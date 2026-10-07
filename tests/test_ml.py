@@ -9389,6 +9389,116 @@ class DirectTrainingPairsTests(unittest.TestCase):
 
 
 
+class MaxDepthSettingTests(unittest.TestCase):
+    """`fit_depth_limited_quantiles` (#244): the depth of every tree, a setting declared in `ml.py`.
+
+    Pressure model v2's trees are v1's with a maximum depth of 3 (#247's candidate (iv), `V2_TREE_SETTINGS`). A script
+    that swapped the estimator class in its own process applied that setting where nothing declared it; here it is
+    declared in this module and applied by a function beside the published fitter. The published fitter's source (and
+    every definition it reads) is hashed by the final test's CRPS declaration (#220), so none of it is edited:
+    `test_final_test_freeze` holds that. The setting reaches the full fit's estimators and every excluding model's, and
+    the estimator class is put back when the fit ends, however it ends.
+
+    Red first: `ml.fit_depth_limited_quantiles` did not exist (`AttributeError`); the first version of this setting,
+    a `max_depth` argument of `fit_gradient_boosted_quantiles`, moved the CRPS checksum
+    (`test_the_crps_checksum_is_the_pinned_one` failed) and was replaced.
+
+    Mutation record. `/opt/rmm-venv`, CPython 3.11, `PYTHONDONTWRITEBYTECODE=1`, this class run alone, in a disposable
+    copy, control green. (1) In `fit_depth_limited_quantiles`, `return published(**kwargs, max_depth=max_depth)` was
+    changed to `return published(**kwargs)`, and `diff` confirmed it. `test_every_estimator_carries_the_depth` then
+    failed in both subtests (`AssertionError: Items in the first set but not the second`), and so did
+    `test_the_depth_is_the_published_fit_with_a_limit_and_nothing_else` (a stump's law equal to the unlimited tree's).
+    (2) The `finally:` that puts the estimator class back (`module["_estimator_class"] = original`) was replaced by
+    `pass`, and `diff` confirmed it. `test_the_estimator_class_is_put_back_however_the_fit_ends`, run alone, then failed
+    with `AssertionError: <function fit_depth_limited_quantiles.<locals>.<lambda> ...> is not <function
+    _estimator_class ...>`; the whole class errored in three tests, the leaked wrapper wrapping the next fit's
+    estimator. Restored, green.
+    """
+
+    ROWS = 70
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = business_day_frame(self.ROWS)
+
+    def fit(self, **overrides):
+        options = {"minimum_history": 20, "calibration": "cross_conformal", "calibration_folds": 3,
+                   "information": _depth_rule(self.rows)}
+        options.update(overrides)
+        return ml.fit_depth_limited_quantiles(self.rows, ("on_rrp", "sofr_volume"), **options)
+
+    def test_every_estimator_carries_the_depth(self):
+        fitted = self.fit(max_depth=2)
+        with self.subTest("the full fit"):
+            self.assertTrue(fitted._estimators)
+            self.assertEqual({e.max_depth for e in fitted._estimators}, {2})
+        with self.subTest("every excluding model"):
+            self.assertEqual(len(fitted.calibration_blocks), 3)
+            for block in fitted.calibration_blocks:
+                self.assertEqual({e.max_depth for e in block.estimators}, {2})
+
+    def test_the_published_fit_is_untouched(self):
+        # Before, between and after a depth-limited fit, the published fitter builds unlimited trees.
+        information = _depth_rule(self.rows)
+
+        def published():
+            return ml.fit_gradient_boosted_quantiles(
+                self.rows, ("on_rrp", "sofr_volume"), minimum_history=20, calibration="cross_conformal",
+                calibration_folds=3, information=information)
+
+        before = published()
+        self.assertEqual({e.max_depth for e in before._estimators}, {None})
+        self.fit(max_depth=2)
+        after = published()
+        self.assertEqual({e.max_depth for e in after._estimators}, {None})
+        self.assertEqual(before.predict(self.rows[-1]), after.predict(self.rows[-1]))
+
+    def test_the_depth_is_the_published_fit_with_a_limit_and_nothing_else(self):
+        # Every other setting is `fit_gradient_boosted_quantiles`' own, passed through.
+        fitted = self.fit(max_depth=3, spread_change_lags=2)
+        self.assertEqual(fitted.model_settings["spread_change_lags"], 2)
+        self.assertEqual(fitted.model_settings["calibration"], "cross_conformal")
+        # And it is not ignored: a stump cannot equal the unlimited tree's law.
+        published = ml.fit_gradient_boosted_quantiles(
+            self.rows, ("on_rrp", "sofr_volume"), minimum_history=20, calibration="cross_conformal",
+            calibration_folds=3, information=_depth_rule(self.rows))
+        self.assertNotEqual(published.predict(self.rows[-1]), self.fit(max_depth=1).predict(self.rows[-1]))
+
+    def test_the_estimator_class_is_put_back_however_the_fit_ends(self):
+        original = ml._estimator_class
+        self.fit(max_depth=2)
+        self.assertIs(ml._estimator_class, original)
+        with self.assertRaises(ValueError):  # a refusal from inside the published fitter
+            self.fit(max_depth=2, calibration="nope")
+        self.assertIs(ml._estimator_class, original)
+
+    def test_the_declared_depth(self):
+        self.assertEqual(dict(ml.V2_TREE_SETTINGS), {"max_depth": 3})
+
+    def test_refusals(self):
+        original = ml._estimator_class
+        for bad in (0, -1, True, 2.5, "3", None):
+            with self.subTest(max_depth=bad):
+                with self.assertRaisesRegex(ValueError, "max_depth"):
+                    self.fit(max_depth=bad)
+        self.assertIs(ml._estimator_class, original)
+        with self.assertRaises(TypeError):  # required: a depth is a choice, never a default
+            ml.fit_depth_limited_quantiles(self.rows, ("on_rrp",), minimum_history=20)
+
+
+def _depth_rule(rows):
+    """An as-of rule for `on_rrp` and `sofr_volume` over `rows`, one calendar day of lag each."""
+
+    from repo_model.asof import InformationRule
+    from repo_model.contract import sources_for_features
+
+    lag = {"basis": "record_date", "unit": "calendar_days", "days": 1, "available_time": "00:00",
+           "timezone": "America/New_York"}
+    features = ("on_rrp", "sofr_volume", "spread_bps")
+    registry = {source: {"release_lag": dict(lag)} for source in sources_for_features(features)}
+    return InformationRule(registry, features, decision_time=time(16, 0))
+
+
 # --------------------------------------------------------------------------
 # Direct pressure-probability models (#114)
 # --------------------------------------------------------------------------
@@ -10683,6 +10793,24 @@ class DynamicPressureModelTests(unittest.TestCase):
         at_zero = ml._index_chain(xs, anchors, 0.0)
         numpy.testing.assert_allclose(at_zero[2], [3.0, 0.0])
 
+    def test_an_anchor_at_or_after_its_own_row_is_refused(self):
+        """The chain reads only an earlier row; a row its own anchor is leakage.
+
+        The line carries `pragma: no cover` because `history_ends` always names
+        an earlier row; the guard is driven directly all the same.
+
+        Recorded mutation (CLAUDE.md): in `ml._index_chain`, `if anchor >=
+        position:` mutated to `if False:`. This test then errors,
+        raising `IndexError` ("list index out of range"): the row's index is
+        read from a chain not yet built.
+        """
+
+        xs = [[1.0, 2.0], [3.0, 0.0], [0.5, 1.0]]
+        for anchors in ([0, 0, 1], [-1, 2, 1]):
+            with self.subTest(anchors=anchors):
+                with self.assertRaisesRegex(LookAheadError, "is not before it"):
+                    ml._index_chain(xs, anchors, 0.5)
+
     def test_a_backtest_at_horizon_three_runs_under_every_guard(self):
         """The lagged index is read off each forecast's own as-of history.
 
@@ -10886,6 +11014,23 @@ class StackedCombinerTests(unittest.TestCase):
             ml.stacked_combiner(bad, **self.options)
         # And the honest bases combine.
         ml.stacked_combiner(self.bases, **self.options)
+
+    def test_the_combiner_never_learns_from_an_outcome_not_yet_observable(self):
+        """A pair whose day is scored after the combiner's fit is refused.
+
+        Recorded mutation (CLAUDE.md): in `ml._check_out_of_fold`, `if
+        fold.scored_date > fit_end:` mutated to `if False:`. This test then
+        fails, raising `AssertionError` ("LookAheadError not raised"): the fold
+        here is out of fold, so only this guard can refuse it.
+        """
+
+        from types import SimpleNamespace
+
+        fold = SimpleNamespace(scored_date=date(2026, 3, 10), train_end=date(2026, 3, 5))
+        bases = {"stub": SimpleNamespace(folds=(fold,))}
+        with self.assertRaisesRegex(LookAheadError, "not yet observable"):
+            ml._check_out_of_fold(bases, [0], date(2026, 3, 9))
+        ml._check_out_of_fold(bases, [0], date(2026, 3, 10))
 
     def test_each_block_is_the_fit_on_its_observable_out_of_fold_past(self):
         """At horizon 3 a block's last days are not yet observable at the next fit."""

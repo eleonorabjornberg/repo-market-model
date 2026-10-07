@@ -2,11 +2,23 @@
 
 The one statement below is read by `scripts/emit_results.py` (the README and `docs/final-test.md`) and by
 `scripts/emit_visual.py` (the results page, `site/index.html`). Edit it here and regenerate; the generated copies are
-never edited by hand. It is the wording of Eleonora's ruling of 6 October 2026 on #261.
+never edited by hand. It is the wording of Eleonora's ruling of 6 October 2026 on #261. The results page
+carries the plain-English version below instead of the technical statement (#316).
 
 ## The statement
 
-> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated (#243), its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.
+> A research forecast of the SOFR − IORB spread. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its central quantiles are not yet calibrated, its tail coverage is weaker on quarter-ends and turns, and it has little history in the current scarce-reserve regime. It needs revalidation after a material policy or regime change.
+
+## Plain-English version
+
+Another repository can sync this by reading **the first blockquote under `## Plain-English version`**: the one line
+that starts with `> ` between this heading and the next `## ` heading. It is at most two short sentences and uses none
+of the statement's technical words. The technical statement above stays the version of record; this one only says
+it for a reader who is not a specialist.
+
+> This is a research forecast of next-day overnight borrowing costs, not a warning system or a tool for managing risk. It has been tested mostly in calm conditions, so it needs re-checking if the market changes sharply.
+
+## The reasons
 
 The reasons, each from a finding of the independent review:
 

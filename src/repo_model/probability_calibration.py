@@ -9,10 +9,14 @@ evidence:
 
 * `isotonic`, **the control**: the CORP isotonic fit of outcomes on forecasts
   (`metrics._recalibrate`, the fit every published reliability diagram is
-  drawn with), read as a right-continuous step function (`metrics._step_lookup`);
+  drawn with), read as a right-continuous step function (`metrics._step_lookup`).
+  It is **not** the published recalibration: `corp_isotonic` in an exceedance
+  record is the method name of the reliability curve, a diagnostic drawn after
+  scoring, and no published forecast is passed through it (#211);
 * `platt`: a one-variable logistic of the outcome on `logit(p)`, exactly
-  `pressure.RECALIBRATION`'s curve (the recalibration pressure model v1 is
-  published with);
+  `pressure.RECALIBRATION`'s curve. **This is the recalibration pressure model v1
+  is published with** (`PUBLISHED`); the published `exceedance_gbm` is not
+  recalibrated at all;
 * `beta`: beta calibration (Kull, Silva Filho and Flach, 2017), a logistic of
   the outcome on `ln p` and `-ln(1 - p)` with both shape slopes held
   non-negative: a negative one is dropped and the curve refitted without it, as
@@ -61,6 +65,7 @@ from .splits import LookAheadError
 __all__ = [
     "CALIBRATORS",
     "CONTROL",
+    "PUBLISHED",
     "MINIMUM_EVENTS",
     "MINIMUM_PAIRS",
     "PROBABILITY_FLOOR",
@@ -78,6 +83,9 @@ __all__ = [
 CALIBRATORS = ("isotonic", "platt", "beta", "platt_recency")
 #: The control every candidate is paired against (#138).
 CONTROL = "isotonic"
+#: The calibrator the published pressure model v1 uses (`pressure.RECALIBRATION`,
+#: `platt_out_of_fold`). A candidate beating it beats what is published (#211).
+PUBLISHED = "platt"
 
 #: `pressure.RECALIBRATION`'s gate, for every method: identity until the past
 #: pairs number this many...
@@ -525,7 +533,7 @@ def score_target(
                 columns[CONTROL], column, outcomes, block_length=block_length,
                 seed=seed(name, CONTROL), splits=splits, rows=rows, scored_dates=scored_dates,
             )
-        if name not in ("platt", CONTROL) and "platt" in columns:
+        if name not in (PUBLISHED, CONTROL) and PUBLISHED in columns:
             metrics["paired"]["vs_platt"] = _paired(
                 columns["platt"], column, outcomes, block_length=block_length,
                 seed=seed(name, "platt"),

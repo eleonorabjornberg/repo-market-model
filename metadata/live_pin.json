@@ -1,0 +1,17 @@
+{
+  "current": "c69a361965fd601a4e69fdbc92643d669dba8e9e",
+  "environment": {
+    "lock": "metadata/live_requirements.lock",
+    "lock_sha256": "80fd364df301d3a5235e824fe410a9ff614534b8246700d5a49d2ea1fd973902",
+    "python": "3.11.16",
+    "runner": "ubuntu-24.04"
+  },
+  "transitions": [
+    {
+      "id": "t0-first-record",
+      "record": "docs/decisions/live-pin.md",
+      "sha": "c69a361965fd601a4e69fdbc92643d669dba8e9e"
+    }
+  ],
+  "version": 1
+}

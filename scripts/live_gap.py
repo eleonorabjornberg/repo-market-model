@@ -28,11 +28,11 @@ workflow does. Each forecast is written once, with its inputs' digests, to
     PYTHONPATH=src python3 scripts/live_gap.py reconstruct --date 2027-04-01 \\
         --live-dir LIVE-LOG --pinned-root ../pinned --out-dir GAP --work-dir WORK [--raw-root RAW]
     PYTHONPATH=src python3 scripts/live_score.py --date 2027-04-01 --live-dir LIVE-LOG \\
-        --gap-dir GAP --panel PANEL --output OUT.json
+        --gap-dir GAP --pinned-tree ../pinned --panel PANEL --archive-dir LIVE-RAW --output OUT.json
 
-`reconstruct` refuses on any date but the first scoring date, and while the
-amendment heading is absent from `docs/decisions/lockbox.md`
-(`live_score.require_gap_scoring`). It is resumable: a day already written is
+`reconstruct` refuses on any date but the first scoring date
+(`live_score.require_gap_scoring`); the gap's days are scored later through the
+lockbox guard (`metadata/lockbox.json`, #277). It is resumable: a day already written is
 skipped.
 
 The module imports nothing from `repo_model` at its top, so that the `fetch`
@@ -296,7 +296,7 @@ def fetched_at(raw_root: Path, scoring_date: date) -> str:
 def reconstruct_command(args) -> int:
     score = _load(REPO / "scripts" / "live_score.py", "gap_live_score")
     day = date.fromisoformat(args.date)
-    score.require_gap_scoring(day, score.LOCKBOX)
+    score.require_gap_scoring(day)
     out_dir, live_dir, pinned_root = Path(args.out_dir), Path(args.live_dir), Path(args.pinned_root)
     require_outside_live_log(out_dir, live_dir)
     live = score._live()

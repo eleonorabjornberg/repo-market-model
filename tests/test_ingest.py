@@ -4294,16 +4294,26 @@ class AvailableAtDerivationTests(unittest.TestCase):
             byte_count=len(payload),
         )
 
-    def declared_available_at(self, lag, ref_date):
+    def declared_available_at(self, lag, ref_date, holidays=True):
         """Recompute `available_at` from a registry declaration alone, touching no adapter code."""
 
         self.assertEqual(lag["basis"], "ref_date")
         self.assertEqual(lag["unit"], "business_days")
+        # A business day is a weekday the New York Fed publishes SOFR: not in the
+        # market holiday table (#201). Read from the file, not from `repo_model.data`.
+        closed = {
+            date.fromisoformat(entry["date"])
+            for entry in json.loads(
+                (Path(__file__).parents[1] / "metadata" / "market_holidays.json").read_text(
+                    encoding="utf-8"
+                )
+            )["closed"]
+        }
         current = ref_date
         remaining = lag["days"]
         while remaining:
             current += timedelta(days=1)
-            if current.weekday() < 5:
+            if current.weekday() < 5 and not (holidays and current in closed):
                 remaining -= 1
         return datetime.combine(
             current,
@@ -4333,8 +4343,14 @@ class AvailableAtDerivationTests(unittest.TestCase):
         for source_id in self.ref_date_sources():
             lag = self.REGISTRY[source_id]["release_lag"]
             # A midweek date and a Friday: the Friday is the only one whose
-            # calendar gap differs from its business-day lag.
-            for ref_date in (date(2026, 1, 6), date(2026, 1, 9)):
+            # calendar gap differs from its business-day lag. Then the days
+            # whose next weekday is a market holiday (#201): 2025-12-31 (New
+            # Year's Day follows) and 2026-01-16 (Martin Luther King Jr. Day
+            # follows), and 2026-01-15, whose second business day crosses it.
+            for ref_date in (
+                date(2026, 1, 6), date(2026, 1, 9),
+                date(2025, 12, 31), date(2026, 1, 15), date(2026, 1, 16),
+            ):
                 with self.subTest(source=source_id, ref_date=ref_date):
                     snapshot = self.source_snapshot(
                         source_id,
@@ -4345,7 +4361,11 @@ class AvailableAtDerivationTests(unittest.TestCase):
                     )
                     rows = list(observations_from_snapshots([snapshot]))
                     self.assertTrue(rows)
-                    expected = self.declared_available_at(lag, ref_date)
+                    # FR 2004 still counts weekdays: skipping holidays moves its
+                    # 2018-12-21 value past the declared 11-day bound (#201).
+                    expected = self.declared_available_at(
+                        lag, ref_date, holidays=source_id != "nyfed_fr2004"
+                    )
                     for row in rows:
                         self.assertEqual(row.available_at, expected)
 
@@ -4367,6 +4387,41 @@ class AvailableAtDerivationTests(unittest.TestCase):
         self.assertNotEqual(
             rows[0].available_at, self.declared_available_at(drifted, ref_date)
         )
+
+
+class NextBusinessDayTests(unittest.TestCase):
+    """`data.next_business_day` counts business days on the market holiday table (#201).
+
+    Recorded mutation (availability guard): in `data.next_business_day`,
+    `if current.weekday() < 5 and current not in holidays.closed:` became
+    `if current.weekday() < 5:`. Failing tests raised `AssertionError` (this class
+    and `AvailableAtDerivationTests.test_adapter_available_at_matches_the_registry_declaration`,
+    every source and each of 2025-12-31, 2026-01-15, 2026-01-16).
+    """
+
+    def test_a_holiday_is_not_a_business_day(self):
+        from repo_model.data import next_business_day
+
+        # 2026-01-01 (Thursday) is New Year's Day: no SOFR publication.
+        self.assertEqual(next_business_day(date(2025, 12, 31), 1), date(2026, 1, 2))
+        # Friday before Martin Luther King Jr. Day (2026-01-19).
+        self.assertEqual(next_business_day(date(2026, 1, 16), 1), date(2026, 1, 20))
+        self.assertEqual(next_business_day(date(2026, 1, 15), 2), date(2026, 1, 20))
+        self.assertEqual(next_business_day(date(2026, 1, 6), 0), date(2026, 1, 6))
+
+    def test_a_count_past_the_table_is_refused(self):
+        from repo_model.data import next_business_day
+
+        with self.assertRaises(ValueError):
+            next_business_day(date(2030, 12, 31), 1)
+
+    def test_days_before_the_table_count_as_weekdays(self):
+        from repo_model.data import next_business_day
+
+        # The table starts 2018-01-01; 2017-12-25 is not in it, so it counts.
+        self.assertEqual(next_business_day(date(2017, 12, 22), 1), date(2017, 12, 25))
+        # 2018-01-01 is in it: skipped.
+        self.assertEqual(next_business_day(date(2017, 12, 29), 1), date(2018, 1, 2))
 
 
 class LegacySourceIdBuildTests(unittest.TestCase):
@@ -7988,12 +8043,13 @@ class NyFedOnRrpAdapterTests(unittest.TestCase):
             ON_RRP_MAX_GAP_DAYS,
         )
 
-    def test_a_result_is_available_at_the_next_weekday_at_16(self):
+    def test_a_result_is_available_at_the_next_business_day_at_16(self):
         _artifacts, rows = self.tracked()
+        # The Monday after is Martin Luther King Jr. Day (#201).
         friday = rows[date(2026, 1, 16)]
         self.assertEqual(
             friday.available_at,
-            datetime(2026, 1, 19, 16, 0, tzinfo=ZoneInfo("America/New_York")),
+            datetime(2026, 1, 20, 16, 0, tzinfo=ZoneInfo("America/New_York")),
         )
 
     def operations(self, *operations):
@@ -8159,12 +8215,13 @@ class NyFedSrfAdapterTests(unittest.TestCase):
         # the day's 13:45 operation took 1 million.
         self.assertAlmostEqual(rows[date(2025, 10, 8)].value, 0.001, places=9)
 
-    def test_a_take_up_is_available_at_the_next_weekday_at_16(self):
+    def test_a_take_up_is_available_at_the_next_business_day_at_16(self):
         _artifacts, rows = self.tracked()
+        # The Monday after is Martin Luther King Jr. Day (#201).
         friday = rows[date(2026, 1, 16)]
         self.assertEqual(
             friday.available_at,
-            datetime(2026, 1, 19, 16, 0, tzinfo=ZoneInfo("America/New_York")),
+            datetime(2026, 1, 20, 16, 0, tzinfo=ZoneInfo("America/New_York")),
         )
 
     def operations(self, *operations):

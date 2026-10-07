@@ -1,5 +1,9 @@
 """Recalibration bake-off (#138): isotonic against Platt, beta and recency-weighted Platt.
 
+The control is the CORP isotonic fit, not the published recalibration: pressure
+model v1 is published with Platt scaling (`pc.PUBLISHED`), so read the "vs Platt"
+columns for a comparison with what is published (#211).
+
 A scratch measurement, not a record: it writes JSON and a Markdown summary to
 the paths it is given, and nothing into `docs/runs/`. Nothing published moves.
 
@@ -351,7 +355,7 @@ def markdown(document) -> str:
         out.append("")
         for target in TARGET_ORDER:
             out.append(f"### {forecast}, {target}\n")
-            out.append("**Paired against the control (isotonic)**, all scored days\n")
+            out.append("**Paired against the control (isotonic; not the published recalibration, which is Platt: see \"vs Platt\")**, all scored days\n")
             out.append("| Candidate | " + " | ".join(f"h={p['horizon']}" for p in parts) + " |")
             out.append("|---|" + "---|" * len(parts))
             for m in CANDIDATES + ("raw",):

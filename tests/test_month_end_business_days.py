@@ -20,6 +20,8 @@ from pathlib import Path
 from repo_model import data
 from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration
 
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
+
 ROOT = Path(__file__).resolve().parents[1]
 SPLITS = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
 
@@ -60,7 +62,7 @@ class LastBusinessDaysTests(unittest.TestCase):
 
     def test_a_month_outside_the_holiday_table_is_refused(self):
         with self.assertRaises(ValueError):
-            data.last_business_days_of_month(2028, 1)
+            data.last_business_days_of_month(2031, 1)
 
 
 class ReportingDayTypeTests(unittest.TestCase):

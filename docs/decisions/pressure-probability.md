@@ -1,6 +1,6 @@
 # Decision: the pressure probability comes from the best model
 
-**Status: decided by Eleonora, 1 October 2026. In force once this record merges.** It replaces the stress-target
+**Status: decided by Eleonora, 1 October 2026. In force: merged in PR #54, 30 September 2026.** It replaces the stress-target
 clause in `docs/process/AGENT_CONTRACT.md` that required the pressure probability to be an exceedance derived from the
 predictive distribution.
 
@@ -80,7 +80,7 @@ records published before this rule are not edited in place: their +20 and +50 bp
 
 ## Onset view and small-leap targets
 
-**Decided by Eleonora on 2 October 2026 (#139), in force once the pull request that adds it merges.** It records her
+**Decided by Eleonora on 2 October 2026 (#139), in force: merged in PR #191, 3 October 2026.** It records her
 request of 2 October 2026, as widened and amended that day, and she approved the wording below as drafted.
 
 **Why.** The +5 and +10 bp stress targets hold too few events in calm periods to settle a model comparison: 2026 has

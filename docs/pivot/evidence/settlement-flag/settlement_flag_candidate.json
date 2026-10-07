@@ -1,0 +1,476 @@
+{
+ "crps_paired": {
+  "days": 1873,
+  "interval": {
+   "block_length": 2,
+   "level": 0.9,
+   "lower": -0.009087292217569097,
+   "method": "stationary_bootstrap",
+   "replications": 2000,
+   "seed": 408223956,
+   "upper": 0.001286010163634221
+  },
+  "mean": -0.0035879784442789213,
+  "splits": {
+   "by_day_type": {
+    "month_end": {
+     "count": 158,
+     "interval": {
+      "lower": -0.02582200389393887,
+      "upper": 0.01348329943166068
+     },
+     "mean": -0.004729639508123698
+    },
+    "ordinary": {
+     "count": 1595,
+     "interval": {
+      "lower": -0.003450539710047832,
+      "upper": 0.004361776940113965
+     },
+     "mean": 0.0006540240448759952
+    },
+    "quarter_end": {
+     "count": 31,
+     "interval": {
+      "lower": -0.3946936765067102,
+      "upper": -3.252026081520149e-05
+     },
+     "mean": -0.17898804832930337
+    },
+    "tax_date": {
+     "count": 89,
+     "interval": {
+      "lower": -0.0658649987807356,
+      "upper": 0.020165677215675554
+     },
+     "mean": -0.016489207159771785
+    }
+   },
+   "by_quarter_end_window": {
+    "outside_quarter_end_window": {
+     "count": 1722,
+     "interval": {
+      "lower": -0.005603007415238536,
+      "upper": 0.003239020984883318
+     },
+     "mean": -0.0009962013333383389
+    },
+    "quarter_end_window": {
+     "count": 151,
+     "interval": {
+      "lower": -0.08120058196773751,
+      "upper": 0.0030223220027413376
+     },
+     "mean": -0.03314453596109804
+    }
+   },
+   "by_regime": {
+    "2018-19": {
+     "count": 375,
+     "interval": {
+      "lower": -0.05057653047078868,
+      "upper": 0.0003228951068605508
+     },
+     "mean": -0.02380213352088298
+    },
+    "2020": {
+     "count": 251,
+     "interval": {
+      "lower": 0.001722890473851002,
+      "upper": 0.010242318191583435
+     },
+     "mean": 0.005538138112928139
+    },
+    "2021-23": {
+     "count": 748,
+     "interval": {
+      "lower": -0.00047902188769097205,
+      "upper": 0.002986288162944493
+     },
+     "mean": 0.0011055948221985546
+    },
+    "2024": {
+     "count": 250,
+     "interval": {
+      "lower": -0.0004968587945095563,
+      "upper": 0.0005100179395706251
+     },
+     "mean": -4.61645966111302e-05
+    },
+    "2025-26": {
+     "count": 249,
+     "interval": {
+      "lower": 0.0,
+      "upper": 0.0
+     },
+     "mean": 0.0
+    }
+   }
+  }
+ },
+ "days": 1873,
+ "days_where_the_crps_differs": 1194,
+ "declared_in": "docs/pivot/settlement-flag-test.md",
+ "directive": "#339",
+ "figures": {
+  "brier_+10bp": {
+   "cells": {
+    "by_day_type/month_end": "worse beyond its interval",
+    "by_day_type/ordinary": "worse beyond its interval",
+    "by_day_type/quarter_end": "worse beyond its interval",
+    "by_day_type/tax_date": "ok",
+    "by_regime/2018-19": "worse beyond its interval",
+    "by_regime/2020": "worse beyond its interval",
+    "by_regime/2021-23": "worse beyond its interval",
+    "by_regime/2024": "ok",
+    "by_regime/2025-26": "ok"
+   },
+   "cells_worse_beyond_interval": [
+    "by_day_type/month_end",
+    "by_day_type/ordinary",
+    "by_day_type/quarter_end",
+    "by_regime/2018-19",
+    "by_regime/2020",
+    "by_regime/2021-23"
+   ],
+   "figure": "brier_+10bp",
+   "gate": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.0007030894171255179,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 943934144,
+    "upper": -0.00024612111479969885
+   },
+   "mean": -0.0004609343641215277
+  },
+  "brier_+5bp": {
+   "cells": {
+    "by_day_type/month_end": "worse beyond its interval",
+    "by_day_type/ordinary": "ok",
+    "by_day_type/quarter_end": "worse beyond its interval",
+    "by_day_type/tax_date": "worse beyond its interval",
+    "by_regime/2018-19": "worse beyond its interval",
+    "by_regime/2020": "worse beyond its interval",
+    "by_regime/2021-23": "worse beyond its interval",
+    "by_regime/2024": "ok",
+    "by_regime/2025-26": "ok"
+   },
+   "cells_worse_beyond_interval": [
+    "by_day_type/month_end",
+    "by_day_type/quarter_end",
+    "by_day_type/tax_date",
+    "by_regime/2018-19",
+    "by_regime/2020",
+    "by_regime/2021-23"
+   ],
+   "figure": "brier_+5bp",
+   "gate": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.0009411755840660821,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1187036392,
+    "upper": -0.00023751890172420408
+   },
+   "mean": -0.0005624216821110001
+  },
+  "crps_bps": {
+   "cells": {
+    "by_day_type/month_end": "ok",
+    "by_day_type/ordinary": "ok",
+    "by_day_type/quarter_end": "worse beyond its interval",
+    "by_day_type/tax_date": "ok",
+    "by_regime/2018-19": "ok",
+    "by_regime/2020": "ok",
+    "by_regime/2021-23": "ok",
+    "by_regime/2024": "ok",
+    "by_regime/2025-26": "ok"
+   },
+   "cells_worse_beyond_interval": [
+    "by_day_type/quarter_end"
+   ],
+   "figure": "crps_bps",
+   "gate": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.009087292217569097,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 408223956,
+    "upper": 0.001286010163634221
+   },
+   "mean": -0.0035879784442789213
+  }
+ },
+ "joins_published_declaration": false,
+ "mean_crps_bps": {
+  "candidate": 1.6627808916531601,
+  "published": 1.6591929132088845
+ },
+ "narrowed_flag_days": 186,
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "pressure_comparison": {
+  "by_tau": {
+   "10": {
+    "benchmark_average_precision": 0.20022744136537304,
+    "benchmark_brier": 0.028802028696748944,
+    "model_brier": 0.02926296306087047,
+    "paired_brier_difference": {
+     "interval": {
+      "block_length": 2,
+      "level": 0.9,
+      "lower": -0.0007030894171255179,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 943934144,
+      "upper": -0.00024612111479969885
+     },
+     "mean": -0.0004609343641215277,
+     "splits": {
+      "by_day_type": {
+       "month_end": {
+        "count": 158,
+        "interval": {
+         "lower": -0.0026492688036796885,
+         "upper": -0.00047916223771354236
+        },
+        "mean": -0.0014756059313596193
+       },
+       "ordinary": {
+        "count": 1595,
+        "interval": {
+         "lower": -0.0002819636719424567,
+         "upper": -1.402008625338019e-05
+        },
+        "mean": -0.00014159625948487035
+       },
+       "quarter_end": {
+        "count": 31,
+        "interval": {
+         "lower": -0.019741824665845887,
+         "upper": -0.0012729898004713886
+        },
+        "mean": -0.009267859873291005
+       },
+       "tax_date": {
+        "count": 89,
+        "interval": {
+         "lower": -0.0034731472418355375,
+         "upper": 0.00012961822244982683
+        },
+        "mean": -0.001314995920161028
+       }
+      },
+      "by_quarter_end_window": {
+       "outside_quarter_end_window": {
+        "count": 1722,
+        "interval": {
+         "lower": -0.0005519890853273454,
+         "upper": -0.0001797163957380505
+        },
+        "mean": -0.00035827093917284854
+       },
+       "quarter_end_window": {
+        "count": 151,
+        "interval": {
+         "lower": -0.00370007993905746,
+         "upper": -5.4884911056896996e-05
+        },
+        "mean": -0.0016317053426748145
+       }
+      },
+      "by_regime": {
+       "2018-19": {
+        "count": 375,
+        "interval": {
+         "lower": -0.002605581961998021,
+         "upper": -0.00047780855424839374
+        },
+        "mean": -0.0014472349968054743
+       },
+       "2020": {
+        "count": 251,
+        "interval": {
+         "lower": -0.0005731659132183742,
+         "upper": -0.00017418273084473176
+        },
+        "mean": -0.0004006020786508296
+       },
+       "2021-23": {
+        "count": 748,
+        "interval": {
+         "lower": -0.00015933549501123679,
+         "upper": -0.00014197188012695627
+        },
+        "mean": -0.00015042314179262406
+       },
+       "2024": {
+        "count": 250,
+        "interval": {
+         "lower": -4.471482654764316e-05,
+         "upper": 2.697919996926478e-05
+        },
+        "mean": -1.1608371669440853e-05
+       },
+       "2025-26": {
+        "count": 249,
+        "interval": {
+         "lower": -0.0011233747742021305,
+         "upper": 0.0001995929654285971
+        },
+        "mean": -0.00042026994167825834
+       }
+      }
+     }
+    },
+    "tau_bp": 10.0
+   },
+   "5": {
+    "benchmark_average_precision": 0.4921796281394555,
+    "benchmark_brier": 0.049553917244021556,
+    "model_brier": 0.050116338926132556,
+    "paired_brier_difference": {
+     "interval": {
+      "block_length": 2,
+      "level": 0.9,
+      "lower": -0.0009411755840660821,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1187036392,
+      "upper": -0.00023751890172420408
+     },
+     "mean": -0.0005624216821110001,
+     "splits": {
+      "by_day_type": {
+       "month_end": {
+        "count": 158,
+        "interval": {
+         "lower": -0.004038715708519951,
+         "upper": -0.0003466120300370068
+        },
+        "mean": -0.0017850248604927657
+       },
+       "ordinary": {
+        "count": 1595,
+        "interval": {
+         "lower": -0.0005298692317454882,
+         "upper": 6.8892221565745945e-06
+        },
+        "mean": -0.0002505363652797784
+       },
+       "quarter_end": {
+        "count": 31,
+        "interval": {
+         "lower": -0.007929161895661964,
+         "upper": -0.0002702166399890155
+        },
+        "mean": -0.0034637666863940107
+       },
+       "tax_date": {
+        "count": 89,
+        "interval": {
+         "lower": -0.006922379244676934,
+         "upper": -0.00021210138281949092
+        },
+        "mean": -0.0029707821655778972
+       }
+      },
+      "by_quarter_end_window": {
+       "outside_quarter_end_window": {
+        "count": 1722,
+        "interval": {
+         "lower": -0.0007945803635368446,
+         "upper": -0.0001596823261208936
+        },
+        "mean": -0.000459538941125425
+       },
+       "quarter_end_window": {
+        "count": 151,
+        "interval": {
+         "lower": -0.004170931192023631,
+         "upper": 0.00017948693619956389
+        },
+        "mean": -0.0017356937349388628
+       }
+      },
+      "by_regime": {
+       "2018-19": {
+        "count": 375,
+        "interval": {
+         "lower": -0.0037375546622296463,
+         "upper": -0.0004510504308667281
+        },
+        "mean": -0.001946553915849605
+       },
+       "2020": {
+        "count": 251,
+        "interval": {
+         "lower": -0.0012958241139855728,
+         "upper": -0.000722903628926187
+        },
+        "mean": -0.0010334246405642959
+       },
+       "2021-23": {
+        "count": 748,
+        "interval": {
+         "lower": -0.00024796597775354214,
+         "upper": -0.00021774538871823946
+        },
+        "mean": -0.00023284036447080786
+       },
+       "2024": {
+        "count": 250,
+        "interval": {
+         "lower": -6.972029015645541e-05,
+         "upper": 0.0002731183390451769
+        },
+        "mean": 7.617252679858653e-05
+       },
+       "2025-26": {
+        "count": 249,
+        "interval": {
+         "lower": -0.00037856939875577025,
+         "upper": 0.0011219241102044058
+        },
+        "mean": 0.000365674512273116
+       }
+      }
+     }
+    },
+    "tau_bp": 5.0
+   }
+  },
+  "features": [
+   "reserve_balances",
+   "sofr_p25",
+   "sofr_p75",
+   "sofr_volume",
+   "spread_bps",
+   "tbill_13w",
+   "tbill_4w",
+   "tga",
+   "treasury_settlement"
+  ],
+  "model": "distributional_gbm+recalibrated",
+  "scored_days": 1873,
+  "sign_convention": "difference = brier(distributional_gbm+recalibrated) - brier(distributional_gbm+recalibrated) on each scored day; a positive mean means distributional_gbm+recalibrated had the lower Brier score, so it beat the benchmark on these days"
+ },
+ "published_flag_days": 251,
+ "published_reproduces_records": {
+  "brier": {
+   "10": 0.028802028696748944,
+   "5": 0.049553917244021556
+  },
+  "crps_per_day": true
+ },
+ "window": [
+  "2018-06-29",
+  "2025-12-31"
+ ]
+}

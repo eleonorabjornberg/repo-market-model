@@ -349,13 +349,13 @@ NOT_ENTRY_POINTS = {
         "the live record's forecast loop (#215): trains and forecasts as the as-of "
         "information set allows, computes no metric and scores no day "
         "(docs/decisions/lockbox.md); scripts/live_score.py scores the record, "
-        "only once the lockbox amendment is merged"
+        "through `lockbox.require_unlocked` on days `metadata/lockbox.json` has opened (#277)"
     ),
     "scripts/live_record.distribution_run": (
         "the live record's distribution loop (#215): trains and forecasts the published "
         "distribution and as-of persistence as the as-of information set allows, "
         "computes no loss and scores no day (docs/decisions/lockbox.md); "
-        "scripts/live_score.py scores the record, only once the lockbox amendment is merged"
+        "scripts/live_score.py scores the record, through `lockbox.require_unlocked` on days `metadata/lockbox.json` has opened (#277)"
     ),
     "scripts/live_record.require_reads_on_real_rows": (
         "checks one live forecast's reads against the placeholder rows (#215); "
@@ -838,6 +838,96 @@ class ScriptTests(EventHoldoutHarness):
             with self.subTest(entry_point=entry):
                 with self.assertRaises(LookAheadError):
                     self.run_script(entry, end="2026-01-05")
+
+
+#: What a function that computes a CRPS (or the live scorer's guard) is, as the lockbox scan sees it
+#: (#257, second review finding 4). `"guard"`: the function calls a guard itself, so it refuses a
+#: locked scored day. `"delegates"`: it computes a loss on days some other function chose; the reason
+#: names the function that chose them and refuses a locked day. Added with the live scorer's own
+#: guard, which `LIBRARY_ENTRY_POINTS` and `SCRIPT_ENTRY_POINTS` do not see: the scan above looks for
+#: `information_set` and the fold loop, and `live_score.score` and `score_crps` read neither.
+CRPS_CALLERS = frozenset({"crps_from_quantiles", "crps_trapezoid_from_quantiles",
+                          "crps_from_record", "integral_crps_from_record",
+                          "_require_scored_days_unlocked"})
+GUARD_CALLS = frozenset({"require_unlocked", "_require_scored_days_unlocked", "_as_of_folds"})
+_WALK = "scores the days `final_test_opening.distribution_walk` walks, which calls lockbox.require_unlocked before any fit"
+_FOLDS = "scores the days `baseline.rolling_persistence_backtest` walks, which refuses a locked day through `_as_of_folds`"
+CRPS_SCORERS = {
+    "scripts/live_score.score_crps": ("guard", "the live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
+    "scripts/live_score.score": ("guard", "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
+    "baseline.rolling_persistence_backtest": ("guard", "the CRPS fold loop: `_as_of_folds` refuses a locked scored day"),
+    "scripts/live_score.crps_from_record": ("delegates", "one record's loss at an outcome `score_crps` supplies, after its guard"),
+    "scripts/live_score.integral_crps_from_record": ("delegates", "one record's integral loss at an outcome `score_crps` supplies, after its guard"),
+    "baseline._crps_at": ("delegates", "the loss callback of `paired_model_comparison`, which walks `_as_of_folds`"),
+    "interior.record": ("delegates", "a label the online calibrator takes from the walk that calls it; scores no day itself"),
+    "recalibration.label": ("delegates", "a label the online calibrator takes from the walk that calls it; scores no day itself"),
+    "onset.twcrps_above_from_quantiles": ("delegates", "a pure metric of one vector and one outcome; chooses no day"),
+    "scripts/calibration_masking_effect.score": ("delegates", _FOLDS),
+    "scripts/calibration_rediagnosis.rediagnose": ("delegates", _FOLDS),
+    "scripts/pid_constant_selection.select": ("delegates", _FOLDS),
+    "scripts/pid_constant_selection.per_day": ("delegates", "a per-day loss of the walk `select` runs; " + _FOLDS),
+    "scripts/final_test_opening.crps_horizon_command": ("delegates", _WALK + ", and `_window_positions` guards the window"),
+    "scripts/settlement_flag_candidate.crps_side": ("delegates", _WALK),
+    "scripts/forecast_daily.reproduction_check": ("delegates", "compares the published series with " + _WALK),
+    "scripts/forecast_daily.reproduction_check_horizon": ("delegates", "compares the final test's cell with " + _WALK),
+    "scripts/interior_diagnosis._crps": ("delegates", "one loss; " + _WALK),
+    "scripts/pressure_model_v2._crps": ("delegates", "one loss; " + _WALK),
+    "scripts/pressure_model_v2.paired_against": ("delegates", "pairs the losses of `window_block`'s days; " + _WALK),
+    "scripts/pressure_model_v2.window_block": ("delegates", "a block over days " + _WALK),
+    "scripts/pressure_model_v2.assemble_command": ("delegates", "assembles blocks over days " + _WALK),
+    "scripts/quarter_end_remedy._crps": ("delegates", "one loss; " + _WALK),
+    "scripts/desk_outputs.check_against_published": ("delegates", "compares the days `history_command` chose, after its `require_unlocked`"),
+    "scripts/desk_outputs._series": ("delegates", "the series of days `history_command` chose, after its `require_unlocked`"),
+}
+
+
+class CrpsScorerScanTests(unittest.TestCase):
+    """Every function that computes a CRPS, or calls the live scorer's guard, is classified (#257).
+
+    `EnumerationTests` finds the functions that read an as-of information set; the live scorer's
+    cells read none, so its `score` and `score_crps` were in neither list. This scan finds the
+    callers of `crps_from_quantiles` and its siblings too, in `src/repo_model/*.py` and the tracked
+    `scripts/*.py`, and requires each to be classified in `CRPS_SCORERS` with a reason.
+
+    Recorded mutations (#257), each applied in a disposable copy outside the tree: renaming the
+    `"scripts/live_score.score_crps"` key in `CRPS_SCORERS` makes
+    `test_every_function_that_computes_a_crps_is_classified` fail with `AssertionError: Items in the
+    first set but not the second` (the scan finds the function, the table does not), and
+    `test_a_guard_entry_calls_a_guard_itself` error with `KeyError`; replacing the
+    `_require_scored_days_unlocked(days, where=f"live_score.score {cell_name} h={h}")` line in
+    `live_score.score` with `pass` makes `test_a_guard_entry_calls_a_guard_itself` fail with
+    `AssertionError: set() is not true : scripts/live_score.score calls no guard`.
+    Written with its table in one pass; not run red first.
+    """
+
+    @staticmethod
+    def functions():
+        paths = [(path, path.stem) for path in sorted(SRC.glob("*.py"))]
+        paths += [(path, f"scripts/{path.stem}") for path in sorted(SCRIPTS.glob("*.py"))]
+        for path, module in paths:
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    called = {getattr(call.func, "attr", getattr(call.func, "id", None))
+                              for call in ast.walk(node) if isinstance(call, ast.Call)}
+                    yield f"{module}.{node.name}", called
+
+    def test_every_function_that_computes_a_crps_is_classified(self):
+        found = {name for name, called in self.functions() if called & CRPS_CALLERS}
+        self.assertEqual(found, set(CRPS_SCORERS),
+                         "classify each new function that computes a CRPS in CRPS_SCORERS, with a reason")
+
+    def test_a_guard_entry_calls_a_guard_itself(self):
+        called = dict(self.functions())
+        for name, (kind, reason) in CRPS_SCORERS.items():
+            with self.subTest(function=name):
+                self.assertIn(kind, ("guard", "delegates"))
+                self.assertTrue(reason.strip())
+                if kind == "guard":
+                    self.assertTrue(called[name] & GUARD_CALLS, f"{name} calls no guard")
+
+    def test_the_live_scorers_cells_are_classified_as_guards(self):
+        for name in ("scripts/live_score.score_crps", "scripts/live_score.score"):
+            self.assertEqual(CRPS_SCORERS[name][0], "guard")
 
 
 class EnumerationTests(unittest.TestCase):

@@ -154,8 +154,11 @@ __all__ = [
     "log_score",
     "pinball_loss",
     "crps_from_quantiles",
+    "crps_piecewise_linear_from_quantiles",
+    "crps_trapezoid_from_quantiles",
     "precision_recall_curve",
     "stationary_bootstrap_indices",
+    "stationary_bootstrap_intervals",
     "stationary_bootstrap_interval",
     "threshold_weighted_crps",
 ]
@@ -794,6 +797,101 @@ def crps_from_quantiles(
     ) / len(grid)
 
 
+def crps_trapezoid_from_quantiles(
+    levels: Sequence[float],
+    predicted: Sequence[float],
+    observed: float,
+) -> float:
+    """The CRPS integral from a quantile vector, trapezoid weighted: a reported-only companion.
+
+    `crps_from_quantiles` is the unweighted mean of the pinball losses at the
+    declared levels. On a grid that is not uniform it overweights the outer
+    levels, so it is a fixed score and not a numerical approximation of the
+    integral `CRPS = 2 * integral over (0, 1) of the quantile loss`. This is the
+    trapezoid rule (#259) for that integral: the quantile loss between two
+    declared levels is the straight line through its two ends (the trapezoid),
+    and beyond the lowest and highest declared levels it is held constant at
+    its value there (constant tails). It reduces to `|observed - point|` for a
+    point mass, as the plain score does.
+
+    It decides nothing: every primary cell stays on `crps_from_quantiles`.
+    """
+
+    grid = _validate_levels(levels)
+    values = [float(value) for value in predicted]
+    if len(values) != len(grid):
+        raise MetricError(f"{len(grid)} levels against {len(values)} quantiles")
+    for position in range(1, len(values)):
+        if values[position] < values[position - 1]:
+            raise MetricError(
+                f"quantiles cross: level {grid[position - 1]} predicts "
+                f"{values[position - 1]} but level {grid[position]} predicts "
+                f"{values[position]}"
+            )
+    losses = [pinball_loss(level, value, observed) for level, value in zip(grid, values)]
+    area = grid[0] * losses[0] + (1.0 - grid[-1]) * losses[-1]
+    for position in range(1, len(grid)):
+        area += (grid[position] - grid[position - 1]) * (losses[position - 1] + losses[position]) / 2.0
+    return 2.0 * area
+
+
+def crps_piecewise_linear_from_quantiles(
+    levels: Sequence[float],
+    predicted: Sequence[float],
+    observed: float,
+    tails: str = "flat",
+) -> float:
+    """The CRPS integral of a piecewise-linear quantile function, in closed form (#259).
+
+    `CRPS = 2 * integral over (0, 1) of (y - q(tau)) * (tau - 1{y < q(tau)})`, where `q`
+    is the straight line between declared levels. Beyond the lowest and highest levels
+    `tails="flat"` holds the end quantile and `tails="linear"` extends the end segment's
+    line to 0 and 1. The integrand is quadratic between kinks, so Simpson's rule on each
+    piece (split where `q` crosses `y`) is exact. A reported-only companion: every
+    primary cell stays on `crps_from_quantiles`.
+    """
+
+    if tails not in ("flat", "linear"):
+        raise MetricError(f"tails must be 'flat' or 'linear', not {tails!r}")
+    grid = _validate_levels(levels)
+    values = [float(value) for value in predicted]
+    if len(values) != len(grid):
+        raise MetricError(f"{len(grid)} levels against {len(values)} quantiles")
+    for position in range(1, len(values)):
+        if values[position] < values[position - 1]:
+            raise MetricError(
+                f"quantiles cross: level {grid[position - 1]} predicts "
+                f"{values[position - 1]} but level {grid[position]} predicts "
+                f"{values[position]}"
+            )
+    knots, heights = list(grid), list(values)
+    if tails == "flat" or len(grid) < 2:
+        low, high = values[0], values[-1]
+    else:
+        low = values[0] - (values[1] - values[0]) / (grid[1] - grid[0]) * grid[0]
+        high = values[-1] + (values[-1] - values[-2]) / (grid[-1] - grid[-2]) * (1.0 - grid[-1])
+    knots = [0.0] + knots + [1.0]
+    heights = [low] + heights + [high]
+
+    def loss(tau: float, q: float) -> float:
+        return (observed - q) * (tau - (1.0 if observed < q else 0.0))
+
+    def simpson(a: float, b: float, qa: float, qb: float) -> float:
+        qm = (qa + qb) / 2.0
+        return (b - a) / 6.0 * (loss(a, qa) + 4.0 * loss((a + b) / 2.0, qm) + loss(b, qb))
+
+    area = 0.0
+    for position in range(1, len(knots)):
+        a, b = knots[position - 1], knots[position]
+        qa, qb = heights[position - 1], heights[position]
+        if (qa - observed) * (qb - observed) < 0.0:
+            cross = a + (b - a) * (observed - qa) / (qb - qa)
+            area += simpson(a, cross, qa, observed) + simpson(cross, b, observed, qb)
+        else:
+            area += simpson(a, b, qa, qb)
+    return 2.0 * area
+
+
 def _validate_levels(levels: Sequence[float]) -> Tuple[float, ...]:
     grid = tuple(float(level) for level in levels)
     if not grid:
@@ -1106,3 +1204,69 @@ def stationary_bootstrap_interval(
     draws.sort()
     tail = (1.0 - level) / 2.0
     return _quantile(draws, tail), _quantile(draws, 1.0 - tail)
+
+
+def stationary_bootstrap_intervals(
+    statistics: Callable[[Sequence[int]], Sequence[float]],
+    n: int,
+    *,
+    block_length: float,
+    seed: int,
+    replications: int = 2000,
+    level: float = 0.90,
+) -> Tuple[Tuple[float, float], ...]:
+    """One interval per statistic, all read off the same stationary block resamples.
+
+    A table of many cells over one series (a split by day type and regime) needs
+    one resample per replication and not one per cell. `statistics` is called
+    with each resampled index sequence and returns one value per cell, always the
+    same number. Cell `k`'s interval is exactly what `stationary_bootstrap_interval`
+    returns for that cell's statistic alone at the same `n`, `block_length`, `seed`
+    and `replications`: the resamples are the same draws in the same order.
+
+    Raises:
+        MetricError: on the arguments `stationary_bootstrap_interval` refuses,
+            on a non-finite value in any cell on any resample (dropping it would
+            narrow that cell's interval), or if a call returns a different
+            number of values than the first.
+    """
+
+    if not callable(statistics):
+        raise MetricError("statistics must be callable")
+    if isinstance(replications, bool) or not isinstance(replications, int) or replications < 2:
+        raise MetricError(f"replications must be an int >= 2, got {replications!r}")
+    if not 0.0 < level < 1.0:
+        raise MetricError(f"level must be in (0, 1), got {level}")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise MetricError(
+            f"seed must be an int, got {seed!r}; an unseeded interval is not "
+            "reproducible, and reproducibility is load-bearing here"
+        )
+
+    rng = random.Random(seed)
+    draws: Optional[list] = None
+    for replication in range(replications):
+        indices = stationary_bootstrap_indices(n, block_length, rng)
+        values = tuple(statistics(indices))
+        if draws is None:
+            draws = [[] for _ in values]
+        if len(values) != len(draws):
+            raise MetricError(
+                f"statistics returned {len(values)} values on bootstrap replication "
+                f"{replication} and {len(draws)} on the first"
+            )
+        for cell, value in enumerate(values):
+            if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+                raise MetricError(
+                    f"statistic {cell} returned {value!r} on bootstrap replication "
+                    f"{replication}; discarding such replicates would narrow the "
+                    "interval, so this raises instead"
+                )
+            draws[cell].append(float(value))
+
+    tail = (1.0 - level) / 2.0
+    out = []
+    for cell in draws or ():
+        cell.sort()
+        out.append((_quantile(cell, tail), _quantile(cell, 1.0 - tail)))
+    return tuple(out)

@@ -486,7 +486,7 @@ def _ofr_stfm_rows(artifact: SnapshotArtifact, payload: bytes):
     The series is the `mnemonic` of the snapshot's URL. A null value (no
     trading, or disclosure edits) yields no row. `available_at` is the
     registry's conservative declaration (`ofr_stfm_repo.release_lag`): 16:00
-    New York time two weekdays after the date. A value dated before
+    New York time two business days after the date. A value dated before
     `OFR_STFM_REAL_TIME_START` was filled in after the OFR began publishing in
     real time, so it is declared available no earlier than that start's own
     declared instant: the latest knowable bound, not a publication time.
@@ -500,12 +500,12 @@ def _ofr_stfm_rows(artifact: SnapshotArtifact, payload: bytes):
         raise ValueError(f"OFR snapshot {artifact.path} names no series mnemonic in its URL")
     zone = ZoneInfo("America/New_York")
     retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
-    earliest = datetime.combine(_next_weekday(OFR_STFM_REAL_TIME_START, 2), time(16, 0), tzinfo=zone)
+    earliest = datetime.combine(_next_business_day(OFR_STFM_REAL_TIME_START, 2), time(16, 0), tzinfo=zone)
     rows = []
     for ref_date, value in _ofr_pairs(json.loads(payload), mnemonic):
         if value is None:
             continue
-        declared = datetime.combine(_next_weekday(ref_date, 2), time(16, 0), tzinfo=zone)
+        declared = datetime.combine(_next_business_day(ref_date, 2), time(16, 0), tzinfo=zone)
         if ref_date < OFR_STFM_REAL_TIME_START:
             declared = max(declared, earliest)
         rows.append(
@@ -882,7 +882,7 @@ def _frb_ddp_rows(artifact: SnapshotArtifact, payload: bytes, registry):
     """Point-in-time observations from one DDP package: its release's fields.
 
     `available_at` is read off the registry on every call, as `_fr2004_rows`
-    reads its own: a `ref_date` field is public `days` business days (weekdays)
+    reads its own: a `ref_date` field is public `days` business days (weekdays not on the market holiday table)
     after its date, a `record_date` field `days` calendar days after it, each at
     its `available_time` in its `timezone`, and never later than retrieval.
     A date the Board marks not available yields no observation.
@@ -910,7 +910,7 @@ def _frb_ddp_rows(artifact: SnapshotArtifact, payload: bytes, registry):
             if value is None:
                 continue
             if lag["basis"] == "ref_date":
-                day = _next_weekday(ref_date, int(lag["days"]))
+                day = _next_business_day(ref_date, int(lag["days"]))
             else:
                 day = ref_date + timedelta(days=int(lag["days"]))
             rows.append(
@@ -1576,6 +1576,15 @@ def load_snapshot_manifest(path: Path) -> SnapshotArtifact:
 
 
 def _next_weekday(value: date, days: int) -> date:
+    """`days` weekdays after `value`, holidays not skipped.
+
+    Only `_fr2004_rows` still counts this way. Skipping the market holidays
+    there dates 2018-12-21's value 12 calendar days out, past the 11 that
+    `nyfed_fr2004.release_lag.worst_case_calendar_days` declares, and moving
+    that bound is a declaration change for Eleonora (#201's pull request opens
+    the question). Every other adapter uses `_next_business_day`.
+    """
+
     current = value
     remaining = days
     while remaining:
@@ -1583,6 +1592,18 @@ def _next_weekday(value: date, days: int) -> date:
         if current.weekday() < 5:
             remaining -= 1
     return current
+
+
+def _next_business_day(value: date, days: int) -> date:
+    """`days` business days after `value`: the registry's `business_days` unit (#201).
+
+    A business day is a weekday not in `metadata/market_holidays.json`, as on
+    the panel's own dates.
+    """
+
+    from .data import next_business_day
+
+    return next_business_day(value, days)
 
 
 def _read_cell(
@@ -1706,7 +1727,7 @@ def _nyfed_rows(
             ) from exc
         # When the API does not expose an exact publication timestamp, apply the
         # registry's conservative finalized-rate convention uniformly.
-        available_date = _next_weekday(ref_date, 1)
+        available_date = _next_business_day(ref_date, 1)
         declared_available_at = datetime.combine(
             available_date, time(15, 0), tzinfo=ZoneInfo("America/New_York")
         )
@@ -1779,7 +1800,7 @@ def _nyfed_on_rrp_rows(artifact: SnapshotArtifact, payload: bytes):
     B). The sum is converted to USD billions, the panel's money unit. Neither
     `propositions` (added a month later) nor `note` is read.
 
-    `available_at` is the next weekday at 16:00 New York time, the registry's
+    `available_at` is the next business day at 16:00 New York time, the registry's
     conservative declaration (`nyfed_on_rrp.release_lag`): the Desk publishes
     results after the 13:15 close but states no clock time.
 
@@ -1816,7 +1837,7 @@ def _nyfed_on_rrp_rows(artifact: SnapshotArtifact, payload: bytes):
     rows = []
     for ref_date in sorted(totals):
         declared_available_at = datetime.combine(
-            _next_weekday(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
+            _next_business_day(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
         )
         rows.append(
             PointInTimeObservation(
@@ -1856,7 +1877,7 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
     repos are left out: the facility is overnight, and its two term operations
     since the inception were tests of a few tens of millions.
 
-    `available_at` is the next weekday at 16:00 New York time, the registry's
+    `available_at` is the next business day at 16:00 New York time, the registry's
     conservative declaration (`nyfed_srf.release_lag`): the Desk states no
     publication time, and `lastUpdated` is a write time.
 
@@ -1894,7 +1915,7 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
     rows = []
     for ref_date in sorted(totals):
         declared_available_at = datetime.combine(
-            _next_weekday(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
+            _next_business_day(ref_date, 1), time(16, 0), tzinfo=ZoneInfo("America/New_York")
         )
         rows.append(
             PointInTimeObservation(

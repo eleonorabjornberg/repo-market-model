@@ -1,0 +1,84 @@
+{
+ "days": 1873,
+ "declared_in": "docs/pivot/depleted-inputs-test.md",
+ "directive": "#132",
+ "figures": {
+  "brier_+10bp": {
+   "cells": {
+    "by_day_type/month_end": "ok",
+    "by_day_type/ordinary": "ok",
+    "by_day_type/quarter_end": "ok",
+    "by_day_type/tax_date": "worse beyond its interval",
+    "by_regime/2018-19": "ok",
+    "by_regime/2020": "worse beyond its interval",
+    "by_regime/2021-23": "ok",
+    "by_regime/2024": "ok",
+    "by_regime/2025-26": "ok"
+   },
+   "cells_worse_beyond_interval": [
+    "by_day_type/tax_date",
+    "by_regime/2020"
+   ],
+   "figure": "brier_+10bp",
+   "gate": false,
+   "interval": {
+    "lower": -6.052846115022036e-06,
+    "upper": 0.00018337608727574288
+   },
+   "mean": 7.960761925274173e-05
+  },
+  "brier_+5bp": {
+   "cells": {
+    "by_day_type/month_end": "ok",
+    "by_day_type/ordinary": "ok",
+    "by_day_type/quarter_end": "ok",
+    "by_day_type/tax_date": "ok",
+    "by_regime/2018-19": "ok",
+    "by_regime/2020": "worse beyond its interval",
+    "by_regime/2021-23": "ok",
+    "by_regime/2024": "ok",
+    "by_regime/2025-26": "ok"
+   },
+   "cells_worse_beyond_interval": [
+    "by_regime/2020"
+   ],
+   "figure": "brier_+5bp",
+   "gate": true,
+   "interval": {
+    "lower": 0.00011726791659741841,
+    "upper": 0.0007499549607174798
+   },
+   "mean": 0.00040802552317381613
+  },
+  "crps_bps": {
+   "cells": {
+    "by_day_type/month_end": "ok",
+    "by_day_type/ordinary": "ok",
+    "by_day_type/quarter_end": "ok",
+    "by_day_type/tax_date": "ok",
+    "by_regime/2018-19": "ok",
+    "by_regime/2020": "ok",
+    "by_regime/2021-23": "ok",
+    "by_regime/2024": "ok",
+    "by_regime/2025-26": "ok"
+   },
+   "cells_worse_beyond_interval": [],
+   "figure": "crps_bps",
+   "gate": true,
+   "interval": {
+    "lower": 0.002667503771334216,
+    "upper": 0.012405615932050142
+   },
+   "mean": 0.0076290376907995625
+  }
+ },
+ "joins_published_declaration": false,
+ "mean_crps_bps": {
+  "candidate": 1.6515638755180813,
+  "published": 1.6591929132088845
+ },
+ "window": [
+  "2018-06-29",
+  "2025-12-31"
+ ]
+}

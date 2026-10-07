@@ -1,5 +1,13 @@
 {
-  "attestations": [],
+  "attestations": [
+    {
+      "kind": "live-pin",
+      "issue": 255,
+      "comment_id": 6028625605,
+      "phrase": "GO #255",
+      "what": "approve the live pin (metadata/live_pin.json and the workflow's pin check, PR #323)"
+    }
+  ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
   "version": 1
 }

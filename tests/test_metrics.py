@@ -53,6 +53,8 @@ from repo_model.metrics import (
     corp_decomposition,
     corp_reliability_curve,
     crps_from_quantiles,
+    crps_piecewise_linear_from_quantiles,
+    crps_trapezoid_from_quantiles,
     crps_on_grid,
     log_score,
     pinball_loss,
@@ -950,6 +952,88 @@ class ContinuousTargetTests(unittest.TestCase):
         tight = crps_from_quantiles(levels, (9.0, 10.0, 11.0), 10.0)
         loose = crps_from_quantiles(levels, (0.0, 10.0, 20.0), 10.0)
         self.assertLess(tight, loose)
+
+    def test_trapezoid_crps_is_the_integral_with_constant_tails(self):
+        """The trapezoid rule (#259), worked by hand on levels 0.25 and 0.75.
+
+        Observed 0, quantiles (-1, 1): the pinball losses are 0.25 and 0.25, so
+        the loss is 0.25 everywhere on (0, 1): constant tails and a flat
+        trapezoid, an integral of 0.25 and a CRPS of 0.5. Observed 2 with the
+        same quantiles: the losses are 0.25 * 3 = 0.75 and 0.75 * 1 = 0.75,
+        again flat, a CRPS of 1.5.
+        """
+
+        self.assertAlmostEqual(crps_trapezoid_from_quantiles((0.25, 0.75), (-1.0, 1.0), 0.0), 0.5)
+        self.assertAlmostEqual(crps_trapezoid_from_quantiles((0.25, 0.75), (-1.0, 1.0), 2.0), 1.5)
+
+    def test_trapezoid_crps_weights_the_gaps_the_plain_mean_does_not(self):
+        levels = (0.05, 0.5, 0.95)
+        predicted = (-2.0, 0.0, 2.0)
+        losses = [pinball_loss(level, value, 1.0) for level, value in zip(levels, predicted)]
+        area = 0.05 * losses[0] + 0.05 * losses[2]
+        area += 0.45 * (losses[0] + losses[1]) / 2 + 0.45 * (losses[1] + losses[2]) / 2
+        self.assertAlmostEqual(crps_trapezoid_from_quantiles(levels, predicted, 1.0), 2 * area)
+        self.assertNotAlmostEqual(
+            crps_trapezoid_from_quantiles(levels, predicted, 1.0),
+            crps_from_quantiles(levels, predicted, 1.0),
+        )
+
+    def test_trapezoid_crps_of_a_point_mass_is_the_absolute_error(self):
+        self.assertAlmostEqual(
+            crps_trapezoid_from_quantiles((0.05, 0.25, 0.5, 0.75, 0.95), (3.0,) * 5, 7.5), 4.5
+        )
+
+    def test_piecewise_linear_crps_matches_a_fine_numerical_integral(self):
+        """The exact piecewise-linear rule (#259) against brute force, both tail treatments.
+
+        The quantile function is the straight line between declared levels; the tails
+        are flat (the end value held) or linear (the end segment's line, extended to 0
+        and 1). The loss `(y - q(tau)) * (tau - 1{y < q(tau)})` is integrated on a
+        200 000-point midpoint grid and must agree with the closed form.
+        """
+
+        levels = (0.05, 0.25, 0.5, 0.75, 0.95)
+        predicted = (-3.0, -0.5, 0.25, 1.0, 5.0)
+
+        def brute(observed, tails, steps=200000):
+            xs = (0.0,) + levels + (1.0,)
+            if tails == "flat":
+                qs = (predicted[0],) + predicted + (predicted[-1],)
+            else:
+                lo = predicted[0] - (predicted[1] - predicted[0]) / (levels[1] - levels[0]) * levels[0]
+                hi = predicted[-1] + (predicted[-1] - predicted[-2]) / (levels[-1] - levels[-2]) * (1 - levels[-1])
+                qs = (lo,) + predicted + (hi,)
+            total = 0.0
+            for k in range(steps):
+                tau = (k + 0.5) / steps
+                j = max(i for i in range(len(xs) - 1) if xs[i] <= tau)
+                q = qs[j] + (qs[j + 1] - qs[j]) * (tau - xs[j]) / (xs[j + 1] - xs[j])
+                total += (observed - q) * (tau - (1.0 if observed < q else 0.0))
+            return 2.0 * total / steps
+
+        for tails in ("flat", "linear"):
+            for observed in (-9.0, -0.7, 0.3, 2.5, 8.0):
+                with self.subTest(tails=tails, observed=observed):
+                    self.assertAlmostEqual(
+                        crps_piecewise_linear_from_quantiles(levels, predicted, observed, tails=tails),
+                        brute(observed, tails), places=4)
+
+    def test_piecewise_linear_crps_of_a_point_mass_is_the_absolute_error(self):
+        for tails in ("flat", "linear"):
+            self.assertAlmostEqual(crps_piecewise_linear_from_quantiles(
+                (0.05, 0.25, 0.5, 0.75, 0.95), (3.0,) * 5, 7.5, tails=tails), 4.5)
+
+    def test_piecewise_linear_crps_rejects_crossing_quantiles_and_an_unknown_tail_rule(self):
+        with self.assertRaisesRegex(MetricError, "quantiles cross"):
+            crps_piecewise_linear_from_quantiles((0.1, 0.9), (10.0, 5.0), 7.0)
+        with self.assertRaisesRegex(MetricError, "tails"):
+            crps_piecewise_linear_from_quantiles((0.1, 0.9), (5.0, 10.0), 7.0, tails="cubic")
+
+    def test_trapezoid_crps_rejects_crossing_quantiles_and_mismatched_lengths(self):
+        with self.assertRaisesRegex(MetricError, "quantiles cross"):
+            crps_trapezoid_from_quantiles((0.1, 0.9), (10.0, 5.0), 7.0)
+        with self.assertRaisesRegex(MetricError, "levels against"):
+            crps_trapezoid_from_quantiles((0.1, 0.9), (10.0,), 7.0)
 
     def test_crossing_quantiles_are_rejected(self):
         with self.assertRaisesRegex(MetricError, "quantiles cross"):
@@ -1892,6 +1976,49 @@ class ValidationGuardMessageTests(unittest.TestCase):
         with self.subTest("a probability between indices interpolates linearly"):
             # position = 0.25 * (4 - 1) = 0.75: 1.0 * 0.25 + 2.0 * 0.75.
             self.assertEqual(metrics._quantile((1.0, 2.0, 3.0, 4.0), 0.25), 1.75)
+
+
+class SharedResampleIntervalTests(unittest.TestCase):
+    """`stationary_bootstrap_intervals`: several statistics on one set of resamples (#265).
+
+    A table of many cells over one series is one resample per replication, not
+    one per cell, and each cell's interval is exactly the one
+    `stationary_bootstrap_interval` returns for it alone.
+    """
+
+    DATA = (1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0)
+
+    def test_each_interval_equals_the_single_statistic_interval(self):
+        data = self.DATA
+        first = lambda idx: sum(data[i] for i in idx) / len(idx)
+        second = lambda idx: sum(1.0 - data[i] for i in idx) / len(idx)
+        both = metrics.stationary_bootstrap_intervals(
+            lambda idx: (first(idx), second(idx)), len(data),
+            block_length=2, seed=7, replications=200,
+        )
+        self.assertEqual(both[0], stationary_bootstrap_interval(
+            first, len(data), block_length=2, seed=7, replications=200))
+        self.assertEqual(both[1], stationary_bootstrap_interval(
+            second, len(data), block_length=2, seed=7, replications=200))
+
+    def test_a_non_finite_value_raises_and_is_not_dropped(self):
+        with self.assertRaises(MetricError):
+            metrics.stationary_bootstrap_intervals(
+                lambda idx: (0.5, float("nan")), 5,
+                block_length=2, seed=1, replications=5,
+            )
+
+    def test_a_wrong_width_raises(self):
+        calls = []
+
+        def statistic(idx):
+            calls.append(1)
+            return (0.5, 0.5) if len(calls) == 1 else (0.5,)
+
+        with self.assertRaises(MetricError):
+            metrics.stationary_bootstrap_intervals(
+                statistic, 5, block_length=2, seed=1, replications=5,
+            )
 
 
 if __name__ == "__main__":

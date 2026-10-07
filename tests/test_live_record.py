@@ -4,7 +4,7 @@ Eleonora's decision of 3 October 2026 (#215): every business day after the
 16:00 ET decision instant, a scheduled GitHub Actions workflow logs the
 published pressure model v1's forecast, and its baselines', as one frozen JSON
 record on the append-only `live-log` branch. The record is scored only on the
-pre-registered dates, and only once the drafted lockbox amendment is merged.
+pre-registered dates, and only on days `metadata/lockbox.json` has opened (#277).
 
 These tests pin what the directive fixes before any day is logged:
 
@@ -14,8 +14,8 @@ These tests pin what the directive fixes before any day is logged:
   (`DecisionDayTests`);
 * the record's schema, the refusal to overwrite a day and the refusal to log a
   day on or before the panel end, 2026-09-03 (`RecordTests`);
-* the scoring dates, the refusal while the lockbox amendment is unmerged, and
-  the headline-verdict rule (`ScoringGuardTests`, `HeadlineVerdictTests`);
+* the scoring dates and the headline-verdict rule (the lockbox guard is in
+  `test_live_lockbox.py`) (`ScoringGuardTests`, `HeadlineVerdictTests`);
 * that a forecast read off placeholder rows is refused (`PlaceholderGuardTests`);
 * that the baselines' forecasts in a record are the repository's baseline
   functions' on the same panel (`BaselineAgreementTests`).
@@ -36,7 +36,7 @@ import re
 import shutil
 import tempfile
 import unittest
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -51,6 +51,8 @@ from repo_model.cli import main as cli_main
 from repo_model.data import load_daily_panel, load_stress_thresholds
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
+
+from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -71,9 +73,13 @@ def _script(name):
 
 live = _script("live_record")
 score = _script("live_score")
+#: Every scoring date in these tests is in the future of the real clock; the scorer's clock guard
+#: (#257) reads `score.now_utc`, so the tests read a clock after the last date they use. The tests
+#: of the guard itself patch it (`test_live_score_provenance.py`).
+score.now_utc = lambda: datetime(2030, 1, 1, 12, tzinfo=timezone.utc)
 
 
-def _record(day="2026-10-02"):
+def _record(day="2026-10-02", pinned_sha="0" * 40):
     """A well-formed record, with made-up numbers, for the schema tests."""
 
     targets = []
@@ -98,7 +104,7 @@ def _record(day="2026-10-02"):
         "record_version": live.RECORD_VERSION,
         "decision_day": day,
         "decision_instant": f"{day}T16:00:00-04:00",
-        "code": {"sha": "0" * 40, "pinned_sha": "0" * 40},
+        "code": {"sha": "0" * 40, "pinned_sha": pinned_sha},
         "packages": {"python": "3.11.15", "numpy": "2.4.6", "scikit-learn": "1.9.1"},
         "inputs": {
             "snapshots": [
@@ -176,8 +182,13 @@ class WorkflowFileTests(unittest.TestCase):
     def test_triggers_are_schedule_and_dispatch_only(self):
         self.assertEqual(set(self._block("on")), {"schedule", "workflow_dispatch"})
 
-    def test_permissions_are_exactly_contents_and_issues_write(self):
-        self.assertEqual(self._block("permissions"), {"contents": "write", "issues": "write"})
+    def test_permissions_are_exactly_contents_issues_and_id_token_write(self):
+        # id-token: write is for cosign's keyless signing into Rekor (#254,
+        # Eleonora's ruling of 6 October 2026); it holds no secret.
+        self.assertEqual(
+            self._block("permissions"),
+            {"contents": "write", "issues": "write", "id-token": "write"},
+        )
         # Declared once, at the workflow level: no job grants itself more.
         declared = [line for line in self.lines if re.match(r"^\s*permissions:", line)]
         self.assertEqual(declared, ["permissions:"])
@@ -191,9 +202,13 @@ class WorkflowFileTests(unittest.TestCase):
                 self.assertRegex(line, r"uses: [\w.-]+/[\w./-]+@[0-9a-f]{40} # v\d")
 
     def test_the_ml_extra_is_pinned_to_the_versions_ci_uses(self):
+        # The workflow installs only from the hashed lock named by the pin
+        # manifest (#255); the lock holds the versions CI pins.
         text = "\n".join(self.lines)
-        self.assertIn('"numpy==2.4.6"', text)
-        self.assertIn('"scikit-learn==1.9.1"', text)
+        self.assertIn("--require-hashes", text)
+        lock = (ROOT / "metadata" / "live_requirements.lock").read_text(encoding="utf-8")
+        self.assertRegex(lock, r"(?m)^numpy==2\.4\.6 \\$")
+        self.assertRegex(lock, r"(?m)^scikit-learn==1\.9\.1 \\$")
         ci = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
         self.assertIn('"numpy==2.4.6" "scikit-learn==1.9.1"', ci)
 
@@ -219,7 +234,7 @@ class DecisionDayTests(unittest.TestCase):
 
     def test_a_day_the_holiday_table_does_not_cover_is_refused(self):
         with self.assertRaises(ValueError):
-            live.is_decision_day(date(2028, 1, 3))
+            live.is_decision_day(date(2031, 1, 3))
 
     def test_the_target_days_skip_holidays(self):
         self.assertEqual(
@@ -317,24 +332,6 @@ class ScoringGuardTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     score.require_scoring_date(day)
 
-    def test_the_tracked_lockbox_has_no_amendment_so_scoring_is_refused(self):
-        with self.assertRaises(ValueError):
-            score.require_amendment(ROOT / "docs" / "decisions" / "lockbox.md")
-
-    def test_a_merged_amendment_lets_scoring_through_the_guard(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "lockbox.md"
-            path.write_text(
-                (ROOT / "docs" / "decisions" / "lockbox.md").read_text(encoding="utf-8")
-                + "\n" + score.AMENDMENT_HEADING + "\n\nText.\n",
-                encoding="utf-8",
-            )
-            score.require_amendment(path)
-
-    def test_the_draft_carries_the_heading_the_guard_reads(self):
-        draft = ROOT / "docs" / "decisions" / "drafts" / "lockbox-live-record.md"
-        self.assertIn(score.AMENDMENT_HEADING, draft.read_text(encoding="utf-8"))
-
     def test_the_draft_states_the_not_evidence_label_for_later_horizons(self):
         """Eleonora's ruling of 4 October 2026 (#229): the draft states the label verbatim."""
 
@@ -346,21 +343,26 @@ class ScoringGuardTests(unittest.TestCase):
             text,
         )
 
-    def test_the_script_refuses_to_run_while_the_amendment_is_unmerged(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with self.assertRaises(ValueError):
-                score.main(
-                    ["--date", "2027-04-01", "--live-dir", tmp, "--panel", str(Path(tmp) / "p.csv"),
-                     "--output", str(Path(tmp) / "out.json")]
-                )
-            self.assertFalse((Path(tmp) / "out.json").exists())
+    def test_the_script_refuses_a_locked_day_and_writes_nothing(self):
+        """Under the tracked declaration the first logged day is in the blind tier (#277)."""
+
+        from repo_model import lockbox
+
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            lockbox, "DEFAULT_LOCKBOX", ROOT / "metadata" / "lockbox.json"
+        ):
+            with self.assertRaises(LookAheadError):
+                score.assemble(records, rows, load_split_declaration(SPLITS), date(2027, 4, 1),
+                               previous=[])
+            self.assertEqual(list(Path(tmp).iterdir()), [])
 
     def test_the_script_refuses_a_non_scoring_date_before_reading_anything(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(ValueError):
                 score.main(
                     ["--date", "2027-04-02", "--live-dir", tmp, "--panel", str(Path(tmp) / "p.csv"),
-                     "--output", str(Path(tmp) / "out.json")]
+                     "--archive-dir", tmp, "--output", str(Path(tmp) / "out.json")]
                 )
 
 
@@ -555,6 +557,21 @@ class CrpsScoringTests(unittest.TestCase):
         cell["sensitivity_interval"]["upper"] = -50.0
         self.assertEqual(score.crps_verdict(cell), "pass")
 
+    def test_the_integral_companion_is_reported_only_and_moves_nothing(self):
+        """#259: the trapezoid-weighted sensitivity rides beside the primary cell and decides nothing."""
+
+        cell = self._cell([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
+        companion = cell["integral_sensitivity"]
+        self.assertEqual(companion["role"], "reported only")
+        self.assertEqual(companion["interval"]["block_length"], cell["interval"]["block_length"])
+        self.assertGreater(companion["mean_difference_bps"], 0)
+        self.assertNotEqual(companion["crps_integral_published_bps"], cell["crps_published_bps"])
+        before = (cell["verdict"], cell["result"])
+        companion["interval"]["lower"] = -100.0
+        companion["interval"]["upper"] = -50.0
+        companion["mean_difference_bps"] = -75.0
+        self.assertEqual((score.crps_verdict(cell), score.crps_result(score.crps_verdict(cell))), before)
+
     def test_every_other_horizon_is_reported_only(self):
         records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0])
         cells = score.score_crps(records, rows, self.splits, date(2027, 4, 1))
@@ -621,6 +638,99 @@ def _auctions():
     if not _AUCTIONS:
         _AUCTIONS.extend(live.auction_records(FIXTURES))
     return _AUCTIONS
+
+
+class MinimumCellSizeTests(unittest.TestCase):
+    """A regime or day-type cell gets an interval by a fixed rule, not by the bootstrap (#276).
+
+    Eleonora's ruling of 6 October 2026 (#269 item 14). A cell below
+    `MINIMUM_CELL_DAYS` carries its mean and "too few days" and no interval; a
+    cell at the minimum carries an interval. The number is proposed, not decided.
+
+    Red first: run before the rule, a 5-day cell carried an interval
+    (`AssertionError: 'interval' unexpectedly found`), because only a cell of
+    fewer than 2 days was refused. Recorded mutation: `if len(positions) >=
+    MINIMUM_CELL_DAYS:` in `_small_cell` replaced by `if len(positions) >= 2:` ->
+    `AssertionError` on the 5-day cell in `test_a_cell_below_the_minimum_has_no_interval`.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.splits = load_split_declaration(SPLITS)
+
+    def _cells(self):
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0], days=60)
+        return score.score_crps(records, rows, self.splits, date(2027, 4, 1))["crps/h1"], records, rows
+
+    def test_the_minimum_is_the_final_tests(self):
+        self.assertEqual(score.MINIMUM_CELL_DAYS, 20)
+
+    def test_a_cell_below_the_minimum_has_no_interval(self):
+        cell, _, _ = self._cells()
+        small = [entry for group in ("by_regime", "by_day_type") for entry in cell[group].values()
+                 if entry["days"] < score.MINIMUM_CELL_DAYS]
+        self.assertTrue(small, "the fixture must hold a small cell")
+        for entry in small:
+            with self.subTest(days=entry["days"]):
+                self.assertNotIn("interval", entry)
+                self.assertEqual(entry["note"], "too few days")
+                self.assertEqual(entry["minimum_days"], score.MINIMUM_CELL_DAYS)
+                self.assertIn("mean", entry)
+
+    def test_a_cell_at_the_minimum_has_an_interval(self):
+        cell, _, _ = self._cells()
+        big = [entry for group in ("by_regime", "by_day_type") for entry in cell[group].values()
+               if entry["days"] >= score.MINIMUM_CELL_DAYS]
+        self.assertTrue(big, "the fixture must hold a large cell")
+        for entry in big:
+            self.assertIn("interval", entry)
+            self.assertNotIn("note", entry)
+
+    def test_the_rule_does_not_depend_on_the_seed(self):
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0], days=60)
+        flags = set()
+        for day in (date(2027, 4, 1), date(2027, 4, 2), date(2027, 4, 3)):
+            cell = score.score_crps(records, rows, self.splits, day)["crps/h1"]
+            flags.add(tuple((group, key, "interval" in entry) for group in ("by_regime", "by_day_type")
+                            for key, entry in sorted(cell[group].items())))
+        self.assertEqual(len(flags), 1)
+
+    def test_the_brier_cells_follow_the_same_rule(self):
+        records, rows = _scoring_records([0.5, 0.8, 1.0, 1.2, 1.5], [-6.0, -2.0, 1.0, 4.0, 9.0], days=60)
+        result = score.score(records, rows, self.splits, date(2027, 4, 1))
+        for cell in result["cells"].values():
+            for entry in cell.get("models", {}).values():
+                for paired in entry["paired"].values():
+                    for group in ("by_regime", "by_day_type"):
+                        for part in paired[group].values():
+                            self.assertEqual("interval" in part, part["days"] >= score.MINIMUM_CELL_DAYS)
+
+
+class YearRegimeTests(unittest.TestCase):
+    """Each calendar year from 2027 is its own regime (#276, ruling #269 item 4).
+
+    `metadata/evaluation_splits.json` declares regimes to 2026-12-31 and is left
+    as it is, so the scorer labels a later target day with its year rather than
+    "undeclared". A day before 2027 that no regime covers stays "undeclared".
+
+    Red first: before the rule, a 2027 target day was labelled "undeclared"
+    (`AssertionError: 'undeclared' != '2027'`). Recorded mutation: `when.year >=
+    FIRST_YEAR_REGIME` in `_regime` replaced by `False` -> the same failure.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.splits = load_split_declaration(SPLITS)
+
+    def test_a_2027_day_is_its_own_year(self):
+        self.assertEqual(score._regime(self.splits, date(2027, 1, 4)), "2027")
+        self.assertEqual(score._regime(self.splits, date(2028, 6, 1)), "2028")
+
+    def test_a_declared_day_keeps_its_declared_regime(self):
+        self.assertEqual(score._regime(self.splits, date(2026, 12, 31)), self.splits.regime(date(2026, 12, 31)))
+
+    def test_an_earlier_uncovered_day_stays_undeclared(self):
+        self.assertEqual(score._regime(self.splits, date(2017, 6, 1)), "undeclared")
 
 
 def _fixture_panel(tmp):

@@ -1,6 +1,6 @@
 # Decision: a locked final test period
 
-**Status: decided by Eleonora, 2 October 2026. In force once this record merges.**
+**Status: decided by Eleonora, 2 October 2026. In force: merged in PR #93, 1 October 2026.**
 
 ## The rule
 
@@ -58,7 +58,7 @@ therefore a weak test above +10 bp until the blind tier adds to it.
 
 ## Amendment: the near-blind tier is opened (#151)
 
-**Status: a draft for Eleonora (#151), in force once she merges it.** Drafted by the pull request that closes #151,
+**Status: in force: merged in PR #236, 5 October 2026 (#151).** Drafted by the pull request that closes #151,
 as that directive asks.
 
 - **Opened once, on 2026-10-05, for the final test.** Eleonora gave the go ("GO #151", 4 October 2026, relayed on
@@ -66,7 +66,9 @@ as that directive asks.
   with that ruling as the reference, and ran the frozen command of `docs/decisions/final-test-preregistration.md`
   once: the published distribution (#169's gbm with nested conformal PID) against as-of persistence, by CRPS, at
   h = 1. The test's other cells, for the frozen dynamic logit (#137) and the published distribution at h = 2 to 5,
-  were scored in the same run and are reported only. The record is `docs/runs/final_test_near_blind.json`, published
+  were scored in the same run and are reported only. The method for the h = 2 to 5 cells was
+  chosen after the 2026 days were seen, because the lockbox was opened before one was declared (Eleonora's ruling of
+  6 October 2026, #223, relayed). They are labelled so on the page and never change the test's verdict. The record is `docs/runs/final_test_near_blind.json`, published
   whatever it shows.
 - **The near-blind tier is now ordinary history.** Its days may be scored by any comparison, like every day
   before 2026-01-01. A comparison that chooses a model on them can no longer claim a held-out test on them.

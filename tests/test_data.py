@@ -237,6 +237,44 @@ class PointInTimeDataContractTests(unittest.TestCase):
         with self.assertRaisesRegex(DataContractError, "published 7 calendar days"):
             validate_publication_gaps(rows, registry)
 
+    def test_a_series_declared_by_two_sources_with_one_bound_is_checked(self):
+        """#180: `EFFR` is declared by `frb_ddp` and `nyfed_effr`, both at 6 days.
+
+        The bound is the same whichever source owns the series, so the answer
+        does not depend on which one does; the guard no longer refuses the pair.
+
+        Mutation: `if earlier is not None and earlier[1] != bound:` changed to
+        `if earlier is not None:` (the old unconditional refusal) made this test
+        raise `DataContractError: series 'A' belongs to multiple sources`.
+        """
+
+        lag = {"basis": "ref_date", "worst_case_calendar_days": 6}
+        registry = {
+            "one": {"fields": ["A"], "release_lag": dict(lag)},
+            "two": {"fields": ["A"], "release_lag": dict(lag)},
+        }
+        ok = [self.observation("A", "2026-01-01", "2026-01-07T12:00:00+00:00", 1, "v1")]
+        self.assertEqual(validate_publication_gaps(ok, registry), {"A": 6})
+        late = [self.observation("A", "2026-01-01", "2026-01-08T12:00:00+00:00", 1, "v1")]
+        with self.assertRaisesRegex(DataContractError, "published 7 calendar days"):
+            validate_publication_gaps(late, registry)
+
+    def test_a_series_declared_by_two_sources_with_different_bounds_is_refused(self):
+        """Rows carry no source, so differing bounds would make the bound a guess."""
+
+        registry = {
+            "one": {
+                "fields": ["A"],
+                "release_lag": {"basis": "ref_date", "worst_case_calendar_days": 6},
+            },
+            "two": {
+                "fields": ["A"],
+                "release_lag": {"basis": "ref_date", "worst_case_calendar_days": 8},
+            },
+        }
+        with self.assertRaisesRegex(DataContractError, "belongs to multiple sources"):
+            validate_publication_gaps([], registry)
+
     def test_missingness_grid_uses_same_source_and_frequency_peer(self):
         rows = [
             self.observation("daily_anchor", "2026-01-01", "2026-01-02T12:00:00+00:00", 1, "v1"),
@@ -772,7 +810,14 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
 
     def test_no_observed_publication_gap_exceeds_the_declared_bound(self):
         registry = json.loads(self.REGISTRY_PATH.read_text(encoding="utf-8"))
-        validate_publication_gaps(self.observations(), registry)
+        rows = self.observations()
+        # The sources that supplied snapshots, as `ingest.py` selects them.
+        found = {
+            json.loads(path.read_text(encoding="utf-8"))["source_id"]
+            for path in self.RAW_ROOT.glob("*/*.manifest.json")
+        }
+        selected = {name: registry[name] for name in sorted(found) if name in registry}
+        validate_publication_gaps(rows, selected)
 
     def test_no_row_is_available_later_than_the_registry_declares(self):
         """Row resolution, where the bound is only source resolution.
@@ -791,16 +836,24 @@ class RealSnapshotPublicationGapTests(unittest.TestCase):
             for series_id in source["fields"]:
                 declarations[series_id] = lag
 
+        from repo_model.data import market_holidays
+
+        holidays = market_holidays()
+        fr2004_fields = set(registry["nyfed_fr2004"]["fields"])
         checked = 0
         for row in self.observations():
             lag = declarations.get(row.series_id)
             if lag is None:
                 continue
+            # A business day is a weekday not in the market holiday table (#201).
+            # FR 2004 still counts weekdays: the table would date its 2018-12-21
+            # value past the declared worst case of 11 calendar days.
+            closed = set() if row.series_id in fr2004_fields else holidays.closed
             current = row.ref_date
             remaining = lag["days"]
             while remaining:
                 current += timedelta(days=1)
-                if current.weekday() < 5:
+                if current.weekday() < 5 and current not in closed:
                     remaining -= 1
             declared = datetime.combine(
                 current,
@@ -891,6 +944,29 @@ class RealSnapshotPublicationGapSkipTests(unittest.TestCase):
         failed = {test.id().rsplit(".", 1)[-1] for test, _ in result.failures + result.errors}
         self.assertNotIn("test_no_row_is_available_later_than_the_registry_declares", failed)
         self.assertNotIn("none is a ref_date source", stderr)
+
+    def test_the_gap_check_reads_only_the_sources_that_supplied_snapshots(self):
+        """#180: a registry-wide read refused `EFFR` (two `ref_date` sources).
+
+        `ingest.py` passes `validate_publication_gaps` only the sources that
+        supplied snapshots; the test now selects the same way. Before the
+        change this root's `test_no_observed_publication_gap_exceeds_the_declared_bound`
+        errored with `DataContractError: series 'EFFR' belongs to multiple sources`.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_root = self.h8_only_root(tmp)
+            self.copy_snapshot(
+                raw_root,
+                self.FIXTURES
+                / "on_rrp_inputs"
+                / "nyfed_on_rrp"
+                / "20261002T012422Z_0dfe701aee28.json.manifest.json",
+            )
+            result, _ = self.run_gap_tests(raw_root)
+
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
 
     def test_a_ref_date_source_with_no_rows_still_fails(self):
         """`checked > 0` still holds once a `ref_date` source supplied a snapshot."""
@@ -6380,7 +6456,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
     on the review of #56 (option A): the business days come from a published
     holiday schedule, not from the panel's grid, so `quarter_end` stays a
     function of the date alone. The schedule is `metadata/market_holidays.json`:
-    since #59, the weekdays of 2018-2027 with no scheduled SOFR publication.
+    since #59 (to 2030 since #263), the weekdays of 2018-2030 with no scheduled SOFR publication.
 
     Until #44 the column marked the last *calendar* day, so it read 0.0 on
     every row of a quarter that ended on a weekend -- 9 of the 33 complete
@@ -6477,18 +6553,18 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
         self.assertEqual({day: data.quarter_end(day) for day in reads}, reads)
 
     def test_every_quarter_of_the_table_has_one_quarter_end(self):
-        """2018-2027: one 1.0 per quarter, on the last weekday the table does not close."""
+        """2018-2030: one 1.0 per quarter, on the last weekday the table does not close."""
 
         from repo_model import data
 
         closed = {date.fromisoformat(entry["date"]) for entry in self.table()["closed"]}
         day = date(2018, 1, 1)
         ends = {}
-        while day <= date(2027, 12, 31):
+        while day <= date(2030, 12, 31):
             if data.quarter_end(day) == 1.0:
                 ends.setdefault((day.year, (day.month - 1) // 3), []).append(day)
             day += timedelta(days=1)
-        self.assertEqual(len(ends), 40)
+        self.assertEqual(len(ends), 52)
         for quarter, days in ends.items():
             with self.subTest(quarter):
                 self.assertEqual(len(days), 1, days)
@@ -6503,7 +6579,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
     def test_a_date_outside_the_table_is_refused(self):
         from repo_model import data
 
-        for day in (date(2017, 12, 29), date(2028, 3, 31), date(2028, 1, 3)):
+        for day in (date(2017, 12, 29), date(2031, 3, 31), date(2031, 1, 3)):
             with self.subTest(day), self.assertRaises(ValueError):
                 data.quarter_end(day)
 
@@ -6519,7 +6595,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
             data.MARKET_HOLIDAYS_SHA256, hashlib.sha256(self.TABLE.read_bytes()).hexdigest()
         )
         loaded = data.market_holidays()
-        self.assertEqual((loaded.first, loaded.last), (date(2018, 1, 1), date(2027, 12, 31)))
+        self.assertEqual((loaded.first, loaded.last), (date(2018, 1, 1), date(2030, 12, 31)))
         self.assertIn(date(2024, 3, 29), loaded.closed)
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -6593,7 +6669,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
 
         table = self.table()
         statute = set()
-        for year in range(2018, 2028):
+        for year in range(2018, 2031):
             statute |= self.statutory_holidays(year)
         closed = {
             date.fromisoformat(entry["date"])
@@ -6604,8 +6680,15 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
             date.fromisoformat(entry["date"])
             for entry in table["statutory_days_the_market_opened"]
         }
-        self.assertEqual(closed | opened, statute)
+        # A statutory day SIFMA has not yet ruled on (#263) is listed apart, not guessed.
+        pending = {
+            date.fromisoformat(entry["date"])
+            for entry in table["sifma_not_yet_published"]
+        } & statute
+        self.assertEqual(pending, {date(2028, 11, 10)})
+        self.assertEqual(closed | opened | pending, statute)
         self.assertEqual(closed & opened, set())
+        self.assertEqual((closed | opened) & pending, set())
         self.assertEqual(
             opened,
             {date(2021, 6, 18), date(2021, 12, 31), date(2023, 11, 10), date(2027, 12, 31)},

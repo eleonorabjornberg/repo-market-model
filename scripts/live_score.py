@@ -5,8 +5,13 @@ was logged:
 
 * **Scoring dates:** 2027-04-01, 2027-10-01, then every 1 October. On each,
   every logged day whose target day is in the outcome panel and before the
-  scoring date is scored, cumulatively from the first logged day. On any other
-  date this script refuses to run (`ValueError`).
+  scoring date is scored, cumulatively from the first logged day. What the
+  script enforces about the date is two checks (#257): the date must be a scoring
+  date (`require_scoring_date`, `ValueError`), and it must have come, which is
+  today's date in America/New_York not being before it (`require_clock`,
+  `LookAheadError`; an override flag lets a run proceed and is recorded in the
+  output). Neither decides which days may be scored: that is
+  `metadata/lockbox.json`, below.
 * **The primary result** (Eleonora's ruling of 4 October 2026 on #215): the
   CRPS of the published distribution (#169's gbm with nested conformal PID)
   against as-of persistence's, at h = 1, both read from each day's file alone
@@ -28,9 +33,14 @@ was logged:
 * **The primary result's verdict** is fixed at the first scoring date that
   scores any day (CRPS has no minimum event count: every day counts). Every
   later date is an update and never replaces it (`headline_status`).
-* **The lockbox:** logged days are blind-tier days. Until the drafted amendment
-  (`docs/decisions/drafts/lockbox-live-record.md`) is merged into
-  `docs/decisions/lockbox.md`, this script refuses to run at all.
+* **The lockbox** (#277, Eleonora's ruling on #269 item 6): logged days are
+  blind-tier days, and this script scores them through the same mechanism as
+  every comparison. Every day it scores goes through
+  `lockbox.require_unlocked` (`_require_scored_days_unlocked`), which reads
+  `metadata/lockbox.json` and raises `LookAheadError` on a day in a tier that is
+  not opened. A scoring date opens only the days before it: `lockbox.split_tier`
+  splits the blind tier there, and committing that split is Eleonora's own
+  action (#256). No heading in `lockbox.md` gates the script.
 * **The blind gap** (Eleonora's ruling of 5 October 2026 on #235, "Option 2",
   and "keep reported only"): at each horizon, the target days after the panel
   end (2026-09-03) and before the first target day the live record carries
@@ -39,41 +49,91 @@ was logged:
   as a separate block (`score_gap`), from forecasts `scripts/live_gap.py`
   reconstructs at the pinned code. Every gap cell is reported only, carries
   `GAP_LABEL` verbatim and never reaches the verdict. Scoring a gap day on any
-  other date, or before the amendment heading is in `lockbox.md`, refuses
-  (`require_gap_scoring`, `ValueError`).
+  other date refuses (`require_gap_scoring`, `ValueError`), and its days go
+  through the lockbox guard like every other scored day.
+
+* **Provenance** (#257): the result carries the time it started (UTC), the SHA-256
+  of the outcome panel, the command that built the panel and the one that scored,
+  the code SHA, `sys.version`, the digest of `metadata/live_requirements.lock`,
+  every live record's digest, each earlier result's digest, and `skipped_records`:
+  every record and horizon it did not score, with the reason (`NO_OUTCOME` or
+  `NOT_YET_DUE`). Nothing is skipped silently. The outcome panel must be one
+  `scripts/live_raw.py build-panel` built from archived bytes
+  (`require_registered_panel`, `ValueError`): `--archive-dir` is a checkout of the
+  `live-raw` branch.
+* **Event cells** (#257, review finding 30): the Brier cells' bootstrap uses block
+  length h + 1, the horizon overlap the final test's event cells and this
+  script's CRPS cells use (`EVENT_BLOCK_RULE`, `EVENT_SEED_RULE`).
+* **Integrity** (#254): before reading any record, the script verifies the
+  live log (`load_records`, `scripts/live_integrity.py`'s `verify`). Every
+  file's SHA-256 must equal its #225 digest, the hash chain must be unbroken,
+  and every file must have been added by `github-actions[bot]` in an add-only
+  commit. Every record's `code.pinned_sha` must also be a registered
+  transition in `metadata/live_pin.json` (#255). Otherwise it refuses
+  (`ValueError`). `--live-dir` is therefore a
+  clean checkout of `live-log`, and `--digests` holds the #225 comments, one
+  JSON object per line, each with `author` and `body`.
 
 Results are published whatever they show, as a new record:
 
     PYTHONPATH=src python3 scripts/live_score.py --date YYYY-MM-DD --live-dir LIVE \\
-        --panel PANEL --output OUT.json [--gap-dir GAP] [--previous EARLIER.json ...]
+        --digests DIGESTS.jsonl --panel PANEL --archive-dir LIVE_RAW --output OUT.json \\
+        [--gap-dir GAP --pinned-tree PINNED] [--previous EARLIER.json ...] [--override-clock]
 
-`--gap-dir` is required on the first scoring date and refused on every other.
+`--gap-dir` is required on the first scoring date and refused on every other; with it,
+`--pinned-tree` (a checkout of the pin) is required, and the gap's day boundaries are
+asserted equal to the ones that tree computes (#257, review finding 39).
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import shlex
+import subprocess
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import onset  # noqa: E402
-from repo_model.metrics import crps_from_quantiles, stationary_bootstrap_interval  # noqa: E402
+from repo_model.metrics import (  # noqa: E402
+    crps_from_quantiles, crps_trapezoid_from_quantiles, stationary_bootstrap_interval,
+)
 from repo_model.baseline import _seed_from  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration  # noqa: E402
+from repo_model.lockbox import require_unlocked  # noqa: E402
+from repo_model.splits import LookAheadError  # noqa: E402
 
-LOCKBOX = REPO / "docs" / "decisions" / "lockbox.md"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
-#: The heading the drafted amendment carries; the guard reads it in lockbox.md.
-AMENDMENT_HEADING = "## Amendment: the live record (#215)"
+LOCK = REPO / "metadata" / "live_requirements.lock"
+EASTERN = ZoneInfo("America/New_York")
+#: Why a record's horizon is not in a result (`skipped_records`): nothing is skipped silently (#257).
+NO_OUTCOME = "target day is not in the outcome panel"
+NOT_YET_DUE = "target day is not before the scoring date"
+#: The event cells' block rule and seed derivation, declared in the draft amendment (#257, finding 30).
+EVENT_BLOCK_RULE = ("stationary bootstrap, mean block length h + 1: the horizon overlap, as the final "
+                    "test's event cells and the CRPS cells use")
+EVENT_SEED_RULE = ("`baseline._seed_from((scoring date, cell, horizon, model, baseline[, regime or "
+                   "day type]))` for each Brier cell")
 FIRST_SCORING_DATES = (date(2027, 4, 1), date(2027, 10, 1))
 #: The live record's primary result (ruling of 4 October 2026 on #215).
 HEADLINE = {"target": "crps", "horizon": 1}
+#: The fewest days a regime or day-type cell needs before it carries an interval
+#: (#276, ruling #269 item 14). A cell below it reports its mean and "too few
+#: days", whatever a bootstrap replicate would have drawn. **Proposed, not
+#: decided**: the number is Eleonora's; 20 is the minimum the final test's pages
+#: already use (`onset.MINIMUM_EVENTS`, there a count of events), applied here to
+#: days. Published records adopt it only at their next publish.
+MINIMUM_CELL_DAYS = onset.MINIMUM_EVENTS
+TOO_FEW_DAYS = "too few days"
+#: From this year each calendar year is its own regime (#276, ruling #269 item 4).
+FIRST_YEAR_REGIME = 2027
 HORIZONS = (1, 2, 3, 4, 5)
 #: Each target, the baselines it is paired with.
 BASELINES = {
@@ -122,6 +182,65 @@ def _live():
 _LIVE = None
 
 
+def _integrity():
+    """`scripts/live_integrity.py`, loaded once."""
+
+    global _INTEGRITY
+    if _INTEGRITY is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_integrity", REPO / "scripts" / "live_integrity.py")
+        _INTEGRITY = module_from_spec(spec)
+        spec.loader.exec_module(_INTEGRITY)
+    return _INTEGRITY
+
+
+_INTEGRITY = None
+
+
+def _pins():
+    """`scripts/live_pin.py`, loaded once."""
+
+    global _PINS
+    if _PINS is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_pin", REPO / "scripts" / "live_pin.py")
+        _PINS = module_from_spec(spec)
+        spec.loader.exec_module(_PINS)
+    return _PINS
+
+
+_PINS = None
+
+
+def load_records(live_dir: Path, digests, manifest=None) -> list:
+    """The live log's records, after the log is verified (#254) and each record's pin is registered (#255).
+
+    Raises:
+        ValueError: no digests, any integrity check failing, a malformed
+            record, a dry run, or a record made at a code SHA that is not a
+            registered transition in `metadata/live_pin.json`.
+    """
+
+    if digests is None:
+        raise ValueError("the live record is scored only against its #225 digests: pass --digests")
+    integrity = _integrity()
+    integrity.verify(live_dir, integrity.parse_digests(digests))
+    pins = _pins()
+    manifest = pins.load_manifest() if manifest is None else manifest
+    live = _live()
+    records = []
+    for path in sorted((Path(live_dir) / "live").glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        live.validate_record(record)
+        if record.get("dry_run"):
+            raise ValueError(f"{path} is a dry run, not a logged day")
+        pins.require_registered(record["code"]["pinned_sha"], manifest)
+        records.append(record)
+    return records
+
+
 def _final_test():
     from importlib.util import module_from_spec, spec_from_file_location
 
@@ -135,6 +254,45 @@ def _final_test():
 final_test = _final_test()
 crps_verdict = final_test.crps_verdict
 crps_result = final_test.crps_result
+
+
+def now_utc() -> datetime:
+    """The wall clock, in UTC. Module-level so that tests patch it (never a flag or environment variable)."""
+
+    return datetime.now(timezone.utc)
+
+
+def today_new_york() -> date:
+    """Today's date in America/New_York, the calendar the scoring dates are fixed in."""
+
+    return now_utc().astimezone(EASTERN).date()
+
+
+def require_clock(day: date, *, override: bool = False) -> dict:
+    """Refuse a scoring date that has not yet come in New York (#257, review finding 4).
+
+    `require_scoring_date` checks the argument against the pre-registered list;
+    this checks it against the clock, so a synthetic record cannot be scored on
+    2026-10-06 by naming 2027-04-01. `override` lets a run proceed anyway, and
+    only if the output records that it did.
+
+    Returns the clock block the result carries: when it was read (UTC), today's
+    New York date and whether the override was used.
+
+    Raises:
+        LookAheadError: if today in New York is before `day` and `override` is false.
+    """
+
+    checked = now_utc()
+    today = checked.astimezone(EASTERN).date()
+    early = today < day
+    if early and not override:
+        raise LookAheadError(
+            f"{day} has not come: today in America/New_York is {today}, and the live record "
+            f"is scored on its scoring date or after it (#257)"
+        )
+    return {"checked_at_utc": checked.isoformat(), "today_new_york": today.isoformat(),
+            "override": early}
 
 
 def is_scoring_date(day: date) -> bool:
@@ -151,15 +309,14 @@ def require_scoring_date(day: date) -> None:
         )
 
 
-def require_amendment(path: Path = LOCKBOX) -> None:
-    """Refuse to score until the lockbox amendment is merged into `path`."""
+def _require_scored_days_unlocked(days, *, where: str) -> None:
+    """Refuse a scored day in a tier `metadata/lockbox.json` has not opened (#277).
 
-    text = Path(path).read_text(encoding="utf-8")
-    if AMENDMENT_HEADING not in text.splitlines():
-        raise ValueError(
-            f"{path} carries no '{AMENDMENT_HEADING}': the live record's days are "
-            f"blind-tier days, opened only once Eleonora merges the amendment"
-        )
+    Raises:
+        LookAheadError: naming the tier and the first offending day.
+    """
+
+    require_unlocked([date.fromisoformat(str(day)) for day in days], where=where)
 
 
 def headline_status(day: date, *, days: int, previous) -> str:
@@ -202,6 +359,42 @@ def crps_from_record(record, side: str, h: int, outcome: float) -> float:
     return crps_from_quantiles(levels, quantiles, outcome)
 
 
+def integral_crps_from_record(record, side: str, h: int, outcome: float) -> float:
+    """`crps_from_record`'s companion: the trapezoid-weighted integral (#259), reported only."""
+
+    block = record.get("distributions") or {}
+    try:
+        levels = block["levels"]
+        quantiles = block[side]["quantiles_bps"][str(h)]
+    except (KeyError, TypeError) as error:
+        raise ValueError(f"the file carries no {side} distribution at h={h}") from error
+    return crps_trapezoid_from_quantiles(levels, quantiles, outcome)
+
+
+def _regime(splits, when: date) -> str:
+    """The regime of `when`: the declared one, else its calendar year from 2027, else "undeclared"."""
+
+    try:
+        return splits.regime(when)
+    except ValueError:
+        return str(when.year) if when.year >= FIRST_YEAR_REGIME else "undeclared"
+
+
+def _small_cell(differences, positions):
+    """The cell's entry when it has fewer than `MINIMUM_CELL_DAYS` days, else None.
+
+    The mean is reported; the interval is not, so a small cell never gets one
+    by the luck of the bootstrap seed.
+    """
+
+    if len(positions) >= MINIMUM_CELL_DAYS:
+        return None
+    entry = {"days": len(positions), "note": TOO_FEW_DAYS, "minimum_days": MINIMUM_CELL_DAYS}
+    if positions:
+        entry["mean"] = sum(differences[k] for k in positions) / len(positions)
+    return entry
+
+
 def score_crps(records, rows, splits, day: date) -> dict:
     """The CRPS cells, cumulatively over `records`: h = 1 primary, h = 2 to 5 reported only."""
 
@@ -209,6 +402,7 @@ def score_crps(records, rows, splits, day: date) -> dict:
     out = {}
     for h in HORIZONS:
         days, published, persistence, regimes, types = [], [], [], [], []
+        integral_published, integral_persistence = [], []
         for record in records:
             when = date.fromisoformat(record["targets"][h - 1]["target_date"])
             if when >= day or when not in by_date:
@@ -217,11 +411,11 @@ def score_crps(records, rows, splits, day: date) -> dict:
             days.append(when)
             published.append(crps_from_record(record, "published", h, row.spread_bps))
             persistence.append(crps_from_record(record, "persistence", h, row.spread_bps))
-            try:
-                regimes.append(splits.regime(when))
-            except ValueError:
-                regimes.append("undeclared")
+            integral_published.append(integral_crps_from_record(record, "published", h, row.spread_bps))
+            integral_persistence.append(integral_crps_from_record(record, "persistence", h, row.spread_bps))
+            regimes.append(_regime(splits, when))
             types.append(splits.reporting_day_type(when, row.values))
+        _require_scored_days_unlocked(days, where=f"live_score.score_crps h={h}")
         primary = h == HEADLINE["horizon"]
         cell = {"days": len(days), "role": "primary" if primary else "reported only",
                 "first": days[0].isoformat() if days else None,
@@ -259,16 +453,35 @@ def score_crps(records, rows, splits, day: date) -> dict:
                 "sensitivity_interval": interval(final_test.CRPS_SENSITIVITY_BLOCK_LENGTH),
             }
         )
+        # Reported only (#259): the same paired difference, scored by the trapezoid-weighted
+        # integral. It never reaches the verdict, the result or the primary cell.
+        integral = [a - b for a, b in zip(integral_persistence, integral_published)]
+
+        def integral_mean(indices):
+            return sum(integral[i] for i in indices) / len(indices)
+
+        lower, upper = stationary_bootstrap_interval(
+            integral_mean, len(integral), block_length=block, seed=seed,
+            replications=onset.REPLICATIONS, level=onset.LEVEL,
+        )
+        cell["integral_sensitivity"] = {
+            "role": "reported only",
+            "rule": "trapezoid-weighted CRPS integral (`metrics.crps_trapezoid_from_quantiles`)",
+            "crps_integral_persistence_bps": sum(integral_persistence) / len(days),
+            "crps_integral_published_bps": sum(integral_published) / len(days),
+            "mean_difference_bps": integral_mean(range(len(days))),
+            "interval": {"lower": lower, "upper": upper, "level": onset.LEVEL,
+                         "method": "stationary_bootstrap", "block_length": block,
+                         "replications": onset.REPLICATIONS, "seed": seed},
+        }
         every = list(range(len(days)))
         for label, keys in (("by_regime", regimes), ("by_day_type", types)):
             cell[label] = {}
             for key in sorted(set(keys)):
                 positions = [k for k in every if keys[k] == key]
-                cell[label][key] = (
-                    onset.paired_difference(persistence, published, positions,
-                                            block_length=block, seed=_seed_from((str(day), "crps", str(h), key)))
-                    if len(positions) >= 2 else {"days": len(positions), "note": "too few days"}
-                )
+                cell[label][key] = _small_cell(differences, positions) or onset.paired_difference(
+                    persistence, published, positions, block_length=block,
+                    seed=_seed_from((str(day), "crps", str(h), key)))
         if primary:
             # A reported-only cell (h = 2 to 5) carries no verdict: it cannot pass or fail, and
             # its label says it is not evidence (#267, second review finding 19).
@@ -286,7 +499,7 @@ def _outcome(target, cell_name, spread):
 
 def _paired(baseline, model, positions, h, *parts):
     return onset.paired_difference(
-        baseline, model, positions, block_length=h,
+        baseline, model, positions, block_length=h + 1,
         seed=_seed_from(tuple(str(part) for part in parts)),
     )
 
@@ -311,11 +524,9 @@ def score(records, rows, splits, day: date) -> dict:
                     model.setdefault(name, []).append(entry["forecasts"][str(h)][cell_name])
                 for name in baselines:
                     bench[name].append(record["baselines"][name]["forecasts"][str(h)][cell_name])
-                try:
-                    regimes.append(splits.regime(when))
-                except ValueError:
-                    regimes.append("undeclared")
+                regimes.append(_regime(splits, when))
                 types.append(splits.reporting_day_type(when, row.values))
+            _require_scored_days_unlocked(days, where=f"live_score.score {cell_name} h={h}")
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
                     "last": days[-1] if days else None, "models": {}, "role": "reported only"}
@@ -335,10 +546,9 @@ def score(records, rows, splits, day: date) -> dict:
                         paired[label] = {}
                         for key in sorted(set(keys)):
                             positions = [k for k in every if keys[k] == key]
-                            paired[label][key] = (
-                                _paired(losses[b], losses[name], positions, h, day, cell_name, h, name, b, key)
-                                if len(positions) >= 2 else {"days": len(positions), "note": "too few days"}
-                            )
+                            gaps = [x - y for x, y in zip(losses[b], losses[name])]
+                            paired[label][key] = _small_cell(gaps, positions) or _paired(
+                                losses[b], losses[name], positions, h, day, cell_name, h, name, b, key)
                     entry["paired"][b] = paired
                 cell["models"][name] = entry
             cell["baseline_brier"] = {b: sum(losses[b]) / len(days) for b in baselines}
@@ -346,22 +556,83 @@ def score(records, rows, splits, day: date) -> dict:
     return out
 
 
+def skipped_records(records, rows, day: date) -> list:
+    """Every (record, horizon) the cells did not score, with the reason: nothing is skipped silently (#257).
+
+    A record's horizon is scored when its target day is before `day` and in the
+    outcome panel (`score_crps`, `score`). Any other is listed here.
+    """
+
+    by_date = {row.date for row in rows}
+    out = []
+    for record in records:
+        for target in record["targets"]:
+            when = date.fromisoformat(target["target_date"])
+            if when >= day:
+                reason = NOT_YET_DUE
+            elif when in by_date:
+                continue
+            else:
+                reason = NO_OUTCOME
+            out.append({"decision_day": record["decision_day"], "horizon": target["horizon"],
+                        "target_date": when.isoformat(), "reason": reason})
+    return out
+
+
+def _code_sha() -> str:
+    done = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True, text=True)
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def build_provenance(*, started_at: datetime, panel: Path, argv, panel_provenance, record_digests,
+                     previous) -> dict:
+    """What produced a result: when, from which bytes, by which command and code (#257, finding 4).
+
+    `panel_provenance` is the sidecar `scripts/live_raw.py build-panel` writes
+    beside the outcome panel: the command that built it and the archived inputs
+    it was built from. `record_digests` are the live records' SHA-256s as
+    verified; `previous` are the earlier results' files, linked by digest.
+    """
+
+    previous_scores = []
+    for path in previous:
+        data = Path(path).read_bytes()
+        previous_scores.append({"date": json.loads(data)["date"], "sha256": _sha256_bytes(data)})
+    return {
+        "started_at_utc": started_at.astimezone(timezone.utc).isoformat(),
+        "panel_sha256": _sha256_bytes(Path(panel).read_bytes()),
+        "panel_build_command": panel_provenance["build_command"],
+        "panel_inputs": panel_provenance.get("inputs", []),
+        "scoring_command": shlex.join(str(part) for part in argv),
+        "code_sha": _code_sha(),
+        "dependency_lock_sha256": _sha256_bytes(LOCK.read_bytes()),
+        "python_version": sys.version,
+        "live_records": list(record_digests),
+        "previous_scores": previous_scores,
+    }
+
+
 # -- the blind gap (#235) ------------------------------------------------------
 
 
-def require_gap_scoring(day: date, path: Path = LOCKBOX) -> None:
-    """Refuse to score a gap day except on the first scoring date, with the amendment merged.
+def require_gap_scoring(day: date) -> None:
+    """Refuse to score a gap day except on the first scoring date.
+
+    The gap's days are scored through `score_crps` and `score`, so
+    `lockbox.require_unlocked` guards each of them like any other scored day.
 
     Raises:
-        ValueError: on any date but `GAP_SCORING_DATE`, or while `path` carries
-            no `AMENDMENT_HEADING` (the type `require_amendment` raises).
+        ValueError: on any date but `GAP_SCORING_DATE`.
     """
 
     if day != GAP_SCORING_DATE:
         raise ValueError(
             f"the blind gap is scored once, on {GAP_SCORING_DATE}, not on {day} (#235)"
         )
-    require_amendment(path)
 
 
 def first_live_targets(record) -> dict:
@@ -376,10 +647,14 @@ def first_live_targets(record) -> dict:
             for target in record["targets"]}
 
 
-def gap_target_days(h: int, first_targets) -> list:
-    """The gap at horizon `h`: decision days after the panel end, before the first live target."""
+def gap_target_days(h: int, first_targets, live=None) -> list:
+    """The gap at horizon `h`: decision days after the panel end, before the first live target.
 
-    live = _live()
+    `live` is the `live_record` module whose calendar is used: main's by default,
+    the pinned tree's for `pinned_gap_days`.
+    """
+
+    live = live or _live()
     out, current = [], live.PANEL_END
     while True:
         current = live.next_decision_days(current, 1)[0]
@@ -467,7 +742,51 @@ def _as_gap_cell(cell) -> dict:
     return cell
 
 
-def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = LOCKBOX) -> dict:
+def require_gap_boundaries_equal(pinned, first_targets) -> None:
+    """The gap's days, as the pinned tree computes them, equal main's (#257, finding 39).
+
+    The forecasts run at the pinned code, but the gap's day boundaries are
+    computed here, from main's `live_record.py` and holiday table. `pinned` is
+    each horizon's gap target days as the pinned tree's own `live_record.py`
+    computes them (`pinned_gap_days`).
+
+    Raises:
+        ValueError: naming the horizon and the days that differ.
+    """
+
+    for h in HORIZONS:
+        here = [day.isoformat() for day in gap_target_days(h, first_targets)]
+        there = list(pinned.get(h, pinned.get(str(h), [])))
+        if here != there:
+            extra = sorted(set(here) ^ set(there))
+            raise ValueError(
+                f"the gap at h={h} differs between main and the pinned tree "
+                f"({len(here)} days here, {len(there)} there; differing: {extra[:5]})"
+            )
+
+
+def pinned_gap_days(tree: Path, first_targets) -> dict:
+    """Each horizon's gap target days, computed by the pinned tree's own `live_record.py`.
+
+    Raises:
+        ValueError: if `tree` is not a checkout of the pin in `metadata/live_pin.json`.
+    """
+
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tree, capture_output=True, text=True)
+    pin = _pins().load_manifest()["current"]
+    if head.returncode != 0 or head.stdout.strip() != pin:
+        raise ValueError(f"{tree} is not a checkout of the pinned code {pin}")
+    spec = spec_from_file_location("live_record_pinned", Path(tree) / "scripts" / "live_record.py")
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return {h: [day.isoformat() for day in gap_target_days(h, first_targets, live=module)]
+            for h in HORIZONS}
+
+
+def score_gap(records, first_live, rows, splits, day: date, *, override_clock: bool = False,
+              pinned_days=None) -> dict:
     """The blind gap's cells (#235), scored once: every one reported only.
 
     `records` are the reconstructed gap forecasts (`validate_gap_record`);
@@ -477,13 +796,23 @@ def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = L
     and bootstrap settings. The reconstructed forecasts are carried in the
     output with their inputs' digests.
 
+    The gap carries the same clock guard and skipped-record list as the live
+    cells (#257, finding 39). `pinned_days` (`pinned_gap_days`), when given, is
+    asserted equal to the boundaries computed here.
+
     Raises:
         ValueError: before anything is read, unless `require_gap_scoring`
-            passes; on a malformed or repeated gap record.
+            passes; on a malformed or repeated gap record, or boundaries that
+            differ from the pinned tree's.
+        LookAheadError: if `day` has not come in New York (`require_clock`), or on a
+            gap day the lockbox has not opened.
     """
 
-    require_gap_scoring(day, lockbox)
+    clock_block = require_clock(day, override=override_clock)
+    require_gap_scoring(day)
     bounds = first_live_targets(first_live)
+    if pinned_days is not None:
+        require_gap_boundaries_equal(pinned_days, bounds)
     for record in records:
         validate_gap_record(record)
     decided = [record["decision_day"] for record in records]
@@ -505,10 +834,19 @@ def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = L
         for name, cell in score(chosen, rows, splits, day)["cells"].items():
             if name.endswith(f"/h{h}"):
                 cells[name] = _as_gap_cell(cell)
+    skipped = []
+    for h in HORIZONS:
+        in_gap = set(gap_target_days(h, bounds))
+        chosen = [r for r in records
+                  if date.fromisoformat(r["targets"][h - 1]["target_date"]) in in_gap]
+        skipped += [entry for entry in skipped_records(chosen, rows, day) if entry["horizon"] == h]
     return {
         "directive": "#235",
         "label": GAP_LABEL,
         "role": "reported only",
+        "clock": clock_block,
+        "boundaries_checked_against_pinned_tree": pinned_days is not None,
+        "skipped_records": skipped,
         "boundaries": boundaries,
         "crps": crps,
         "cells": cells,
@@ -517,16 +855,22 @@ def score_gap(records, first_live, rows, splits, day: date, *, lockbox: Path = L
 
 
 def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
-             lockbox: Path = LOCKBOX, require_gap: bool = False) -> dict:
+             require_gap: bool = False, override_clock: bool = False, provenance=None,
+             pinned_days=None) -> dict:
     """The scoring result: the live cells, the primary result, and the gap block apart.
 
     The primary result and its status are read off the live cells alone; the
-    gap block (`score_gap`) is added beside them and never read back.
+    gap block (`score_gap`) is added beside them and never read back. The
+    result carries the clock it was scored under, the records it did not score
+    and why (`skipped_records`), and `provenance` when given (`build_provenance`).
 
     Raises:
+        LookAheadError: before anything is computed, if `day` has not come in New York
+            (`require_clock`) and `override_clock` is false.
         ValueError: if `require_gap` and no gap records are given.
     """
 
+    clock_block = require_clock(day, override=override_clock)
     if require_gap and gap_records is None:
         raise ValueError(
             f"{day} scores the blind gap in the same run as its live cells (#235); "
@@ -547,54 +891,99 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
             "crps_sign_convention": CRPS_SIGN,
             "primary_result": headline.get("result"),
             "headline_status": headline_status(day, days=headline["days"], previous=previous),
+            "clock": clock_block,
+            "skipped_records": skipped_records(records, rows, day),
+            "event_block_rule": EVENT_BLOCK_RULE,
+            "event_seed": EVENT_SEED_RULE,
         }
     )
+    if provenance is not None:
+        result["provenance"] = provenance
     if gap_records is not None:
         first = [record for record in records if record["decision_day"] == FIRST_LIVE_DAY.isoformat()]
         if not first:
             raise ValueError(f"the live record has no file for {FIRST_LIVE_DAY}, which bounds the gap")
-        result["gap"] = score_gap(gap_records, first[0], rows, splits, day, lockbox=lockbox)
+        result["gap"] = score_gap(gap_records, first[0], rows, splits, day,
+                                  override_clock=override_clock, pinned_days=pinned_days)
     return result
+
+
+def _raw():
+    """`scripts/live_raw.py`, loaded once."""
+
+    global _RAW
+    if _RAW is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_raw", REPO / "scripts" / "live_raw.py")
+        _RAW = module_from_spec(spec)
+        spec.loader.exec_module(_RAW)
+    return _RAW
+
+
+_RAW = None
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--date", required=True)
     parser.add_argument("--live-dir", required=True, type=Path)
-    parser.add_argument("--panel", required=True, type=Path, help="the outcome panel")
+    parser.add_argument("--digests", type=Path, default=None,
+                        help="the #225 digest comments, one JSON object per line (#254)")
+    parser.add_argument("--panel", required=True, type=Path,
+                        help="the outcome panel, built by `scripts/live_raw.py build-panel`")
+    parser.add_argument("--archive-dir", required=True, type=Path,
+                        help="a checkout of the `live-raw` branch: the panel's inputs must be in it (#257)")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--previous", action="append", default=[], type=Path)
     parser.add_argument("--gap-dir", type=Path, default=None,
                         help="the reconstructed gap forecasts (scripts/live_gap.py); "
                              "the first scoring date only")
+    parser.add_argument("--pinned-tree", type=Path, default=None,
+                        help="a checkout of the pinned code: the gap's day boundaries are asserted "
+                             "equal to its own (required with --gap-dir)")
+    parser.add_argument("--override-clock", action="store_true",
+                        help="score a date that has not come; recorded in the output (#257)")
     args = parser.parse_args(argv)
+    started = now_utc()
     day = date.fromisoformat(args.date)
     require_scoring_date(day)
-    require_amendment(LOCKBOX)
+    clock_block = require_clock(day, override=args.override_clock)
     if args.output.exists():
         raise ValueError(f"{args.output} exists: a result is published as a new record")
     if args.gap_dir is not None:
-        require_gap_scoring(day, LOCKBOX)
+        require_gap_scoring(day)
+        if args.pinned_tree is None:
+            raise ValueError("--gap-dir needs --pinned-tree: the gap's boundaries are checked against the pinned code")
     elif day == GAP_SCORING_DATE:
         raise ValueError(f"{day} scores the blind gap in the same run (#235): pass --gap-dir")
 
-    live = _live()
-    records = []
-    for path in sorted((args.live_dir / "live").glob("*.json")):
-        record = json.loads(path.read_text(encoding="utf-8"))
-        live.validate_record(record)
-        if record.get("dry_run"):
-            raise ValueError(f"{path} is a dry run, not a logged day")
-        records.append(record)
+    records = load_records(args.live_dir, args.digests)
+    panel_provenance = _raw().require_registered_panel(args.panel, args.archive_dir)
+    integrity = _integrity()
+    record_digests = [{"decision_day": path.stem, "sha256": integrity.file_sha256(path)}
+                      for path in sorted((args.live_dir / "live").glob("*.json"))]
+    archive_report = _raw().verify_records(args.archive_dir, args.live_dir)
     previous = [json.loads(path.read_text(encoding="utf-8")) for path in args.previous]
     rows = load_daily_panel(args.panel)
     splits = load_split_declaration(SPLITS)
-    gap_records = None
+    gap_records, pinned_days = None, None
     if args.gap_dir is not None:
         gap_records = [json.loads(path.read_text(encoding="utf-8"))
                        for path in sorted((args.gap_dir / "gap").glob("*.json"))]
+        first = [record for record in records if record["decision_day"] == FIRST_LIVE_DAY.isoformat()]
+        if not first:
+            raise ValueError(f"the live record has no file for {FIRST_LIVE_DAY}, which bounds the gap")
+        pinned_days = pinned_gap_days(args.pinned_tree, first_live_targets(first[0]))
+    provenance = build_provenance(
+        started_at=started, panel=args.panel,
+        argv=["scripts/live_score.py", *(sys.argv[1:] if argv is None else argv)],
+        panel_provenance=panel_provenance, record_digests=record_digests, previous=args.previous)
+    provenance["raw_archive"] = archive_report
     result = assemble(records, rows, splits, day, previous=previous, gap_records=gap_records,
-                      require_gap=day == GAP_SCORING_DATE)
+                      require_gap=day == GAP_SCORING_DATE, override_clock=args.override_clock,
+                      provenance=provenance, pinned_days=pinned_days)
+    result["clock"] = {**result["clock"], "first_read_at_utc": clock_block["checked_at_utc"]}
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(args.output), "headline_status": result["headline_status"]}))
     return 0

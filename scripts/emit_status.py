@@ -207,6 +207,8 @@ def closed_for_now(phases, number):
             for phase in phases
             if phase["number"] < number and phase["marker"] == CLOSED]
 
+#: Bumped when a key of docs/status.json is renamed or removed (#270).
+SCHEMA_VERSION = 1
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -277,12 +279,13 @@ def main():
         "closed_for_now": closed_for_now(phases, number),
         "next": {"number": following["number"], "name": following["name"],
                  "exit": require_exit(following, "the next phase")},
+        "schema_version": SCHEMA_VERSION,
         "total_phases": len(phases),
         "figures": {
             "panel_start": manifest["start_date"],
             "panel_end": manifest["end_date"],
             "panel_rows": manifest["row_count"],
-            "event_holdouts": len(events["windows"]),
+            "event_windows": len(events["windows"]),
             "dependencies": dependency_count(),
         },
         "run_records": sorted(p.name for p in (ROOT / "docs/runs").glob("*.json")),

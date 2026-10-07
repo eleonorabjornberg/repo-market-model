@@ -1,0 +1,59 @@
+{
+  "about": "The controls the validation report (docs/model/validation.md, #119) lists under implementation and controls. Each names the guard in the code and the test that holds it. scripts/validation_report.py refuses an entry whose guard or test file is missing, or whose test carries no recorded mutation, so a control cannot be listed after it has stopped being tested. The kinds are the ones docs/decisions/information-set.md and lockbox.md name.",
+  "controls": [
+    {
+      "kind": "leakage",
+      "what": "an input read after the decision instant",
+      "guard": "src/repo_model/asof.py",
+      "test": "tests/test_asof.py"
+    },
+    {
+      "kind": "staleness",
+      "what": "an input older than the latest value public at the decision instant",
+      "guard": "src/repo_model/asof.py",
+      "test": "tests/test_asof.py"
+    },
+    {
+      "kind": "leakage",
+      "what": "a scheduled settlement or announced IORB change dated after its public instant",
+      "guard": "src/repo_model/announced_iorb.py",
+      "test": "tests/test_announced_iorb.py"
+    },
+    {
+      "kind": "leakage",
+      "what": "a settlement result read before its auction results time",
+      "guard": "src/repo_model/ingest.py",
+      "test": "tests/test_settlement_dating.py"
+    },
+    {
+      "kind": "lockbox",
+      "what": "a scored day in a tier the lockbox has not opened",
+      "guard": "src/repo_model/lockbox.py",
+      "test": "tests/test_lockbox.py"
+    },
+    {
+      "kind": "lockbox",
+      "what": "the live record's days kept out of every comparison",
+      "guard": "scripts/live_score.py",
+      "test": "tests/test_live_lockbox.py"
+    },
+    {
+      "kind": "freeze",
+      "what": "the final test's declaration, its checksum and its frozen command",
+      "guard": "scripts/final_test_preregistration.py",
+      "test": "tests/test_final_test_freeze.py"
+    },
+    {
+      "kind": "freeze",
+      "what": "the live log's digests, so a logged forecast cannot change after the fact",
+      "guard": "scripts/live_integrity.py",
+      "test": "tests/test_live_integrity.py"
+    },
+    {
+      "kind": "reproducibility",
+      "what": "every generated page is what its generator renders from the records",
+      "guard": "scripts/emit_results.py",
+      "test": "tests/test_generated_results.py"
+    }
+  ]
+}

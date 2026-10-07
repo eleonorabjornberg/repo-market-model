@@ -8,12 +8,40 @@ name: live-log
 # rewritten: `live-log` is protected by repository ruleset 24422476 (no
 # deletion, no non-fast-forward push).
 #
-# The code that makes the record is pinned (`scripts/live_record.py pin`): this
-# file runs from main, and the record is made from a worktree at the pinned
-# SHA, which changes only through a dated version-bump record.
+# The ruleset alone does not stop a fast-forward commit from changing an
+# existing file (#254). So `scripts/live_integrity.py`, run from main:
+# chains each new record to the one before it (`chain`), checks that the
+# day's commit only adds the day's file before it is pushed (`check-append`),
+# and every day re-checks every logged file against its digest on the
+# digest issue (#225), its chain and its commit (`verify`).
+# A mismatch fails the run, and the failure reaches the failed-runs issue.
+#
+# The raw bytes of each day's inputs are archived too (#257): `scripts/live_raw.py`
+# copies the day's raw root, with the digests the record carries, to `raw/<day>/` of the
+# append-only `live-raw` branch, in one add-only commit checked before the push. The
+# record keeps only each input's URL, retrieval time and digest, and a later download
+# may differ, so without the bytes the outcome panel cannot be rebuilt. A failed archive
+# never blocks the record.
+#
+# Each day's digest is also anchored outside the repository's reach, in the
+# public Sigstore Rekor log (Eleonora's ruling of 6 October 2026, #254):
+# `cosign sign-blob` signs the file keylessly under this workflow's GitHub
+# OIDC identity, and the entry's log index, UUID and inclusion proof are
+# stored beside the record as `live/<day>.rekor`, in a second add-only commit.
+# If Rekor is unreachable the record is still written; the failure goes to
+# the failed-runs issue and a later run anchors the missed day. A missing
+# anchor never blocks a record. How to check one online: `ONLINE_COMMAND` in
+# `scripts/live_integrity.py`.
+#
+# The code that makes the record is pinned by a literal in
+# `metadata/live_pin.json` (#255): this file runs from main, reads the pin with
+# jq, and makes the record from a worktree at that SHA. The pin changes only
+# through a registered transition (`scripts/live_pin.py`), a dated decision
+# record and Eleonora's own approval.
 #
 # No third-party action is used: Python 3.11 comes from the runner's own tool
-# cache, and git and gh are the runner's. So there is no action to pin.
+# cache, and git, gh, curl and jq are the runner's. So there is no action to
+# pin. cosign is one release binary, checked against its published SHA-256.
 
 on:
   schedule:
@@ -22,10 +50,13 @@ on:
   workflow_dispatch:
 
 # contents: write only to push to live-log; issues: write for the digest and
-# failure issues. Eleonora's decision of 3 October 2026 (#215).
+# failure issues. Eleonora's decision of 3 October 2026 (#215). id-token: write
+# only so cosign can sign keylessly under this workflow's identity, and holds
+# no secret (her ruling of 6 October 2026, #254).
 permissions:
   contents: write
   issues: write
+  id-token: write
 
 concurrency:
   group: live-log
@@ -34,7 +65,7 @@ concurrency:
 jobs:
   log:
     name: log the day's forecast
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
       GH_TOKEN: ${{ github.token }}
@@ -44,29 +75,45 @@ jobs:
       # One OpenMP thread: the gbm's numbers do not depend on it, and on a
       # shared runner several threads per fit only slow the nested-PID replay.
       OMP_NUM_THREADS: "1"
+      # The two issues the run writes to, by number and never by title (#255).
+      DIGEST_ISSUE: 225
+      FAILED_RUNS_ISSUE: 237
     steps:
-      - name: Python 3.11 from the runner's tool cache
-        id: python
-        run: |
-          base=$(ls -d /opt/hostedtoolcache/Python/3.11.*/x64 | sort -V | tail -1)
-          test -x "$base/bin/python3"
-          echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
-          echo "DAY=$(TZ=America/New_York date +%F)" >> "$GITHUB_ENV"
-
       - name: Check out main and the pinned code
         id: checkout
         run: |
           git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" main
-          pin=$(cd main && PYTHONPATH=src "$PY" -B scripts/live_record.py pin --ref origin/main)
+          # The pin is a literal in a manifest, read with jq: no repository
+          # Python runs before the pinned code is checked out (#255).
+          pin=$(jq -r .current main/metadata/live_pin.json)
+          echo "$pin" | grep -Eq '^[0-9a-f]{40}$'
+          git -C main merge-base --is-ancestor "$pin" origin/main
           git -C main worktree add --quiet --detach ../pinned "$pin"
           echo "PIN=$pin" >> "$GITHUB_ENV"
 
-      - name: Install the ml extra at the versions CI pins
+      - name: Python from the runner's tool cache, at the pinned patch release
+        id: python
+        run: |
+          patch=$(jq -r .environment.python main/metadata/live_pin.json)
+          base=/opt/hostedtoolcache/Python/$patch/x64
+          test -x "$base/bin/python3"
+          echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
+          echo "DAY=$(TZ=America/New_York date +%F)" >> "$GITHUB_ENV"
+
+      - name: Verify the pin is a registered transition
+        id: pin
+        run: |
+          "$PY" -B main/scripts/live_pin.py verify --repo main --ref origin/main
+
+      - name: Install the locked environment
         id: install
         run: |
+          lock=main/$(jq -r .environment.lock main/metadata/live_pin.json)
+          echo "$(jq -r .environment.lock_sha256 main/metadata/live_pin.json)  $lock" | sha256sum -c -
           "$PY" -m venv venv
-          venv/bin/python -m pip install --quiet "./pinned[ml]" "numpy==2.4.6" "scikit-learn==1.9.1"
-          venv/bin/python -m pip freeze | grep -iE '^(numpy|scikit-learn)=='
+          venv/bin/python -m pip install --quiet --require-hashes --no-deps --only-binary :all: -r "$lock"
+          venv/bin/python -m pip freeze > freeze.txt
+          cat freeze.txt
 
       - name: Check out the live-log branch
         id: branch
@@ -99,21 +146,129 @@ jobs:
             echo "Not a decision day: nothing to append."
             exit 0
           fi
+          base=$(git rev-parse --verify -q HEAD || echo none)
+          "$PY" -B ../main/scripts/live_integrity.py chain --live-dir . --date "$DAY"
+          "$PY" -B ../main/scripts/live_pin.py environment --repo ../main --freeze ../freeze.txt \
+            --python "$(../venv/bin/python -c 'import platform; print(platform.python_version())')" > ../environment.json
+          "$PY" -B ../main/scripts/live_integrity.py environment --live-dir . --date "$DAY" --block ../environment.json
           git add "$file"
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit --quiet -m "Live record for $DAY (code $PIN)"
+          "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$DAY" --base "$base"
           git push --quiet origin HEAD:refs/heads/live-log
           echo "SHA256=$(sha256sum "$file" | cut -d' ' -f1)" >> "$GITHUB_ENV"
           echo "COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           echo "WROTE=1" >> "$GITHUB_ENV"
 
+      - name: Archive the raw inputs on live-raw
+        id: raw
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        run: |
+          # The record keeps each input's URL, retrieval time and digest, not its bytes (#257).
+          # Archive the day's raw root, content addressed by those digests, on an append-only
+          # branch of its own. A failure here never blocks a record: it goes to the failed-runs
+          # issue, and the day stays unarchived (`live_raw.py verify-records` lists it).
+          set -euo pipefail
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" live-raw >/dev/null; then
+            git clone --quiet --branch live-raw --single-branch "$url" live-raw
+          else
+            git init --quiet -b live-raw live-raw
+            git -C live-raw remote add origin "$url"
+          fi
+          export PYTHONPATH=main/src
+          "$PY" -B main/scripts/live_raw.py archive --raw-root work/raw --day "$DAY" --out-dir live-raw
+          cd live-raw
+          base=$(git rev-parse --verify -q HEAD || true)
+          git add "raw/$DAY"
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Raw inputs for $DAY"
+          "$PY" -B ../main/scripts/live_raw.py check-append --repo . --day "$DAY" --base "$base"
+          git push --quiet origin HEAD:refs/heads/live-raw
+
+      - name: Anchor the digests in Sigstore Rekor
+        id: anchor
+        if: steps.push.outcome == 'success'
+        continue-on-error: true
+        env:
+          COSIGN_VERSION: v2.5.3
+          COSIGN_SHA256: 783b5d6c74105401c63946c68d9b2a4e1aab3c8abce043e06b8510b02b623ec9
+        run: |
+          set -euo pipefail
+          curl -fsSL -o cosign "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
+          echo "${COSIGN_SHA256}  cosign" | sha256sum -c -
+          chmod +x cosign
+          cd live-log
+          anchor_day() {
+            day=$1
+            file="live/$day.json"
+            sha=$(sha256sum "$file" | cut -d' ' -f1) || return 1
+            ../cosign sign-blob --yes --bundle "../bundle-$day.json" "$file" > /dev/null || return 1
+            : > ../entries.jsonl
+            for uuid in $(curl -fsS -X POST -H 'Content-Type: application/json' \
+                -d "{\"hash\":\"sha256:$sha\"}" https://rekor.sigstore.dev/api/v1/index/retrieve | jq -r '.[]'); do
+              curl -fsS "https://rekor.sigstore.dev/api/v1/log/entries/$uuid" >> ../entries.jsonl || return 1
+              echo >> ../entries.jsonl
+            done
+            jq -s . ../entries.jsonl > ../entries.json || return 1
+            "$PY" -B ../main/scripts/live_integrity.py anchor-file --live-dir . --date "$day" --entries ../entries.json || return 1
+            base=$(git rev-parse HEAD)
+            git add "live/$day.rekor" || return 1
+            git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit --quiet -m "Rekor anchor for $day" || return 1
+            "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$day" --base "$base" --anchor || return 1
+            git push --quiet origin HEAD:refs/heads/live-log || return 1
+            if [ "$day" != "$DAY" ]; then
+              n=$DIGEST_ISSUE
+              {
+                echo "$day anchored late in Sigstore Rekor (the digest above is unchanged):"
+                echo
+                jq -r '"- Rekor log index: \(.log_index)\n- Rekor entry: \(.uuid)"' "live/$day.rekor"
+                echo "- run: $RUN_URL"
+              } > late.md
+              gh api "repos/$REPO/issues/$n/comments" -F body=@../late.md > /dev/null || true
+            fi
+          }
+          # A day that fails to anchor never stops the later days (#328): its failure is
+          # remembered, its local state is discarded, and the step fails at the end.
+          failed=""
+          days=$("$PY" -B ../main/scripts/live_integrity.py unanchored --live-dir . | jq -r '.unanchored[]')
+          for day in $days; do
+            start=$(git rev-parse HEAD)
+            if ! anchor_day "$day"; then
+              echo "::warning::Rekor anchor failed for $day"
+              git reset --quiet --hard "$start"
+              git clean --quiet -fd live
+              failed="$failed $day"
+            fi
+          done
+          if [ -z "$failed" ]; then exit 0; fi
+          echo "Rekor anchor failed for:$failed" >&2
+          exit 1
+
+      - name: Report an anchor that failed
+        if: always() && steps.anchor.outcome == 'failure'
+        run: |
+          n=$FAILED_RUNS_ISSUE
+          echo "Anchor failed: $DAY. The record is written; the Rekor anchor is not. A later run anchors every unanchored day (#254). Run: $RUN_URL" > anchor-failed.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@anchor-failed.md >/dev/null
+
+      - name: Report a raw archive that failed
+        if: always() && steps.raw.outcome == 'failure'
+        run: |
+          n=$FAILED_RUNS_ISSUE
+          echo "Raw archive failed: $DAY. The record is written; its raw inputs are not archived on live-raw, so the day cannot be rebuilt from bytes (#257). Run: $RUN_URL" > raw-failed.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@raw-failed.md >/dev/null
+
       - name: Post the digest outside the repository
         id: digest
         if: env.WROTE == '1'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+          n=$DIGEST_ISSUE
           test -n "$n"
           {
             echo "$DAY: \`live/$DAY.json\`"
@@ -122,19 +277,45 @@ jobs:
             echo "- commit on live-log: $COMMIT"
             echo "- code: $PIN"
             echo "- run: $RUN_URL"
+            if [ -f "live-log/live/$DAY.rekor" ]; then
+              jq -r '"- Rekor log index: \(.log_index)\n- Rekor entry: \(.uuid)"' "live-log/live/$DAY.rekor"
+            fi
           } > digest.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@digest.md >/dev/null
+
+      - name: Reconcile digests missing from the digest issue
+        id: reconcile
+        if: always() && steps.branch.outcome == 'success'
+        run: |
+          # A record pushed to live-log whose digest post failed (#263). Every run
+          # posts the digest of any logged file that has none, marked "reconciled
+          # late". It reads live-log and writes nothing in it; a posted digest that
+          # differs from its file fails the step, and the next step re-checks them all.
+          n=$DIGEST_ISSUE
+          test -n "$n"
+          gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" \
+            -q '.[] | {author: .user.login, body: .body} | @json' > digests-before.jsonl
+          "$PY" -B main/scripts/live_integrity.py reconcile --live-dir live-log \
+            --digests digests-before.jsonl --out-dir reconcile --run-url "$RUN_URL"
+          for body in reconcile/*.md; do
+            [ -e "$body" ] || continue
+            gh api "repos/$REPO/issues/$n/comments" -F body=@"$body" >/dev/null
+          done
+
+      - name: Verify every logged file
+        id: integrity
+        if: always() && steps.branch.outcome == 'success'
+        run: |
+          n=$DIGEST_ISSUE
+          test -n "$n"
+          gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" \
+            -q '.[] | {author: .user.login, body: .body} | @json' > digests.jsonl
+          "$PY" -B main/scripts/live_integrity.py verify --live-dir live-log --digests digests.jsonl
 
       - name: Report missed days
         if: always() && env.MISSED_ANY == '1'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
-          if [ -z "$n" ]; then
-            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
-              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
-              -f 'labels[]=finding' -q .number)
-          fi
+          n=$FAILED_RUNS_ISSUE
           echo "Missed: decision days with no record, before $DAY: $MISSED. They stay missing (#215). Run: $RUN_URL" > missed.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@missed.md >/dev/null
 
@@ -144,32 +325,27 @@ jobs:
           OUTCOMES: >-
             python=${{ steps.python.outcome }}
             checkout=${{ steps.checkout.outcome }}
+            pin=${{ steps.pin.outcome }}
             install=${{ steps.install.outcome }}
             branch=${{ steps.branch.outcome }}
             record=${{ steps.record.outcome }}
             push=${{ steps.push.outcome }}
             digest=${{ steps.digest.outcome }}
+            reconcile=${{ steps.reconcile.outcome }}
+            integrity=${{ steps.integrity.outcome }}
         run: |
           step=$(echo "$OUTCOMES" | tr ' ' '\n' | grep '=failure' | head -1 | cut -d= -f1)
           if [ "$step" = "record" ] && [ -f status.json ]; then
             step="record ($(sed -E 's/.*"step": "([^"]*)".*/\1/' status.json))"
           fi
-          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
-          if [ -z "$n" ]; then
-            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
-              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
-              -f 'labels[]=finding' -q .number)
-          fi
+          n=$FAILED_RUNS_ISSUE
           echo "Failed: $DAY, at step ${step:-unknown}. No record was appended for the day unless the digest issue shows one. Run: $RUN_URL" > failed.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@failed.md >/dev/null
 
       - name: Say a run succeeded after a failure
         if: success() && env.WROTE == '1'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
-          if [ -z "$n" ]; then exit 0; fi
+          n=$FAILED_RUNS_ISSUE
           last=$(gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" -q '.[-1].body' | tail -1)
           case "$last" in
             Failed:*|Missed:*)
