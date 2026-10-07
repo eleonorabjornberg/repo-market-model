@@ -109,7 +109,7 @@ instant raises `LookAheadError`, and a read older than the latest value public a
 
 | Source | Provider | Frequency | Availability (lag, time, basis) | Fields with their own lag |
 |---|---|---|---|---|
-| `frb_ddp` | Board of Governors of the Federal Reserve System | business daily | 1 business day, 16:15, ref date | IOER (0 calendar days, 16:15, record date), IORB (0 calendar days, 16:15, record date) |
+| `frb_ddp` | Board of Governors of the Federal Reserve System | business daily | 0 calendar days, 16:15, record date | EFFR (1 business day, 16:15, ref date), IOER (0 calendar days, 16:15, record date), IORB (0 calendar days, 16:15, record date) |
 | `frb_h8` | Board of Governors of the Federal Reserve System | weekly | 12 calendar days, 16:15, record date | none |
 | `fred_macro_latest_vintage` | Federal Reserve Bank of St. Louis FRED | mixed daily and weekly | snapshot retrieved at | DFF (5 calendar days, 16:15, record date), IOER (0 calendar days, 16:15, record date), IORB (0 calendar days, 16:15, record date), WLRRAOL (5 calendar days, 16:30, record date), WRESBAL (5 calendar days, 16:30, record date), WTREGEN (5 calendar days, 16:30, record date) |
 | `nyfed_bgcr` | Federal Reserve Bank of New York | business daily | 1 business day, 15:00, ref date | none |

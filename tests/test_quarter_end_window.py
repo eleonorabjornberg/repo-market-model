@@ -87,11 +87,11 @@ class QuarterEndWindowColumnTests(unittest.TestCase):
         self.assertEqual(data.quarter_end_window(date(2019, 3, 30)), 0.0)
 
     def test_the_window_is_centred_on_quarter_end(self):
-        """Every window from 2018 Q1 to 2027 Q3 has five days, with `quarter_end` the middle one."""
+        """Every window from 2018 Q1 to 2030 Q3 has five days, with `quarter_end` the middle one."""
 
-        for year in range(2018, 2028):
+        for year in range(2018, 2031):
             for quarter in range(1, 5):
-                if (year, quarter) == (2027, 4):
+                if (year, quarter) == (2030, 4):
                     continue
                 window = data.quarter_end_window_days(year, quarter)
                 self.assertEqual(len(window), 5)
@@ -108,7 +108,7 @@ class QuarterEndWindowColumnTests(unittest.TestCase):
 
         closed = data.market_holidays().closed
         day = date(2018, 1, 1)
-        while day <= date(2027, 12, 31):
+        while day <= date(2030, 12, 31):
             month = 3 * ((day.month - 1) // 3) + 3
             last = date(day.year + month // 12, month % 12 + 1, 1) - timedelta(days=1)
             while last.weekday() >= 5 or last in closed:
@@ -118,7 +118,7 @@ class QuarterEndWindowColumnTests(unittest.TestCase):
 
     def test_a_window_the_table_does_not_cover_is_refused(self):
         with self.assertRaises(ValueError):
-            data.quarter_end_window_days(2027, 4)
+            data.quarter_end_window_days(2030, 4)
         with self.assertRaises(ValueError):
             data.quarter_end_window_days(2017, 4)
         with self.assertRaises(ValueError):

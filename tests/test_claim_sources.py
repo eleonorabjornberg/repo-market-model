@@ -67,6 +67,9 @@ MARKDOWN_LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
 
 FRONT_DOOR = "README.md"
 
+#: What the README carried before #344: the account moved to `PROJECT_GUIDE.md`, and the pages it links are still in scope.
+GUIDE = "PROJECT_GUIDE.md"
+
 EXPLORER = ("site/index.html",)
 
 EXPLORER_DATA = "docs/visual"
@@ -75,7 +78,7 @@ _DECISION = "names the ruling that made this decision; the rule is the record it
 
 #: (page, number): why the link is attribution, not the source of a figure.
 ATTRIBUTION = {
-    ("README.md", 151): (
+    ("PROJECT_GUIDE.md", 151): (
         "names the issue where a relayed go was withdrawn as not a go; the sentence "
         "states the withdrawal and links the comment that records it; no figure rests on it"
     ),
@@ -83,15 +86,15 @@ ATTRIBUTION = {
         "names the issue where Eleonora's go to open the near-blind tier is recorded, linked "
         "to the comment; the opening is also recorded in docs/decisions/lockbox.md; no figure rests on it"
     ),
-    ("README.md", 256): (
+    ("PROJECT_GUIDE.md", 256): (
         "names the issue that asked for owner attestation; the sentence says "
         "where the rule's text stands; no figure rests on it"
     ),
-    ("README.md", 294): (
+    ("PROJECT_GUIDE.md", 294): (
         "names the pull request that merged the owner-attestation check and its draft rule; "
         "the sentence says what it merged; no figure rests on it"
     ),
-    ("README.md", 269): (
+    ("PROJECT_GUIDE.md", 269): (
         "names the issue where Eleonora states which merges were hers, each linked to "
         "her comment; no figure rests on it"
     ),
@@ -99,7 +102,7 @@ ATTRIBUTION = {
         "names the comments where Eleonora confirmed the #153, #236, #216 and #224 merges; the note "
         "quotes them and states no figure"
     ),
-    ("README.md", 73): (
+    ("PROJECT_GUIDE.md", 73): (
         "names the issue where the Phase 2 verdict was ruled; the verdict is stated in "
         "PLAN.md, which the same sentence links"
     ),
@@ -148,7 +151,7 @@ NO_RECORD_YET = {
 
 #: (page, the sentence's opening words): why the figures it points at have no record.
 POINTERS_NO_RECORD_YET = {
-    ("README.md", "On onset days it does not beat the persistence-logistic"): (
+    ("PROJECT_GUIDE.md", "On onset days it does not beat the persistence-logistic"): (
         "rendered from the text of exceedance_gbm_conformal_pid_nested_funding.json, "
         "which points at PR #169 for the onset-day figures; a published record is not "
         "edited in place, and no record carries those figures yet"
@@ -162,14 +165,15 @@ POINTERS_NO_RECORD_YET = {
 def published_pages(root=REPO_ROOT):
     """The pages in scope, as paths relative to the repository root."""
 
-    pages = {FRONT_DOOR, *EXPLORER}
-    front = (root / FRONT_DOOR).read_text(encoding="utf-8")
-    for target in MARKDOWN_LINK.findall(front):
-        if "://" in target:
-            continue
-        path = root / target
-        if path.is_file() and path.suffix == ".md":
-            pages.add(target)
+    pages = {FRONT_DOOR, GUIDE, *EXPLORER}
+    for door in (FRONT_DOOR, GUIDE):
+        front = (root / door).read_text(encoding="utf-8")
+        for target in MARKDOWN_LINK.findall(front):
+            if "://" in target:
+                continue
+            path = root / target
+            if path.is_file() and path.suffix == ".md":
+                pages.add(target)
     for path in sorted((root / EXPLORER_DATA).rglob("*")):
         if path.is_file():
             pages.add(path.relative_to(root).as_posix())
@@ -210,6 +214,7 @@ class ClaimSourceTests(unittest.TestCase):
         pages = published_pages()
         for page in (
             "README.md",
+            "PROJECT_GUIDE.md",
             "PLAN.md",
             "docs/PORTFOLIO_CASE_STUDY.md",
             "docs/decisions/pressure-probability.md",
@@ -278,6 +283,7 @@ class ClaimSourceTests(unittest.TestCase):
 #: and `docs/pivot/` are not binding and are not read.
 EXCLUSION_PAGES = (
     "README.md",
+    "PROJECT_GUIDE.md",
     "docs/process/AGENT_CONTRACT.md",
     "src/repo_model/event_eval.py",
     "src/repo_model/baseline.py",

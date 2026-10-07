@@ -302,6 +302,24 @@ def _atomic_write(path: Path, payload: bytes) -> None:
         raise
 
 
+def _previous_byte_count(output_root: Path, source_id: str, url: str) -> Optional[int]:
+    """The size of the latest saved snapshot of `source_id` fetched with `url`, or `None`."""
+
+    latest = None
+    for path in sorted((output_root / source_id).glob(f"*{MANIFEST_SUFFIX}")):
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            if manifest["url"] != url:
+                continue
+            when = datetime.fromisoformat(str(manifest["retrieved_at"]).replace("Z", "+00:00"))
+            size = int(manifest["byte_count"])
+        except (OSError, KeyError, TypeError, ValueError):
+            continue
+        if latest is None or when >= latest[0]:
+            latest = (when, size)
+    return None if latest is None else latest[1]
+
+
 def _save_snapshot(
     source_id: str,
     url: str,
@@ -313,6 +331,16 @@ def _save_snapshot(
     timestamp = retrieved_at or datetime.now(timezone.utc)
     stamp = timestamp.strftime("%Y%m%dT%H%M%SZ")
     digest = hashlib.sha256(payload).hexdigest()
+    # A response to the same request (same URL, so the same range) that is
+    # shorter than the last snapshot of it is a truncation or a partial answer,
+    # not a source that lost rows: refuse it before anything is written (#268).
+    previous = _previous_byte_count(output_root, source_id, url)
+    if previous is not None and len(payload) < previous:
+        raise ValueError(
+            f"{source_id}: the response to {url} is {len(payload)} bytes, shorter than the "
+            f"snapshot of the same request already saved ({previous} bytes); a shorter "
+            f"response is not archived as the new latest"
+        )
     snapshot_path = output_root / source_id / f"{stamp}_{digest[:12]}.{suffix}"
     _atomic_write(snapshot_path, payload)
     path = snapshot_path.resolve()
@@ -1547,25 +1575,6 @@ def load_snapshot_manifest(path: Path) -> SnapshotArtifact:
     return artifact
 
 
-def _next_weekday(value: date, days: int) -> date:
-    """`days` weekdays after `value`, holidays not skipped.
-
-    Only `_fr2004_rows` still counts this way. Skipping the market holidays
-    there dates 2018-12-21's value 12 calendar days out, past the 11 that
-    `nyfed_fr2004.release_lag.worst_case_calendar_days` declares, and moving
-    that bound is a declaration change for Eleonora (#201's pull request opens
-    the question). Every other adapter uses `_next_business_day`.
-    """
-
-    current = value
-    remaining = days
-    while remaining:
-        current += timedelta(days=1)
-        if current.weekday() < 5:
-            remaining -= 1
-    return current
-
-
 def _next_business_day(value: date, days: int) -> date:
     """`days` business days after `value`: the registry's `business_days` unit (#201).
 
@@ -2305,7 +2314,7 @@ def _fr2004_rows(
                 series_id=series_id,
                 ref_date=ref_date,
                 available_at=datetime.combine(
-                    _next_weekday(ref_date, lag_days), available_time, tzinfo=zone
+                    _next_business_day(ref_date, lag_days), available_time, tzinfo=zone
                 ),
                 value=value / FR2004_MILLIONS_PER_BILLION,
                 vintage_id=artifact.retrieved_at,

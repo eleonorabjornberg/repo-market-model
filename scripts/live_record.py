@@ -121,6 +121,11 @@ from repo_model.data import (  # noqa: E402
     market_holidays,
 )
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.ingest import (  # noqa: E402
+    _artifact_payload,
+    check_settlement_schedule,
+    load_snapshot_manifest,
+)
 from repo_model.splits import LookAheadError, SplitError  # noqa: E402
 
 #: A file without pressure model v2 (every day before v2 is logged).
@@ -583,7 +588,26 @@ def _settlements(pit_path: Path, days) -> dict:
     return out
 
 
-def extend_panel(real_rows, decision_day: date, horizon: int, pit_path: Path):
+def auction_records(raw_root: Path) -> list:
+    """Every record of the `treasury_auctions` snapshots under `raw_root`, verified.
+
+    The auctions `extend_panel` judges: the build checks the ones inside its own
+    window (`check_scheduled_settlements`), and the live run reads the
+    placeholder days beyond it.
+
+    Raises:
+        ValueError: if a snapshot fails its checksum.
+    """
+
+    records = []
+    for path in sorted(Path(raw_root).glob("*/*.manifest.json")):
+        artifact = load_snapshot_manifest(path)
+        if artifact.source_id == "treasury_auctions":
+            records.extend(json.loads(_artifact_payload(artifact)).get("data") or [])
+    return records
+
+
+def extend_panel(real_rows, decision_day: date, horizon: int, pit_path: Path, auctions):
     """The panel as of `decision_day`, extended through its `horizon`-th target day.
 
     Returns `(rows, target_days)`. The real rows must end on the decision day
@@ -591,8 +615,18 @@ def extend_panel(real_rows, decision_day: date, horizon: int, pit_path: Path):
     its decision, and a missing one would leave the as-of rule reading a
     placeholder's.
 
+    The placeholders read their settlement columns as scheduled inputs
+    (`treasury_auctions`' `scheduled_availability`), which holds only for an
+    auction that closed before the declared instant on the panel day before it
+    settles. The build checks that for the auctions inside its window; a
+    placeholder day is outside it, so `auctions` (`auction_records`) are checked
+    here against the real days and the placeholders together. A same-day
+    cash-management bill settling on a target day is therefore refused.
+
     Raises:
-        ValueError: if the real rows do not end on the previous decision day.
+        ValueError: if the real rows do not end on the previous decision day, or
+            an auction settling on a real or placeholder day closed after the
+            declared instant.
     """
 
     real = list(real_rows)
@@ -604,6 +638,8 @@ def extend_panel(real_rows, decision_day: date, horizon: int, pit_path: Path):
         )
     targets = next_decision_days(decision_day, horizon)
     days = [decision_day] + targets
+    block = json.loads(REGISTRY.read_text(encoding="utf-8"))["treasury_auctions"]["scheduled_availability"]
+    check_settlement_schedule(auctions, [row.date for row in real] + days, block)
     settled = _settlements(pit_path, days)
     last = real[-1].values
     extended = list(real)
@@ -1166,7 +1202,8 @@ def run_command(args) -> int:
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     splits = load_split_declaration(SPLITS)
     taus = tuple(float(tau) for tau in load_stress_thresholds(THRESHOLDS)["taus_bp"])
-    extended = {h: extend_panel(real, day, h, pit) for h in HORIZONS}
+    auctions = auction_records(raw_root)
+    extended = {h: extend_panel(real, day, h, pit, auctions) for h in HORIZONS}
     durations["build"] = clock.monotonic() - tick
 
     targets = []
