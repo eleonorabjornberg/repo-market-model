@@ -23,13 +23,21 @@ jobs:
   suite:
     name: unit tests (3.11)
     runs-on: ubuntu-latest
+    # The suite runs twice here (once with networking off, #262), about 20
+    # minutes each; a hung run is stopped well after that.
+    timeout-minutes: 90
     # 3.11 only, the one declared interpreter (requires-python, #53). 3.9 and
     # 3.10 left the matrix on the human's ruling of 30 Sep (#29): every
     # environment that runs this project is the rmm cloud environment, on 3.11.
     steps:
-      - uses: actions/checkout@v5
+      # The whole history, not a depth-1 clone: the results page and
+      # docs/status.json are stamped with the latest commit that changed an
+      # input, and the commit-stamp test skips on a shallow clone (#268).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
 
@@ -51,6 +59,15 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: src
         run: python3 -B -m unittest discover -s tests -v
+
+      # The results page is generated, never hand-edited; this refuses a stale
+      # one (the same check tests/test_visual.py makes, run as the command a
+      # contributor runs). Needs the history, hence fetch-depth above.
+      - name: Check the results page is current
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPATH: src
+        run: python3 -B scripts/emit_visual.py --check
 
       # The same suite again with the network namespace empty, so a test that
       # reaches a host fails here by name even if the in-process guard
@@ -83,10 +100,16 @@ jobs:
     # the whole suite here too, so a merge is never under-tested on the way in.
     name: unit tests with the ml extra (3.11)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      # The whole history, not a depth-1 clone: the results page and
+      # docs/status.json are stamped with the latest commit that changed an
+      # input, and the commit-stamp test skips on a shallow clone (#268).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
           cache: pip
@@ -122,15 +145,16 @@ jobs:
     name: owner attestation
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       issues: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
 

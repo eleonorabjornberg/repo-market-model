@@ -6290,9 +6290,15 @@ class AbsentValueReasonTests(unittest.TestCase):
                 [(fixture.SUPPRESSED_REF_DATE, (suppressed_series,))],
             )
 
+        fetches = []
+
         def nyfed_artifacts(rate_payload, volume_payload):
+            # One output root per fetch: these payloads are synthetic and differ
+            # in length for one request, which a shared root would refuse as a
+            # shorter re-fetch (#268).
+            fetches.append(None)
             artifacts = fetch_nyfed_reference_rate(
-                self.root / "nyfed",
+                self.root / "nyfed" / str(len(fetches)),
                 "sofr",
                 "2026-01-01",
                 "2026-01-06",
@@ -8577,3 +8583,65 @@ class FrbH8ExtractRowsTests(unittest.TestCase):
                 ingest.parse_snapshots(
                     [self.artifact(directory, text)], registry=ingest.load_source_registry()
                 )
+
+
+class ShorterRefetchTests(unittest.TestCase):
+    """A fetch refuses a response shorter than the previous snapshot of the same request (#268).
+
+    A truncated or partial response to the same request (same source, same URL)
+    would otherwise be archived as the new latest snapshot and read as if the
+    source had lost rows. The comparison is on the bytes as saved, per request:
+    the same URL means the same range. A different range (a rolling end date) is
+    a different request and is not compared.
+
+    **Recorded mutation**, 6 October 2026: in `ingest._save_snapshot`, the
+    refusal condition `if len(payload) < previous:` replaced by `if False:`
+    (confirmed applied by grep). `test_a_shorter_response_for_the_same_request_is_refused`,
+    `test_the_guard_covers_the_fred_adapter` and
+    `test_nothing_is_written_when_it_refuses` then fail with
+    `AssertionError: ValueError not raised`. Restored, all green.
+    """
+
+    LONG = b'{"refRates":[{"effectiveDate":"2026-01-02","percentRate":4.31},{"effectiveDate":"2026-01-03","percentRate":4.32}]}'
+    SHORT = b'{"refRates":[{"effectiveDate":"2026-01-02","percentRate":4.31}]}'
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+
+    def fetch(self, payload, end="2026-01-03"):
+        # The rate and volume requests answer with different bytes, as they do
+        # live; two requests answered with one payload would share a file.
+        def downloader(url):
+            return payload if "type=rate" in url else payload.replace(b"percentRate", b"volumeInBillions")
+
+        return fetch_nyfed_reference_rate(self.root, "sofr", "2026-01-01", end, downloader)
+
+    def test_the_same_or_a_longer_response_is_saved(self):
+        self.fetch(self.SHORT)
+        self.fetch(self.SHORT)
+        saved = self.fetch(self.LONG)
+        self.assertEqual(saved[0].path.read_bytes(), self.LONG)
+
+    def test_a_shorter_response_for_the_same_request_is_refused(self):
+        self.fetch(self.LONG)
+        with self.assertRaisesRegex(ValueError, "shorter than the snapshot"):
+            self.fetch(self.SHORT)
+
+    def test_nothing_is_written_when_it_refuses(self):
+        self.fetch(self.LONG)
+        before = sorted(path.name for path in (self.root / "nyfed_sofr").iterdir())
+        with self.assertRaises(ValueError):
+            self.fetch(self.SHORT)
+        self.assertEqual(sorted(path.name for path in (self.root / "nyfed_sofr").iterdir()), before)
+
+    def test_a_different_range_is_not_compared(self):
+        self.fetch(self.LONG, end="2026-01-03")
+        self.fetch(self.SHORT, end="2026-01-02")
+
+    def test_the_guard_covers_the_fred_adapter(self):
+        first = b"observation_date,IORB\n2026-01-01,4.30\n2026-01-02,4.30\n"
+        fetch_fred_macro(self.root, lambda _: first)
+        with self.assertRaisesRegex(ValueError, "shorter than the snapshot"):
+            fetch_fred_macro(self.root, lambda _: b"observation_date,IORB\n2026-01-01,4.30\n")
