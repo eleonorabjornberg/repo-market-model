@@ -27,6 +27,13 @@ directive asks for. Each one raises `ValueError`:
   The workflow runs it every day, and `live_score.py` runs it before it scores
   anything.
 
+* **The panel** (#275). Each record's commit also adds `live/<day>.panel.csv`, the
+  panel the day's run built. The record names it (`inputs.panel_sha256`), so its
+  digest on #225 and its Rekor anchor cover the panel through that field.
+  `check-append --panel` refuses a record's commit without it, and `verify`
+  refuses a panel that is not the one its record names, or was not added in its
+  record's commit. Days logged before #275 have none, and that passes.
+
 * **The anchor** (Eleonora's ruling of 6 October 2026: Sigstore Rekor). After
   each day's record is pushed, the workflow signs the file's SHA-256 keylessly
   (cosign, under the workflow's GitHub OIDC identity) into the public Rekor
@@ -46,7 +53,7 @@ token cannot touch: the entry sits in Rekor's public log.
 
     python3 scripts/live_integrity.py chain --live-dir LIVE_LOG --date YYYY-MM-DD
     python3 scripts/live_integrity.py environment --live-dir LIVE_LOG --date YYYY-MM-DD --block BLOCK.json
-    python3 scripts/live_integrity.py check-append --live-dir LIVE_LOG --date YYYY-MM-DD --base SHA|none
+    python3 scripts/live_integrity.py check-append --live-dir LIVE_LOG --date YYYY-MM-DD --base SHA|none [--panel]
     python3 scripts/live_integrity.py verify --live-dir LIVE_LOG --digests DIGESTS.jsonl
     python3 scripts/live_integrity.py unanchored --live-dir LIVE_LOG
     python3 scripts/live_integrity.py anchor-file --live-dir LIVE_LOG --date YYYY-MM-DD --entries ENTRIES.json
@@ -79,6 +86,9 @@ FILE_PATTERN = re.compile(r"^live/(\d{4}-\d{2}-\d{2})\.json$")
 #: The anchor file. Not `.json`, so no reader of `live/*.json` mistakes it for a record.
 ANCHOR_PATTERN = re.compile(r"^live/(\d{4}-\d{2}-\d{2})\.rekor$")
 #: The only identity whose Rekor entry anchors a day: this repository's workflow, on main.
+#: The day's panel, committed in the record's own commit (#275). Not `.json`, for the same reason.
+PANEL_PATTERN = re.compile(r"^live/(\d{4}-\d{2}-\d{2})\.panel\.csv$")
+
 IDENTITY = "https://github.com/eleonorabjornberg/repo-market-model/.github/workflows/live-log.yml@refs/heads/main"
 OIDC_ISSUER = "https://token.actions.githubusercontent.com"
 #: Fulcio's certificate extension for the OIDC issuer (v1: the raw string; v2: a DER UTF8String).
@@ -124,22 +134,28 @@ def _has_commits(repo: Path) -> bool:
 
 
 def _day_of(rel: str) -> date:
-    match = FILE_PATTERN.match(rel) or ANCHOR_PATTERN.match(rel)
+    match = FILE_PATTERN.match(rel) or ANCHOR_PATTERN.match(rel) or PANEL_PATTERN.match(rel)
     if not match:
-        raise ValueError(f"{rel} is not a live record path (live/YYYY-MM-DD.json or live/YYYY-MM-DD.rekor)")
+        raise ValueError(
+            f"{rel} is not a live record path (live/YYYY-MM-DD.json, .panel.csv or .rekor)"
+        )
     return date.fromisoformat(match.group(1))
 
 
-def require_add_only_commit(repo: Path, commit: str, expected: str | None = None) -> date:
-    """`commit` adds exactly one live record or anchor file, as the bot, and changes nothing else.
+def require_add_only_commit(
+    repo: Path, commit: str, expected: str | None = None, require_panel: bool = False
+) -> date:
+    """`commit` adds one live record (and its panel) or one anchor file, as the bot, and changes nothing else.
 
-    Returns the day it adds. `expected`, if given, is the only path it may add.
-    An anchor (`live/YYYY-MM-DD.rekor`) may only follow its day's record.
+    Returns the day it adds. `expected`, if given, is the record or anchor path
+    it must add. A record's commit may also add that day's `live/YYYY-MM-DD.panel.csv`
+    (#275), and must with `require_panel`. An anchor may only follow its day's record.
 
     Raises:
         ValueError: a merge, another author or committer, any change other
-            than adding one `live/YYYY-MM-DD.json` or `.rekor`, or an anchor
-            for a day whose record is not already in the log.
+            than adding one `live/YYYY-MM-DD.json` (with its panel) or `.rekor`,
+            a panel on its own, a missing panel when one is required, or an
+            anchor for a day whose record is not already in the log.
     """
 
     fields = _git(repo, "show", "-s", "--format=%an%n%ae%n%cn%n%ce%n%P", commit).split("\n")
@@ -151,11 +167,22 @@ def require_add_only_commit(repo: Path, commit: str, expected: str | None = None
     parent = parents[0] if parents else EMPTY_TREE
     lines = _git(repo, "diff", "--no-renames", "--name-status", parent, commit).splitlines()
     changes = [tuple(line.split("\t", 1)) for line in lines if line]
-    if expected is None and len(changes) == 1 and changes[0][0] == "A":
-        expected = changes[0][1]
-    if changes != [("A", expected)]:
+    added = [path for status, path in changes if status == "A"]
+    if expected is None:
+        candidates = [path for path in added if not PANEL_PATTERN.match(path)]
+        if len(candidates) == 1:
+            expected = candidates[0]
+    day = _day_of(expected) if expected is not None else None
+    allowed = [expected]
+    panel_rel = None
+    if expected is not None and FILE_PATTERN.match(expected):
+        panel_rel = f"live/{day.isoformat()}.panel.csv"
+        if panel_rel in added:
+            allowed.append(panel_rel)
+        elif require_panel:
+            raise ValueError(f"{commit} adds {expected} without its panel {panel_rel}")
+    if sorted(changes) != sorted(("A", path) for path in allowed if path):
         raise ValueError(f"{commit} must only add {expected or 'one live record file'}; it changes {changes}")
-    day = _day_of(expected)
     if ANCHOR_PATTERN.match(expected):
         record = f"live/{day.isoformat()}.json"
         if parent == EMPTY_TREE or subprocess.run(
@@ -165,9 +192,11 @@ def require_add_only_commit(repo: Path, commit: str, expected: str | None = None
     return day
 
 
-def require_append_only(repo: Path, base: str | None, day: date, anchor: bool = False) -> None:
+def require_append_only(
+    repo: Path, base: str | None, day: date, anchor: bool = False, panel: bool = False
+) -> None:
     """HEAD is one commit on top of `base` (`None`: a new branch) that only adds `live/<day>.json`
-    (`live/<day>.rekor` with `anchor`).
+    (`live/<day>.rekor` with `anchor`), and with `panel` also `live/<day>.panel.csv`.
 
     The workflow runs this after each commit and before `git push`.
 
@@ -180,7 +209,9 @@ def require_append_only(repo: Path, base: str | None, day: date, anchor: bool = 
     parents = _git(repo, "show", "-s", "--format=%P", head).split()
     if parents != ([base] if base else []):
         raise ValueError(f"HEAD must be one commit on top of {base or 'nothing'}; its parents are {parents}")
-    require_add_only_commit(repo, head, f"live/{day.isoformat()}.{'rekor' if anchor else 'json'}")
+    require_add_only_commit(
+        repo, head, f"live/{day.isoformat()}.{'rekor' if anchor else 'json'}", require_panel=panel
+    )
 
 
 def _paths(repo: Path) -> list:
@@ -200,6 +231,12 @@ def logged_files(repo: Path) -> list:
     for rel in paths:
         _day_of(rel)
     return sorted((_day_of(rel), rel) for rel in paths if FILE_PATTERN.match(rel))
+
+
+def panel_files(repo: Path) -> list:
+    """The committed panel files, oldest day first, as (day, path relative to the repo)."""
+
+    return sorted((_day_of(rel), rel) for rel in _paths(repo) if PANEL_PATTERN.match(rel))
 
 
 def anchor_files(repo: Path) -> list:
@@ -575,6 +612,14 @@ def verify(repo: Path, digests: dict) -> list:
         raise ValueError(f"days digested on #225 with no file in the log: {[d.isoformat() for d in missing]}")
     require_chain(repo, files)
     logged = {day: rel for day, rel in files}
+    for day, rel in panel_files(repo):
+        if day not in logged:
+            raise ValueError(f"{rel} is the panel of a day the log holds no record for")
+        named = json.loads((repo / logged[day]).read_text(encoding="utf-8"))["inputs"]["panel_sha256"]
+        if file_sha256(repo / rel) != named:
+            raise ValueError(f"{rel} is not the panel its record names: SHA-256 {named}")
+        if adding_commit(repo, rel) != adding_commit(repo, logged[day]):
+            raise ValueError(f"{rel} was not added in its record's commit")
     for day, rel in anchor_files(repo):
         if day not in logged:
             raise ValueError(f"{rel} anchors a day the log holds no record for")
@@ -597,6 +642,7 @@ def main(argv=None) -> int:
     check.add_argument("--date", required=True)
     check.add_argument("--base", required=True, help="origin/live-log's SHA, or 'none' for a new branch")
     check.add_argument("--anchor", action="store_true", help="the commit adds the day's .rekor file")
+    check.add_argument("--panel", action="store_true", help="the record's commit must add the day's panel too")
     missing = sub.add_parser("unanchored", help="the logged days with no anchor yet")
     missing.add_argument("--live-dir", required=True, type=Path)
     anchor = sub.add_parser("anchor-file", help="write the day's .rekor file from Rekor entries")
@@ -616,7 +662,9 @@ def main(argv=None) -> int:
         path = add_environment(args.live_dir, day, json.loads(args.block.read_text(encoding="utf-8")))
         print(json.dumps({"file": str(path)}))
     elif args.command == "check-append":
-        require_append_only(args.live_dir, None if args.base == "none" else args.base, day, args.anchor)
+        require_append_only(
+            args.live_dir, None if args.base == "none" else args.base, day, args.anchor, args.panel
+        )
         print(json.dumps({"append_only": f"live/{day.isoformat()}.{'rekor' if args.anchor else 'json'}"}))
     elif args.command == "unanchored":
         print(json.dumps({"unanchored": [d.isoformat() for d in unanchored(args.live_dir)]}))
