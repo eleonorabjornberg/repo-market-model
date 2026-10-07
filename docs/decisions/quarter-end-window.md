@@ -1,6 +1,6 @@
 # Decision: a quarter-end window and per-quarter peak pressure
 
-**Status: decided by Eleonora, 2 October 2026 (#140; ruling on PR #186). In force once PR #186 merges.** A session
+**Status: decided by Eleonora, 2 October 2026 (#140; ruling on PR #186). In force: merged in PR #186, 2 October 2026.** A session
 drafted it at her request of 2 October 2026, and she approved the draft with the two choices below. No published
 panel or declaration reads the column, and no record already published changes.
 

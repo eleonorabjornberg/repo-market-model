@@ -1,7 +1,7 @@
 # Decision: a bounded, listed defect is handled, not a reason to refuse a series
 
-**Status: decided by Eleonora, 30 September 2026. This record is drafted by a session to record her decision; it is in
-force once she (or, under "Delegated review" in `workflow.md`, the reviewer routine) has merged it.**
+**Status: decided by Eleonora, 30 September 2026. This record was drafted by a session to record her decision. In force: merged
+in PR #51, 30 September 2026.**
 
 ## The rule
 
