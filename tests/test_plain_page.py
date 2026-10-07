@@ -18,8 +18,8 @@ Held here, beyond that:
 
 Recorded mutation for the digit guard (`test_no_digit_stands_outside_a_generated_block`): a "5 bp" typed into the
 hand-written `<p class="lede">` of `site/plain.html` fails it with `AssertionError`.
-Recorded mutation for the dead-link guard (`test_every_repository_link_points_at_a_file`): a block linking to
-`docs/runs/does_not_exist.json` makes `plain_page._link` raise `PageError`.
+Recorded mutation for the dead-link guard (`test_every_repository_link_points_at_a_file`): a link in the page to
+`docs/runs/does_not_exist.json` fails it with `AssertionError`.
 """
 
 import importlib.util
