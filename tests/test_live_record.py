@@ -74,7 +74,7 @@ live = _script("live_record")
 score = _script("live_score")
 
 
-def _record(day="2026-10-02"):
+def _record(day="2026-10-02", pinned_sha="0" * 40):
     """A well-formed record, with made-up numbers, for the schema tests."""
 
     targets = []
@@ -99,7 +99,7 @@ def _record(day="2026-10-02"):
         "record_version": live.RECORD_VERSION,
         "decision_day": day,
         "decision_instant": f"{day}T16:00:00-04:00",
-        "code": {"sha": "0" * 40, "pinned_sha": "0" * 40},
+        "code": {"sha": "0" * 40, "pinned_sha": pinned_sha},
         "packages": {"python": "3.11.15", "numpy": "2.4.6", "scikit-learn": "1.9.1"},
         "inputs": {
             "snapshots": [
@@ -197,9 +197,13 @@ class WorkflowFileTests(unittest.TestCase):
                 self.assertRegex(line, r"uses: [\w.-]+/[\w./-]+@[0-9a-f]{40} # v\d")
 
     def test_the_ml_extra_is_pinned_to_the_versions_ci_uses(self):
+        # The workflow installs only from the hashed lock named by the pin
+        # manifest (#255); the lock holds the versions CI pins.
         text = "\n".join(self.lines)
-        self.assertIn('"numpy==2.4.6"', text)
-        self.assertIn('"scikit-learn==1.9.1"', text)
+        self.assertIn("--require-hashes", text)
+        lock = (ROOT / "metadata" / "live_requirements.lock").read_text(encoding="utf-8")
+        self.assertRegex(lock, r"(?m)^numpy==2\.4\.6 \\$")
+        self.assertRegex(lock, r"(?m)^scikit-learn==1\.9\.1 \\$")
         ci = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
         self.assertIn('"numpy==2.4.6" "scikit-learn==1.9.1"', ci)
 

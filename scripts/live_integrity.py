@@ -45,6 +45,7 @@ the repository token can set any author name. The anchor is the control the
 token cannot touch: the entry sits in Rekor's public log.
 
     python3 scripts/live_integrity.py chain --live-dir LIVE_LOG --date YYYY-MM-DD
+    python3 scripts/live_integrity.py environment --live-dir LIVE_LOG --date YYYY-MM-DD --block BLOCK.json
     python3 scripts/live_integrity.py check-append --live-dir LIVE_LOG --date YYYY-MM-DD --base SHA|none
     python3 scripts/live_integrity.py verify --live-dir LIVE_LOG --digests DIGESTS.jsonl
     python3 scripts/live_integrity.py unanchored --live-dir LIVE_LOG
@@ -263,6 +264,33 @@ def add_chain(repo: Path, day: date) -> Path:
     if chain is None:
         return path
     record["chain"] = chain
+    path.write_bytes(record_bytes(record))
+    return path
+
+
+def add_environment(repo: Path, day: date, block: dict) -> Path:
+    """Insert the `environment` block (`live_pin.environment_block`) into `day`'s new, uncommitted record (#255).
+
+    Raises:
+        ValueError: the file is missing, already committed, already carries an
+            environment, or is not serialised as the pinned code serialises a record.
+    """
+
+    rel = f"live/{day.isoformat()}.json"
+    path = Path(repo) / rel
+    if not path.is_file():
+        raise ValueError(f"{path} does not exist")
+    if _has_commits(repo) and subprocess.run(
+        ["git", "cat-file", "-e", f"HEAD:{rel}"], cwd=repo, capture_output=True
+    ).returncode == 0:
+        raise ValueError(f"{rel} is already committed: a logged file is never edited")
+    raw = path.read_bytes()
+    record = json.loads(raw)
+    if "environment" in record:
+        raise ValueError(f"{rel} already carries an environment")
+    if record_bytes(record) != raw:
+        raise ValueError(f"{rel} is not serialised as a record: refusing to rewrite it")
+    record["environment"] = block
     path.write_bytes(record_bytes(record))
     return path
 
@@ -560,6 +588,10 @@ def main(argv=None) -> int:
     chain = sub.add_parser("chain", help="insert the chain block into the day's new record")
     chain.add_argument("--live-dir", required=True, type=Path)
     chain.add_argument("--date", required=True)
+    env = sub.add_parser("environment", help="insert the environment block into the day's new record")
+    env.add_argument("--live-dir", required=True, type=Path)
+    env.add_argument("--date", required=True)
+    env.add_argument("--block", required=True, type=Path, help="`live_pin.py environment`'s output")
     check = sub.add_parser("check-append", help="the new commit only adds the day's record")
     check.add_argument("--live-dir", required=True, type=Path)
     check.add_argument("--date", required=True)
@@ -580,6 +612,9 @@ def main(argv=None) -> int:
         path = add_chain(args.live_dir, day)
         record = json.loads(path.read_text(encoding="utf-8"))
         print(json.dumps({"file": str(path), "chain": record.get("chain")}))
+    elif args.command == "environment":
+        path = add_environment(args.live_dir, day, json.loads(args.block.read_text(encoding="utf-8")))
+        print(json.dumps({"file": str(path)}))
     elif args.command == "check-append":
         require_append_only(args.live_dir, None if args.base == "none" else args.base, day, args.anchor)
         print(json.dumps({"append_only": f"live/{day.isoformat()}.{'rekor' if args.anchor else 'json'}"}))

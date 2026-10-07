@@ -13,7 +13,7 @@ name: live-log
 # chains each new record to the one before it (`chain`), checks that the
 # day's commit only adds the day's file before it is pushed (`check-append`),
 # and every day re-checks every logged file against its digest on the
-# "Live record: daily digests" issue, its chain and its commit (`verify`).
+# digest issue (#225), its chain and its commit (`verify`).
 # A mismatch fails the run, and the failure reaches the failed-runs issue.
 #
 # Each day's digest is also anchored outside the repository's reach, in the
@@ -26,9 +26,11 @@ name: live-log
 # anchor never blocks a record. How to check one online: `ONLINE_COMMAND` in
 # `scripts/live_integrity.py`.
 #
-# The code that makes the record is pinned (`scripts/live_record.py pin`): this
-# file runs from main, and the record is made from a worktree at the pinned
-# SHA, which changes only through a dated version-bump record.
+# The code that makes the record is pinned by a literal in
+# `metadata/live_pin.json` (#255): this file runs from main, reads the pin with
+# jq, and makes the record from a worktree at that SHA. The pin changes only
+# through a registered transition (`scripts/live_pin.py`), a dated decision
+# record and Eleonora's own approval.
 #
 # No third-party action is used: Python 3.11 comes from the runner's own tool
 # cache, and git, gh, curl and jq are the runner's. So there is no action to
@@ -56,7 +58,7 @@ concurrency:
 jobs:
   log:
     name: log the day's forecast
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
       GH_TOKEN: ${{ github.token }}
@@ -66,29 +68,45 @@ jobs:
       # One OpenMP thread: the gbm's numbers do not depend on it, and on a
       # shared runner several threads per fit only slow the nested-PID replay.
       OMP_NUM_THREADS: "1"
+      # The two issues the run writes to, by number and never by title (#255).
+      DIGEST_ISSUE: 225
+      FAILED_RUNS_ISSUE: 237
     steps:
-      - name: Python 3.11 from the runner's tool cache
-        id: python
-        run: |
-          base=$(ls -d /opt/hostedtoolcache/Python/3.11.*/x64 | sort -V | tail -1)
-          test -x "$base/bin/python3"
-          echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
-          echo "DAY=$(TZ=America/New_York date +%F)" >> "$GITHUB_ENV"
-
       - name: Check out main and the pinned code
         id: checkout
         run: |
           git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" main
-          pin=$(cd main && PYTHONPATH=src "$PY" -B scripts/live_record.py pin --ref origin/main)
+          # The pin is a literal in a manifest, read with jq: no repository
+          # Python runs before the pinned code is checked out (#255).
+          pin=$(jq -r .current main/metadata/live_pin.json)
+          echo "$pin" | grep -Eq '^[0-9a-f]{40}$'
+          git -C main merge-base --is-ancestor "$pin" origin/main
           git -C main worktree add --quiet --detach ../pinned "$pin"
           echo "PIN=$pin" >> "$GITHUB_ENV"
 
-      - name: Install the ml extra at the versions CI pins
+      - name: Python from the runner's tool cache, at the pinned patch release
+        id: python
+        run: |
+          patch=$(jq -r .environment.python main/metadata/live_pin.json)
+          base=/opt/hostedtoolcache/Python/$patch/x64
+          test -x "$base/bin/python3"
+          echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
+          echo "DAY=$(TZ=America/New_York date +%F)" >> "$GITHUB_ENV"
+
+      - name: Verify the pin is a registered transition
+        id: pin
+        run: |
+          "$PY" -B main/scripts/live_pin.py verify --repo main --ref origin/main
+
+      - name: Install the locked environment
         id: install
         run: |
+          lock=main/$(jq -r .environment.lock main/metadata/live_pin.json)
+          echo "$(jq -r .environment.lock_sha256 main/metadata/live_pin.json)  $lock" | sha256sum -c -
           "$PY" -m venv venv
-          venv/bin/python -m pip install --quiet "./pinned[ml]" "numpy==2.4.6" "scikit-learn==1.9.1"
-          venv/bin/python -m pip freeze | grep -iE '^(numpy|scikit-learn)=='
+          venv/bin/python -m pip install --quiet --require-hashes --no-deps --only-binary :all: -r "$lock"
+          venv/bin/python -m pip freeze > freeze.txt
+          cat freeze.txt
 
       - name: Check out the live-log branch
         id: branch
@@ -123,6 +141,9 @@ jobs:
           fi
           base=$(git rev-parse --verify -q HEAD || echo none)
           "$PY" -B ../main/scripts/live_integrity.py chain --live-dir . --date "$DAY"
+          "$PY" -B ../main/scripts/live_pin.py environment --repo ../main --freeze ../freeze.txt \
+            --python "$(../venv/bin/python -c 'import platform; print(platform.python_version())')" > ../environment.json
+          "$PY" -B ../main/scripts/live_integrity.py environment --live-dir . --date "$DAY" --block ../environment.json
           git add "$file"
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
@@ -167,8 +188,7 @@ jobs:
             "$PY" -B ../main/scripts/live_integrity.py check-append --live-dir . --date "$day" --base "$base" --anchor || return 1
             git push --quiet origin HEAD:refs/heads/live-log || return 1
             if [ "$day" != "$DAY" ]; then
-              n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
-                -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+              n=$DIGEST_ISSUE
               {
                 echo "$day anchored late in Sigstore Rekor (the digest above is unchanged):"
                 echo
@@ -198,13 +218,7 @@ jobs:
       - name: Report an anchor that failed
         if: always() && steps.anchor.outcome == 'failure'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
-          if [ -z "$n" ]; then
-            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
-              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
-              -f 'labels[]=finding' -q .number)
-          fi
+          n=$FAILED_RUNS_ISSUE
           echo "Anchor failed: $DAY. The record is written; the Rekor anchor is not. A later run anchors every unanchored day (#254). Run: $RUN_URL" > anchor-failed.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@anchor-failed.md >/dev/null
 
@@ -212,8 +226,7 @@ jobs:
         id: digest
         if: env.WROTE == '1'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+          n=$DIGEST_ISSUE
           test -n "$n"
           {
             echo "$DAY: \`live/$DAY.json\`"
@@ -232,8 +245,7 @@ jobs:
         id: integrity
         if: always() && steps.branch.outcome == 'success'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=all&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: daily digests") | .number' | head -1)
+          n=$DIGEST_ISSUE
           test -n "$n"
           gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" \
             -q '.[] | {author: .user.login, body: .body} | @json' > digests.jsonl
@@ -242,13 +254,7 @@ jobs:
       - name: Report missed days
         if: always() && env.MISSED_ANY == '1'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
-          if [ -z "$n" ]; then
-            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
-              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
-              -f 'labels[]=finding' -q .number)
-          fi
+          n=$FAILED_RUNS_ISSUE
           echo "Missed: decision days with no record, before $DAY: $MISSED. They stay missing (#215). Run: $RUN_URL" > missed.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@missed.md >/dev/null
 
@@ -258,6 +264,7 @@ jobs:
           OUTCOMES: >-
             python=${{ steps.python.outcome }}
             checkout=${{ steps.checkout.outcome }}
+            pin=${{ steps.pin.outcome }}
             install=${{ steps.install.outcome }}
             branch=${{ steps.branch.outcome }}
             record=${{ steps.record.outcome }}
@@ -269,22 +276,14 @@ jobs:
           if [ "$step" = "record" ] && [ -f status.json ]; then
             step="record ($(sed -E 's/.*"step": "([^"]*)".*/\1/' status.json))"
           fi
-          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
-          if [ -z "$n" ]; then
-            n=$(gh api "repos/$REPO/issues" -f title="Live record: failed runs" \
-              -f body="Failed or missed runs of .github/workflows/live-log.yml (#215). A missed day is never backfilled." \
-              -f 'labels[]=finding' -q .number)
-          fi
+          n=$FAILED_RUNS_ISSUE
           echo "Failed: $DAY, at step ${step:-unknown}. No record was appended for the day unless the digest issue shows one. Run: $RUN_URL" > failed.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@failed.md >/dev/null
 
       - name: Say a run succeeded after a failure
         if: success() && env.WROTE == '1'
         run: |
-          n=$(gh api --paginate "repos/$REPO/issues?state=open&per_page=100" \
-            -q '.[] | select(.pull_request|not) | select(.title=="Live record: failed runs") | .number' | head -1)
-          if [ -z "$n" ]; then exit 0; fi
+          n=$FAILED_RUNS_ISSUE
           last=$(gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" -q '.[-1].body' | tail -1)
           case "$last" in
             Failed:*|Missed:*)
