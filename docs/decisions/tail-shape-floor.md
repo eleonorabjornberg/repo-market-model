@@ -2,8 +2,7 @@
 
 **Status: decided by Eleonora, 1 October 2026, in her ruling on
 [#63](https://github.com/eleonorabjornberg/repo-market-model/issues/63). A session drafted this record to
-record her decision. It is in force once she, or the reviewer routine under "Delegated review" in `workflow.md`,
-has merged it. It supersedes [`tail-refusal.md`](tail-refusal.md).**
+record her decision. In force: merged in PR #66, 1 October 2026. It supersedes [`tail-refusal.md`](tail-refusal.md).**
 
 ## The ruling
 

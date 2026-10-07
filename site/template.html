@@ -260,7 +260,7 @@ table.fttab.fdtab td{white-space:nowrap}
   <div class="prose intro">
     <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
   </div>
-  <p class="uselimit"><b>Use limitation.</b> {{use_limitation}}</p>
+  <p class="uselimit"><b>Limits.</b> {{use_limitation}} The final test was near-blind, and the central range is not yet fully calibrated. <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/use-limitation.md">Method and limits</a></p>
   <nav aria-label="Chapters">
     <ol>
       <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
@@ -279,8 +279,7 @@ table.fttab.fdtab td{white-space:nowrap}
 <!-- start-here -->
 <div id="start">
   <p class="kicker">Start here</p>
-  <div class="prose"><p>New to this market? These views are for you, in order. Each says what it shows in one sentence, draws it, explains it in plain words, and ends with a fold that leads into the technical chapter below.</p></div>
-  {{opened_note}}
+  <div class="prose"><p>New to this market? Five short views, in order.</p></div>
   <nav aria-label="Start here">{{newcomer_nav}}</nav>
 
 <section id="n1" aria-labelledby="n1-title">
@@ -295,22 +294,18 @@ table.fttab.fdtab td{white-space:nowrap}
     </div>
     <div id="n1bandkey" hidden>
       <ul class="key" aria-label="Key: reserve-scarcity state">{{band_key}}</ul>
-      <p class="held-note">Shaded from {{band_first}}, by the reserve-scarcity state (#115) as it could be read that day. {{band_caption}} How it is built: <a href="#n3">N3</a>.</p>
     </div>
     <div class="chart" id="n1chart"><div class="tip"></div></div>
-    <p class="held-note">{{n1_held_note}}</p>
   </figure>
   <ol class="events" id="n1events">{{n1_episode_list}}</ol>
   <div class="prose">
-    <p>SOFR is the typical rate on {{dfn_overnight}} {{dfn_repo}}: cash lent until the next business day against Treasury securities. Much of that cash comes from {{dfn_money_fund}} and goes to {{dfn_dealer}} (<a href="{{n1_src_triparty}}">source</a>).</p>
-    <p>The zero line is not &ldquo;normal&rdquo;. It is the rate the Fed pays banks on their reserves: below it, cash in the market costs less than that, and above it, more. SOFR closed at or below zero on {{n1_at_or_below}}. More than +{{pressure_bp}} bp above it, the project calls a day a pressure day.</p>
-    <p>This shows what happened, not what could have been predicted. {{c_sofr_publication}}</p>
+    <p>SOFR is the typical rate on {{dfn_overnight}} {{dfn_repo}}, cash lent against Treasury securities, mostly by {{dfn_money_fund}} to {{dfn_dealer}}. Zero on the chart is the rate the Fed pays banks on their reserves. SOFR closed at or below it on {{n1_at_or_below}}. More than +{{pressure_bp}} bp above it, the project calls a day a pressure day.</p>
   </div>
   <details>
     <summary>Go deeper: how this line is drawn</summary>
     <ul>
       <li>The line is SOFR minus the Fed's rate on reserves, each in percent as published, so the difference is a whole number of basis points. Before {{n1_iorb_from}} the Fed paid IOER, its rate on excess reserves, and the line uses it.</li>
-      <li>The +{{pressure_bp}} bp line is the project's headline pressure threshold, and a day counts only when it is strictly above it (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>).</li>
+      <li>The +{{pressure_bp}} bp line is the project's headline pressure threshold, and a day counts only when it is strictly above it (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). {{c_sofr_publication}} The chart shows what happened, not what could have been predicted.</li>
       <li>With the scale clipped at +{{clip_bp}} bp, {{n1_off_scale}} counted here rise above it and are drawn as triangles on the top edge; the largest was {{n1_spike}}.</li>
     </ul>
     <p>The same line, with the Fed's balance-sheet runoff, the stress windows and the middle half of each day's trades, is <a href="#history">chapter 2</a>.</p>
@@ -329,17 +324,16 @@ table.fttab.fdtab td{white-space:nowrap}
       <li class="b2"><i aria-hidden="true"></i>Above +{{n2_tau2}} bp (square)</li>
       <li class="b3"><i aria-hidden="true"></i>Above +{{n2_tau3}} bp (diamond)</li>
       <li class="b4"><i aria-hidden="true"></i>Above +{{n2_tau4}} bp (triangle)</li>
-      <li class="held"><i aria-hidden="true"></i>Held out, not counted</li>
     </ul>
     <div class="chart" id="n2chart"><div class="tip"></div></div>
-    <p class="held-note">{{n2_held_note}}</p>
   </figure>
   <div class="prose">
-    <p>That is what makes forecasting pressure hard. A forecast that always said &ldquo;no pressure tomorrow&rdquo; would have been right on {{n2_quiet}} days counted here, and would have missed every pressure day. So the project never grades a forecast by how often it is right: it compares it with <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">simple benchmarks</a> on the same days.</p>
-    <p>Pressure days also bunch together. {{n2_runs}} One of those benchmarks simply carries today forward.</p>
+    <p>That is what makes forecasting pressure hard. A forecast that always said &ldquo;no pressure tomorrow&rdquo; would have been right on {{n2_quiet}} days, and missed every pressure day. So a forecast is graded against <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">simple benchmarks</a>, not by how often it is right. {{n2_runs}}</p>
   </div>
-  <p class="note" style="margin-top:18px">Every day above +{{n2_tau3}} bp, with its spread. They are too few for a rate, so they are listed one by one.</p>
-  <ol class="tail" id="n2tail">{{n2_tail_list}}</ol>
+  <details>
+    <summary>Show every day above +{{n2_tau3}} bp</summary>
+    <ol class="tail" id="n2tail">{{n2_tail_list}}</ol>
+  </details>
   <details>
     <summary>Go deeper: which days are scored</summary>
     <ul>
@@ -354,28 +348,27 @@ table.fttab.fdtab td{white-space:nowrap}
   <h2 id="n3-title"><span class="n">N3</span>When does it happen?</h2>
   <p class="prose lede">{{n3_lede}}</p>
   <div class="prose">
-    <p>Two things are crossed here. One is the calendar: the days around each quarter's end. The other is spare cash. Money market funds can park cash at the Fed in {{dfn_on_rrp}}; this view calls cash scarce on a day when the facility took in less than {{n3_break}}, and abundant otherwise.</p>
+    <p>Two things are crossed: the days around each quarter's end, and spare cash. Money market funds park cash at the Fed in {{dfn_on_rrp}}; cash is scarce on a day when the facility took in less than {{n3_break}}.</p>
   </div>
   <figure>
     <figcaption><div class="t">Share of days with SOFR more than +{{pressure_bp}} bp above IORB</div>
       <div class="s">Business days from {{n3_first}} to {{n3_last}}, in four groups. Dot: the share; bar: its interval; circle: quarter-end window; square: other days</div></figcaption>
     <div class="chart" id="n3chart"><div class="tip"></div></div>
-    <div class="grid2" role="region" aria-label="Table: share of days more than +{{pressure_bp}} bp above IORB, by quarter-end and cash" tabindex="0">{{n3_table}}</div>
-    <p class="held-note">{{n3_held_note}}</p>
+    <details>
+      <summary>Show the numbers</summary>
+      <div class="grid2" role="region" aria-label="Table: share of days more than +{{pressure_bp}} bp above IORB, by quarter-end and cash" tabindex="0">{{n3_table}}</div>
+    </details>
   </figure>
   <div class="prose">
-    <p>{{c_n3_quarter_end}} {{c_n3_fed_cash}}</p>
-    <p>{{n3_small}} Read each cell as a rate, not as a rule. {{n3_reading}}</p>
-    <p>This shows what happened, not what could have been predicted.</p>
+    <p>{{c_n3_quarter_end}}</p>
+    <p>{{n3_small}}</p>
   </div>
   <figure>
     <figcaption><div class="t">The reserve-scarcity state behind the spread</div>
       <div class="s">Business days from {{band_first}} to {{band_last}}. Top: SOFR minus IORB in basis points, shaded by the state. Middle: the state, 0 to 3. Bottom: days ON RRP was below {{band_break}}</div></figcaption>
     <ul class="key" aria-label="Key: reserve-scarcity state">{{band_key}}<li class="buf"><i aria-hidden="true"></i>ON RRP below {{band_break}}</li></ul>
     <div class="chart" id="n3band"><div class="tip"></div></div>
-    <p class="held-note">Reserve-scarcity state (#115): {{band_status}}.</p>
     <p class="held-note">{{band_caption}}</p>
-    <p class="held-note">{{band_held_note}}</p>
   </figure>
   <details>
     <summary>Go deeper: how the cells are drawn</summary>
@@ -387,7 +380,7 @@ table.fttab.fdtab td{white-space:nowrap}
     </ul>
     <p>The band:</p>
     <ul>
-      <li>{{band_read}}</li>
+      <li>{{band_read}} The band describes the period; it is not a working indicator, and no forecast on this page reads it.</li>
       <li>{{band_asof}}</li>
       <li>The bottom lane marks the days the cells above call scarce cash, from the same {{decision}} reading. {{band_interval}}</li>
     </ul>
@@ -402,30 +395,31 @@ table.fttab.fdtab td{white-space:nowrap}
   <h2 id="n4-title"><span class="n">N4</span>Who lends to whom</h2>
   <p class="prose lede">{{n4_lede}}</p>
   <div class="prose">
-    <p>Cash moves between the Fed, the Treasury, money funds, banks, dealers, the funds dealers lend to, and other cash lenders such as the Federal Home Loan Banks. Each public series that measures one of those flows is a tag: the balance at {{dfn_on_rrp}}, the balance of {{dfn_tga}}, the gap between {{dfn_effr}} and IORB, take-up at {{dfn_srf}}, and the {{dfn_percentile}}s of each day's SOFR trades, among others. {{c_fhlb_fed_funds}}</p>
-    <p>Three of the New York Fed's rates price the repo segments. <b>TGCR</b> is {{dfn_triparty}} general collateral repo, leaving out the Fed's own trades. <b>BGCR</b> is tri-party plus {{dfn_gcf}}. <b>SOFR</b> is BGCR plus FICC-cleared {{dfn_dvp}}, with the lowest-rate 20 percent of DVP volume trimmed. Non-centrally cleared bilateral repo, traded directly between two firms without a clearing house, is in none of the three. {{c_segments_none}}</p>
+    <p>Cash moves between the Fed, the Treasury, money funds, banks, dealers and other lenders. Each public series that measures one of those flows is a tag on the map: for example the balance at {{dfn_on_rrp}}, the balance of {{dfn_tga}}, the gap between {{dfn_effr}} and IORB, take-up at {{dfn_srf}}, or the {{dfn_percentile}}s of each day's SOFR trades.</p>
+    <p>Three New York Fed rates price the repo segments: <b>TGCR</b> ({{dfn_triparty}}), <b>BGCR</b> (tri-party plus {{dfn_gcf}}) and <b>SOFR</b> (BGCR plus cleared {{dfn_dvp}}). Direct bilateral repo is in none of them.</p>
   </div>
   <figure>
     <figcaption><div class="t">Where the cash goes, and which public series measure each flow</div>
       <div class="s">Each arrow points the way the cash goes. Its number matches the list, where each flow's tags open a detail panel</div></figcaption>
     <div class="n4map">{{n4_map}}</div>
     <ul class="kinds" aria-label="Line styles">{{n4_kinds}}<li><svg viewBox="0 0 40 10" aria-hidden="true"><line x1="0" y1="5" x2="40" y2="5" style="stroke:var(--ink-3)"/></svg>Faint: no registered series on this map measures the flow</li></ul>
-    {{n4_list}}
+    <details>
+      <summary>Show each flow and its series</summary>
+      {{n4_list}}
+    </details>
     <div class="n4details">{{n4_details}}</div>
   </figure>
   <figure>
-    <figcaption><div class="t">The three segment rates, each less IORB, on days chosen by a rule fixed on 2 October 2026 that reads no rate or spread</div>
-      <div class="s">Basis points. {{n4_seg_counts}}, chosen by one rule that reads only inputs known before each day: {{n4_seg_rule}}. The rule never reads a rate or a spread</div></figcaption>
+    <figcaption><div class="t">The three repo rates on quarter-ends and tax days</div>
+      <div class="s">Basis points above IORB. {{n4_seg_counts}}</div></figcaption>
     <div class="chart" id="n4seg"><div class="tip"></div></div>
-    <p class="held-note">{{n4_seg_held}}</p>
   </figure>
   <details class="wide">
     <summary>Go deeper: the status of every tag, and the segment days</summary>
     {{n4_status_table}}
     <ul>
-      <li><b>Used</b>: a published run record in <code>docs/runs/</code> declares every field the tag reads. <b>Tried and hurt</b>: a published comparison that differs only by adding the tag's fields shows a worse paired score, with its interval wholly on that side. <b>In progress</b>: a directive for it is labelled in progress or has an open pull request, or it was scored and left off and its publishing question is still open. <b>Registered but unused</b>: the sources registry carries it and nothing above holds; &ldquo;queued&rdquo; names an open directive not yet started. <b>Not registered</b>: no source in the registry carries it.</li>
-      <li>&ldquo;Data in this repository&rdquo; says whether a snapshot of the tag's source, with its manifest, is tracked under <code>tests/fixtures/snapshots/</code>.</li>
-      <li>Directive and pull-request states are read from <code>docs/visual/issues.json</code>, retrieved from GitHub on {{n4_retrieved}}. A state that changed since then shows on the next refresh.</li>
+      <li><b>Used</b>: a published forecast reads it. <b>Tried and hurt</b>: adding it made the forecast worse. <b>In progress</b>: being worked on. <b>Registered but unused</b>: the project has the source and no forecast reads it. <b>Not registered</b>: the project has no source for it.</li>
+      <li>The days were chosen by one rule that reads only inputs known before each day: {{n4_seg_rule}}. It never reads a rate or a spread.</li>
       <li>The segment chart's days come from the panel's <code>quarter_end</code> flag (the last business day of the quarter), the statutory corporate tax deadlines, the scheduled coupon settlements, and the New York Fed's ON RRP results read as they stood at each day's decision. The values are below.</li>
     </ul>
     {{n4_seg_table}}
@@ -437,21 +431,19 @@ table.fttab.fdtab td{white-space:nowrap}
   <h2 id="n5-title"><span class="n">N5</span>A quarter-end squeeze, step by step</h2>
   <p class="prose lede">{{n5_lede}}</p>
   <div class="prose">
-    <p>Each step is one link in the chain the Fed's staff describe, with its sources. It lights the flows it concerns on the map from N4 and charts the public series that measure them, {{n5_window}} business days either side of each quarter-end. A filled point was public at {{n5_decision}} New York time on the business day before the quarter-end, when the forecast for that day is made; a hollow point was not public yet.</p>
-    <p>This shows what happened on two quarter-ends, not what could have been predicted, and not a rule for every quarter-end.</p>
+    <p>Each step is one link in the chain the Fed's staff describe. It lights the flows on the map and charts the series that measure them, {{n5_window}} business days either side of each quarter-end. A filled point was public at {{n5_decision}} the business day before; a hollow point was not yet.</p>
   </div>
   <figure>
-    <figcaption><div class="t">A quarter-end, step by step</div>
-      <div class="s">{{n5_rule}}</div></figcaption>
+    <figcaption><div class="t">A quarter-end, step by step</div></figcaption>
     <div class="controls"><div class="seg" role="group" aria-label="Walk through the steps"><button type="button" id="n5prev" aria-controls="n5panels">Previous step</button><button type="button" id="n5next" aria-controls="n5panels">Next step</button></div></div>
     {{n5_step_list}}
     <div id="n5panels" aria-live="polite">{{n5_panels}}</div>
     <div class="n4map n5map">{{n5_map}}</div>
     <div class="chart" id="n5chart"><div class="tip"></div></div>
-    <p class="held-note">{{n5_held_note}}</p>
   </figure>
   <details class="wide">
     <summary>Go deeper: the values, and how the two quarter-ends were chosen</summary>
+    <p>{{n5_rule}}</p>
     <ul>
       <li>The two quarter-ends come from one rule, declared in the generator before any chart was drawn. It reads only the panel's <code>quarter_end</code> flag (the quarter's last business day) and the New York Fed's ON RRP results, read as they stood at each decision, as N3 and N4 read them (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
       <li>The Treasury's account and reserve balances are drawn as the change since the window's first day, because their levels differ by thousands of billions. Rates are drawn less IORB, in whole basis points.</li>
@@ -468,57 +460,56 @@ table.fttab.fdtab td{white-space:nowrap}
   <p class="kicker">The result</p>
   <h2 id="final-test-title">The final test</h2>
   <p class="prose lede">{{ft_verdict}}</p>
-  <p class="uselimit"><b>Use limitation.</b> {{use_limitation}}</p>
-  {{ft_claim}}
   <figure>
     <figcaption><div class="t">The model against carrying the latest spread forward, {{ft_window}}</div>
-      <div class="s">Above: mean five-quantile score over the {{ft_days}} scored days, in basis points; lower is better. Below: the mean paired difference, persistence minus the model, with its {{ft_level}}% interval; right of zero favours the model</div></figcaption>
+      <div class="s">Above: average score over {{ft_days}} days, in basis points; lower is better. Below: the model's edge over carrying the spread forward, with its {{ft_level}}% interval; right of zero favours the model</div></figcaption>
     <div class="chart" id="ftchart"><div class="tip"></div></div>
   </figure>
   <h3 class="sub">How much to trust the pass</h3>
-  <p class="ftposthoc">Post hoc; decides nothing. These checks were run after the result, on the same days.</p>
   {{ft_robust_sentences}}
   <figure>
-    <figcaption><div class="t">What the checks show, in basis points of CRPS</div>
-      <div class="s">Above: the mean paired difference, persistence minus the model, for each group, with its {{ft_level}}% interval; right of zero, the model is better. Below: the mean after dropping the days where the model did best.</div></figcaption>
+    <figcaption><div class="t">How the edge holds up, in basis points</div>
+      <div class="s">Above: the model's edge in each group, with its {{ft_level}}% interval; right of zero, the model is better. Below: the edge after dropping the days where the model did best</div></figcaption>
     <div class="chart" id="ftrob"><div class="tip"></div></div>
   </figure>
   {{ft_numbers}}
-  <h3 class="sub">How the test was run</h3>
-  <ul class="ftlist">
-    <li>{{ft_fixed}}</li>
-    <li>{{ft_once}}</li>
-    <li>{{ft_benchmark}}</li>
-    <li>{{ft_switch}}</li>
-  </ul>
-  <p class="ftlinks">{{ft_links}}</p>
+  <details>
+    <summary>How the test was run</summary>
+    <ul class="ftlist">
+      <li>{{ft_fixed}}</li>
+      <li>{{ft_once}}</li>
+      <li>{{ft_benchmark}}</li>
+      <li>{{ft_switch}}</li>
+    </ul>
+    {{ft_claim}}
+    <p class="ftlinks">{{ft_links}}</p>
+  </details>
 </section>
 
 <section id="forecast-actual" aria-labelledby="forecast-actual-title">
   <p class="kicker">Day by day</p>
   <h2 id="forecast-actual-title">Forecast against what happened</h2>
-  <p class="prose lede">{{fd_lede}}</p>
   <figure>
     <figcaption><div class="t">The forecast one day ahead and the spread that came, <span id="fdyearlabel"></span></div>
-      <div class="s">SOFR − IORB in basis points. Points: the actual spread. Line: the model's median forecast. Shaded: its 90% band and, darker, its 50% band, {{fd_band_50}}</div></figcaption>
-    <p class="fdcontrol"><label for="fdyear">Year</label> <select id="fdyear">{{fd_year_options}}</select></p>
+      <div class="s">SOFR − IORB in basis points. Points: the actual spread. Line: the model's median forecast. Shaded: its 90% band. Circled: the biggest misses</div></figcaption>
     <div class="chart" id="fdchart"><div class="tip"></div></div>
   </figure>
-  {{fd_table}}
-  {{fd_misses}}
-  <p class="prose fdhidden">{{fd_hidden}}</p>
-  <p class="ftlinks">{{fd_links}}</p>
+  {{fd_takeaways}}
+  <details>
+    <summary>Show the numbers</summary>
+    {{fd_table}}
+    {{fd_misses}}
+    <p class="ftlinks">{{fd_links}}</p>
+  </details>
 </section>
 
 <section id="plumbing">
   <h2><span class="n">1</span>The plumbing</h2>
   <p class="prose lede">The Fed brackets the market with a firm floor, its overnight reverse repo rate, and a soft ceiling, its standing repo rate. Under the implementation note of {{note_issued}}, the standing repo rate is {{srp_vs_iorb}} bp from IORB and the overnight reverse repo rate {{rrp_vs_iorb}} bp.</p>
   <div class="prose">
-    <p><b>SOFR</b> is the cost of borrowing cash overnight with Treasury securities as collateral. {{c_sofr_median}} On {{shown_day}} it was set from about {{latest_volume}} of trades. {{c_triparty_actors}}</p>
-    <p>Bank-to-bank lending is a different rate, the federal funds rate. {{c_fhlb_fed_funds}}</p>
-    <p><b>Why IORB is the anchor.</b> {{c_iorb_pays}} A bank can therefore always earn IORB without lending to anyone, so it has little reason to lend in repo for less. SOFR above IORB means spare cash is not reaching the repo market at the Fed's rate.</p>
-    <p><b>Why the floor is firm and the ceiling is soft.</b> Money funds do not earn IORB, which is paid to banks. {{c_mmf_on_rrp}} The overnight reverse repo rate is therefore a floor under what a money fund will accept. {{c_srf_access}} SOFR can pass the ceiling: on {{srp_cross_day}} it printed {{srp_cross_sofr}}, above the standing repo rate of {{srp_cross_rate}} then in force (event {{srp_event_n}} in chapter 2).</p>
-    <p>Who lends cash to whom is mapped in <a href="#n4">N4</a>. This chapter goes deeper: the repo segments the New York Fed's reference rates are built from, and the rates the Fed sets on either side of them.</p>
+    <p><b>SOFR</b> is the cost of borrowing cash overnight against Treasuries. {{c_sofr_median}} On {{shown_day}} it was set from about {{latest_volume}} of trades.</p>
+    <p><b>Why IORB is the anchor.</b> {{c_iorb_pays}} A bank can always earn IORB without lending, so SOFR above IORB means spare cash is not reaching the repo market.</p>
+    <p><b>A firm floor, a soft ceiling.</b> Money funds do not earn IORB, so the overnight reverse repo rate is a floor under what they accept. The ceiling is soft: on {{srp_cross_day}} SOFR printed {{srp_cross_sofr}}, above the standing repo rate of {{srp_cross_rate}}.</p>
   </div>
   <details class="wide" id="plumbing-deeper">
     <summary>Go deeper: the segments and the Fed's administered rates</summary>
@@ -556,8 +547,8 @@ table.fttab.fdtab td{white-space:nowrap}
   <h2><span class="n">2</span>{{n_years_word}} years in one line</h2>
   <p class="prose lede">SOFR closed above the Fed's rate on reserves on {{above_ample}} in {{ample}}, and on {{above_late}} in {{late}}. It was more than {{tail_bp}} bp above on {{n_tail}}, {{tail_where}}.</p>
   <div class="prose">
-    <p><b>How big is pressure?</b> A day more than +{{pressure_bp}} bp above is mild. The largest, on {{spike_day}}, was {{spike_bp}} bp, and the New York Fed answered with repo operations that week (event {{spike_event_n}} below).</p>
-    <p><b>Why calm days sit below zero.</b> In {{ample}}, the median day was {{ample_gap}} IORB. Money funds cannot earn IORB, but they can lend to the Fed at the overnight reverse repo rate, which the Fed sets below IORB, so when cash is abundant SOFR settles near that floor. {{c_rrp_floor}}</p>
+    <p><b>How big is pressure?</b> A day more than +{{pressure_bp}} bp above is mild. The largest, on {{spike_day}}, was {{spike_bp}} bp, and the New York Fed answered with repo operations that week.</p>
+    <p><b>Why calm days sit below zero.</b> In {{ample}}, the median day was {{ample_gap}} IORB. When cash is abundant, SOFR settles near the Fed's overnight reverse repo rate, which sits below IORB.</p>
   </div>
   <figure>
     <figcaption><div class="t">Pressure arrives in episodes, not at random</div>
@@ -567,10 +558,12 @@ table.fttab.fdtab td{white-space:nowrap}
       <label class="tog"><input type="checkbox" id="bandToggle"> Show the middle half of the day's trades</label>
     </div>
     <div class="chart" id="spread"><div class="tip"></div></div>
-    <p class="note">Red line: days more than +{{pressure_bp}} bp above, also marked by the dashed threshold. Shaded: periods when the Fed was shrinking its balance sheet. Hatched: the stress windows. Numbered markers: the events listed below.</p>
-    {{held_out_note}}
+    <p class="note">Red line: days more than +{{pressure_bp}} bp above. Shaded: the Fed shrinking its balance sheet. Hatched: stress windows. Numbers: the events below.</p>
   </figure>
-  <ol class="events" id="events">{{event_list}}</ol>
+  <details>
+    <summary>The events behind the numbered markers</summary>
+    <ol class="events" id="events">{{event_list}}</ol>
+  </details>
   <details>
     <summary>Go deeper: how this chart is built</summary>
     <ul>
@@ -593,23 +586,24 @@ table.fttab.fdtab td{white-space:nowrap}
       <div class="s">Each dot is one business day: reserves banks hold at the Fed against SOFR minus the rate on reserves</div></figcaption>
     <div class="controls"><div class="years" id="years" role="group" aria-label="Highlight a year"></div></div>
     <div class="chart" id="scatter"><div class="tip"></div></div>
-    <p class="note">Dashed verticals: median reserves on days more than +{{pressure_bp}} bp above, by period. Triangles: the {{n_off_scale_lc}} above +{{clip_bp}} bp, drawn at the top edge. Reserves are the weekly average from the Fed's H.4.1 release, carried forward to each day of its week.{{held_out_dots}}</p>
+    <p class="note">Dashed verticals: median reserves on days more than +{{pressure_bp}} bp above, by period. Triangles: the {{n_off_scale_lc}} above +{{clip_bp}} bp, drawn at the top edge. Reserves are the weekly average from the Fed's H.4.1 release.</p>
   </figure>
   <div class="prose">
-    <p>Banks need more reserves as their balance sheets grow and as rules tighten, so a dollar figure from one period does not compare with one from another. {{c_reserve_ratio}} The project will use that ratio once the bank-assets series is added.</p>
+    <p>Banks need more reserves as their balance sheets grow, so a dollar figure from one period does not compare with another. {{c_reserve_ratio}}</p>
     <p><b>Reserves are only half of it.</b> The other half is the Fed's overnight reverse repo facility (ON RRP), where money funds park cash instead of lending it. {{c_on_rrp_buffer}} A thin buffer makes pressure possible, not certain: in {{ample}}, ON RRP was below {{buffer_break}} on {{n_low_ample}} and pressure came on {{n_low_ample_pressure}} of them, because reserves were abundant. Over all the days counted here, pressure came on {{share_low}} of the days with ON RRP below {{buffer_break}}, against {{share_high}} of the others.</p>
-    <p>This chart describes what happened together. It does not show that one caused the other.</p>
   </div>
 
   <figure style="margin-top:44px">
     <figcaption><div class="t">The calendar picks the days once reserves are near the edge</div>
       <div class="s">Days more than +{{pressure_bp}} bp above, out of all days of each type, by year</div></figcaption>
-    <div class="heat" role="region" aria-label="Table of pressure days by day type and year" tabindex="0">{{heat_table}}</div>
+    <details>
+      <summary>Show the numbers</summary>
+      <div class="heat" role="region" aria-label="Table of pressure days by day type and year" tabindex="0">{{heat_table}}</div>
+    </details>
   </figure>
   <div class="prose">
     <p class="lede" style="font-size:1.08rem">In {{early}}, pressure came on {{ord_early}} ordinary days. In {{late}} it came on {{ord_late}}, but on {{qe_late}} quarter-ends. In {{ample}}, when reserves were most plentiful, {{quiet_ample}}.</p>
-    <p>The usual explanations are these, and the table does not test them. {{c_quarter_end}} {{c_qe_foreign}} {{c_tax_date}} {{c_settlement}} {{c_coupon_demand}}</p>
-    <p>{{c_limitation_why}}</p>
+    <p>The usual explanations: {{c_quarter_end}} {{c_tax_date}}</p>
   </div>
   <details>
     <summary>Go deeper: how the days are classified</summary>
@@ -630,9 +624,9 @@ table.fttab.fdtab td{white-space:nowrap}
   <p class="prose lede">Each forecast is made at {{decision}} the business day before. By then the {{sched_names}} for the next day are already announced; of the observed inputs, the freshest is {{lag_min}} and the stalest is {{lag_max}}.</p>
   <figure>
     <figcaption><div class="t">Every input has its own publication clock</div>
-      <div class="s">When each of the panel's {{n_inputs}} sourced inputs is first public, in days after the day its value describes, as its source is declared in <code>metadata/sources.json</code></div></figcaption>
+      <div class="s">When each of {{n_inputs}} inputs is first public, in days after the day its value describes</div></figcaption>
     <div class="chart" id="clockchart"><div class="tip"></div></div>
-    <p class="note">Dots: first public, observed after the fact. Diamonds: announced before the day. Dotted verticals: the {{decision_24}} decision on each day. A value is read at the first decision on or after its dot. The {{n_calendar}} calendar inputs are functions of the date and known in advance.</p>
+    <p class="note">Dots: first public. Diamonds: announced before the day. Dotted lines: the {{decision_24}} decision each day.</p>
   </figure>
   <details>
     <summary>Go deeper: what this does and does not show</summary>
@@ -650,14 +644,14 @@ table.fttab.fdtab td{white-space:nowrap}
   <p class="prose lede">{{forecast_lede}}</p>
   <figure>
     <figcaption><div class="t">Each model against the two benchmarks, on the same days</div>
-      <div class="s">The benchmark's Brier score minus the model's, averaged over the {{model_days}} days scored from {{model_first}} to {{model_last}}. Right of zero, the model's probabilities were closer to what happened. Lines: {{interval_level}}% intervals</div></figcaption>
+      <div class="s">Benchmark's Brier score minus the model's, over {{model_days}} days from {{model_first}} to {{model_last}}. Right of zero, the model was closer to what happened. Lines: {{interval_level}}% intervals</div></figcaption>
     <div class="controls"><div class="seg" role="group" aria-label="Threshold" id="tauPaired"></div></div>
     <div class="chart" id="paired"><div class="tip"></div></div>
-    <p class="note">Blue: the interval lies right of zero. Red: it lies left of zero. Grey: it includes zero, so the records do not tell the two apart.</p>
+    <p class="note">Blue: the interval is right of zero. Red: left of zero. Grey: it includes zero.</p>
   </figure>
   <figure style="margin-top:40px">
     <figcaption><div class="t">The same comparison, by regime and by type of day</div>
-      <div class="s">A pooled average can hide a model that wins in calm years and loses when pressure comes. Each group is the record's own split, with its {{interval_level}}% interval</div></figcaption>
+      <div class="s">Each group with its {{interval_level}}% interval</div></figcaption>
     <div class="controls">
       <select class="pick" id="splitModel" aria-label="Model"></select>
       <div class="seg" role="group" aria-label="Benchmark" id="splitBench"></div>
@@ -682,7 +676,7 @@ table.fttab.fdtab td{white-space:nowrap}
   <p class="prose lede">At +{{tau_first}} bp, pressure came on {{base_first}} of the scored days. The share of a model's Brier score that is miscalibration runs from {{miscal_low}} ({{miscal_low_model}}) to {{miscal_high}} ({{miscal_high_model}}).</p>
   <figure>
     <figcaption><div class="t">Does a stated probability come true as often as it says?</div>
-      <div class="s">CORP reliability: each model's forecasts against how often pressure followed them, recalibrated by isotonic regression. On the diagonal, a probability comes true exactly as often as it says. Shaded: the record's {{interval_level}}% band</div></figcaption>
+      <div class="s">Each model's forecasts against how often pressure followed. On the diagonal, a probability comes true exactly as often as it says</div></figcaption>
     <div class="controls">
       <select class="pick" id="relModel" aria-label="Model"></select>
       <div class="seg" role="group" aria-label="Threshold" id="tauRel"></div>
@@ -693,12 +687,13 @@ table.fttab.fdtab td{white-space:nowrap}
   <div id="band-coverage" role="group" aria-labelledby="band-coverage-title">
     <h3 class="sub" id="band-coverage-title">Do the bands hold?</h3>
     <p class="prose">{{bc_sentence}}</p>
-    {{bc_table}}
-    {{bc_later_table}}
-    <p class="note">{{bc_note}}</p>
+    <details>
+      <summary>Show the numbers</summary>
+      {{bc_table}}
+      {{bc_later_table}}
+      <p class="note">{{bc_note}}</p>
+    </details>
   </div>
-  <h3 class="sub">Lead time</h3>
-  <p class="pending">{{lead_time_placeholder}}</p>
   <details>
     <summary>Go deeper: reading the reliability curve</summary>
     <ul>
@@ -712,11 +707,21 @@ table.fttab.fdtab td{white-space:nowrap}
 <section id="built">
   <h2><span class="n">7</span>How it was built</h2>
   <p class="prose lede">Every figure on this page is computed from a verified data panel by a script in the repository, and every change to that script went through a written directive and a pull request that a separate Claude review routine checked against its criteria. Eleonora wrote the directives and decided the judgement calls; she did not review all of the code (<a href="https://github.com/eleonorabjornberg/repo-market-model#who-decides-and-who-reviews">who decides and who reviews</a>).</p>
-  <ol class="steps" aria-label="The steps every change goes through">{{process_list}}</ol>
-  <h3 style="margin:34px 0 8px;font-size:1.05rem">The guards</h3>
-  <ul class="guards">{{guard_list}}</ul>
-  <h3 style="margin:30px 0 8px;font-size:1.05rem">A validation result</h3>
-  <p class="prose">{{validation}}</p>
+  <details>
+    <summary>The process, the guards and a validation result</summary>
+    <ol class="steps" aria-label="The steps every change goes through">{{process_list}}</ol>
+    <h3 style="margin:34px 0 8px;font-size:1.05rem">The guards</h3>
+    <ul class="guards">{{guard_list}}</ul>
+    <p class="prose">{{validation}}</p>
+  </details>
+</section>
+
+<section id="next">
+  <h2>Next steps</h2>
+  <ul>
+    <li>A live daily forecast, once a calibrated model is ready.</li>
+    <li>{{lead_time_placeholder}}</li>
+  </ul>
 </section>
 
 <details>
@@ -736,8 +741,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </details>
 
 <footer>
-  <p>Built from the project's verified data panel: {{n_rows}} business days from {{first_day}} to {{last_day}}, SHA-256 <code>{{sha}}</code>, repository commit <code>{{commit}}</code>. Every number on this page is computed from that file, the run records, the source declarations and the cited documents by the page's generator, <code>scripts/emit_visual.py</code>; none is typed by hand.{{held_out_footer}}</p>
-  <p>Chapters 5 and 6 are drawn only from the {{n_models}} run records in <code>docs/runs/</code> that <code>docs/visual/data/model.json</code> lists with their SHA-256, all scored on the same panel under the project's as-of information rule. The generator refuses any other record, and any model figure that no published record carries.</p>
+  <p>Built from {{n_rows}} business days, {{first_day}} to {{last_day}}. Panel SHA-256 <code>{{sha}}</code>, commit <code>{{commit}}</code>. Every number is computed by <code>scripts/emit_visual.py</code> from the panel and the run records; none is typed by hand.</p>
   <p>The same results in plain words, for a reader with no finance background, are on <a href="plain.html">the plain-language results page</a>; its figures are generated from the same run records.</p>
   <p>Academic and portfolio work; not investment advice.</p>
 </footer>
@@ -1202,7 +1206,7 @@ d3.selectAll("#n1scale button").on("click", function () {
   renderN1();
 });
 
-// ---- The reserve-scarcity band (#148): #115's state as read each day, shaded behind the spread in N1 (on request)
+// ---- The reserve-scarcity band: the state as read each day, shaded behind the spread in N1 (on request)
 // and drawn as lanes in N3. Held-out days carry no state; they keep the grey hatch.
 const BAND = D.newcomer_band;
 const bandSpans = BAND.spans.map(([a, b, s], i, all) => ({a: parse(a), b: parse(b), s, r: i + 1 < all.length ? parse(all[i + 1][0]) : d3.utcDay.offset(parse(b), 1)}));
@@ -1578,7 +1582,7 @@ function renderFinalRobust() {
   title(aTop - 8, "Paired difference by group, with its interval");
   if (!narrow) svg.append("text").attr("class", "lab").attr("x", W - mr).attr("y", aTop - 8).attr("text-anchor", "end").style("fill", "var(--ink-2)").text("right of zero: model better");
   title(bTop - 8, "How much of the edge survives dropping the best days");
-  const unit = "Persistence's CRPS minus the model's, bp";
+  const unit = "The model's edge over carrying the spread forward, bp";
   svg.append("text").attr("class", "lab").attr("x", narrow ? ml : W - mr).attr("y", H - 4).attr("text-anchor", narrow ? "start" : "end").text(unit);
   if (narrow) svg.append("text").attr("class", "lab").attr("x", ml).attr("y", H - 17).style("fill", "var(--ink-2)").text("Right of zero: model better");
   const label = (y, text) => svg.append("text").attr("x", narrow ? ml : ml - 12).attr("y", narrow ? y - 12 : y + 4).attr("text-anchor", narrow ? "start" : "end").style("font-size", "11.5px").style("fill", "var(--ink)").text(text);
@@ -1601,7 +1605,7 @@ const FD = D.forecast_daily;
 const FD_COLOURS = ["var(--sofr)", "var(--pressure)"];
 function renderForecastDaily() {
   const host = d3.select("#fdchart"); host.select("svg").remove();
-  const year = +document.getElementById("fdyear").value;
+  const year = FD.default_year;
   document.getElementById("fdyearlabel").textContent = String(year);
   const W = host.node().clientWidth, narrow = W < 560, H = narrow ? 300 : 340;
   const m = {t: narrow ? 46 : 30, r: 14, b: 30, l: 40};
@@ -1613,32 +1617,37 @@ function renderForecastDaily() {
   const y = d3.scaleLinear([Math.min(lo, 0), Math.max(hi, 0)], [H - m.b, m.t]).nice();
   const inside = days.filter(d => d.y >= d.q[0] - 1e-9 && d.y <= d.q[4] + 1e-9).length;
   const svg = host.append("svg").attr("width", W).attr("height", H).attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img")
-    .attr("aria-label", `Daily chart for ${year}, ${days.length} scored days from ${fmt(days[0].t)} to ${fmt(days.at(-1).t)}: the actual SOFR − IORB as points, the model's median forecast one day ahead as a line, and its 90% and 50% bands shaded; the 50% band is not yet calibrated (#243). The actual spread fell inside the 90% band on ${inside} of the ${days.length} days. The accuracy table below gives the figures.`);
+    .attr("aria-label", `Daily chart for ${year}, ${days.length} scored days from ${fmt(days[0].t)} to ${fmt(days.at(-1).t)}: the actual SOFR − IORB as points, the model's median forecast one day ahead as a line, and its 90% band shaded, with the biggest misses marked by date. The actual spread fell inside the 90% band on ${inside} of the ${days.length} days.`);
   svg.append("g").selectAll("line").data(y.ticks(5)).join("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", d => y(d)).attr("y2", d => y(d)).style("stroke", d => d === 0 ? "var(--ink-2)" : "var(--rule)");
   svg.append("g").attr("class", "axis").attr("transform", `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(sgn).tickSizeOuter(0));
   svg.append("g").attr("class", "axis").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(narrow ? 4 : 8).tickFormat(d3.utcFormat(narrow ? "%b" : "%b %Y")).tickSizeOuter(0));
   rows.forEach((pts, si) => {
     const c = FD_COLOURS[si % FD_COLOURS.length];
     svg.append("path").datum(pts).attr("d", d3.area().x(d => x(d.t)).y0(d => y(d.q[0])).y1(d => y(d.q[4]))).style("fill", c).style("opacity", .16);
-    svg.append("path").datum(pts).attr("d", d3.area().x(d => x(d.t)).y0(d => y(d.q[1])).y1(d => y(d.q[3]))).style("fill", c).style("opacity", .3);
     svg.append("path").datum(pts).attr("d", d3.line().x(d => x(d.t)).y(d => y(d.q[2]))).style("fill", "none").style("stroke", c).style("stroke-width", 1.4).style("stroke-dasharray", si ? "4 3" : null);
   });
   svg.append("g").selectAll("circle").data(days).join("circle").attr("cx", d => x(d.t)).attr("cy", d => y(d.y)).attr("r", narrow ? 1.6 : 2.1).style("fill", "var(--ink)");
-  const key = [["dot", "Actual spread"], ["line", FD.series.length > 1 ? FD.series.map(s => s.label).join(" / ") + ", median" : "Median forecast"], ["b90", "90% band"], ["b50", "50% band, not yet calibrated (#243)"]];
+  FD.misses_2026.slice(0, FD.chart_misses).forEach((ms, i) => {
+    const d = days.find(r => fmtIso(r.t) === ms.date); if (!d) return;
+    const cx = x(d.t), cy = y(d.y), right = cx < W - m.r - 70;
+    svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 6).style("fill", "none").style("stroke", "var(--pressure)").style("stroke-width", 1.5);
+    svg.append("text").attr("class", "lab").attr("x", cx + (right ? 9 : -9)).attr("y", cy + 4).attr("text-anchor", right ? "start" : "end").style("paint-order", "stroke").style("stroke", "var(--paper)").style("stroke-width", 3).text(ms.label);
+  });
+  const key = [["dot", "Actual spread"], ["line", FD.series.length > 1 ? FD.series.map(s => s.label).join(" / ") + ", median" : "Median forecast"], ["b90", "90% band"]];
   const g = svg.append("g").attr("transform", `translate(${m.l},12)`);
   let at = 0, row = 0;
   key.forEach(([kind, text]) => {
     const k = g.append("g");
     if (kind === "dot") k.append("circle").attr("cx", 6).attr("cy", 0).attr("r", 2.6).style("fill", "var(--ink)");
     else if (kind === "line") k.append("line").attr("x1", 0).attr("x2", 12).attr("y1", 0).attr("y2", 0).style("stroke", FD_COLOURS[0]).style("stroke-width", 1.6);
-    else k.append("rect").attr("x", 0).attr("y", -5).attr("width", 12).attr("height", 10).style("fill", FD_COLOURS[0]).style("opacity", kind === "b90" ? .16 : .3);
+    else k.append("rect").attr("x", 0).attr("y", -5).attr("width", 12).attr("height", 10).style("fill", FD_COLOURS[0]).style("opacity", .16);
     const w = 17 + k.append("text").attr("class", "lab").attr("x", 17).attr("y", 4).text(text).node().getComputedTextLength() + 14;
     if (at && at + w > W - m.l - m.r) { at = 0; row += 16; }
     k.attr("transform", `translate(${at},${row})`);
     at += w;
   });
 }
-document.getElementById("fdyear").addEventListener("change", renderForecastDaily);
+function fmtIso(t) { return t.toISOString().slice(0, 10); }
 const renderAll = () => { renderFinalTest(); renderFinalRobust(); renderForecastDaily(); renderN1(); renderN2(); renderN3(); renderBand(); renderN4Seg(); renderN5(); renderCorridor(); renderSpread(); renderScatter(); renderClock(); renderPaired(); renderSplits(); renderReliability(); };
 renderAll();
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });

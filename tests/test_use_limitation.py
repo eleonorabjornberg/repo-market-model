@@ -16,14 +16,14 @@ was applied to a fresh clone, the generator re-run, and the result read:
    `test_readme_carries_the_statement` -- `AssertionError: 0 != 1`.
 2. `scripts/emit_visual.py`: `use_limitation_fill` returns `{"use_limitation": ""}`,
    then `emit_visual.py` re-run. Kills `test_results_page_carries_the_statement_twice`
-   (renamed in #316 to `test_results_page_carries_the_plain_version_twice`) -- `AssertionError: 0 != 2`.
+   (renamed in #316, and in #314 to `test_results_page_carries_the_plain_version_once`: the page now says it once) -- `AssertionError: 0 != 1`.
 
 #316 added the plain-English version, which the page now carries instead (the page test
 counts it, and no longer the technical statement). Two more, applied the same way:
 
 3. `scripts/emit_visual.py`: `use_limitation_fill` reads `## The statement` instead of
    `## Plain-English version`, then `emit_visual.py` re-run. Kills
-   `test_results_page_carries_the_plain_version_twice` -- `AssertionError: 0 != 2`.
+   `test_results_page_carries_the_plain_version_once` -- `AssertionError: 0 != 1`.
 4. `docs/use-limitation.md`: "market" in the plain version replaced by "regime". Kills
    `test_plain_version_is_one_short_blockquote_without_jargon` -- `AssertionError: 'regime'
    unexpectedly found in ...`.
@@ -79,14 +79,12 @@ class UseLimitationTests(unittest.TestCase):
         start, end = text.index("<!-- generated: final-test -->"), text.index("<!-- end generated: final-test -->")
         self.assertIn(RULED, text[start:end])
 
-    def test_results_page_carries_the_plain_version_twice(self):
+    def test_results_page_carries_the_plain_version_once(self):
         page = read("site/index.html")
         (version,) = plain()
-        self.assertEqual(page.count(version), 2)
+        self.assertEqual(page.count(version), 1)
         self.assertEqual(page.count(RULED), 0)
         self.assertLess(page.index(version), page.index('id="start"'))
-        final = page[page.index('<section id="final-test"'):]
-        self.assertIn(version, final[:final.index("</section>")])
 
     def test_plain_version_is_one_short_blockquote_without_jargon(self):
         found = plain()

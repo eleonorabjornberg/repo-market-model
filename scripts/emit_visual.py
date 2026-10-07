@@ -385,7 +385,9 @@ FORECAST_DAILY_TIE_BP = 1e-9
 #: How many of the largest misses the table names per period, and the 2026 list shows.
 FORECAST_DAILY_LARGEST, FORECAST_DAILY_MISSES = 3, 5
 #: The interior band's label until v2 replaces it (#243).
-FORECAST_DAILY_50_LABEL = "not yet calibrated (#243)"
+FORECAST_DAILY_50_LABEL = "not yet calibrated"
+#: How many of the year's biggest misses the chart circles and dates.
+FORECAST_DAILY_CHART_MISSES = 3
 
 FINAL_TEST_LABELS = {"pass": "shown better", "not distinguishable": "not shown", "worse": "shown worse"}
 
@@ -497,9 +499,7 @@ def pending_figures(records):
         if carriers:
             raise VisualError(f"{carriers[0]} carries {marker}, but the page draws no figure of {what} "
                               f"yet: draw it from the record rather than publish a placeholder")
-        out[key] = (f"No published record in <code>{RUNS}/</code> carries {what}, so this page draws "
-                    f"no figure of it. The generator draws model figures only from such a record, and "
-                    f"refuses one that no record carries.")
+        out[key] = f"Not yet drawn: {what}, because no published record carries it."
     return out
 
 
@@ -1492,14 +1492,13 @@ def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
         elif working:
             n, e = working[0]
             status = "in_progress"
-            reason = (f"open pull request #{e['open_prs'][0]} for #{n}" if e["open_prs"]
-                      else f"#{n} is being worked on")
+            reason = "being worked on"
         elif registered and asking:
             n, q = asking[0]
-            status, reason = "in_progress", f"directive #{n} is done, and its publishing question #{q} is open"
+            status, reason = "in_progress", "built; whether it joins the published forecast is not yet decided"
         elif registered:
             status, reason = "registered_unused", "registered, and no published declaration reads it"
-            sub = ("queued: " + ", ".join(f"#{n}" for n in queued)) if queued else None
+            sub = "queued" if queued else None
         else:
             status, reason = "not_registered", f"no source in <code>{SOURCES}</code> carries it"
         columns = sorted({c for c, fields in FEATURE_FIELDS.items() if pairs & set(fields)})
@@ -1508,7 +1507,7 @@ def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
         where = tag.get("fixtures")
         data_in_repo = bool(where) and any(
             f.startswith(where.rstrip("/") + "/") and f.endswith(".manifest.json") for f in tracked)
-        rows.append({"key": tag["key"], "label": tag["label"], "flow": tag.get("flow"), "board": tag.get("board"),
+        rows.append({"key": tag["key"], "label": re.sub(r"\s*\(#\d+\)", "", tag["label"]), "flow": tag.get("flow"), "board": tag.get("board"),
                      "status": status,
                      "reason": reason, "sub": sub, "fields": names, "panel": "; ".join(panel),
                      "data_in_repo": data_in_repo, "issues": list(tag["issues"])})
@@ -1763,7 +1762,6 @@ def tag_details(tag_map, rows, registry, notes, glossary, parties):
                            f'{" and ".join(freq)}: {"; ".join(html.escape(c) for c in entry["coverage"])}')
         where = (f'{where_label(r, tag_map, parties)}, {label[tag_map["flows"][r["flow"]]["kind"]].split(":")[0].lower()}'
                  if r["flow"] else where_label(r, tag_map, parties))
-        issues = ", ".join(f'<a href="https://github.com/{REPOSITORY}/issues/{n}">#{n}</a>' for n in r["issues"])
         sub = f" {html.escape(r['sub'])}." if r["sub"] else ""
         out.append(
             f'<div class="n4d" id="n4d-{r["key"]}" role="region" aria-labelledby="n4d-{r["key"]}-h" hidden>'
@@ -1774,7 +1772,6 @@ def tag_details(tag_map, rows, registry, notes, glossary, parties):
             f'<dt>Registry</dt><dd>{r["fields"]}<br>{"<br>".join(sources)}</dd>'
             f'<dt>Panel</dt><dd>{r["panel"]}</dd>'
             f'<dt>Data in this repository</dt><dd>{"yes" if r["data_in_repo"] else "no"}</dd>'
-            + (f"<dt>Issues</dt><dd>{issues}</dd>" if issues else "")
             + '</dl><button type="button" class="n4close">Close</button></div>')
     return "".join(out)
 
@@ -1849,8 +1846,7 @@ def newcomer_n4(tag_map, registry, manifest, records, snapshot, tracked, notes, 
                          "on_rrp": {"source": NYFED_ON_RRP_SOURCE_ID, "field": NYFED_ON_RRP_FIELD}}}
     fills = {
         "n4_lede": (f"Of the {word(len(rows))} public series on this market's map, {word(used)} "
-                    f"{'is' if used == 1 else 'are'} read by a published forecast. Each tag on the map says "
-                    f"which, and why or why not; it is worked out from the repository, not typed."),
+                    f"{'is' if used == 1 else 'are'} read by a published forecast."),
         "n4_status_table": status_table(rows, tag_map, parties),
         "n4_retrieved": f"{day(retrieved[:10])} ({retrieved[11:16]} UTC)",
         "n4_map": map_svg(tag_map, rows, parties),
@@ -2009,7 +2005,7 @@ def break_provenance_note(brk):
     return (f"The {brk} break is the project's constant, taken from the "
             f"<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/advisor/evidence-pack/MEMO.md'>"
             f"advisor evidence pack</a>, which read it off {p['read_off']}{overlap}. It was fixed before this project "
-            f"used it and is not tuned here on these days; the review of that pack ({p['re_check']}) found the "
+            f"used it and is not tuned here on these days; the review of that pack found the "
             f"reading insensitive to a break anywhere from ${low:,.0f}bn to ${high:,.0f}bn.")
 
 
@@ -2240,8 +2236,7 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
                 overlap = cb["interval"][1] >= ca["interval"][0]
                 drops.append(f"on {share(a, t)} but {share(b, t)}" + (", and the intervals overlap" if overlap else ""))
         caption = (f"Pressure-day frequency does not rise step by step with the state. SOFR closed more than +{t} bp "
-                   f"above IORB {'; and '.join(drops)}. The band describes the period. It is not a working indicator, "
-                   f"and no forecast on this page reads it.")
+                   f"above IORB {'; and '.join(drops)}.")
     level = round(100 * BOOTSTRAP_LEVEL)
     head = "".join(f"<th scope='col'>Above +{t} bp</th>" for t in taus)
     body = "".join(
@@ -2279,7 +2274,7 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
             f"latest week all its inputs were public. {link(notes['claims']['h8_release'])} Bank assets are each "
             f"week's first print. Reserves are the latest revised figures, so that leg is shown with hindsight."),
         "band_interval": (f"Each interval is a {level}% stationary-bootstrap interval that resamples a state's days in "
-                          f"blocks averaging {BOOTSTRAP_BLOCK_LENGTH} days, the one #115's validation used."),
+                          f"blocks averaging {BOOTSTRAP_BLOCK_LENGTH} days, the one the scarcity validation used."),
     }
     return data, fills
 
@@ -2581,8 +2576,8 @@ def newcomer_n5(rows, locked, chosen, registry, decision, snaps, tag_map, tags, 
             f'<span class="tagchip"><span aria-hidden="true">{marks[t["status"]][0]}</span> {html.escape(t["label"])} '
             f'<small>{marks[t["status"]][1]}</small></span>' for t in mine)
         hypothesis = step.get("hypothesis")
-        under_test = (f'<p class="hyp"><b>Hypothesis under test</b> in <a href="https://github.com/{REPOSITORY}/'
-                      f'issues/{hypothesis}">#{hypothesis}</a>, not a finding: that the top of the day&rsquo;s '
+        under_test = (f'<p class="hyp"><b>Hypothesis under test</b> (<a href="https://github.com/{REPOSITORY}/'
+                      f'issues/{hypothesis}">the open question</a>), not a finding: that the top of the day&rsquo;s '
                       f'trades moves before the middle does. Daily data cannot show the order within a day.</p>'
                       if hypothesis else "")
         claims = " ".join(link(notes["claims"][c]) for c in step["claims"])
@@ -2638,11 +2633,10 @@ def newcomer_n5(rows, locked, chosen, registry, decision, snaps, tag_map, tags, 
             "window_business_days": N5_WINDOW_BUSINESS_DAYS, "quarter_ends": quarter_ends, "series": series,
             "steps": steps, "sources": {k: v[1] for k, v in N5_SNAPSHOTS.items()}}
     fills = {
-        "n5_lede": (f"Two quarter-ends, chosen by a rule fixed on 2 October 2026 that reads no rate or spread, only the "
-                    f"Fed's overnight reverse repo balance: {day(s['date'])}, with cash scarce, and {day(a['date'])}, with cash abundant. SOFR less "
+        "n5_lede": (f"Two quarter-ends: {day(s['date'])}, with cash scarce, and {day(a['date'])}, with cash abundant. SOFR less "
                     f"IORB closed at {on_day('scarce')} on the first and {on_day('abundant')} on the second. Step "
-                    f"through what the Fed and its staff describe happening around a quarter-end, and what each "
-                    f"public series did then."),
+                    f"through what the Fed's staff describe happening around a quarter-end, and what each "
+                    f"public series did."),
         "n5_rule": (f"The scarce case is the most recent quarter-end before {day(before)} on which the ON RRP result "
                     f"public at the declared decision instant ({clock(decision)} New York time) the business day before was below {below}: "
                     f"{day(s['date'])}, which read ${s['on_rrp']['bn']:,.1f}bn. The abundant case is the quarter-end "
@@ -2692,6 +2686,25 @@ def rests_on(window, interval, mean, rel):
             "replications": interval["replications"], "wins": sum(v > 0 for v in diffs), "n": len(diffs)}
 
 
+def band_coverage_sentence(module, table):
+    """The plain sentence above the band-coverage table, from the table's own cells.
+
+    Rule: the all-days cell gives the share of days inside the central 50% band and inside the 90% band, to the
+    nearest percent; then, for each band, the count of groups (cells with enough days) whose interval excludes its
+    nominal level, out of all groups with enough days. The README and `docs/band_coverage_by_split.md`
+    keep the long sentence naming each cell.
+    """
+    everything = next(c for c in table if c["kind"] == "all")
+    enough = [c for c in table if c["enough"]]
+    short = {band: sum(1 for c in enough if any(b == band for b, _ in module.excluded([c])))
+             for band in ("50%", "90%")}
+    pct = lambda v: f"{100 * v:.0f}%"
+    count = lambda k: f"all {len(enough)} groups" if k == len(enough) else f"{k} of {len(enough)} groups"
+    return (f"The central 50% range held on {pct(everything['bands'][0.5]['coverage'])} of days and the 90% range on "
+            f"{pct(everything['bands'][0.9]['coverage'])}. Split by type of day and period, the 50% range misses its "
+            f"target in {count(short['50%'])} and the 90% range in {count(short['90%'])}.")
+
+
 def band_coverage_block(repo):
     """The band-coverage table for the "Grading it honestly" chapter (#265, her ruling on #291).
 
@@ -2706,8 +2719,7 @@ def band_coverage_block(repo):
     record, table, later, days = module.compute(Path(repo) / RUNS)
     minimum, pct = module.MINIMUM_DAYS, module._pct
     calibration = record["metrics"]["interval_calibration"]["coverage_interval"]
-    sentence = html.escape(module.finding_sentence(table, later))
-    sentence = re.sub(r"`([^`]*)`", r"<code>\1</code>", sentence)
+    sentence = band_coverage_sentence(module, table)
 
     def rows_of(cells):
         rows = []
@@ -2797,7 +2809,7 @@ def final_test_robustness(mean, drops, wins, n, groups, minimum):
         tail = (f"without the top 10 it reverses, to {sign(drops[10])}." if drops[10] < 0 else
                 f"without the top 10 it is {sign(drops[10])}." if drops[10] == 0 else
                 f"without the top 10 it is still {sign(drops[10])}.")
-        first = (f"On this near-blind test, the pass rests on a handful of days: without the 5 days where the "
+        first = (f"The pass rests on a handful of days: without the 5 days where the "
                  f"model did best, the edge falls from {sign(mean)} to {sign(drops[5])}; {tail}")
     else:
         first = (f"The edge does not depend on a few days: without the 5 days where the model did best, it is "
@@ -2913,19 +2925,17 @@ def final_test(records, locked):
     x, y = date.fromisoformat(first), date.fromisoformat(last)
     window = (f"{x.day} {x:%B} to {day(last)}" if x.year == y.year else f"{day(first)} to {day(last)}")
     gap = f"{signed(lower, 2)} to {signed(upper, 2)} bp"
-    near_blind = ("near-blind, not blind: these days had appeared inside earlier pooled results, though the record "
-                  "says no choice was made on them by name")
     if result == "pass":
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was more accurate "
                    f"than carrying the latest spread forward: {published:.2f} bp against {persistence:.2f} bp of "
-                   f"five-quantile score, where lower is better, and the {level}% interval of the gap, {gap}, lies above zero. "
-                   f"Result: <b>pass</b>, on a test that is near-blind.")
+                   f"five-quantile score (how far the forecast range was from what happened; lower is better), and the {level}% interval of the gap, {gap}, lies above zero. "
+                   f"Result: <b>pass</b>.")
         claim_html = (f"<p class='ftclaim'><b>The claim:</b> {html.escape(claim)}.</p>")
     else:
         verdict = (f"From {window}, the model's next-day forecast of the range of SOFR − IORB was not shown to be "
                    f"more accurate than carrying the latest spread forward: {published:.2f} bp against "
-                   f"{persistence:.2f} bp of five-quantile score, where lower is better, with a {level}% interval for the gap of "
-                   f"{gap}. Result: <b>fail</b>, on a test that is {near_blind}. No claim is made.")
+                   f"{persistence:.2f} bp of five-quantile score (how far the forecast range was from what happened; lower is better), with a {level}% interval for the gap of "
+                   f"{gap}. Result: <b>fail</b>. No claim is made.")
         claim_html = ""
 
     def interval_cell(row):
@@ -3006,18 +3016,16 @@ def final_test(records, locked):
         "ft_split_table": split_table,
         "ft_influence_table": influence_table,
         "ft_window_table": window_table,
-        "ft_fixed": (f"<b>Fixed first.</b> The design, the benchmark and the command were written down and "
-                     f"checksummed (<code>{checksum[:12]}</code>) before any of these days was scored "
-                     f"(<a href='{BLOB}{prereg}'>the pre-registration</a>)."),
-        "ft_once": f"<b>Run once,</b> on {day(opened)}, on Eleonora's go, and published whatever it showed.",
-        "ft_benchmark": ("<b>Against carrying the latest spread forward.</b> The benchmark, as-of persistence, "
-                         "forecasts the next day from the latest spread known at the decision time. Both are graded "
-                         "by the five-quantile score (the mean pinball loss over the five published quantiles): how far "
-                         "a forecast range was from the spread that actually came, in basis points, so lower is better."),
-        "ft_switch": (f"<b>The deciding comparison was changed before the test was opened.</b> On 4 October 2026 the "
-                      f"deciding cell was changed from the plain-leap probability cell (#216) to this five-quantile score cell, "
-                      f"under Eleonora's ruling on #221, recorded in <a href='{BLOB}{prereg}'>the pre-registration</a>'s amendment. "
-                      + (f"On the opened record the plain leap does not beat calendar climatology: mean Brier "
+        "ft_fixed": (f"<b>Fixed first.</b> The design, the benchmark and the command were written down "
+                     f"(<a href='{BLOB}{prereg}'>the pre-registration</a>) before any of these days was scored."),
+        "ft_once": f"<b>Run once,</b> on {day(opened)}, and published whatever it showed.",
+        "ft_benchmark": ("<b>Against carrying the latest spread forward.</b> Both forecasts are graded by the "
+                         "five-quantile score, the mean pinball loss over the five published quantiles: how far "
+                         "the forecast range was from the spread that came, in basis points. Lower is better."),
+        "ft_switch": (f"<b>One change before the test was opened.</b> The deciding comparison moved from the "
+                      f"probability forecast to this five-quantile score (<a href='{BLOB}{prereg}'>the "
+                      f"pre-registration</a> records it). "
+                      + (f"On the opened record the probability forecast does not beat calendar climatology: mean Brier "
                          f"difference {signed(leap['mean'], 4)}, {round(100 * leap['level'])}% interval "
                          f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
                          f"(reported only)." if leap else
@@ -3058,6 +3066,22 @@ def forecast_accuracy(days):
         "band_90": band(0, 4),
         "band_50": band(1, 3),
     }
+
+
+def forecast_takeaways(recent, worst, year):
+    """The three plain takeaways under the forecast chart, each chosen by a rule from the record's numbers.
+
+    Typical miss: the median absolute error of the median, to the nearest whole basis point ("about 2 bp off",
+    "under 1 bp off" below 0.5). Coverage: the share of days inside the 90% band, to the nearest percent. Biggest
+    miss: the largest absolute error of the year, to the nearest whole basis point, with its day and month.
+    """
+    typical = recent["median_abs_error"]
+    off = "under 1 bp" if typical < 0.5 else f"about {typical:.0f} bp"
+    miss = abs(worst["miss"])
+    when = date.fromisoformat(worst["date"])
+    return [f"On a typical day the forecast was {off} off.",
+            f"The actual landed inside the forecast's 90% range on {100 * recent['band_90']['inside']:.0f}% of days.",
+            f"The biggest miss in {year} was about {miss:.0f} bp ({when.day} {when:%B})."]
 
 
 def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
@@ -3110,7 +3134,7 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
     v1 = drawn[0][2]
     later = [d for d in v1 if d["date"] >= FORECAST_DAILY_SPLIT]
     ranked = sorted(later, key=lambda d: -abs(d["actual_bps"] - d["quantiles_bps"][2]))
-    misses = [{"date": d["date"], "actual": d["actual_bps"], "median": d["quantiles_bps"][2],
+    misses = [{"date": d["date"], "label": f"{date.fromisoformat(d['date']).day} {date.fromisoformat(d['date']):%b}", "actual": d["actual_bps"], "median": d["quantiles_bps"][2],
                "low": d["quantiles_bps"][0], "high": d["quantiles_bps"][4],
                "miss": d["actual_bps"] - d["quantiles_bps"][2]} for d in ranked[:FORECAST_DAILY_MISSES]]
     years = sorted({int(iso[:4]) for iso in dates})
@@ -3121,7 +3145,7 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
                     "days": [[d["date"], *(round(v, 3) for v in (d["actual_bps"], *d["quantiles_bps"]))]
                              for d in days]}
                    for entry, rel, days in drawn],
-        "periods": periods, "misses_2026": misses,
+        "periods": periods, "misses_2026": misses, "chart_misses": FORECAST_DAILY_CHART_MISSES,
     }
 
     many = len(drawn) > 1
@@ -3166,21 +3190,11 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
                   f"<th scope='col'>90% band, bp</th><th scope='col'>Miss, bp</th></tr></thead>"
                   f"<tbody>{miss_rows}</tbody></table></div>")
     recent = periods[1]["rows"][0]
-    options = "".join(f"<option value='{y}'{' selected' if y == years[-1] else ''}>{y}</option>" for y in years)
+    takeaways = forecast_takeaways(recent, misses[0], date.fromisoformat(periods[1]["first"]).year)
     fills = {
-        "fd_lede": (f"Each day at the decision time the model forecasts the next day's SOFR − IORB as a range. In "
-                    f"{periods[1]['label']}, its median was off by {recent['mean_abs_error']:.2f} bp on an "
-                    f"average day and within 1 bp of the actual spread on {100 * recent['within_1']:.0f}% of "
-                    f"days, and the actual spread fell inside its 90% band on "
-                    f"{100 * recent['band_90']['inside']:.0f}% of days."),
-        "fd_year_options": options,
-        "fd_first_year": years[0],
-        "fd_band_50": FORECAST_DAILY_50_LABEL,
+        "fd_takeaways": "<ul class='ftlist'>" + "".join(f"<li>{html.escape(t)}</li>" for t in takeaways) + "</ul>",
         "fd_table": table,
         "fd_misses": miss_table,
-        "fd_hidden": (f"<b>No day after {day(last)} is drawn or counted.</b> Later days are in the blind tier, "
-                      f"and the live record's forecasts are among them; none is shown until its scoring date "
-                      f"opens it (<a href='{LOCKBOX_RULE}'>the lockbox</a>)."),
         "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'><code>{FORECAST_DAILY}"
                      f"</code></a>: each scored day from {day(first)} to {day(last)}, the published "
                      f"distribution's five quantiles one day ahead and the actual spread. Its daily CRPS "

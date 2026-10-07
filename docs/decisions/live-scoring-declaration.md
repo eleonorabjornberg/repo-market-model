@@ -1,6 +1,6 @@
 # Decision: how the live record is scored
 
-**Status: a draft for Eleonora (#276), in force once she merges it.** Drafted by the pull request that
+**Status: in force: merged in PR #286, 6 October 2026 (#276).** Drafted by the pull request that
 closes #276, which states decisions she has already made (her ruling of 6 October 2026, #269 items 4, 7
 and 14). It declares how the live record (#215) is scored before any 2027 outcome exists. Nothing here
 opens a lockbox tier: the opening is `docs/decisions/lockbox.md`'s, and this record changes none of it.

@@ -79,6 +79,10 @@ ATTRIBUTION = {
         "names the issue where a relayed go was withdrawn as not a go; the sentence "
         "states the withdrawal and links the comment that records it; no figure rests on it"
     ),
+    ("docs/final-test.md", 151): (
+        "names the issue where Eleonora's go to open the near-blind tier is recorded, linked "
+        "to the comment; the opening is also recorded in docs/decisions/lockbox.md; no figure rests on it"
+    ),
     ("README.md", 256): (
         "names the issue that asked for owner attestation; the sentence says "
         "where the rule's text stands; no figure rests on it"
@@ -122,10 +126,6 @@ ATTRIBUTION = {
     ),
     ("docs/decisions/pressure-probability.md", 130): _DECISION,
     ("docs/decisions/pressure-probability.md", 152): _DECISION,
-    ("site/index.html", 38): "work-tracking issue on a source card; no figure rests on it",
-    ("site/index.html", 88): "work-tracking issue on a source card; no figure rests on it",
-    ("site/index.html", 98): "work-tracking issue on a source card; no figure rests on it",
-    ("site/index.html", 115): "work-tracking issue on a source card; no figure rests on it",
     ("site/index.html", 127): "work-tracking issue on a source card; no figure rests on it",
 }
 
