@@ -2014,8 +2014,10 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
 
     Each counted day falls in one cell: inside a quarter-end window or not
     (`data.quarter_end_window`, #140), and with the ON RRP reading public at the
-    decision instant below `contract.ON_RRP_DEPLETION_BREAK_BN` (scarce) or not
-    (abundant). Each cell reports the share of its days with SOFR - IORB, on
+    decision instant of a forecast of that day below `contract.ON_RRP_DEPLETION_BREAK_BN`
+    (scarce) or not (abundant): the declared decision time on the panel day
+    before it, as N4's segment chart and N5 read a quarter-end (#198). The
+    first panel day has no such day and is in no cell. Each cell reports the share of its days with SOFR - IORB, on
     whole basis points, strictly above each headline threshold: k of n, with an
     interval. The #115 scarcity state is not read here: it is the band
     (`newcomer_band`), and the 2x2 keeps the ON RRP break alone. Days in a
@@ -2024,13 +2026,15 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
     """
     taus = [int(t) for t in thresholds["taus_bp"]]
     pressure_bp, second_bp = taus[0], taus[1]
-    kept = counted(rows, locked)
+    kept = [r for i, r in enumerate(rows) if i > 0 and locked_tier(date.fromisoformat(r["date"]), locked) is None]
     if not kept:
         raise VisualError("every panel day is held out; N3 has nothing to count")
     groups = {(scarce, qe): [] for scarce in (True, False) for qe in (True, False)}
-    for r in kept:
+    for i, r in enumerate(rows):
+        if i == 0 or locked_tier(date.fromisoformat(r["date"]), locked) is not None:
+            continue
         today = date.fromisoformat(r["date"])
-        _, value = on_rrp_as_of(on_rrp, today, decision, registry)
+        _, value = on_rrp_as_of(on_rrp, date.fromisoformat(rows[i - 1]["date"]), decision, registry)
         spread = int((Decimal(r["sofr"]) - Decimal(r["iorb"])) * 100)
         groups[(value < ON_RRP_DEPLETION_BREAK_BN, quarter_end_window(today) == 1.0)].append(spread)
     cells = [{"scarce": scarce, "quarter_end": qe, "n": len(spreads),
@@ -2093,10 +2097,11 @@ def newcomer_n3(rows, locked, thresholds, registry, decision, on_rrp, notes):
             f"all (<a href='https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/"
             f"quarter-end-window.md'>the decision</a>). A one-day flag on the last business day alone would put "
             f"pressure on the days around it in &ldquo;other days&rdquo;."),
-        "n3_read": (f"Each day is classed by the ON RRP result public at {clock(decision)} New York time that day. "
+        "n3_read": (f"Each day is classed by the ON RRP result public at {clock(decision)} New York time on the "
+                    f"panel day before it, the moment a forecast of that day is made. "
                     f"The project dates a result to {lag['available_time']} on the next business day, because the "
-                    f"New York Fed states no publication time, so the reading is the previous business day's "
-                    f"operation."),
+                    f"New York Fed states no publication time, so that reading is the operation of the business day "
+                    f"before the one it is read on."),
         "n3_small": (f"The quarter-end cells are small, {days(sq['n'])} with scarce cash and {days(aq['n'])} with "
                      f"abundant cash, so their intervals are wide."),
         "n3_reading": (
