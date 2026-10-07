@@ -16,6 +16,15 @@
       "IORB": "calendar_daily"
     },
     "field_release_lags": {
+      "EFFR": {
+        "available_time": "16:15",
+        "basis": "ref_date",
+        "days": 1,
+        "note": "EFFR: the H.15 posts at 16:15 ET each business day, carrying the previous business day's rate, so a value is declared available at 16:15 ET one business day after its date. Later than the New York Fed's own 09:00 ET print of the same number; this source is the Board's release. REVISION STATEMENT: never revised. RIFSPFF_N.B in the H.15 package fetched 2 October 2026 (tests/fixtures/snapshots/frb_ddp/, sha256 d5a661bd…) is identical to all eight tracked ALFRED vintages of DFF (tests/fixtures/snapshots/alfred-dff/ and alfred-dff-first-print/) on every shared business-day observation, back to 1954-07-01. test_effr_history.FrbDdpRevisionTests re-runs the comparison. The rate is computed by the New York Fed and published once.",
+        "timezone": "America/New_York",
+        "unit": "business_days",
+        "worst_case_calendar_days": 6
+      },
       "IOER": {
         "available_time": "16:15",
         "basis": "record_date",
@@ -44,12 +53,11 @@
     "provider": "Board of Governors of the Federal Reserve System",
     "release_lag": {
       "available_time": "16:15",
-      "basis": "ref_date",
-      "days": 1,
-      "note": "EFFR: the H.15 posts at 16:15 ET each business day, carrying the previous business day's rate, so a value is declared available at 16:15 ET one business day after its date. Later than the New York Fed's own 09:00 ET print of the same number; this source is the Board's release. REVISION STATEMENT: never revised. RIFSPFF_N.B in the H.15 package fetched 2 October 2026 (tests/fixtures/snapshots/frb_ddp/, sha256 d5a661bd…) is identical to all eight tracked ALFRED vintages of DFF (tests/fixtures/snapshots/alfred-dff/ and alfred-dff-first-print/) on every shared business-day observation, back to 1954-07-01. test_effr_history.FrbDdpRevisionTests re-runs the comparison. The rate is computed by the New York Fed and published once.",
+      "basis": "record_date",
+      "days": 0,
+      "note": "Source-level default for the DDP package, which no panel column reads. Every field this source lists is priced by its own field_release_lags entry, EFFR included; this block applies to none of them. EFFR is deliberately not declared here under a ref_date basis: nyfed_effr is the one ref_date source that owns EFFR for the panel and for validate_publication_gaps (#360), and the Board's copy of the same rate is priced by the field entry below for the #129 history study alone.",
       "timezone": "America/New_York",
-      "unit": "business_days",
-      "worst_case_calendar_days": 6
+      "unit": "calendar_days"
     },
     "reviewed_note": "Structural-zero semantics have not been reviewed against the DDP schema; the empty declaration is not a finding.",
     "structural_zeros": [],
