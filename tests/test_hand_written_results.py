@@ -75,7 +75,7 @@ import unittest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-PAGES = ("README.md", "METHODOLOGY.md", "docs/PORTFOLIO_CASE_STUDY.md")
+PAGES = ("README.md", "PROJECT_GUIDE.md", "METHODOLOGY.md", "docs/PORTFOLIO_CASE_STUDY.md")
 
 EVENT_RECORD = "docs/decisions/pressure-probability.md"
 
