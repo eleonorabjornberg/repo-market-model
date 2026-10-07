@@ -123,7 +123,7 @@ class PublishedSentenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.record, cls.table, cls.later, cls.days = emit.band_coverage()
-        cls.readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        cls.readme = (REPO_ROOT / "PROJECT_GUIDE.md").read_text(encoding="utf-8")
 
     def test_the_pooled_sentence_never_stands_while_a_split_cell_excludes(self):
         self.assertTrue(band.excluded(self.table),
