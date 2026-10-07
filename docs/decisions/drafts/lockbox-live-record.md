@@ -71,5 +71,5 @@ append-only `live-log` branch (`.github/workflows/live-log.yml`, `scripts/live_r
     test's pass rule, labels and bootstrap settings. A second cell, v1's published distribution against v2 on the
     days both are logged, is reported only. v2's block is separate and labelled, and it never enters v1's verdict.
   - v2's verdict is fixed once, at the first scoring date that scores any day of v2's primary cell. **Proposed:** the
-    same dates as v1 (2027-04-01, then every 1 October). **A question for Eleonora to confirm or change.**
+    same dates as v1 (`FIRST_SCORING_DATES`, then every 1 October). **A question for Eleonora to confirm or change.**
     It is fixed at the first scoring date with a scored v2 day, not at a calendar date.
