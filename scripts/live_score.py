@@ -101,6 +101,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import onset  # noqa: E402
+from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.metrics import (  # noqa: E402
     crps_from_quantiles, crps_trapezoid_from_quantiles, stationary_bootstrap_interval,
 )
@@ -504,10 +505,94 @@ def _paired(baseline, model, positions, h, *parts):
     )
 
 
+def _opening():
+    """`scripts/final_test_opening.py`, loaded once: the final test's group scoring (#363)."""
+
+    global _OPENING
+    if _OPENING is None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_score_final_opening", REPO / "scripts" / "final_test_opening.py")
+        _OPENING = module_from_spec(spec)
+        spec.loader.exec_module(_OPENING)
+    return _OPENING
+
+
+_OPENING = None
+
+
+def _event_groups(cell_name, h, dates, rows, splits, day, cache):
+    """The final test's group for a Brier cell, as positions into `dates` (#363).
+
+    The leap cell gets the leap-onset group (`onset.leap_onset_group`); the +5 bp and +10 bp
+    cells get the at-risk group (`onset.day_groups`). Both are read from the panel rows before
+    `day` only: a group never reads a day the scoring date has not opened.
+    """
+
+    before = [row for row in rows if row.date < day]
+    if cell_name == "leap":
+        if h not in cache:
+            rule = InformationRule(json.loads(final_test.REGISTRY.read_text()), ("spread_bps",),
+                                   decision_time=final_test.DECISION, horizon=h)
+            cache[h] = onset.LeapTargets(before, rule, final_test.leap_jump_bp(h))
+        return {onset.GROUP_LEAP_ONSET: onset.leap_onset_group(cache[h], dates)}
+    return {onset.GROUP_ONSET: onset.day_groups(before, dates, splits)[onset.GROUP_ONSET]}
+
+
+def _paired_cell(losses, baseline, name, positions, regimes, types, h, day, cell_name, tail=()):
+    """The model paired against one baseline over `positions`: all days, by regime, by day type.
+
+    `tail` is added to every seed after the baseline, so a group's cells draw their own.
+    """
+
+    paired = {"all_days": _paired(losses[baseline], losses[name], positions, h, day, cell_name, h, name,
+                                  baseline, *tail)}
+    gaps = [x - y for x, y in zip(losses[baseline], losses[name])]
+    for label, keys in (("by_regime", regimes), ("by_day_type", types)):
+        paired[label] = {}
+        for key in sorted({keys[k] for k in positions}):
+            part = [k for k in positions if keys[k] == key]
+            paired[label][key] = _small_cell(gaps, part) or _paired(
+                losses[baseline], losses[name], part, h, day, cell_name, h, name, baseline, *tail, key)
+    return paired
+
+
+def _group_cell(group, positions, outcomes, losses, columns, models, baselines, regimes, types, h, day,
+                cell_name):
+    """One final-test group inside a Brier cell: its Brier, paired cells and false-alarm level."""
+
+    events = sum(outcomes[k] for k in positions)
+    cell = {"days": len(positions), "events": events, "role": "reported only"}
+    if not positions:
+        cell["result"] = "inconclusive"
+        cell["reason"] = "no days in the group"
+        return cell
+    cell["false_alarm_level"] = _opening().false_alarm_level(group, positions, outcomes, columns)
+    if events < onset.MINIMUM_EVENTS:
+        cell["result"] = "inconclusive"
+        cell["reason"] = f"{events} events, below the minimum of {onset.MINIMUM_EVENTS}"
+        return cell
+    cell["models"] = {}
+    for name in models:
+        entry = {"brier": sum(losses[name][k] for k in positions) / len(positions), "paired": {}}
+        for b in baselines:
+            paired = _paired_cell(losses, b, name, positions, regimes, types, h, day, cell_name,
+                                  tail=(group,))
+            paired["all_days"]["label"] = _opening().label(paired["all_days"], events)
+            entry["paired"][b] = paired
+        cell["models"][name] = entry
+    cell["baseline_brier"] = {b: sum(losses[b][k] for k in positions) / len(positions) for b in baselines}
+    return cell
+
+
 def score(records, rows, splits, day: date) -> dict:
-    """Every Brier cell, cumulatively over `records`, on the outcomes in `rows`: reported only."""
+    """Every Brier cell, cumulatively over `records`, on the outcomes in `rows`: reported only.
+
+    Each cell also carries the final test's group for it, under `groups` (#363).
+    """
 
     by_date = {row.date: row for row in rows}
+    leap_targets = {}
     out = {"cells": {}}
     for cell_name, baselines in BASELINES.items():
         for h in HORIZONS:
@@ -530,26 +615,25 @@ def score(records, rows, splits, day: date) -> dict:
             events = sum(outcomes)
             cell = {"days": len(days), "events": events, "first": days[0] if days else None,
                     "last": days[-1] if days else None, "models": {}, "role": "reported only"}
+            groups = _event_groups(cell_name, h, [date.fromisoformat(d) for d in days], rows, splits, day,
+                                   leap_targets)
+            losses = {name: [(p - y) ** 2 for p, y in zip(column, outcomes)]
+                      for name, column in {**model, **bench}.items()}
+            columns = {**model, **bench}
+            cell["groups"] = {group: _group_cell(group, positions, outcomes, losses, columns, list(model),
+                                                 baselines, regimes, types, h, day, cell_name)
+                              for group, positions in groups.items()}
             if events < onset.MINIMUM_EVENTS:
                 cell["result"] = "inconclusive"
                 cell["reason"] = f"{events} events, below the minimum of {onset.MINIMUM_EVENTS}"
                 out["cells"][f"{cell_name}/h{h}"] = cell
                 continue
-            losses = {name: [(p - y) ** 2 for p, y in zip(column, outcomes)]
-                      for name, column in {**model, **bench}.items()}
             every = list(range(len(days)))
             for name in model:
                 entry = {"brier": sum(losses[name]) / len(days), "paired": {}}
                 for b in baselines:
-                    paired = {"all_days": _paired(losses[b], losses[name], every, h, day, cell_name, h, name, b)}
-                    for label, keys in (("by_regime", regimes), ("by_day_type", types)):
-                        paired[label] = {}
-                        for key in sorted(set(keys)):
-                            positions = [k for k in every if keys[k] == key]
-                            gaps = [x - y for x, y in zip(losses[b], losses[name])]
-                            paired[label][key] = _small_cell(gaps, positions) or _paired(
-                                losses[b], losses[name], positions, h, day, cell_name, h, name, b, key)
-                    entry["paired"][b] = paired
+                    entry["paired"][b] = _paired_cell(losses, b, name, every, regimes, types, h, day,
+                                                      cell_name)
                 cell["models"][name] = entry
             cell["baseline_brier"] = {b: sum(losses[b]) / len(days) for b in baselines}
             out["cells"][f"{cell_name}/h{h}"] = cell
