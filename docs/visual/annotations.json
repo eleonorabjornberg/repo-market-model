@@ -176,7 +176,7 @@
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
     {"step": "Pull request", "text": "The pull request is the report: what changed, the evidence, what was checked and what was not",
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
-    {"step": "Review", "text": "A separate reviewer checks every acceptance criterion against the tree, and judgement calls go to Eleonora",
+    {"step": "Review", "text": "A separate Claude review routine, not Eleonora, checks each acceptance criterion against the tree and merges; judgement calls go to her",
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/workflow.md"},
     {"step": "Publish", "text": "A record is published only while nothing that computes a figure, declares a source or supplies the panel has changed since it was scored",
      "src": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/publish-rule.md"}

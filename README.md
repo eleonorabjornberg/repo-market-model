@@ -450,8 +450,10 @@ research directions, not completed features.
 - **Eleonora Björnberg** — author. She designed the model, the
   methodology and the workflow: the research design and the point-in-time contract,
   the evaluation protocol, the agent contract the code is developed under, validation
-  (every guard and mutation record in the suite), interpretation of results, and review
-  of all machine-written code before it lands.
+  (every guard and mutation record in the suite), and the interpretation of results.
+  She did not review all of the machine-written code: see "Who decides and who reviews"
+  below for what she decided, what a delegated Claude routine reviewed, and what she
+  merged herself.
 - **Nicholas Beroud** — advisor on data selection and economic interpretation: which
   public series carry the funding market's mechanics, what each one means, and which
   open questions are questions of finance rather than of code.
@@ -499,14 +501,48 @@ Then, for how the work is controlled rather than what it claims:
 ## Development process and AI disclosure
 
 Much of the implementation is written by AI coding agents. Each session works one directive, on one branch and one
-pull request, which merges into `main` only after CI and the author's review
-([`docs/decisions/workflow.md`](docs/decisions/workflow.md)). The earlier development process is documented in
+pull request ([`docs/decisions/workflow.md`](docs/decisions/workflow.md)). The earlier development process is documented in
 [`docs/archive/`](docs/archive). The author and the advisor answer for different things:
-the model, methodology, workflow, tests and code with Eleonora Björnberg; the choice
+the model, methodology, workflow and tests with Eleonora Björnberg; the choice
 of data and its economic meaning with Nicholas Beroud. Any academic submission based
 on this repository remains the author's academic responsibility, should follow the
 relevant instructor's AI-use and citation requirements, and should disclose both the
 AI-agent workflow and the collaboration.
+
+### Who decides and who reviews
+
+*Draft wording, for Eleonora's approval.* The pull request that proposes it marks the
+question.
+
+- **Eleonora decides** what the work is: she writes the directives (the issues in the
+  "Directive queue"), gives the rulings on the questions they raise, and holds the
+  judgement calls: a new rule, a threshold, a data meaning, a published figure.
+- **A delegated Claude routine reviews and merges most pull requests.** Under "Delegated
+  review" in [`docs/decisions/workflow.md`](docs/decisions/workflow.md), queued pull
+  requests are reviewed and merged by the "Directive reviewer" routine, a separate Claude
+  Code session from the one that wrote the change. It checks each acceptance criterion and
+  CI, and escalates the cases the record lists to her. She did not read those pull requests
+  before they merged, and she did not read all of the code.
+- **Merges she made herself** are the ones she says so for. On
+  [#269](https://github.com/eleonorabjornberg/repo-market-model/issues/269) she states that
+  [#153 and #236 were her merges](https://github.com/eleonorabjornberg/repo-market-model/issues/269#issuecomment-6019863374),
+  and that she [approved the merges of #216 and #224](https://github.com/eleonorabjornberg/repo-market-model/issues/269#issuecomment-6019982763)
+  (the final-test pre-registration and its amendment), which the orchestrating session
+  carried out on her instruction given off GitHub.
+- **How her own decision is told apart.** Agent sessions post to GitHub under her account,
+  so a comment there does not by itself show that she wrote it.
+  [`scripts/owner_attested.py`](scripts/owner_attested.py) accepts one only if it is by her
+  account, was posted without a GitHub app, was never edited, and carries the agreed phrase
+  on the issue it approves. The rule that requires this for opening a lockbox tier, changing
+  a pre-registered primary test, approving a model to join the live record and changing the
+  live pin was asked for in [#256](https://github.com/eleonorabjornberg/repo-market-model/issues/256)
+  and is drafted in `docs/decisions/drafts/owner-attestation.md`. The check and its CI step
+  were merged in [#294](https://github.com/eleonorabjornberg/repo-market-model/pull/294);
+  the rule's text has not yet been added to `workflow.md`.
+- **A relay that was not her go.** On 3 October a "go for #151" was relayed there by the
+  orchestrating session. On 4 October that relay was
+  [withdrawn as "not a go"](https://github.com/eleonorabjornberg/repo-market-model/issues/151#issuecomment-5975923861).
+  The attestation check exists because of it.
 
 ## License
 

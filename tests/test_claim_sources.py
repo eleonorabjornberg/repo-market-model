@@ -75,6 +75,22 @@ _DECISION = "names the ruling that made this decision; the rule is the record it
 
 #: (page, number): why the link is attribution, not the source of a figure.
 ATTRIBUTION = {
+    ("README.md", 151): (
+        "names the issue where a relayed go was withdrawn as not a go; the sentence "
+        "states the withdrawal and links the comment that records it; no figure rests on it"
+    ),
+    ("README.md", 256): (
+        "names the issue that asked for owner attestation; the sentence says "
+        "where the rule's text stands; no figure rests on it"
+    ),
+    ("README.md", 294): (
+        "names the pull request that merged the owner-attestation check and its draft rule; "
+        "the sentence says what it merged; no figure rests on it"
+    ),
+    ("README.md", 269): (
+        "names the issue where Eleonora states which merges were hers, each linked to "
+        "her comment; no figure rests on it"
+    ),
     ("docs/decisions/workflow.md", 269): (
         "names the comments where Eleonora confirmed the #153, #236, #216 and #224 merges; the note "
         "quotes them and states no figure"
