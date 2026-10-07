@@ -541,7 +541,7 @@ class ScorerRefusalTests(unittest.TestCase):
                 score.main(
                     ["--date", "2027-10-01", "--live-dir", str(repo), "--digests",
                      str(save(comments, tmp)), "--panel", str(Path(tmp) / "missing.csv"),
-                     "--output", str(out)]
+                     "--archive-dir", str(Path(tmp) / "no-archive"), "--output", str(out)]
                 )
             self.assertFalse(out.exists())
 
@@ -907,8 +907,9 @@ class WorkflowIntegrityTests(unittest.TestCase):
 
     def test_the_workflow_writes_no_existing_path(self):
         # Only the day's record and its anchor are ever staged, each in its own commit.
+        # `"raw/$DAY"` is staged in a different clone, of the `live-raw` branch (#257).
         adds = re.findall(r"git add (\S+)", self.text)
-        self.assertEqual(adds, ['"$file"', '"live/$day.rekor"'])
+        self.assertEqual(adds, ['"$file"', '"raw/$DAY"', '"live/$day.rekor"'])
 
     def test_the_anchor_follows_the_push_and_precedes_the_digest_and_never_fails_the_run(self):
         step = self._step("Anchor the digests in Sigstore Rekor")
