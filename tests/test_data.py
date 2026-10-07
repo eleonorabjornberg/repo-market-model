@@ -6388,7 +6388,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
     on the review of #56 (option A): the business days come from a published
     holiday schedule, not from the panel's grid, so `quarter_end` stays a
     function of the date alone. The schedule is `metadata/market_holidays.json`:
-    since #59, the weekdays of 2018-2027 with no scheduled SOFR publication.
+    since #59 (to 2030 since #263), the weekdays of 2018-2030 with no scheduled SOFR publication.
 
     Until #44 the column marked the last *calendar* day, so it read 0.0 on
     every row of a quarter that ended on a weekend -- 9 of the 33 complete
@@ -6485,18 +6485,18 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
         self.assertEqual({day: data.quarter_end(day) for day in reads}, reads)
 
     def test_every_quarter_of_the_table_has_one_quarter_end(self):
-        """2018-2027: one 1.0 per quarter, on the last weekday the table does not close."""
+        """2018-2030: one 1.0 per quarter, on the last weekday the table does not close."""
 
         from repo_model import data
 
         closed = {date.fromisoformat(entry["date"]) for entry in self.table()["closed"]}
         day = date(2018, 1, 1)
         ends = {}
-        while day <= date(2027, 12, 31):
+        while day <= date(2030, 12, 31):
             if data.quarter_end(day) == 1.0:
                 ends.setdefault((day.year, (day.month - 1) // 3), []).append(day)
             day += timedelta(days=1)
-        self.assertEqual(len(ends), 40)
+        self.assertEqual(len(ends), 52)
         for quarter, days in ends.items():
             with self.subTest(quarter):
                 self.assertEqual(len(days), 1, days)
@@ -6511,7 +6511,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
     def test_a_date_outside_the_table_is_refused(self):
         from repo_model import data
 
-        for day in (date(2017, 12, 29), date(2028, 3, 31), date(2028, 1, 3)):
+        for day in (date(2017, 12, 29), date(2031, 3, 31), date(2031, 1, 3)):
             with self.subTest(day), self.assertRaises(ValueError):
                 data.quarter_end(day)
 
@@ -6527,7 +6527,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
             data.MARKET_HOLIDAYS_SHA256, hashlib.sha256(self.TABLE.read_bytes()).hexdigest()
         )
         loaded = data.market_holidays()
-        self.assertEqual((loaded.first, loaded.last), (date(2018, 1, 1), date(2027, 12, 31)))
+        self.assertEqual((loaded.first, loaded.last), (date(2018, 1, 1), date(2030, 12, 31)))
         self.assertIn(date(2024, 3, 29), loaded.closed)
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -6601,7 +6601,7 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
 
         table = self.table()
         statute = set()
-        for year in range(2018, 2028):
+        for year in range(2018, 2031):
             statute |= self.statutory_holidays(year)
         closed = {
             date.fromisoformat(entry["date"])
@@ -6612,8 +6612,15 @@ class QuarterEndMarketHolidayTests(unittest.TestCase):
             date.fromisoformat(entry["date"])
             for entry in table["statutory_days_the_market_opened"]
         }
-        self.assertEqual(closed | opened, statute)
+        # A statutory day SIFMA has not yet ruled on (#263) is listed apart, not guessed.
+        pending = {
+            date.fromisoformat(entry["date"])
+            for entry in table["sifma_not_yet_published"]
+        } & statute
+        self.assertEqual(pending, {date(2028, 11, 10)})
+        self.assertEqual(closed | opened | pending, statute)
         self.assertEqual(closed & opened, set())
+        self.assertEqual((closed | opened) & pending, set())
         self.assertEqual(
             opened,
             {date(2021, 6, 18), date(2021, 12, 31), date(2023, 11, 10), date(2027, 12, 31)},

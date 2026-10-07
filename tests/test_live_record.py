@@ -229,7 +229,7 @@ class DecisionDayTests(unittest.TestCase):
 
     def test_a_day_the_holiday_table_does_not_cover_is_refused(self):
         with self.assertRaises(ValueError):
-            live.is_decision_day(date(2028, 1, 3))
+            live.is_decision_day(date(2031, 1, 3))
 
     def test_the_target_days_skip_holidays(self):
         self.assertEqual(
