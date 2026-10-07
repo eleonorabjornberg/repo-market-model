@@ -56,6 +56,9 @@ BAND_PAGE = ROOT / "docs/band_coverage_by_split.md"
 #: The model documentation and validation report (#119): prose written by hand, every figure in a block
 #: `scripts/validation_report.py` renders from the records.
 VALIDATION_PAGE = ROOT / "docs/model/validation.md"
+#: The plain-language results page (#120): hand-written shell, every figure in a block
+#: `scripts/plain_page.py` renders from the records.
+PLAIN_PAGE = ROOT / "site/plain.html"
 
 BEGIN = "<!-- generated: key-findings -->"
 END = "<!-- end generated: key-findings -->"
@@ -1452,6 +1455,37 @@ def validation_report_module():
 _VALIDATION_MODULE = {}
 
 
+def plain_page_module():
+    """`scripts/plain_page.py`, loaded once."""
+
+    if "module" not in _PLAIN_MODULE:
+        spec = importlib.util.spec_from_file_location("plain_page", ROOT / "scripts/plain_page.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["plain_page"] = module
+        spec.loader.exec_module(module)
+        _PLAIN_MODULE["module"] = module
+    return _PLAIN_MODULE["module"]
+
+
+_PLAIN_MODULE = {}
+
+
+def desk_outputs_module():
+    """`scripts/desk_outputs.py`, loaded once (the page quotes its declared rules and labels)."""
+
+    if "module" not in _DESK_MODULE:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        spec = importlib.util.spec_from_file_location("desk_outputs", ROOT / "scripts/desk_outputs.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["desk_outputs"] = module
+        spec.loader.exec_module(module)
+        _DESK_MODULE["module"] = module
+    return _DESK_MODULE["module"]
+
+
+_DESK_MODULE = {}
+
+
 def band_coverage():
     """`(record, table, h2-5 cells, days)` of the published distribution's band split, computed once."""
 
@@ -1844,6 +1878,7 @@ def rendered(persistence, exceedance, conditional):
             (FINAL_TEST_BEGIN, FINAL_TEST_END, final_test_section()),
         ),
         VALIDATION_PAGE: tuple(validation_report_module().blocks(types.SimpleNamespace(**globals()))),
+        PLAIN_PAGE: tuple(plain_page_module().blocks(types.SimpleNamespace(**globals()))),
     }
     for page, blocks in pages.items():
         if not page.exists():

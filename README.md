@@ -22,6 +22,8 @@ project, built to show how such a forecast can be made and tested without borrow
   <img alt="Four groups of public data (the price of overnight cash, spare cash in the system, days when a lot of cash is needed at once, and where cash can park instead) flow into what is known at 4 pm the day before, and then into the chance that tomorrow's rate is more than 5 bp above what the Fed pays on reserves" src="docs/figures/overview-light.svg">
 </picture>
 
+What it forecasts, how well, against what, and where it fails, in plain words and for a reader with no finance background: [the plain-language results page](https://eleonorabjornberg.github.io/repo-market-model/plain.html) (source: [`site/plain.html`](site/plain.html), every figure generated from `docs/runs/` by [`scripts/plain_page.py`](scripts/plain_page.py)).
+
 New to this market? [Start here](https://eleonorabjornberg.github.io/repo-market-model/#start): short views, read in order, explain what pressure is, why it is hard to forecast, when it happens, who lends to whom, and one quarter-end step by step, with every term defined where it is first used.
 
 <!-- generated: status -->
