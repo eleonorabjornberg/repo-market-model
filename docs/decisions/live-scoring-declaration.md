@@ -17,6 +17,12 @@ this record merges: git blob `772a47cc859854c487c7097b9d2ea8fd83cfdf7d`, SHA-256
 `d92d48f17aef1475d3773406d2dfb6c650cbe470fd4f9e8074e965c37a23bc96`. The file's last declared regime ends
 at the end of 2026, so the 2027 regimes live in the scorer's rule, not in the file, and the file is not edited.
 
+**Amendment, 7 October 2026 (#362; draft for Eleonora's review).** Following her ruling on #354, the file now
+declares a regime `2027` (2027-01-01 to 2027-12-31). Its SHA-256 is
+`24cde33374353a83f1f8c61322b9ab91b15e10e70daad21c5ab54a9c7876dc75`. Live records written from the merge on carry
+that hash in `inputs.splits_sha256`; earlier records keep the one above. A 2027 day is labelled `2027` either way,
+and no published record scores a 2027 day.
+
 **How that relates to each record's hash.** Every live record stores `inputs.splits_sha256`, the SHA-256 of
 the file's bytes on the day the record was written. A record whose hash differs from the one above was
 written under a different version of the file. The scorer reports it and does not re-split on it. Editing

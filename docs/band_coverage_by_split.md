@@ -22,6 +22,7 @@ The published distribution at h = 1 (`docs/runs/backtest_gbm_conformal_pid_neste
 | regime | 2021-23 | 748 | 29.0% | 25.3% to 32.7% | 91.0% | 88.7% to 93.2% | 50 (6.7%) | 17 (2.3%) | 50% |
 | regime | 2024 | 250 | 34.8% | 28.9% to 40.9% | 84.4% | 80.0% to 88.5% | 10 (4.0%) | 29 (11.6%) | 50%, 90% |
 | regime | 2025-26 | 249 | 30.1% | 25.3% to 35.1% | 89.2% | 85.5% to 92.4% | 4 (1.6%) | 23 (9.2%) | 50% |
+| regime | 2027 | 0 | too few days (under 20) | | too few days (under 20) | | 0 | 0 | |
 
 ## h = 2
 
@@ -41,6 +42,7 @@ The published distribution at h = 1 (`docs/runs/backtest_gbm_conformal_pid_neste
 | regime | 2021-23 | 748 | 30.5% | 26.6% to 34.3% | 90.8% | 88.3% to 93.0% | 50 (6.7%) | 19 (2.5%) | 50% |
 | regime | 2024 | 250 | 34.4% | 28.2% to 40.6% | 84.4% | 80.2% to 88.6% | 12 (4.8%) | 27 (10.8%) | 50%, 90% |
 | regime | 2025-26 | 249 | 27.3% | 21.9% to 32.8% | 89.2% | 85.3% to 92.6% | 5 (2.0%) | 22 (8.8%) | 50% |
+| regime | 2027 | 0 | too few days (under 20) | | too few days (under 20) | | 0 | 0 | |
 
 ## h = 3
 
@@ -60,6 +62,7 @@ The published distribution at h = 1 (`docs/runs/backtest_gbm_conformal_pid_neste
 | regime | 2021-23 | 748 | 29.3% | 25.5% to 33.0% | 90.9% | 88.5% to 93.2% | 48 (6.4%) | 20 (2.7%) | 50% |
 | regime | 2024 | 250 | 32.0% | 26.1% to 38.0% | 85.2% | 80.4% to 89.6% | 10 (4.0%) | 27 (10.8%) | 50%, 90% |
 | regime | 2025-26 | 249 | 24.5% | 19.4% to 29.5% | 87.1% | 82.8% to 91.0% | 6 (2.4%) | 26 (10.4%) | 50% |
+| regime | 2027 | 0 | too few days (under 20) | | too few days (under 20) | | 0 | 0 | |
 
 ## h = 4
 
@@ -79,6 +82,7 @@ The published distribution at h = 1 (`docs/runs/backtest_gbm_conformal_pid_neste
 | regime | 2021-23 | 748 | 29.3% | 25.5% to 32.9% | 90.4% | 87.9% to 92.6% | 53 (7.1%) | 19 (2.5%) | 50% |
 | regime | 2024 | 250 | 31.6% | 25.5% to 37.6% | 85.2% | 80.0% to 90.1% | 11 (4.4%) | 26 (10.4%) | 50% |
 | regime | 2025-26 | 249 | 24.9% | 19.9% to 30.4% | 87.6% | 83.5% to 91.4% | 8 (3.2%) | 23 (9.2%) | 50% |
+| regime | 2027 | 0 | too few days (under 20) | | too few days (under 20) | | 0 | 0 | |
 
 ## h = 5
 
@@ -98,5 +102,6 @@ The published distribution at h = 1 (`docs/runs/backtest_gbm_conformal_pid_neste
 | regime | 2021-23 | 748 | 28.3% | 24.4% to 32.0% | 89.4% | 86.7% to 91.9% | 58 (7.8%) | 21 (2.8%) | 50% |
 | regime | 2024 | 250 | 33.6% | 27.7% to 39.5% | 85.6% | 80.7% to 90.1% | 9 (3.6%) | 27 (10.8%) | 50% |
 | regime | 2025-26 | 249 | 25.7% | 20.5% to 31.1% | 86.3% | 81.9% to 90.5% | 8 (3.2%) | 26 (10.4%) | 50% |
+| regime | 2027 | 0 | too few days (under 20) | | too few days (under 20) | | 0 | 0 | |
 
 <!-- end generated: band-coverage -->
