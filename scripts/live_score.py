@@ -992,6 +992,58 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
     return result
 
 
+#: The code the live scorer is (#282, ruling on #269 item 5), hashed the way the final test's
+#: `_CRPS_SOURCE` is: each root and every top-level name of its file it mentions, so the
+#: cells, the intervals, the minimum-cell rule, the regime and month-end splits and the gap
+#: scoring are all covered. The clock, integrity, pin and provenance code scores nothing and is
+#: left out (`tests/test_live_score_freeze.py` lists it and refuses a scoring function outside).
+LIVE_SOURCE = (
+    ("scripts/live_score.py", (
+        "crps_from_record", "integral_crps_from_record", "headline_status", "_regime", "_small_cell",
+        "score_crps", "_outcome", "_paired", "_event_groups", "_paired_cell", "_group_cell", "score",
+        "skipped_records", "first_live_targets", "gap_target_days", "gap_decision_days",
+        "validate_gap_record", "_as_gap_cell", "require_gap_boundaries_equal", "pinned_gap_days",
+        "require_gap_scoring", "score_gap", "assemble", "_require_scored_days_unlocked",
+        "EVENT_BLOCK_RULE", "EVENT_SEED_RULE", "NOT_EVIDENCE", "INTERIOR_DESIGN", "GAP_LABEL",
+    )),
+    ("scripts/final_test_preregistration.py", ("crps_verdict", "crps_result", "leap_jump_bp",
+                                               "CRPS_BLOCK_LENGTH", "CRPS_SENSITIVITY_BLOCK_LENGTH")),
+    ("scripts/final_test_opening.py", ("false_alarm_level", "label")),
+    ("src/repo_model/metrics.py", ("crps_from_quantiles", "crps_trapezoid_from_quantiles",
+                                   "stationary_bootstrap_interval")),
+    ("src/repo_model/baseline.py", ("_seed_from",)),
+    ("src/repo_model/onset.py", ("paired_difference", "whole_bp", "day_groups", "leap_onset_group",
+                                 "LeapTargets", "MINIMUM_EVENTS", "REPLICATIONS", "LEVEL")),
+    ("src/repo_model/data.py", ("exceeds_bp",)),
+    ("src/repo_model/lockbox.py", ("require_unlocked",)),
+    ("src/repo_model/evaluation_splits.py", ("SplitDeclaration", "MONTH_END_RULE", "DAY_TYPES",
+                                             "DAY_TYPE_COLUMNS", "quarter_end_window_label",
+                                             "load_split_declaration")),
+)
+
+
+def live_declaration() -> dict:
+    """Everything the live scorer is: its scoring code and the constants it reads."""
+
+    source = {}
+    for path, names in LIVE_SOURCE:
+        source[path] = {**source.get(path, {}), **final_test._top_level_source(path, names)}
+    return {
+        "constants": {
+            "horizons": list(HORIZONS), "minimum_cell_days": MINIMUM_CELL_DAYS,
+            "minimum_events": onset.MINIMUM_EVENTS, "replications": onset.REPLICATIONS,
+            "level": onset.LEVEL, "first_year_regime": FIRST_YEAR_REGIME,
+            "baselines": {cell: list(names) for cell, names in BASELINES.items()},
+        },
+        "source_sha256": source,
+    }
+
+
+def live_declaration_checksum() -> str:
+    text = json.dumps(live_declaration(), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def _raw():
     """`scripts/live_raw.py`, loaded once."""
 

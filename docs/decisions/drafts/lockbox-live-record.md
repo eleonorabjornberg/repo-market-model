@@ -106,6 +106,21 @@ Drafted for her. It fixes how a scoring run is made, so that the evidence can be
   probability on the group's days whose outcome is 0, computed by the final test's own `false_alarm_level`. A
   group with fewer than `MINIMUM_EVENTS` events is `inconclusive` and carries only its false-alarm level. The
   seeds add the group's name after the baseline. No other cell moves.
+- **The frozen scorer (#282).** The live scorer is frozen the way the final test's CRPS functions are
+  (`final_test_preregistration.py`, `crps_declaration_checksum`), by a checksum of its own,
+  `scripts/live_score.py`'s `live_declaration_checksum`: the SHA-256 of every top-level definition the scoring
+  functions reach, in `live_score.py` and in the modules they call into, with the constants they read. It covers the
+  cells (`score`, `score_crps`, the group cells), the intervals (`_paired`, `_paired_cell`,
+  `stationary_bootstrap_interval`, the seeds), the minimum-cell rule (`_small_cell`), the regime and month-end splits
+  (`_regime`, `SplitDeclaration`, `MONTH_END_RULE`) and the gap scoring (`score_gap` and its helpers); the final
+  test's two checksums do not move. `tests/test_live_score_freeze.py` fails when any covered function changes and
+  when a scoring function is added outside the checksum. It was taken after the declarations, the `lockbox.json`
+  routing, the `month_end` re-split, #257, #231 and the final test's groups (#363) had merged, so #282 is the
+  last change not under it. A later change to a covered function is a decision of hers and re-pins this value.
+  *Proposed, hers to merge:* the pin in the next two lines.
+
+- **Live scorer checksum:** `ae9b94b50247f2776317b86021231e51cecc830bff21df7ffc923933009c0613`
+- **Live scorer checksum taken at:** `37cc995699af4bc13fc7bcd4cd4ef7074905216f`
 - **The gap.** The blind gap's raw inputs, fetched once at scoring time, are archived on `live-raw` as
   `raw/<date>-gap/` before the reconstruction reads them. Its day boundaries are computed by the pinned code's own
   calendar and the scorer asserts they equal the ones it computes from main's; a difference refuses the run.
