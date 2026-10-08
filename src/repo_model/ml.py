@@ -4017,6 +4017,38 @@ PRESSURE_CLASSIFIER_SETTINGS = MappingProxyType(
     }
 )
 
+#: Rare-event training (#381; `docs/pivot/literature.md`): fit the pressure label so the model
+#: learns from the spikes rather than the calm majority. Declared before any score, not tuned.
+#: `class_weight` weights each class by n / (2 n_class) in the fit. `focal` is a gradient-boosted
+#: classifier on the focal loss (Lin et al. 2017) of `gamma` and positive-class weight `alpha`,
+#: built from scikit-learn regression trees with Newton leaf values (`l2` on the hessian sum).
+#: `balanced_bootstrap` fits `bags` models, each on a bootstrap of the *training rows only*
+#: with half its draws from the events and half from the calm days, and averages them.
+#: Reweighting distorts probabilities, so every candidate is also read recalibrated out of fold
+#: (`pressure.recalibrated`), which is the form the judge scores.
+PRESSURE_RARE_EVENT_SETTINGS = MappingProxyType(
+    {
+        "treatments": ("class_weight", "focal", "balanced_bootstrap"),
+        "class_weight": "balanced",
+        "focal": MappingProxyType(
+            {
+                "gamma": 2.0,
+                "alpha": 0.75,
+                "rounds": 200,
+                "learning_rate": 0.05,
+                "max_leaf_nodes": 15,
+                "min_samples_leaf": 20,
+                "l2": 0.1,
+                "hessian_floor": 1e-6,
+                "hessian_step": 1e-4,
+            }
+        ),
+        "balanced_bootstrap": MappingProxyType(
+            {"bags": MappingProxyType({"logistic": 10, "gbm_classifier": 5}), "event_share": 0.5}
+        ),
+    }
+)
+
 #: The panel days over which the TGA change is measured: one week of panel
 #: rows, the H.4.1 print's cadence.
 TGA_CHANGE_ROWS = 5
@@ -4294,8 +4326,14 @@ def _direct_pressure_predictor(
     products: Sequence[Tuple[str, str]] = (),
     history: Optional[Tuple[Sequence[Any], Any]] = None,
     design: Optional[Any] = None,
+    rare: Optional[str] = None,
 ) -> Any:
     """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `rare`, for the rare-event study (#381): a treatment of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied inside each fit to
+    its training pairs only (`_fit_rare_event`). It is refused for the probit
+    and quantile kinds, and checked here so a bad name fails at construction.
 
     `design`, for the scarcity-conditioned calendar (#128) only: a prebuilt
     design (`_ScarcityCalendarDesign`) used in place of `_PressureDesign`'s
@@ -4314,6 +4352,16 @@ def _direct_pressure_predictor(
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if rare is not None:
+        if kind not in ("logistic", "gbm_classifier"):
+            raise ValueError(f"a rare-event treatment is the logistic's or the classifier's, not {kind!r}")
+        if rare not in PRESSURE_RARE_EVENT_SETTINGS["treatments"]:
+            raise ValueError(
+                f"unknown rare-event treatment {rare!r}; one of "
+                f"{list(PRESSURE_RARE_EVENT_SETTINGS['treatments'])}"
+            )
+        if rare == "focal" and kind != "gbm_classifier":
+            raise ValueError("the focal loss is the gradient-boosted classifier's")
     if design is None:
         design = _PressureDesign(features, declaration, products)
     monotone = getattr(design, "monotone", None)
@@ -4388,7 +4436,13 @@ def _direct_pressure_predictor(
             key = tuple(labels)
             if key not in fitted:
                 fitted[key] = _fit_classifier(
-                    kind, xs, labels, served, monotone=monotone, pooling=getattr(design, "pooling", None)
+                    kind,
+                    xs,
+                    labels,
+                    served,
+                    monotone=monotone,
+                    pooling=getattr(design, "pooling", None),
+                    rare=rare,
                 )
             columns.append(fitted[key])
         curves = []
@@ -4407,6 +4461,15 @@ def _direct_pressure_predictor(
             }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
         )
         settings["design"] = list(design.names)
+        if rare is not None:
+            settings["rare_event"] = {
+                "treatment": rare,
+                **{
+                    key: _plain(value)
+                    for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
+                    if key in ("class_weight", rare)
+                },
+            }
         if history is not None:
             pool = pooled["pool"]
             settings["design"].append(HISTORY_MARKET_COLUMN)
@@ -4448,6 +4511,7 @@ def _fit_classifier(
     served: Sequence[Sequence[float]],
     monotone: Optional[Sequence[int]] = None,
     pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None,
+    rare: Optional[str] = None,
 ) -> List[float]:
     """Fit one estimator to one threshold's labels; P(label = 1) at `served`.
 
@@ -4458,6 +4522,11 @@ def _fit_classifier(
     deviations are shrunk toward the pooled fit, and a regime with no training
     day is served the pooled fit. `None` passes nothing, so every other fit is
     unchanged.
+
+    `rare`, the rare-event treatments' (#381): one of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied to the training rows
+    handed in and to nothing else (`_fit_rare_event`). `None`, the default,
+    passes nothing, so every existing fit is unchanged.
 
     `monotone`, the classifier's only: one of -1, 0, +1 per design column,
     passed to scikit-learn as `monotonic_cst` (#128). `None`, the default,
@@ -4470,6 +4539,10 @@ def _fit_classifier(
     x = numpy.asarray(xs, dtype=float)
     y = numpy.asarray(labels, dtype=int)
     z = numpy.asarray(served, dtype=float)
+    if rare is not None:
+        if monotone is not None:
+            raise ValueError("a monotone constraint is not combined with a rare-event treatment")
+        return _fit_rare_event(kind, rare, x, y, z)
     if kind == "logistic":
         if monotone is not None:
             raise ValueError("a monotone constraint is the gradient-boosted classifier's, not the logistic's")
@@ -4513,6 +4586,169 @@ def _fit_classifier(
     )
     model.fit(x, y)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def _plain(value: Any) -> Any:
+    """A read-only settings tree as plain dicts and lists, for a JSON record."""
+
+    if isinstance(value, Mapping):
+        return {key: _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    return value
+
+
+def _balanced_indices(labels: Any, seed: int) -> Any:
+    """Row indices of one event-balanced bootstrap of the training labels.
+
+    Half the draws (`PRESSURE_RARE_EVENT_SETTINGS["balanced_bootstrap"]["event_share"]`)
+    are made with replacement from the rows labelled 1, the rest from the rows
+    labelled 0. It reads only `labels`, the training rows of one fit, and a
+    seed: no served row and no later label can enter it.
+    """
+
+    import numpy
+
+    y = numpy.asarray(labels, dtype=int)
+    events = numpy.flatnonzero(y == 1)
+    calm = numpy.flatnonzero(y == 0)
+    if len(events) == 0 or len(calm) == 0:
+        raise ValueError("a balanced bootstrap needs both classes among the training labels")
+    share = PRESSURE_RARE_EVENT_SETTINGS["balanced_bootstrap"]["event_share"]
+    drawn_events = int(round(share * len(y)))
+    rng = numpy.random.default_rng(seed)
+    return numpy.concatenate(
+        [
+            rng.choice(events, size=drawn_events, replace=True),
+            rng.choice(calm, size=len(y) - drawn_events, replace=True),
+        ]
+    )
+
+
+def _focal_gradient(logit: Any, labels: Any, gamma: float, alpha: float) -> Any:
+    """d(focal loss)/d(logit), per row (Lin et al. 2017).
+
+    `FL = -alpha (1 - p)^gamma log p` for a 1 and `-(1 - alpha) p^gamma log(1 - p)`
+    for a 0, with `p = sigmoid(logit)`.
+    """
+
+    import numpy
+
+    p = numpy.clip(1.0 / (1.0 + numpy.exp(-numpy.asarray(logit, dtype=float))), 1e-12, 1.0 - 1e-12)
+    y = numpy.asarray(labels, dtype=int)
+    positive = alpha * (gamma * (1.0 - p) ** gamma * p * numpy.log(p) - (1.0 - p) ** (gamma + 1.0))
+    negative = -(1.0 - alpha) * (
+        gamma * p**gamma * (1.0 - p) * numpy.log(1.0 - p) - p ** (gamma + 1.0)
+    )
+    return numpy.where(y == 1, positive, negative)
+
+
+def _fit_focal(x: Any, y: Any, z: Any) -> List[float]:
+    """A gradient-boosted classifier on the focal loss, numpy and scikit-learn only.
+
+    Newton boosting: each round fits a regression tree (`max_leaf_nodes`,
+    `min_samples_leaf` of `PRESSURE_RARE_EVENT_SETTINGS["focal"]`) to
+    `-g / h` weighted by `h`, then sets each leaf to `-sum(g) / (sum(h) + l2)`.
+    `g` is `_focal_gradient`; `h` is its central difference in the logit,
+    floored (the focal loss is not convex). Starts from the training event
+    rate's logit. Deterministic. Returns P(label = 1) at `z`.
+    """
+
+    import numpy
+    from sklearn.tree import DecisionTreeRegressor
+
+    cfg = PRESSURE_RARE_EVENT_SETTINGS["focal"]
+    rate = min(max(float(y.mean()), 1e-6), 1.0 - 1e-6)
+    base = math.log(rate / (1.0 - rate))
+    score = numpy.full(len(y), base)
+    served = numpy.full(len(z), base)
+    step = cfg["hessian_step"]
+    for _ in range(cfg["rounds"]):
+        g = _focal_gradient(score, y, cfg["gamma"], cfg["alpha"])
+        h = (
+            _focal_gradient(score + step, y, cfg["gamma"], cfg["alpha"])
+            - _focal_gradient(score - step, y, cfg["gamma"], cfg["alpha"])
+        ) / (2.0 * step)
+        h = numpy.maximum(h, cfg["hessian_floor"])
+        tree = DecisionTreeRegressor(
+            max_leaf_nodes=cfg["max_leaf_nodes"],
+            min_samples_leaf=cfg["min_samples_leaf"],
+            random_state=DEFAULT_RANDOM_STATE,
+        )
+        tree.fit(x, -g / h, sample_weight=h)
+        leaf = tree.apply(x)
+        leaves = numpy.unique(leaf)
+        value = {
+            int(node): float(-g[leaf == node].sum() / (h[leaf == node].sum() + cfg["l2"]))
+            for node in leaves
+        }
+        score = score + cfg["learning_rate"] * numpy.array([value[int(node)] for node in leaf])
+        served = served + cfg["learning_rate"] * numpy.array(
+            [value.get(int(node), 0.0) for node in tree.apply(z)]
+        )
+    return [float(p) for p in 1.0 / (1.0 + numpy.exp(-served))]
+
+
+def _fit_rare_event(kind: str, treatment: str, x: Any, y: Any, z: Any) -> List[float]:
+    """One threshold's fit with a rare-event treatment (#381); P(label = 1) at `z`.
+
+    * `class_weight`: the logistic or the histogram gradient-boosted classifier
+      with `class_weight="balanced"`.
+    * `focal`: `_fit_focal` (the gradient-boosted classifier only).
+    * `balanced_bootstrap`: `bags` fits, each on `_balanced_indices` of the
+      training rows with the plain estimator, averaged. Seeds are the
+      classifier's `random_state` plus the bag number.
+
+    Everything is computed from `x` and `y`, the training rows of the one fit.
+    """
+
+    import numpy
+
+    if treatment not in PRESSURE_RARE_EVENT_SETTINGS["treatments"]:
+        raise ValueError(
+            f"unknown rare-event treatment {treatment!r}; one of "
+            f"{list(PRESSURE_RARE_EVENT_SETTINGS['treatments'])}"
+        )
+    if kind not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"a rare-event treatment is the logistic's or the classifier's, not {kind!r}")
+    if treatment == "focal":
+        if kind != "gbm_classifier":
+            raise ValueError("the focal loss is the gradient-boosted classifier's")
+        return _fit_focal(x, y, z)
+
+    def estimator(weighted: bool):
+        if kind == "logistic":
+            from sklearn.linear_model import LogisticRegression
+
+            return LogisticRegression(
+                C=PRESSURE_LOGISTIC_SETTINGS["C"],
+                max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
+                class_weight=PRESSURE_RARE_EVENT_SETTINGS["class_weight"] if weighted else None,
+            )
+        from sklearn.ensemble import HistGradientBoostingClassifier
+
+        cfg = PRESSURE_CLASSIFIER_SETTINGS
+        return HistGradientBoostingClassifier(
+            learning_rate=cfg["learning_rate"],
+            max_iter=cfg["max_iter"],
+            max_leaf_nodes=cfg["max_leaf_nodes"],
+            min_samples_leaf=cfg["min_samples_leaf"],
+            random_state=cfg["random_state"],
+            early_stopping=False,
+            class_weight=PRESSURE_RARE_EVENT_SETTINGS["class_weight"] if weighted else None,
+        )
+
+    if kind == "logistic":
+        centre, scale = _standardizer(x)
+        x, z = (x - centre) / scale, (z - centre) / scale
+    if treatment == "class_weight":
+        return [float(p) for p in estimator(True).fit(x, y).predict_proba(z)[:, 1]]
+    bags = PRESSURE_RARE_EVENT_SETTINGS["balanced_bootstrap"]["bags"][kind]
+    total = numpy.zeros(len(z))
+    for bag in range(bags):
+        rows = _balanced_indices(y, PRESSURE_CLASSIFIER_SETTINGS["random_state"] + bag)
+        total += estimator(False).fit(x[rows], y[rows]).predict_proba(z)[:, 1]
+    return [float(p) for p in total / bags]
 
 
 def _pool_columns(
@@ -4775,6 +5011,29 @@ def pressure_classifier_exceedance(
     """
 
     return _direct_pressure_predictor("gbm_classifier", features, declaration, minimum_history)
+
+
+def pressure_rare_event_exceedance(
+    kind: str,
+    treatment: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+) -> ExceedancePredictor:
+    """The direct logistic or classifier fitted for the rare event (#381).
+
+    `kind` is `"logistic"` or `"gbm_classifier"`; `treatment` is one of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`: `class_weight`, `focal`
+    (classifier only) or `balanced_bootstrap`. The design, the direct pairs and
+    the guards are those of `pressure_logistic_exceedance`; only the fit
+    differs, and it reads that fit's training pairs alone. The probabilities
+    are distorted on purpose; read them recalibrated out of fold
+    (`pressure.recalibrated`).
+    """
+
+    return _direct_pressure_predictor(
+        kind, features, declaration, minimum_history, rare=treatment
+    )
 
 
 def pressure_probit_exceedance(

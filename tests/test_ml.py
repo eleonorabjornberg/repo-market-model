@@ -11443,5 +11443,198 @@ class PairedBootstrapPValueTests(unittest.TestCase):
             ml.paired_bootstrap_p_values([[0.1, 0.2], [0.1]], block_length=1, seed=1, replications=10)
 
 
+def _rare_factory(kind, treatment):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_rare_event_exceedance(kind, treatment, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_{kind}_{treatment}"
+    return factory
+
+
+class PressureLogisticClassWeightConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted logistic (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("logistic", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierClassWeightConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted gradient-boosted classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierFocalConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the focal-loss classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "focal"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureLogisticBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the event-balanced bootstrap logistic (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("logistic", "balanced_bootstrap"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the event-balanced bootstrap classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "balanced_bootstrap"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class RareEventTrainingTests(unittest.TestCase):
+    """Rare-event training (#381): reweighted fits learn from the spikes.
+
+    Recorded mutations (the resampling reads the training labels of one fit and
+    nothing else; the focal gradient is the loss's derivative):
+
+    * `_balanced_indices`: `rng.choice(events, ...)` replaced by
+      `rng.choice(numpy.arange(len(y)), ...)` (events drawn from every row):
+      `test_a_balanced_bootstrap_draws_half_its_rows_from_the_events` fails
+      with `AssertionError`.
+    * `_focal_gradient`: the `y == 1` branch's `- (1.0 - p) ** (gamma + 1.0)`
+      deleted: `test_the_focal_gradient_is_the_derivative_of_the_focal_loss`
+      fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def rare_data(self, n=1500, seed=0):
+        import numpy
+
+        rng = numpy.random.default_rng(seed)
+        x = rng.normal(size=(n, 2))
+        logit = -4.0 + 2.5 * x[:, 0]
+        y = (rng.uniform(size=n) < 1.0 / (1.0 + numpy.exp(-logit))).astype(int)
+        return x, y
+
+    def test_class_weights_equal_scikit_learn_balanced_weights(self):
+        import numpy
+        from sklearn.linear_model import LogisticRegression
+
+        x, y = self.rare_data()
+        got = ml._fit_rare_event("logistic", "class_weight", x, y, x[:5])
+        centre, scale = x.mean(axis=0), x.std(axis=0)
+        want = (
+            LogisticRegression(C=1.0, max_iter=5000, class_weight="balanced")
+            .fit((x - centre) / scale, y)
+            .predict_proba((x[:5] - centre) / scale)[:, 1]
+        )
+        self.assertTrue(numpy.allclose(got, want, atol=1e-12))
+
+    def test_every_treatment_raises_the_average_probability_above_the_plain_fit(self):
+        x, y = self.rare_data()
+        held_out, _ = self.rare_data(seed=1)
+        for kind, treatment in (
+            ("logistic", "class_weight"),
+            ("logistic", "balanced_bootstrap"),
+            ("gbm_classifier", "class_weight"),
+            ("gbm_classifier", "balanced_bootstrap"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment):
+                plain = ml._fit_classifier("logistic" if kind == "logistic" else "gbm", x, y, held_out)
+                treated = ml._fit_rare_event(kind, treatment, x, y, held_out)
+                self.assertGreater(sum(treated) / len(treated), 1.5 * sum(plain) / len(plain))
+
+    def test_every_treatment_ranks_the_events_above_chance(self):
+        from repo_model.pressure_judge import auroc
+
+        x, y = self.rare_data()
+        test_x, test_y = self.rare_data(seed=1)
+        for kind, treatment in (
+            ("logistic", "class_weight"),
+            ("logistic", "balanced_bootstrap"),
+            ("gbm_classifier", "class_weight"),
+            ("gbm_classifier", "balanced_bootstrap"),
+            ("gbm_classifier", "focal"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment):
+                got = ml._fit_rare_event(kind, treatment, x, y, test_x)
+                self.assertGreater(auroc(got, [int(v) for v in test_y]), 0.8)
+
+    def test_the_focal_gradient_is_the_derivative_of_the_focal_loss(self):
+        import numpy
+
+        def loss(z, y, gamma, alpha):
+            p = 1.0 / (1.0 + numpy.exp(-z))
+            return numpy.where(
+                y == 1, -alpha * (1 - p) ** gamma * numpy.log(p), -(1 - alpha) * p**gamma * numpy.log(1 - p)
+            )
+
+        z = numpy.linspace(-4.0, 4.0, 9)
+        for y in (1, 0):
+            labels = numpy.full(len(z), y)
+            for gamma, alpha in ((2.0, 0.75), (0.0, 0.5), (1.0, 0.3)):
+                step = 1e-6
+                want = (loss(z + step, labels, gamma, alpha) - loss(z - step, labels, gamma, alpha)) / (2 * step)
+                got = ml._focal_gradient(z, labels, gamma, alpha)
+                self.assertTrue(numpy.allclose(got, want, atol=1e-6), (y, gamma, alpha))
+
+    def test_the_focal_fit_is_deterministic(self):
+        x, y = self.rare_data(n=600)
+        first = ml._fit_rare_event("gbm_classifier", "focal", x, y, x[:20])
+        second = ml._fit_rare_event("gbm_classifier", "focal", x, y, x[:20])
+        self.assertEqual(first, second)
+
+    def test_a_balanced_bootstrap_draws_half_its_rows_from_the_events(self):
+        import numpy
+
+        _, y = self.rare_data()
+        rows = ml._balanced_indices(y, 7)
+        self.assertEqual(len(rows), len(y))
+        self.assertTrue(((rows >= 0) & (rows < len(y))).all())
+        self.assertEqual(int(y[rows].sum()), round(0.5 * len(y)))
+        self.assertTrue(numpy.array_equal(rows, ml._balanced_indices(y, 7)))
+        self.assertFalse(numpy.array_equal(rows, ml._balanced_indices(y, 8)))
+
+    def test_a_balanced_bootstrap_uses_the_training_labels_of_its_fit_only(self):
+        # Rows the fit is not given cannot appear: indices are positions in the labels passed in.
+        x, y = self.rare_data()
+        cut = 900
+        for seed in range(5):
+            self.assertLess(int(ml._balanced_indices(y[:cut], seed).max()), cut)
+
+    def test_a_balanced_bootstrap_of_one_class_is_refused(self):
+        import numpy
+
+        with self.assertRaises(ValueError):
+            ml._balanced_indices(numpy.zeros(50, dtype=int), 0)
+
+    def test_unsupported_treatments_are_refused_at_construction(self):
+        splits = _pressure_splits()
+        for kind, treatment in (
+            ("logistic", "focal"),
+            ("probit", "class_weight"),
+            ("gbm_classifier", "oversample"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment), self.assertRaises(ValueError):
+                ml.pressure_rare_event_exceedance(kind, treatment, _PRESSURE_CALENDAR, splits)
+
+    def test_the_declaration_names_the_treatment(self):
+        import numpy
+
+        predictor = ml.pressure_rare_event_exceedance(
+            "gbm_classifier", "focal", _PRESSURE_CALENDAR, _pressure_splits()
+        )
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        from test_baseline import regressor_frame
+
+        rows = _with_calendar(regressor_frame())
+        info = rule.information_set([r.date for r in rows], len(rows) - 1)
+        curves = predictor(rows[:-1], (rule.observation(rows, info),), (5.0,), information=rule)
+        settings = curves.model_settings["rare_event"]
+        self.assertEqual(settings["treatment"], "focal")
+        self.assertEqual(settings["focal"]["gamma"], 2.0)
+        import json
+
+        json.dumps(dict(curves.model_settings))  # a record, so plain dicts all the way down
+        self.assertTrue(numpy.isfinite(curves.curves[0][0]))
+
+
 if __name__ == "__main__":
     unittest.main()
