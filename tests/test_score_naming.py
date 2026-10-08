@@ -125,8 +125,9 @@ pins what the code gives.
         primary = json.loads((REPO / "docs/runs/final_test_near_blind.json").read_text(encoding="utf-8"))
         self.assertEqual(self.cell["role"], "reported only")
         self.assertEqual(self.record["crps_declaration_sha256"], primary["crps_declaration_sha256"])
+        # The checksum the frozen run carried; #324 extended the declaration after the opening.
         self.assertEqual(self.record["crps_declaration_sha256"],
-                         _script("final_test_preregistration").crps_declaration_checksum())
+                         "d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59")
         # The primary record is untouched: its own cell still carries the plain score.
         self.assertEqual(self.record["primary_cell_by_the_plain_score"]["crps_persistence_bps"],
                          primary["primary"]["cell"]["crps_persistence_bps"])

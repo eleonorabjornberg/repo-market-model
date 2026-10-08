@@ -674,6 +674,23 @@ _MODEL_SOURCE = {
         ("scripts/final_test_preregistration.py", ("_stacked_combiner", "_dynamic_logit")),
     ),
 }
+#: What both declarations freeze beside the model (#324, Eleonora's `GO`): the three
+#: metadata files every forecast reads, by the sha256 of their bytes, and the code that
+#: reads them. `("*",)` names every top-level definition of the file. Hashed as
+#: `_SHARED_SOURCE` is, under the one `inputs` key of each declaration: without it a
+#: declaration hashes to the checksum the opening run carried.
+_FROZEN_METADATA = ("metadata/sources.json", "metadata/evaluation_splits.json",
+                    "metadata/market_holidays.json")
+_FROZEN_PIPELINE = (
+    ("src/repo_model/asof.py", ("*",)),
+    ("src/repo_model/data.py", ("load_point_in_time_panel", "load_daily_panel",
+                                "market_holidays")),
+    ("src/repo_model/splits.py", ("*",)),
+    ("src/repo_model/evaluation_splits.py", ("*",)),
+    ("src/repo_model/contract.py", ("*",)),
+    ("src/repo_model/registry.py", ("*",)),
+)
+
 #: Each candidate's declared inputs at horizon 1, as `candidate` scored them.
 _FEATURES = {
     "scarcity_calendar": ("spread_bps", "reserve_scarcity_state", "days_to_month_end",
@@ -723,6 +740,8 @@ def _source_hashes(path: str, text: str, roots: tuple) -> tuple:
     """`_top_level_source` on `text`, kept per text: an edited file is hashed anew."""
 
     definitions = _definitions(ast.parse(text))
+    if roots == ("*",):
+        roots = tuple(definitions)
     missing = sorted(set(roots) - set(definitions))
     if missing:
         raise ValueError(f"{path} defines none of {missing}")
@@ -741,6 +760,21 @@ def _source_hashes(path: str, text: str, roots: tuple) -> tuple:
         ).hexdigest())
         for name in sorted(reached)
     )
+
+
+def frozen_inputs() -> dict:
+    """The metadata digests and the as-of, loader, splitter and contract code (#324)."""
+
+    source = {}
+    for path, names in _FROZEN_PIPELINE:
+        source[path] = {**source.get(path, {}), **_top_level_source(path, names)}
+    return {
+        "metadata_sha256": {
+            path: hashlib.sha256((REPO / path).read_bytes()).hexdigest()
+            for path in _FROZEN_METADATA
+        },
+        "source_sha256": source,
+    }
 
 
 def declaration(name: str = CHOSEN, calibrator: str = CHOSEN_CALIBRATOR) -> dict:
@@ -775,6 +809,7 @@ def declaration(name: str = CHOSEN, calibrator: str = CHOSEN_CALIBRATOR) -> dict
         "interval": {"level": pc.LEVEL, "replications": pc.REPLICATIONS,
                      "method": "stationary_bootstrap"},
         "cells": cells(),
+        "inputs": frozen_inputs(),
         "source_sha256": source,
     }
 
@@ -930,6 +965,7 @@ def crps_declaration() -> dict:
         "cells": cells(),
         "panel_sha256": _frozen_panel_sha256(),
         "command": list(CRPS_COMMAND),
+        "inputs": frozen_inputs(),
         "source_sha256": source,
     }
 
