@@ -437,6 +437,36 @@ class WorkflowEnvironmentTests(_WorkflowText):
         self.assertLess(self.text.index("- name: Check out main and the pinned code"),
                         self.text.index("- name: Python from the runner's tool cache"))
 
+    def test_a_tool_cache_without_the_patch_falls_back_to_installing_exactly_that_patch(self):
+        """#420: the 8 October 2026 07:19 UTC run failed at `test -x` because the runner image no
+        longer carried 3.11.16. The cache check no longer fails; a fallback step installs the
+        pinned patch with `actions/setup-python`, pinned by commit SHA, and a check step fails
+        unless `python3 --version` equals the pinned patch. Cached runs skip the fallback.
+
+        Recorded mutation: in the fallback step, `python-version: ${{ steps.python.outputs.patch }}`
+        -> `python-version: "3.11"` makes `test_a_tool_cache_without_the_patch_falls_back_to_installing_exactly_that_patch`
+        fail with AssertionError.
+        """
+        cache = self._step("Python from the runner's tool cache, at the pinned patch release")
+        self.assertNotRegex(cache, r"(?m)^\s*test -x")
+        self.assertIn("jq -r .environment.python main/metadata/live_pin.json", cache)
+        self.assertIn("patch=", cache)
+        fallback = self._step("Install the pinned Python patch when the tool cache lacks it")
+        self.assertIn("if: steps.python.outputs.cached != 'true'", fallback)
+        self.assertRegex(fallback, r"uses: actions/setup-python@[0-9a-f]{40}")
+        self.assertIn("python-version: ${{ steps.python.outputs.patch }}", fallback)
+        self.assertIn("check-latest: false", fallback)
+        check = self._step("Check the Python is the pinned patch")
+        self.assertIn('"Python $patch"', check)
+        self.assertIn("exit 1", check)
+        names = [m.group(1) for m in re.finditer(r"\n      - name: (.*)", self.text)]
+        self.assertLess(names.index("Python from the runner's tool cache, at the pinned patch release"),
+                        names.index("Install the pinned Python patch when the tool cache lacks it"))
+        self.assertLess(names.index("Install the pinned Python patch when the tool cache lacks it"),
+                        names.index("Check the Python is the pinned patch"))
+        self.assertLess(names.index("Check the Python is the pinned patch"),
+                        names.index("Verify the pin is a registered transition"))
+
     def test_the_install_is_from_the_hashed_lock_only(self):
         step = self._step("Install the locked environment")
         self.assertIn("sha256sum -c", step)

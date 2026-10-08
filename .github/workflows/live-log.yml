@@ -43,9 +43,11 @@ name: live-log
 # and, when the day's record is already there, ends the run green with nothing
 # written. Each record's commit also carries the panel it was made from.
 #
-# No third-party action is used: Python 3.11 comes from the runner's own tool
-# cache, and git, gh, curl and jq are the runner's. So there is no action to
-# pin. cosign is one release binary, checked against its published SHA-256.
+# Python 3.11 comes from the runner's own tool cache at the pinned patch. If the
+# runner image no longer carries that patch, `actions/setup-python`, pinned by commit
+# SHA, installs exactly it (#420), and a check fails the run unless `python3 --version`
+# equals the pin. git, gh, curl and jq are the runner's.
+# cosign is one release binary, checked against its published SHA-256.
 
 on:
   schedule:
@@ -132,10 +134,43 @@ jobs:
         id: python
         run: |
           patch=$(jq -r .environment.python main/metadata/live_pin.json)
+          echo "patch=$patch" >> "$GITHUB_OUTPUT"
           base=/opt/hostedtoolcache/Python/$patch/x64
-          test -x "$base/bin/python3"
-          echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
+          if test -x "$base/bin/python3"; then
+            echo "cached=true" >> "$GITHUB_OUTPUT"
+            echo "PY=$base/bin/python3" >> "$GITHUB_ENV"
+          else
+            echo "cached=false" >> "$GITHUB_OUTPUT"
+            echo "Python $patch is not in the runner's tool cache: installing exactly that patch (#420)."
+          fi
           echo "DAY=$(TZ=America/New_York date +%F)" >> "$GITHUB_ENV"
+
+      # The one third-party action, pinned by commit SHA (#420): only when the runner image
+      # no longer carries the pinned patch. The version is the pin's, never a range.
+      - name: Install the pinned Python patch when the tool cache lacks it
+        id: setup
+        if: steps.python.outputs.cached != 'true'
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ steps.python.outputs.patch }}
+          check-latest: false
+
+      - name: Check the Python is the pinned patch
+        id: pycheck
+        env:
+          SETUP_PY: ${{ steps.setup.outputs.python-path }}
+        run: |
+          patch=$(jq -r .environment.python main/metadata/live_pin.json)
+          if [ -z "${PY:-}" ]; then
+            echo "PY=$SETUP_PY" >> "$GITHUB_ENV"
+            PY=$SETUP_PY
+          fi
+          got=$("$PY" --version)
+          if [ "$got" != "Python $patch" ]; then
+            echo "Pinned Python $patch, but $PY reports: $got" >&2
+            exit 1
+          fi
+          echo "$got"
 
       - name: Verify the pin is a registered transition
         id: pin
@@ -365,6 +400,8 @@ jobs:
         env:
           OUTCOMES: >-
             python=${{ steps.python.outcome }}
+            pythonsetup=${{ steps.setup.outcome }}
+            pycheck=${{ steps.pycheck.outcome }}
             checkout=${{ steps.checkout.outcome }}
             pin=${{ steps.pin.outcome }}
             install=${{ steps.install.outcome }}
