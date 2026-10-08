@@ -1,5 +1,5 @@
 {
-  "status": "declared by the pull request that closes #375, before any score was computed; the bar is Eleonora's ruling of 7 October 2026 on #374, and the choices marked in docs/decisions/drafts/ are hers to rule on",
+  "status": "declared by the pull request that closes #375 before any score was computed; the bar is Eleonora's ruling of 7 October 2026 on #374; the choices that ruling leaves open (the horizons the pass needs, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review",
   "scoring": {"last_day": "2025-12-31"},
   "thresholds_bp": [5, 10],
   "primary_threshold_bp": 5,
