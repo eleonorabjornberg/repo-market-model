@@ -7153,6 +7153,7 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
             "fetch_nyfed_srf",
             "fetch_frb_h8_archive",
             "fetch_ofr_stfm_repo",
+            "fetch_treasury_dts_tga",
         ):
             self.addCleanup(setattr, cli_data, name, getattr(cli_data, name))
             setattr(cli_data, name, lambda **_kwargs: [])
