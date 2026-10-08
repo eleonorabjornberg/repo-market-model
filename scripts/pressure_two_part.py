@@ -44,7 +44,6 @@ import statistics
 import sys
 from datetime import date, time
 from pathlib import Path
-from types import SimpleNamespace
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
@@ -110,12 +109,40 @@ def _run(rows, registry, name, predictor, features, horizon):
 
 
 def _published(rows, splits, registry, horizon):
-    """Pressure model v1 at the tail family: `scripts/pressure_judge.py`'s published run, four taus."""
+    """Pressure model v1 at the tail family: `scripts/pressure_judge.py`'s published run, four taus.
 
-    judge = _load_script("pressure_judge")
-    return judge._published(
-        rows, splits, registry, horizon, SimpleNamespace(thresholds=TAUS, last_day=END)
+    The same run (the distributional gbm, nested-fold PID, recalibrated out of fold), kept as a
+    report so its whole curve is scored.
+    """
+
+    from repo_model import ml, pressure
+    from repo_model.recalibration import NestedFoldPid
+
+    model = _load_script("pressure_model_v1")
+    features = model._at_horizon(model.GBM_FEATURES, horizon)
+    built = []
+
+    def online(rows_, rule):
+        built.append(NestedFoldPid(rows_, rule, splits=splits, refit_every=REFIT_EVERY))
+        return built[-1]
+
+    raw = rolling_exceedance_backtest(
+        rows,
+        predictor=ml.gbm_exceedance(
+            tuple(n for n in features if n != "spread_bps"), minimum_history=MINIMUM_HISTORY
+        ),
+        model_name="distributional_gbm",
+        features=features,
+        registry=registry,
+        decision_time=DECISION,
+        taus=TAUS,
+        minimum_history=MINIMUM_HISTORY,
+        refit_every=REFIT_EVERY,
+        end=END,
+        horizon=horizon,
+        online_calibration=online,
     )
+    return pressure.recalibrated(raw)
 
 
 def _tail_losses(report):
