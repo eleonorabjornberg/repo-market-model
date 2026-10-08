@@ -13,6 +13,8 @@
     "reserve_balances"
   ],
   "features_note": "the six features of the dynamic logit and of #372's probit and quantile predictors, on the published funding panel",
+  "dropped_beyond_horizon_1": ["treasury_settlement_coupons"],
+  "dropped_note": "found when the first run at h = 2 was refused by the as-of rule (the feature reads the scored day's own settlement, which is not public at a decision two or more days earlier): at h >= 2 the column is dropped from every candidate and from the reference, the convention of scripts/pressure_model_v1.py (_at_horizon). h = 1 had already been scored with it; nothing about any score changed this declaration",
   "settings": {
     "qrf": "ml.PRESSURE_QRF_SETTINGS",
     "natural_gradient": "ml.PRESSURE_NATURAL_GRADIENT_SETTINGS",

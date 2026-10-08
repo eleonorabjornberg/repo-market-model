@@ -65,10 +65,17 @@ def load_declaration() -> dict:
     return json.loads(DECLARATION.read_text(encoding="utf-8"))
 
 
-def _predictor(name, entry, declaration, splits):
-    features = tuple(declaration["features"])
+def features_at(declaration, horizon, features=None):
+    """The declared features at one horizon: the scheduled settlement is dropped beyond h = 1."""
+
+    dropped = set(declaration["dropped_beyond_horizon_1"]) if horizon > 1 else set()
+    return tuple(f for f in (declaration["features"] if features is None else features) if f not in dropped)
+
+
+def _predictor(name, entry, declaration, splits, horizon):
+    features = features_at(declaration, horizon)
     if name == "gbm":
-        return ml.gbm_exceedance(tuple(entry["regressors"]), minimum_history=MINIMUM_HISTORY)
+        return ml.gbm_exceedance(features_at(declaration, horizon, entry["regressors"]), minimum_history=MINIMUM_HISTORY)
     if entry["model"] == "pressure_qrf_exceedance":
         return ml.pressure_qrf_exceedance(features, splits, minimum_history=MINIMUM_HISTORY)
     return ml.pressure_natural_gradient_exceedance(
@@ -110,8 +117,10 @@ def forecasts_command(args) -> int:
     entries.update({"gbm_reference": declaration["reference"]["gbm"]})
     forecasts, distribution = {}, {}
     for name, entry in entries.items():
-        predictor = _predictor("gbm" if name == "gbm_reference" else name, entry, declaration, splits)
-        features = tuple(declaration["features"])
+        predictor = _predictor("gbm" if name == "gbm_reference" else name, entry, declaration, splits, args.horizon)
+        features = features_at(declaration, args.horizon)
+        if name == "gbm_reference":
+            features = ("spread_bps",) + features_at(declaration, args.horizon, entry["regressors"])
         report = rolling_exceedance_backtest(
             rows,
             predictor=predictor,
