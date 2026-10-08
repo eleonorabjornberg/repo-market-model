@@ -1,0 +1,46 @@
+{
+  "directive": "#243",
+  "declared_before_scoring": "This addendum is committed before any candidate it lists is scored. It answers Eleonora's scope ruling on #243 (8 October 2026, 02:18 UTC), posted before the first declaration but not met by it. The first declaration, docs/declarations/interior_calibration_243.json (commit 836eb0a), is unchanged: its four candidates were declared, and then scored, under it, and keep that status. Only the candidates below are declared here; the judge records the sha256 of both files and refuses a candidate that neither lists.",
+  "first_declaration_commit": "836eb0a",
+  "base": "as the first declaration: the published distribution at h = 1 (#169's gbm with nested conformal PID), as docs/runs/v1_interior_diagnosis.json carries its issued vectors",
+  "window": {"first": "2018-06-29", "last": "2025-12-31", "reason": "as the first declaration"},
+  "levels_bps": [0.05, 0.25, 0.5, 0.75, 0.95],
+  "test": "as the first declaration, unchanged (statement, bootstrap, cells, minimum cell days and the otherwise clause). Multiplicity: with these, eight candidates are tested without correction (four under the first declaration, four under this one), and the pages say so.",
+  "candidates": {
+    "conformal_group_regime": {
+      "ruling_item": "(a) conditional conformal coverage by group, calendar type x regime (Gibbs, Cherian & Candes)",
+      "what": "conformal_by_day_type with the residual group refined to calendar class x declared regime (metadata/evaluation_splits.json regime of the scored day, which is a calendar declaration and so known ahead). The group's trailing-250 observable residuals set the q25/q50/q75 shifts; a group with fewer than 60 observable residuals falls back to the day's calendar class, then to the pooled residuals. This is the empirical group-conditional rule on a finite partition, not the full conditional-conformal programme of the paper (no augmented-quantile regression over a function class), whose guarantees it shares only for the groups it names",
+      "window_days": 250,
+      "minimum_days": 60
+    },
+    "conformal_recency_regime": {
+      "ruling_item": "(b) recency- or regime-weighted calibration scores (Barber et al., Beyond exchangeability)",
+      "what": "conformal_pooled with weighted residual quantiles: each observable residual in the trailing 250 days has weight 0.5 ** (age / 60) times 1 if it is from the scored day's regime and 0.25 if not, age counted in observable scored days back from the latest; the shift is the weighted quantile (weights at the midpoints of the cumulative weight, linear interpolation); 0 until 60 are observable. The half-life 60 and the off-regime weight 0.25 are declared here, not tuned",
+      "window_days": 250,
+      "minimum_days": 60,
+      "half_life_days": 60,
+      "off_regime_weight": 0.25
+    },
+    "conformal_aci": {
+      "ruling_item": "(c) online alpha updating under regime shift (ACI; DtACI is left out, see below)",
+      "what": "conformal_pooled with each interior level's quantile level adapted online (adaptive conformal inference, Gibbs & Candes): level l_tau starts at tau; before a day is issued, each earlier day whose label is observable at the day's anchor updates l_tau += 0.01 * (tau - 1[y < the q_tau issued that day]), in date order, clipped to [0.02, 0.98]; the shift is the l_tau quantile of the trailing-250 pooled residuals, 0 until 60 are observable (the updates run throughout)",
+      "window_days": 250,
+      "minimum_days": 60,
+      "gamma": 0.01,
+      "level_clip": [0.02, 0.98],
+      "dtaci_left_out": "DtACI (Gibbs & Candes, JMLR 2024) runs several ACI step sizes as experts and aggregates them by exponential weights, to avoid choosing gamma. Here the step size is the only thing it would choose, and the project already has that choice scored: #247's interior_tracking (candidate in the first declaration) selects among four online step sizes by nested walk-forward and did not meet the declared test (pooled gain +0.013 [-0.003, +0.029]). A second step-size selector on the same days and the same residual stream adds a free parameter set and a multiplicity charge, not a different mechanism; it is left out, and revisited only if conformal_aci shows the step size matters"
+    },
+    "conformal_pid_calendar": {
+      "ruling_item": "(d) the conformal-PID calendar scorecaster (Angelopoulos, Candes & Tibshirani)",
+      "what": "the issued vector with each interior level moved by an integrator plus a calendar scorecaster. Integrator: theta_tau += 0.05 * (tau - 1[y < final q_tau issued that day]) over earlier days whose label is observable at the anchor, in date order (the paper's I term; the P term is not used). Scorecaster: the tau-quantile of (y - (issued q_tau + theta_tau as it stood that day)) over the trailing-250 observable days of the scored day's calendar class ('turn' or 'ordinary', as conformal_by_day_type), 0 while that class has fewer than 60 observable days; the final q_tau is issued + theta_tau + scorecaster. The vector is sorted",
+      "window_days": 250,
+      "minimum_days": 60,
+      "integrator_step": 0.05,
+      "classes": {"turn": ["month_end", "quarter_end", "tax_date", "coupon_settlement"], "ordinary": []}
+    }
+  },
+  "reported_not_tested": [
+    "50% and 90% coverage by day type, quarter-ends and coupon settlements named explicitly, with the share of misses above and below, for every candidate in both declarations"
+  ],
+  "live_record": "not changed by this directive: no pin, no live_score.py edit"
+}
