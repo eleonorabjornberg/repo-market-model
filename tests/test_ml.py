@@ -11486,6 +11486,107 @@ class PressureClassifierBootstrapConformanceTests(_PressureConformance, unittest
     IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
 
 
+def _onset_factory(kind, treatment):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_onset_exceedance(kind, treatment, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_onset_{kind}_{treatment}"
+    return factory
+
+
+class PressureOnsetLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted onset logistic (#409)."""
+
+    FACTORY = staticmethod(_onset_factory("logistic", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_onset_exceedance)
+
+
+class PressureOnsetClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted onset classifier (#409)."""
+
+    FACTORY = staticmethod(_onset_factory("gbm_classifier", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_onset_exceedance)
+
+
+class OnsetLabelTests(unittest.TestCase):
+    """The onset label (#409): a pressure day with five quiet panel days before it.
+
+    Recorded mutations:
+
+    * `_onset_labels`: the slice `train_rows[target - ONSET_QUIET_DAYS : target]`
+      widened to `train_rows[target - ONSET_QUIET_DAYS : target + 1]` (the target
+      itself counted among its own quiet days, so no pressure day is an onset):
+      `test_the_label_is_the_pressure_onset_rule` fails with `AssertionError`.
+    * `_onset_labels`: the slice shortened to `train_rows[target - 4 : target]`
+      (four quiet days): the same test fails with `AssertionError`.
+    """
+
+    SPREADS = [0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 6]
+
+    def rows(self):
+        from datetime import timedelta
+
+        return [
+            DailyObservation(date(2024, 1, 1) + timedelta(days=k), {"sofr": 5.0 + value / 100.0, "iorb": 5.0})
+            for k, value in enumerate(self.SPREADS)
+        ]
+
+    def test_the_label_is_the_pressure_onset_rule(self):
+        from repo_model import pressure
+        from repo_model.data import exceeds_bp
+
+        rows = self.rows()
+        targets = list(range(ml.ONSET_QUIET_DAYS, len(rows)))
+        exceeds = [1 if exceeds_bp(rows[t].spread_bps, 5.0) else 0 for t in targets]
+        labels = ml._onset_labels(exceeds, targets, rows, 5.0)
+        # Day 6 opens an episode, day 7 continues it, day 15 follows seven quiet days; day 20 has a
+        # pressure day exactly five days before it, and day 27 (a 6 bp print) follows seven quiet ones.
+        self.assertEqual([t for t, label in zip(targets, labels) if label], [6, 15, 27])
+        scored = [row.date for row in rows[ml.ONSET_QUIET_DAYS:]]
+        by_rule = pressure.onsets(rows, 5.0, scored)
+        self.assertEqual([rows[t].date for t, label in zip(targets, labels) if label], list(by_rule))
+
+    def test_no_threshold_above_the_spreads_gives_no_onset(self):
+        rows = self.rows()
+        targets = list(range(ml.ONSET_QUIET_DAYS, len(rows)))
+        self.assertEqual(sum(ml._onset_labels([0] * len(targets), targets, rows, 50.0)), 0)
+
+    def test_a_quantile_kind_has_no_onset_label(self):
+        with self.assertRaises(ValueError):
+            ml._direct_pressure_predictor("quantile", _PRESSURE_CALENDAR, _pressure_splits(), 20, onset=True)
+        with self.assertRaises(ValueError):
+            ml.pressure_onset_exceedance("probit", None, _PRESSURE_CALENDAR, _pressure_splits())
+
+
+class OptionalColumnTests(unittest.TestCase):
+    """A declared column that enters with an observed indicator (#409)."""
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, **options):
+        return ml._PressureDesign(("spread_bps", "ofr_tri_rate"), _pressure_splits(), **options)
+
+    def test_a_hole_is_a_zero_with_the_indicator_off(self):
+        design = self.design(optional=("ofr_tri_rate",))
+        self.assertEqual(design.names, ("spread_bps", "ofr_tri_rate", "ofr_tri_rate_observed"))
+        seen = DailyObservation(date(2024, 1, 2), {"sofr": 5.1, "iorb": 5.0, "ofr_tri_rate": 5.05})
+        hole = DailyObservation(date(2024, 1, 2), {"sofr": 5.1, "iorb": 5.0, "ofr_tri_rate": None})
+        self.assertEqual(design.row(seen, None)[1:], [5.05, 1.0])
+        self.assertEqual(design.row(hole, None)[1:], [0.0, 0.0])
+
+    def test_without_the_option_a_hole_is_still_refused(self):
+        hole = DailyObservation(date(2024, 1, 2), {"sofr": 5.1, "iorb": 5.0, "ofr_tri_rate": None})
+        with self.assertRaises(ValueError):
+            self.design().row(hole, None)
+
+    def test_an_optional_column_must_be_a_declared_linear_column(self):
+        with self.assertRaises(ValueError):
+            self.design(optional=("ofr_gcf_rate",))
+        with self.assertRaises(ValueError):
+            ml._PressureDesign(("spread_bps", "reserve_balances"), _pressure_splits(), optional=("reserve_balances",))
+
+
 class RareEventTrainingTests(unittest.TestCase):
     """Rare-event training (#381): reweighted fits learn from the spikes.
 
