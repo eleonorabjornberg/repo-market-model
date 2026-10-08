@@ -4066,6 +4066,21 @@ PRESSURE_RARE_EVENT_SETTINGS = MappingProxyType(
     }
 )
 
+#: Recency-weighted and windowed training of the class-weighted logistic (#411). Declared, not
+#: tuned. A pair's age is the number of panel rows between its label and the fit's last training
+#: row. `decay` weights a pair by 0.5 ** (age / half_life) and balances the classes on the
+#: weighted totals; `window` keeps only the pairs younger than the window, and falls back to
+#: the whole history when the window holds fewer than `minimum_window_events` events at the
+#: threshold (a calm stretch has none, and a fit without events has nothing to learn).
+PRESSURE_RECENCY_SETTINGS = MappingProxyType(
+    {
+        "modes": ("decay", "window"),
+        "half_lives": (63, 126, 252),
+        "windows": (252, 504),
+        "minimum_window_events": 10,
+    }
+)
+
 #: What the two full-distribution models (#385) are built with, declared in
 #: `metadata/pressure_track_q.json` before any score; a test pins the two together.
 #: Both pick one hyperparameter on the pressure-day labels (`PRESSURE_DISTRIBUTION_SELECTION`).
@@ -4336,8 +4351,11 @@ def _pressure_pairs(
     information: InformationRule,
     train_rows: Sequence[DailyObservation],
     cache: dict,
+    positions: Optional[List[int]] = None,
 ) -> Tuple[List[List[float]], List[float]]:
     """Direct (horizon-matched) training pairs under the as-of rule.
+
+    `positions`, when given, receives each pair's label row index in `train_rows`.
 
     Each label `t` is paired with the design row a forecast of `t` would have
     read at its own decision instant (`information.information_set`), checked
@@ -4374,6 +4392,8 @@ def _pressure_pairs(
         if pair is not None:
             xs.append(pair[0])
             ys.append(pair[1])
+            if positions is not None:
+                positions.append(target)
     return xs, ys
 
 
@@ -4391,8 +4411,15 @@ def _direct_pressure_predictor(
     history: Optional[Tuple[Sequence[Any], Any]] = None,
     design: Optional[Any] = None,
     rare: Optional[str] = None,
+    recency: Optional[Tuple[str, int]] = None,
 ) -> Any:
     """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `recency`, for the recency study (#411): `(mode, parameter)`, a mode of
+    `PRESSURE_RECENCY_SETTINGS["modes"]` with its half-life or window in panel
+    rows. It applies to the class-weighted logistic only (`kind="logistic"`,
+    `rare="class_weight"`) and is read off the fit's own training pairs, by their
+    age from that fit's last training row (`_fit_recency_logistic`).
 
     `rare`, for the rare-event study (#381): a treatment of
     `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied inside each fit to
@@ -4426,6 +4453,14 @@ def _direct_pressure_predictor(
             )
         if rare == "focal" and kind != "gbm_classifier":
             raise ValueError("the focal loss is the gradient-boosted classifier's")
+    if recency is not None:
+        mode, parameter = recency
+        if kind != "logistic" or rare != "class_weight":
+            raise ValueError("recency weighting is the class-weighted logistic's")
+        if mode not in PRESSURE_RECENCY_SETTINGS["modes"]:
+            raise ValueError(f"unknown recency mode {mode!r}; one of {list(PRESSURE_RECENCY_SETTINGS['modes'])}")
+        if parameter < 1:
+            raise ValueError(f"a recency half-life or window must be positive, got {parameter}")
     if design is None:
         design = _PressureDesign(features, declaration, products)
     monotone = getattr(design, "monotone", None)
@@ -4458,9 +4493,11 @@ def _direct_pressure_predictor(
                 "the TGA change is read off each forecast's own as-of history; "
                 "one history per feature row is required"
             )
-        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        positions: List[int] = []
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache, positions)
         if not xs:
             raise ValueError("no training label has a complete as-of read")
+        ages = [len(train_rows) - 1 - position for position in positions]
         served = [
             design.row(
                 row,
@@ -4514,6 +4551,7 @@ def _direct_pressure_predictor(
                     monotone=monotone,
                     pooling=getattr(design, "pooling", None),
                     rare=rare,
+                    recency=None if recency is None else (recency[0], recency[1], ages),
                 )
             columns.append(fitted[key])
         curves = []
@@ -4547,6 +4585,12 @@ def _direct_pressure_predictor(
                     for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
                     if key in ("class_weight", rare)
                 },
+            }
+        if recency is not None:
+            settings["recency"] = {
+                "mode": recency[0],
+                "parameter": recency[1],
+                "minimum_window_events": PRESSURE_RECENCY_SETTINGS["minimum_window_events"],
             }
         if history is not None:
             pool = pooled["pool"]
@@ -4592,8 +4636,12 @@ def _fit_classifier(
     monotone: Optional[Sequence[int]] = None,
     pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None,
     rare: Optional[str] = None,
+    recency: Optional[Tuple[str, int, Sequence[int]]] = None,
 ) -> List[float]:
     """Fit one estimator to one threshold's labels; P(label = 1) at `served`.
+
+    `recency`, the class-weighted logistic's only (#411): `(mode, parameter,
+    ages)`, one age per training pair (`_fit_recency_logistic`).
 
     `pooling`, the logistic's only (#378): `(pooled columns, deviation columns,
     regimes, scale)`. Column 1 is the regime. The fit is the pooled columns plus,
@@ -4619,6 +4667,10 @@ def _fit_classifier(
     x = numpy.asarray(xs, dtype=float)
     y = numpy.asarray(labels, dtype=int)
     z = numpy.asarray(served, dtype=float)
+    if recency is not None:
+        if kind != "logistic" or rare != "class_weight" or monotone is not None:
+            raise ValueError("recency weighting is the unconstrained class-weighted logistic's")
+        return _fit_recency_logistic(x, y, z, numpy.asarray(recency[2], dtype=float), recency[0], recency[1])
     if rare is not None:
         if monotone is not None:
             raise ValueError("a monotone constraint is not combined with a rare-event treatment")
@@ -4767,6 +4819,49 @@ def _fit_focal(x: Any, y: Any, z: Any) -> List[float]:
             [value.get(int(node), 0.0) for node in tree.apply(z)]
         )
     return [float(p) for p in 1.0 / (1.0 + numpy.exp(-served))]
+
+
+def _fit_recency_logistic(x: Any, y: Any, z: Any, ages: Any, mode: str, parameter: float) -> List[float]:
+    """The class-weighted logistic fitted to favour recent pairs (#411); P(label = 1) at `z`.
+
+    `ages` is each pair's age in panel rows from the fit's last training row, so it reads
+    the training pairs of this one fit and nothing later.
+
+    * `decay`: pair weight 0.5 ** (age / parameter), times a class weight that balances the
+      two classes on the *weighted* totals (n_w / (2 W_class), the form
+      `class_weight="balanced"` takes for unit weights).
+    * `window`: only pairs with age < parameter, class-balanced; the whole history when the
+      window holds fewer than `PRESSURE_RECENCY_SETTINGS["minimum_window_events"]` events or
+      lacks a class.
+    """
+
+    import numpy
+    from sklearn.linear_model import LogisticRegression
+
+    if mode not in PRESSURE_RECENCY_SETTINGS["modes"]:
+        raise ValueError(f"unknown recency mode {mode!r}; one of {list(PRESSURE_RECENCY_SETTINGS['modes'])}")
+    if len(ages) != len(y):
+        raise ValueError("one age per training pair is required")
+    if mode == "decay":
+        weight = 0.5 ** (ages / float(parameter))
+    else:
+        keep = ages < parameter
+        if y[keep].sum() < PRESSURE_RECENCY_SETTINGS["minimum_window_events"] or y[keep].sum() == keep.sum():
+            keep = numpy.ones(len(y), dtype=bool)
+        weight = keep.astype(float)
+    total = weight.sum()
+    for label in (0, 1):
+        mass = weight[y == label].sum()
+        if mass <= 0.0:
+            raise ValueError("a recency fit needs both classes among its weighted pairs")
+        weight = numpy.where(y == label, weight * total / (2.0 * mass), weight)
+    used = weight > 0.0
+    centre = x[used].mean(axis=0)
+    scale = x[used].std(axis=0)
+    scale[scale == 0.0] = 1.0
+    model = LogisticRegression(C=PRESSURE_LOGISTIC_SETTINGS["C"], max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"])
+    model.fit((x[used] - centre) / scale, y[used], sample_weight=weight[used])
+    return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
 
 
 def _fit_rare_event(kind: str, treatment: str, x: Any, y: Any, z: Any) -> List[float]:
@@ -5099,8 +5194,12 @@ def pressure_rare_event_exceedance(
     features: Sequence[str],
     declaration: Any,
     minimum_history: int = 20,
+    recency: Optional[Tuple[str, int]] = None,
 ) -> ExceedancePredictor:
     """The direct logistic or classifier fitted for the rare event (#381).
+
+    `recency`, `(mode, parameter)` of `PRESSURE_RECENCY_SETTINGS` (#411): the
+    class-weighted logistic with a decaying sample weight or a trailing window.
 
     `kind` is `"logistic"` or `"gbm_classifier"`; `treatment` is one of
     `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`: `class_weight`, `focal`
@@ -5112,7 +5211,7 @@ def pressure_rare_event_exceedance(
     """
 
     return _direct_pressure_predictor(
-        kind, features, declaration, minimum_history, rare=treatment
+        kind, features, declaration, minimum_history, rare=treatment, recency=recency
     )
 
 
