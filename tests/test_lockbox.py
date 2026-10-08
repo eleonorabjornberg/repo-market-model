@@ -318,6 +318,12 @@ NON_SCORING_COMMANDS = {
 NOT_ENTRY_POINTS = {
     # Holds the guard itself: every entry point above reaches it.
     "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
+    "scripts/pressure_judge._scarcity_states": (
+        "reads the reserve-scarcity state on the fold grid, to label the judge's groups "
+        "(#375); scores nothing, it ends at the declared last scored day through "
+        "_as_of_folds, which calls require_unlocked, and pressure_judge.judge guards the "
+        "scored days itself"
+    ),
     "ml._held_out_read": "a calibration read inside a fit's own training frame",
     "ml._pressure_pairs": (
         "builds the direct pressure models' training pairs inside a fit's own "
