@@ -123,7 +123,7 @@ def forecasts_command(args) -> int:
         horizon=args.horizon,
     )
     served = [item for fold in record for item in fold["served"]]
-    if [item["date"] for item in served] != [d.isoformat() for d in report.scored_dates]:
+    if len(served) != len(report.scored_dates):
         raise SystemExit("the tail's per-day record does not line up with the scored days")
     forecast = pj.report_forecast(declaration["candidate"], report)
     folds = [{k: v for k, v in fold.items() if k != "served"} for fold in record]
@@ -149,7 +149,10 @@ def forecasts_command(args) -> int:
         "tail": {
             "threshold_bp": declaration["threshold_bp"],
             "folds": [dict(fold, scored_days=n) for fold, n in zip(folds, sizes)],
-            "days": {item["date"]: {"body": item["body"], "sigma": item["sigma"]} for item in served},
+            "days": {
+                day.isoformat(): {"anchor": item["anchor"], "body": item["body"], "sigma": item["sigma"]}
+                for day, item in zip(report.scored_dates, served)
+            },
         },
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")

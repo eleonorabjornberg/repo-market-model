@@ -4841,8 +4841,9 @@ def pressure_tail_exceedance(
     as-of history.
 
     `record`, when a list, receives one mapping per fit: its fit summary and,
-    for each served row in order, the body probability, scale and shape, which
-    is what the tail diagnostics are computed from.
+    for each served row in order (`anchor` is the row's own date, the latest day
+    whose spread was public), the body probability and the scale, which with the
+    fit's shape is what the tail diagnostics are computed from.
 
     Raises:
         ValueError: on a design without reserves and the calendar (the scale
@@ -4935,7 +4936,7 @@ def pressure_tail_exceedance(
                     },
                     "log_likelihood": tail.log_likelihood,
                     "served": [
-                        {"date": row.date.isoformat(), "body": float(b), "sigma": s}
+                        {"anchor": row.date.isoformat(), "body": float(b), "sigma": s}
                         for row, b, s in zip(feature_rows, body, sigmas)
                     ],
                 }

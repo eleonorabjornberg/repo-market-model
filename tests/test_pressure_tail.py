@@ -263,14 +263,14 @@ class PredictorTests(unittest.TestCase):
         report = self.run_backtest(1, taus=(5.0, 10.0), record=record)
         served = [item for fold in record for item in fold["served"]]
         self.assertEqual(len(served), len(report.forecast))
-        fold = next(f for f in record if f["mode"] == "gpd")
         checked = 0
+        position = 0
         for fold in record:
-            if fold["mode"] != "gpd":
-                continue
             for item in fold["served"]:
-                index = [s["date"] for s in served].index(item["date"])
-                curve = report.forecast[index]
+                curve = report.forecast[position]
+                position += 1
+                if fold["mode"] != "gpd":
+                    continue
                 for tau, value in zip((5.0, 10.0), curve):
                     z = (tau - U) / item["sigma"]
                     survival = (
@@ -289,7 +289,7 @@ class PredictorTests(unittest.TestCase):
         modes = {fold["mode"] for fold in record}
         self.assertIn("gpd", modes)
         for fold in record:
-            self.assertLessEqual(fold["train_end"], fold["served"][0]["date"])
+            self.assertLessEqual(fold["train_end"], fold["served"][0]["anchor"])
             self.assertEqual(
                 set(fold["coefficients"]), {"reserve_balances", "quarter_end", "month_end", "tax_date"}
             )
