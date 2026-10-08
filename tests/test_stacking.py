@@ -14,18 +14,26 @@ What is covered:
   on disk is the one the code reads.
 
 **Recorded mutations** (disposable copy of the tree, `PYTHONDONTWRITEBYTECODE=1`,
-the killing test run alone, each mutation confirmed applied by `grep` and
-restored before the next):
+`test_stacking` run alone, each mutation confirmed applied by `grep` and restored
+before the next):
 
-1. `training_window`: change `if day > training_end` to `if day > training_end + timedelta(days=30)`
-   (the guard on a window day after the refit's training end). 
-   `WindowTests.test_a_day_after_the_training_end_is_refused` fails: no
-   `LookAheadError` is raised.
-2. `training_window`: change `for k in range(start)` to `for k in range(start + 1)`
-   (the first day of the block joins its own training window).
-   `WindowTests.test_the_window_holds_only_earlier_blocks_days` fails
-   (`LookAheadError` raised by the guard of mutation 1 is expected for a block
-   day after the training end; here the window then holds a day of the block).
+1. `require_known`: change `if training_end is None or days[k] > training_end` to
+   `if training_end is None` (the guard no longer compares a window day with the
+   training end). `WindowTests.test_a_day_after_the_training_end_is_refused`
+   fails: `AssertionError: LookAheadError not raised`.
+2. `training_end_of`: change `position[days[start]] - horizon - 1` to
+   `position[days[start]] - horizon` (the outcome of the day before the block is
+   treated as public, though SOFR for a day is published the morning after).
+   Three tests fail, among them
+   `WindowTests.test_the_last_known_day_leaves_a_gap_of_the_horizon_plus_one`
+   and `StackTests.test_the_probabilities_of_the_days_inside_the_gap_are_not_read`.
+3. `training_window`: delete the filter `and days[k] <= training_end` from the
+   list comprehension, so the window is every earlier-block day. The guard
+   `require_known` then raises `LookAheadError` on the first refit whose window
+   holds a day inside the gap, and four tests error with it (`StackTests` and
+   `WindowTests.test_the_window_holds_only_earlier_blocks_days`). The filter and
+   the guard each catch a window that is too wide; this records that the guard
+   stands on its own when the filter is gone.
 """
 
 from __future__ import annotations
