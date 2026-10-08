@@ -315,6 +315,39 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The full-distribution models of #385: a quantile regression forest and a
+        # natural-gradient boosting of a Laplace (or normal) law, on the same design.
+        "pressure_qrf": _ModelChoice(
+            declared=_DeferredFactory("pressure_qrf_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_natural_gradient": _ModelChoice(
+            declared=_DeferredFactory("pressure_natural_gradient_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_natural_gradient_normal": _ModelChoice(
+            declared=_DeferredFactory("pressure_natural_gradient_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+                family="normal",
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         # The dynamic pressure logit and its ordinal version (#137): the
         # direct design plus the lagged event indicator and the model's own
         # lagged index, read off each forecast's as-of history.

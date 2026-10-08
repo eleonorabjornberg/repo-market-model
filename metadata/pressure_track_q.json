@@ -1,0 +1,42 @@
+{
+  "status": "declared by the pull request that closes #385 before any score was computed; the candidates, their features, the flagging cut-offs, the distribution scores and the model settings below are fixed here and are never tuned on a scored day",
+  "issue": 385,
+  "scoring": {"last_day": "2025-12-31"},
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement_coupons",
+    "reserve_balances"
+  ],
+  "features_note": "the six features of the dynamic logit and of #372's probit and quantile predictors, on the published funding panel",
+  "settings": {
+    "qrf": "ml.PRESSURE_QRF_SETTINGS",
+    "natural_gradient": "ml.PRESSURE_NATURAL_GRADIENT_SETTINGS",
+    "selection": "ml.PRESSURE_DISTRIBUTION_SELECTION"
+  },
+  "candidates": {
+    "qrf": {"model": "pressure_qrf_exceedance", "cutoffs": {"5": 0.2, "10": 0.2}},
+    "ngboost_laplace": {"model": "pressure_natural_gradient_exceedance", "family": "laplace", "cutoffs": {"5": 0.2, "10": 0.2}},
+    "ngboost_normal": {"model": "pressure_natural_gradient_exceedance", "family": "normal", "cutoffs": {"5": 0.2, "10": 0.2}}
+  },
+  "reference": {
+    "gbm": {
+      "model": "gbm_exceedance",
+      "regressors": ["days_to_month_end", "quarter_end", "tax_date", "treasury_settlement_coupons", "reserve_balances"],
+      "note": "the current distributional gbm, uncalibrated, on the same features: the tails the new models are meant to improve; scored for the distribution tables and, as a row, by the judge",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    }
+  },
+  "distribution": {
+    "outcome": "the spread on whole basis points, round(spread_bps)",
+    "crps": "discrete CRPS on whole basis points: sum over integer k in the grid of (F(k) - 1[y <= k])^2, F(k) = 1 - P(spread > k) from the model's own curve at every integer k",
+    "grid_bp": [-30, 80],
+    "band": {"lower": 0.05, "upper": 0.95, "reading": "the central 90% band of the model's own discrete law: [smallest k with F(k) >= 0.05, smallest k with F(k) >= 0.95]; covered when the whole-bp outcome lies inside, ends included"},
+    "groupings": ["regime", "day_type"],
+    "comparison": "mean CRPS difference, reference gbm minus candidate (positive: the candidate is better), on the same days, with the judge's stationary-bootstrap interval"
+  }
+}
