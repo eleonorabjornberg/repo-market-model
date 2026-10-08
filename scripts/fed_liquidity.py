@@ -18,6 +18,9 @@ columns does so inside `switched_on()`.
     PYTHONPATH=src python3 scripts/pressure_judge.py forecasts --panel PUB.csv --horizon H --output OUT/b_hH.json --published
     PYTHONPATH=src python3 scripts/pressure_judge.py judge --panel PUB.csv --output OUT/judge.json \\
         --markdown OUT/judge.md OUT/b_h1.json OUT/h_h1.json OUT/f_h1.json ...
+    PYTHONPATH=src python3 scripts/pressure_judge.py table OUT/judge.json --output OUT/tables.md
+    PYTHONPATH=src python3 scripts/fed_liquidity.py paired --panel PUB.csv --output OUT/paired.json \\
+        --markdown OUT/paired.md OUT/h_h?.json OUT/f_h?.json
 
 `forecasts` scores each candidate declared by track F in `metadata/pressure_judge.json`
 (`fed_liquidity.CANDIDATES`: the hierarchical logistic of #406 with the inputs added),
@@ -159,6 +162,88 @@ def forecasts_command(args) -> int:
     return 0
 
 
+def _brier_cells(grid, tau, control, candidate):
+    """Per-day vectors of the Brier loss the control loses to the candidate, by cell."""
+
+    outcomes = grid.outcomes[tau]
+    loss = [(c - o) ** 2 - (p - o) ** 2 for c, p, o in zip(control, candidate, outcomes)]
+    cells = {"all": list(range(len(outcomes)))}
+    for dimension in ("regime", "day_type"):
+        for label, members in pj._group_cells(grid, dimension).items():
+            cells[f"{dimension}: {label}"] = members
+    out = {}
+    for label, members in cells.items():
+        inside = [0.0] * len(outcomes)
+        for position in members:
+            inside[position] = 1.0
+        out[label] = [inside, [inside[i] * loss[i] for i in range(len(outcomes))]]
+    return out
+
+
+def paired_command(args) -> int:
+    """The candidates' Brier score against the control's, paired, with stationary-bootstrap intervals."""
+
+    declaration = pj.load_declaration()
+    judge_script.require_committed_declaration(pj.DEFAULT_DECLARATION)
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(SPLITS)
+    forecasts = {}
+    for path in args.inputs:
+        for forecast in pj.forecasts_from_horizon_document(json.loads(Path(path).read_text())):
+            forecasts[(forecast.name, forecast.horizon)] = forecast
+    statistic = {"difference": pj._ratio(1, 0)}
+    result = {"control": args.control, "positive": "the candidate's Brier score is lower than the control's", "cells": {}}
+    lines = [
+        f"Brier score of `{args.control}` minus the candidate's, paired on the same days "
+        f"(positive: the candidate is better), {declaration.level:.0%} stationary-bootstrap interval, "
+        f"block length {declaration.block_length}.",
+        "",
+    ]
+    names = sorted({name for name, _h in forecasts if name != args.control})
+    for name in names:
+        lines += [f"### {name}", "", "| threshold, horizon | all days | " + " | ".join(
+            f"{d}: {lab}" for d, lab in _LABELS) + " |", "|---|---|" + "---|" * len(_LABELS)]
+        for tau in declaration.thresholds:
+            for horizon in declaration.horizons:
+                control = forecasts[(args.control, horizon)]
+                candidate = forecasts[(name, horizon)]
+                if control.dates != candidate.dates:
+                    raise SystemExit(f"{name} h={horizon}: not on the control's days")
+                grid = pj.build_grid(declaration, horizon, rows, control.dates, splits, scarcity_state={})
+                cells = _brier_cells(grid, tau, control.probabilities[tau], candidate.probabilities[tau])
+                seed = pj._seed(declaration.seed, "fed_liquidity", name, tau, horizon)
+                booted = pj._bootstrap(declaration, cells, statistic, len(control.dates), seed=seed)
+                result["cells"][f"{name}|{tau:g}|{horizon}"] = {
+                    label: {"days": entry["days"], **entry["difference"]} for label, entry in booted.items()
+                }
+                def show(label):
+                    cell = booted.get(label)
+                    if cell is None or not cell["days"]:
+                        return "–"
+                    d = cell["difference"]
+                    if d["mean"] is None or "interval" not in d:
+                        return "–"
+                    return f"{d['mean']:+.4f} [{d['interval']['lower']:+.4f}, {d['interval']['upper']:+.4f}]"
+                lines.append(
+                    f"| +{tau:g} bp, h = {horizon} | {show('all')} | "
+                    + " | ".join(show(f"{d}: {lab}") for d, lab in _LABELS) + " |"
+                )
+        lines.append("")
+    args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    if args.markdown:
+        args.markdown.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output), "cells": len(result["cells"])}))
+    return 0
+
+
+#: The groupings the paired table shows beyond all days.
+_LABELS = (
+    ("regime", "2018-19"), ("regime", "2020"), ("regime", "2021-23"), ("regime", "2024"), ("regime", "2025-26"),
+    ("day_type", "month_end"), ("day_type", "ordinary"), ("day_type", "quarter_end"), ("day_type", "tax_date"),
+)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -173,6 +258,13 @@ def main(argv=None) -> int:
     forecasts.add_argument("--candidate", choices=sorted(fed_liquidity.CANDIDATES))
     forecasts.add_argument("--output", type=Path, required=True)
     forecasts.set_defaults(handler=forecasts_command)
+    paired = commands.add_parser("paired", help="the candidates' Brier score against the control's")
+    paired.add_argument("--panel", type=Path, required=True)
+    paired.add_argument("--control", default=hl.NAME)
+    paired.add_argument("--output", type=Path, required=True)
+    paired.add_argument("--markdown", type=Path)
+    paired.add_argument("inputs", type=Path, nargs="+")
+    paired.set_defaults(handler=paired_command)
     args = parser.parse_args(argv)
     return args.handler(args)
 
