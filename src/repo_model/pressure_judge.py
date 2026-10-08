@@ -37,6 +37,10 @@ cut-off, lead time at +5 bp, and the bar by every declared grouping (the
 regimes, the reserve-scarcity state of #115, the pressure-day type, and any
 grouping a later track declares) and on the knowledge-holdout windows.
 
+Beside each row the judge prints `recall_floor_point`: the highest cut-off that
+reaches the recall floor, and its precision. It is chosen on the scored days, so
+it is a diagnostic of whether any cut-off could meet the bar and never decides one.
+
 **"At the same recall."** The reference's precision is read where its own
 ranking reaches the candidate's recall: the reference flags its highest
 probabilities until the share of pressure days flagged equals the candidate's,
@@ -88,6 +92,7 @@ __all__ = [
     "judge",
     "load_declaration",
     "matched_recall_weights",
+    "recall_floor_point",
     "report_forecast",
     "require_scored_days",
     "usefulness",
@@ -539,6 +544,40 @@ def matched_recall_weights(
     return tuple(weights)
 
 
+def recall_floor_point(
+    probabilities: Sequence[float], outcomes: Sequence[int], recall_floor: float
+) -> Optional[dict]:
+    """Where the probabilities first reach `recall_floor`, read after the fact.
+
+    The highest cut-off at which the share of event days flagged is at least
+    `recall_floor`, with the precision there. **A diagnostic, never a pass**:
+    it is chosen on the scored days, so it says whether any cut-off could meet
+    the bar, not that the candidate meets it; the bar is applied at the
+    declared cut-off only. `None` when there is no event day.
+    """
+
+    events = sum(outcomes)
+    if events == 0:
+        return None
+    by_value: Dict[float, List[int]] = {}
+    for index, p in enumerate(probabilities):
+        by_value.setdefault(p, []).append(index)
+    alarms = hits = 0
+    for value in sorted(by_value, reverse=True):
+        members = by_value[value]
+        alarms += len(members)
+        hits += sum(outcomes[i] for i in members)
+        if hits / events >= recall_floor:
+            return {
+                "cutoff": value,
+                "recall": hits / events,
+                "precision": hits / alarms,
+                "false_alarms_per_true": (alarms - hits) / hits,
+                "note": "ex post, chosen on the scored days: a diagnostic, never the pass condition",
+            }
+    return None
+
+
 def _flags_summary(flags: Sequence[float], outcomes: Sequence[int]) -> dict:
     alarms = sum(flags)
     hits = sum(f for f, y in zip(flags, outcomes) if y)
@@ -887,6 +926,9 @@ def _row(
     except MetricError as exc:
         row["average_precision_unavailable"] = str(exc)
     row["usefulness"] = usefulness(flags, outcomes, declaration.usefulness_preference)
+    row["at_recall_floor_ex_post"] = recall_floor_point(
+        probabilities, outcomes, declaration.recall_at_least
+    )
 
     climatology_name = declaration.climatology
     clim_probabilities = by_name[climatology_name][horizon].probabilities[tau]

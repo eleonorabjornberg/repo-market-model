@@ -313,6 +313,16 @@ class MetricTests(unittest.TestCase):
         self.assertTrue(0.0 < weights[1] < 1.0)
         self.assertEqual(weights[1], weights[2])
 
+    def test_the_recall_floor_point_is_the_highest_cutoff_that_reaches_the_floor(self):
+        p = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
+        y = [1, 0, 1, 0, 1, 0]
+        point = pj.recall_floor_point(p, y, 0.6)
+        self.assertEqual(point["cutoff"], 0.7)
+        self.assertAlmostEqual(point["recall"], 2 / 3)
+        self.assertAlmostEqual(point["precision"], 2 / 3)
+        self.assertAlmostEqual(point["false_alarms_per_true"], 0.5)
+        self.assertIsNone(pj.recall_floor_point([0.1, 0.2], [0, 0], 0.7))
+
     def test_a_flat_forecast_is_matched_by_flagging_every_day_in_proportion(self):
         weights = pj.matched_recall_weights([0.1] * 10, [1, 0] * 5, 0.6)
         self.assertTrue(all(abs(w - 0.6) < 1e-12 for w in weights))

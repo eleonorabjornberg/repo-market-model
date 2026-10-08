@@ -271,6 +271,17 @@ def markdown(result) -> str:
                 f"{_f(row['auroc'])} | {_f(row['usefulness'].get('relative'))} | "
                 f"{'pass' if row['bar']['passes'] else 'fail'} |"
             )
+        floors = [
+            (h, per_tau[primary]["at_recall_floor_ex_post"]) for h, per_tau in candidate["horizons"].items()
+        ]
+        lines += [
+            "",
+            "Ex post, never a pass: the highest cut-off that reaches the recall floor, and its precision: "
+            + "; ".join(
+                f"h = {h}: " + ("no event" if f is None else f"cut-off {f['cutoff']:.3f}, precision {_f(f['precision'])}, false alarms per true {_f(f['false_alarms_per_true'])}")
+                for h, f in floors
+            ),
+        ]
         lead = candidate["lead_time"]
         lines += [
             "",
