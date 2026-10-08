@@ -273,6 +273,34 @@ def markdown(result) -> str:
             )
         lead = candidate["lead_time"]
         lines += ["", f"Lead time at +{primary} bp: {lead['flagged']} of {lead['onsets']} onsets flagged, mean {_f(lead['mean_lead_days'], 2)} days.", ""]
+        first = next(iter(candidate["horizons"]))
+        row = candidate["horizons"][first][primary]
+        lines += [
+            f"The bar by group at h = {first}:",
+            "",
+            "| grouping | group | days | events | recall | precision | ΔBrier vs climatology | Δprecision | bar |",
+            "|---|---|---|---|---|---|---|---|---|",
+        ]
+        for dimension, cells in row.get("splits", {}).items():
+            for label, cell in cells.items():
+                flags = cell["flags"]
+                lines.append(
+                    f"| {dimension} | {label} | {cell['days']} | {cell['events']} | {_f(flags['recall'])} | "
+                    f"{_f(flags['precision'])} | {_cell(cell['brier_difference']) if isinstance(cell.get('brier_difference'), dict) else _f(cell.get('brier_difference'), 4)} | "
+                    f"{_cell(cell['precision_difference']) if isinstance(cell.get('precision_difference'), dict) else _f(cell.get('precision_difference'), 4)} | "
+                    f"{'pass' if cell.get('bar', {}).get('passes') else 'fail' if 'bar' in cell else '–'} |"
+                )
+        if row.get("holdouts"):
+            lines += ["", f"Knowledge holdouts at h = {first} (descriptive):", "", "| window | days | events | recall | precision | Brier | climatology Brier |", "|---|---|---|---|---|---|---|"]
+            for window, cell in row["holdouts"].items():
+                if not cell.get("days"):
+                    lines.append(f"| {window} | 0 | | | | | |")
+                    continue
+                lines.append(
+                    f"| {window} | {cell['days']} | {cell['events']} | {_f(cell['flags']['recall'])} | "
+                    f"{_f(cell['flags']['precision'])} | {_f(cell['brier'], 4)} | {_f(cell['climatology_brier'], 4)} |"
+                )
+        lines.append("")
     return "\n".join(lines) + "\n"
 
 

@@ -193,6 +193,16 @@ class Declaration:
         }
 
 
+def _display(path: Path) -> str:
+    """The declaration's path as a result names it: relative to the repository when inside it."""
+
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(Path(__file__).parents[2]))
+    except ValueError:
+        return str(path)
+
+
 def _key(tau: float) -> str:
     return f"{float(tau):g}"
 
@@ -291,7 +301,7 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
             raise ValueError(f"{path}: benchmarks.{label} {name!r} is not a declared candidate")
 
     return Declaration(
-        path=str(path),
+        path=_display(path),
         sha256=hashlib.sha256(raw).hexdigest(),
         status=str(document["status"]),
         last_day=last_day,
