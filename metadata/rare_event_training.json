@@ -1,0 +1,20 @@
+{
+  "status": "declared by the pull request that closes #381 before any score was computed; nothing here is tuned on a scored day; the choices below are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "minimum_history": 61, "refit_every": 21, "decision_time": "16:00"},
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "features": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date", "treasury_settlement", "reserve_balances", "tga"],
+  "features_note": "the direct-model design of pressure model v1; treasury_settlement is dropped at h >= 2 (scheduled one business day ahead, so not public)",
+  "settings": "ml.PRESSURE_RARE_EVENT_SETTINGS, with ml.PRESSURE_LOGISTIC_SETTINGS and ml.PRESSURE_CLASSIFIER_SETTINGS for the base estimators",
+  "recalibration": "pressure.RECALIBRATION: Platt on the candidate's own earlier forecasts, out of fold, per threshold",
+  "candidates": {
+    "rare_logistic_class_weight": {"kind": "logistic", "treatment": "class_weight"},
+    "rare_logistic_balanced_bootstrap": {"kind": "logistic", "treatment": "balanced_bootstrap"},
+    "rare_gbm_class_weight": {"kind": "gbm_classifier", "treatment": "class_weight"},
+    "rare_gbm_focal": {"kind": "gbm_classifier", "treatment": "focal"},
+    "rare_gbm_balanced_bootstrap": {"kind": "gbm_classifier", "treatment": "balanced_bootstrap"}
+  },
+  "judged_form": "+recalibrated",
+  "cutoffs": {"5": 0.2, "10": 0.2},
+  "cutoffs_note": "the flag cut-off of every judged row, the lower of pressure.ALARM_LEVELS, as the judge's declaration gives the baseline rows; recalibrated probabilities are on the event-rate scale, so one cut-off serves all five; never tuned on a scored day"
+}

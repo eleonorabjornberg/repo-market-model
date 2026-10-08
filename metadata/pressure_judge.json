@@ -328,6 +328,91 @@
         "10": 0.2
       }
     },
+    "rare_logistic_class_weight+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (class_weight), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_logistic_balanced_bootstrap+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_gbm_class_weight+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (class_weight), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_gbm_focal+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (focal), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_gbm_balanced_bootstrap+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
     "extreme_value_tail": {
       "role": "candidate",
       "features": [
