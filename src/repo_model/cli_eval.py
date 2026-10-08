@@ -293,6 +293,28 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The two literature-scan predictors (#372): a ridge probit of the label and
+        # linear quantile regressions of the spread, on the same direct design.
+        "pressure_probit": _ModelChoice(
+            declared=_DeferredFactory("pressure_probit_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_quantile": _ModelChoice(
+            declared=_DeferredFactory("pressure_quantile_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         # The dynamic pressure logit and its ordinal version (#137): the
         # direct design plus the lagged event indicator and the model's own
         # lagged index, read off each forecast's as-of history.
