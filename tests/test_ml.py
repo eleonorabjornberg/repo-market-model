@@ -10174,6 +10174,152 @@ class ScarcityEventBarVariantTests(unittest.TestCase):
             self.assertEqual(settings["regime_partial_pooling"] is not None, "regime_pooled" in kwargs)
 
 
+class HierarchicalLogisticTests(unittest.TestCase):
+    """The hierarchical logistic of the pressure label, shrinkage by empirical Bayes (#386).
+
+    Written first, and watched failing: before the variant existed every test
+    here raised `AttributeError: module 'repo_model.ml' has no attribute
+    '_empirical_bayes_scale'` or `TypeError: _ScarcityCalendarDesign.__init__()
+    got an unexpected keyword argument 'regime_hierarchical'`.
+
+    Recorded mutations (applied in a scratch copy, run, reverted):
+
+    * `_laplace_log_evidence`: the `- 0.5 * logdet` term deleted (the Occam
+      factor): killed by `test_the_evidence_prefers_the_smaller_scale_for_an_irrelevant_deviation`
+      (`AssertionError`). The same mutation also failed
+      `test_regimes_that_agree_are_pooled_by_the_smallest_scale` and
+      `test_regimes_that_differ_are_given_a_larger_scale`.
+    * `_empirical_bayes_scale`: `x[:, 1]` (the regime column) replaced by
+      `x[:, 0]` in the `_pool_columns` call: killed by
+      `test_regimes_that_differ_are_given_a_larger_scale` (`AssertionError`).
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, **kwargs):
+        return ml._ScarcityCalendarDesign(
+            _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL, regime_hierarchical=True, **kwargs
+        )
+
+    def _data(self, differ, rows=480):
+        """A pooled design with a regime column, labels that do (or do not) depend on the regime."""
+
+        import numpy
+
+        rng = numpy.random.RandomState(7)
+        regime = numpy.arange(rows) % 4
+        x = rng.normal(size=(rows, 2))
+        logit = -2.0 + 0.8 * x[:, 0]
+        if differ:
+            logit = logit + numpy.array([-2.0, 0.0, 1.0, 3.0])[regime] + (regime == 3) * 1.5 * x[:, 1]
+        y = (rng.uniform(size=rows) < 1.0 / (1.0 + numpy.exp(-logit))).astype(int)
+        columns = numpy.column_stack([x[:, 0], regime.astype(float), x[:, 1]])
+        return columns, y
+
+    def test_the_variant_is_declared_with_no_fixed_scale(self):
+        design = self.design()
+        self.assertIsNone(design.pooling[3])
+        self.assertEqual(design.names, ml._ScarcityCalendarDesign(
+            _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL, regime_pooled=True).names)
+        self.assertEqual(design.settings()["regime_partial_pooling"]["deviation_scale"], "empirical Bayes")
+
+    def test_the_variant_is_one_variant(self):
+        with self.assertRaises(ValueError):
+            self.design(interactions=True)
+        with self.assertRaises(ValueError):
+            self.design(monotone=True)
+        with self.assertRaises(ValueError):
+            ml._ScarcityCalendarDesign(
+                _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL, regime_hierarchical=True, regime_pooled=True
+            )
+
+    def test_the_evidence_prefers_the_smaller_scale_for_an_irrelevant_deviation(self):
+        import numpy
+
+        columns, y = self._data(differ=False)
+        pooled = (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0)
+        z = (columns - columns.mean(axis=0)) / columns.std(axis=0)
+        small = ml._laplace_log_evidence(ml._pool_columns(z, columns[:, 1], *pooled, 0.05), y)
+        large = ml._laplace_log_evidence(ml._pool_columns(z, columns[:, 1], *pooled, 4.0), y)
+        self.assertGreater(small, large)
+        self.assertTrue(numpy.isfinite(small) and numpy.isfinite(large))
+
+    def test_regimes_that_agree_are_pooled_by_the_smallest_scale(self):
+        columns, y = self._data(differ=False)
+        got = ml._empirical_bayes_scale(columns, y, (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0))
+        self.assertEqual(got, min(ml.REGIME_SHRINKAGE_GRID))
+
+    def test_regimes_that_differ_are_given_a_larger_scale(self):
+        agree, differ = self._data(differ=False), self._data(differ=True)
+        base = ml._empirical_bayes_scale(*agree, (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0))
+        got = ml._empirical_bayes_scale(*differ, (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0))
+        self.assertGreater(got, base)
+
+    def test_the_fit_records_the_scale_it_chose_and_is_deterministic(self):
+        columns, y = self._data(differ=True)
+        pooling = ((0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0), None)
+        first, second = [], []
+        a = ml._fit_classifier("logistic", columns, y, columns[:20], pooling=pooling, shrinkage_trace=first)
+        b = ml._fit_classifier("logistic", columns, y, columns[:20], pooling=pooling, shrinkage_trace=second)
+        self.assertEqual(a, b)
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 1)
+        self.assertIn(first[0], ml.REGIME_SHRINKAGE_GRID)
+        self.assertTrue(all(0.0 < p < 1.0 for p in a))
+
+    def test_the_regime_effects_add_the_pooled_coefficient_and_the_shrunk_deviation(self):
+        import numpy
+
+        # Columns: pooled 0 and 1; deviating 0 and 2 (column 2 is not pooled); two regimes.
+        coefficients = numpy.array([0.5, 2.0, 1.0, 0.1, 0.2, 3.0, 0.4, 0.6])
+        scale = numpy.array([2.0, 1.0, 4.0])
+        got = ml._regime_effects(coefficients, (0, 1), (0, 2), (0.0, 1.0), 0.5, scale)
+        self.assertEqual(got["shrink"], 0.5)
+        self.assertEqual(got["pooled"], {0: 0.25, 1: 2.0})
+        # regime 0: intercept 0.5 * 1.0; column 0: (0.5 + 0.5 * 0.1) / 2; column 2: 0.5 * 0.2 / 4
+        self.assertAlmostEqual(got["regimes"][0.0]["intercept"], 0.5)
+        self.assertAlmostEqual(got["regimes"][0.0][0], 0.275)
+        self.assertAlmostEqual(got["regimes"][0.0][2], 0.025)
+        self.assertEqual(got["regimes"][0.0][1], 2.0)
+        # regime 1: intercept 0.5 * 3.0; column 0: (0.5 + 0.5 * 0.4) / 2; column 2: 0.5 * 0.6 / 4
+        self.assertAlmostEqual(got["regimes"][1.0]["intercept"], 1.5)
+        self.assertAlmostEqual(got["regimes"][1.0][0], 0.35)
+        self.assertAlmostEqual(got["regimes"][1.0][2], 0.075)
+
+    def test_a_fixed_scale_is_untouched(self):
+        columns, y = self._data(differ=True)
+        trace = []
+        fixed = ((0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0), 0.5)
+        ml._fit_classifier("logistic", columns, y, columns[:5], pooling=fixed, shrinkage_trace=trace)
+        self.assertEqual(trace, [])
+
+    def test_a_backtest_runs_the_variant_under_every_guard_and_records_the_shrinkage(self):
+        from repo_model.scarcity import measurement_declaration
+
+        rows = _scarcity_calendar_panel()
+        with measurement_declaration():
+            report = baseline.rolling_exceedance_backtest(
+                rows,
+                predictor=ml._scarcity_calendar_predictor(
+                    "logistic", _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL,
+                    minimum_history=60, regime_hierarchical=True,
+                ),
+                model_name="hierarchical_logistic",
+                features=_SCARCITY_CALENDAR,
+                registry=_PRESSURE_REGISTRY,
+                decision_time=time(16, 0),
+                taus=(5.0, 10.0),
+                minimum_history=60,
+                refit_every=21,
+                horizon=1,
+            )
+        self.assertTrue(report.folds)
+        chosen = report.model_settings["scarcity_calendar"]["regime_partial_pooling"]
+        self.assertEqual(chosen["deviation_scale"], "empirical Bayes")
+        self.assertTrue(chosen["grid"])
+
+
 def _history_rows(start, end):
     """Pre-SOFR history rows (#129) on weekdays, EFFR - IOER cycling through +8 bp."""
 

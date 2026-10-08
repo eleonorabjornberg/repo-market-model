@@ -191,6 +191,23 @@
         "5": 0.2,
         "10": 0.2
       }
+    },
+    "hierarchical_logistic": {
+      "role": "candidate",
+      "track": "H (#386)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     }
   }
 }
