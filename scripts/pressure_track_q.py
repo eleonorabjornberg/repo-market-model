@@ -184,7 +184,6 @@ def _composed_declaration(track: dict) -> pj.Declaration:
             "role": "candidate",
             "features": sorted(set(features)),
             "calibration": "none",
-            "cutoffs": entry["cutoffs"],
         }
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "pressure_judge_with_track_q.json"

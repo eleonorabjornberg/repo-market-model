@@ -1,5 +1,5 @@
 {
-  "status": "declared by the pull request that closes #385 before any score was computed; the candidates, their features, the flagging cut-offs, the distribution scores and the model settings below are fixed here and are never tuned on a scored day",
+  "status": "declared by the pull request that closes #385 before any score was computed; the candidates, their features, the distribution scores and the model settings below are fixed here and are never tuned on a scored day; amended after the judge of #407 stopped taking a declared cut-off per candidate: the entries no longer name a cut-off, and each flag cut-off is chosen by the judge's cutoff_rule from each refit's training window",
   "issue": 385,
   "scoring": {"last_day": "2025-12-31"},
   "thresholds_bp": [5, 10],
@@ -21,16 +21,15 @@
     "selection": "ml.PRESSURE_DISTRIBUTION_SELECTION"
   },
   "candidates": {
-    "qrf": {"model": "pressure_qrf_exceedance", "cutoffs": {"5": 0.2, "10": 0.2}},
-    "ngboost_laplace": {"model": "pressure_natural_gradient_exceedance", "family": "laplace", "cutoffs": {"5": 0.2, "10": 0.2}},
-    "ngboost_normal": {"model": "pressure_natural_gradient_exceedance", "family": "normal", "cutoffs": {"5": 0.2, "10": 0.2}}
+    "qrf": {"model": "pressure_qrf_exceedance"},
+    "ngboost_laplace": {"model": "pressure_natural_gradient_exceedance", "family": "laplace"},
+    "ngboost_normal": {"model": "pressure_natural_gradient_exceedance", "family": "normal"}
   },
   "reference": {
     "gbm": {
       "model": "gbm_exceedance",
       "regressors": ["days_to_month_end", "quarter_end", "tax_date", "treasury_settlement_coupons", "reserve_balances"],
-      "note": "the current distributional gbm, uncalibrated, on the same features: the tails the new models are meant to improve; scored for the distribution tables and, as a row, by the judge",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "note": "the current distributional gbm, uncalibrated, on the same features: the tails the new models are meant to improve; scored for the distribution tables and, as a row, by the judge"
     }
   },
   "distribution": {
