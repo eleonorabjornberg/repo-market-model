@@ -426,5 +426,63 @@ class BarTests(unittest.TestCase):
         self.assertEqual(result["declaration"]["last_scored_day"], "2025-12-31")
 
 
+class InputTests(unittest.TestCase):
+    def test_forecasts_are_read_from_a_horizon_document(self):
+        document = {
+            "horizon": 2,
+            "forecasts": {
+                "m": {
+                    "5": {"2019-01-03": 0.1, "2019-01-02": 0.2},
+                    "10": {"2019-01-02": 0.05, "2019-01-03": 0.01},
+                }
+            },
+        }
+        (forecast,) = pj.forecasts_from_horizon_document(document)
+        self.assertEqual(forecast.horizon, 2)
+        self.assertEqual(forecast.dates, (date(2019, 1, 2), date(2019, 1, 3)))
+        self.assertEqual(forecast.probabilities[5.0], (0.2, 0.1))
+        self.assertEqual(forecast.probabilities[10.0], (0.05, 0.01))
+
+    def test_a_report_becomes_a_forecast_at_its_own_thresholds(self):
+        class Report:
+            horizon = 3
+            scored_dates = (date(2019, 1, 2), date(2019, 1, 3))
+            taus = (5.0, 10.0)
+            forecast = ((0.3, 0.1), (0.2, 0.05))
+
+        forecast = pj.report_forecast("m", Report)
+        self.assertEqual(forecast.horizon, 3)
+        self.assertEqual(forecast.probabilities, {5.0: (0.3, 0.2), 10.0: (0.1, 0.05)})
+
+    def test_the_grid_reads_outcomes_strictly_above_and_the_declared_groupings(self):
+        from repo_model.data import DailyObservation
+        from repo_model.evaluation_splits import load_split_declaration
+
+        splits = load_split_declaration(Path(__file__).parents[1] / "metadata" / "evaluation_splits.json")
+        spreads = {date(2019, 1, 2): 5.0, date(2019, 1, 3): 6.0, date(2019, 1, 4): 11.0}
+        rows = [
+            DailyObservation(
+                day,
+                {"sofr": 4.0 + value / 100.0, "iorb": 4.0, "days_to_month_end": 20.0, "quarter_end": 0.0, "tax_date": 0.0},
+            )
+            for day, value in spreads.items()
+        ]
+        grid = pj.build_grid(
+            _load(groupings=["regime", "scarcity_state", "day_type"]),
+            1, rows, list(spreads), splits,
+            scarcity_state={date(2019, 1, 2): 2.0, date(2019, 1, 3): None},
+        )
+        # Whole basis points, strictly above: a day on +5 is not above +5.
+        self.assertEqual(grid.outcomes[5.0], (0, 1, 1))
+        self.assertEqual(grid.outcomes[10.0], (0, 0, 1))
+        self.assertEqual(grid.groups["scarcity_state"], ("2", "unknown", "unknown"))
+        self.assertEqual(grid.groups["regime"], ("2018-19",) * 3)
+        self.assertEqual(grid.groups["day_type"], ("ordinary",) * 3)
+        with self.assertRaises(ValueError):
+            pj.build_grid(
+                _load(), 1, rows, [date(2019, 1, 7)], splits, scarcity_state={},
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
