@@ -74,5 +74,42 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://data.financialresearch.gov/v1/series/timeseries"
+  },
+  "treasury_auction_net_settlement": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #426. The columns are computed per panel row by repo_model.net_settlement from Fiscal Data's auctions_query records (tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions, fetched 2026-10-08 with ingest.fetch_treasury_auctions), each auction counted from its announcemt_date. The dataset states no announcement clock time. Treasury's usual announcement time, 11:00 a.m. ET, is from general knowledge and was NOT verified from this environment; 12:00 ET is declared, an hour later, so a 16:00 ET decision of the announcement day reads the announcement and no decision before it does. The earliest closing of any auction in the snapshot is 10:00 a.m. (cash management bills announced and held on one day).",
+      "publication": "U.S. Treasury auction announcements (offering amount, and the estimate of the publicly held securities maturing on the settlement date), announced days before the auction and the settlement."
+    },
+    "coverage": [
+      "offering amounts and the publicly held maturing estimate of every Treasury auction settling 2018-01-02 to 2026-01-15 in the tracked snapshot"
+    ],
+    "field_frequencies": {
+      "net_settlement": "business_daily",
+      "net_settlement_bills": "business_daily",
+      "net_settlement_due_5d": "business_daily"
+    },
+    "fields": [
+      "net_settlement",
+      "net_settlement_bills",
+      "net_settlement_due_5d"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#426), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md): the published treasury_auctions source is dated from the settlement and its scheduled availability. These columns are read only by a track that switches them on (repo_model.net_settlement.COLUMN_FIELDS). The maturing figure is the announced estimate of the publicly held maturing amount by security type; a group of auctions announced with no figure (mostly cash management bills) reads zero maturing, so its net is its offering. A day partly announced reads low. SOMA add-ons are not in the net (they cancel against the SOMA's own maturing holdings).",
+    "provider": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+    "release_lag": {
+      "available_time": "12:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 8 October 2026 (#426). The value on the row of day t counts the auctions announced on or before t, at 12:00 ET on t (availability_provenance), so the 16:00 ET decision of t reads it. The announcement clock time is declared conservatively, not verified.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the Fiscal Data schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query"
   }
 }
