@@ -571,12 +571,17 @@ def _oid(dotted: str) -> bytes:
     return _der(0x06, bytes(out))
 
 
-def fake_certificate(identity=None, issuer=None, uris=1) -> str:
+ISSUER_V1 = "1.3.6.1.4.1.57264.1.1"  # deprecated: the raw string
+ISSUER_V2 = "1.3.6.1.4.1.57264.1.8"  # current: a DER UTF8String (tag 0x0c, length, string)
+
+
+def fake_certificate(identity=None, issuer=None, uris=1, issuer_oid=ISSUER_V2) -> str:
     identity = identity or integrity.IDENTITY
     issuer = issuer or integrity.OIDC_ISSUER
+    issuer_value = issuer.encode() if issuer_oid == ISSUER_V1 else _der(0x0C, issuer.encode())
     names = b"".join(_der(0x86, identity.encode()) for _ in range(uris))
     san = _der(0x30, _oid("2.5.29.17") + _der(0x04, _der(0x30, names)))
-    iss = _der(0x30, _oid("1.3.6.1.4.1.57264.1.1") + _der(0x04, issuer.encode()))
+    iss = _der(0x30, _oid(issuer_oid) + _der(0x04, issuer_value))
     tbs = _der(0x30, _der(0xA0, _der(0x02, b"\x02")) + _der(0x02, b"\x01") + _der(0x30, b"")
                + _der(0x30, b"") + _der(0x30, b"") + _der(0x30, b"") + _der(0x30, b"")
                + _der(0xA3, _der(0x30, san + iss)))
@@ -610,7 +615,7 @@ def _path(m, leaves):
 
 
 def rekor_response(sha256, *, identity=None, issuer=None, algorithm="sha256", value=None, uris=1,
-                   size=7, index=3, kind="hashedrekord", offset=0):
+                   size=7, index=3, kind="hashedrekord", offset=0, issuer_oid=ISSUER_V2):
     """A Rekor v1 `{uuid: entry}` response for `sha256`, with a real Merkle inclusion proof.
 
     `offset` is the sharded log's: the entry's `logIndex` is global, the proof's is the active tree's.
@@ -622,7 +627,7 @@ def rekor_response(sha256, *, identity=None, issuer=None, algorithm="sha256", va
         "spec": {
             "data": {"hash": {"algorithm": algorithm, "value": value or sha256}},
             "signature": {"content": "MEUCIQ==", "publicKey": {"content": base64.b64encode(
-                fake_certificate(identity, issuer, uris).encode()).decode()}},
+                fake_certificate(identity, issuer, uris, issuer_oid).encode()).decode()}},
         },
     }
     raw = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
@@ -692,6 +697,48 @@ class AnchorTests(unittest.TestCase):
             with self.subTest(identity=identity), self.assertRaises(ValueError) as caught:
                 integrity.verify_entry(rekor_response(self.sha, identity=identity), self.sha)
             self.assertIn("not " + integrity.IDENTITY, str(caught.exception))
+
+    def test_the_current_der_encoded_issuer_extension_is_accepted(self):
+        """The live failure of 2026-10-05 to 07 (#371): no day anchored.
+
+        Fulcio's current issuer extension (1.3.6.1.4.1.57264.1.8) is a DER UTF8String, and the
+        parser kept its tag and length, reading `\\x0c+https://token.actions.githubusercontent.com`.
+        The certificate here is constructed (rekor.sigstore.dev is unreachable from this
+        environment), to the shape of the three real entries: that extension, DER-encoded, and the
+        workflow identity on main. The real-world confirmation is the next live run, which must
+        anchor 5, 6 and 7 October late.
+
+        Recorded mutation: in `certificate_identity`, replacing the DER decoding of 1.8 with
+        `issuer = octets.decode("utf-8", "replace")` made this test and the two below fail with
+        `ValueError` (the entry "was signed by ... via \\x0c+https://token..."), the exception
+        `verify_entry` and `write_anchor` raise.
+        """
+
+        response = rekor_response(self.sha)
+        self.assertEqual(integrity.verify_entry(response, self.sha)["identity"], integrity.IDENTITY)
+        with tempfile.TemporaryDirectory() as tmp:
+            repo, _, sha = self._anchored_log(tmp)
+            path = integrity.write_anchor(repo, date(2026, 10, 7), [rekor_response(sha)])
+            self.assertEqual(json.loads(path.read_text())["identity"], integrity.IDENTITY)
+
+    def test_the_der_encoded_issuer_is_compared_after_decoding(self):
+        for issuer in ("https://accounts.google.com", integrity.OIDC_ISSUER + "x"):
+            with self.subTest(issuer=issuer), self.assertRaises(ValueError):
+                integrity.verify_entry(rekor_response(self.sha, issuer=issuer), self.sha)
+        with self.assertRaises(ValueError):
+            integrity.verify_entry(rekor_response(self.sha, identity=integrity.IDENTITY + "x"), self.sha)
+
+    def test_the_raw_legacy_issuer_extension_is_still_accepted_and_still_checked(self):
+        found = integrity.verify_entry(rekor_response(self.sha, issuer_oid=ISSUER_V1), self.sha)
+        self.assertEqual(found["identity"], integrity.IDENTITY)
+        with self.assertRaises(ValueError):
+            integrity.verify_entry(
+                rekor_response(self.sha, issuer="https://accounts.google.com", issuer_oid=ISSUER_V1), self.sha)
+
+    def test_a_der_issuer_that_is_not_one_utf8string_is_refused(self):
+        for bad in (b"\x04\x05abcde", b"\x0c\x7fshort", b"\x0c\x01ab", integrity.OIDC_ISSUER.encode()):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                integrity._der_utf8(bad)
 
     def test_another_oidc_issuer_is_refused(self):
         with self.assertRaises(ValueError):
