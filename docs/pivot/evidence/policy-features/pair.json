@@ -1,0 +1,136 @@
+{
+ "onset_logistic_policy": {
+  "1": {
+   "days": 1873,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": 0.0027982218994895645,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 913646693,
+    "upper": 0.007408105262268822
+   },
+   "mean": 0.004950594104435388
+  },
+  "2": {
+   "days": 1872,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": 0.0011812495503405074,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 651596249,
+    "upper": 0.005487088848047556
+   },
+   "mean": 0.0031642912829579067
+  },
+  "3": {
+   "days": 1871,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": 0.0016829006288121427,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1163895444,
+    "upper": 0.006438606689163702
+   },
+   "mean": 0.003896708141951584
+  },
+  "4": {
+   "days": 1870,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": 0.0014278836850775366,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 198005149,
+    "upper": 0.005862539401489935
+   },
+   "mean": 0.003545285924626045
+  },
+  "5": {
+   "days": 1869,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": -8.227860762046524e-05,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 851081592,
+    "upper": 0.004430997965819459
+   },
+   "mean": 0.0020551210474471127
+  }
+ },
+ "rare_gbm_balanced_bootstrap_policy": {
+  "1": {
+   "days": 1873,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": -0.007389845578321263,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 338446878,
+    "upper": 0.0046384559598404325
+   },
+   "mean": -0.00126655635722207
+  },
+  "2": {
+   "days": 1872,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": -0.0055840576370740636,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1694471135,
+    "upper": 0.008980969836947628
+   },
+   "mean": 0.0019408406627094937
+  },
+  "3": {
+   "days": 1871,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": -0.003440298545993147,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 217501093,
+    "upper": 0.009528832747160746
+   },
+   "mean": 0.0028070953740746397
+  },
+  "4": {
+   "days": 1870,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": -0.0019116569135071992,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 2080026286,
+    "upper": 0.009526588103743216
+   },
+   "mean": 0.003879900447320444
+  },
+  "5": {
+   "days": 1869,
+   "interval": {
+    "block_length": 10,
+    "level": 0.9,
+    "lower": -0.001639910614631291,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 392726017,
+    "upper": 0.007748072698877991
+   },
+   "mean": 0.002772642924139874
+  }
+ }
+}
