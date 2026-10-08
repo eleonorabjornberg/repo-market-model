@@ -12,7 +12,8 @@ gradient-boosted classifier, or event-balanced bootstraps within each training f
 scored walk-forward by `baseline.rolling_exceedance_backtest` on the shared fold grid
 at +5 and +10 bp, days before 2026-01-01 only, then recalibrated out of fold
 (`pressure.recalibrated`). The output has the shape of `pressure_model_v1.py horizon`'s
-`forecasts` block (every candidate raw and `+recalibrated`), so the judge of #375 reads it:
+`forecasts` block (`forecasts`: every candidate `+recalibrated`, the form the judge declares; the raw fits are kept
+under `unrecalibrated_forecasts` as an ablation), so the judge of #375 reads it:
 
     PYTHONPATH=src python3 scripts/pressure_judge.py judge --panel PANEL --output OUT/judge.json OUT/rare_h1.json ... OUT/rare_h5.json
 """
@@ -92,7 +93,7 @@ def horizon_command(args) -> int:
     features = tuple(name for name in DECLARED["features"] if h == 1 or name != SETTLEMENT)
     minimum = DECLARED["scoring"]["minimum_history"]
 
-    forecasts, declarations, scores = {}, {}, {}
+    forecasts, raw_forecasts, declarations, scores = {}, {}, {}, {}
     for name, spec in DECLARED["candidates"].items():
         report = rolling_exceedance_backtest(
             rows,
@@ -110,7 +111,8 @@ def horizon_command(args) -> int:
             horizon=h,
         )
         for label, version in ((name, report), (name + DECLARED["judged_form"], pressure.recalibrated(report))):
-            forecasts[label] = {
+            target = forecasts if version is not report else raw_forecasts
+            target[label] = {
                 f"{tau:g}": {
                     when.isoformat(): curve[position]
                     for when, curve in zip(version.scored_dates, version.forecast)
@@ -131,6 +133,7 @@ def horizon_command(args) -> int:
         "declarations": declarations,
         "descriptive_scores": scores,
         "forecasts": forecasts,
+        "unrecalibrated_forecasts": raw_forecasts,
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
     print(json.dumps({"horizon": h, "output": str(args.output)}))
