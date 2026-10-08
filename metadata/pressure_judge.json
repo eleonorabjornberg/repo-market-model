@@ -40,6 +40,66 @@
       ],
       "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION)",
       "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "settlement_probit_timing": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "probit",
+      "inputs": "timing",
+      "features": ["spread_bps", "treasury_settlement", "treasury_settlement_coupons", "days_to_month_end", "quarter_end", "tax_date"],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the ridge probit's probabilities as fitted)",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "settlement_probit_scarcity": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "probit",
+      "inputs": "scarcity",
+      "features": ["spread_bps", "treasury_settlement", "treasury_settlement_coupons", "days_to_month_end", "quarter_end", "tax_date", "reserve_balances", "reserve_scarcity_state", "tga"],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the ridge probit's probabilities as fitted)",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "settlement_probit_tga": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "probit",
+      "inputs": "tga",
+      "features": ["spread_bps", "treasury_settlement", "treasury_settlement_coupons", "days_to_month_end", "quarter_end", "tax_date", "reserve_balances", "reserve_scarcity_state", "tga", "tga_daily", "tga_daily_change"],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the ridge probit's probabilities as fitted)",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "settlement_quantile_timing": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "quantile",
+      "inputs": "timing",
+      "features": ["spread_bps", "treasury_settlement", "treasury_settlement_coupons", "days_to_month_end", "quarter_end", "tax_date"],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the skew-t's exceedance as fitted)",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "settlement_quantile_scarcity": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "quantile",
+      "inputs": "scarcity",
+      "features": ["spread_bps", "treasury_settlement", "treasury_settlement_coupons", "days_to_month_end", "quarter_end", "tax_date", "reserve_balances", "reserve_scarcity_state", "tga"],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the skew-t's exceedance as fitted)",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "settlement_quantile_tga": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "quantile",
+      "inputs": "tga",
+      "features": ["spread_bps", "treasury_settlement", "treasury_settlement_coupons", "days_to_month_end", "quarter_end", "tax_date", "reserve_balances", "reserve_scarcity_state", "tga", "tga_daily", "tga_daily_change"],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the skew-t's exceedance as fitted)",
+      "cutoffs": {"5": 0.2, "10": 0.2}
     }
   }
 }
