@@ -21,9 +21,12 @@ its own forecasts in that shape and passes the file to `judge`.
 
 `judge` reads the forecast files, builds the shared grid at each horizon (the
 declared groupings: year regimes, the reserve-scarcity state of #115 read as of
-each forecast's decision instant, and the pressure-day type), and writes the
-bar's evidence for every declared candidate. Scored days are before 2026-01-01
-(`docs/decisions/lockbox.md`, #374).
+each forecast's decision instant, the pressure-day type, and the scheduled risk
+dates), and writes the evidence of Eleonora's replacement bar (tiers 1 to 5 and
+the pass rule) for every declared candidate. Scored days are before 2026-01-01
+(`docs/decisions/lockbox.md`, #374); `--confirmation` is the single look at
+2026-01-01 to 2026-09-03 and scores only the candidates the declaration names
+for it.
 """
 
 from __future__ import annotations
@@ -96,7 +99,7 @@ def _document(horizon, digest, forecasts):
     }
 
 
-def _published(rows, splits, registry, horizon, declaration):
+def _published(rows, splits, registry, horizon, declaration, end):
     """The published probability: pressure model v1's recalibrated distributional gbm.
 
     The same run as `pressure_model_v1.py publish`, which writes a record and
@@ -127,7 +130,7 @@ def _published(rows, splits, registry, horizon, declaration):
         taus=declaration.thresholds,
         minimum_history=MINIMUM_HISTORY,
         refit_every=REFIT_EVERY,
-        end=declaration.last_day,
+        end=end,
         horizon=horizon,
         online_calibration=online,
     )
@@ -141,12 +144,13 @@ def forecasts_command(args) -> int:
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
     registry = json.loads(REGISTRY.read_text())
+    end = declaration.confirmation_last if args.confirmation else declaration.last_day
     forecasts = pj.benchmark_forecasts(
         declaration, rows, splits, registry, horizon=args.horizon,
-        decision_time=DECISION, minimum_history=MINIMUM_HISTORY, refit_every=REFIT_EVERY,
+        decision_time=DECISION, minimum_history=MINIMUM_HISTORY, refit_every=REFIT_EVERY, end=end,
     )
     if args.published:
-        forecasts.append(_published(rows, splits, registry, args.horizon, declaration))
+        forecasts.append(_published(rows, splits, registry, args.horizon, declaration, end))
     document = _document(args.horizon, panel_sha256(args.panel), forecasts)
     document["declaration_commit"] = commit
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
@@ -201,15 +205,25 @@ def judge_command(args) -> int:
         if document["panel_sha256"] != digest:
             raise SystemExit(f"{path} was scored on another panel ({document['panel_sha256'][:8]})")
         forecasts.extend(pj.forecasts_from_horizon_document(document))
+    if args.confirmation:
+        forecasts = [
+            pj.restrict_forecast(f, declaration.confirmation_first, declaration.confirmation_last)
+            for f in forecasts
+        ]
 
     grids = {}
     for horizon in declaration.horizons:
         reference = next(f for f in forecasts if f.horizon == horizon and f.name == declaration.climatology)
         grids[horizon] = pj.build_grid(
             declaration, horizon, rows, reference.dates, splits,
-            scarcity_state=_scarcity_states(horizon, declaration.last_day),
+            scarcity_state=_scarcity_states(
+                horizon, declaration.confirmation_last if args.confirmation else declaration.last_day
+            ),
         )
-    result = pj.judge(declaration, grids, forecasts, holdouts=_holdouts())
+    result = pj.judge(
+        declaration, grids, forecasts,
+        calendar=[row.date for row in rows], holdouts=_holdouts(), confirmation=args.confirmation,
+    )
     result["provenance"] = {
         "panel_sha256": digest,
         "declaration_commit": commit,
@@ -220,6 +234,7 @@ def judge_command(args) -> int:
         args.markdown.write_text(markdown(result), encoding="utf-8")
     print(json.dumps({
         "output": str(args.output),
+        "mode": result["mode"],
         "verdicts": {name: c["verdict"]["passes"] for name, c in result["candidates"].items()},
     }))
     return 0
@@ -233,69 +248,108 @@ def _f(value, places=3):
 
 
 def _cell(cell):
+    if cell is None:
+        return "–"
     if "interval" in cell:
         i = cell["interval"]
         return f"{cell['mean']:+.4f} [{i['lower']:+.4f}, {i['upper']:+.4f}]"
     return f"{_f(cell['mean'], 4)} (no interval)"
 
 
+def _yes(value):
+    return "–" if value is None else ("yes" if value else "no")
+
+
 def markdown(result) -> str:
     declaration = result["declaration"]
     primary = f"{declaration['primary_threshold_bp']:g}"
+    tiers = declaration["tiers"]
     lines = [
         "# Pressure-day judge (#375)",
         "",
-        f"Declaration `{declaration['path']}` sha256 `{declaration['sha256'][:12]}…`. "
+        f"Mode: {result['mode']}. Declaration `{declaration['path']}` sha256 `{declaration['sha256'][:12]}…`. "
         f"Scored days {result['scored_window']['first']} to {result['scored_window']['last']}. "
-        "Bar: recall ≥ {recall_at_least}, false alarms per true day ≤ {false_alarms_per_true_at_most}, "
-        "and a win over calendar climatology at the same recall (paired, {level:.0%} stationary "
-        "bootstrap) on Brier and on precision.".format(**declaration["bar"]),
+        f"Pass rule: tier 1 (onset warning) at lead >= {tiers['onset_warning']['lead_at_least']}, tier 3 (no crying wolf) "
+        f"at every lead, and tier 5 (week-ahead window), at +{primary} bp; {declaration['bootstrap']['level']:.0%} "
+        "stationary bootstrap intervals.",
         "",
     ]
     for name, candidate in result["candidates"].items():
         verdict = candidate["verdict"]
+        near_key = f"lead_at_least_{tiers['onset_warning']['lead_at_least']}"
+        far_key = f"lead_at_least_{tiers['onset_warning']['far_lead_at_least']}"
+        onset = candidate["tiers"]["onset_warning"]
         lines += [
             f"## {name} ({candidate['role']}): {'PASS' if verdict['passes'] else 'FAIL'} at +{primary} bp",
             "",
-            "| h | cut-off | recall | precision | false alarms per true | Brier | ΔBrier vs climatology | Δprecision at same recall | AUROC | usefulness | bar |",
+            f"Tier 1 {_yes(verdict['tier_1_onset_warning'])}, tier 3 {_yes(verdict['tier_3_no_crying_wolf'])}, "
+            f"tier 5 {_yes(verdict['tier_5_week_ahead'])}."
+            + (f" Not scored at horizons {verdict['not_scored']}." if verdict["not_scored"] else ""),
+            "",
+            "| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | worst false alarms per onset | criteria |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for key in (near_key, far_key):
+            cell = onset[key]
+            if "recall" not in cell:
+                lines.append(f"| {key} | {cell.get('onsets', '–')} | – | {cell.get('unavailable', '–')} | | | |")
+                continue
+            recall = cell["recall"]
+            interval = recall.get("interval")
+            shown = f"{_f(recall['mean'])}" + (f" [{interval['lower']:.3f}, {interval['upper']:.3f}]" if interval else " (no interval)")
+            criteria = cell.get("criteria")
+            note = (
+                ", ".join(f"{k} {_yes(v)}" for k, v in criteria.items()) if criteria
+                else f"reported only; meets far recall: {_yes(cell.get('meets_far_recall'))}"
+            )
+            lines.append(
+                f"| {key} | {cell['onsets']} | {cell['onsets_flagged']} | {shown} | {_f(cell['climatology_recall'])} | "
+                f"{_f(cell['worst_false_alarms_per_onset'], 2)} | {note}{'' if cell['complete'] else ' (partial horizons)'} |"
+            )
+        lines += [
+            "",
+            "| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |",
             "|---|---|---|---|---|---|---|---|---|---|---|",
         ]
         for horizon, per_tau in candidate["horizons"].items():
             row = per_tau[primary]
-            clim = row.get("paired", {}).get("vs_calendar_climatology")
+            paired = row["paired"]
             lines.append(
-                f"| {horizon} | {row['cutoff']:g} | {_f(row['flags']['recall'])} | {_f(row['flags']['precision'])} | "
-                f"{_f(row['flags']['false_alarms_per_true'])} | {_f(row['brier'], 4)} | "
-                f"{_cell(clim['brier_difference']) if clim else '–'} | "
-                f"{_cell(clim['precision_difference']) if clim else '–'} | "
-                f"{_f(row['auroc'])} | {_f(row['usefulness'].get('relative'))} | "
-                f"{'pass' if row['bar']['passes'] else 'fail'} |"
+                f"| {horizon} | {row['cutoff']:g} | {row['flags']['alarms']} | {_f(row['flags']['recall'])} | "
+                f"{_f(row['flags']['precision'])} | {_f(row['brier'], 4)} | "
+                f"{_cell(paired['vs_calendar_climatology']['brier_difference'])} | "
+                f"{_cell(paired['vs_persistence_logistic']['brier_difference'])} | "
+                f"{_f(row['auroc'])} | {_f(row['usefulness'].get('relative'))} | {_yes(row['no_crying_wolf']['ok'])} |"
             )
-        floors = [
-            (h, per_tau[primary]["at_recall_floor_ex_post"]) for h, per_tau in candidate["horizons"].items()
-        ]
-        lines += [
-            "",
-            "Ex post, never a pass: the highest cut-off that reaches the recall floor, and its precision: "
-            + "; ".join(
-                f"h = {h}: " + ("no event" if f is None else f"cut-off {f['cutoff']:.3f}, precision {_f(f['precision'])}, false alarms per true {_f(f['false_alarms_per_true'])}")
-                for h, f in floors
-            ),
-        ]
-        lead = candidate["lead_time"]
-        lines += [
-            "",
-            f"Lead time at +{primary} bp: {lead['flagged']} of {lead['onsets']} onsets flagged, mean {_f(lead['mean_lead_days'], 2)} days."
-            if "onsets" in lead
-            else f"Lead time: {lead['unavailable']}.",
-            "",
-        ]
+        lines += ["", "Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):", ""]
+        for horizon, per_tau in candidate["horizons"].items():
+            wolf = per_tau[primary]["no_crying_wolf"]
+            stretches = "; ".join(
+                f"{label}: {_f(c['flags_per_year'], 1)} over {c['days']} days" for label, c in wolf["abundant_stretches"].items()
+            )
+            calibrated = ", ".join(f"{k} {_yes(v)}" for k, v in wolf["calibrated_by_regime"].items())
+            lines.append(f"- h = {horizon}: {stretches}. Calibrated: {calibrated}.")
+        risky = candidate["tiers"]["risky_dates"]
+        lines += ["", "Tier 2 (reported only): " + (
+            risky["unavailable"] if "unavailable" in risky
+            else f"h = {risky['lead']}, {risky['days']} risky dates in scarcity state >= {tiers['risky_dates']['scarcity_state_at_least']}, "
+            f"AUROC {_f(risky['auroc'])} (climatology {_f(risky['climatology_auroc'])}, difference {_cell(risky['auroc_difference'])}); "
+            f"meets {tiers['risky_dates']['auroc_at_least']}: {_yes(risky['meets_auroc'])}, beats climatology: {_yes(risky['beats_climatology'])}."
+        )]
+        week = candidate["tiers"]["week_ahead"]
+        lines += ["", "Tier 5 (week-ahead window): " + (
+            week["unavailable"] if "unavailable" in week
+            else f"{week['days']} decision days, base rate {_f(week['base_rate'])}, Brier {_f(week['brier'], 4)}, "
+            f"ΔBrier vs climatology {_cell(week['brier_difference_vs_climatology'])}, "
+            f"realised minus predicted {_cell(week['realised_minus_predicted'])}; "
+            + ", ".join(f"{k} {_yes(v)}" for k, v in week["criteria"].items()) + "."
+        ), ""]
         first = next(iter(candidate["horizons"]))
         row = candidate["horizons"][first][primary]
         lines += [
-            f"The bar by group at h = {first}:",
+            f"By group at h = {first}:",
             "",
-            "| grouping | group | days | events | recall | precision | ΔBrier vs climatology | Δprecision | bar |",
+            "| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |",
             "|---|---|---|---|---|---|---|---|---|",
         ]
         for dimension, cells in row.get("splits", {}).items():
@@ -303,9 +357,8 @@ def markdown(result) -> str:
                 flags = cell["flags"]
                 lines.append(
                     f"| {dimension} | {label} | {cell['days']} | {cell['events']} | {_f(flags['recall'])} | "
-                    f"{_f(flags['precision'])} | {_cell(cell['brier_difference']) if isinstance(cell.get('brier_difference'), dict) else _f(cell.get('brier_difference'), 4)} | "
-                    f"{_cell(cell['precision_difference']) if isinstance(cell.get('precision_difference'), dict) else _f(cell.get('precision_difference'), 4)} | "
-                    f"{'pass' if cell.get('bar', {}).get('passes') else 'fail' if 'bar' in cell else '–'} |"
+                    f"{_f(flags['precision'])} | {_f(cell['mean_predicted'], 4)} | {_f(cell['realised_frequency'], 4)} | "
+                    f"{_cell(cell['brier_difference_vs_climatology'])} |"
                 )
         if row.get("holdouts"):
             lines += ["", f"Knowledge holdouts at h = {first} (descriptive):", "", "| window | days | events | recall | precision | Brier | climatology Brier |", "|---|---|---|---|---|---|---|"]
@@ -329,11 +382,19 @@ def main(argv=None) -> int:
     forecasts.add_argument("--horizon", type=int, required=True)
     forecasts.add_argument("--output", type=Path, required=True)
     forecasts.add_argument("--published", action="store_true")
+    forecasts.add_argument(
+        "--confirmation", action="store_true",
+        help="score walk-forward through the confirmation window's last day (for the single look)",
+    )
     forecasts.set_defaults(run=forecasts_command)
     judge = commands.add_parser("judge")
     judge.add_argument("--panel", type=Path, required=True)
     judge.add_argument("--output", type=Path, required=True)
     judge.add_argument("--markdown", type=Path)
+    judge.add_argument(
+        "--confirmation", action="store_true",
+        help="the single look at the declared confirmation window, for the declared candidates only",
+    )
     judge.add_argument("inputs", nargs="+", type=Path)
     judge.set_defaults(run=judge_command)
     args = parser.parse_args(argv)
