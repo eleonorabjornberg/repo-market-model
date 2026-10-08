@@ -36,9 +36,9 @@ before any score (the fifth row, see below) was corrected in a commit before the
 
 Published panel `4ddc3882…` (rebuilt from the tracked fixtures, `verify-panel` clean); scratch panels from
 `pressure_v1_1.py panel` (`AUG.csv`, digest `4137d0ad…`) and `measurement_fields.py panel` (`AUG2.csv`). Run with
-`OMP_NUM_THREADS=1`. Each row's forecasts come from its own script, unchanged, at h = 1 to 5. Two of the five rows are on
-open track pull requests, so their scripts are read at those heads: `pressure_two_part.py` at #404's head `7d5169a`
-and `pressure_track_q.py` at #413's head `d8b9c41` (both on the published panel).
+`OMP_NUM_THREADS=1`. Each row's forecasts come from its own script, unchanged, at h = 1 to 5. One row is on an open track
+pull request, so its script is read at that head: `pressure_track_q.py` at #413's head `d8b9c41` (the published panel).
+`pressure_two_part.py` was read at #404's head `7d5169a`, which has since merged, so it is on main.
 
 ```
 PYTHONPATH=src python3 scripts/pressure_v1_1.py panel --output AUG.csv
@@ -48,7 +48,7 @@ for h in 1 2 3 4 5:
   PYTHONPATH=src python3 scripts/hierarchical_logistic.py forecasts --panel AUG.csv --horizon $h --output OUT/hl_h$h.json
   PYTHONPATH=src python3 scripts/settlement_timing.py run --panel AUG2.csv --published PUB.csv --candidate settlement_quantile_timing --horizon $h --output OUT/sqt_h$h.json
   PYTHONPATH=src python3 scripts/scarcity_event_bar.py forecasts --panel AUG.csv --horizon $h --candidate scarcity_logistic_interactions --output OUT/sli_h$h.json
-  (at #404's head) PYTHONPATH=src python3 scripts/pressure_two_part.py horizon --panel PUB.csv --horizon $h --output OUT/tp_h$h.json
+  PYTHONPATH=src python3 scripts/pressure_two_part.py horizon --panel PUB.csv --horizon $h --output OUT/tp_h$h.json
   (at #413's head) PYTHONPATH=src python3 scripts/pressure_track_q.py forecasts --panel PUB.csv --horizon $h --output OUT/q_h$h.json --distribution OUT/qdist_h$h.json
 PYTHONPATH=src python3 scripts/onset_diagnostics.py false-alarms --panel PUB.csv --bench 'OUT/bench_h{h}.json' \
     --row two_part_gbm='OUT/tp_h{h}.json' --row ngboost_laplace='OUT/q_h{h}.json' --row hierarchical_logistic='OUT/hl_h{h}.json' \
