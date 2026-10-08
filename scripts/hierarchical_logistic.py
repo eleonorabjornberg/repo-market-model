@@ -27,6 +27,7 @@ the calendar terms by regime from the last fold, in the design's own units.
 from __future__ import annotations
 
 import argparse
+import functools
 import importlib.util
 import json
 import sys
@@ -57,6 +58,16 @@ REFIT_EVERY = judge_script.REFIT_EVERY
 DECISION = judge_script.DECISION
 
 
+def _keyed(value):
+    """`value` with every dict key a string, so it can be written sorted."""
+
+    if isinstance(value, dict):
+        return {str(key): _keyed(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_keyed(item) for item in value]
+    return value
+
+
 def score(rows, splits, registry, declaration, horizon):
     """The candidate's recalibrated forecasts at one horizon, and what each fold fitted."""
 
@@ -67,13 +78,14 @@ def score(rows, splits, registry, declaration, horizon):
     )
     folds = []
 
+    @functools.wraps(predictor)
     def recording(*args, **kwargs):
         curves = predictor(*args, **kwargs)
         settings = curves.model_settings
         folds.append(
             {
                 "scale_by_threshold": list(settings.get("regime_shrinkage_chosen", [])),
-                "effects": settings.get("regime_effects", []),
+                "effects": _keyed(settings.get("regime_effects", [])),
                 "design": list(settings["design"]),
             }
         )
