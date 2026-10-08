@@ -1,6 +1,6 @@
 # Pressure-day judge (#375)
 
-Mode: development. Declaration `metadata/pressure_judge.json` sha256 `86973b5eecce…`. Scored days 2018-06-29 to 2025-12-31. Pass rule: tier 1 (onset warning) at lead >= 1, tier 3 (no crying wolf) at every lead, and tier 5 (week-ahead window), at +5 bp; 90% stationary bootstrap intervals.
+Mode: development. Declaration `metadata/pressure_judge.json` sha256 `70b26e00e643…`. Scored days 2018-06-29 to 2025-12-31. Pass rule: tier 1 (onset warning) at lead >= 1, tier 3 (no crying wolf) at every lead, and tier 5 (week-ahead window), at +5 bp; 90% stationary bootstrap intervals.
 
 ## calendar_climatology (benchmark): FAIL at +5 bp
 
