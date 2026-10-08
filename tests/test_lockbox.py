@@ -324,6 +324,11 @@ NOT_ENTRY_POINTS = {
         "_as_of_folds, which calls require_unlocked, and pressure_judge.judge guards the "
         "scored days itself"
     ),
+    "scripts/pressure_track_m.states_command": (
+        "tabulates the filtered state against #115's state on the fold grid (#384); scores "
+        "nothing, it ends at the declared last scored day through _as_of_folds, which calls "
+        "require_unlocked, and drops every row after that day before it starts"
+    ),
     "pressure_hazard._decisions": (
         "reads each training decision's as-of covariates inside a fit's own training "
         "frame (#387), as ml._pressure_pairs does; scores nothing, the backtest that "
