@@ -587,6 +587,7 @@ from .baseline import (
 from .contract import DERIVED_FEATURES, QUANTILE_LEVELS
 from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .metrics import _validate_levels
+from .pressure import ONSET_QUIET_DAYS
 from .asof import InformationRule
 from .splits import (
     LookAheadError,
@@ -5145,6 +5146,209 @@ def pressure_rare_event_exceedance(
     return _direct_pressure_predictor(
         kind, features, declaration, minimum_history, rare=treatment, recency=recency
     )
+
+
+# --------------------------------------------------------------------------
+# The onset classifier (#409, track O of #374)
+# --------------------------------------------------------------------------
+#
+# Separate definitions, not options of `_direct_pressure_predictor`: that function and the design and
+# pair builders it reaches are hashed into the final test's pre-registered checksums
+# (`docs/decisions/final-test-preregistration.md`), so an option added to them would move a pinned
+# checksum. These reuse them without changing them.
+
+
+class _OnsetDesign(_PressureDesign):
+    """`_PressureDesign` with declared columns that may be unobserved (#409).
+
+    An `optional` column is a declared linear column other than `reserve_balances`. It enters as its
+    value, zero where not yet public, followed by an `<name>_observed` indicator (1 or 0), so a
+    series with a short or gappy history trains on every day.
+    """
+
+    def __init__(self, features: Sequence[str], declaration: Any, optional: Sequence[str] = ()) -> None:
+        super().__init__(features, declaration)
+        self.optional = tuple(dict.fromkeys(str(name) for name in optional))
+        for name in self.optional:
+            if name not in self.linear or name == "reserve_balances":
+                raise ValueError(
+                    f"an optional column is a declared linear column other than reserve_balances; "
+                    f"{name!r} is not"
+                )
+        names = list(self.names)
+        for name in self.optional:
+            names.insert(names.index(name) + 1, f"{name}_observed")
+        self.names = tuple(names)
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        seen = {}
+        values = dict(observation.values)
+        for name in self.optional:
+            raw = values.get(name)
+            seen[name] = raw is not None and math.isfinite(float(raw))
+            if not seen[name]:
+                values[name] = 0.0
+        out = super().row(DailyObservation(observation.date, values), tga_change)
+        # `_PressureDesign.row`: the spread, then the linear columns in declared order.
+        position = 1
+        for name in self.linear:
+            position += 1
+            if name in self.optional:
+                out.insert(position, 1.0 if seen[name] else 0.0)
+                position += 1
+        return out
+
+
+def _onset_labels(
+    labels: Sequence[int], targets: Sequence[int], train_rows: Sequence[DailyObservation], tau: float
+) -> List[int]:
+    """The exceedance labels of the pairs, kept only where the day is an onset (#409).
+
+    `labels[k]` is 1 when the pair's target day, row `targets[k]` of `train_rows`, is above `tau`.
+    It stays 1 only when none of the `ONSET_QUIET_DAYS` rows before the target is:
+    `pressure.onsets`' rule, read off the training rows alone, every one of which is at or before
+    the target.
+    """
+
+    return [
+        1
+        if label
+        and not any(
+            exceeds_bp(float(prior.spread_bps), tau)
+            for prior in train_rows[target - ONSET_QUIET_DAYS : target]
+        )
+        else 0
+        for label, target in zip(labels, targets)
+    ]
+
+
+def pressure_onset_exceedance(
+    kind: str,
+    treatment: Optional[str],
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    optional: Sequence[str] = (),
+) -> ExceedancePredictor:
+    """The direct logistic or classifier fitted to the onset label (#409).
+
+    `kind` is `"logistic"` or `"gbm_classifier"`; `treatment` is `None` or one of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]` (#381). The label at each threshold is an onset
+    (`pressure.onsets`: a day above it with no such day on the five panel days before it), read off
+    the training rows alone; a training day with fewer than that many panel days before it trains
+    no pair. The design, the direct pairs and the guards are those of
+    `pressure_logistic_exceedance`; `optional` names declared columns that enter with an observed
+    indicator (`_OnsetDesign`). The curve across thresholds is made non-increasing, as the
+    exceedance-curve interface requires. The probabilities are those of an onset, not of a pressure
+    day; read them recalibrated out of fold (`pressure.recalibrated`).
+    """
+
+    if kind not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"an onset classifier is the logistic or the classifier, not {kind!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if treatment is not None and treatment not in PRESSURE_RARE_EVENT_SETTINGS["treatments"]:
+        raise ValueError(
+            f"unknown rare-event treatment {treatment!r}; one of "
+            f"{list(PRESSURE_RARE_EVENT_SETTINGS['treatments'])}"
+        )
+    if treatment == "focal" and kind != "gbm_classifier":
+        raise ValueError("the focal loss is the gradient-boosted classifier's")
+    design = _OnsetDesign(features, declaration, optional)
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "an onset classifier pairs each training label with what was public at that label's "
+                "own decision instant, which only the as-of rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"an onset classifier needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        # The pairs' label positions, from the cache `_pressure_pairs` just filled.
+        base = (information.horizon, information.features)
+        targets = [
+            target
+            for target in range(1, len(train_rows))
+            if cache.get((base, train_rows[target].date)) is not None
+        ]
+        if len(targets) != len(xs):  # pragma: no cover - construction bug
+            raise ValueError("the onset label positions and the training pairs are out of step")
+        kept = [k for k, target in enumerate(targets) if target >= ONSET_QUIET_DAYS]
+        xs = [xs[k] for k in kept]
+        spreads = [spreads[k] for k in kept]
+        targets = [targets[k] for k in kept]
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        columns: List[List[float]] = []
+        fitted: dict = {}
+        for tau in taus:
+            exceeds = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+            labels = _onset_labels(exceeds, targets, train_rows, float(tau))
+            if len(set(labels)) < 2:
+                columns.append([float(labels[0])] * len(served))
+                continue
+            key = tuple(labels)
+            if key not in fitted:
+                fitted[key] = _fit_classifier(kind, xs, labels, served, rare=treatment)
+            columns.append(fitted[key])
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS)
+        settings["design"] = list(design.names)
+        settings["onset_label"] = f"exceedance with {ONSET_QUIET_DAYS} quiet panel days before"
+        if treatment is not None:
+            settings["rare_event"] = {
+                "treatment": treatment,
+                **{
+                    key: _plain(value)
+                    for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
+                    if key in ("class_weight", treatment)
+                },
+            }
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
 
 
 def pressure_probit_exceedance(
