@@ -872,6 +872,7 @@ CRPS_SCORERS = {
     "scripts/forecast_daily.reproduction_check_horizon": ("delegates", "compares the final test's cell with " + _WALK),
     "scripts/interior_diagnosis._crps": ("delegates", "one loss; " + _WALK),
     "scripts/pressure_model_v2._crps": ("delegates", "one loss; " + _WALK),
+    "scripts/interior_calibration_judge._crps": ("delegates", "one loss; `score_command` calls `check_window` (which calls lockbox.require_unlocked) on every day before any is scored"),
     "scripts/pressure_model_v2.paired_against": ("delegates", "pairs the losses of `window_block`'s days; " + _WALK),
     "scripts/pressure_model_v2.window_block": ("delegates", "a block over days " + _WALK),
     "scripts/pressure_model_v2.assemble_command": ("delegates", "assembles blocks over days " + _WALK),
