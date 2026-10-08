@@ -2765,13 +2765,13 @@ class ForecastDailySectionTests(unittest.TestCase):
 
     def test_the_v2_hook_adds_a_series_without_other_changes(self):
         """#246 point 4: v2's line and bands join `FORECAST_DAILY_SERIES`; v2 itself is not added."""
-        self.assertEqual([s["key"] for s in emit_visual.FORECAST_DAILY_SERIES], ["v1"])
+        self.assertEqual([s["key"] for s in emit_visual.FORECAST_DAILY_SERIES], ["v1", "calendar"])
         series = emit_visual.FORECAST_DAILY_SERIES + (
             {"key": "v2", "label": "Pressure model v2", "record": emit_visual.FORECAST_DAILY},)
         data, fills = emit_visual.forecast_daily(self.records, self.locked, series=series)
-        self.assertEqual([s["key"] for s in data["series"]], ["v1", "v2"])
+        self.assertEqual([s["key"] for s in data["series"]], ["v1", "calendar", "v2"])
         for period in data["periods"]:
-            self.assertEqual([r["series"] for r in period["rows"]], ["v1", "v2"])
+            self.assertEqual([r["series"] for r in period["rows"]], ["v1", "calendar", "v2"])
         self.assertIn("Pressure model v2", fills["fd_table"])
 
     def test_the_section_sits_after_the_final_test_before_the_chapters(self):
