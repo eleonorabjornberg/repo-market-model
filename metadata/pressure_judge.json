@@ -369,6 +369,104 @@
         "tga"
       ],
       "calibration": "none (discrete-time first-passage hazard, declared in metadata/pressure_hazard.json)"
+    },
+    "recency_decay_63+recalibrated": {
+      "role": "candidate",
+      "track": "R (#411)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "class-weighted logistic with a decay of 63 panel rows over its training pairs, then Platt out of fold (pressure.RECALIBRATION); metadata/recency_adaptive_training.json"
+    },
+    "recency_decay_126+recalibrated": {
+      "role": "candidate",
+      "track": "R (#411)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "class-weighted logistic with a decay of 126 panel rows over its training pairs, then Platt out of fold (pressure.RECALIBRATION); metadata/recency_adaptive_training.json"
+    },
+    "recency_decay_252+recalibrated": {
+      "role": "candidate",
+      "track": "R (#411)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "class-weighted logistic with a decay of 252 panel rows over its training pairs, then Platt out of fold (pressure.RECALIBRATION); metadata/recency_adaptive_training.json"
+    },
+    "recency_window_252+recalibrated": {
+      "role": "candidate",
+      "track": "R (#411)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "class-weighted logistic with a window of 252 panel rows over its training pairs, then Platt out of fold (pressure.RECALIBRATION); metadata/recency_adaptive_training.json"
+    },
+    "recency_window_504+recalibrated": {
+      "role": "candidate",
+      "track": "R (#411)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "class-weighted logistic with a window of 504 panel rows over its training pairs, then Platt out of fold (pressure.RECALIBRATION); metadata/recency_adaptive_training.json"
+    },
+    "base_online_platt": {
+      "role": "candidate",
+      "track": "R (#411)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "class-weighted logistic (track W), then online_platt (pressure.ONLINE_RECALIBRATION) on resolved earlier days; metadata/recency_adaptive_training.json"
+    },
+    "base_adaptive_offset": {
+      "role": "candidate",
+      "track": "R (#411)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "class-weighted logistic (track W), then adaptive_offset (pressure.ONLINE_RECALIBRATION) on resolved earlier days; metadata/recency_adaptive_training.json"
     }
   }
 }
