@@ -9613,6 +9613,54 @@ class PressureClassifierConformanceTests(_PressureConformance, unittest.TestCase
     FACTORY = staticmethod(ml.pressure_classifier_exceedance)
 
 
+class PressureProbitConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_probit_exceedance` (#372)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_probit_exceedance)
+    FACTORY = staticmethod(ml.pressure_probit_exceedance)
+
+
+class PressureQuantileConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_quantile_exceedance` (#372)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_quantile_exceedance)
+    FACTORY = staticmethod(ml.pressure_quantile_exceedance)
+
+
+class ProbitAndQuantileTests(unittest.TestCase):
+    def setUp(self):
+        require_extra(self)
+
+    def test_the_probit_recovers_a_probit_law(self):
+        import numpy
+
+        rng = numpy.random.default_rng(0)
+        x = rng.normal(size=(4000, 1))
+        y = (rng.normal(size=4000) < 1.2 * x[:, 0]).astype(int)
+        served = [[-1.0], [0.0], [1.0]]
+        got = ml._fit_classifier("probit", x.tolist(), y.tolist(), served)
+        from math import erf, sqrt
+
+        for value, p in zip((-1.0, 0.0, 1.0), got):
+            self.assertAlmostEqual(p, 0.5 * (1 + erf(1.2 * value / sqrt(2))), delta=0.04)
+
+    def test_quantile_exceedance_reads_the_conditional_law_and_is_non_increasing(self):
+        import numpy
+
+        rng = numpy.random.default_rng(1)
+        x = rng.normal(size=(1500, 1))
+        spread = 2.5 + 4.0 * x[:, 0] + rng.normal(size=1500)
+        curves = ml._quantile_exceedance(
+            x.tolist(), spread.tolist(), [[0.0], [1.0]], (0.5, 2.5, 6.5, 20.0)
+        )
+        for curve in curves:
+            self.assertEqual(list(curve), sorted(curve, reverse=True))
+        # at x=0 the spread is N(2.5, 1): P(> 2.5) is about a half; at x=1, N(6.5, 1): P(> 6.5) the same
+        self.assertAlmostEqual(curves[0][1], 0.5, delta=0.1)
+        self.assertAlmostEqual(curves[1][2], 0.5, delta=0.1)
+        self.assertLess(curves[0][3], 0.02)
+
+
 class DirectPressureModelTests(unittest.TestCase):
     """The direct pressure models' design, pairs and guards (#114)."""
 
