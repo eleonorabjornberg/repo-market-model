@@ -114,7 +114,7 @@ The full tables are `docs/pivot/evidence/onset-diagnostics/power.md`. The develo
 ## Not checked, and for Eleonora
 
 * **Which five rows.** The directive says "the five best rows" without a measure. The measure here is onsets flagged, ties by
-  fewer worst false alarms per onset. Ranked by fewest false alarms instead, the five would be different rows; say if that is wanted.
+  fewer worst false alarms per onset. Ranked by fewest false alarms instead, the five would be different rows.
 * **Whether the confirmation look can be run as declared.** The never-drop rule makes tier 1's recall condition unmeetable in a
   window with at most 5 onsets (Result 2). Changing the rule, or reading the 2026 look without an interval, is a change to the
   bar and is hers; this page changes nothing. It is raised as a finding.
