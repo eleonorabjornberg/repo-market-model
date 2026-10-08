@@ -1,0 +1,8 @@
+{
+  "byte_count": 36795,
+  "path": "treasury_dts_tga/20261008T023222Z_da13d06264b4.json",
+  "retrieved_at": "2026-10-08T02:32:22.177421+00:00",
+  "sha256": "da13d06264b43e54ec0a63625cf9566d60751c5abee71f1c2ab79b9971f42ef4",
+  "source_id": "treasury_dts_tga",
+  "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance?fields=record_date%2Caccount_type%2Copen_today_bal%2Cclose_today_bal&filter=record_date%3Agte%3A2024-01-01%2Crecord_date%3Alte%3A2024-12-31%2Caccount_type%3Aeq%3ATreasury+General+Account+%28TGA%29+Closing+Balance&sort=record_date&page%5Bsize%5D=10000"
+}

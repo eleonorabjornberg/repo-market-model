@@ -1,0 +1,39 @@
+{
+  "directive": "#243",
+  "declared_before_scoring": "This file is committed before any candidate of #243 is scored. scripts/interior_calibration_judge.py reads it, records its sha256, and refuses a candidate it does not list or a test it does not state.",
+  "base": "the published distribution: #169's gbm with nested conformal PID at h = 1, as docs/runs/v1_interior_diagnosis.json (v1_h1_per_day) carries its issued vectors",
+  "window": {"first": "2018-06-29", "last": "2025-12-31", "reason": "days before 2026-01-01 only, as the directive says; nothing after is read"},
+  "levels_bps": [0.05, 0.25, 0.5, 0.75, 0.95],
+  "candidates": {
+    "conformal_pooled": {
+      "what": "q25, q50 and q75 each moved by the 0.25, 0.5, 0.75 empirical quantile (linear interpolation) of y - issued q_tau over the trailing 250 scored days whose label is observable at the day's anchor; 0 until 60 are observable; q05 and q95 stay PID's; the vector is then sorted",
+      "window_days": 250,
+      "minimum_days": 60
+    },
+    "conformal_by_day_type": {
+      "what": "the same, with the residuals taken within the day's calendar class: 'turn' (the day carries month_end, quarter_end, tax_date or coupon_settlement) or 'ordinary'; a class with fewer than 60 observable residuals uses the pooled residuals; the class is read from the panel row's own calendar columns at the scored day (scheduled, so known ahead)",
+      "window_days": 250,
+      "minimum_days": 60,
+      "classes": {"turn": ["month_end", "quarter_end", "tax_date", "coupon_settlement"], "ordinary": []}
+    },
+    "interior_tracking": {
+      "what": "#247's recommended candidate (i): per-level online quantile tracking of q25, q50, q75, steps 0.01, 0.05, 0.1, 0.2 bp chosen by nested walk-forward selection (scripts/interior_diagnosis.py interior_tracking). Re-run here from v1's issued vectors; chosen and tuned on 2018-2025 by #247, so exploratory"
+    },
+    "pressure_model_v2": {
+      "what": "pressure model v2's online interior as built by #244/#252 (docs/runs/pressure_model_v2_distribution_h1.json, column v2): depth-3 trees, tracked interior, width tracker, quarter-end term. Its construction used the 2018-2025 inner and outer blocks, so its edge here is exploratory"
+    }
+  },
+  "test": {
+    "statement": "Publish a candidate only if (1) the 90% stationary-bootstrap interval of the pooled paired gain CRPS(published) - CRPS(candidate) over the window lies above zero, and (2) no regime cell and no day-type cell with at least 20 days has a 90% interval of that gain lying wholly below zero.",
+    "bootstrap": "stationary, block length 2, 2000 replications, 90%, seeds from onset._seed('#243', ...)",
+    "regime_cells": "the declared regimes of metadata/evaluation_splits.json",
+    "day_type_cells": "month_end, quarter_end, year_end, tax_date, coupon_settlement and other (scripts/band_coverage.py tags, overlapping), and the declared reporting day types quarter_end, month_end, tax_date, ordinary",
+    "minimum_cell_days": 20,
+    "otherwise": "report only; the published declaration stays unchanged"
+  },
+  "reported_not_tested": [
+    "coverage of the 50% and 90% bands by day type, with the share of misses above and below, for the published distribution and every candidate",
+    "median-based location error"
+  ],
+  "live_record": "not changed by this directive: no pin, no live_score.py edit"
+}
