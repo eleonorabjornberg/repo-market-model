@@ -13,6 +13,13 @@
       "comment_id": 6050739911,
       "phrase": "GO #245",
       "what": "approve pressure model v2 joining the live record alongside v1 (PR #355)"
+    },
+    {
+      "kind": "live-pin",
+      "issue": 370,
+      "comment_id": 6068792134,
+      "phrase": "GO #370",
+      "what": "re-take the live scorer checksum so the freeze covers the decision-day calendar helpers and the group labels (#370)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

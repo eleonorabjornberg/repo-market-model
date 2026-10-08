@@ -175,14 +175,16 @@ class EditTests(unittest.TestCase):
         """The decision-day calendar and the group labels are frozen too (#370).
 
         Recorded mutation, confirmed applied: in `scripts/live_record.py`, `previous_decision_day`'s
-        `current = day - timedelta(days=1)` changed to `days=2` -> this test fails with `AssertionError`
-        (`ne` of the checksum with the pin), subtest `previous_decision_day`.
+        `current = day - timedelta(days=1)` changed to `days=2` -> the checksum moves to `875a2a5a\u2026`
+        and `test_the_checksum_is_the_pinned_one` fails with `AssertionError`. Before the names were
+        added to `LIVE_SOURCE`, the same edit left the checksum alone (the red run: `KeyError` on
+        `scripts/live_record.py` and an `AssertionError` on the onset names).
         """
 
         pinned = _pinned("Live scorer checksum")
         edits = (
-            ("scripts/live_record.py", "next_decision_days", "current += timedelta(days=1)",
-             "current += timedelta(days=2)"),
+            ("scripts/live_record.py", "next_decision_days", "while len(out) < count:\n        current += timedelta(days=1)\n",
+             "while len(out) < count:\n        current += timedelta(days=2)\n"),
             ("scripts/live_record.py", "previous_decision_day", "current = day - timedelta(days=1)",
              "current = day - timedelta(days=2)"),
             ("src/repo_model/onset.py", "GROUP_ONSET", 'GROUP_ONSET = "onset_days"\n',
