@@ -412,6 +412,22 @@
         "5": 0.2,
         "10": 0.2
       }
+    },
+    "extreme_value_tail": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "none (logistic body of spread > u times a conditional generalised Pareto tail, declared in metadata/pressure_tail.json)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     }
   }
 }
