@@ -62,11 +62,21 @@ class MeasureTests(unittest.TestCase):
     def test_auc_is_undefined_without_both_outcomes(self):
         self.assertIsNone(fd._auc([0.1, 0.2], [0, 0]))
 
-    def test_reliability_bins_hold_every_day_once(self):
+    def test_corp_steps_hold_every_day_once(self):
         days = [{"final": [p], "outcomes": [int(p > 0.3)]} for p in (0.0, 0.005, 0.03, 0.07, 0.15, 0.3, 0.9, 1.0)]
-        bins = fd._reliability_bins(days, 0, "final")
-        self.assertEqual(sum(b["days"] for b in bins), len(days))
-        self.assertEqual(sum(b["events"] for b in bins), 2)
+        steps = fd._reliability_steps(days, 0, "final")
+        self.assertEqual(sum(step["days"] for step in steps), len(days))
+        self.assertEqual(steps[-1]["observed"], 1.0)
+
+    def test_event_listed_thresholds_carry_no_skill_score_or_interval(self):
+        days = [{"raw": [0.1], "final": [0.1], "reference": [0.1], "persistence_logistic": [0.1],
+                 "outcomes": [i % 2]} for i in range(10)]
+        listed = fd._group_rows(days, ["all"] * 10, ["all"], 0, True, 2, True)["all"]
+        self.assertNotIn("brier", listed)
+        self.assertNotIn("brier_skill_vs_climatology", listed)
+        self.assertNotIn("climatology_minus_final_brier", listed)
+        pooled = fd._group_rows(days, ["all"] * 10, ["all"], 0, False, 2, False)["all"]
+        self.assertIn("brier_skill_vs_climatology", pooled)
 
     def test_skill_against_the_reference(self):
         self.assertAlmostEqual(fd._skill(0.9, 1.0), 0.1)
@@ -161,6 +171,15 @@ class RecordTests(unittest.TestCase):
 
     def test_it_decides_nothing(self):
         self.assertEqual(self.record["decides"], "nothing")
+
+    def test_the_event_listed_thresholds_carry_no_pooled_skill(self):
+        for section in self.record["horizons"].values():
+            for tau in ("20", "50"):
+                pooled = section["reliability"][tau]["pooled"]
+                self.assertNotIn("brier_skill_vs_climatology", pooled, tau)
+                self.assertNotIn("climatology_minus_final_brier", pooled, tau)
+            for tau in ("5", "10"):
+                self.assertIn("brier_skill_vs_climatology", section["reliability"][tau]["pooled"], tau)
 
     def test_every_threshold_carries_its_event_count(self):
         for section in self.record["horizons"].values():

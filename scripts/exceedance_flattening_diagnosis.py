@@ -138,7 +138,11 @@ def walk_command(args) -> int:
 
 #: The days compared: before the near-blind tier (`docs/decisions/lockbox.md`).
 LAST_DAY = "2025-12-31"
-BIN_EDGES = (0.0, 0.01, 0.02, 0.05, 0.10, 0.20, 0.50, 1.0000001)
+#: The thresholds the published records report event by event, with no pooled skill claim, Brier, interval or
+#: reliability curve (`docs/decisions/pressure-probability.md`, ruling of 2 October 2026 on #130). The
+#: reliability here is descriptive and the directive asks for it by threshold; the skill score, the Brier score
+#: and the interval are not computed at these thresholds.
+EVENT_LISTED = (20.0, 50.0)
 REPLICATIONS = 2000
 SEED = 373
 LEVEL = 0.90
@@ -185,7 +189,7 @@ def _interval(statistic, n, block_length):
             "block_length": block_length, "replications": REPLICATIONS, "seed": SEED}
 
 
-def _group_rows(days, labels, order, k, with_interval, block_length):
+def _group_rows(days, labels, order, k, with_interval, block_length, listed=False):
     """Predicted against realised exceedance rate, per group, at threshold index `k`."""
 
     out = {}
@@ -194,20 +198,21 @@ def _group_rows(days, labels, order, k, with_interval, block_length):
         entry = {"days": len(members)}
         if members:
             outcomes = [days[i]["outcomes"][k] for i in members]
-            brier = {
-                name: _mean((days[i][name][k] - days[i]["outcomes"][k]) ** 2 for i in members)
-                for name in ("raw", "final", "reference", "persistence_logistic")
-            }
             entry.update(
                 events=sum(outcomes),
                 realised_rate=_mean(outcomes),
                 mean_raw=_mean(days[i]["raw"][k] for i in members),
                 mean_final=_mean(days[i]["final"][k] for i in members),
                 mean_climatology=_mean(days[i]["reference"][k] for i in members),
-                brier=brier,
-                brier_skill_vs_climatology=_skill(brier["final"], brier["reference"]),
             )
-            if with_interval and len(members) >= 2:
+            if not listed:
+                brier = {
+                    name: _mean((days[i][name][k] - days[i]["outcomes"][k]) ** 2 for i in members)
+                    for name in ("raw", "final", "reference", "persistence_logistic")
+                }
+                entry["brier"] = brier
+                entry["brier_skill_vs_climatology"] = _skill(brier["final"], brier["reference"])
+            if with_interval and not listed and len(members) >= 2:
                 difference = [
                     (days[i]["reference"][k] - days[i]["outcomes"][k]) ** 2
                     - (days[i]["final"][k] - days[i]["outcomes"][k]) ** 2
@@ -237,21 +242,12 @@ def _skill(model, reference):
     return None if not reference else 1.0 - model / reference
 
 
-def _reliability_bins(days, k, name):
-    out = []
-    for low, high in zip(BIN_EDGES, BIN_EDGES[1:]):
-        members = [d for d in days if low <= d[name][k] < high]
-        out.append(
-            {
-                "from": low,
-                "to": min(high, 1.0),
-                "days": len(members),
-                "events": sum(d["outcomes"][k] for d in members),
-                "mean_forecast": _mean(d[name][k] for d in members),
-                "realised_rate": _mean(d["outcomes"][k] for d in members),
-            }
-        )
-    return out
+def _reliability_steps(days, k, name):
+    """The CORP reliability diagram at threshold index `k`, as its isotonic steps (`pressure._reliability_steps`)."""
+
+    from repo_model.pressure import _reliability_steps as steps
+
+    return steps([d[name][k] for d in days], [d["outcomes"][k] for d in days])
 
 
 def _quantiles(values, cuts=10):
@@ -343,12 +339,13 @@ def assemble_command(args) -> int:
         section["reliability"] = {}
         for k, tau in enumerate(taus):
             with_interval = h == INTERVAL_HORIZON
+            listed = tau in EVENT_LISTED
             section["reliability"][f"{tau:g}"] = {
-                "pooled": _group_rows(days, ["all"] * n, ["all"], k, with_interval, block_length)["all"],
-                "bins_final": _reliability_bins(days, k, "final"),
-                "bins_raw": _reliability_bins(days, k, "raw"),
-                "by_regime": _group_rows(days, regimes, regime_order, k, with_interval, block_length),
-                "by_day_type": _group_rows(days, types, day_types, k, with_interval, block_length),
+                "pooled": _group_rows(days, ["all"] * n, ["all"], k, with_interval, block_length, listed)["all"],
+                "corp_steps_final": _reliability_steps(days, k, "final"),
+                "corp_steps_raw": _reliability_steps(days, k, "raw"),
+                "by_regime": _group_rows(days, regimes, regime_order, k, with_interval, block_length, listed),
+                "by_day_type": _group_rows(days, types, day_types, k, with_interval, block_length, listed),
             }
 
         # 3. how the flattening arises

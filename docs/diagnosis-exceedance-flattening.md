@@ -19,7 +19,10 @@ refuses a walk that scores a later day. No comparison here scores a locked day.
 **Benchmarks.** *Climatology* is the report's reference: the expanding unconditional exceedance rate. The
 *persistence-logistic* is the published benchmark, refitted the same way. Intervals are 90% stationary-bootstrap
 intervals on the paired Brier difference (climatology minus model, positive when the model is better), drawn at
-h = 1 only; the other horizons are in the record as means and counts.
+h = 1 only; the other horizons are in the record as means and counts. At +20 and +50 bp the published records carry no
+pooled skill claim, Brier score, interval or reliability curve (`docs/decisions/pressure-probability.md`); this page
+and record follow that: there they give predicted and realised rates, descriptive reliability (which the directive asks
+for) and discrimination, and compute no skill score, Brier score or interval.
 
 ## In short
 
@@ -66,37 +69,37 @@ the +5 bp value; a calibrated curve would show the realised column's ratios.
 The realised rate falls 35-fold from +5 to +50 bp. The raw probability falls 3-fold and the published one 6-fold.
 The same shape holds at h = 2 to 5 (`horizons.*.by_threshold` in the record).
 
-The paired comparison, h = 1, pooled over all scored days, climatology minus the published model (positive favours
-the model), with the 90% interval:
+The paired comparison at the two headline thresholds, h = 1, pooled over all scored days, climatology minus the
+published model (positive favours the model), with the 90% interval:
 
 | τ (bp) | Brier skill vs climatology | Climatology − published, Brier | 90% interval |
 |---|---|---|---|
 | +5 | +30% | +0.0212 | [+0.0155, +0.0273] |
 | +10 | +10% | +0.0031 | [+0.0012, +0.0053] |
-| +20 | −2% | −0.00025 | [−0.00062, +0.00015] |
-| +50 | −16% | −0.00034 | [−0.00041, −0.00026] |
 
-The model beats climatology at +5 and +10 bp and does not at +20 and +50 bp (at +50 bp climatology is better, the
-interval excluding zero). The differences at the upper thresholds are tiny in Brier terms because both sit near
-zero; the point is the direction.
+The model beats climatology at +5 and +10 bp. At +20 and +50 bp the published records carry no pooled skill figure and
+this page computes none; the phase 2 verdict in PLAN.md already records that climatology beats the model's exceedance
+probabilities there. What the table above shows is the mechanism: the climatology column is nearer the realised rate
+than the model's raw and published columns at +20 and +50 bp.
 
 ## 2. Reliability by threshold, regime and pressure-day type
 
-Published probabilities grouped into bins, h = 1 (`reliability.*.bins_final`; the raw probabilities' bins are beside
-them in the record):
+The CORP reliability diagram (the isotonic fit of the outcome on the forecast, `corp_reliability_curve`), h = 1,
+all scored days, published probabilities (`reliability.*.corp_steps_final`; the raw probabilities' steps are beside
+them in the record). A calibrated forecast has each step's observed rate equal to its forecast range.
 
-| Forecast bin | +5 bp: days, mean forecast → realised | +10 bp | +20 bp | +50 bp |
-|---|---|---|---|---|
-| < 1% | 7, 0.5% → 14% | 22, 0.1% → 4.5% | 717, 0.7% → 0.1% | 728, 0.7% → 0.3% |
-| 1–2% | 262, 1.9% → 1.1% | 708, 1.6% → 0.7% | 557, 1.4% → 0.5% | 632, 1.4% → 0.2% |
-| 2–5% | 955, 3.1% → 0.9% | 670, 3.1% → 0.9% | 476, 3.3% → 2.1% | 501, 3.2% → 0.2% |
-| 5–10% | 257, 6.9% → 2.3% | 248, 6.9% → 6.1% | 75, 7.2% → 6.7% | 12, 7.3% → 0% |
-| 10–20% | 103, 14% → 16% | 147, 14% → 12% | 46, 15% → 2.2% | 0 |
-| 20–50% | 212, 30% → 29% | 75, 23% → 19% | 2, 21% → 0% | 0 |
-| ≥ 50% | 77, 64% → 56% | 3, 56% → 67% | 0 | 0 |
+| τ (bp) | Steps | Lowest step: forecast range → observed (days) | Highest step: forecast range → observed (days) |
+|---|---|---|---|
+| +5 | 20 | 0–3.2% → 0.6% (846) | 70–83% → 82% (17), then one day at 95% → 1 |
+| +10 | 10 | 0–4.4% → 0.5% (1,319) | 40–62% → 75% (4) |
+| +20 | 8 | 0–0.7% → 0 (253) | 18–21% → 14% (7); the 4.5–18% step holds 155 days and observes 5.2% |
+| +50 | 3 | 0–2.0% → 0.15% (1,353) | 4.0–8.9% → 0.9% (110) |
 
-At +50 bp every forecast is below 10%, and all but 12 days are below 5%, whatever the day. At +20 bp no
-forecast exceeds 21%.
+The raw (pre-Platt) probabilities at +50 bp make **one** step: the isotonic fit finds no ordering in them, so the
+curve is a horizontal line at the base rate (0.21%) across forecasts of 0 to 8.9%. At +20 bp they make six steps
+and the busiest (63 days, forecasts of 16% to 35%) observes 9.5%. At +50 bp the published probabilities average 1.0%, 2.9% and 4.8% in the three steps against observed
+0.15%, 0.24% and 0.91%: 5× to 12× too high. At +5 bp the diagram follows the diagonal from about 14% upward and
+over-forecasts below it.
 
 By regime (h = 1; published mean probability → realised rate, events in brackets):
 
@@ -127,9 +130,8 @@ does not tell a quarter end from an ordinary Tuesday above +10 bp. Quarter-end c
 +20 bp, 2 at +50 bp), so these are descriptive.
 
 The paired Brier differences against climatology by regime and day type, with intervals, are in
-`reliability.*.by_regime` and `by_day_type` of the record. Where climatology wins at +20 bp, it wins on ordinary days and
-in 2020 (intervals exclude zero); at +50 bp it wins in every regime, 2018–19 included, and on ordinary and month-end
-days. That is where the flat 4% over-forecasts.
+`reliability.*.by_regime` and `by_day_type` of the record at +5 and +10 bp. At +20 and +50 bp the record has the
+rates and probabilities only, and the tables above are all the evidence this page offers there.
 
 ## 3. How the flattening arises
 
