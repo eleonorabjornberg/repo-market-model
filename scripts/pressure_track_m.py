@@ -160,7 +160,9 @@ def judge_command(args) -> int:
         )
     wanted = {name for name in declaration.candidates}
     forecasts = [f for f in forecasts if f.name in wanted]
-    result = pj.judge(declaration, grids, forecasts, holdouts=judge_script._holdouts())
+    result = pj.judge(
+        declaration, grids, forecasts, calendar=[row.date for row in rows], holdouts=judge_script._holdouts()
+    )
     result["provenance"] = {
         "panel_sha256": digest,
         "judge_declaration_commit": judge_script.require_committed_declaration(pj.DEFAULT_DECLARATION),
@@ -172,7 +174,7 @@ def judge_command(args) -> int:
         args.markdown.write_text(judge_script.markdown(result), encoding="utf-8")
     print(json.dumps({
         "output": str(args.output),
-        "verdicts": {name: c["verdict"] for name, c in result["candidates"].items()},
+        "verdicts": {name: c["verdict"]["passes"] for name, c in result["candidates"].items()},
     }))
     return 0
 
