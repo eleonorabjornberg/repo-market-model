@@ -167,6 +167,11 @@ class RecordTests(unittest.TestCase):
         record = json.loads(RECORD.read_text())
         self.assertLessEqual(record["window"]["last"], "2025-12-31")
 
+    def test_the_page_is_rendered_from_the_record(self):
+        record = json.loads(RECORD.read_text())
+        page = (REPO / "docs" / "interior_calibration_243.md").read_text()
+        self.assertEqual(page, judge.render(record))
+
     def test_the_published_side_reproduces_the_published_crps(self):
         record = json.loads(RECORD.read_text())
         published = json.loads((REPO / "docs/runs/v1_interior_diagnosis.json").read_text())
