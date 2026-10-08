@@ -1,35 +1,35 @@
 """Track C of #374 (#380): is recalibrating the current model's probabilities enough?
 
-A scratch measurement, not a record: it writes forecast files for the judge
+A scratch measurement, not a record: it writes a forecast file for the judge
 (`scripts/pressure_judge.py judge`) and nothing into `docs/runs/`. The candidates,
 their cut-offs and the pooled and conditional recalibrators are declared in
 `metadata/pressure_judge.json` and `repo_model.group_calibration` before any
-score is computed.
+score is computed; this script refuses to run unless that file is committed.
 
-    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/recalibration_bakeoff.py raw \\
-        --panel PANEL --forecast pressure_v1 --horizon H --output OUT/raw_hH.pickle
-    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/recalibration_track.py forecasts \\
-        --panel PANEL --input OUT/raw_hH.pickle --output OUT/forecasts_hH.json
+    PYTHONPATH=src /opt/rmm-venv/bin/python scripts/recalibration_track.py horizon \\
+        --panel PANEL --horizon H --output OUT/recal_hH.json
+    PYTHONPATH=src python3 scripts/pressure_judge.py forecasts --panel PANEL --horizon H \\
+        --output OUT/bench_hH.json
     PYTHONPATH=src python3 scripts/pressure_judge.py judge --panel PANEL \\
-        --output OUT/judge.json --markdown OUT/judge.md OUT/forecasts_h?.json
+        --output OUT/judge.json --markdown OUT/judge.md OUT/bench_h?.json OUT/recal_h?.json
 
-The raw forecast is pressure model v1's `distributional_gbm` before its
-recalibration (what `recalibration_bakeoff.py raw --forecast pressure_v1`
-produces; its pickle also carries the two benchmarks, run exactly as
-`pressure_judge.benchmark_forecasts` runs them). Each threshold and horizon is
-recalibrated out of fold on its own, then made non-increasing in tau.
+The raw forecast is pressure model v1's `distributional_gbm`: the published
+funding declaration's gbm, conformal PID with nested selection, before any
+recalibration (the run `pressure_judge.py forecasts --published` recalibrates
+by Platt and names `published_v1`). The output carries `published_v1` (that
+raw run through `pressure.recalibrated`, so the judge's baseline row needs no
+second run) and the four recalibrated candidates. Each threshold and horizon
+is recalibrated out of fold on its own, then made non-increasing in tau. The
+benchmarks come from `pressure_judge.py forecasts`, run beside this.
 """
 
 from __future__ import annotations
 
 import argparse
-import copyreg
 import importlib.util
 import json
-import pickle
 import sys
 from pathlib import Path
-from types import MappingProxyType
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
@@ -40,13 +40,8 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
+judge_script = None
 
-def _proxy(mapping):
-    # `recalibration_bakeoff.py raw` pickles a mapping proxy as `__main__._proxy`.
-    return MappingProxyType(mapping)
-
-
-copyreg.pickle(MappingProxyType, lambda proxy: (_proxy, (dict(proxy),)))
 
 
 def _load_script(name):
@@ -80,34 +75,65 @@ def candidate_columns(report, groups, declared_taus):
     return out
 
 
-def forecasts_command(args) -> int:
+def _raw_report(rows, splits, registry, horizon, declaration):
+    """Pressure model v1's distributional gbm, unrecalibrated (what `pressure_judge._published` fits)."""
+
+    from repo_model import ml
+    from repo_model.baseline import rolling_exceedance_backtest
+    from repo_model.recalibration import NestedFoldPid
+
+    model = _load_script("pressure_model_v1")
+    features = model._at_horizon(model.GBM_FEATURES, horizon)
+    built = []
+
+    def online(rows_, rule):
+        built.append(NestedFoldPid(rows_, rule, splits=splits, refit_every=judge_script.REFIT_EVERY))
+        return built[-1]
+
+    return rolling_exceedance_backtest(
+        rows,
+        predictor=ml.gbm_exceedance(
+            tuple(name for name in features if name != "spread_bps"),
+            minimum_history=judge_script.MINIMUM_HISTORY,
+        ),
+        model_name="distributional_gbm",
+        features=features,
+        registry=registry,
+        decision_time=judge_script.DECISION,
+        taus=declaration.thresholds,
+        minimum_history=judge_script.MINIMUM_HISTORY,
+        refit_every=judge_script.REFIT_EVERY,
+        end=declaration.last_day,
+        horizon=horizon,
+        online_calibration=online,
+    )
+
+
+def horizon_command(args) -> int:
+    global judge_script
     declaration = pj.load_declaration()
     judge_script = _load_script("pressure_judge")
     commit = judge_script.require_committed_declaration(pj.DEFAULT_DECLARATION)
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
-    digest = panel_sha256(args.panel)
-    part = pickle.loads(args.input.read_bytes())
-    report = part["report"]
-    horizon = int(part["horizon"])
+    registry = json.loads((REPO / "metadata" / "sources.json").read_text())
+    horizon = args.horizon
+    report = _raw_report(rows, splits, registry, horizon, declaration)
     scored = list(report.scored_dates)
-    pj.require_scored_days(declaration, scored, where="recalibration_track.forecasts")
+    pj.require_scored_days(declaration, scored, where="recalibration_track.horizon")
     states = judge_script._scarcity_states(horizon, declaration.last_day)
     by_date = {row.date: row for row in rows}
     groups = [
         gc.group_label(states.get(day), splits.reporting_day_type(day, by_date[day].values))
         for day in scored
     ]
-    forecasts = []
-    for name, columns in candidate_columns(report, groups, declaration.thresholds).items():
-        forecasts.append(pj.Forecast(name, horizon, tuple(scored),
-                                     {tau: tuple(col) for tau, col in columns.items()}))
+    forecasts = [
+        pj.Forecast(name, horizon, tuple(scored), {tau: tuple(col) for tau, col in columns.items()})
+        for name, columns in candidate_columns(report, groups, declaration.thresholds).items()
+    ]
     forecasts.append(pj.report_forecast("published_v1", pressure.recalibrated(report)))
-    names = {"calendar_climatology": declaration.climatology, "persistence_logistic": declaration.persistence}
-    for key, name in names.items():
-        forecasts.append(pj.report_forecast(name, part["benchmarks"][key]))
-    document = judge_script._document(horizon, digest, forecasts)
+    document = judge_script._document(horizon, panel_sha256(args.panel), forecasts)
     document["declaration_commit"] = commit
     document["group_counts"] = {g: groups.count(g) for g in sorted(set(groups))}
     document["calibration"] = {"pooled": pc.declaration(), "conditional": gc.declaration()}
@@ -119,11 +145,11 @@ def forecasts_command(args) -> int:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    one = commands.add_parser("forecasts", help="recalibrate one horizon's raw run for the judge")
+    one = commands.add_parser("horizon", help="fit and recalibrate the raw forecast at one horizon")
     one.add_argument("--panel", type=Path, required=True)
-    one.add_argument("--input", type=Path, required=True)
+    one.add_argument("--horizon", type=int, choices=(1, 2, 3, 4, 5), required=True)
     one.add_argument("--output", type=Path, required=True)
-    one.set_defaults(func=forecasts_command)
+    one.set_defaults(func=horizon_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
