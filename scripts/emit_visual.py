@@ -1030,8 +1030,10 @@ def history(rows, notes, thresholds, regimes, windows, locked, buffer_low):
     spike_event_n = next((i for i, e in enumerate(notes["events"], 1) if e["date"] == spike["date"]), None)
     if spike_event_n is None:
         raise VisualError(f"no annotation is dated {spike['date']}, the largest spread; chapter 2 points at it")
-    low = [r for r in kept if buffer_low(r["date"])]
-    high = [r for r in kept if not buffer_low(r["date"])]
+    # The first panel day has no decision instant (#348), so it is in neither group, as in N3's cells.
+    read = [r for r in kept if r["date"] > rows[0]["date"]]
+    low = [r for r in read if buffer_low(r["date"])]
+    high = [r for r in read if not buffer_low(r["date"])]
     low_ample = [r for r in low if in_regime(r, ample)]
     span_years = (date.fromisoformat(rows[-1]["date"]) - date.fromisoformat(rows[0]["date"])).days / 365.25
     fills = {
@@ -2168,13 +2170,38 @@ def runs(days, key):
     return out
 
 
+def buffer_scarce(on_rrp, rows, day, decision, registry):
+    """Whether the ON RRP result public at the decision instant of a forecast of `day` is below the break (#348).
+
+    The decision instant of `day` is the declared decision time on the last
+    panel day before it (`docs/decisions/information-set.md`), as N3, N4 and N5
+    read it. `rows` is the panel; a day with no panel day before it has no
+    decision instant and is refused (`ValueError`).
+    """
+    iso = day.isoformat()
+    previous = [r["date"] for r in rows if r["date"] < iso]
+    if not previous:
+        raise ValueError(f"{iso} has no panel day before it, so no decision instant")
+    return on_rrp_as_of(on_rrp, date.fromisoformat(previous[-1]), decision, registry)[1] < ON_RRP_DEPLETION_BREAK_BN
+
+
+def history_buffer_low(on_rrp, rows, decision, registry):
+    """The history chapter's `buffer_low(iso)`: `buffer_scarce` on the decision instant of the day (#348)."""
+    panel = [dict(r) for r in rows]
+
+    def buffer_low(iso):
+        return buffer_scarce(on_rrp, panel, date.fromisoformat(iso), decision, registry)
+
+    return buffer_low
+
+
 def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status, notes, rows):
     """The #115 reserve-scarcity state as a band lane, with the ON RRP buffer as its sub-lane (#148).
 
     `scored` is `scarcity_days(...)[0]`: each scored day's as-of state and its
     own SOFR - IORB. A day in a locked tier is dropped here, whatever it holds,
     and is in no span, count or sentence. The sub-lane marks the days N3's 2x2
-    calls scarce: the ON RRP result public at the decision instant below
+    calls scarce: the ON RRP result public at the decision instant (#348) below
     `contract.ON_RRP_DEPLETION_BREAK_BN`. Per state, the share of days strictly
     above each headline threshold on whole basis points, k of n with an
     interval, exactly as `scarcity.tabulate` reports it for #115. The caption
@@ -2191,7 +2218,7 @@ def newcomer_band(scored, locked, thresholds, registry, decision, on_rrp, status
     spans = runs(kept, lambda d: None if d.state is None else int(d.state))
 
     def scarce(d):
-        return on_rrp_as_of(on_rrp, d.day, decision, registry)[1] < ON_RRP_DEPLETION_BREAK_BN
+        return buffer_scarce(on_rrp, rows, d.day, decision, registry)
 
     buffer_spans = [[a, b] for a, b, below in runs(kept, scarce) if below]
     states = sorted({int(d.state) for d in kept if d.state is not None})
@@ -3250,10 +3277,8 @@ def generate(repo, commit=None):
     on_rrp, on_rrp_snapshots = on_rrp_results(repo)
     n3, n3_fills = newcomer_n3([dict(r) for r in rows], locked, thresholds, registry, decision, on_rrp, notes)
     scored, band_snapshots = scarcity_days(repo, locked)
-    def buffer_low(iso):
-        return on_rrp_as_of(on_rrp, date.fromisoformat(iso), decision, registry)[1] < ON_RRP_DEPLETION_BREAK_BN
-
-    hist, fills = history(rows, notes, thresholds, regimes, windows, locked, buffer_low)
+    hist, fills = history(rows, notes, thresholds, regimes, windows, locked,
+                          history_buffer_low(on_rrp, rows, decision, registry))
     crossings = check_above_standing_repo(repo, notes, counted(rows, locked))
     if len(crossings) != 1:
         raise VisualError(f"chapter 1 quotes one day SOFR passed the standing repo rate; the annotations carry {len(crossings)}")
