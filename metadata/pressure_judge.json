@@ -107,6 +107,91 @@
         "10": 0.2
       }
     },
+    "scarcity_logistic": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_gbm": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_logistic_interactions": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_gbm_interactions": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_logistic_regime_pooled": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
     "settlement_probit_timing": {
       "role": "candidate",
       "track": "T (#379)",
