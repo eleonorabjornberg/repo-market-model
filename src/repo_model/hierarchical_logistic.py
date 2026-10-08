@@ -11,8 +11,9 @@ greatest on that fit's own training pairs (empirical Bayes,
 `ml._empirical_bayes_scale`). A regime with no training day is served the pooled
 fit. numpy and scikit-learn only, in `ml.py`.
 
-Declared in `metadata/pressure_judge.json` before any score, with the flag
-cut-off 0.2 the benchmark rows carry, never tuned on a scored day. The state is
+Declared in `metadata/pressure_judge.json` before any score. It declares no flag
+cut-off: the judge chooses it at each refit from that refit's training window by
+the declared `cutoff_rule` (#407). The state is
 off in every published declaration and on for these runs only.
 
 Standard library only, like the rest of `src/` outside `ml.py`.
@@ -24,15 +25,12 @@ from typing import Tuple
 
 from . import scarcity_calendar as sc
 
-__all__ = ["CALIBRATION", "CUTOFF", "NAME", "STATE_FORM", "declaration_entry", "features_at_horizon"]
+__all__ = ["CALIBRATION", "NAME", "STATE_FORM", "declaration_entry", "features_at_horizon"]
 
 NAME = "hierarchical_logistic"
 
 #: The state form it reads: #128's form (a), the four levels as #115 built them.
 STATE_FORM = "four_level"
-
-#: The flagging cut-off at +5 and +10 bp and every horizon: the benchmark rows' value.
-CUTOFF = 0.2
 
 CALIBRATION = "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
 
@@ -50,5 +48,4 @@ def declaration_entry() -> dict:
         "role": "candidate",
         "features": sorted(features_at_horizon(1)),
         "calibration": CALIBRATION,
-        "cutoffs": {"5": CUTOFF, "10": CUTOFF},
     }

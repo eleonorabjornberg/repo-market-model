@@ -36,13 +36,10 @@ class DeclarationTests(unittest.TestCase):
         for key, value in hl.declaration_entry().items():
             self.assertEqual(got[key], value, key)
 
-    def test_the_judge_reads_the_candidate_with_the_declared_cutoff(self):
-        declaration = pj.load_declaration(DECLARATION)
-        for tau in declaration.thresholds:
-            for horizon in declaration.horizons:
-                self.assertEqual(declaration.cutoff(hl.NAME, tau, horizon), hl.CUTOFF)
-                with self.assertRaises(ValueError):
-                    declaration.cutoff(hl.NAME, tau, horizon, hl.CUTOFF + 0.1)
+    def test_the_candidate_declares_no_fixed_cutoff(self):
+        got = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"][hl.NAME]
+        self.assertNotIn("cutoffs", got)
+        pj.load_declaration(DECLARATION)
 
 
 if __name__ == "__main__":

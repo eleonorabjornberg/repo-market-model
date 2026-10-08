@@ -107,8 +107,6 @@ def score(rows, splits, registry, declaration, horizon):
 def forecasts_command(args) -> int:
     declaration = pj.load_declaration()
     commit = judge_script.require_committed_declaration(pj.DEFAULT_DECLARATION)
-    for tau in declaration.thresholds:
-        declaration.cutoff(hl.NAME, tau, args.horizon, hl.CUTOFF)
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)

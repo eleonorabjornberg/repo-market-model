@@ -357,11 +357,7 @@
         "tax_date",
         "treasury_settlement"
       ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
-      "cutoffs": {
-        "5": 0.2,
-        "10": 0.2
-      }
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
     },
     "extreme_value_tail": {
       "role": "candidate",
