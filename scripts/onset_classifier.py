@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import importlib.util
 import json
 import subprocess
 import sys
@@ -161,8 +162,10 @@ def leads_command(args) -> int:
     that are not pressure days) per onset, for h = 1 to 5.
     """
 
-    sys.path.insert(0, str(REPO / "scripts"))
-    import pressure_judge as script
+    # The judge's script is a sibling file, not a package module; load it by path.
+    spec = importlib.util.spec_from_file_location("pressure_judge_script", REPO / "scripts" / "pressure_judge.py")
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
 
     from repo_model import pressure_judge as pj
 

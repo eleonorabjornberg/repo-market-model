@@ -11804,19 +11804,19 @@ class OnsetLabelTests(unittest.TestCase):
 
     def test_a_quantile_kind_has_no_onset_label(self):
         with self.assertRaises(ValueError):
-            ml._direct_pressure_predictor("quantile", _PRESSURE_CALENDAR, _pressure_splits(), 20, onset=True)
-        with self.assertRaises(ValueError):
             ml.pressure_onset_exceedance("probit", None, _PRESSURE_CALENDAR, _pressure_splits())
+        with self.assertRaises(ValueError):
+            ml.pressure_onset_exceedance("logistic", "focal", _PRESSURE_CALENDAR, _pressure_splits())
 
 
 class OptionalColumnTests(unittest.TestCase):
-    """A declared column that enters with an observed indicator (#409)."""
+    """A declared column that enters with an observed indicator (`ml._OnsetDesign`, #409)."""
 
     def setUp(self):
         require_extra(self)
 
     def design(self, **options):
-        return ml._PressureDesign(("spread_bps", "ofr_tri_rate"), _pressure_splits(), **options)
+        return ml._OnsetDesign(("spread_bps", "ofr_tri_rate"), _pressure_splits(), **options)
 
     def test_a_hole_is_a_zero_with_the_indicator_off(self):
         design = self.design(optional=("ofr_tri_rate",))
@@ -11835,7 +11835,7 @@ class OptionalColumnTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.design(optional=("ofr_gcf_rate",))
         with self.assertRaises(ValueError):
-            ml._PressureDesign(("spread_bps", "reserve_balances"), _pressure_splits(), optional=("reserve_balances",))
+            ml._OnsetDesign(("spread_bps", "reserve_balances"), _pressure_splits(), optional=("reserve_balances",))
 
 
 class RareEventTrainingTests(unittest.TestCase):

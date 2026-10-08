@@ -18,7 +18,7 @@ confirmation window is not looked at). Declared before any score in `metadata/on
 * **Features.** The calendar (days to month end, quarter end, tax date), Treasury settlement at h = 1 only (not public earlier),
   reserves and the reserve-scarcity state (#115, 0 to 3; reserves multiply every scheduled term, as in #379), the weekly TGA change,
   and from #377 the daily TGA balance and its change. Two candidates add the OFR tri-party and GCF overnight rates, entered with an
-  observed indicator and a zero where not yet public (`ml._PressureDesign`, `optional`): the tri-party rate is real-time only from
+  observed indicator and a zero where not yet public (`ml._OnsetDesign`): the tri-party rate is real-time only from
   2020-09-09 (1324 of 1935 panel rows) and the GCF rate is present on 144 rows. They could not enter as required columns without
   dropping the 2018-19 days, which hold most of the pressure days.
 * **Weighting.** `ml.PRESSURE_RARE_EVENT_SETTINGS` (#381): balanced class weights inside each fit, or the focal loss; one
