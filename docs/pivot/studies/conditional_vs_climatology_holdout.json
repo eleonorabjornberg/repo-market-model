@@ -1,0 +1,2335 @@
+{
+  "bootstrap": {
+    "block_length": 2,
+    "level": 0.9,
+    "replications": 2000
+  },
+  "days": [
+    "2019-09-16",
+    "2019-09-17",
+    "2019-09-18",
+    "2019-09-19",
+    "2019-09-20",
+    "2020-03-09",
+    "2020-03-10",
+    "2020-03-11",
+    "2020-03-12",
+    "2020-03-13",
+    "2020-03-16",
+    "2020-03-17",
+    "2020-03-18",
+    "2020-03-19",
+    "2020-03-20"
+  ],
+  "declaration": "docs/pivot/conditional-vs-climatology-declaration.json",
+  "declaration_sha256": "5f32bfa29589f7eb12d9c707918e2b60af12233cc9480def51767fb6e7c8981b",
+  "label": "uncalibrated: no published (calibrated) model is held out from these windows",
+  "leap": {
+    "jump_bp": 3.0,
+    "levels_bp": [
+      13.5,
+      13.5,
+      36.5,
+      318.5,
+      48.5,
+      5.5,
+      3.5,
+      2.5,
+      4.5,
+      8.5,
+      13.5,
+      3.5,
+      19.5,
+      47.5,
+      3.5
+    ]
+  },
+  "results": {
+    "leap": {
+      "days": 15,
+      "dynamic_logit": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.32737236086166543,
+              "dynamic_logit": 0.41096297567146833,
+              "persistence_logistic": 0.36022214183117296
+            },
+            "days": 15,
+            "events": 7,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.14835751065294592,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 61956894,
+                  "upper": -0.023602479548635556
+                },
+                "mean": -0.08359061480980297
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.07884850094295061,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1647533468,
+                  "upper": -0.022628292205404528
+                },
+                "mean": -0.05074083384029537
+              }
+            }
+          },
+          "leap_onset_days": {
+            "brier": {
+              "climatology": null,
+              "dynamic_logit": null,
+              "persistence_logistic": null
+            },
+            "days": 0,
+            "events": 0,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 0
+              },
+              "persistence_logistic": {
+                "days": 0
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.06920674571950693,
+                  "upper": 0.014421614034491749
+                },
+                "mean": -0.02722509632126224
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 25; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.3090526887639659
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.1507583176664312,
+                  "upper": -0.024291043255404005
+                },
+                "mean": -0.08359061480980297
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 72; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.17039206993552825
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.08374857008815449,
+                  "upper": 0.005959402424875417
+                },
+                "mean": -0.04018988724694035
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.06779720963577761,
+                  "upper": -0.002942845224947094
+                },
+                "mean": -0.03602896310369552
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.10958831678669474
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.07938875082336684,
+                  "upper": -0.02302736840057871
+                },
+                "mean": -0.05074083384029537
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 244; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.06573841010627127
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.07761621459924913,
+                  "upper": -0.003902701815868126
+                },
+                "mean": -0.04324204570730742
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "not_met"
+      },
+      "events": 7,
+      "gbm_published_4": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.32737236086166543,
+              "gbm_published_4": 0.4072216542800273,
+              "persistence_logistic": 0.36022214183117296
+            },
+            "days": 15,
+            "events": 7,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.13056106798050932,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 314351934,
+                  "upper": -0.03138489859686654
+                },
+                "mean": -0.07984929341836196
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.07748258734252632,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1683698626,
+                  "upper": -0.01745581016487809
+                },
+                "mean": -0.046999512448854364
+              }
+            }
+          },
+          "leap_onset_days": {
+            "brier": {
+              "climatology": null,
+              "gbm_published_4": null,
+              "persistence_logistic": null
+            },
+            "days": 0,
+            "events": 0,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 0
+              },
+              "persistence_logistic": {
+                "days": 0
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.07812767951710198,
+                  "upper": 0.0040841668986896255
+                },
+                "mean": -0.03795585184494755
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.24742305971201964
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.12856926369439137,
+                  "upper": -0.032299969837745364
+                },
+                "mean": -0.07984929341836196
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.13367883842165196
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.09400245620414283,
+                  "upper": -0.008738269647778227
+                },
+                "mean": -0.05293452091671698
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.07888518078129265,
+                  "upper": -0.014037255186026632
+                },
+                "mean": -0.04675971862738085
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 3; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.04795868773474846
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.07718472787617249,
+                  "upper": -0.018947134572444232
+                },
+                "mean": -0.046999512448854364
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 193; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.029025178592394986
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.09087073203422102,
+                  "upper": -0.019427652368279213
+                },
+                "mean": -0.05598667937708405
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "not_met"
+      },
+      "gbm_published_9": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.32737236086166543,
+              "gbm_published_9": 0.42504966291187424,
+              "persistence_logistic": 0.36022214183117296
+            },
+            "days": 15,
+            "events": 7,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.15370096837314093,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2045572226,
+                  "upper": -0.041173474496516094
+                },
+                "mean": -0.09767730205020884
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.11357858439269702,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 636530335,
+                  "upper": -0.020132960374271272
+                },
+                "mean": -0.06482752108070124
+              }
+            }
+          },
+          "leap_onset_days": {
+            "brier": {
+              "climatology": null,
+              "gbm_published_9": null,
+              "persistence_logistic": null
+            },
+            "days": 0,
+            "events": 0,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 0
+              },
+              "persistence_logistic": {
+                "days": 0
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.11193646621910776,
+                  "upper": 0.006469939135528198
+                },
+                "mean": -0.05662959647358098
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 1; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.2618681243567204
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.1543418584543072,
+                  "upper": -0.04100172150110559
+                },
+                "mean": -0.09767730205020884
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 55; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.14224125348860836
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.13266693250242892,
+                  "upper": -0.0042003340422014646
+                },
+                "mean": -0.07539532633100911
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.12110612690583313,
+                  "upper": -0.009402477172470423
+                },
+                "mean": -0.06543346325601425
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 0; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.06240375237944921
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.11260071334776475,
+                  "upper": -0.021465976896768723
+                },
+                "mean": -0.06482752108070124
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 8; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.037587593659351395
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.1383219242278538,
+                  "upper": -0.0128998396435291
+                },
+                "mean": -0.07844748479137617
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "not_met"
+      }
+    },
+    "pressure_10": {
+      "days": 15,
+      "dynamic_logit": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.343278986824318,
+              "dynamic_logit": 0.2071932722145717,
+              "persistence_logistic": 0.2877198545648676
+            },
+            "days": 15,
+            "events": 6,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.011714973818263967,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1321001449,
+                  "upper": 0.29732516289175753
+                },
+                "mean": 0.13608571460974625
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.0019318374002686768,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 249688045,
+                  "upper": 0.17449649169789155
+                },
+                "mean": 0.08052658235029585
+              }
+            }
+          },
+          "onset_days": {
+            "brier": {
+              "climatology": 0.006915599431191947,
+              "dynamic_logit": 0.00036070167512077255,
+              "persistence_logistic": 0.00448754508139546
+            },
+            "days": 1,
+            "events": 0,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.006554897756071175,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1407972431,
+                  "upper": 0.006554897756071175
+                },
+                "mean": 0.006554897756071175
+              },
+              "persistence_logistic": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.004126843406274687,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1638368489,
+                  "upper": 0.004126843406274687
+                },
+                "mean": 0.004126843406274687
+              }
+            }
+          },
+          "onset_days_one_day": {
+            "brier": {
+              "climatology": 0.12601271852831103,
+              "dynamic_logit": 0.11999754270186413,
+              "persistence_logistic": 0.1570486257734958
+            },
+            "days": 7,
+            "events": 1,
+            "note": "descriptive only, decides nothing: #160's definition, every day whose previous panel day was at or below +5 bp",
+            "paired": {
+              "climatology": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.005115041391487112,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 244012083,
+                  "upper": 0.006804456195483223
+                },
+                "mean": 0.006015175826446888
+              },
+              "persistence_logistic": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.0109541483002088,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1607241097,
+                  "upper": 0.08526050085105177
+                },
+                "mean": 0.03705108307163162
+              }
+            }
+          },
+          "scheduled_pressure_days": {
+            "brier": {
+              "climatology": 0.8489087335139652,
+              "dynamic_logit": 0.41534116267522214,
+              "persistence_logistic": 0.6700675512917165
+            },
+            "days": 4,
+            "events": 4,
+            "paired": {
+              "climatology": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.2377709706901508,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 154194749,
+                  "upper": 0.6293641709873353
+                },
+                "mean": 0.4335675708387431
+              },
+              "persistence_logistic": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.08243529772314423,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1488276757,
+                  "upper": 0.42701747950984453
+                },
+                "mean": 0.2547263886164944
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.0614987160090537,
+                  "upper": 0.15430214672915624
+                },
+                "mean": 0.02626025197172259
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.5753875651618409
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.005131525679337253,
+                  "upper": 0.31157091323998665
+                },
+                "mean": 0.13608571460974625
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.42312597946299474
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.02754157427291289,
+                  "upper": 0.006438553264909176
+                },
+                "mean": -0.007434417816878017
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.022788017156236767,
+                  "upper": 0.05699422835894036
+                },
+                "mean": 0.011742869406905172
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 4; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.3556614341238586
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": 0.0016042091991469427,
+                  "upper": 0.1729746121349105
+                },
+                "mean": 0.08052658235029585
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 4; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.20170926167651113
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.020619938128784144,
+                  "upper": 0.0751861578751764
+                },
+                "mean": 0.019935242687188222
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "inconclusive"
+      },
+      "events": 6,
+      "gbm_published_4": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.343278986824318,
+              "gbm_published_4": 0.27059836736086673,
+              "persistence_logistic": 0.2877198545648676
+            },
+            "days": 15,
+            "events": 6,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.04504511427981896,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1654367325,
+                  "upper": 0.202074662421406
+                },
+                "mean": 0.0726806194634512
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.017908382514595245,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 832509470,
+                  "upper": 0.05482110295858994
+                },
+                "mean": 0.01712148720400081
+              }
+            }
+          },
+          "onset_days": {
+            "brier": {
+              "climatology": 0.006915599431191947,
+              "gbm_published_4": 0.0024143529415113765,
+              "persistence_logistic": 0.00448754508139546
+            },
+            "days": 1,
+            "events": 0,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.004501246489680571,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 705599408,
+                  "upper": 0.004501246489680571
+                },
+                "mean": 0.004501246489680571
+              },
+              "persistence_logistic": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.0020731921398840832,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1439561166,
+                  "upper": 0.0020731921398840832
+                },
+                "mean": 0.0020731921398840832
+              }
+            }
+          },
+          "onset_days_one_day": {
+            "brier": {
+              "climatology": 0.12601271852831103,
+              "gbm_published_4": 0.1276042721791361,
+              "persistence_logistic": 0.1570486257734958
+            },
+            "days": 7,
+            "events": 1,
+            "note": "descriptive only, decides nothing: #160's definition, every day whose previous panel day was at or below +5 bp",
+            "paired": {
+              "climatology": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.0394692396191832,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2032789513,
+                  "upper": 0.030892663476384537
+                },
+                "mean": -0.0015915536508250576
+              },
+              "persistence_logistic": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.00118743000422272,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2057565205,
+                  "upper": 0.060130277989409064
+                },
+                "mean": 0.02944435359435968
+              }
+            }
+          },
+          "scheduled_pressure_days": {
+            "brier": {
+              "climatology": 0.8489087335139652,
+              "gbm_published_4": 0.558396447119183,
+              "persistence_logistic": 0.6700675512917165
+            },
+            "days": 4,
+            "events": 4,
+            "paired": {
+              "climatology": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.14959113712280164,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1441277162,
+                  "upper": 0.4314334356667628
+                },
+                "mean": 0.2905122863947822
+              },
+              "persistence_logistic": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.06117433197307967,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1633867188,
+                  "upper": 0.1621678763719874
+                },
+                "mean": 0.11167110417253354
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.08318988013530822,
+                  "upper": 0.11405065897048113
+                },
+                "mean": 0.00376103449792565
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 25; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.3483589593255534
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.037960264471462904,
+                  "upper": 0.20558009888087325
+                },
+                "mean": 0.0726806194634512
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 25; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.26348477270022086
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.06675614991572833,
+                  "upper": 0.017452769122797775
+                },
+                "mean": -0.022721457154933657
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.04302789865335852,
+                  "upper": 0.018008304029894413
+                },
+                "mean": -0.010756348066891769
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 3; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.12863282828757114
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.017289444645976676,
+                  "upper": 0.05400738078290272
+                },
+                "mean": 0.01712148720400081
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.04206805491373727
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.02156673626651899,
+                  "upper": 0.030467216808756917
+                },
+                "mean": 0.0046482033491325805
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "inconclusive"
+      },
+      "gbm_published_9": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.343278986824318,
+              "gbm_published_9": 0.2804676467943696,
+              "persistence_logistic": 0.2877198545648676
+            },
+            "days": 15,
+            "events": 6,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.03411498855238202,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1063095056,
+                  "upper": 0.18433087066073767
+                },
+                "mean": 0.06281134002994833
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.03530076216291811,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2078291129,
+                  "upper": 0.05312639486914078
+                },
+                "mean": 0.007252207770497978
+              }
+            }
+          },
+          "onset_days": {
+            "brier": {
+              "climatology": 0.006915599431191947,
+              "gbm_published_9": 0.0024016029825797984,
+              "persistence_logistic": 0.00448754508139546
+            },
+            "days": 1,
+            "events": 0,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.0045139964486121485,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1272449611,
+                  "upper": 0.0045139964486121485
+                },
+                "mean": 0.0045139964486121485
+              },
+              "persistence_logistic": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.0020859420988156613,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1015115652,
+                  "upper": 0.0020859420988156613
+                },
+                "mean": 0.0020859420988156613
+              }
+            }
+          },
+          "onset_days_one_day": {
+            "brier": {
+              "climatology": 0.12601271852831103,
+              "gbm_published_9": 0.152527316218702,
+              "persistence_logistic": 0.1570486257734958
+            },
+            "days": 7,
+            "events": 1,
+            "note": "descriptive only, decides nothing: #160's definition, every day whose previous panel day was at or below +5 bp",
+            "paired": {
+              "climatology": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.057575164153879234,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 576088696,
+                  "upper": 0.004541189817751889
+                },
+                "mean": -0.026514597690390964
+              },
+              "persistence_logistic": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.03252893198663177,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 563927705,
+                  "upper": 0.04163441929136383
+                },
+                "mean": 0.004521309554793772
+              }
+            }
+          },
+          "scheduled_pressure_days": {
+            "brier": {
+              "climatology": 0.8489087335139652,
+              "gbm_published_9": 0.6273041661859147,
+              "persistence_logistic": 0.6700675512917165
+            },
+            "days": 4,
+            "events": 4,
+            "paired": {
+              "climatology": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.06115799512942072,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1244077191,
+                  "upper": 0.3820511395266803
+                },
+                "mean": 0.2216045673280505
+              },
+              "persistence_logistic": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.05237927262080044,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 944708465,
+                  "upper": 0.1379060428324041
+                },
+                "mean": 0.04276338510580183
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.0732872403489837,
+                  "upper": 0.10031596934415533
+                },
+                "mean": -0.0005601456839550338
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 1; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.3162972828855619
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.040427034124134474,
+                  "upper": 0.184713332092006
+                },
+                "mean": 0.06281134002994833
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 11; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.2663517538802057
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.0768259776355098,
+                  "upper": -0.0006084693026416867
+                },
+                "mean": -0.038958866895180334
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.06123297400949116,
+                  "upper": 0.02513802683428375
+                },
+                "mean": -0.015077528248772442
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 2; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.09657115184757965
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.03603463603231324,
+                  "upper": 0.05041420211593025
+                },
+                "mean": 0.007252207770497978
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 83; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.04493503609372214
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.0439196323592906,
+                  "upper": 0.021749745185649427
+                },
+                "mean": -0.0115892063911141
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "not_met"
+      }
+    },
+    "pressure_5": {
+      "days": 15,
+      "dynamic_logit": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.34255371318964417,
+              "dynamic_logit": 0.14411432765434284,
+              "persistence_logistic": 0.25626582653593216
+            },
+            "days": 15,
+            "events": 8,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.04018994019001616,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1227693193,
+                  "upper": 0.3687029469481179
+                },
+                "mean": 0.19843938553530135
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.01593332236993757,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1320501471,
+                  "upper": 0.21514070726613987
+                },
+                "mean": 0.11215149888158929
+              }
+            }
+          },
+          "onset_days": {
+            "brier": {
+              "climatology": 0.6078163562571047,
+              "dynamic_logit": 0.8585819268408136,
+              "persistence_logistic": 0.6759697724885841
+            },
+            "days": 1,
+            "events": 1,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.25076557058370885,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2054087047,
+                  "upper": -0.25076557058370885
+                },
+                "mean": -0.25076557058370885
+              },
+              "persistence_logistic": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.18261215435222944,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1246327694,
+                  "upper": -0.18261215435222944
+                },
+                "mean": -0.18261215435222944
+              }
+            }
+          },
+          "onset_days_one_day": {
+            "brier": {
+              "climatology": 0.20835095679170523,
+              "dynamic_logit": 0.16487652045900508,
+              "persistence_logistic": 0.3016562069351227
+            },
+            "days": 7,
+            "events": 2,
+            "note": "descriptive only, decides nothing: #160's definition, every day whose previous panel day was at or below +5 bp",
+            "paired": {
+              "climatology": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.043740036459216675,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 757927369,
+                  "upper": 0.15401042173029625
+                },
+                "mean": 0.043474436332700185
+              },
+              "persistence_logistic": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.010585445378579512,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1930696196,
+                  "upper": 0.31167289650578955
+                },
+                "mean": 0.13677968647611766
+              }
+            }
+          },
+          "scheduled_pressure_days": {
+            "brier": {
+              "climatology": 0.5981895465694558,
+              "dynamic_logit": 0.032576671667963714,
+              "persistence_logistic": 0.2661600647025536
+            },
+            "days": 4,
+            "events": 4,
+            "paired": {
+              "climatology": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.5477194275309606,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2002758861,
+                  "upper": 0.5829874393041171
+                },
+                "mean": 0.565612874901492
+              },
+              "persistence_logistic": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.1505893179930819,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 539317773,
+                  "upper": 0.31657746807609777
+                },
+                "mean": 0.23358339303458986
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.03159314665827859,
+                  "upper": 0.25816847137144283
+                },
+                "mean": 0.10309380088525129
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 6; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.5798217241355015
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": 0.03942889134025955,
+                  "upper": 0.36893859497195736
+                },
+                "mean": 0.19843938553530135
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 15; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.5821246710911915
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.07163811278706318,
+                  "upper": 0.09568196712446696
+                },
+                "mean": 0.006596742757356278
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.01044248313819208,
+                  "upper": 0.21328621144516835
+                },
+                "mean": 0.08789735174586621
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 13; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.2091680874244816
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": 0.01898243547764631,
+                  "upper": 0.21865950627755326
+                },
+                "mean": 0.11215149888158929
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 13; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.1217847739628611
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.010613208536902551,
+                  "upper": 0.24345790206720208
+                },
+                "mean": 0.10733486134095338
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "met"
+      },
+      "events": 8,
+      "gbm_published_4": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.34255371318964417,
+              "gbm_published_4": 0.21544474441397365,
+              "persistence_logistic": 0.25626582653593216
+            },
+            "days": 15,
+            "events": 8,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.03786857739938402,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1613356333,
+                  "upper": 0.30448458525627026
+                },
+                "mean": 0.1271089687756705
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.038873167400243214,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 664231869,
+                  "upper": 0.13545456195781097
+                },
+                "mean": 0.04082108212195845
+              }
+            }
+          },
+          "onset_days": {
+            "brier": {
+              "climatology": 0.6078163562571047,
+              "gbm_published_4": 0.9025375419410712,
+              "persistence_logistic": 0.6759697724885841
+            },
+            "days": 1,
+            "events": 1,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.29472118568396644,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 5392993,
+                  "upper": -0.29472118568396644
+                },
+                "mean": -0.29472118568396644
+              },
+              "persistence_logistic": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.22656776945248702,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 466539457,
+                  "upper": -0.22656776945248702
+                },
+                "mean": -0.22656776945248702
+              }
+            }
+          },
+          "onset_days_one_day": {
+            "brier": {
+              "climatology": 0.20835095679170523,
+              "gbm_published_4": 0.2258703556728549,
+              "persistence_logistic": 0.3016562069351227
+            },
+            "days": 7,
+            "events": 2,
+            "note": "descriptive only, decides nothing: #160's definition, every day whose previous panel day was at or below +5 bp",
+            "paired": {
+              "climatology": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.08606553483317039,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1031353013,
+                  "upper": 0.049906478626995834
+                },
+                "mean": -0.017519398881149662
+              },
+              "persistence_logistic": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.05664265685616727,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1724370678,
+                  "upper": 0.22409461122984248
+                },
+                "mean": 0.07578585126226779
+              }
+            }
+          },
+          "scheduled_pressure_days": {
+            "brier": {
+              "climatology": 0.5981895465694558,
+              "gbm_published_4": 0.17335260482751533,
+              "persistence_logistic": 0.2661600647025536
+            },
+            "days": 4,
+            "events": 4,
+            "paired": {
+              "climatology": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.348655884885982,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 420083367,
+                  "upper": 0.5010179985978986
+                },
+                "mean": 0.42483694174194037
+              },
+              "persistence_logistic": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.054721121947589484,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2123295426,
+                  "upper": 0.13089379780248706
+                },
+                "mean": 0.09280745987503826
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.09969557204217316,
+                  "upper": 0.2203547832474522
+                },
+                "mean": 0.04136549903801271
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 38; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.4700828477263017
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.041926877724687735,
+                  "upper": 0.3037127292389817
+                },
+                "mean": 0.1271089687756705
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 122; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.5196062248220873
+              },
+              "2020": {
+                "count": 10,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 1045; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": -0.06913965924753794
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.0635663993208148,
+                  "upper": 0.14611952819818522
+                },
+                "mean": 0.0261690498986276
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 17; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.09942921101528185
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.04177501062241543,
+                  "upper": 0.13565688547909724
+                },
+                "mean": 0.04082108212195845
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 49; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.059266327693757004
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.07846676053642193,
+                  "upper": 0.1757426021769258
+                },
+                "mean": 0.03159845933605917
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "inconclusive"
+      },
+      "gbm_published_9": {
+        "groups": {
+          "all_days": {
+            "brier": {
+              "climatology": 0.34255371318964417,
+              "gbm_published_9": 0.21004459568067224,
+              "persistence_logistic": 0.25626582653593216
+            },
+            "days": 15,
+            "events": 8,
+            "paired": {
+              "climatology": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.03718056068308155,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1127156438,
+                  "upper": 0.30331342953309387
+                },
+                "mean": 0.13250911750897193
+              },
+              "persistence_logistic": {
+                "days": 15,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.0253207915374054,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1672196973,
+                  "upper": 0.12444312652423195
+                },
+                "mean": 0.046221230855259865
+              }
+            }
+          },
+          "onset_days": {
+            "brier": {
+              "climatology": 0.6078163562571047,
+              "gbm_published_9": 0.9027844744828092,
+              "persistence_logistic": 0.6759697724885841
+            },
+            "days": 1,
+            "events": 1,
+            "note": "descriptive, not a test: every day after a calm stretch, whatever its outcome, with the onsets as its events (counted in 'events', the days in 'days'); the group is mostly calm days, so its score mostly measures false alarms",
+            "paired": {
+              "climatology": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.29496811822570446,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 733603728,
+                  "upper": -0.29496811822570446
+                },
+                "mean": -0.29496811822570446
+              },
+              "persistence_logistic": {
+                "days": 1,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.22681470199422504,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 90351007,
+                  "upper": -0.22681470199422504
+                },
+                "mean": -0.22681470199422504
+              }
+            }
+          },
+          "onset_days_one_day": {
+            "brier": {
+              "climatology": 0.20835095679170523,
+              "gbm_published_9": 0.22322952408715085,
+              "persistence_logistic": 0.3016562069351227
+            },
+            "days": 7,
+            "events": 2,
+            "note": "descriptive only, decides nothing: #160's definition, every day whose previous panel day was at or below +5 bp",
+            "paired": {
+              "climatology": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.09585416317877492,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1206318419,
+                  "upper": 0.06187595846027132
+                },
+                "mean": -0.014878567295445589
+              },
+              "persistence_logistic": {
+                "days": 7,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": -0.04288956787752908,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 2023004651,
+                  "upper": 0.20142464056093562
+                },
+                "mean": 0.07842668284797187
+              }
+            }
+          },
+          "scheduled_pressure_days": {
+            "brier": {
+              "climatology": 0.5981895465694558,
+              "gbm_published_9": 0.17269441202647584,
+              "persistence_logistic": 0.2661600647025536
+            },
+            "days": 4,
+            "events": 4,
+            "paired": {
+              "climatology": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.34654732894811,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 1415648602,
+                  "upper": 0.5044429401378498
+                },
+                "mean": 0.42549513454297994
+              },
+              "persistence_logistic": {
+                "days": 4,
+                "interval": {
+                  "block_length": 2,
+                  "level": 0.9,
+                  "lower": 0.03278410394829699,
+                  "method": "stationary_bootstrap",
+                  "replications": 2000,
+                  "seed": 35813065,
+                  "upper": 0.15414720140385854
+                },
+                "mean": 0.09346565267607777
+              }
+            }
+          }
+        },
+        "splits": {
+          "climatology": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.09822014011904727,
+                  "upper": 0.229682039309543
+                },
+                "mean": 0.04645673967096103
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 5; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.47671862886101546
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.031791283805348305,
+                  "upper": 0.31248309845225886
+                },
+                "mean": 0.13250911750897193
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 19; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.5221402124896518
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.1557068318658032,
+                  "upper": 0.029658866429130425
+                },
+                "mean": -0.06230642998136804
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          },
+          "persistence_logistic": {
+            "by_day_type": {
+              "month_end": {
+                "count": 0
+              },
+              "ordinary": {
+                "count": 12,
+                "interval": {
+                  "lower": -0.042390732795958175,
+                  "upper": 0.1269955964276256
+                },
+                "mean": 0.031260290531575946
+              },
+              "quarter_end": {
+                "count": 0
+              },
+              "tax_date": {
+                "count": 3,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 11; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.10606499214999558
+              }
+            },
+            "by_quarter_end_window": {
+              "outside_quarter_end_window": {
+                "count": 15,
+                "interval": {
+                  "lower": -0.021604525219845412,
+                  "upper": 0.1288608793294245
+                },
+                "mean": 0.046221230855259865
+              },
+              "quarter_end_window": {
+                "count": 0
+              }
+            },
+            "by_regime": {
+              "2018-19": {
+                "count": 5,
+                "interval_unavailable": "statistic returned nan on bootstrap replication 54; discarding such replicates would narrow the interval, so this raises instead",
+                "mean": 0.06180031536132145
+              },
+              "2020": {
+                "count": 10,
+                "interval": {
+                  "lower": -0.0505737308725947,
+                  "upper": 0.15941776168127403
+                },
+                "mean": 0.03843168860222908
+              },
+              "2021-23": {
+                "count": 0
+              },
+              "2024": {
+                "count": 0
+              },
+              "2025-26": {
+                "count": 0
+              },
+              "2027": {
+                "count": 0
+              }
+            }
+          }
+        },
+        "verdict": "inconclusive"
+      }
+    }
+  },
+  "sign": "benchmark Brier minus predictor Brier; positive favours the predictor",
+  "windows": [
+    {
+      "end": "2019-09-20",
+      "last_train_date": "2019-09-12",
+      "name": "sep-2019",
+      "start": "2019-09-16"
+    },
+    {
+      "end": "2020-03-20",
+      "last_train_date": "2020-03-05",
+      "name": "mar-2020",
+      "start": "2020-03-09"
+    }
+  ]
+}
