@@ -60,7 +60,7 @@ Full output of the judge follows (the declaration digest it names is the one in 
 
 ## Judge output
 
-Mode: development. Declaration `metadata/pressure_judge.json` sha256 `e5053b86f250…`. Scored days 2018-06-29 to 2025-12-31. Pass rule: tier 1 (onset warning) at lead >= 1, tier 3 (no crying wolf) at every lead, and tier 5 (week-ahead window), at +5 bp; 90% stationary bootstrap intervals.
+Mode: development. Declaration `metadata/pressure_judge.json` sha256 `fefd24397108…`. Scored days 2018-06-29 to 2025-12-31. Pass rule: tier 1 (onset warning) at lead >= 1, tier 3 (no crying wolf) at every lead, and tier 5 (week-ahead window), at +5 bp; 90% stationary bootstrap intervals.
 
 ### calendar_climatology (benchmark): FAIL at +5 bp
 
