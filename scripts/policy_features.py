@@ -222,6 +222,65 @@ def run_command(args) -> int:
     return 0
 
 
+def pair_command(args) -> int:
+    """The register's paired effect: each control's Brier minus its policy twin's, per horizon, with the judge's bootstrap.
+
+    Positive: the classifier with the register is better. Same days, same resamples (`pressure_judge._bootstrap`),
+    +5 bp primary threshold and the others the judge declares; the judge's own tables remain the report.
+    """
+
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("pressure_judge_script", REPO / "scripts" / "pressure_judge.py")
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+    from repo_model import pressure_judge as pj
+
+    declared = committed_declaration(DECLARATION)
+    declaration = pj.load_declaration()
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(SPLITS)
+    digest = panel_sha256(args.panel)
+    forecasts = []
+    for path in args.inputs:
+        document = json.loads(Path(path).read_text())
+        if document["panel_sha256"] != digest:
+            raise SystemExit(f"{path} was scored on another panel ({document['panel_sha256'][:8]})")
+        forecasts.extend(pj.forecasts_from_horizon_document(document))
+    form = declared["judged_form"]
+    out = {}
+    for name, spec in declared["candidates"].items():
+        if not spec["policy"]:
+            continue
+        control = name[: -len("_policy")]
+        for h in declaration.horizons:
+            by_name = {f.name: f for f in forecasts if f.horizon == h}
+            reference = by_name[declaration.climatology]
+            states = script._scarcity_states(h, declaration.last_day)
+            grid = pj.build_grid(declaration, h, rows, reference.dates, splits, scarcity_state=states)
+            tau = declaration.primary
+            outcomes = grid.outcomes[tau]
+            base, plus = by_name[control + form].probabilities[tau], by_name[name + form].probabilities[tau]
+            gain = [(b - y) ** 2 - (q - y) ** 2 for b, q, y in zip(base, plus, outcomes)]
+            cells = {"all": [[1.0] * len(outcomes), gain]}
+            result = pj._bootstrap(
+                declaration, cells, {"brier_difference": pj._ratio(1, 0)}, len(outcomes), seed=pj._seed(declaration.seed, "policy", name, h)
+            )["all"]["brier_difference"]
+            out.setdefault(name, {})[str(h)] = {"days": len(outcomes), **result}
+    args.output.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print("| classifier | " + " | ".join(f"h={h}" for h in declaration.horizons) + " |")
+    print("|---|" + "---|" * len(declaration.horizons))
+    for name in sorted(out):
+        cells = []
+        for h in declaration.horizons:
+            cell = out[name][str(h)]
+            interval = cell.get("interval")
+            cells.append(f"{cell['mean']:+.4f} [{interval['lower']:+.4f}, {interval['upper']:+.4f}]")
+        print(f"| {name} vs {name[: -len('_policy')]} | " + " | ".join(cells) + " |")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -236,6 +295,11 @@ def main(argv=None) -> int:
     run.add_argument("--candidate")
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(handler=run_command)
+    pair = commands.add_parser("pair", help="each control's Brier minus its register twin's, with the judge's bootstrap")
+    pair.add_argument("--panel", type=Path, required=True)
+    pair.add_argument("--output", type=Path, required=True)
+    pair.add_argument("inputs", nargs="+", type=Path)
+    pair.set_defaults(handler=pair_command)
     args = parser.parse_args(argv)
     return args.handler(args)
 
