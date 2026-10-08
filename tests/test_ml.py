@@ -11636,5 +11636,131 @@ class RareEventTrainingTests(unittest.TestCase):
         self.assertTrue(numpy.isfinite(curves.curves[0][0]))
 
 
+def _recency_factory(mode, parameter):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_rare_event_exceedance(
+            "logistic", "class_weight", features, declaration, minimum_history, recency=(mode, parameter)
+        )
+
+    factory.__name__ = f"pressure_logistic_{mode}_{parameter}"
+    return factory
+
+
+class PressureLogisticDecayConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the decay-weighted class-weighted logistic (#411)."""
+
+    FACTORY = staticmethod(_recency_factory("decay", 30))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureLogisticWindowConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the windowed class-weighted logistic (#411)."""
+
+    FACTORY = staticmethod(_recency_factory("window", 40))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class RecencyTrainingTests(unittest.TestCase):
+    """Recency-weighted and windowed fits (#411): recent pairs count more, only the fit's own pairs are read.
+
+    Recorded mutation (the window keeps only the pairs younger than it):
+    in `_fit_recency_logistic`, `keep = ages < parameter` replaced by
+    `keep = ages >= 0` (every pair kept): `test_a_window_fit_is_the_class_weighted_fit_of_its_pairs`
+    fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def drifting(self, n=1200, seed=3):
+        """Old pairs: the event follows x0. The last 300: it follows -x0. Age 0 is the newest."""
+
+        import numpy
+
+        rng = numpy.random.default_rng(seed)
+        x = rng.normal(size=(n, 2))
+        sign = numpy.where(numpy.arange(n) < n - 300, 1.0, -1.0)
+        y = (rng.uniform(size=n) < 1.0 / (1.0 + numpy.exp(-(-2.5 + 2.5 * sign * x[:, 0])))).astype(int)
+        ages = numpy.arange(n)[::-1].astype(float)
+        return x, y, ages
+
+    def test_a_very_long_half_life_is_the_class_weighted_fit(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        got = ml._fit_recency_logistic(x, y, x[:10], ages, "decay", 1e12)
+        want = ml._fit_rare_event("logistic", "class_weight", x, y, x[:10])
+        self.assertTrue(numpy.allclose(got, want, atol=1e-6))
+
+    def test_a_short_half_life_follows_the_recent_relation(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        probe = numpy.array([[2.0, 0.0], [-2.0, 0.0]])
+        flat = ml._fit_recency_logistic(x, y, probe, ages, "decay", 1e12)
+        recent = ml._fit_recency_logistic(x, y, probe, ages, "decay", 60)
+        self.assertGreater(flat[0], flat[1])  # the old relation dominates
+        self.assertLess(recent[0], recent[1])  # the last 300 days' relation
+
+    def test_decay_balances_the_classes_on_the_weighted_totals(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        p = numpy.array(ml._fit_recency_logistic(x, y, x, ages, "decay", 90))
+        plain = numpy.array(ml._fit_classifier("logistic", x, y, x))
+        self.assertGreater(p.mean(), 1.5 * plain.mean())
+
+    def test_a_window_fit_is_the_class_weighted_fit_of_its_pairs(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        got = ml._fit_recency_logistic(x, y, x[:10], ages, "window", 300)
+        keep = ages < 300
+        want = ml._fit_rare_event("logistic", "class_weight", x[keep], y[keep], x[:10])
+        # Same pairs; the standardizer and the weights are the window's own.
+        self.assertTrue(numpy.allclose(got, want, atol=1e-9))
+        whole = ml._fit_rare_event("logistic", "class_weight", x, y, x[:10])
+        self.assertFalse(numpy.allclose(got, whole, atol=1e-3))
+
+    def test_a_window_with_too_few_events_falls_back_to_the_whole_history(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        y = y.copy()
+        y[ages < 100] = 0
+        got = ml._fit_recency_logistic(x, y, x[:10], ages, "window", 100)
+        want = ml._fit_rare_event("logistic", "class_weight", x, y, x[:10])
+        self.assertTrue(numpy.allclose(got, want, atol=1e-9))
+
+    def test_unsupported_recency_is_refused_at_construction(self):
+        splits = _pressure_splits()
+        for kind, treatment, recency in (
+            ("gbm_classifier", "class_weight", ("decay", 60)),
+            ("logistic", "balanced_bootstrap", ("decay", 60)),
+            ("logistic", "class_weight", ("ewma", 60)),
+            ("logistic", "class_weight", ("window", 0)),
+        ):
+            with self.subTest(kind=kind, treatment=treatment, recency=recency), self.assertRaises(ValueError):
+                ml.pressure_rare_event_exceedance(
+                    kind, treatment, _PRESSURE_CALENDAR, splits, recency=recency
+                )
+
+    def test_the_declaration_names_the_recency(self):
+        predictor = ml.pressure_rare_event_exceedance(
+            "logistic", "class_weight", _PRESSURE_CALENDAR, _pressure_splits(), recency=("decay", 126)
+        )
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        from test_baseline import regressor_frame
+
+        rows = _with_calendar(regressor_frame())
+        info = rule.information_set([r.date for r in rows], len(rows) - 1)
+        curves = predictor(rows[:-1], (rule.observation(rows, info),), (5.0,), information=rule)
+        self.assertEqual(curves.model_settings["recency"]["mode"], "decay")
+        self.assertEqual(curves.model_settings["recency"]["parameter"], 126)
+        import json
+
+        json.dumps(dict(curves.model_settings))
+
+
 if __name__ == "__main__":
     unittest.main()
