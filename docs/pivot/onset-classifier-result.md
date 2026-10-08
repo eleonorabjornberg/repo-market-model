@@ -54,7 +54,7 @@ The pass rule is tier 1 (onset warning at lead of at least 1), tier 3 (no crying
 fail tier 1 and tier 3, within the scarce regime alone as well. Training on the onset label does not give a classifier that flags
 half the onsets inside the false-alarm limit: the class-weighted logistics keep the false alarms down (under one per onset) by
 flagging few onsets, and the other four flag more onsets with more false alarms than the limit allows. Five of the six pass
-tier 5, the week-ahead window (calibrated and better than climatology on Brier), which the published model also passes.
+tier 5, the week-ahead window (calibrated and better than climatology on Brier); the published model does not.
 
 Table 1. Tiers at +5 bp, h = 1 to 5; 90% stationary-bootstrap intervals, as the judge reports them.
 
@@ -121,7 +121,7 @@ alarms. Descriptive: a window holds too few days for an interval.
   climatology's, see Table 3) but its recalibrated probabilities seldom reach a cut-off that the false-alarm limit allows, so it
   flags few onsets. The ranking is not turned into flags by the judge's cut-off rule on these probabilities.
 * The classifiers do not beat the persistence-logistic benchmark or the published model on Brier or AUROC at h = 1 (Table 3);
-  the published model's advantage is the latest spread. The onset label alone does not add what persistence already carries.
+  the onset label alone does not add what the latest spread already carries.
 * The tri-party and GCF rates add nothing visible (the two `_funding` rows are within noise of their parents), consistent with
   the gaps in those series.
 * Not checked: the +10 bp threshold is scored by the judge (see `judge.md`) but is not the pass condition; the unrecalibrated
