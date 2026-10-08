@@ -598,6 +598,7 @@ GitHub herself (`docs/decisions/drafts/owner-attestation.md`).
 | `docs/decisions/iorb-availability.md` | Decision: IORB and IOER for a date are public before that date | Status: decided and declared. |
 | `docs/decisions/live-pin.md` | The live record's code pin | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/materiality.md` | Decision: a bounded, listed defect is handled, not a reason to refuse a series | Status: decided by Eleonora, 30 September 2026. |
+| `docs/decisions/policy-point-in-time.md` | Decision: policy and legislation are read from their announcement | Status: drafted for Eleonora's review (#376, track P of #374). |
 | `docs/decisions/quarter-end-window.md` | Decision: a quarter-end window and per-quarter peak pressure | Status: decided by Eleonora, 2 October 2026 (#140; ruling on PR #186). |
 | `docs/decisions/tail-refusal.md` | Decision: refusing a tail fit clamped at the lower shape bound | Status: decided, merged in PR #66, 1 October 2026, and superseded (above). |
 | `docs/decisions/tail-shape-floor.md` | Decision: the fitted tail shape is never negative | Status: decided by Eleonora, 1 October 2026, in her ruling on [#63](https://github.com/eleonorabjornberg/repo-market-model/issues/63). |
