@@ -1,0 +1,154 @@
+{
+  "title": "A conditional pressure-probability predictor against climatology on the knowledge holdouts (#372)",
+  "declared_before_scoring": true,
+  "status": "A declaration for a reported-only study. It decides nothing and moves no published figure.",
+  "holdout_windows": {
+    "file": "metadata/events.json",
+    "names": [
+      "sep-2019",
+      "mar-2020"
+    ],
+    "note": "Boundaries and checksums are the file's. The script refuses a window whose checksum is not the file's."
+  },
+  "panel": {
+    "sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+    "decision_time": "16:00",
+    "horizon_business_days": 1,
+    "minimum_history": 61
+  },
+  "predictors": {
+    "gbm_published_4": {
+      "kind": "uncalibrated gbm on the four features of exceedance_gbm.json",
+      "features": [
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps"
+      ]
+    },
+    "gbm_published_9": {
+      "kind": "uncalibrated gbm on the nine features of the funding declaration the published calibrated model reads",
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ]
+    },
+    "dynamic_logit": {
+      "kind": "the frozen dynamic logit of #137 (ml.DYNAMIC_LOGIT_SETTINGS), no recalibration",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ]
+    },
+    "probit_literature": {
+      "kind": "ridge probit of the label at each threshold (ml.pressure_probit_exceedance, ml.PRESSURE_PROBIT_SETTINGS), uncalibrated",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "source": "docs/pivot/literature.md: Copeland, Duffie & Yang (SR 974) and Ferris, Rose & Tase, a probit on settlement timing and reserve-demand state",
+      "fit": "the six features of the dynamic logit: spread, month-end, quarter-end, tax-date and coupon-settlement timing, and reserve balances"
+    },
+    "quantile_literature": {
+      "kind": "linear quantile regressions of the spread read as an exceedance curve (ml.pressure_quantile_exceedance, ml.PRESSURE_QUANTILE_SETTINGS), uncalibrated",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "source": "docs/pivot/literature.md: Copeland, Duffie & Yang (SR 974); Adrian, Boyarchenko & Giannone (quantile grid smoothed to P(>= x))",
+      "fit": "the same six features; the curve at tau is 1 - F(floor(tau) + 0.5), F linear between the grid's quantiles"
+    },
+    "fit_failure_rule": "A declared predictor whose fit cannot be made on a window (a ValueError from its fit) is reported in the result with the reason and scored on no day; it is never dropped silently.",
+    "note": "No published (calibrated) model is held out from these windows: the published records train on every crisis day once it is past. Every figure is labelled uncalibrated."
+  },
+  "benchmarks": [
+    "climatology",
+    "persistence_logistic"
+  ],
+  "reported_only_benchmarks": [
+    "calendar_climatology"
+  ],
+  "thresholds": {
+    "pressure_bp": [
+      5,
+      10
+    ],
+    "pressure_rule": "whole basis points, strictly greater than (docs/decisions/pressure-probability.md)",
+    "plain_leap": {
+      "jump_bp_h1": 3.0,
+      "source": "onset.LEAP_JUMP_BP[1]",
+      "rule": "round(s_t) - round(s_anchor) strictly greater than the jump, anchor as-of (onset.LeapTargets)",
+      "leap_benchmarks": {
+        "climatology": "the pooled leap frequency among the training days (every day before the window with an admissible as-of anchor)",
+        "persistence_logistic": "onset.leap_persistence_logistic: a logistic of the leap on the latest as-of jump and spread, fitted on the same training days",
+        "note": "A spread-level climatology curve is not a leap climatology, so the leap is benchmarked by these two, not by the pressure benchmarks' curves."
+      },
+      "predictor_reading": "A predictor's curve is read, for each day, at that day's leap level: floor(round(s_anchor) + jump) + 0.5 bp (onset.LeapTargets.event_threshold). The curve is requested at those levels together with +5 and +10 bp."
+    }
+  },
+  "score": "Brier, per day; paired difference = benchmark Brier minus predictor Brier, positive favours the predictor",
+  "interval": {
+    "method": "stationary bootstrap",
+    "level": 0.9,
+    "mean_block_length": 2,
+    "replications": 2000
+  },
+  "splits": [
+    "all scored days",
+    "by regime (metadata/evaluation_splits.json)",
+    "by pressure-day type (metadata/evaluation_splits.json)",
+    "onset at-risk days (onset.at_risk_flags)",
+    "leap at-risk days and leap-onset events (onset.LeapTargets)"
+  ],
+  "pass_rule": {
+    "cell": "one predictor at one threshold against one benchmark",
+    "met_when": [
+      "the pooled paired Brier difference has its 90% interval above zero against climatology AND against persistence_logistic",
+      "no regime cell and no pressure-day-type cell has its 90% interval wholly below zero against either benchmark; a cell whose interval cannot be bootstrapped is reported and does not count"
+    ],
+    "not_met": "reported as not met; a point estimate favouring the predictor with an interval including zero is inconclusive",
+    "if_met": "nothing is published here. A publish follows docs/decisions/publish-rule.md: paired against the current published declaration on days before 2026-01-01, interval above zero, no regime or day-type cell worse beyond its interval. The live record is not changed."
+  },
+  "lockbox": "Every scored day is in a window before 2026-01-01. lockbox.require_unlocked checks it before any read or fit.",
+  "final_test_groups": "The final test's leap-onset and at-risk groups (docs/runs/final_test_near_blind.json) are reported as definitions applied to the holdout days, with day and event counts. That record is read for its group definitions, never rescored.",
+  "outputs": {
+    "result": "docs/pivot/studies/conditional_vs_climatology_holdout.json",
+    "page": "docs/pivot/conditional-vs-climatology-holdout.md"
+  },
+  "metrics_beside_brier": {
+    "source": "docs/pivot/literature.md: Alessi & Detken (2011), Sarlin (2013), Drehmann & Juselius (2014), early-warning evaluation",
+    "scope": "Every predictor, each target, pooled over the scored days, beside the Brier. Descriptive: they carry no interval and enter no pass rule.",
+    "auroc": "Mann-Whitney area under the ROC of the forecast against the outcome, ties counting one half; null when a class is empty.",
+    "usefulness": {
+      "rule": "Sarlin (2013): loss(theta) = mu * missed-event rate + (1 - mu) * false-alarm rate for the alarm 'forecast >= theta'; absolute usefulness = min(mu, 1 - mu) - min over theta of loss; relative usefulness = absolute / min(mu, 1 - mu).",
+      "mu": 0.5,
+      "theta": "every forecast value of the predictor on the scored days. The minimum is in-sample on these days, so it is optimistic and is reported as such.",
+      "null_when": "a class is empty"
+    },
+    "lead_time": {
+      "rule": "pressure.lead_times at the single horizon of this study (h = 1): the lead of an onset is 1 business day when the forecast of it reached the alarm level, else 0; onsets are pressure.onsets at the target's level (pressure targets) and the leap-onset events (the leap).",
+      "alarm_level": 0.5,
+      "limit": "Longer leads need forecasts at longer horizons, which this study does not make; the figure is the share of onsets flagged one business day ahead, and is empty where a target has no onset on the scored days."
+    }
+  },
+  "scope_ruling": "Eleonora, 7 October 2026 (comment on #372): include the literature-scan methods among the predictors where they fit, and report AUROC, usefulness and lead time beside Brier."
+}

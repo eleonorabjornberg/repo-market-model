@@ -625,6 +625,8 @@ __all__ = [
     "SCARCITY_STATE",
     "TGA_CHANGE_ROWS",
     "pressure_classifier_exceedance",
+    "pressure_probit_exceedance",
+    "pressure_quantile_exceedance",
     "pressure_logistic_exceedance",
 ]
 
@@ -3968,6 +3970,23 @@ def gbm_exceedance(
 PRESSURE_LOGISTIC_SETTINGS = MappingProxyType(
     {"C": 1.0, "penalty": "l2", "standardized": True, "max_iter": 5000}
 )
+#: The literature-scan predictors (#372; `docs/pivot/literature.md`, Copeland-Duffie-Yang
+#: SR 974): a ridge probit of the label, and a linear quantile regression of the spread read
+#: as a conditional law. Chosen before scoring, not tuned.
+PRESSURE_PROBIT_SETTINGS = MappingProxyType(
+    {"link": "probit", "ridge": 1.0, "standardized": True, "iterations": 50}
+)
+PRESSURE_QUANTILE_SETTINGS = MappingProxyType(
+    {
+        "estimator": "QuantileRegressor",
+        "solver": "highs",
+        "alpha": 0.0,
+        "standardized": True,
+        "quantile_grid": (0.01, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99),
+        "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5), F linear between the grid's quantiles "
+        "and continued at the outer segments' slopes to 0 and 1",
+    }
+)
 PRESSURE_CLASSIFIER_SETTINGS = MappingProxyType(
     {
         "estimator": "HistGradientBoostingClassifier",
@@ -4331,7 +4350,10 @@ def _direct_pressure_predictor(
         # Two thresholds with no training spread between them have one label
         # vector, so one fit: the estimator is deterministic in its labels.
         fitted: dict = {}
-        for tau in taus:
+        if kind == "quantile":
+            law = _quantile_exceedance(xs, spreads, served, [float(tau) for tau in taus])
+            columns = [[curve[k] for curve in law] for k in range(len(taus))]
+        for tau in taus if kind != "quantile" else ():
             labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
@@ -4348,7 +4370,11 @@ def _direct_pressure_predictor(
                 curve.append(value if not curve else min(curve[-1], value))
             curves.append(tuple(curve))
         settings = dict(
-            PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS
+            {
+                "logistic": PRESSURE_LOGISTIC_SETTINGS,
+                "probit": PRESSURE_PROBIT_SETTINGS,
+                "quantile": PRESSURE_QUANTILE_SETTINGS,
+            }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
         )
         settings["design"] = list(design.names)
         if history is not None:
@@ -4419,6 +4445,8 @@ def _fit_classifier(
         )
         model.fit((x - centre) / scale, y)
         return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
+    if kind == "probit":
+        return _fit_probit(x, y, z)
     from sklearn.ensemble import HistGradientBoostingClassifier
 
     settings = PRESSURE_CLASSIFIER_SETTINGS
@@ -4441,6 +4469,108 @@ def _fit_classifier(
     )
     model.fit(x, y)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def _fit_probit(x: Any, y: Any, z: Any) -> List[float]:
+    """A ridge probit by Fisher scoring, numpy and scipy only; P(y = 1) at `z`.
+
+    Columns standardized on `x`; the intercept is unpenalized, the other
+    coefficients carry `ridge` (`PRESSURE_PROBIT_SETTINGS`). Deterministic.
+    """
+
+    import numpy
+    from scipy.stats import norm
+
+    centre, scale = _standardizer(x)
+    design = numpy.hstack([numpy.ones((len(x), 1)), (x - centre) / scale])
+    ridge = numpy.full(design.shape[1], PRESSURE_PROBIT_SETTINGS["ridge"])
+    ridge[0] = 0.0
+    rate = min(max(float(y.mean()), 1e-6), 1 - 1e-6)
+    w = numpy.zeros(design.shape[1])
+    w[0] = norm.ppf(rate)
+
+    def objective(weights: Any) -> float:
+        eta = design @ weights
+        p = numpy.clip(norm.cdf(eta), 1e-12, 1 - 1e-12)
+        return float(-numpy.sum(y * numpy.log(p) + (1 - y) * numpy.log1p(-p)) + 0.5 * numpy.sum(ridge * weights**2))
+
+    current = objective(w)
+    for _ in range(PRESSURE_PROBIT_SETTINGS["iterations"]):
+        eta = design @ w
+        p = numpy.clip(norm.cdf(eta), 1e-12, 1 - 1e-12)
+        density = norm.pdf(eta)
+        gradient = design.T @ (density * (p - y) / (p * (1 - p))) + ridge * w
+        weight = density**2 / (p * (1 - p))
+        fisher = (design * weight[:, None]).T @ design + numpy.diag(ridge) + 1e-10 * numpy.eye(len(w))
+        step = numpy.linalg.solve(fisher, gradient)
+        size = 1.0
+        while True:
+            trial = w - size * step
+            value = objective(trial)
+            if value <= current + 1e-12 or size < 1e-8:
+                break
+            size /= 2.0
+        converged = abs(current - value) < 1e-10
+        w, current = trial, value
+        if converged:
+            break
+    return [float(p) for p in norm.cdf(w[0] + ((z - centre) / scale) @ w[1:])]
+
+
+def _quantile_exceedance(
+    xs: Sequence[Sequence[float]],
+    spreads: Sequence[float],
+    served: Sequence[Sequence[float]],
+    taus: Sequence[float],
+) -> List[Tuple[float, ...]]:
+    """Linear quantile regressions of the spread, read as P(spread > tau) per day.
+
+    One `QuantileRegressor` per grid quantile (`PRESSURE_QUANTILE_SETTINGS`), on
+    columns standardized on `xs`. A day's predicted quantiles are sorted (the
+    crossing fix), the law is linear between them, and the curve at `tau` is
+    `1 - F(floor(tau) + 0.5)`: the whole-basis-point event of
+    `data.exceeds_bp`. Non-increasing in `tau` by construction.
+    """
+
+    _estimator_class()
+    import numpy
+    from sklearn.linear_model import QuantileRegressor
+
+    x = numpy.asarray(xs, dtype=float)
+    y = numpy.asarray(spreads, dtype=float)
+    centre, scale = _standardizer(x)
+    train = (x - centre) / scale
+    given = (numpy.asarray(served, dtype=float) - centre) / scale
+    grid = PRESSURE_QUANTILE_SETTINGS["quantile_grid"]
+    predicted = numpy.column_stack(
+        [
+            QuantileRegressor(
+                quantile=q, alpha=PRESSURE_QUANTILE_SETTINGS["alpha"], solver="highs"
+            ).fit(train, y).predict(given)
+            for q in grid
+        ]
+    )
+    predicted.sort(axis=1)
+    probabilities = numpy.asarray(grid, dtype=float)
+    curves = []
+    for row in predicted:
+        # Beyond the outer quantiles the law runs on at the outer segment's slope
+        # to probability 0 / 1, so the curve reaches 0 and 1 (np.interp needs
+        # increasing knots: ties are nudged by one part in a million of a bp).
+        knots = row + 1e-6 * numpy.arange(len(row))
+        low = (knots[1] - knots[0]) / (probabilities[1] - probabilities[0])
+        high = (knots[-1] - knots[-2]) / (probabilities[-1] - probabilities[-2])
+        edges = numpy.concatenate(
+            [[knots[0] - probabilities[0] * low], knots, [knots[-1] + (1.0 - probabilities[-1]) * high]]
+        )
+        levels = numpy.concatenate([[0.0], probabilities, [1.0]])
+        curve = []
+        for tau in taus:
+            cut = math.floor(float(tau)) + 0.5
+            below = float(numpy.interp(cut, edges, levels))
+            curve.append(float(min(1.0, max(0.0, 1.0 - below))))
+        curves.append(tuple(curve))
+    return curves
 
 
 def pressure_logistic_exceedance(
@@ -4490,6 +4620,32 @@ def pressure_classifier_exceedance(
     """
 
     return _direct_pressure_predictor("gbm_classifier", features, declaration, minimum_history)
+
+
+def pressure_probit_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A ridge probit of the pressure label (#372; Copeland-Duffie-Yang, SR 974).
+
+    `pressure_logistic_exceedance` with a probit link, fitted with
+    `PRESSURE_PROBIT_SETTINGS`, on the same design and the same direct pairs.
+    """
+
+    return _direct_pressure_predictor("probit", features, declaration, minimum_history)
+
+
+def pressure_quantile_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """Quantile regressions of the spread, read as an exceedance curve (#372).
+
+    A linear quantile regression of the spread (not of a label) at each grid
+    quantile of `PRESSURE_QUANTILE_SETTINGS`, on the same design and the same
+    direct pairs, smoothed to a distribution by linear interpolation
+    (`_quantile_exceedance`; Adrian-Boyarchenko-Giannone, Copeland-Duffie-Yang).
+    """
+
+    return _direct_pressure_predictor("quantile", features, declaration, minimum_history)
 
 
 # --------------------------------------------------------------------------
