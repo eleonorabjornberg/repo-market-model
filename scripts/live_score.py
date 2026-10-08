@@ -938,6 +938,133 @@ def score_gap(records, first_live, rows, splits, day: date, *, override_clock: b
     }
 
 
+# -- pressure model v2, logged alongside v1 (#245) -------------------------------
+
+#: v2's own block: separate from v1's cells, and it never enters v1's verdict.
+V2_LABEL = ("pressure model v2 (#244), logged alongside the unchanged v1 from its first logged day: its "
+            "own blind record. v2 was chosen on 2018-2025, after #243, so only these logged days are "
+            "evidence for it. This block never enters v1's verdict.")
+V2_CRPS_SIGN = ("paired = CRPS(persistence) - CRPS(v2) per day; a positive mean favours v2")
+V2_VS_V1_SIGN = ("paired = CRPS(v1 published) - CRPS(v2) per day, on the days both are logged; a positive "
+                 "mean favours v2; reported only")
+V2_SIDE = "published_v2"
+V2_HORIZON = 1
+V2_HORIZON_KEY = str(V2_HORIZON)
+
+
+def v2_logged(record) -> bool:
+    """Whether `record` carries v2's distribution at h = 1."""
+
+    try:
+        return V2_HORIZON_KEY in record["distributions"][V2_SIDE]["quantiles_bps"]
+    except (KeyError, TypeError):
+        return False
+
+
+
+def v2_crps(record, outcome: float) -> float:
+    """One day's CRPS for v2 at h = 1, from the day's file alone.
+
+    Raises:
+        ValueError: if the day was not logged with v2: v2 is never scored on a day it was not logged.
+    """
+
+    if not v2_logged(record):
+        raise ValueError(
+            f"{record.get('decision_day')} was not logged with pressure model v2: v2 is scored only on "
+            f"the days it was logged (#245)"
+        )
+    return crps_from_record(record, V2_SIDE, V2_HORIZON, outcome)
+
+
+def _paired_crps_cell(days, benchmark, model, regimes, types, day, *, seed_parts, sign, role, verdict: bool):
+    """A CRPS cell paired `benchmark - model` per day, with `score_crps`'s interval, splits and rule."""
+
+    h = V2_HORIZON
+    cell = {"days": len(days), "role": role, "first": days[0].isoformat() if days else None,
+            "last": days[-1].isoformat() if days else None, "sign_convention": sign}
+    if not days:
+        cell["result" if verdict else "note"] = "inconclusive" if verdict else "no scored day"
+        return cell
+    differences = [a - b for a, b in zip(benchmark, model)]
+    seed = _seed_from((str(day), *seed_parts))
+    block = final_test.CRPS_BLOCK_LENGTH + (h - 1)
+
+    def mean_of(indices):
+        return sum(differences[i] for i in indices) / len(indices)
+
+    def interval(block_length):
+        lower, upper = stationary_bootstrap_interval(
+            mean_of, len(differences), block_length=block_length, seed=seed,
+            replications=onset.REPLICATIONS, level=onset.LEVEL,
+        )
+        return {"lower": lower, "upper": upper, "level": onset.LEVEL,
+                "method": "stationary_bootstrap", "block_length": block_length,
+                "replications": onset.REPLICATIONS, "seed": seed}
+
+    cell.update({
+        "crps_benchmark_bps": sum(benchmark) / len(days),
+        "crps_model_bps": sum(model) / len(days),
+        "mean_difference_bps": mean_of(range(len(days))),
+        "interval": interval(block),
+        "sensitivity_interval": interval(final_test.CRPS_SENSITIVITY_BLOCK_LENGTH),
+    })
+    every = list(range(len(days)))
+    for label, keys in (("by_regime", regimes), ("by_day_type", types)):
+        cell[label] = {}
+        for key in sorted(set(keys)):
+            positions = [k for k in every if keys[k] == key]
+            cell[label][key] = _small_cell(differences, positions) or onset.paired_difference(
+                benchmark, model, positions, block_length=block,
+                seed=_seed_from((str(day), *seed_parts, key)))
+    if verdict:
+        cell["verdict"] = crps_verdict(cell)
+        cell["result"] = crps_result(cell["verdict"])
+    return cell
+
+
+def score_v2(records, rows, splits, day: date) -> dict:
+    """Pressure model v2's block: its primary cell and its comparison with v1, over the days v2 was logged.
+
+    * `crps/h1`: CRPS at h = 1, v2 against as-of persistence, over the logged days that carry v2 only,
+      under the final test's pass rule, labels and bootstrap settings (`score_crps`'s).
+    * `v2_vs_v1/h1`: v1's published distribution against v2, paired on those same days, reported only.
+
+    A record without v2's block is not scored here (`v2_crps` refuses it). Nothing in this block is read
+    by v1's cells, `primary_result` or `headline_status`.
+    """
+
+    by_date = {row.date: row for row in rows}
+    logged = [record for record in records if v2_logged(record)]
+    days, persistence, v2, v1, regimes, types = [], [], [], [], [], []
+    for record in logged:
+        when = date.fromisoformat(record["targets"][V2_HORIZON - 1]["target_date"])
+        if when >= day or when not in by_date:
+            continue
+        row = by_date[when]
+        days.append(when)
+        persistence.append(crps_from_record(record, "persistence", V2_HORIZON, row.spread_bps))
+        v2.append(v2_crps(record, row.spread_bps))
+        v1.append(crps_from_record(record, "published", V2_HORIZON, row.spread_bps))
+        regimes.append(_regime(splits, when))
+        types.append(splits.reporting_day_type(when, row.values))
+    _require_scored_days_unlocked(days, where="live_score.score_v2")
+    primary = _paired_crps_cell(days, persistence, v2, regimes, types, day,
+                                seed_parts=("v2", "crps", "1"), sign=V2_CRPS_SIGN, role="primary (v2)",
+                                verdict=True)
+    against = _paired_crps_cell(days, v1, v2, regimes, types, day,
+                                seed_parts=("v2", "vs_v1", "1"), sign=V2_VS_V1_SIGN, role="reported only",
+                                verdict=False)
+    return {
+        "label": V2_LABEL,
+        "logged_days": [record["decision_day"] for record in logged],
+        "first_logged_day": logged[0]["decision_day"] if logged else None,
+        "crps/h1": primary,
+        "v2_vs_v1/h1": against,
+        "primary_result": primary.get("result"),
+    }
+
+
 def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
              require_gap: bool = False, override_clock: bool = False, provenance=None,
              pinned_days=None) -> dict:
@@ -962,6 +1089,7 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
         )
     result = score(records, rows, splits, day)
     result["crps"] = score_crps(records, rows, splits, day)
+    v2 = score_v2(records, rows, splits, day)
     headline = result["crps"][f"{HEADLINE['target']}/h{HEADLINE['horizon']}"]
     result.update(
         {
@@ -981,6 +1109,13 @@ def assemble(records, rows, splits, day: date, *, previous, gap_records=None,
             "event_seed": EVENT_SEED_RULE,
         }
     )
+    if v2["first_logged_day"] is not None:
+        # v2's block is separate and is added after v1's keys are all set; v1's keys are never read from it.
+        v2["headline_status"] = headline_status(
+            day, days=v2["crps/h1"]["days"],
+            previous=[{"date": r["date"], "headline_status": r["v2"]["headline_status"]}
+                      for r in previous if r.get("v2", {}).get("headline_status")])
+        result["v2"] = v2
     if provenance is not None:
         result["provenance"] = provenance
     if gap_records is not None:

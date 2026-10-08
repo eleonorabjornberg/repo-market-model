@@ -6,6 +6,13 @@
       "comment_id": 6028625605,
       "phrase": "GO #255",
       "what": "approve the live pin (metadata/live_pin.json and the workflow's pin check, PR #323)"
+    },
+    {
+      "kind": "live-model",
+      "issue": 245,
+      "comment_id": 6050739911,
+      "phrase": "GO #245",
+      "what": "approve pressure model v2 joining the live record alongside v1 (PR #355)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
