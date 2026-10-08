@@ -42,6 +42,7 @@ from .ingest import (
     fetch_nyfed_effr,
     fetch_nyfed_fr2004,
     fetch_nyfed_on_rrp,
+    fetch_nyfed_repo_operations,
     fetch_nyfed_srf,
     fetch_ofr_stfm_repo,
     fetch_nyfed_reference_rate,
@@ -108,6 +109,10 @@ def _fetch(args: argparse.Namespace) -> int:
         )
     elif args.source == "srf":
         artifacts = fetch_nyfed_srf(
+            output_root=args.output_root, start=args.start, end=args.end
+        )
+    elif args.source == "repo-ops":
+        artifacts = fetch_nyfed_repo_operations(
             output_root=args.output_root, start=args.start, end=args.end
         )
     elif args.source == "ofr-stfm":
@@ -391,7 +396,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     fetch.add_argument(
         "source",
         choices=NYFED_RATE_SOURCES
-        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8", "ofr-stfm", "ofr-stfm-segments", "treasury-dts-tga"),
+        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "repo-ops", "h8", "ofr-stfm", "ofr-stfm-segments", "treasury-dts-tga"),
     )
     fetch.add_argument(
         "--start",
