@@ -4094,6 +4094,12 @@ _INTERACTION_DAY_TYPES = ("quarter_end", "tax_date")
 #: scaled by this before the one L2 penalty, so its deviations carry
 #: `1 / scale ** 2` times the pooled columns' penalty. Declared, not tuned.
 REGIME_POOLING_SCALE = 0.5
+#: The hierarchical logistic's candidate deviation scales (#386): the regime
+#: deviations' prior standard deviation, as a multiple of the pooled columns'.
+#: Each fit takes the one whose Laplace-approximated evidence is greatest
+#: (empirical Bayes). The grid is declared, not tuned; the smallest value is
+#: almost complete pooling, the largest an almost unshrunk regime-by-regime fit.
+REGIME_SHRINKAGE_GRID = (0.05, 0.1, 0.25, 0.5, 1.0, 2.0)
 #: The scheduled settlement columns the design reads as scheduled-pressure
 #: terms: the total (#114) and the coupon part alone (#137).
 _SETTLEMENT_INPUTS = ("treasury_settlement", "treasury_settlement_coupons")
@@ -4415,6 +4421,8 @@ def _direct_pressure_predictor(
     monotone = getattr(design, "monotone", None)
     cache: dict = {}
     pooled: dict = {}
+    shrinkage: List[float] = []
+    effects: List[dict] = []
 
     def fit_predict(
         train_rows: Sequence[DailyObservation],
@@ -4473,6 +4481,8 @@ def _direct_pressure_predictor(
         # Two thresholds with no training spread between them have one label
         # vector, so one fit: the estimator is deterministic in its labels.
         fitted: dict = {}
+        shrinkage.clear()
+        effects.clear()
         if kind in ("quantile", "quantile_skewt"):
             law = _quantile_exceedance(
                 xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t" if kind == "quantile_skewt" else "linear"
@@ -4493,6 +4503,8 @@ def _direct_pressure_predictor(
                     monotone=monotone,
                     pooling=getattr(design, "pooling", None),
                     rare=rare,
+                    shrinkage_trace=shrinkage,
+                    effects_trace=effects,
                     recency=None if recency is None else (recency[0], recency[1], ages),
                 )
             columns.append(fitted[key])
@@ -4544,6 +4556,10 @@ def _direct_pressure_predictor(
             settings["products"] = [list(pair) for pair in design.products]
         if isinstance(design, _ScarcityCalendarDesign):
             settings["scarcity_calendar"] = design.settings()
+            if shrinkage:
+                settings["regime_shrinkage_chosen"] = list(shrinkage)
+            if effects:
+                settings["regime_effects"] = list(effects)
         if monotone is not None:
             settings["monotonic_cst"] = list(monotone)
         return ExceedanceCurves(
@@ -4567,7 +4583,9 @@ def _fit_classifier(
     labels: Sequence[int],
     served: Sequence[Sequence[float]],
     monotone: Optional[Sequence[int]] = None,
-    pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None,
+    pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], Optional[float]]] = None,
+    shrinkage_trace: Optional[List[float]] = None,
+    effects_trace: Optional[List[dict]] = None,
     rare: Optional[str] = None,
     recency: Optional[Tuple[str, int, Sequence[int]]] = None,
 ) -> List[float]:
@@ -4582,7 +4600,9 @@ def _fit_classifier(
     `scale` and by the regime's indicator, under the one L2 penalty: a regime's
     deviations are shrunk toward the pooled fit, and a regime with no training
     day is served the pooled fit. `None` passes nothing, so every other fit is
-    unchanged.
+    unchanged. A `scale` of `None` (#386) is estimated from this fit's training
+    pairs alone by `_empirical_bayes_scale` and appended to `shrinkage_trace`;
+    `effects_trace`, if given, receives `_regime_effects` of the fit.
 
     `rare`, the rare-event treatments' (#381): one of
     `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied to the training rows
@@ -4618,6 +4638,11 @@ def _fit_classifier(
         scale[scale == 0.0] = 1.0
         if pooling is not None:
             pooled, deviating, regimes, shrink = pooling
+            if shrink is None:
+                shrink = _empirical_bayes_scale(x, y, pooled, deviating, regimes)
+                if shrinkage_trace is not None:
+                    shrinkage_trace.append(shrink)
+            original_scale = scale
             x = _pool_columns((x - centre) / scale, x[:, 1], pooled, deviating, regimes, shrink)
             z = _pool_columns((z - centre) / scale, z[:, 1], pooled, deviating, regimes, shrink)
             centre, scale = numpy.zeros(x.shape[1]), numpy.ones(x.shape[1])
@@ -4626,6 +4651,10 @@ def _fit_classifier(
             max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
         )
         model.fit((x - centre) / scale, y)
+        if pooling is not None and effects_trace is not None:
+            effects_trace.append(
+                _regime_effects(model.coef_[0], pooled, deviating, regimes, shrink, original_scale)
+            )
         return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
     if kind == "probit":
         return _fit_probit(x, y, z)
@@ -4877,6 +4906,105 @@ def _pool_columns(
         blocks.append(shrink * indicator)
         blocks.append(shrink * indicator * standardized[:, list(deviating)])
     return numpy.hstack(blocks)
+
+
+def _regime_effects(
+    coefficients: Any,
+    pooled: Sequence[int],
+    deviating: Sequence[int],
+    regimes: Sequence[float],
+    shrink: float,
+    scale: Any,
+) -> dict:
+    """A partially pooled logistic's coefficients, per regime and in the design's own units (#386).
+
+    `coefficients` are those of `_pool_columns`'s columns. For each regime, by
+    design column index: the logit change per unit of that column, which is the
+    pooled coefficient (if the column is pooled) plus the regime's shrunk
+    deviation (if it deviates), divided by the column's training scale; and
+    `"intercept"`, the regime's own shrunk intercept shift. Also the `"pooled"`
+    coefficients on their own and the `shrink` used.
+    """
+
+    width = len(pooled)
+    block = 1 + len(deviating)
+    effects: dict = {"shrink": float(shrink), "pooled": {int(j): float(coefficients[i] / scale[j]) for i, j in enumerate(pooled)}}
+    by_regime: dict = {}
+    for k, level in enumerate(regimes):
+        start = width + k * block
+        entry = {"intercept": float(shrink * coefficients[start])}
+        for i, j in enumerate(deviating):
+            deviation = shrink * coefficients[start + 1 + i]
+            total = deviation + (coefficients[list(pooled).index(j)] if j in pooled else 0.0)
+            entry[int(j)] = float(total / scale[j])
+        for i, j in enumerate(pooled):
+            entry.setdefault(int(j), float(coefficients[i] / scale[j]))
+        by_regime[float(level)] = entry
+    effects["regimes"] = by_regime
+    return effects
+
+
+def _laplace_log_evidence(design: Any, y: Any) -> float:
+    """The Laplace-approximated log marginal likelihood of a ridge logistic (#386).
+
+    The model is `LogisticRegression`'s: an unpenalized intercept and a Gaussian
+    prior of variance `C` on every column of `design`, `C` from
+    `PRESSURE_LOGISTIC_SETTINGS`. The posterior mode is found by Newton's method
+    and the evidence is `-nll(w) - |w|^2 / 2C - log det(H) / 2 + k log(1/C) / 2`,
+    with `H` the penalized Hessian at the mode. The `log det` term is the Occam
+    factor: a deviation column the data do not need lowers the evidence.
+    """
+
+    import numpy
+    from scipy.special import expit
+
+    n, k = design.shape
+    prior = 1.0 / PRESSURE_LOGISTIC_SETTINGS["C"]
+    a = numpy.hstack([numpy.ones((n, 1)), design])
+    precision = numpy.diag([0.0] + [prior] * k)
+    w = numpy.zeros(k + 1)
+    rate = min(max(float(y.mean()), 1e-6), 1 - 1e-6)
+    w[0] = math.log(rate / (1 - rate))
+    for _ in range(100):
+        p = expit(a @ w)
+        gradient = a.T @ (p - y) + precision @ w
+        hessian = (a.T * (p * (1.0 - p))) @ a + precision + 1e-10 * numpy.eye(k + 1)
+        step = numpy.linalg.solve(hessian, gradient)
+        w = w - numpy.clip(step, -4.0, 4.0)
+        if float(numpy.max(numpy.abs(step))) < 1e-9:
+            break
+    eta = a @ w
+    nll = float(numpy.sum(numpy.logaddexp(0.0, eta) - y * eta))
+    p = expit(eta)
+    hessian = (a.T * (p * (1.0 - p))) @ a + precision + 1e-10 * numpy.eye(k + 1)
+    _, logdet = numpy.linalg.slogdet(hessian)
+    penalized = w[1:]
+    return float(-nll - 0.5 * prior * float(penalized @ penalized) - 0.5 * logdet + 0.5 * k * math.log(prior))
+
+
+def _empirical_bayes_scale(
+    x: Any, y: Any, pooled: Sequence[int], deviating: Sequence[int], regimes: Sequence[float]
+) -> float:
+    """The deviation scale in `REGIME_SHRINKAGE_GRID` with the greatest evidence (#386).
+
+    Empirical Bayes: the prior spread of the regime deviations is chosen by
+    maximizing the Laplace-approximated marginal likelihood of this fit's own
+    training pairs, so it reads nothing but `x` and `y`. A tie goes to the
+    smaller scale (more pooling). Column 1 of `x` is the regime.
+    """
+
+    import numpy
+
+    centre = x.mean(axis=0)
+    scale = x.std(axis=0)
+    scale[scale == 0.0] = 1.0
+    standardized = (x - centre) / scale
+    best, best_evidence = None, -math.inf
+    for candidate in REGIME_SHRINKAGE_GRID:
+        evidence = _laplace_log_evidence(_pool_columns(standardized, x[:, 1], pooled, deviating, regimes, candidate), y)
+        if evidence > best_evidence:
+            best, best_evidence = candidate, evidence
+    return float(best)
 
 
 def _fit_probit(x: Any, y: Any, z: Any) -> List[float]:
@@ -5763,11 +5891,15 @@ class _ScarcityCalendarDesign:
         monotone: bool = False,
         interactions: bool = False,
         regime_pooled: bool = False,
+        regime_hierarchical: bool = False,
     ) -> None:
         from .scarcity import RESERVE_SCARCITY_STATE, STATE_LABELS
 
-        if interactions and regime_pooled:
-            raise ValueError("the interaction variant and the regime-pooled variant are separate candidates")
+        if sum((interactions, regime_pooled, regime_hierarchical)) > 1:
+            raise ValueError(
+                "the interaction, regime-pooled and hierarchical variants are separate candidates"
+            )
+        regime_pooled = regime_pooled or regime_hierarchical
         if regime_pooled and monotone:
             raise ValueError("partial pooling is the logistic's; the classifier's constraint does not apply to it")
         declared = tuple(dict.fromkeys(str(name) for name in features))
@@ -5811,14 +5943,19 @@ class _ScarcityCalendarDesign:
         names += [f"treasury_settlement_x_state_x_{kind}" for kind in self.interaction_types]
         # The regime-pooled variant (#378): the scheduled terms and the spread
         # get a deviation per scarcity regime, shrunk toward the pooled fit.
-        self.pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None
+        self.pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], Optional[float]]] = None
         if regime_pooled:
             pooled_columns = tuple(range(len(names)))
             raw = list(_PRESSURE_DAY_TYPES) + (["treasury_settlement"] if self.settlement else [])
             names += raw
             deviation_columns = (0,) + tuple(range(len(pooled_columns), len(names)))
+            # The hierarchical variant (#386) has no fixed scale: each fit
+            # estimates it by empirical Bayes (`None`).
             self.pooling = (
-                pooled_columns, deviation_columns, tuple(sorted(set(self.state_levels.values()))), REGIME_POOLING_SCALE
+                pooled_columns,
+                deviation_columns,
+                tuple(sorted(set(self.state_levels.values()))),
+                None if regime_hierarchical else REGIME_POOLING_SCALE,
             )
         self.names = tuple(names)
         self.monotone: Optional[Tuple[int, ...]] = (
@@ -5840,7 +5977,11 @@ class _ScarcityCalendarDesign:
             "regime_partial_pooling": (
                 None
                 if self.pooling is None
-                else {"regimes": list(self.pooling[2]), "deviation_scale": self.pooling[3]}
+                else {
+                    "regimes": list(self.pooling[2]),
+                    "deviation_scale": "empirical Bayes" if self.pooling[3] is None else self.pooling[3],
+                    "grid": list(REGIME_SHRINKAGE_GRID) if self.pooling[3] is None else None,
+                }
             ),
         }
 
@@ -5898,6 +6039,7 @@ def _scarcity_calendar_predictor(
     *,
     interactions: bool = False,
     regime_pooled: bool = False,
+    regime_hierarchical: bool = False,
 ) -> Any:
     """The scarcity-conditioned calendar (#128), as a direct pressure model.
 
@@ -5916,14 +6058,16 @@ def _scarcity_calendar_predictor(
     Two variants (#378, `repo_model.scarcity_event_bar`): `interactions` adds
     the settlement's size x state x quarter-end and x tax date; `regime_pooled`
     (the logistic only) gives the spread and each scheduled term a deviation per
-    scarcity regime, partially pooled toward the pooled fit.
+    scarcity regime, partially pooled toward the pooled fit. A third (#386),
+    `regime_hierarchical`, is the same design with the pooling strength estimated
+    in each fit by empirical Bayes (`_empirical_bayes_scale`) instead of declared.
     """
 
     if form not in SCARCITY_CALENDAR_KINDS:
         raise ValueError(f"a scarcity-calendar form is one of {sorted(SCARCITY_CALENDAR_KINDS)}, got {form!r}")
     design = _ScarcityCalendarDesign(
         features, declaration, state_levels, monotone=form == "gbm",
-        interactions=interactions, regime_pooled=regime_pooled,
+        interactions=interactions, regime_pooled=regime_pooled, regime_hierarchical=regime_hierarchical,
     )
     return _direct_pressure_predictor(
         SCARCITY_CALENDAR_KINDS[form], features, declaration, minimum_history, design=design
