@@ -315,6 +315,68 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The rare-event treatments of the direct pressure classifiers (#381): class weights, a
+        # focal-loss classifier and event-balanced bootstraps, on the same direct design.
+        "pressure_logistic_weighted": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                "class_weight",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier_weighted": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                "class_weight",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier_focal": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                "focal",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_logistic_bootstrap": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                "balanced_bootstrap",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier_bootstrap": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                "balanced_bootstrap",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         # The two-part (hurdle) pressure model (#382): P(spike) from a classifier times a
         # conditional size law, on the same direct design; the logistic spike part.
         "pressure_two_part": _ModelChoice(

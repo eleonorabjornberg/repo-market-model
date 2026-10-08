@@ -1,0 +1,1156 @@
+{
+ "bootstrap": {
+  "block_length": 2,
+  "level": 0.9,
+  "replications": 2000
+ },
+ "candidates": {
+  "conformal_by_day_type": {
+   "coverage_by_group": {
+    "all": {
+     "band_50": 44.97041420118343,
+     "band_50_mean_width_bps": 3.6992291828677595,
+     "band_50_miss_above": 23.076923076923077,
+     "band_50_miss_below": 31.952662721893493,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "regime:2025-26": {
+     "band_50": 44.97041420118343,
+     "band_50_mean_width_bps": 3.6992291828677595,
+     "band_50_miss_above": 23.076923076923077,
+     "band_50_miss_below": 31.952662721893493,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "reporting:month_end": {
+     "band_50": 57.142857142857146,
+     "band_50_mean_width_bps": 4.1322804669143105,
+     "band_50_miss_above": 14.285714285714286,
+     "band_50_miss_below": 28.571428571428573,
+     "band_90": 92.85714285714286,
+     "band_90_mean_width_bps": 11.670004742454614,
+     "band_90_miss_above": 7.142857142857143,
+     "band_90_miss_below": 0.0,
+     "days": 14
+    },
+    "reporting:ordinary": {
+     "band_50": 46.25850340136054,
+     "band_50_mean_width_bps": 3.6557593268660464,
+     "band_50_miss_above": 22.448979591836736,
+     "band_50_miss_below": 31.292517006802722,
+     "band_90": 93.87755102040816,
+     "band_90_mean_width_bps": 12.009205128285164,
+     "band_90_miss_above": 1.3605442176870748,
+     "band_90_miss_below": 4.761904761904762,
+     "days": 147
+    },
+    "reporting:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7203327500810053,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "reporting:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7467531363967055,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    },
+    "tag:coupon_settlement": {
+     "band_50": 41.666666666666664,
+     "band_50_mean_width_bps": 4.199714603484171,
+     "band_50_miss_above": 50.0,
+     "band_50_miss_below": 8.333333333333334,
+     "band_90": 83.33333333333333,
+     "band_90_mean_width_bps": 11.105052596835193,
+     "band_90_miss_above": 16.666666666666668,
+     "band_90_miss_below": 0.0,
+     "days": 24
+    },
+    "tag:month_end": {
+     "band_50": 50.0,
+     "band_50_mean_width_bps": 4.080787002310148,
+     "band_50_miss_above": 25.0,
+     "band_50_miss_below": 25.0,
+     "band_90": 93.75,
+     "band_90_mean_width_bps": 11.473056939007874,
+     "band_90_miss_above": 6.25,
+     "band_90_miss_below": 0.0,
+     "days": 16
+    },
+    "tag:other": {
+     "band_50": 46.61654135338346,
+     "band_50_mean_width_bps": 3.596491093439011,
+     "band_50_miss_above": 20.30075187969925,
+     "band_50_miss_below": 33.08270676691729,
+     "band_90": 93.98496240601504,
+     "band_90_mean_width_bps": 12.065443968707369,
+     "band_90_miss_above": 0.7518796992481203,
+     "band_90_miss_below": 5.2631578947368425,
+     "days": 133
+    },
+    "tag:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7203327500810053,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "tag:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7467531363967055,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    }
+   },
+   "crps_bps": 1.5767870169144977,
+   "gain_by_group": {
+    "regime:2025-26": {
+     "days": 169,
+     "interval": {
+      "lower": 0.05409320796843212,
+      "upper": 0.11143469219273344
+     },
+     "mean": 0.08228972632385186
+    },
+    "reporting:month_end": {
+     "days": 14,
+     "mean": 0.0072914730324675926
+    },
+    "reporting:ordinary": {
+     "days": 147,
+     "interval": {
+      "lower": 0.04924229779541658,
+      "upper": 0.1135738947970126
+     },
+     "mean": 0.0810087360397958
+    },
+    "reporting:quarter_end": {
+     "days": 2,
+     "mean": 0.4080917396374786
+    },
+    "reporting:tax_date": {
+     "days": 6,
+     "mean": 0.18006924152524637
+    },
+    "tag:coupon_settlement": {
+     "days": 24,
+     "interval": {
+      "lower": 0.09174920608613489,
+      "upper": 0.2570345914761954
+     },
+     "mean": 0.17637323242663094
+    },
+    "tag:month_end": {
+     "days": 16,
+     "mean": 0.057391506358093966
+    },
+    "tag:other": {
+     "days": 133,
+     "interval": {
+      "lower": 0.03858547600854684,
+      "upper": 0.10498297617513205
+     },
+     "mean": 0.07259401006905106
+    },
+    "tag:quarter_end": {
+     "days": 2,
+     "mean": 0.4080917396374786
+    },
+    "tag:tax_date": {
+     "days": 6,
+     "mean": 0.18006924152524637
+    },
+    "tag:year_end": {
+     "days": 0
+    }
+   },
+   "pooled_gain": {
+    "days": 169,
+    "interval": {
+     "lower": 0.05409320796843212,
+     "upper": 0.11143469219273344
+    },
+    "mean": 0.08228972632385186
+   },
+   "test": {
+    "met": true,
+    "pooled_above_zero": true,
+    "worse_cells": []
+   }
+  },
+  "conformal_group_regime": {
+   "coverage_by_group": {
+    "all": {
+     "band_50": 44.97041420118343,
+     "band_50_mean_width_bps": 3.6992291828677595,
+     "band_50_miss_above": 23.076923076923077,
+     "band_50_miss_below": 31.952662721893493,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "regime:2025-26": {
+     "band_50": 44.97041420118343,
+     "band_50_mean_width_bps": 3.6992291828677595,
+     "band_50_miss_above": 23.076923076923077,
+     "band_50_miss_below": 31.952662721893493,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "reporting:month_end": {
+     "band_50": 57.142857142857146,
+     "band_50_mean_width_bps": 4.1322804669143105,
+     "band_50_miss_above": 14.285714285714286,
+     "band_50_miss_below": 28.571428571428573,
+     "band_90": 92.85714285714286,
+     "band_90_mean_width_bps": 11.670004742454614,
+     "band_90_miss_above": 7.142857142857143,
+     "band_90_miss_below": 0.0,
+     "days": 14
+    },
+    "reporting:ordinary": {
+     "band_50": 46.25850340136054,
+     "band_50_mean_width_bps": 3.6557593268660464,
+     "band_50_miss_above": 22.448979591836736,
+     "band_50_miss_below": 31.292517006802722,
+     "band_90": 93.87755102040816,
+     "band_90_mean_width_bps": 12.009205128285164,
+     "band_90_miss_above": 1.3605442176870748,
+     "band_90_miss_below": 4.761904761904762,
+     "days": 147
+    },
+    "reporting:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7203327500810053,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "reporting:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7467531363967055,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    },
+    "tag:coupon_settlement": {
+     "band_50": 41.666666666666664,
+     "band_50_mean_width_bps": 4.199714603484171,
+     "band_50_miss_above": 50.0,
+     "band_50_miss_below": 8.333333333333334,
+     "band_90": 83.33333333333333,
+     "band_90_mean_width_bps": 11.105052596835193,
+     "band_90_miss_above": 16.666666666666668,
+     "band_90_miss_below": 0.0,
+     "days": 24
+    },
+    "tag:month_end": {
+     "band_50": 50.0,
+     "band_50_mean_width_bps": 4.080787002310148,
+     "band_50_miss_above": 25.0,
+     "band_50_miss_below": 25.0,
+     "band_90": 93.75,
+     "band_90_mean_width_bps": 11.473056939007874,
+     "band_90_miss_above": 6.25,
+     "band_90_miss_below": 0.0,
+     "days": 16
+    },
+    "tag:other": {
+     "band_50": 46.61654135338346,
+     "band_50_mean_width_bps": 3.596491093439011,
+     "band_50_miss_above": 20.30075187969925,
+     "band_50_miss_below": 33.08270676691729,
+     "band_90": 93.98496240601504,
+     "band_90_mean_width_bps": 12.065443968707369,
+     "band_90_miss_above": 0.7518796992481203,
+     "band_90_miss_below": 5.2631578947368425,
+     "days": 133
+    },
+    "tag:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7203327500810053,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "tag:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.7467531363967055,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    }
+   },
+   "crps_bps": 1.5767870169144977,
+   "gain_by_group": {
+    "regime:2025-26": {
+     "days": 169,
+     "interval": {
+      "lower": 0.052817015138152894,
+      "upper": 0.11319177941575065
+     },
+     "mean": 0.08228972632385186
+    },
+    "reporting:month_end": {
+     "days": 14,
+     "mean": 0.0072914730324675926
+    },
+    "reporting:ordinary": {
+     "days": 147,
+     "interval": {
+      "lower": 0.04722371879819232,
+      "upper": 0.11358842293083295
+     },
+     "mean": 0.0810087360397958
+    },
+    "reporting:quarter_end": {
+     "days": 2,
+     "mean": 0.4080917396374786
+    },
+    "reporting:tax_date": {
+     "days": 6,
+     "mean": 0.18006924152524637
+    },
+    "tag:coupon_settlement": {
+     "days": 24,
+     "interval": {
+      "lower": 0.09082922091320324,
+      "upper": 0.2626298032675528
+     },
+     "mean": 0.17637323242663094
+    },
+    "tag:month_end": {
+     "days": 16,
+     "mean": 0.057391506358093966
+    },
+    "tag:other": {
+     "days": 133,
+     "interval": {
+      "lower": 0.03792571327170625,
+      "upper": 0.10765862057075924
+     },
+     "mean": 0.07259401006905106
+    },
+    "tag:quarter_end": {
+     "days": 2,
+     "mean": 0.4080917396374786
+    },
+    "tag:tax_date": {
+     "days": 6,
+     "mean": 0.18006924152524637
+    },
+    "tag:year_end": {
+     "days": 0
+    }
+   },
+   "pooled_gain": {
+    "days": 169,
+    "interval": {
+     "lower": 0.052817015138152894,
+     "upper": 0.11319177941575065
+    },
+    "mean": 0.08228972632385186
+   },
+   "test": {
+    "met": true,
+    "pooled_above_zero": true,
+    "worse_cells": []
+   }
+  },
+  "conformal_pid_calendar": {
+   "coverage_by_group": {
+    "all": {
+     "band_50": 47.337278106508876,
+     "band_50_mean_width_bps": 4.024378338557101,
+     "band_50_miss_above": 20.71005917159763,
+     "band_50_miss_below": 31.952662721893493,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "regime:2025-26": {
+     "band_50": 47.337278106508876,
+     "band_50_mean_width_bps": 4.024378338557101,
+     "band_50_miss_above": 20.71005917159763,
+     "band_50_miss_below": 31.952662721893493,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "reporting:month_end": {
+     "band_50": 57.142857142857146,
+     "band_50_mean_width_bps": 4.0300658472359,
+     "band_50_miss_above": 7.142857142857143,
+     "band_50_miss_below": 35.714285714285715,
+     "band_90": 92.85714285714286,
+     "band_90_mean_width_bps": 11.670004742454614,
+     "band_90_miss_above": 7.142857142857143,
+     "band_90_miss_below": 0.0,
+     "days": 14
+    },
+    "reporting:ordinary": {
+     "band_50": 48.97959183673469,
+     "band_50_mean_width_bps": 4.045229446281415,
+     "band_50_miss_above": 20.408163265306122,
+     "band_50_miss_below": 30.612244897959183,
+     "band_90": 93.87755102040816,
+     "band_90_mean_width_bps": 12.009205128285164,
+     "band_90_miss_above": 1.3605442176870748,
+     "band_90_miss_below": 4.761904761904762,
+     "days": 147
+    },
+    "reporting:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.5770049124308603,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "reporting:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.649379821102933,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    },
+    "tag:coupon_settlement": {
+     "band_50": 45.833333333333336,
+     "band_50_mean_width_bps": 4.079859458307904,
+     "band_50_miss_above": 45.833333333333336,
+     "band_50_miss_below": 8.333333333333334,
+     "band_90": 83.33333333333333,
+     "band_90_mean_width_bps": 11.105052596835193,
+     "band_90_miss_above": 16.666666666666668,
+     "band_90_miss_below": 0.0,
+     "days": 24
+    },
+    "tag:month_end": {
+     "band_50": 50.0,
+     "band_50_mean_width_bps": 3.9734332303852695,
+     "band_50_miss_above": 18.75,
+     "band_50_miss_below": 31.25,
+     "band_90": 93.75,
+     "band_90_mean_width_bps": 11.473056939007874,
+     "band_90_miss_above": 6.25,
+     "band_90_miss_below": 0.0,
+     "days": 16
+    },
+    "tag:other": {
+     "band_50": 49.62406015037594,
+     "band_50_mean_width_bps": 4.0407603115328055,
+     "band_50_miss_above": 18.045112781954888,
+     "band_50_miss_below": 32.330827067669176,
+     "band_90": 93.98496240601504,
+     "band_90_mean_width_bps": 12.065443968707369,
+     "band_90_miss_above": 0.7518796992481203,
+     "band_90_miss_below": 5.2631578947368425,
+     "days": 133
+    },
+    "tag:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.5770049124308603,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "tag:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.649379821102933,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    }
+   },
+   "crps_bps": 1.5892255866557767,
+   "gain_by_group": {
+    "regime:2025-26": {
+     "days": 169,
+     "interval": {
+      "lower": 0.03652794308960815,
+      "upper": 0.10293414994146317
+     },
+     "mean": 0.06985115658257315
+    },
+    "reporting:month_end": {
+     "days": 14,
+     "mean": -0.019723242566706458
+    },
+    "reporting:ordinary": {
+     "days": 147,
+     "interval": {
+      "lower": 0.036681933196215474,
+      "upper": 0.10504069285994519
+     },
+     "mean": 0.07031272692781435
+    },
+    "reporting:quarter_end": {
+     "days": 2,
+     "mean": 0.5400000000000185
+    },
+    "reporting:tax_date": {
+     "days": 6,
+     "mean": 0.1108333333333349
+    },
+    "tag:coupon_settlement": {
+     "days": 24,
+     "interval": {
+      "lower": 0.1454082800597966,
+      "upper": 0.3599976371710145
+     },
+     "mean": 0.25452056195874223
+    },
+    "tag:month_end": {
+     "days": 16,
+     "mean": 0.05024216275413416
+    },
+    "tag:other": {
+     "days": 133,
+     "interval": {
+      "lower": 0.021823813329178075,
+      "upper": 0.09004105841439053
+     },
+     "mean": 0.055398312742140146
+    },
+    "tag:quarter_end": {
+     "days": 2,
+     "mean": 0.5400000000000185
+    },
+    "tag:tax_date": {
+     "days": 6,
+     "mean": 0.1108333333333349
+    },
+    "tag:year_end": {
+     "days": 0
+    }
+   },
+   "pooled_gain": {
+    "days": 169,
+    "interval": {
+     "lower": 0.03652794308960815,
+     "upper": 0.10293414994146317
+    },
+    "mean": 0.06985115658257315
+   },
+   "test": {
+    "met": true,
+    "pooled_above_zero": true,
+    "worse_cells": []
+   }
+  },
+  "conformal_recency_regime": {
+   "coverage_by_group": {
+    "all": {
+     "band_50": 49.112426035502956,
+     "band_50_mean_width_bps": 4.312099148641179,
+     "band_50_miss_above": 19.526627218934912,
+     "band_50_miss_below": 31.36094674556213,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "regime:2025-26": {
+     "band_50": 49.112426035502956,
+     "band_50_mean_width_bps": 4.312099148641179,
+     "band_50_miss_above": 19.526627218934912,
+     "band_50_miss_below": 31.36094674556213,
+     "band_90": 92.89940828402366,
+     "band_90_mean_width_bps": 12.017628673436796,
+     "band_90_miss_above": 2.9585798816568047,
+     "band_90_miss_below": 4.1420118343195265,
+     "days": 169
+    },
+    "reporting:month_end": {
+     "band_50": 57.142857142857146,
+     "band_50_mean_width_bps": 4.1142510838799025,
+     "band_50_miss_above": 14.285714285714286,
+     "band_50_miss_below": 28.571428571428573,
+     "band_90": 92.85714285714286,
+     "band_90_mean_width_bps": 11.670004742454614,
+     "band_90_miss_above": 7.142857142857143,
+     "band_90_miss_below": 0.0,
+     "days": 14
+    },
+    "reporting:ordinary": {
+     "band_50": 50.34013605442177,
+     "band_50_mean_width_bps": 4.3763884053116895,
+     "band_50_miss_above": 18.367346938775512,
+     "band_50_miss_below": 31.292517006802722,
+     "band_90": 93.87755102040816,
+     "band_90_mean_width_bps": 12.009205128285164,
+     "band_90_miss_above": 1.3605442176870748,
+     "band_90_miss_below": 4.761904761904762,
+     "days": 147
+    },
+    "reporting:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.302139513836672,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "reporting:tax_date": {
+     "band_50": 16.666666666666668,
+     "band_50_mean_width_bps": 3.535311056258161,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 50.0,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    },
+    "tag:coupon_settlement": {
+     "band_50": 37.5,
+     "band_50_mean_width_bps": 4.0737252379515025,
+     "band_50_miss_above": 54.166666666666664,
+     "band_50_miss_below": 8.333333333333334,
+     "band_90": 83.33333333333333,
+     "band_90_mean_width_bps": 11.105052596835193,
+     "band_90_miss_above": 16.666666666666668,
+     "band_90_miss_below": 0.0,
+     "days": 24
+    },
+    "tag:month_end": {
+     "band_50": 50.0,
+     "band_50_mean_width_bps": 4.012737137624499,
+     "band_50_miss_above": 25.0,
+     "band_50_miss_below": 25.0,
+     "band_90": 93.75,
+     "band_90_mean_width_bps": 11.473056939007874,
+     "band_90_miss_above": 6.25,
+     "band_90_miss_below": 0.0,
+     "days": 16
+    },
+    "tag:other": {
+     "band_50": 51.8796992481203,
+     "band_50_mean_width_bps": 4.402459982880033,
+     "band_50_miss_above": 15.037593984962406,
+     "band_50_miss_below": 33.08270676691729,
+     "band_90": 93.98496240601504,
+     "band_90_mean_width_bps": 12.065443968707369,
+     "band_90_miss_above": 0.7518796992481203,
+     "band_90_miss_below": 5.2631578947368425,
+     "days": 133
+    },
+    "tag:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 3.302139513836672,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.094422314880678,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "tag:tax_date": {
+     "band_50": 16.666666666666668,
+     "band_50_mean_width_bps": 3.535311056258161,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 50.0,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.676196821462234,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    }
+   },
+   "crps_bps": 1.6344561773905748,
+   "gain_by_group": {
+    "regime:2025-26": {
+     "days": 169,
+     "interval": {
+      "lower": -0.010291392101397068,
+      "upper": 0.05975647641088831
+     },
+     "mean": 0.02462056584777482
+    },
+    "reporting:month_end": {
+     "days": 14,
+     "mean": -0.009778588147852279
+    },
+    "reporting:ordinary": {
+     "days": 147,
+     "interval": {
+      "lower": -0.01806406635959597,
+      "upper": 0.057713073013398425
+     },
+     "mean": 0.02043321822213256
+    },
+    "reporting:quarter_end": {
+     "days": 2,
+     "mean": 0.12391696533457264
+    },
+    "reporting:tax_date": {
+     "days": 6,
+     "mean": 0.17437647550354093
+    },
+    "tag:coupon_settlement": {
+     "days": 24,
+     "interval": {
+      "lower": -0.00446030854701585,
+      "upper": 0.15634005424449693
+     },
+     "mean": 0.07362207132693915
+    },
+    "tag:month_end": {
+     "days": 16,
+     "mean": 0.006933356037450836
+    },
+    "tag:other": {
+     "days": 133,
+     "interval": {
+      "lower": -0.026336583159331812,
+      "upper": 0.0509323808477632
+     },
+     "mean": 0.012353763769493552
+    },
+    "tag:quarter_end": {
+     "days": 2,
+     "mean": 0.12391696533457264
+    },
+    "tag:tax_date": {
+     "days": 6,
+     "mean": 0.17437647550354093
+    },
+    "tag:year_end": {
+     "days": 0
+    }
+   },
+   "pooled_gain": {
+    "days": 169,
+    "interval": {
+     "lower": -0.010291392101397068,
+     "upper": 0.05975647641088831
+    },
+    "mean": 0.02462056584777482
+   },
+   "test": {
+    "met": false,
+    "pooled_above_zero": false,
+    "worse_cells": []
+   }
+  },
+  "pressure_model_v2": {
+   "coverage_by_group": {
+    "all": {
+     "band_50": 47.928994082840234,
+     "band_50_mean_width_bps": 3.905015322524101,
+     "band_50_miss_above": 17.75147928994083,
+     "band_50_miss_below": 34.319526627218934,
+     "band_90": 91.71597633136095,
+     "band_90_mean_width_bps": 12.158988749170796,
+     "band_90_miss_above": 2.366863905325444,
+     "band_90_miss_below": 5.9171597633136095,
+     "days": 169
+    },
+    "regime:2025-26": {
+     "band_50": 47.928994082840234,
+     "band_50_mean_width_bps": 3.905015322524101,
+     "band_50_miss_above": 17.75147928994083,
+     "band_50_miss_below": 34.319526627218934,
+     "band_90": 91.71597633136095,
+     "band_90_mean_width_bps": 12.158988749170796,
+     "band_90_miss_above": 2.366863905325444,
+     "band_90_miss_below": 5.9171597633136095,
+     "days": 169
+    },
+    "reporting:month_end": {
+     "band_50": 64.28571428571429,
+     "band_50_mean_width_bps": 4.6488346596240815,
+     "band_50_miss_above": 14.285714285714286,
+     "band_50_miss_below": 21.428571428571427,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 11.707572019810462,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 14
+    },
+    "reporting:ordinary": {
+     "band_50": 48.97959183673469,
+     "band_50_mean_width_bps": 3.740847018056419,
+     "band_50_miss_above": 16.3265306122449,
+     "band_50_miss_below": 34.69387755102041,
+     "band_90": 91.83673469387755,
+     "band_90_mean_width_bps": 12.16453511623018,
+     "band_90_miss_above": 1.3605442176870748,
+     "band_90_miss_below": 6.802721088435374,
+     "days": 147
+    },
+    "reporting:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 6.220435243984863,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.335610378482688,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "reporting:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 5.419753688262095,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.684201248286058,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    },
+    "tag:coupon_settlement": {
+     "band_50": 37.5,
+     "band_50_mean_width_bps": 4.111472808851546,
+     "band_50_miss_above": 50.0,
+     "band_50_miss_below": 12.5,
+     "band_90": 91.66666666666667,
+     "band_90_mean_width_bps": 11.379279294326729,
+     "band_90_miss_above": 8.333333333333334,
+     "band_90_miss_below": 0.0,
+     "days": 24
+    },
+    "tag:month_end": {
+     "band_50": 56.25,
+     "band_50_mean_width_bps": 4.845284732669179,
+     "band_50_miss_above": 25.0,
+     "band_50_miss_below": 18.75,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 11.53607681464449,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 16
+    },
+    "tag:other": {
+     "band_50": 50.37593984962406,
+     "band_50_mean_width_bps": 3.7805083333905727,
+     "band_50_miss_above": 13.533834586466165,
+     "band_50_miss_below": 36.090225563909776,
+     "band_90": 90.97744360902256,
+     "band_90_mean_width_bps": 12.212259352218068,
+     "band_90_miss_above": 1.5037593984962405,
+     "band_90_miss_below": 7.518796992481203,
+     "days": 133
+    },
+    "tag:quarter_end": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 6.220435243984863,
+     "band_50_miss_above": 100.0,
+     "band_50_miss_below": 0.0,
+     "band_90": 100.0,
+     "band_90_mean_width_bps": 10.335610378482688,
+     "band_90_miss_above": 0.0,
+     "band_90_miss_below": 0.0,
+     "days": 2
+    },
+    "tag:tax_date": {
+     "band_50": 0.0,
+     "band_50_mean_width_bps": 5.419753688262095,
+     "band_50_miss_above": 33.333333333333336,
+     "band_50_miss_below": 66.66666666666667,
+     "band_90": 66.66666666666667,
+     "band_90_mean_width_bps": 13.684201248286058,
+     "band_90_miss_above": 33.333333333333336,
+     "band_90_miss_below": 0.0,
+     "days": 6
+    }
+   },
+   "crps_bps": 1.6531056948368181,
+   "gain_by_group": {
+    "regime:2025-26": {
+     "days": 169,
+     "interval": {
+      "lower": -0.038769547829098146,
+      "upper": 0.04985229800921128
+     },
+     "mean": 0.00597104840153164
+    },
+    "reporting:month_end": {
+     "days": 14,
+     "mean": -0.04839315504326432
+    },
+    "reporting:ordinary": {
+     "days": 147,
+     "interval": {
+      "lower": -0.03937408220796758,
+      "upper": 0.051200472691613715
+     },
+     "mean": 0.007033218067165418
+    },
+    "reporting:quarter_end": {
+     "days": 2,
+     "mean": 0.5442811169028294
+    },
+    "reporting:tax_date": {
+     "days": 6,
+     "mean": -0.07263898986907129
+    },
+    "tag:coupon_settlement": {
+     "days": 24,
+     "interval": {
+      "lower": -0.02598350606173817,
+      "upper": 0.22417904908641265
+     },
+     "mean": 0.0949044452097948
+    },
+    "tag:month_end": {
+     "days": 16,
+     "mean": 0.025691128949997394
+    },
+    "tag:other": {
+     "days": 133,
+     "interval": {
+      "lower": -0.04143214835308916,
+      "upper": 0.05521363713747048
+     },
+     "mean": 0.007372013065361627
+    },
+    "tag:quarter_end": {
+     "days": 2,
+     "mean": 0.5442811169028294
+    },
+    "tag:tax_date": {
+     "days": 6,
+     "mean": -0.07263898986907129
+    },
+    "tag:year_end": {
+     "days": 0
+    }
+   },
+   "pooled_gain": {
+    "days": 169,
+    "interval": {
+     "lower": -0.038769547829098146,
+     "upper": 0.04985229800921128
+    },
+    "mean": 0.00597104840153164
+   },
+   "test": {
+    "met": false,
+    "pooled_above_zero": false,
+    "worse_cells": []
+   }
+  }
+ },
+ "declaration": "docs/declarations/interior_confirmation_408.json",
+ "declaration_sha256": "54d0ff4cdf19821c7417cd2d9b95e4eea7f9341cbb105806acd8099ccc7c4f71",
+ "directive": "#408",
+ "holds_on_both": [
+  "conformal_pid_calendar",
+  "conformal_by_day_type",
+  "conformal_group_regime"
+ ],
+ "outcome": "meeting the declared test on 2026 as well as on 2018-2025: conformal_pid_calendar, conformal_by_day_type, conformal_group_regime. Whether and which joins the published declaration is Eleonora's; this record changes no published figure",
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "published": {
+  "coverage_by_group": {
+   "all": {
+    "band_50": 20.118343195266274,
+    "band_50_mean_width_bps": 1.9311743415205667,
+    "band_50_miss_above": 32.544378698224854,
+    "band_50_miss_below": 47.337278106508876,
+    "band_90": 92.89940828402366,
+    "band_90_mean_width_bps": 12.017628673436796,
+    "band_90_miss_above": 2.9585798816568047,
+    "band_90_miss_below": 4.1420118343195265,
+    "days": 169
+   },
+   "regime:2025-26": {
+    "band_50": 20.118343195266274,
+    "band_50_mean_width_bps": 1.9311743415205667,
+    "band_50_miss_above": 32.544378698224854,
+    "band_50_miss_below": 47.337278106508876,
+    "band_90": 92.89940828402366,
+    "band_90_mean_width_bps": 12.017628673436796,
+    "band_90_miss_above": 2.9585798816568047,
+    "band_90_miss_below": 4.1420118343195265,
+    "days": 169
+   },
+   "reporting:month_end": {
+    "band_50": 21.428571428571427,
+    "band_50_mean_width_bps": 1.713994418664413,
+    "band_50_miss_above": 42.857142857142854,
+    "band_50_miss_below": 35.714285714285715,
+    "band_90": 92.85714285714286,
+    "band_90_mean_width_bps": 11.670004742454614,
+    "band_90_miss_above": 7.142857142857143,
+    "band_90_miss_below": 0.0,
+    "days": 14
+   },
+   "reporting:ordinary": {
+    "band_50": 21.08843537414966,
+    "band_50_mean_width_bps": 1.9841649871033682,
+    "band_50_miss_above": 30.612244897959183,
+    "band_50_miss_below": 48.29931972789116,
+    "band_90": 93.87755102040816,
+    "band_90_mean_width_bps": 12.009205128285164,
+    "band_90_miss_above": 1.3605442176870748,
+    "band_90_miss_below": 4.761904761904762,
+    "days": 147
+   },
+   "reporting:quarter_end": {
+    "band_50": 0.0,
+    "band_50_mean_width_bps": 1.327004912430802,
+    "band_50_miss_above": 100.0,
+    "band_50_miss_below": 0.0,
+    "band_90": 100.0,
+    "band_90_mean_width_bps": 10.094422314880678,
+    "band_90_miss_above": 0.0,
+    "band_90_miss_below": 0.0,
+    "days": 2
+   },
+   "reporting:tax_date": {
+    "band_50": 0.0,
+    "band_50_mean_width_bps": 1.3410464877695414,
+    "band_50_miss_above": 33.333333333333336,
+    "band_50_miss_below": 66.66666666666667,
+    "band_90": 66.66666666666667,
+    "band_90_mean_width_bps": 13.676196821462234,
+    "band_90_miss_above": 33.333333333333336,
+    "band_90_miss_below": 0.0,
+    "days": 6
+   },
+   "tag:coupon_settlement": {
+    "band_50": 16.666666666666668,
+    "band_50_mean_width_bps": 1.7829844583078465,
+    "band_50_miss_above": 70.83333333333333,
+    "band_50_miss_below": 12.5,
+    "band_90": 83.33333333333333,
+    "band_90_mean_width_bps": 11.105052596835193,
+    "band_90_miss_above": 16.666666666666668,
+    "band_90_miss_below": 0.0,
+    "days": 24
+   },
+   "tag:month_end": {
+    "band_50": 18.75,
+    "band_50_mean_width_bps": 1.6656207303852115,
+    "band_50_miss_above": 50.0,
+    "band_50_miss_below": 31.25,
+    "band_90": 93.75,
+    "band_90_mean_width_bps": 11.473056939007874,
+    "band_90_miss_above": 6.25,
+    "band_90_miss_below": 0.0,
+    "days": 16
+   },
+   "tag:other": {
+    "band_50": 21.804511278195488,
+    "band_50_mean_width_bps": 2.0046589919901576,
+    "band_50_miss_above": 27.06766917293233,
+    "band_50_miss_below": 51.12781954887218,
+    "band_90": 93.98496240601504,
+    "band_90_mean_width_bps": 12.065443968707369,
+    "band_90_miss_above": 0.7518796992481203,
+    "band_90_miss_below": 5.2631578947368425,
+    "days": 133
+   },
+   "tag:quarter_end": {
+    "band_50": 0.0,
+    "band_50_mean_width_bps": 1.327004912430802,
+    "band_50_miss_above": 100.0,
+    "band_50_miss_below": 0.0,
+    "band_90": 100.0,
+    "band_90_mean_width_bps": 10.094422314880678,
+    "band_90_miss_above": 0.0,
+    "band_90_miss_below": 0.0,
+    "days": 2
+   },
+   "tag:tax_date": {
+    "band_50": 0.0,
+    "band_50_mean_width_bps": 1.3410464877695414,
+    "band_50_miss_above": 33.333333333333336,
+    "band_50_miss_below": 66.66666666666667,
+    "band_90": 66.66666666666667,
+    "band_90_mean_width_bps": 13.676196821462234,
+    "band_90_miss_above": 33.333333333333336,
+    "band_90_miss_below": 0.0,
+    "days": 6
+   }
+  },
+  "crps_bps": 1.65907674323835
+ },
+ "record": "2026 confirmation of the #243 band candidates against the published distribution (h = 1)",
+ "sign_convention": "gain = CRPS(published) - CRPS(candidate) per day; a positive mean favours the candidate",
+ "test_files": {
+  "docs/declarations/interior_calibration_243.json": "aead865e245ce6e954118cc264e2320467ea82e887d46f399fdf77794ece3f15",
+  "docs/declarations/interior_calibration_243_addendum.json": "fa8d55a42977e86b5a59d1d846ac8cf121eadb91138392ab8b7f90f927143f4b"
+ },
+ "window": {
+  "days": 169,
+  "first": "2026-01-02",
+  "last": "2026-09-03"
+ }
+}
