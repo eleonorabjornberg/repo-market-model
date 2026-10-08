@@ -1083,6 +1083,22 @@ class WorkflowIntegrityTests(unittest.TestCase):
         self.assertLess(failed.index("git reset"), failed.index("done"))
         self.assertRegex(step, r'\[ -z "\$failed" \]')
 
+    def test_the_anchor_step_leaves_nothing_untracked_in_live_log(self):
+        """The late-anchor note is written outside the live-log checkout (#437).
+
+        Run 37851656637 anchored 5, 6 and 7 October late. The step runs inside
+        `live-log/` and wrote `late.md` there, then read `../late.md`: the note
+        was never posted and the untracked file made `verify` refuse the clean
+        checkout ("live-log has uncommitted changes"), failing a sound record.
+        Recorded mutation: `} > ../late.md` back to `} > late.md` made this
+        test fail with AssertionError.
+        """
+
+        step = self._step("Anchor the digests in Sigstore Rekor")
+        self.assertIn("} > ../late.md", step)
+        self.assertNotRegex(step, r"> late\.md")
+        self.assertIn("-F body=@../late.md", step)
+
     def test_cosign_is_a_pinned_release_checked_against_its_sha256(self):
         step = self._step("Anchor the digests in Sigstore Rekor")
         self.assertRegex(step, r"COSIGN_VERSION: v\d+\.\d+\.\d+")
