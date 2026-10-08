@@ -1,0 +1,45 @@
+{
+  "status": "declared by the pull request that closes #375, before any score was computed; the bar is Eleonora's ruling of 7 October 2026 on #374, and the choices marked in docs/decisions/drafts/ are hers to rule on",
+  "scoring": {"last_day": "2025-12-31"},
+  "thresholds_bp": [5, 10],
+  "primary_threshold_bp": 5,
+  "horizons": [1, 2, 3, 4, 5],
+  "pass_horizons": [1, 2, 3, 4, 5],
+  "bar": {
+    "recall_at_least": 0.7,
+    "false_alarms_per_true_at_most": 1.0,
+    "level": 0.9,
+    "replications": 2000,
+    "block_length": 10,
+    "seed": 375
+  },
+  "early_warning": {"usefulness_preference": 0.5},
+  "groupings": ["regime", "scarcity_state", "day_type"],
+  "benchmarks": {
+    "climatology": "calendar_climatology",
+    "persistence": "persistence_logistic"
+  },
+  "candidates": {
+    "calendar_climatology": {
+      "role": "benchmark",
+      "features": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date"],
+      "calibration": "none",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "persistence_logistic": {
+      "role": "benchmark",
+      "features": ["spread_bps"],
+      "calibration": "none",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "published_v1": {
+      "role": "baseline",
+      "features": [
+        "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
+        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"
+      ],
+      "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION)",
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    }
+  }
+}
