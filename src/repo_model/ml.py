@@ -587,6 +587,7 @@ from .baseline import (
 from .contract import DERIVED_FEATURES, QUANTILE_LEVELS
 from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .metrics import _validate_levels
+from .pressure import ONSET_QUIET_DAYS
 from .asof import InformationRule
 from .splits import (
     LookAheadError,
@@ -638,6 +639,8 @@ __all__ = [
     "TGA_CHANGE_ROWS",
     "pressure_classifier_exceedance",
     "pressure_probit_exceedance",
+    "pressure_two_part_exceedance",
+    "TWO_PART_SETTINGS",
     "pressure_quantile_exceedance",
     "pressure_logistic_exceedance",
     "PRESSURE_TAIL_SETTINGS",
@@ -4004,6 +4007,23 @@ PRESSURE_QUANTILE_SETTINGS = MappingProxyType(
         "and continued at the outer segments' slopes to 0 and 1",
     }
 )
+#: The two-part pressure model (#382, track S of #374): P(spike) from a classifier, times a
+#: conditional law of the spike's size. Chosen before scoring, not tuned. The size is the
+#: spread's whole-bp excess over the spike threshold, geometric on 1, 2, ... with a
+#: log-linear mean on the same design (a ridge Poisson fit of excess - 1, so the mean is
+#: consistent without a distributional assumption), pooled to one mean when the training
+#: frame has fewer than `min_spike_days` spikes.
+TWO_PART_SETTINGS = MappingProxyType(
+    {
+        "spike_bp": 5.0,
+        "size_law": "geometric excess over the spike threshold",
+        "size_mean": "1 + PoissonRegressor(alpha, log link) on the standardized design, fitted on spike days",
+        "alpha": 1.0,
+        "max_iter": 1000,
+        "min_spike_days": 20,
+        "reading": "P(spread > tau) = P(spike) * (1 - 1/mean)^(tau - spike_bp) for tau >= spike_bp",
+    }
+)
 #: The quantile regression of the settlement-timing track (#379; Adrian, Boyarchenko &
 #: Giannone 2019): the quantile grid of `PRESSURE_QUANTILE_SETTINGS`, smoothed into a
 #: skew-t by least squares on the predicted quantiles, in place of linear interpolation.
@@ -4145,6 +4165,12 @@ _INTERACTION_DAY_TYPES = ("quarter_end", "tax_date")
 #: scaled by this before the one L2 penalty, so its deviations carry
 #: `1 / scale ** 2` times the pooled columns' penalty. Declared, not tuned.
 REGIME_POOLING_SCALE = 0.5
+#: The hierarchical logistic's candidate deviation scales (#386): the regime
+#: deviations' prior standard deviation, as a multiple of the pooled columns'.
+#: Each fit takes the one whose Laplace-approximated evidence is greatest
+#: (empirical Bayes). The grid is declared, not tuned; the smallest value is
+#: almost complete pooling, the largest an almost unshrunk regime-by-regime fit.
+REGIME_SHRINKAGE_GRID = (0.05, 0.1, 0.25, 0.5, 1.0, 2.0)
 #: The scheduled settlement columns the design reads as scheduled-pressure
 #: terms: the total (#114) and the coupon part alone (#137).
 _SETTLEMENT_INPUTS = ("treasury_settlement", "treasury_settlement_coupons")
@@ -4467,6 +4493,8 @@ def _direct_pressure_predictor(
     cache: dict = {}
     pooled: dict = {}
     selections: List[Mapping[str, Any]] = []
+    shrinkage: List[float] = []
+    effects: List[dict] = []
 
     def fit_predict(
         train_rows: Sequence[DailyObservation],
@@ -4525,6 +4553,8 @@ def _direct_pressure_predictor(
         # Two thresholds with no training spread between them have one label
         # vector, so one fit: the estimator is deterministic in its labels.
         fitted: dict = {}
+        shrinkage.clear()
+        effects.clear()
         if kind in ("quantile", "quantile_skewt"):
             law = _quantile_exceedance(
                 xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t" if kind == "quantile_skewt" else "linear"
@@ -4536,7 +4566,17 @@ def _direct_pressure_predictor(
             )
             selections.append(chosen)
             columns = [[curve[k] for curve in law] for k in range(len(taus))]
-        for tau in taus if kind not in ("quantile", "quantile_skewt") and kind not in _DISTRIBUTION_KINDS else ():
+        if kind.startswith("two_part_"):
+            columns = _two_part_columns(
+                kind[len("two_part_"):], xs, spreads, served, [float(tau) for tau in taus], monotone
+            )
+        for tau in (
+            taus
+            if kind not in ("quantile", "quantile_skewt")
+            and kind not in _DISTRIBUTION_KINDS
+            and not kind.startswith("two_part_")
+            else ()
+        ):
             labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
@@ -4551,6 +4591,8 @@ def _direct_pressure_predictor(
                     monotone=monotone,
                     pooling=getattr(design, "pooling", None),
                     rare=rare,
+                    shrinkage_trace=shrinkage,
+                    effects_trace=effects,
                     recency=None if recency is None else (recency[0], recency[1], ages),
                 )
             columns.append(fitted[key])
@@ -4566,6 +4608,8 @@ def _direct_pressure_predictor(
                 "logistic": PRESSURE_LOGISTIC_SETTINGS,
                 "probit": PRESSURE_PROBIT_SETTINGS,
                 "quantile": PRESSURE_QUANTILE_SETTINGS,
+                "two_part_logistic": {**PRESSURE_LOGISTIC_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
+                "two_part_gbm_classifier": {**PRESSURE_CLASSIFIER_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
                 "quantile_skewt": PRESSURE_QUANTILE_SKEWT_SETTINGS,
                 "qrf": PRESSURE_QRF_SETTINGS,
                 "ng_normal": PRESSURE_NATURAL_GRADIENT_SETTINGS,
@@ -4609,6 +4653,10 @@ def _direct_pressure_predictor(
             settings["products"] = [list(pair) for pair in design.products]
         if isinstance(design, _ScarcityCalendarDesign):
             settings["scarcity_calendar"] = design.settings()
+            if shrinkage:
+                settings["regime_shrinkage_chosen"] = list(shrinkage)
+            if effects:
+                settings["regime_effects"] = list(effects)
         if monotone is not None:
             settings["monotonic_cst"] = list(monotone)
         return ExceedanceCurves(
@@ -4628,13 +4676,95 @@ def _direct_pressure_predictor(
     return fit_predict
 
 
+def _geometric_size_survival(
+    xs: Sequence[Sequence[float]],
+    excess: Sequence[float],
+    served: Sequence[Sequence[float]],
+    steps: Sequence[float],
+) -> List[Tuple[float, ...]]:
+    """P(excess > t | x) at each served row and each step t, for a geometric size law (#382).
+
+    `xs` and `excess` are the spike days' design rows and whole-bp excess over the
+    spike threshold (each at least 1). The excess is geometric on 1, 2, ... with mean
+    m(x) = 1 + exp(linear index), the index fitted by a ridge Poisson regression of
+    `excess - 1` on the standardized design (`TWO_PART_SETTINGS`); then
+    P(excess > t) = (1 - 1/m)^t, which is 1 at t = 0 and non-increasing in t. With fewer
+    than `TWO_PART_SETTINGS["min_spike_days"]` spike days the mean is the pooled one.
+    """
+
+    import numpy
+
+    settings = TWO_PART_SETTINGS
+    e = numpy.asarray(excess, dtype=float)
+    if len(e) and float(e.min()) < 1.0:
+        raise ValueError("the excess over the spike threshold is at least one whole basis point")
+    z = numpy.asarray(served, dtype=float)
+    if len(e) == 0:
+        mean = numpy.full(len(z), 1.0)
+    elif len(e) < settings["min_spike_days"]:
+        mean = numpy.full(len(z), float(e.mean()))
+    else:
+        from sklearn.linear_model import PoissonRegressor
+
+        x = numpy.asarray(xs, dtype=float)
+        centre, scale = _standardizer(x)
+        model = PoissonRegressor(alpha=settings["alpha"], max_iter=settings["max_iter"])
+        model.fit((x - centre) / scale, e - 1.0)
+        mean = 1.0 + model.predict((z - centre) / scale)
+    ratio = numpy.clip(1.0 - 1.0 / numpy.maximum(mean, 1.0), 0.0, 1.0)
+    return [tuple(float(r) ** float(t) for t in steps) for r in ratio]
+
+
+def _two_part_columns(
+    classifier: str,
+    xs: Sequence[Sequence[float]],
+    spreads: Sequence[float],
+    served: Sequence[Sequence[float]],
+    taus: Sequence[float],
+    monotone: Optional[Sequence[int]],
+) -> List[List[float]]:
+    """One exceedance column per tau: P(spike) times the conditional size survival (#382)."""
+
+    spike = float(TWO_PART_SETTINGS["spike_bp"])
+    labels = [1 if exceeds_bp(value, spike) else 0 for value in spreads]
+    if len(set(labels)) < 2:
+        p_spike = [float(labels[0])] * len(served)
+    else:
+        p_spike = _fit_classifier(classifier, xs, labels, served, monotone=monotone)
+    spike_rows = [x for x, label in zip(xs, labels) if label]
+    excess = [round(float(value)) - spike for value, label in zip(spreads, labels) if label]
+    above = [tau for tau in taus if tau >= spike]
+    survival = _geometric_size_survival(spike_rows, excess, served, [tau - spike for tau in above])
+    columns = []
+    for tau in taus:
+        if tau >= spike:
+            k = above.index(tau)
+            columns.append([p_spike[day] * survival[day][k] for day in range(len(served))])
+            continue
+        # below the spike threshold the size law says nothing: the classifier on that threshold's own label
+        direct = [1 if exceeds_bp(value, tau) else 0 for value in spreads]
+        columns.append(
+            [float(direct[0])] * len(served)
+            if len(set(direct)) < 2
+            else _fit_classifier(classifier, xs, direct, served, monotone=monotone)
+        )
+    # No smoothing and no prior: the parametric tail never reaches past the largest
+    # spread the fit has seen, so a threshold above every training spread is a hard zero.
+    for k, tau in enumerate(taus):
+        if not any(exceeds_bp(value, tau) for value in spreads):
+            columns[k] = [0.0] * len(served)
+    return columns
+
+
 def _fit_classifier(
     kind: str,
     xs: Sequence[Sequence[float]],
     labels: Sequence[int],
     served: Sequence[Sequence[float]],
     monotone: Optional[Sequence[int]] = None,
-    pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None,
+    pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], Optional[float]]] = None,
+    shrinkage_trace: Optional[List[float]] = None,
+    effects_trace: Optional[List[dict]] = None,
     rare: Optional[str] = None,
     recency: Optional[Tuple[str, int, Sequence[int]]] = None,
 ) -> List[float]:
@@ -4649,7 +4779,9 @@ def _fit_classifier(
     `scale` and by the regime's indicator, under the one L2 penalty: a regime's
     deviations are shrunk toward the pooled fit, and a regime with no training
     day is served the pooled fit. `None` passes nothing, so every other fit is
-    unchanged.
+    unchanged. A `scale` of `None` (#386) is estimated from this fit's training
+    pairs alone by `_empirical_bayes_scale` and appended to `shrinkage_trace`;
+    `effects_trace`, if given, receives `_regime_effects` of the fit.
 
     `rare`, the rare-event treatments' (#381): one of
     `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied to the training rows
@@ -4685,6 +4817,11 @@ def _fit_classifier(
         scale[scale == 0.0] = 1.0
         if pooling is not None:
             pooled, deviating, regimes, shrink = pooling
+            if shrink is None:
+                shrink = _empirical_bayes_scale(x, y, pooled, deviating, regimes)
+                if shrinkage_trace is not None:
+                    shrinkage_trace.append(shrink)
+            original_scale = scale
             x = _pool_columns((x - centre) / scale, x[:, 1], pooled, deviating, regimes, shrink)
             z = _pool_columns((z - centre) / scale, z[:, 1], pooled, deviating, regimes, shrink)
             centre, scale = numpy.zeros(x.shape[1]), numpy.ones(x.shape[1])
@@ -4693,6 +4830,10 @@ def _fit_classifier(
             max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
         )
         model.fit((x - centre) / scale, y)
+        if pooling is not None and effects_trace is not None:
+            effects_trace.append(
+                _regime_effects(model.coef_[0], pooled, deviating, regimes, shrink, original_scale)
+            )
         return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
     if kind == "probit":
         return _fit_probit(x, y, z)
@@ -4944,6 +5085,105 @@ def _pool_columns(
         blocks.append(shrink * indicator)
         blocks.append(shrink * indicator * standardized[:, list(deviating)])
     return numpy.hstack(blocks)
+
+
+def _regime_effects(
+    coefficients: Any,
+    pooled: Sequence[int],
+    deviating: Sequence[int],
+    regimes: Sequence[float],
+    shrink: float,
+    scale: Any,
+) -> dict:
+    """A partially pooled logistic's coefficients, per regime and in the design's own units (#386).
+
+    `coefficients` are those of `_pool_columns`'s columns. For each regime, by
+    design column index: the logit change per unit of that column, which is the
+    pooled coefficient (if the column is pooled) plus the regime's shrunk
+    deviation (if it deviates), divided by the column's training scale; and
+    `"intercept"`, the regime's own shrunk intercept shift. Also the `"pooled"`
+    coefficients on their own and the `shrink` used.
+    """
+
+    width = len(pooled)
+    block = 1 + len(deviating)
+    effects: dict = {"shrink": float(shrink), "pooled": {int(j): float(coefficients[i] / scale[j]) for i, j in enumerate(pooled)}}
+    by_regime: dict = {}
+    for k, level in enumerate(regimes):
+        start = width + k * block
+        entry = {"intercept": float(shrink * coefficients[start])}
+        for i, j in enumerate(deviating):
+            deviation = shrink * coefficients[start + 1 + i]
+            total = deviation + (coefficients[list(pooled).index(j)] if j in pooled else 0.0)
+            entry[int(j)] = float(total / scale[j])
+        for i, j in enumerate(pooled):
+            entry.setdefault(int(j), float(coefficients[i] / scale[j]))
+        by_regime[float(level)] = entry
+    effects["regimes"] = by_regime
+    return effects
+
+
+def _laplace_log_evidence(design: Any, y: Any) -> float:
+    """The Laplace-approximated log marginal likelihood of a ridge logistic (#386).
+
+    The model is `LogisticRegression`'s: an unpenalized intercept and a Gaussian
+    prior of variance `C` on every column of `design`, `C` from
+    `PRESSURE_LOGISTIC_SETTINGS`. The posterior mode is found by Newton's method
+    and the evidence is `-nll(w) - |w|^2 / 2C - log det(H) / 2 + k log(1/C) / 2`,
+    with `H` the penalized Hessian at the mode. The `log det` term is the Occam
+    factor: a deviation column the data do not need lowers the evidence.
+    """
+
+    import numpy
+    from scipy.special import expit
+
+    n, k = design.shape
+    prior = 1.0 / PRESSURE_LOGISTIC_SETTINGS["C"]
+    a = numpy.hstack([numpy.ones((n, 1)), design])
+    precision = numpy.diag([0.0] + [prior] * k)
+    w = numpy.zeros(k + 1)
+    rate = min(max(float(y.mean()), 1e-6), 1 - 1e-6)
+    w[0] = math.log(rate / (1 - rate))
+    for _ in range(100):
+        p = expit(a @ w)
+        gradient = a.T @ (p - y) + precision @ w
+        hessian = (a.T * (p * (1.0 - p))) @ a + precision + 1e-10 * numpy.eye(k + 1)
+        step = numpy.linalg.solve(hessian, gradient)
+        w = w - numpy.clip(step, -4.0, 4.0)
+        if float(numpy.max(numpy.abs(step))) < 1e-9:
+            break
+    eta = a @ w
+    nll = float(numpy.sum(numpy.logaddexp(0.0, eta) - y * eta))
+    p = expit(eta)
+    hessian = (a.T * (p * (1.0 - p))) @ a + precision + 1e-10 * numpy.eye(k + 1)
+    _, logdet = numpy.linalg.slogdet(hessian)
+    penalized = w[1:]
+    return float(-nll - 0.5 * prior * float(penalized @ penalized) - 0.5 * logdet + 0.5 * k * math.log(prior))
+
+
+def _empirical_bayes_scale(
+    x: Any, y: Any, pooled: Sequence[int], deviating: Sequence[int], regimes: Sequence[float]
+) -> float:
+    """The deviation scale in `REGIME_SHRINKAGE_GRID` with the greatest evidence (#386).
+
+    Empirical Bayes: the prior spread of the regime deviations is chosen by
+    maximizing the Laplace-approximated marginal likelihood of this fit's own
+    training pairs, so it reads nothing but `x` and `y`. A tie goes to the
+    smaller scale (more pooling). Column 1 of `x` is the regime.
+    """
+
+    import numpy
+
+    centre = x.mean(axis=0)
+    scale = x.std(axis=0)
+    scale[scale == 0.0] = 1.0
+    standardized = (x - centre) / scale
+    best, best_evidence = None, -math.inf
+    for candidate in REGIME_SHRINKAGE_GRID:
+        evidence = _laplace_log_evidence(_pool_columns(standardized, x[:, 1], pooled, deviating, regimes, candidate), y)
+        if evidence > best_evidence:
+            best, best_evidence = candidate, evidence
+    return float(best)
 
 
 def _fit_probit(x: Any, y: Any, z: Any) -> List[float]:
@@ -5215,6 +5455,209 @@ def pressure_rare_event_exceedance(
     )
 
 
+# --------------------------------------------------------------------------
+# The onset classifier (#409, track O of #374)
+# --------------------------------------------------------------------------
+#
+# Separate definitions, not options of `_direct_pressure_predictor`: that function and the design and
+# pair builders it reaches are hashed into the final test's pre-registered checksums
+# (`docs/decisions/final-test-preregistration.md`), so an option added to them would move a pinned
+# checksum. These reuse them without changing them.
+
+
+class _OnsetDesign(_PressureDesign):
+    """`_PressureDesign` with declared columns that may be unobserved (#409).
+
+    An `optional` column is a declared linear column other than `reserve_balances`. It enters as its
+    value, zero where not yet public, followed by an `<name>_observed` indicator (1 or 0), so a
+    series with a short or gappy history trains on every day.
+    """
+
+    def __init__(self, features: Sequence[str], declaration: Any, optional: Sequence[str] = ()) -> None:
+        super().__init__(features, declaration)
+        self.optional = tuple(dict.fromkeys(str(name) for name in optional))
+        for name in self.optional:
+            if name not in self.linear or name == "reserve_balances":
+                raise ValueError(
+                    f"an optional column is a declared linear column other than reserve_balances; "
+                    f"{name!r} is not"
+                )
+        names = list(self.names)
+        for name in self.optional:
+            names.insert(names.index(name) + 1, f"{name}_observed")
+        self.names = tuple(names)
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        seen = {}
+        values = dict(observation.values)
+        for name in self.optional:
+            raw = values.get(name)
+            seen[name] = raw is not None and math.isfinite(float(raw))
+            if not seen[name]:
+                values[name] = 0.0
+        out = super().row(DailyObservation(observation.date, values), tga_change)
+        # `_PressureDesign.row`: the spread, then the linear columns in declared order.
+        position = 1
+        for name in self.linear:
+            position += 1
+            if name in self.optional:
+                out.insert(position, 1.0 if seen[name] else 0.0)
+                position += 1
+        return out
+
+
+def _onset_labels(
+    labels: Sequence[int], targets: Sequence[int], train_rows: Sequence[DailyObservation], tau: float
+) -> List[int]:
+    """The exceedance labels of the pairs, kept only where the day is an onset (#409).
+
+    `labels[k]` is 1 when the pair's target day, row `targets[k]` of `train_rows`, is above `tau`.
+    It stays 1 only when none of the `ONSET_QUIET_DAYS` rows before the target is:
+    `pressure.onsets`' rule, read off the training rows alone, every one of which is at or before
+    the target.
+    """
+
+    return [
+        1
+        if label
+        and not any(
+            exceeds_bp(float(prior.spread_bps), tau)
+            for prior in train_rows[target - ONSET_QUIET_DAYS : target]
+        )
+        else 0
+        for label, target in zip(labels, targets)
+    ]
+
+
+def pressure_onset_exceedance(
+    kind: str,
+    treatment: Optional[str],
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    optional: Sequence[str] = (),
+) -> ExceedancePredictor:
+    """The direct logistic or classifier fitted to the onset label (#409).
+
+    `kind` is `"logistic"` or `"gbm_classifier"`; `treatment` is `None` or one of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]` (#381). The label at each threshold is an onset
+    (`pressure.onsets`: a day above it with no such day on the five panel days before it), read off
+    the training rows alone; a training day with fewer than that many panel days before it trains
+    no pair. The design, the direct pairs and the guards are those of
+    `pressure_logistic_exceedance`; `optional` names declared columns that enter with an observed
+    indicator (`_OnsetDesign`). The curve across thresholds is made non-increasing, as the
+    exceedance-curve interface requires. The probabilities are those of an onset, not of a pressure
+    day; read them recalibrated out of fold (`pressure.recalibrated`).
+    """
+
+    if kind not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"an onset classifier is the logistic or the classifier, not {kind!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if treatment is not None and treatment not in PRESSURE_RARE_EVENT_SETTINGS["treatments"]:
+        raise ValueError(
+            f"unknown rare-event treatment {treatment!r}; one of "
+            f"{list(PRESSURE_RARE_EVENT_SETTINGS['treatments'])}"
+        )
+    if treatment == "focal" and kind != "gbm_classifier":
+        raise ValueError("the focal loss is the gradient-boosted classifier's")
+    design = _OnsetDesign(features, declaration, optional)
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "an onset classifier pairs each training label with what was public at that label's "
+                "own decision instant, which only the as-of rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"an onset classifier needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        # The pairs' label positions, from the cache `_pressure_pairs` just filled.
+        base = (information.horizon, information.features)
+        targets = [
+            target
+            for target in range(1, len(train_rows))
+            if cache.get((base, train_rows[target].date)) is not None
+        ]
+        if len(targets) != len(xs):  # pragma: no cover - construction bug
+            raise ValueError("the onset label positions and the training pairs are out of step")
+        kept = [k for k, target in enumerate(targets) if target >= ONSET_QUIET_DAYS]
+        xs = [xs[k] for k in kept]
+        spreads = [spreads[k] for k in kept]
+        targets = [targets[k] for k in kept]
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        columns: List[List[float]] = []
+        fitted: dict = {}
+        for tau in taus:
+            exceeds = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+            labels = _onset_labels(exceeds, targets, train_rows, float(tau))
+            if len(set(labels)) < 2:
+                columns.append([float(labels[0])] * len(served))
+                continue
+            key = tuple(labels)
+            if key not in fitted:
+                fitted[key] = _fit_classifier(kind, xs, labels, served, rare=treatment)
+            columns.append(fitted[key])
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS)
+        settings["design"] = list(design.names)
+        settings["onset_label"] = f"exceedance with {ONSET_QUIET_DAYS} quiet panel days before"
+        if treatment is not None:
+            settings["rare_event"] = {
+                "treatment": treatment,
+                **{
+                    key: _plain(value)
+                    for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
+                    if key in ("class_weight", treatment)
+                },
+            }
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
+
+
 def pressure_probit_exceedance(
     features: Sequence[str], declaration: Any, minimum_history: int = 20
 ) -> ExceedancePredictor:
@@ -5225,6 +5668,35 @@ def pressure_probit_exceedance(
     """
 
     return _direct_pressure_predictor("probit", features, declaration, minimum_history)
+
+
+def pressure_two_part_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    classifier: str = "logistic",
+) -> ExceedancePredictor:
+    """A two-part (hurdle) model of the pressure label and its size (#382).
+
+    Part one is `classifier` ("logistic" or "gbm_classifier") on `spread > +5 bp`,
+    the spike. Part two is the conditional law of the spike's size (the whole-bp
+    excess over +5 bp) on the same design, fitted on the spike days only
+    (`_geometric_size_survival`). The exceedance at tau >= 5 bp is their product,
+    `P(spike) * P(excess > tau - 5 | spike)`, so the curve is non-increasing in tau by
+    construction and its +5 bp value is the classifier's. A threshold below +5 bp, where
+    the size law is silent, is the classifier on that threshold's own label. Fitted on the
+    direct, as-of-paired pairs (`_pressure_pairs`) like the other direct models.
+
+    Raises:
+        ValueError: on a design the features cannot support, a short frame, or a call
+            without the as-of rule.
+    """
+
+    if classifier not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"the spike part is a logistic or a gbm_classifier, got {classifier!r}")
+    return _direct_pressure_predictor(
+        f"two_part_{classifier}", features, declaration, minimum_history
+    )
 
 
 def pressure_quantile_exceedance(
@@ -5913,11 +6385,15 @@ class _ScarcityCalendarDesign:
         monotone: bool = False,
         interactions: bool = False,
         regime_pooled: bool = False,
+        regime_hierarchical: bool = False,
     ) -> None:
         from .scarcity import RESERVE_SCARCITY_STATE, STATE_LABELS
 
-        if interactions and regime_pooled:
-            raise ValueError("the interaction variant and the regime-pooled variant are separate candidates")
+        if sum((interactions, regime_pooled, regime_hierarchical)) > 1:
+            raise ValueError(
+                "the interaction, regime-pooled and hierarchical variants are separate candidates"
+            )
+        regime_pooled = regime_pooled or regime_hierarchical
         if regime_pooled and monotone:
             raise ValueError("partial pooling is the logistic's; the classifier's constraint does not apply to it")
         declared = tuple(dict.fromkeys(str(name) for name in features))
@@ -5961,14 +6437,19 @@ class _ScarcityCalendarDesign:
         names += [f"treasury_settlement_x_state_x_{kind}" for kind in self.interaction_types]
         # The regime-pooled variant (#378): the scheduled terms and the spread
         # get a deviation per scarcity regime, shrunk toward the pooled fit.
-        self.pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None
+        self.pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], Optional[float]]] = None
         if regime_pooled:
             pooled_columns = tuple(range(len(names)))
             raw = list(_PRESSURE_DAY_TYPES) + (["treasury_settlement"] if self.settlement else [])
             names += raw
             deviation_columns = (0,) + tuple(range(len(pooled_columns), len(names)))
+            # The hierarchical variant (#386) has no fixed scale: each fit
+            # estimates it by empirical Bayes (`None`).
             self.pooling = (
-                pooled_columns, deviation_columns, tuple(sorted(set(self.state_levels.values()))), REGIME_POOLING_SCALE
+                pooled_columns,
+                deviation_columns,
+                tuple(sorted(set(self.state_levels.values()))),
+                None if regime_hierarchical else REGIME_POOLING_SCALE,
             )
         self.names = tuple(names)
         self.monotone: Optional[Tuple[int, ...]] = (
@@ -5990,7 +6471,11 @@ class _ScarcityCalendarDesign:
             "regime_partial_pooling": (
                 None
                 if self.pooling is None
-                else {"regimes": list(self.pooling[2]), "deviation_scale": self.pooling[3]}
+                else {
+                    "regimes": list(self.pooling[2]),
+                    "deviation_scale": "empirical Bayes" if self.pooling[3] is None else self.pooling[3],
+                    "grid": list(REGIME_SHRINKAGE_GRID) if self.pooling[3] is None else None,
+                }
             ),
         }
 
@@ -6048,6 +6533,7 @@ def _scarcity_calendar_predictor(
     *,
     interactions: bool = False,
     regime_pooled: bool = False,
+    regime_hierarchical: bool = False,
 ) -> Any:
     """The scarcity-conditioned calendar (#128), as a direct pressure model.
 
@@ -6066,14 +6552,16 @@ def _scarcity_calendar_predictor(
     Two variants (#378, `repo_model.scarcity_event_bar`): `interactions` adds
     the settlement's size x state x quarter-end and x tax date; `regime_pooled`
     (the logistic only) gives the spread and each scheduled term a deviation per
-    scarcity regime, partially pooled toward the pooled fit.
+    scarcity regime, partially pooled toward the pooled fit. A third (#386),
+    `regime_hierarchical`, is the same design with the pooling strength estimated
+    in each fit by empirical Bayes (`_empirical_bayes_scale`) instead of declared.
     """
 
     if form not in SCARCITY_CALENDAR_KINDS:
         raise ValueError(f"a scarcity-calendar form is one of {sorted(SCARCITY_CALENDAR_KINDS)}, got {form!r}")
     design = _ScarcityCalendarDesign(
         features, declaration, state_levels, monotone=form == "gbm",
-        interactions=interactions, regime_pooled=regime_pooled,
+        interactions=interactions, regime_pooled=regime_pooled, regime_hierarchical=regime_hierarchical,
     )
     return _direct_pressure_predictor(
         SCARCITY_CALENDAR_KINDS[form], features, declaration, minimum_history, design=design

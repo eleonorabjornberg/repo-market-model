@@ -129,10 +129,14 @@ Drafted for her. It fixes how a scoring run is made, so that the evidence can be
   when a scoring function is added outside the checksum. It was taken after the declarations, the `lockbox.json`
   routing, the `month_end` re-split, #257, #231 and the final test's groups (#363) had merged, so #282 is the
   last change not under it. A later change to a covered function is a decision of hers and re-pins this value.
+  The pin was re-taken for #370 (her `GO #370`, attested in `metadata/owner_attestations.json`): the freeze also covers
+  the decision-day calendar helpers (`next_decision_days`, `previous_decision_day` in `scripts/live_record.py`, with
+  what they reach there) and the group labels (`onset.GROUP_ONSET`, `onset.GROUP_LEAP_ONSET`), which set the blind
+  gap's day boundaries and the group cells.
   *Proposed, hers to merge:* the pin in the next two lines.
 
-- **Live scorer checksum:** `c3d4bb30931e343211d918c0639a0e9452382391d0fd2cf5ad00e8e1c9c9c017`
-- **Live scorer checksum taken at:** `0fefd8fa1f10a18df613737c77bf68d9091a1df1`
+- **Live scorer checksum:** `d508b30d94da822d6b3f816fb9e9a5616c83f29b266878e72722f7f6eac82a79`
+- **Live scorer checksum taken at:** `da7aa3dd3bcb5bb6591e9c711fd3421223f085db`
 - **The gap.** The blind gap's raw inputs, fetched once at scoring time, are archived on `live-raw` as
   `raw/<date>-gap/` before the reconstruction reads them. Its day boundaries are computed by the pinned code's own
   calendar and the scorer asserts they equal the ones it computes from main's; a difference refuses the run.
