@@ -5,7 +5,7 @@ probability changes little from +5 bp to +50 bp, so that at the upper thresholds
 descriptive: it changes no model, no published record, no input and nothing the live record logs. Remedies are at
 the end, as candidates only; none is scored here.
 
-Every figure is read from `docs/runs/exceedance_flattening_diagnosis.json`, made by
+Every figure is read from `docs/runs/v1_flattening_diagnosis.json`, made by
 `scripts/exceedance_flattening_diagnosis.py` on the published panel (`4ddc3882…8999`). The model is pressure model v1
 as published (`docs/runs/pressure_model_v1_h1.json` … `_h5.json`): the funding gradient-boosted quantile model
 with nested conformal PID, its exceedance read off the issued law, then the out-of-fold Platt step. The walk repeats
@@ -238,7 +238,7 @@ they answer a cause above:
 ```
 PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs --output /tmp/funding_panel.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
 for h in 1 2 3 4 5; do OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/exceedance_flattening_diagnosis.py walk --panel /tmp/funding_panel.csv --horizon $h --output /tmp/walk_h$h.json; done
-PYTHONPATH=src python3 scripts/exceedance_flattening_diagnosis.py assemble --panel /tmp/funding_panel.csv --walks /tmp/walk_h1.json /tmp/walk_h2.json /tmp/walk_h3.json /tmp/walk_h4.json /tmp/walk_h5.json --output docs/runs/exceedance_flattening_diagnosis.json
+PYTHONPATH=src python3 scripts/exceedance_flattening_diagnosis.py assemble --panel /tmp/funding_panel.csv --walks /tmp/walk_h1.json /tmp/walk_h2.json /tmp/walk_h3.json /tmp/walk_h4.json /tmp/walk_h5.json --output docs/runs/v1_flattening_diagnosis.json
 ```
 
 | Cause | Check | Where in the record |

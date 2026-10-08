@@ -2,7 +2,7 @@
 
 `scripts/exceedance_flattening_diagnosis.py` walks the published pressure model v1
 (that needs the `ml` extra and a panel, so it is not run here) and assembles
-`docs/runs/exceedance_flattening_diagnosis.json`. These tests read no panel: the
+`docs/runs/v1_flattening_diagnosis.json`. These tests read no panel: the
 measures and the guards run on synthetic inputs, and the record is checked against
 the published pressure-model records.
 
@@ -34,7 +34,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 REPO = Path(__file__).resolve().parents[1]
-RECORD = REPO / "docs" / "runs" / "exceedance_flattening_diagnosis.json"
+RECORD = REPO / "docs" / "runs" / "v1_flattening_diagnosis.json"
 LAST_COMPARED = "2025-12-31"
 
 
