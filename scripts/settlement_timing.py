@@ -2,8 +2,8 @@
 
 A scratch measurement, not a record: it writes JSON to the paths it is given and nothing
 into `docs/runs/`. The candidates are `repo_model.settlement_timing.CANDIDATES`, their
-cut-offs are in `metadata/pressure_judge.json`, both committed before any score was
-computed. Every input they read beyond the published panel is off in every published
+declaration is `metadata/pressure_judge.json` (the flag cut-off is chosen by the judge's
+`cutoff_rule`, #407), both committed before any score was computed. Every input they read beyond the published panel is off in every published
 declaration and switched on for these runs only.
 
     PYTHONPATH=src python3 scripts/pressure_v1_1.py panel --output AUG.csv

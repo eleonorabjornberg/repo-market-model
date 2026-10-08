@@ -601,6 +601,13 @@ __all__ = [
     "PRESSURE_DISTRIBUTION_SELECTION",
     "pressure_qrf_exceedance",
     "pressure_natural_gradient_exceedance",
+    "MARKOV_SWITCHING_SETTINGS",
+    "FittedMarkovSwitching",
+    "fit_markov_switching",
+    "filter_markov_switching",
+    "markov_switching_exceedance",
+    "markov_switching_exceedance_curve",
+    "markov_switching_state_probabilities",
     "ARX_FEATURES",
     "CALIBRATIONS",
     "DEFAULT_CALIBRATION_FOLDS",
@@ -633,6 +640,11 @@ __all__ = [
     "pressure_probit_exceedance",
     "pressure_quantile_exceedance",
     "pressure_logistic_exceedance",
+    "PRESSURE_TAIL_SETTINGS",
+    "TAIL_SCALE_COLUMNS",
+    "CensoredGpd",
+    "fit_censored_gpd",
+    "pressure_tail_exceedance",
 ]
 
 #: The level the point forecast is read at. The contract grid carries it, and a
@@ -4022,6 +4034,38 @@ PRESSURE_CLASSIFIER_SETTINGS = MappingProxyType(
     }
 )
 
+#: Rare-event training (#381; `docs/pivot/literature.md`): fit the pressure label so the model
+#: learns from the spikes rather than the calm majority. Declared before any score, not tuned.
+#: `class_weight` weights each class by n / (2 n_class) in the fit. `focal` is a gradient-boosted
+#: classifier on the focal loss (Lin et al. 2017) of `gamma` and positive-class weight `alpha`,
+#: built from scikit-learn regression trees with Newton leaf values (`l2` on the hessian sum).
+#: `balanced_bootstrap` fits `bags` models, each on a bootstrap of the *training rows only*
+#: with half its draws from the events and half from the calm days, and averages them.
+#: Reweighting distorts probabilities, so every candidate is also read recalibrated out of fold
+#: (`pressure.recalibrated`), which is the form the judge scores.
+PRESSURE_RARE_EVENT_SETTINGS = MappingProxyType(
+    {
+        "treatments": ("class_weight", "focal", "balanced_bootstrap"),
+        "class_weight": "balanced",
+        "focal": MappingProxyType(
+            {
+                "gamma": 2.0,
+                "alpha": 0.75,
+                "rounds": 200,
+                "learning_rate": 0.05,
+                "max_leaf_nodes": 15,
+                "min_samples_leaf": 20,
+                "l2": 0.1,
+                "hessian_floor": 1e-6,
+                "hessian_step": 1e-4,
+            }
+        ),
+        "balanced_bootstrap": MappingProxyType(
+            {"bags": MappingProxyType({"logistic": 10, "gbm_classifier": 5}), "event_share": 0.5}
+        ),
+    }
+)
+
 #: What the two full-distribution models (#385) are built with, declared in
 #: `metadata/pressure_track_q.json` before any score; a test pins the two together.
 #: Both pick one hyperparameter on the pressure-day labels (`PRESSURE_DISTRIBUTION_SELECTION`).
@@ -4346,8 +4390,14 @@ def _direct_pressure_predictor(
     products: Sequence[Tuple[str, str]] = (),
     history: Optional[Tuple[Sequence[Any], Any]] = None,
     design: Optional[Any] = None,
+    rare: Optional[str] = None,
 ) -> Any:
     """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `rare`, for the rare-event study (#381): a treatment of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied inside each fit to
+    its training pairs only (`_fit_rare_event`). It is refused for the probit
+    and quantile kinds, and checked here so a bad name fails at construction.
 
     `design`, for the scarcity-conditioned calendar (#128) only: a prebuilt
     design (`_ScarcityCalendarDesign`) used in place of `_PressureDesign`'s
@@ -4366,6 +4416,16 @@ def _direct_pressure_predictor(
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if rare is not None:
+        if kind not in ("logistic", "gbm_classifier"):
+            raise ValueError(f"a rare-event treatment is the logistic's or the classifier's, not {kind!r}")
+        if rare not in PRESSURE_RARE_EVENT_SETTINGS["treatments"]:
+            raise ValueError(
+                f"unknown rare-event treatment {rare!r}; one of "
+                f"{list(PRESSURE_RARE_EVENT_SETTINGS['treatments'])}"
+            )
+        if rare == "focal" and kind != "gbm_classifier":
+            raise ValueError("the focal loss is the gradient-boosted classifier's")
     if design is None:
         design = _PressureDesign(features, declaration, products)
     monotone = getattr(design, "monotone", None)
@@ -4447,7 +4507,13 @@ def _direct_pressure_predictor(
             key = tuple(labels)
             if key not in fitted:
                 fitted[key] = _fit_classifier(
-                    kind, xs, labels, served, monotone=monotone, pooling=getattr(design, "pooling", None)
+                    kind,
+                    xs,
+                    labels,
+                    served,
+                    monotone=monotone,
+                    pooling=getattr(design, "pooling", None),
+                    rare=rare,
                 )
             columns.append(fitted[key])
         curves = []
@@ -4473,6 +4539,15 @@ def _direct_pressure_predictor(
             if kind != "qrf":
                 settings["family"] = kind[len("ng_"):]
         settings["design"] = list(design.names)
+        if rare is not None:
+            settings["rare_event"] = {
+                "treatment": rare,
+                **{
+                    key: _plain(value)
+                    for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
+                    if key in ("class_weight", rare)
+                },
+            }
         if history is not None:
             pool = pooled["pool"]
             settings["design"].append(HISTORY_MARKET_COLUMN)
@@ -4516,6 +4591,7 @@ def _fit_classifier(
     served: Sequence[Sequence[float]],
     monotone: Optional[Sequence[int]] = None,
     pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None,
+    rare: Optional[str] = None,
 ) -> List[float]:
     """Fit one estimator to one threshold's labels; P(label = 1) at `served`.
 
@@ -4526,6 +4602,11 @@ def _fit_classifier(
     deviations are shrunk toward the pooled fit, and a regime with no training
     day is served the pooled fit. `None` passes nothing, so every other fit is
     unchanged.
+
+    `rare`, the rare-event treatments' (#381): one of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied to the training rows
+    handed in and to nothing else (`_fit_rare_event`). `None`, the default,
+    passes nothing, so every existing fit is unchanged.
 
     `monotone`, the classifier's only: one of -1, 0, +1 per design column,
     passed to scikit-learn as `monotonic_cst` (#128). `None`, the default,
@@ -4538,6 +4619,10 @@ def _fit_classifier(
     x = numpy.asarray(xs, dtype=float)
     y = numpy.asarray(labels, dtype=int)
     z = numpy.asarray(served, dtype=float)
+    if rare is not None:
+        if monotone is not None:
+            raise ValueError("a monotone constraint is not combined with a rare-event treatment")
+        return _fit_rare_event(kind, rare, x, y, z)
     if kind == "logistic":
         if monotone is not None:
             raise ValueError("a monotone constraint is the gradient-boosted classifier's, not the logistic's")
@@ -4581,6 +4666,169 @@ def _fit_classifier(
     )
     model.fit(x, y)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def _plain(value: Any) -> Any:
+    """A read-only settings tree as plain dicts and lists, for a JSON record."""
+
+    if isinstance(value, Mapping):
+        return {key: _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    return value
+
+
+def _balanced_indices(labels: Any, seed: int) -> Any:
+    """Row indices of one event-balanced bootstrap of the training labels.
+
+    Half the draws (`PRESSURE_RARE_EVENT_SETTINGS["balanced_bootstrap"]["event_share"]`)
+    are made with replacement from the rows labelled 1, the rest from the rows
+    labelled 0. It reads only `labels`, the training rows of one fit, and a
+    seed: no served row and no later label can enter it.
+    """
+
+    import numpy
+
+    y = numpy.asarray(labels, dtype=int)
+    events = numpy.flatnonzero(y == 1)
+    calm = numpy.flatnonzero(y == 0)
+    if len(events) == 0 or len(calm) == 0:
+        raise ValueError("a balanced bootstrap needs both classes among the training labels")
+    share = PRESSURE_RARE_EVENT_SETTINGS["balanced_bootstrap"]["event_share"]
+    drawn_events = int(round(share * len(y)))
+    rng = numpy.random.default_rng(seed)
+    return numpy.concatenate(
+        [
+            rng.choice(events, size=drawn_events, replace=True),
+            rng.choice(calm, size=len(y) - drawn_events, replace=True),
+        ]
+    )
+
+
+def _focal_gradient(logit: Any, labels: Any, gamma: float, alpha: float) -> Any:
+    """d(focal loss)/d(logit), per row (Lin et al. 2017).
+
+    `FL = -alpha (1 - p)^gamma log p` for a 1 and `-(1 - alpha) p^gamma log(1 - p)`
+    for a 0, with `p = sigmoid(logit)`.
+    """
+
+    import numpy
+
+    p = numpy.clip(1.0 / (1.0 + numpy.exp(-numpy.asarray(logit, dtype=float))), 1e-12, 1.0 - 1e-12)
+    y = numpy.asarray(labels, dtype=int)
+    positive = alpha * (gamma * (1.0 - p) ** gamma * p * numpy.log(p) - (1.0 - p) ** (gamma + 1.0))
+    negative = -(1.0 - alpha) * (
+        gamma * p**gamma * (1.0 - p) * numpy.log(1.0 - p) - p ** (gamma + 1.0)
+    )
+    return numpy.where(y == 1, positive, negative)
+
+
+def _fit_focal(x: Any, y: Any, z: Any) -> List[float]:
+    """A gradient-boosted classifier on the focal loss, numpy and scikit-learn only.
+
+    Newton boosting: each round fits a regression tree (`max_leaf_nodes`,
+    `min_samples_leaf` of `PRESSURE_RARE_EVENT_SETTINGS["focal"]`) to
+    `-g / h` weighted by `h`, then sets each leaf to `-sum(g) / (sum(h) + l2)`.
+    `g` is `_focal_gradient`; `h` is its central difference in the logit,
+    floored (the focal loss is not convex). Starts from the training event
+    rate's logit. Deterministic. Returns P(label = 1) at `z`.
+    """
+
+    import numpy
+    from sklearn.tree import DecisionTreeRegressor
+
+    cfg = PRESSURE_RARE_EVENT_SETTINGS["focal"]
+    rate = min(max(float(y.mean()), 1e-6), 1.0 - 1e-6)
+    base = math.log(rate / (1.0 - rate))
+    score = numpy.full(len(y), base)
+    served = numpy.full(len(z), base)
+    step = cfg["hessian_step"]
+    for _ in range(cfg["rounds"]):
+        g = _focal_gradient(score, y, cfg["gamma"], cfg["alpha"])
+        h = (
+            _focal_gradient(score + step, y, cfg["gamma"], cfg["alpha"])
+            - _focal_gradient(score - step, y, cfg["gamma"], cfg["alpha"])
+        ) / (2.0 * step)
+        h = numpy.maximum(h, cfg["hessian_floor"])
+        tree = DecisionTreeRegressor(
+            max_leaf_nodes=cfg["max_leaf_nodes"],
+            min_samples_leaf=cfg["min_samples_leaf"],
+            random_state=DEFAULT_RANDOM_STATE,
+        )
+        tree.fit(x, -g / h, sample_weight=h)
+        leaf = tree.apply(x)
+        leaves = numpy.unique(leaf)
+        value = {
+            int(node): float(-g[leaf == node].sum() / (h[leaf == node].sum() + cfg["l2"]))
+            for node in leaves
+        }
+        score = score + cfg["learning_rate"] * numpy.array([value[int(node)] for node in leaf])
+        served = served + cfg["learning_rate"] * numpy.array(
+            [value.get(int(node), 0.0) for node in tree.apply(z)]
+        )
+    return [float(p) for p in 1.0 / (1.0 + numpy.exp(-served))]
+
+
+def _fit_rare_event(kind: str, treatment: str, x: Any, y: Any, z: Any) -> List[float]:
+    """One threshold's fit with a rare-event treatment (#381); P(label = 1) at `z`.
+
+    * `class_weight`: the logistic or the histogram gradient-boosted classifier
+      with `class_weight="balanced"`.
+    * `focal`: `_fit_focal` (the gradient-boosted classifier only).
+    * `balanced_bootstrap`: `bags` fits, each on `_balanced_indices` of the
+      training rows with the plain estimator, averaged. Seeds are the
+      classifier's `random_state` plus the bag number.
+
+    Everything is computed from `x` and `y`, the training rows of the one fit.
+    """
+
+    import numpy
+
+    if treatment not in PRESSURE_RARE_EVENT_SETTINGS["treatments"]:
+        raise ValueError(
+            f"unknown rare-event treatment {treatment!r}; one of "
+            f"{list(PRESSURE_RARE_EVENT_SETTINGS['treatments'])}"
+        )
+    if kind not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"a rare-event treatment is the logistic's or the classifier's, not {kind!r}")
+    if treatment == "focal":
+        if kind != "gbm_classifier":
+            raise ValueError("the focal loss is the gradient-boosted classifier's")
+        return _fit_focal(x, y, z)
+
+    def estimator(weighted: bool):
+        if kind == "logistic":
+            from sklearn.linear_model import LogisticRegression
+
+            return LogisticRegression(
+                C=PRESSURE_LOGISTIC_SETTINGS["C"],
+                max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
+                class_weight=PRESSURE_RARE_EVENT_SETTINGS["class_weight"] if weighted else None,
+            )
+        from sklearn.ensemble import HistGradientBoostingClassifier
+
+        cfg = PRESSURE_CLASSIFIER_SETTINGS
+        return HistGradientBoostingClassifier(
+            learning_rate=cfg["learning_rate"],
+            max_iter=cfg["max_iter"],
+            max_leaf_nodes=cfg["max_leaf_nodes"],
+            min_samples_leaf=cfg["min_samples_leaf"],
+            random_state=cfg["random_state"],
+            early_stopping=False,
+            class_weight=PRESSURE_RARE_EVENT_SETTINGS["class_weight"] if weighted else None,
+        )
+
+    if kind == "logistic":
+        centre, scale = _standardizer(x)
+        x, z = (x - centre) / scale, (z - centre) / scale
+    if treatment == "class_weight":
+        return [float(p) for p in estimator(True).fit(x, y).predict_proba(z)[:, 1]]
+    bags = PRESSURE_RARE_EVENT_SETTINGS["balanced_bootstrap"]["bags"][kind]
+    total = numpy.zeros(len(z))
+    for bag in range(bags):
+        rows = _balanced_indices(y, PRESSURE_CLASSIFIER_SETTINGS["random_state"] + bag)
+        total += estimator(False).fit(x[rows], y[rows]).predict_proba(z)[:, 1]
+    return [float(p) for p in total / bags]
 
 
 def _pool_columns(
@@ -4845,6 +5093,29 @@ def pressure_classifier_exceedance(
     return _direct_pressure_predictor("gbm_classifier", features, declaration, minimum_history)
 
 
+def pressure_rare_event_exceedance(
+    kind: str,
+    treatment: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+) -> ExceedancePredictor:
+    """The direct logistic or classifier fitted for the rare event (#381).
+
+    `kind` is `"logistic"` or `"gbm_classifier"`; `treatment` is one of
+    `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`: `class_weight`, `focal`
+    (classifier only) or `balanced_bootstrap`. The design, the direct pairs and
+    the guards are those of `pressure_logistic_exceedance`; only the fit
+    differs, and it reads that fit's training pairs alone. The probabilities
+    are distorted on purpose; read them recalibrated out of fold
+    (`pressure.recalibrated`).
+    """
+
+    return _direct_pressure_predictor(
+        kind, features, declaration, minimum_history, rare=treatment
+    )
+
+
 def pressure_probit_exceedance(
     features: Sequence[str], declaration: Any, minimum_history: int = 20
 ) -> ExceedancePredictor:
@@ -4895,6 +5166,321 @@ def _settlement_timing_predictor(
     if form not in SETTLEMENT_TIMING_KINDS:
         raise ValueError(f"a settlement-timing form is one of {sorted(SETTLEMENT_TIMING_KINDS)}, got {form!r}")
     return _direct_pressure_predictor(SETTLEMENT_TIMING_KINDS[form], features, declaration, minimum_history)
+
+
+# --------------------------------------------------------------------------
+# The extreme-value tail (#383, track E of #374)
+# --------------------------------------------------------------------------
+#
+# P(spread > tau) = P(spread > u) * S(tau - u), for a declared high threshold
+# `u` below the lowest tau: a logistic body for the exceedance of `u`, and a
+# generalised Pareto survival `S` for the excess, its scale a log-linear
+# function of the reserve-scarcity state and the pressure-day type, fitted by
+# maximum likelihood on the training excesses. Declared in
+# `metadata/pressure_tail.json` before any score was computed.
+#
+# The spread is published to the basis point, so an integer spread `k` is an
+# excess in an interval, not a point. With the continuous latent spread rounded
+# to the basis point, `spread > u` is the latent spread above `u + 0.5`, the
+# excess `Z` is measured from there, `spread = k` is `Z` in `[k - u - 1, k - u)`,
+# and `spread > tau` is `Z >= tau - u`. The likelihood of an observation is the
+# probability of its bin, `S(k - u - 1) - S(k - u)`, and a forecast of
+# `spread > tau` is `S(tau - u)`.
+
+#: Chosen before scoring, not tuned. The scale's columns are standardised on the
+#: excess rows and ridge-penalised with `C` as the direct logistic's, the shape
+#: is one constant per fit inside `GPD_SHAPE_BOUNDS` (the floor of
+#: `docs/decisions/tail-shape-floor.md`), and a fit with fewer excesses than
+#: `minimum_excesses` is an exponential (shape 0) with one constant scale.
+PRESSURE_TAIL_SETTINGS = MappingProxyType(
+    {
+        "body": "logistic (PRESSURE_LOGISTIC_SETTINGS) on the label spread > u",
+        "tail": "generalised Pareto on the excess over u + 0.5 bp, interval-censored to the basis point",
+        "estimator": "maximum likelihood, BFGS with finite-difference gradient (numpy)",
+        "scale": "log-linear in reserves (USD trillions) and the pressure-day type, standardised",
+        "C": 1.0,
+        "shape": "constant per fit, 0.5 * expit(s), inside GPD_SHAPE_BOUNDS",
+        "minimum_excesses": 30,
+        "fallback": "exponential, constant scale, below minimum_excesses; no excess: tail probability 0",
+    }
+)
+
+#: The scale's design columns, in `_PressureDesign`'s names.
+TAIL_SCALE_COLUMNS = ("reserve_balances",) + _PRESSURE_DAY_TYPES
+
+
+class CensoredGpd(NamedTuple):
+    """A fitted generalised Pareto tail with a log-linear scale.
+
+    `mode` is `"gpd"` (shape fitted), `"exponential"` (too few excesses for a
+    shape) or `"none"` (no excess at all: the tail probability is 0).
+    """
+
+    mode: str
+    excesses: int
+    intercept: float
+    coefficients: Any
+    centre: Any
+    scale: Any
+    shape: float
+    log_likelihood: float
+
+    def sigma(self, columns: Any) -> Any:
+        import numpy
+
+        z = (numpy.atleast_2d(numpy.asarray(columns, dtype=float)) - self.centre) / self.scale
+        return numpy.exp(self.intercept + z @ self.coefficients)
+
+    def survival(self, excess: float, columns: Any) -> Any:
+        """`S(excess)` at each row of `columns`; 0 when there is no excess to read."""
+
+        import numpy
+
+        rows = numpy.atleast_2d(numpy.asarray(columns, dtype=float)).shape[0]
+        if self.mode == "none":
+            return numpy.zeros(rows)
+        return numpy.exp(_gpd_log_survival(float(excess), self.sigma(columns), self.shape))
+
+
+def _gpd_log_survival(z: Any, sigma: Any, shape: float) -> Any:
+    """`log S(z)` of a generalised Pareto with scale `sigma` and `shape` >= 0."""
+
+    import numpy
+
+    z = numpy.asarray(z, dtype=float)
+    if shape < 1e-8:
+        return -z / sigma
+    return -numpy.log1p(shape * z / sigma) / shape
+
+
+def fit_censored_gpd(
+    columns: Any,
+    bins: Any,
+    c: float = 1.0,
+    minimum_excesses: int = 30,
+) -> CensoredGpd:
+    """Maximum-likelihood generalised Pareto tail for basis-point-rounded excesses.
+
+    Args:
+        columns: one row per excess, the scale's covariates.
+        bins: each excess `k - u` as an integer of at least 1: the observation
+            is the interval `[bins - 1, bins)` of the excess over `u + 0.5`.
+        c: the ridge's `C` on the standardised columns (the intercept is free).
+        minimum_excesses: fewer rows than this fit an exponential, constant
+            scale; no rows at all fit nothing.
+
+    Raises:
+        ValueError: on a bin below 1 or rows and bins of different length.
+    """
+
+    _estimator_class()
+    import numpy
+
+    x = numpy.asarray(columns, dtype=float)
+    k = numpy.asarray(bins, dtype=float)
+    if len(k) == 0 and x.size == 0:
+        width = x.shape[1] if x.ndim == 2 else 0
+        return CensoredGpd("none", 0, 0.0, numpy.zeros(width), numpy.zeros(width), numpy.ones(width), 0.0, 0.0)
+    if x.ndim != 2 or len(x) != len(k):
+        raise ValueError(f"{len(k)} excesses need as many covariate rows, got shape {x.shape}")
+    width = x.shape[1]
+    if (k < 1.0).any():
+        raise ValueError("an excess bin is at least 1 basis point above the threshold")
+    centre, scale = _standardizer(x)
+    z = (x - centre) / scale
+    lower, upper = k - 1.0, k
+    penalty = 1.0 / c
+    gpd = len(k) >= minimum_excesses
+
+    def unpack(theta: Any) -> Tuple[float, Any, float]:
+        if not gpd:
+            return float(theta[0]), numpy.zeros(width), 0.0
+        return float(theta[0]), theta[1 : 1 + width], 0.5 * float(_expit(theta[1 + width]))
+
+    def objective(theta: Any) -> float:
+        intercept, beta, shape = unpack(theta)
+        with numpy.errstate(all="ignore"):  # a wild line-search step is refused by `_bfgs`
+            sigma = numpy.exp(intercept + z @ beta)
+            log_low = _gpd_log_survival(lower, sigma, shape)
+            log_high = _gpd_log_survival(upper, sigma, shape)
+            gap = numpy.maximum(-numpy.expm1(log_high - log_low), 1e-300)
+            value = -float(numpy.sum(log_low + numpy.log(gap)))
+        return value + 0.5 * penalty * float(numpy.sum(beta**2))
+
+    def with_gradient(theta: Any) -> Tuple[float, Any]:
+        value = objective(theta)
+        gradient = numpy.zeros(len(theta))
+        for index in range(len(theta)):
+            step = 1e-6 * max(1.0, abs(float(theta[index])))
+            up, down = theta.copy(), theta.copy()
+            up[index] += step
+            down[index] -= step
+            gradient[index] = (objective(up) - objective(down)) / (2.0 * step)
+        return value, gradient
+
+    start = [math.log(float(numpy.mean(k - 0.5)))]
+    if gpd:
+        start += [0.0] * width + [-2.0]
+    theta, value = _bfgs(with_gradient, numpy.asarray(start, dtype=float))
+    intercept, beta, shape = unpack(theta)
+    penalised = 0.5 * penalty * float(numpy.sum(beta**2))
+    return CensoredGpd(
+        "gpd" if gpd else "exponential",
+        int(len(k)),
+        intercept,
+        beta,
+        centre,
+        scale,
+        shape,
+        -(value - penalised),
+    )
+
+
+def pressure_tail_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    *,
+    minimum_history: int,
+    threshold_bp: float,
+    record: Optional[List[Mapping[str, Any]]] = None,
+) -> Any:
+    """A logistic body with a conditional generalised Pareto tail (#383).
+
+    `P(spread > tau) = P(spread > u) * S(tau - u)` with `u = threshold_bp`.
+    The body is a direct logistic of `spread > u` on `_PressureDesign`'s design
+    (as `pressure_logistic_exceedance` fits any threshold); the tail is
+    `fit_censored_gpd` on the training pairs whose spread exceeds `u`, its scale
+    depending on `TAIL_SCALE_COLUMNS`. Both are fitted on the direct pairs under
+    the run's as-of rule, so a training label is paired with what was public at
+    its own decision instant, and a forecast's TGA change is read off its own
+    as-of history.
+
+    `record`, when a list, receives one mapping per fit: its fit summary and,
+    for each served row in order (`anchor` is the row's own date, the latest day
+    whose spread was public), the body probability and the scale, which with the
+    fit's shape is what the tail diagnostics are computed from.
+
+    Raises:
+        ValueError: on a design without reserves and the calendar (the scale
+            depends on both), a `tau` not above `u`, a short frame, or a call
+            without the as-of rule.
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _PressureDesign(features, declaration)
+    if not (design.scarcity and design.calendar):
+        raise ValueError(
+            "the tail's scale depends on the reserve-scarcity state and the pressure-day "
+            "type; declare reserve_balances and the three calendar columns"
+        )
+    scale_index = [design.names.index(name) for name in TAIL_SCALE_COLUMNS]
+    settings_minimum = int(PRESSURE_TAIL_SETTINGS["minimum_excesses"])
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a tail model pairs each training label with what was public at that "
+                "label's own decision instant, which only the as-of rule can say; it "
+                "was called without one"
+            )
+        for tau in taus:
+            if float(tau) <= threshold_bp:
+                raise ValueError(
+                    f"the tail starts at u = {threshold_bp:g} bp and gives no probability "
+                    f"at tau = {float(tau):g} bp, which is not above it"
+                )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a tail model needs at least {minimum_history} training rows, got "
+                f"{len(train_rows)}"
+            )
+        if design.needs_history() and (
+            histories is None or len(histories) != len(feature_rows)
+        ):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; "
+                "one history per feature row is required"
+            )
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        labels = [1 if exceeds_bp(value, threshold_bp) else 0 for value in spreads]
+        if len(set(labels)) < 2:
+            body = [float(labels[0])] * len(served)
+        else:
+            body = _fit_classifier("logistic", xs, labels, served)
+        excess_rows = [i for i, label in enumerate(labels) if label]
+        tail = fit_censored_gpd(
+            [[xs[i][j] for j in scale_index] for i in excess_rows],
+            [round(spreads[i] - threshold_bp) for i in excess_rows],
+            c=PRESSURE_TAIL_SETTINGS["C"],
+            minimum_excesses=settings_minimum,
+        )
+        served_scale = [[row[j] for j in scale_index] for row in served]
+        columns = [
+            [float(b * s) for b, s in zip(body, tail.survival(float(tau) - threshold_bp, served_scale))]
+            for tau in taus
+        ]
+        if record is not None:
+            sigmas = [float(s) for s in tail.sigma(served_scale)] if tail.mode != "none" else [0.0] * len(served)
+            record.append(
+                {
+                    "mode": tail.mode,
+                    "excesses": tail.excesses,
+                    "train_rows": len(train_rows),
+                    "train_end": train_rows[-1].date.isoformat(),
+                    "shape": tail.shape,
+                    "intercept": tail.intercept,
+                    "coefficients": {
+                        name: float(value) for name, value in zip(TAIL_SCALE_COLUMNS, tail.coefficients)
+                    },
+                    "log_likelihood": tail.log_likelihood,
+                    "served": [
+                        {"anchor": row.date.isoformat(), "body": float(b), "sigma": s}
+                        for row, b, s in zip(feature_rows, body, sigmas)
+                    ],
+                }
+            )
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(PRESSURE_TAIL_SETTINGS)
+        settings["threshold_bp"] = threshold_bp
+        settings["design"] = list(design.names)
+        settings["scale_columns"] = list(TAIL_SCALE_COLUMNS)
+        settings["scarcity_state"] = SCARCITY_STATE
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
 
 
 # --------------------------------------------------------------------------
@@ -6148,3 +6734,318 @@ def paired_bootstrap_p_values(
         done += size
     total = replications + 1
     return [(float((1 + u) / total), float((1 + d) / total)) for u, d in zip(up, down)]
+
+
+# --------------------------------------------------------------------------
+# Markov-switching regimes (#384; track M of #374)
+# --------------------------------------------------------------------------
+#
+# A hidden Markov model of the spread (SOFR - IORB, bp) with two or three latent
+# states -- calm, tight, stressed -- each Gaussian in the spread. The transition
+# matrix is one of two, picked by a binary covariate: whether the reserve-scarcity
+# state of #115 read as of the source day is tight or scarce (state 2 or 3). The
+# model is fitted by EM on the training frame, then *forward-filtered* through each
+# forecast's own as-of history: the filter never smooths, so no future row reaches
+# a state probability. The probability of a pressure day `h` panel days ahead is
+# the filtered state distribution carried `h` steps by the transition matrix of
+# the latest known covariate, then the mixture's tail above the threshold.
+
+#: What the fit is built with. Declared in `metadata/pressure_track_m.json`
+#: before any scoring; a test pins the two together.
+MARKOV_SWITCHING_SETTINGS = MappingProxyType(
+    {
+        "variance_floor_bp": 0.25,
+        "transition_prior": 1.0,
+        "max_iterations": 200,
+        "tolerance": 1e-7,
+        "tight_state_at_least": 2,
+    }
+)
+
+#: The share of the sorted training spreads each initial state starts from, by
+#: state count: most days calm, a tail stressed. Fixed, so the fit is deterministic.
+_MARKOV_INITIAL_SHARES = MappingProxyType({2: (0.8, 0.2), 3: (0.6, 0.3, 0.1)})
+
+
+class FittedMarkovSwitching(NamedTuple):
+    """A fitted Gaussian hidden Markov model with covariate-dependent transitions."""
+
+    means: Tuple[float, ...]
+    sigmas: Tuple[float, ...]
+    #: `transitions[z][i][j]`: from state i to j when the source day's covariate is z.
+    transitions: Tuple[Tuple[Tuple[float, ...], ...], ...]
+    initial: Tuple[float, ...]
+    log_likelihood: float
+    iterations: int
+
+
+def _gaussian_density(y: Any, means: Any, sigmas: Any) -> Any:
+    import numpy
+
+    z = (y[:, None] - means[None, :]) / sigmas[None, :]
+    density = numpy.exp(-0.5 * z * z) / (sigmas[None, :] * math.sqrt(2.0 * math.pi))
+    # A missing spread informs no state.
+    density[numpy.isnan(y), :] = 1.0
+    return density
+
+
+def _forward(density: Any, transitions: Any, covariates: Any, initial: Any) -> Tuple[Any, Any]:
+    """Scaled forward pass: the filtered distribution at each row, and the scales."""
+
+    import numpy
+
+    length, states = density.shape
+    alpha = numpy.empty((length, states))
+    scales = numpy.empty(length)
+    step = initial * density[0]
+    for t in range(length):
+        if t:
+            step = (alpha[t - 1] @ transitions[covariates[t - 1]]) * density[t]
+        total = step.sum()
+        if not total > 0.0:
+            # A spread no state can reach (the floor keeps this to a float underflow).
+            total = 1e-300
+            step = numpy.full(states, 1.0 / states) * total
+        scales[t] = total
+        alpha[t] = step / total
+    return alpha, scales
+
+
+def fit_markov_switching(
+    spreads: Sequence[Optional[float]],
+    covariates: Sequence[int],
+    states: int = 3,
+) -> FittedMarkovSwitching:
+    """Baum-Welch on the training spreads, deterministic.
+
+    Args:
+        spreads: the spread in bp per training row, `None` where unobserved.
+        covariates: 0 or 1 per row; the transition out of row t uses matrix
+            `covariates[t]`.
+        states: 2 or 3.
+
+    Raises:
+        ValueError: on a state count off the declared two, a covariate that is
+            not 0 or 1, rows of unequal length, or too few observed spreads for
+            the states.
+    """
+
+    import numpy
+
+    if states not in _MARKOV_INITIAL_SHARES:
+        raise ValueError(f"states must be one of {sorted(_MARKOV_INITIAL_SHARES)}, got {states!r}")
+    if len(spreads) != len(covariates):
+        raise ValueError("spreads and covariates must have one entry per row")
+    if any(c not in (0, 1) for c in covariates):
+        raise ValueError("a transition covariate is 0 or 1")
+    y = numpy.array([numpy.nan if v is None else float(v) for v in spreads])
+    z = numpy.asarray(covariates, dtype=int)
+    observed = y[~numpy.isnan(y)]
+    if len(observed) < 5 * states:
+        raise ValueError(f"{len(observed)} observed spreads cannot fit {states} states")
+    floor = float(MARKOV_SWITCHING_SETTINGS["variance_floor_bp"])
+    prior = float(MARKOV_SWITCHING_SETTINGS["transition_prior"])
+
+    ordered = numpy.sort(observed)
+    edges = numpy.cumsum((0.0,) + _MARKOV_INITIAL_SHARES[states])
+    means = numpy.empty(states)
+    sigmas = numpy.empty(states)
+    for k in range(states):
+        lo, hi = int(edges[k] * len(ordered)), max(int(edges[k + 1] * len(ordered)), int(edges[k] * len(ordered)) + 2)
+        part = ordered[lo:hi]
+        means[k] = part.mean()
+        sigmas[k] = max(part.std(), floor)
+    stay = 0.9
+    base = numpy.full((states, states), (1.0 - stay) / (states - 1))
+    numpy.fill_diagonal(base, stay)
+    transitions = numpy.stack([base, base])
+    initial = numpy.full(states, 1.0 / states)
+
+    previous = -math.inf
+    iterations = 0
+    log_likelihood = -math.inf
+    for iterations in range(1, int(MARKOV_SWITCHING_SETTINGS["max_iterations"]) + 1):
+        density = _gaussian_density(y, means, sigmas)
+        alpha, scales = _forward(density, transitions, z, initial)
+        log_likelihood = float(numpy.log(scales).sum())
+        beta = numpy.ones_like(alpha)
+        for t in range(len(y) - 2, -1, -1):
+            beta[t] = transitions[z[t]] @ (density[t + 1] * beta[t + 1]) / scales[t + 1]
+        gamma = alpha * beta
+        gamma /= gamma.sum(axis=1, keepdims=True)
+        counts = numpy.zeros((2, states, states))
+        for t in range(len(y) - 1):
+            xi = alpha[t][:, None] * transitions[z[t]] * (density[t + 1] * beta[t + 1])[None, :]
+            counts[z[t]] += xi / xi.sum()
+        counts += prior / states
+        transitions = counts / counts.sum(axis=2, keepdims=True)
+        initial = gamma[0] / gamma[0].sum()
+        weight = gamma[~numpy.isnan(y)]
+        values = y[~numpy.isnan(y)]
+        mass = weight.sum(axis=0)
+        means = (weight * values[:, None]).sum(axis=0) / mass
+        variance = (weight * (values[:, None] - means[None, :]) ** 2).sum(axis=0) / mass
+        sigmas = numpy.maximum(numpy.sqrt(variance), floor)
+        if abs(log_likelihood - previous) < float(MARKOV_SWITCHING_SETTINGS["tolerance"]) * max(1.0, abs(log_likelihood)):
+            break
+        previous = log_likelihood
+    order = numpy.argsort(means)
+    return FittedMarkovSwitching(
+        means=tuple(float(v) for v in means[order]),
+        sigmas=tuple(float(v) for v in sigmas[order]),
+        transitions=tuple(
+            tuple(tuple(float(v) for v in row) for row in matrix[numpy.ix_(order, order)])
+            for matrix in transitions
+        ),
+        initial=tuple(float(v) for v in initial[order]),
+        log_likelihood=log_likelihood,
+        iterations=iterations,
+    )
+
+
+def filter_markov_switching(
+    fitted: FittedMarkovSwitching,
+    spreads: Sequence[Optional[float]],
+    covariates: Sequence[int],
+) -> Tuple[float, ...]:
+    """The filtered state distribution at the last row: forward pass only.
+
+    Row t's distribution reads rows 0..t and nothing after it; there is no
+    backward pass, so this is what a forecaster at row t could have computed.
+    """
+
+    import numpy
+
+    if not len(spreads) or len(spreads) != len(covariates):
+        raise ValueError("a filter needs one covariate per spread, and at least one row")
+    y = numpy.array([numpy.nan if v is None else float(v) for v in spreads])
+    density = _gaussian_density(y, numpy.array(fitted.means), numpy.array(fitted.sigmas))
+    alpha, _ = _forward(
+        density,
+        numpy.array(fitted.transitions),
+        numpy.asarray(covariates, dtype=int),
+        numpy.array(fitted.initial),
+    )
+    return tuple(float(v) for v in alpha[-1])
+
+
+def markov_switching_state_probabilities(
+    fitted: FittedMarkovSwitching, filtered: Sequence[float], covariate: int, steps: int
+) -> Tuple[float, ...]:
+    """The state distribution `steps` rows after a filtered one, the covariate held."""
+
+    import numpy
+
+    if steps < 0:
+        raise ValueError(f"steps must not be negative, got {steps}")
+    matrix = numpy.linalg.matrix_power(numpy.array(fitted.transitions[covariate]), steps)
+    return tuple(float(v) for v in numpy.asarray(filtered, dtype=float) @ matrix)
+
+
+def markov_switching_exceedance_curve(
+    fitted: FittedMarkovSwitching, distribution: Sequence[float], taus: Sequence[float]
+) -> Tuple[float, ...]:
+    """`P(spread > tau)` on whole basis points: the mixture's tail above `tau + 1/2`."""
+
+    curve = []
+    for tau in taus:
+        total = 0.0
+        for weight, mean, sigma in zip(distribution, fitted.means, fitted.sigmas):
+            total += weight * 0.5 * math.erfc((float(tau) + 0.5 - mean) / (sigma * math.sqrt(2.0)))
+        curve.append(min(1.0, max(0.0, total)))
+    return tuple(curve)
+
+
+def _tight_covariates(rows: Sequence[DailyObservation], column: Optional[str]) -> List[int]:
+    """The transition covariate per row: 1 where the scarcity state read is tight or scarce.
+
+    A row whose state is unread carries the last read forward (that value was
+    public before it); before any read the covariate is 0.
+    """
+
+    if column is None:
+        return [0] * len(rows)
+    threshold = MARKOV_SWITCHING_SETTINGS["tight_state_at_least"]
+    out: List[int] = []
+    latest = 0
+    for row in rows:
+        value = row.values.get(column)
+        if value is not None and math.isfinite(float(value)):
+            latest = 1 if float(value) >= threshold else 0
+        out.append(latest)
+    return out
+
+
+def markov_switching_exceedance(
+    states: int = 3,
+    minimum_history: int = 20,
+    scarcity_column: Optional[str] = None,
+) -> ExceedancePredictor:
+    """Pressure probabilities from a Markov-switching spread model (#384).
+
+    Fitted by EM on each refit block's training frame, filtered forward through
+    each forecast's own as-of history, carried `information.horizon` rows ahead.
+    With `scarcity_column` (`scarcity.RESERVE_SCARCITY_STATE`) the transition
+    matrix depends on whether that state, as read, is tight or scarce.
+
+    Raises:
+        ValueError: on a short frame, a call without the as-of rule or without
+            each row's history, or a state count off the declared two.
+        LookAheadError: if a history runs past its forecast's anchor.
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None or histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "a Markov-switching forecast is filtered through its own as-of history; "
+                "it was called without the rule or without one history per feature row"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a Markov-switching model needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        fitted = fit_markov_switching(
+            [_observed_spread(row, "markov_switching") for row in train_rows],
+            _tight_covariates(train_rows, scarcity_column),
+            states=states,
+        )
+        curves = []
+        for feature_row, history in zip(feature_rows, histories):
+            if not history:
+                raise ValueError("a forecast's as-of history is empty")
+            if history[-1].date > feature_row.date:
+                raise LookAheadError(
+                    f"the filter for the forecast anchored {feature_row.date} was handed "
+                    f"history through {history[-1].date}"
+                )
+            covariates = _tight_covariates(history, scarcity_column)
+            filtered = filter_markov_switching(
+                fitted, [_observed_spread(row, "markov_switching") for row in history], covariates
+            )
+            distribution = markov_switching_state_probabilities(
+                fitted, filtered, covariates[-1], information.horizon
+            )
+            curves.append(markov_switching_exceedance_curve(fitted, distribution, taus))
+        read = ("spread_bps",) + ((scarcity_column,) if scarcity_column else ())
+        settings = dict(MARKOV_SWITCHING_SETTINGS, states=states)
+        if scarcity_column:
+            settings["scarcity_state"] = scarcity_column
+        return ExceedanceCurves(
+            tuple(curves),
+            read,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=tuple(history[-1].date for history in histories),
+        )
+
+    return fit_predict

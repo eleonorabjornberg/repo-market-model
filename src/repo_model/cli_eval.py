@@ -348,6 +348,77 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The Markov-switching spread model (#384): three latent states, filtered
+        # forward through each forecast's as-of history. No regressor and no splits.
+        "markov_switching": _ModelChoice(
+            declared=_DeferredFactory("markov_switching_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+        ),
+        # The rare-event treatments of the direct pressure classifiers (#381): class weights, a
+        # focal-loss classifier and event-balanced bootstraps, on the same direct design.
+        "pressure_logistic_weighted": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                "class_weight",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier_weighted": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                "class_weight",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier_focal": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                "focal",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_logistic_bootstrap": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                "balanced_bootstrap",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_classifier_bootstrap": _ModelChoice(
+            declared=_DeferredFactory("pressure_rare_event_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                "balanced_bootstrap",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         # The dynamic pressure logit and its ordinal version (#137): the
         # direct design plus the lagged event indicator and the model's own
         # lagged index, read off each forecast's as-of history.
