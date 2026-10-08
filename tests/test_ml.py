@@ -10197,6 +10197,148 @@ class ScarcityCalendarDesignTests(unittest.TestCase):
                 self.assertNotIn("monotonic_cst", settings)
 
 
+class ScarcityEventBarVariantTests(unittest.TestCase):
+    """The two variants of the scarcity-conditioned calendar scored under the event bar (#378).
+
+    Written first, and watched failing: before the variants existed every test
+    here raised `TypeError: _ScarcityCalendarDesign.__init__() got an
+    unexpected keyword argument 'interactions'` (or `'regime_pooled'`).
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, features=_SCARCITY_CALENDAR, **kwargs):
+        return ml._ScarcityCalendarDesign(features, _pressure_splits(), _FOUR_LEVEL, **kwargs)
+
+    def _observation(self, state, **values):
+        base = {
+            "sofr": 4.07, "iorb": 4.0, "reserve_scarcity_state": state,
+            "days_to_month_end": 12.0, "quarter_end": 0.0, "tax_date": 0.0,
+            "treasury_settlement": 0.0,
+        }
+        base.update(values)
+        return DailyObservation(date(2025, 9, 16), base)
+
+    def test_the_interaction_crosses_settlement_size_state_and_quarter_end_or_tax_date(self):
+        design = self.design(interactions=True)
+        self.assertEqual(design.names[-2:], (
+            "treasury_settlement_x_state_x_quarter_end", "treasury_settlement_x_state_x_tax_date",
+        ))
+        tax = design.row(self._observation(2.0, tax_date=1.0, treasury_settlement=70.0), None)
+        self.assertEqual(tax[-2:], [0.0, 140.0])
+        quarter = design.row(
+            self._observation(3.0, quarter_end=1.0, days_to_month_end=0.0, treasury_settlement=50.0), None
+        )
+        self.assertEqual(quarter[-2:], [150.0, 0.0])
+        ordinary = design.row(self._observation(3.0, treasury_settlement=50.0), None)
+        self.assertEqual(ordinary[-2:], [0.0, 0.0])
+        calm = design.row(self._observation(0.0, tax_date=1.0, treasury_settlement=70.0), None)
+        self.assertEqual(calm[-2:], [0.0, 0.0])
+
+    def test_the_interaction_variant_is_the_base_form_without_a_settlement(self):
+        without = _SCARCITY_CALENDAR[:-1]
+        self.assertEqual(self.design(without, interactions=True).names, self.design(without).names)
+        self.assertEqual(
+            self.design(interactions=True).names[: len(self.design().names)], self.design().names
+        )
+
+    def test_the_gbm_interactions_are_constrained_non_decreasing(self):
+        got = self.design(monotone=True, interactions=True).monotone
+        self.assertEqual(got, (0, 1, 1, 1, 1, 1, 1, 1))
+
+    def test_a_variant_is_one_variant(self):
+        with self.assertRaises(ValueError):
+            self.design(interactions=True, regime_pooled=True)
+        with self.assertRaises(ValueError):
+            self.design(regime_pooled=True, monotone=True)
+
+    def test_the_regime_design_adds_raw_scheduled_columns_and_declares_its_pooling(self):
+        design = self.design(regime_pooled=True)
+        self.assertEqual(
+            design.names[-4:], ("quarter_end", "month_end", "tax_date", "treasury_settlement")
+        )
+        pooled, deviating, regimes, scale = design.pooling
+        self.assertEqual(pooled, tuple(range(6)))
+        self.assertEqual(deviating, (0, 6, 7, 8, 9))
+        self.assertEqual(regimes, (0.0, 1.0, 2.0, 3.0))
+        self.assertEqual(scale, ml.REGIME_POOLING_SCALE)
+        got = design.row(self._observation(2.0, tax_date=1.0, treasury_settlement=70.0), None)
+        self.assertEqual(got[-4:], [0.0, 0.0, 1.0, 70.0])
+        self.assertEqual(got[2:6], [0.0, 0.0, 2.0, 140.0])
+
+    def test_the_regime_fit_is_the_pooled_fit_for_a_regime_with_no_training_day(self):
+        """A regime unseen in training is served the pooled model, never an extrapolation."""
+
+        design = self.design(regime_pooled=True)
+        xs, labels = [], []
+        for index in range(300):
+            state = float(index % 3)  # state 3 never appears in training
+            observation = self._observation(
+                state, quarter_end=1.0 if index % 5 == 0 else 0.0, sofr=4.0 + (index % 9) / 50.0,
+                treasury_settlement=float(index % 7) * 10.0,
+            )
+            xs.append(design.row(observation, None))
+            labels.append(1 if (state >= 1.0 and index % 4 == 0) else 0)
+        served = [design.row(self._observation(3.0, quarter_end=1.0, treasury_settlement=30.0), None)]
+        pooled_only = ml._fit_classifier("logistic", [x[:6] for x in xs], labels, [served[0][:6]])
+        got = ml._fit_classifier("logistic", xs, labels, served, pooling=design.pooling)
+        self.assertEqual(len(got), 1)
+        self.assertTrue(0.0 <= got[0] <= 1.0)
+        # Deviation columns of an unseen regime are all zero in training, so its
+        # coefficients are exactly zero; the served day differs from the pooled
+        # model only by the raw columns the pooled part does not carry.
+        self.assertAlmostEqual(got[0], pooled_only[0], delta=0.2)
+
+    def test_stronger_shrinkage_brings_a_regime_nearer_the_pooled_fit(self):
+        design = self.design(regime_pooled=True)
+        xs, labels = [], []
+        for index in range(400):
+            state = float(index % 4)
+            observation = self._observation(
+                state, tax_date=1.0 if index % 6 == 0 else 0.0, sofr=4.0 + (index % 9) / 50.0,
+                treasury_settlement=float(index % 7) * 10.0,
+            )
+            xs.append(design.row(observation, None))
+            labels.append(1 if (state == 3.0 and index % 9 < 5) else 0)
+        served = [design.row(self._observation(3.0, tax_date=1.0, treasury_settlement=30.0), None)]
+        pooled, deviating, regimes, _ = design.pooling
+        loose = ml._fit_classifier("logistic", xs, labels, served, pooling=(pooled, deviating, regimes, 1.0))
+        tight = ml._fit_classifier("logistic", xs, labels, served, pooling=(pooled, deviating, regimes, 0.01))
+        flat = ml._fit_classifier("logistic", [x[:6] for x in xs], labels, [served[0][:6]])
+        self.assertLess(abs(tight[0] - flat[0]), abs(loose[0] - flat[0]))
+
+    def test_a_backtest_runs_each_variant_under_every_guard(self):
+        from repo_model.scarcity import measurement_declaration
+
+        rows = _scarcity_calendar_panel()
+        for name, kwargs, form in (
+            ("interactions", {"interactions": True}, "logistic"),
+            ("interactions_gbm", {"interactions": True}, "gbm"),
+            ("regime_pooled", {"regime_pooled": True}, "logistic"),
+        ):
+            with self.subTest(name=name), measurement_declaration():
+                report = baseline.rolling_exceedance_backtest(
+                    rows,
+                    predictor=ml._scarcity_calendar_predictor(
+                        form, _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL,
+                        minimum_history=60, **kwargs,
+                    ),
+                    model_name=name,
+                    features=_SCARCITY_CALENDAR,
+                    registry=_PRESSURE_REGISTRY,
+                    decision_time=time(16, 0),
+                    taus=(5.0, 10.0),
+                    minimum_history=60,
+                    refit_every=21,
+                    horizon=1,
+                )
+            self.assertTrue(report.folds)
+            settings = report.model_settings["scarcity_calendar"]
+            self.assertEqual(bool(settings["interaction_terms"]), "interactions" in kwargs)
+            self.assertEqual(settings["regime_partial_pooling"] is not None, "regime_pooled" in kwargs)
+
+
 def _history_rows(start, end):
     """Pre-SOFR history rows (#129) on weekdays, EFFR - IOER cycling through +8 bp."""
 
