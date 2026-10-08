@@ -315,6 +315,15 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The Markov-switching spread model (#384): three latent states, filtered
+        # forward through each forecast's as-of history. No regressor and no splits.
+        "markov_switching": _ModelChoice(
+            declared=_DeferredFactory("markov_switching_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+        ),
         # The rare-event treatments of the direct pressure classifiers (#381): class weights, a
         # focal-loss classifier and event-balanced bootstraps, on the same direct design.
         "pressure_logistic_weighted": _ModelChoice(

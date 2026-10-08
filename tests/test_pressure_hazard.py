@@ -203,9 +203,8 @@ class DeclarationTests(unittest.TestCase):
         entry = judge["candidates"][declaration.candidate]
         self.assertEqual(entry["role"], "candidate")
         self.assertEqual(tuple(entry["features"]), declaration.features)
-        self.assertEqual(
-            {float(k): v for k, v in entry["cutoffs"].items()}, dict(declaration.cutoffs)
-        )
+        # The judge chooses the flag cut-off itself (#407); the judge's entry declares none.
+        self.assertNotIn("cutoffs", entry)
         self.assertEqual(declaration.thresholds, tuple(float(t) for t in judge["thresholds_bp"]))
         self.assertEqual(declaration.horizons, tuple(judge["horizons"]))
         self.assertEqual(declaration.last_day.isoformat(), judge["scoring"]["last_day"])

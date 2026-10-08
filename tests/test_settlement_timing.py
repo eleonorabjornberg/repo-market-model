@@ -26,15 +26,10 @@ class SettlementTimingDeclarationTests(unittest.TestCase):
             self.assertEqual(declared["inputs"], entry.inputs)
             self.assertEqual(tuple(declared["features"]), st.INPUT_SETS[entry.inputs])
 
-    def test_every_candidate_has_a_declared_cutoff_at_every_threshold_and_horizon(self):
+    def test_no_candidate_declares_a_fixed_cutoff(self):
+        # The flag cut-off is chosen from each refit's training window (`cutoff_rule`, #407).
         for entry in st.CANDIDATES:
-            for tau in self.declaration.thresholds:
-                for horizon in self.declaration.horizons:
-                    self.assertEqual(self.declaration.cutoff(entry.name, tau, horizon), 0.2)
-
-    def test_a_cutoff_other_than_the_declared_one_is_refused(self):
-        with self.assertRaises(ValueError):
-            self.declaration.cutoff("settlement_probit_timing", 5.0, 1, requested=0.1)
+            self.assertNotIn("cutoffs", self.declaration.candidates[entry.name])
 
     def test_the_input_sets_are_nested(self):
         timing, scarcity, tga = (st.INPUT_SETS[k] for k in ("timing", "scarcity", "tga"))
