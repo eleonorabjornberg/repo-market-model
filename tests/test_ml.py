@@ -9826,6 +9826,99 @@ class ProbitAndQuantileTests(unittest.TestCase):
         self.assertLess(curves[0][3], 0.02)
 
 
+class SettlementTimingConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the skew-t quantile regression of #379."""
+
+    IMPLEMENTATION = staticmethod(
+        lambda features, declaration, minimum_history=20: ml._settlement_timing_predictor(
+            "quantile_skewt", features, declaration, minimum_history
+        )
+    )
+    FACTORY = IMPLEMENTATION
+
+
+class SkewTSmootherTests(unittest.TestCase):
+    """The Adrian-Boyarchenko-Giannone smoother of the settlement-timing track (#379)."""
+
+    GRID = (0.01, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99)
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_it_recovers_a_student_t_law_from_its_quantiles(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        quantiles = stats.t.ppf(probabilities, 4) * 3.0 + 1.0
+        got = ml._skew_t_exceedance(quantiles, probabilities, [5.5, 10.5, 20.5])
+        want = 1.0 - stats.t.cdf((numpy_array([5.5, 10.5, 20.5]) - 1.0) / 3.0, 4)
+        for value, expected in zip(got, want):
+            self.assertAlmostEqual(value, float(expected), delta=0.005)
+
+    def test_it_carries_the_skew_the_quantiles_have(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        quantiles = stats.skewnorm.ppf(probabilities, 4.0) * 2.0
+        got = ml._skew_t_exceedance(quantiles, probabilities, [0.5, 2.5, 4.5])
+        want = stats.skewnorm.sf(numpy_array([0.5, 2.5, 4.5]) / 2.0, 4.0)
+        for value, expected in zip(got, want):
+            self.assertAlmostEqual(value, float(expected), delta=0.02)
+
+    def test_the_curve_does_not_rise_with_the_cut_and_stays_a_probability(self):
+        probabilities = list(self.GRID)
+        quantiles = [-3.0, -1.5, -1.0, -0.5, 0.0, 0.2, 0.4, 0.7, 1.2, 2.5, 5.0, 8.0, 30.0]
+        curve = ml._skew_t_exceedance(quantiles, probabilities, [0.5, 1.5, 5.5, 10.5, 20.5, 50.5])
+        self.assertEqual(list(curve), sorted(curve, reverse=True))
+        self.assertTrue(all(0.0 <= value <= 1.0 for value in curve))
+
+    def test_a_day_with_equal_quantiles_is_a_point_mass(self):
+        self.assertEqual(ml._skew_t_exceedance([2.0] * 13, list(self.GRID), [1.5, 2.5]), (1.0, 0.0))
+
+    def test_a_day_does_not_depend_on_the_days_fitted_before_it(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        first = stats.t.ppf(probabilities, 5) * 2.0
+        second = stats.t.ppf(probabilities, 3) * 6.0 + 4.0
+        alone = ml._skew_t_exceedance(second, probabilities, [5.5, 10.5])
+        ml._skew_t_exceedance(first, probabilities, [5.5, 10.5])
+        self.assertEqual(ml._skew_t_exceedance(second, probabilities, [5.5, 10.5]), alone)
+
+    def test_it_refuses_quantiles_that_do_not_match_the_grid(self):
+        with self.assertRaises(ValueError):
+            ml._skew_t_exceedance([0.0, 1.0, 2.0], list(self.GRID), [0.5])
+
+    def test_the_quantile_reading_refuses_an_unknown_smoother(self):
+        with self.assertRaises(ValueError):
+            ml._quantile_exceedance([[0.0]] * 40, [0.0] * 40, [[0.0]], (5.0,), smoother="spline")
+
+    def test_the_skew_t_reading_of_a_regression_is_a_conditional_law(self):
+        import numpy
+
+        rng = numpy.random.default_rng(2)
+        x = rng.normal(size=(1500, 1))
+        spread = 2.5 + 4.0 * x[:, 0] + rng.normal(size=1500)
+        curves = ml._quantile_exceedance(
+            x.tolist(), spread.tolist(), [[0.0], [1.0]], (0.5, 2.5, 6.5, 20.0), smoother="skew_t"
+        )
+        for curve in curves:
+            self.assertEqual(list(curve), sorted(curve, reverse=True))
+        self.assertAlmostEqual(curves[0][1], 0.5, delta=0.1)
+        self.assertAlmostEqual(curves[1][2], 0.5, delta=0.1)
+        self.assertLess(curves[0][3], 0.02)
+
+    def test_a_settlement_timing_form_is_one_of_the_two_declared(self):
+        with self.assertRaises(ValueError):
+            ml._settlement_timing_predictor("logistic", _PRESSURE_CALENDAR, _pressure_splits())
+
+
+def numpy_array(values):
+    import numpy
+
+    return numpy.asarray(values, dtype=float)
+
+
 class DirectPressureModelTests(unittest.TestCase):
     """The direct pressure models' design, pairs and guards (#114)."""
 
