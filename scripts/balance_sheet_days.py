@@ -11,7 +11,8 @@ fixtures.
     PYTHONPATH=src python3 scripts/pressure_v1_1.py panel --output AUG.csv
     PYTHONPATH=src python3 scripts/balance_sheet_days.py forecasts --panel AUG.csv --candidate NAME --horizon H --output OUT/NAME_hH.json
     PYTHONPATH=src python3 scripts/pressure_judge.py forecasts --panel AUG.csv --horizon H --output OUT/b_hH.json
-    PYTHONPATH=src python3 scripts/pressure_judge.py judge --panel AUG.csv --output OUT/judge.json --markdown OUT/judge.md OUT/*.json
+    PYTHONPATH=src python3 scripts/pressure_judge.py judge --panel AUG.csv --output OUT/judge.json --markdown OUT/judge.md OUT/*_h?.json
+    PYTHONPATH=src python3 scripts/balance_sheet_days.py paired --panel AUG.csv --output OUT/paired.json OUT/*_h?.json
 
 The comparison classifiers (`hierarchical_logistic`, `scarcity_gbm`) are scored by
 `scripts/hierarchical_logistic.py forecasts` and `scripts/scarcity_event_bar.py
@@ -84,6 +85,53 @@ def forecasts_command(args) -> int:
     return 0
 
 
+PAIRS = (
+    ("balance_sheet_hierarchical_logistic", "hierarchical_logistic"),
+    ("balance_sheet_scarcity_gbm", "scarcity_gbm"),
+)
+GROUPINGS = ("regime", "scarcity_state", "day_type")
+
+
+def paired_command(args) -> int:
+    """Each candidate's Brier score against the same classifier without the new inputs, paired.
+
+    Positive: the candidate (with the inputs) is better. The days, the grid, the
+    groupings and the stationary bootstrap are the judge's, on shared resamples.
+    """
+
+    declaration = pj.load_declaration()
+    rows = load_daily_panel(args.panel)
+    splits = load_split_declaration(SPLITS)
+    by_name = {}
+    for path in args.inputs:
+        document = json.loads(Path(path).read_text())
+        for forecast in pj.forecasts_from_horizon_document(document):
+            by_name[(forecast.name, forecast.horizon)] = forecast
+    states = {h: judge_script._scarcity_states(h, declaration.last_day) for h in declaration.horizons}
+    out = {}
+    for horizon in declaration.horizons:
+        reference = by_name[(declaration.climatology, horizon)]
+        grid = pj.build_grid(declaration, horizon, rows, reference.dates, splits, scarcity_state=states[horizon])
+        for tau in declaration.thresholds:
+            outcomes = grid.outcomes[tau]
+            for candidate, comparator in PAIRS:
+                a = by_name[(candidate, horizon)].probabilities[tau]
+                b = by_name[(comparator, horizon)].probabilities[tau]
+                loss = [(b[i] - outcomes[i]) ** 2 - (a[i] - outcomes[i]) ** 2 for i in range(len(outcomes))]
+                cells = {"all_days": [[1.0] * len(loss), loss]}
+                for dimension in GROUPINGS:
+                    for label in sorted(set(grid.groups[dimension])):
+                        inside = [1.0 if g == label else 0.0 for g in grid.groups[dimension]]
+                        cells[f"{dimension}:{label}"] = [inside, [x * y for x, y in zip(inside, loss)]]
+                result = pj._bootstrap(
+                    declaration, cells, {"brier_gain": pj._ratio(1, 0)}, len(loss),
+                    seed=pj._seed(declaration.seed, "balance-sheet", candidate, horizon, tau),
+                )
+                out[f"{candidate}|h{horizon}|+{tau:g}bp"] = result
+    args.output.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -93,6 +141,11 @@ def main(argv=None) -> int:
     forecasts.add_argument("--horizon", type=int, required=True)
     forecasts.add_argument("--output", type=Path, required=True)
     forecasts.set_defaults(run=forecasts_command)
+    paired = commands.add_parser("paired")
+    paired.add_argument("--panel", type=Path, required=True)
+    paired.add_argument("--output", type=Path, required=True)
+    paired.add_argument("inputs", type=Path, nargs="+")
+    paired.set_defaults(run=paired_command)
     args = parser.parse_args(argv)
     return args.run(args)
 
