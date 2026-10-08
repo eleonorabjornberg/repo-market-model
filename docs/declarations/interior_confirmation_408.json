@@ -1,0 +1,15 @@
+{
+  "directive": "#408",
+  "declared_before_scoring": "This file is committed before any candidate is scored on the window below. It confirms, on days that were not used to choose them, the candidates that met the #243 test on 2018-06-29 to 2025-12-31 (reported on #393), under Eleonora's ruling of 8 October 2026 on #393: nothing is published until they are confirmed. The judge (scripts/interior_confirmation_408.py) records the sha256 of this file and of the two #243 declarations, and refuses a candidate this file does not list.",
+  "test_source": "docs/declarations/interior_calibration_243.json (first declaration) and docs/declarations/interior_calibration_243_addendum.json, unchanged: the statement, the stationary bootstrap, the regime and day-type cells, the 20-day minimum cell and the otherwise clause are those files'. Only the window changes.",
+  "base": "the published distribution at h = 1 (#169's gbm with nested conformal PID), as docs/runs/v1_interior_diagnosis.json (v1_h1_per_day) carries its issued vectors, which the record shows reproduce docs/runs/final_test_near_blind.json for these days",
+  "window": {"first": "2026-01-01", "last": "2026-09-03", "reason": "the near-blind tier, ordinary history since the lockbox amendment of #151 (docs/decisions/lockbox.md); no day after 2026-09-03 is read, and no day before 2026-01-01 is scored"},
+  "history": "Each candidate is an online layer: its residual windows, integrators and trackers run over the whole panel from 2018-06-29 exactly as under #243, and only the days of the window above are scored. The candidates' rules, windows, step sizes and the pressure_model_v2 record are those declared in the two #243 files; nothing is retuned on the window.",
+  "candidates": ["pressure_model_v2", "conformal_pid_calendar", "conformal_recency_regime", "conformal_by_day_type", "conformal_group_regime"],
+  "not_scored": ["conformal_pooled", "interior_tracking", "conformal_aci"],
+  "bootstrap": "as the first declaration (stationary, block length 2, 2000 replications, 90%), with seeds from onset._seed('#408', ...)",
+  "reported_columns": ["CRPS", "pooled paired gain CRPS(published) - CRPS(candidate) with its 90% interval", "50% and 90% band coverage by day type, with the share of misses below and above", "the #393 development figures beside them, from docs/runs/interior_calibration_243.json"],
+  "holds_on_both": "a candidate holds on both windows when it meets the declared test on 2018-06-29 to 2025-12-31 (#243) and on the window above",
+  "otherwise": "report only; the published declaration is unchanged. Whether and which candidate joins it is Eleonora's, asked in a separate \"Publish?\" issue",
+  "live_record": "not changed by this directive: no pin, no live_score.py edit"
+}
