@@ -1,7 +1,7 @@
 # Per-threshold recalibration of the current model (track C of #374, #380)
 
-A scratch measurement under the judge of #375 as merged (the replacement bar of the ruling on #375, development mode:
-scored days 2018-06-29 to 2025-12-31). It writes nothing into `docs/runs/`, moves no published figure and logs nothing
+A scratch measurement under the judge of #375 as amended by #407 (the replacement bar of the ruling on #375, development
+mode: each flag cut-off is chosen from the refit's training window alone; scored days 2018-06-29 to 2025-12-31). It writes nothing into `docs/runs/`, moves no published figure and logs nothing
 to the live record. No comparison scores a locked day (`docs/decisions/lockbox.md`); the confirmation window is not
 looked at.
 
@@ -10,7 +10,7 @@ clear the bar? The raw forecast is pressure model v1's `distributional_gbm` (the
 conformal PID with nested selection), before any recalibration.
 
 **Candidates** (declared in `metadata/pressure_judge.json` and `src/repo_model/group_calibration.py`, committed before
-any score was read; each flags at the declared 0.2 at both thresholds, as every other row does):
+any score was read; none declares a cut-off, the judge's declared rule chooses each one from the refit's training window):
 
 - `recal_isotonic`: the CORP isotonic fit, out of fold, per threshold and horizon.
 - `recal_platt`: Platt out of fold, per threshold and horizon. It is the published recalibration, rerun as the pooled
@@ -39,23 +39,25 @@ Run with `OMP_NUM_THREADS=1` when several horizons run at once: the gbm's thread
 
 ## Result: no candidate passes; recalibration alone is not enough
 
-+5 bp, tier 1 at a lead of at least 1 (26 onsets), tier 3 at the worst horizon, tier 5:
+Table 1 is the judge's own table (`pressure_judge.py table`), +5 bp, h = 1 to 5, tier 1 at a lead of at least 1 (26 onsets),
+tier 3 at the worst horizon, tier 5. The flag cut-off of every row is the one the declared rule chose from the refit's
+training window; an earlier version of this page flagged at a fixed 0.2, which the amended judge no longer allows, and
+its recall figures (18 or 19 of 26 onsets) do not carry over.
 
-| Model | onsets flagged | recall [90%] | climatology recall at same false alarms | worst false alarms per onset | tier 3 flags per 252 days (state 0 / 2021-23), worst h | calibrated by regime (h = 1) | tier 5 Brier gain over climatology, calibrated |
-|---|---|---|---|---|---|---|---|
-| calendar climatology | 10 of 26 | 0.385 [0.222, 0.556] | 0.385 | 6.62 | 9.0 / 11.1 | 1 of 5 | +0.0000 [+0.0000, +0.0000], yes |
-| persistence-logistic | 8 of 26 | 0.308 [0.148, 0.500] | 0.269 | 5.65 | 1.0 / 0.0 | 2 of 5 | -0.0348 [-0.0510, -0.0203], yes |
-| published v1 (Platt) | 19 of 26 | 0.731 [0.560, 0.882] | 0.423 | 8.54 | 1.0 / 0.0 | 3 of 5 | +0.0439 [+0.0302, +0.0598], no |
-| Platt, rerun (control) | 19 of 26 | 0.731 [0.560, 0.882] | 0.423 | 8.54 | 1.0 / 0.0 | 3 of 5 | +0.0439 [+0.0301, +0.0594], no |
-| isotonic | 19 of 26 | 0.731 [0.560, 0.889] | 0.423 | 9.96 | 5.1 / 0.3 | 3 of 5 | +0.0476 [+0.0331, +0.0647], no |
-| Platt per group | 19 of 26 | 0.731 [0.577, 0.875] | 0.423 | 7.35 | 1.0 / 0.0 | 3 of 5 | +0.0477 [+0.0334, +0.0646], no |
-| group-weighted Platt | 18 of 26 | 0.692 [0.519, 0.850] | 0.423 | 7.35 | 1.0 / 0.0 | 3 of 5 | +0.0464 [+0.0325, +0.0612], no |
+| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset (limit 2) | tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes with pressure, h = 1 | tier 5: calibrated, beats clim. | pass | scarce regime alone (tiers 1 / 3 / 5) |
+|---|---|---|---|---|---|---|---|---|---|
+| calendar_climatology | 10 of 26 | 0.385 [0.208, 0.588] | 0.269 | 5.00 | 2.7 / 4.4 | 1 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
+| persistence_logistic | 7 of 26 | 0.269 [0.111, 0.444] | 0.231 | 3.42 | 0.5 / 0.0 | 2 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
+| published_v1 | 2 of 26 | 0.077 [0.000, 0.185] | 0.192 | 2.35 | 0.2 / 0.0 | 3 of 4 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| recal_isotonic | 3 of 26 | 0.115 [0.000, 0.231] | 0.192 | 2.42 | 0.0 / 0.0 | 3 of 4 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| recal_platt | 2 of 26 | 0.077 [0.000, 0.179] | 0.192 | 2.35 | 0.2 / 0.0 | 3 of 4 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| recal_platt_group | 5 of 26 | 0.192 [0.067, 0.333] | 0.231 | 2.77 | 0.2 / 0.0 | 3 of 4 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| recal_platt_weighted | 5 of 26 | 0.192 [0.069, 0.333] | 0.231 | 2.77 | 0.2 / 0.0 | 3 of 4 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
 
-Every recalibrator keeps the raw model's recall on onsets (18 or 19 of 26, above climatology's 0.423) and none cuts
-its false alarms to the tier-1 limit of 2 per onset (the lowest is 7.35). Tier 3's flag limit holds for all of them at
-every lead; what fails is calibration by regime (the 2020 and 2021-23 regimes, where the realised frequency is near
-zero and the forecast is not), and the week-ahead window is not calibrated. Isotonic raises state-0 flags to 5.1 per
-252 days and false alarms to 9.96 per onset.
+Under the chosen cut-offs the recalibrators flag few onsets (2 to 5 of 26) and none beats climatology's recall at the same
+false alarms by more than the interval allows; the pooled Platt control reproduces `published_v1` exactly. Every
+candidate fails tiers 1, 3 and 5. Tier 3's flag limit holds at every lead; what fails is calibration by regime (the
+regimes with pressure days), and the week-ahead window is not calibrated.
 
 ### Does conditioning help? Brier at +5 bp, paired against the pooled Platt control
 
@@ -75,7 +77,7 @@ Fitting the curve per group lowers Brier at every horizon at +5 bp (intervals ab
 h = 3. The group-weighted curve does so at every horizon at both thresholds. Isotonic does not beat pooled Platt at any
 horizon. The gain is in the all-days Brier, which is the measure `docs/decisions/pressure-probability.md`'s earlier gate
 used and the replacement bar does not use: it moves recall, false alarms and week-ahead calibration by nothing that
-changes a verdict.
+changes a verdict (flag counts: Table 1).
 
 ## What it does not show
 
