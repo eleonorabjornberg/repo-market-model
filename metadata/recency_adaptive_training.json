@@ -1,0 +1,82 @@
+{
+ "status": "declared by the pull request that closes #411 before any score was computed; nothing here is tuned on a scored day; the half-lives, windows, learning rates and the base fit are this pull request's choices, listed there for Eleonora's review",
+ "scoring": {
+  "last_day": "2025-12-31",
+  "minimum_history": 61,
+  "refit_every": 21,
+  "decision_time": "16:00"
+ },
+ "thresholds_bp": [
+  5,
+  10
+ ],
+ "horizons": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "features": [
+  "spread_bps",
+  "days_to_month_end",
+  "quarter_end",
+  "tax_date",
+  "treasury_settlement",
+  "reserve_balances",
+  "tga"
+ ],
+ "features_note": "the features of track W (metadata/rare_event_training.json); treasury_settlement is dropped at h >= 2",
+ "base": {
+  "name": "rare_logistic_class_weight",
+  "kind": "logistic",
+  "treatment": "class_weight",
+  "why": "the best classifier of #381 on the replacement bar's recall and ranking: tier 1 recall 0.769 [0.625, 0.903] (joint best with the bootstrap logistic) and the highest AUROC (0.91 at h = 1) of the five; the simplest of the three fits that tie on recall; chosen from #381's reported result, before any score of this pull request"
+ },
+ "recency_fits": {
+  "settings": "ml.PRESSURE_RECENCY_SETTINGS; a pair's age is the number of panel rows from its label to the fit's last training row",
+  "candidates": {
+   "recency_decay_63": {
+    "mode": "decay",
+    "parameter": 63
+   },
+   "recency_decay_126": {
+    "mode": "decay",
+    "parameter": 126
+   },
+   "recency_decay_252": {
+    "mode": "decay",
+    "parameter": 252
+   },
+   "recency_window_252": {
+    "mode": "window",
+    "parameter": 252
+   },
+   "recency_window_504": {
+    "mode": "window",
+    "parameter": 504
+   }
+  },
+  "recalibration": "pressure.RECALIBRATION: Platt on the candidate's own earlier forecasts, out of fold, per threshold (the form track W judged); judged form +recalibrated",
+  "judged_form": "+recalibrated",
+  "window_fallback": "the whole history when the window holds fewer than 10 events at the threshold, or only events"
+ },
+ "online_recalibration": {
+  "settings": "pressure.ONLINE_RECALIBRATION",
+  "applied_to": "the base's raw (unrecalibrated) walk-forward probabilities",
+  "candidates": {
+   "base_online_platt": {
+    "method": "online_platt"
+   },
+   "base_adaptive_offset": {
+    "method": "adaptive_offset"
+   }
+  },
+  "rule": "the map for a forecast has been updated on every earlier scored day whose date is on or before the forecast's feature date (the latest day whose spread was public at its decision instant), one day at a time, in date order; the identity until 250 such days with at least 5 events",
+  "judged_form": "the rows are named base_online_platt and base_adaptive_offset"
+ },
+ "reference_rows": {
+  "rare_logistic_class_weight+recalibrated": "the base under the out-of-fold Platt step, as track W declared it, re-scored here on the same grid so the recency rows are paired with it"
+ },
+ "cutoffs": "none declared: the judge chooses each flag cut-off from the candidate's own training window (metadata/pressure_judge.json, cutoff_rule)"
+}
