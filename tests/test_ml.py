@@ -9756,6 +9756,33 @@ class DistributionModelTests(unittest.TestCase):
         self.assertEqual(record["min_samples_leaf"], ml.PRESSURE_QRF_SETTINGS["default_min_samples_leaf"])
         self.assertEqual(record["validation_brier"], {})
 
+    def test_the_track_declaration_names_the_models_it_is_pinned_to(self):
+        """`metadata/pressure_track_q.json` is declared before any score; its model names and families are the code's."""
+
+        import json
+        from pathlib import Path
+
+        declaration = json.loads(
+            (Path(__file__).resolve().parents[1] / "metadata" / "pressure_track_q.json").read_text()
+        )
+        self.assertEqual(declaration["scoring"]["last_day"] < "2026-01-01", True)
+        for name, entry in declaration["candidates"].items():
+            with self.subTest(candidate=name):
+                self.assertTrue(callable(getattr(ml, entry["model"])))
+                if "family" in entry:
+                    self.assertIn(entry["family"], ml.PRESSURE_NATURAL_GRADIENT_SETTINGS["families"])
+        self.assertEqual(
+            declaration["settings"],
+            {
+                "qrf": "ml.PRESSURE_QRF_SETTINGS",
+                "natural_gradient": "ml.PRESSURE_NATURAL_GRADIENT_SETTINGS",
+                "selection": "ml.PRESSURE_DISTRIBUTION_SELECTION",
+            },
+        )
+        self.assertEqual(declaration["thresholds_bp"], list(ml.PRESSURE_DISTRIBUTION_SELECTION["taus"]))
+        design = ml._PressureDesign(tuple(declaration["features"]), _pressure_splits())
+        self.assertEqual(design.features, tuple(declaration["features"]))
+
     def test_an_unknown_family_is_refused(self):
         with self.assertRaisesRegex(ValueError, "family"):
             ml.pressure_natural_gradient_exceedance(_PRESSURE_CALENDAR, _pressure_splits(), family="gamma")
