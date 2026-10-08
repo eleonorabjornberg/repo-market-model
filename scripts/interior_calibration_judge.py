@@ -509,6 +509,12 @@ def render(record) -> str:
              "(block length 2). Days after 2025-12-31 are not read." % (
                  record["window"]["days"], record["window"]["first"], record["window"]["last"],
                  record["declaration"], record["declaration_sha256"][:12]), "",
+             "The first declaration listed four candidates (conformal_pooled, conformal_by_day_type, interior_tracking, "
+             "pressure_model_v2). Eleonora's scope ruling of 8 October added four more, declared in `%s` (sha256 `%s`), "
+             "committed before any of them was scored, with the first declaration left as it was: %s. The same test applies to "
+             "all. **%d candidates were tested without correction for multiplicity.** DtACI is left out, with the reason in the "
+             "addendum." % (record["addendum"], record["addendum_sha256"][:12], ", ".join(record["addendum_candidates"]),
+                            len(record["candidates"])), "",
              "## The declared test", "",
              "| Candidate | CRPS (bp) | Pooled gain | Pooled interval above zero | Cells worse beyond their interval | Test met |",
              "|---|---|---|---|---|---|",
