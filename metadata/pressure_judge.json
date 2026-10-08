@@ -1,20 +1,63 @@
 {
-  "status": "declared by the pull request that closes #375 before any score was computed; the bar is Eleonora's ruling of 7 October 2026 on #374; the choices that ruling leaves open (the horizons the pass needs, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review",
-  "scoring": {"last_day": "2025-12-31"},
-  "thresholds_bp": [5, 10],
+  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review",
+  "scoring": {
+    "last_day": "2025-12-31"
+  },
+  "confirmation": {
+    "first": "2026-01-01",
+    "last": "2026-09-03",
+    "candidates": []
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
   "primary_threshold_bp": 5,
-  "horizons": [1, 2, 3, 4, 5],
-  "pass_horizons": [1, 2, 3, 4, 5],
-  "bar": {
-    "recall_at_least": 0.7,
-    "false_alarms_per_true_at_most": 1.0,
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "bootstrap": {
     "level": 0.9,
     "replications": 2000,
     "block_length": 10,
     "seed": 375
   },
-  "early_warning": {"usefulness_preference": 0.5},
-  "groupings": ["regime", "scarcity_state", "day_type"],
+  "tiers": {
+    "onset_warning": {
+      "lead_at_least": 1,
+      "recall_at_least": 0.5,
+      "false_alarms_per_onset_at_most": 2.0,
+      "far_lead_at_least": 3,
+      "far_recall_at_least": 0.3
+    },
+    "risky_dates": {
+      "scarcity_state_at_least": 2,
+      "lead": 5,
+      "auroc_at_least": 0.75
+    },
+    "no_crying_wolf": {
+      "abundant_scarcity_state": 0,
+      "abundant_regime": "2021-23",
+      "flags_per_year_at_most": 21,
+      "business_days_per_year": 252
+    },
+    "week_ahead": {
+      "days": 5,
+      "combine": "max"
+    }
+  },
+  "early_warning": {
+    "usefulness_preference": 0.5
+  },
+  "groupings": [
+    "regime",
+    "scarcity_state",
+    "day_type"
+  ],
   "benchmarks": {
     "climatology": "calendar_climatology",
     "persistence": "persistence_logistic"
@@ -22,36 +65,79 @@
   "candidates": {
     "calendar_climatology": {
       "role": "benchmark",
-      "features": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date"],
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date"
+      ],
       "calibration": "none",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "persistence_logistic": {
       "role": "benchmark",
-      "features": ["spread_bps"],
+      "features": [
+        "spread_bps"
+      ],
       "calibration": "none",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "published_v1": {
       "role": "baseline",
       "features": [
-        "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
       ],
       "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION)",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "two_part_logistic": {
       "role": "candidate",
-      "features": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date", "treasury_settlement_coupons", "reserve_balances"],
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
       "calibration": "none (P(spike) from a ridge logistic at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "two_part_gbm": {
       "role": "candidate",
-      "features": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date", "treasury_settlement_coupons", "reserve_balances"],
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
       "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     }
   }
 }
