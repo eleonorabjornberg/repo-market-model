@@ -1,0 +1,77 @@
+{
+  "title": "A conditional pressure-probability predictor against climatology on the knowledge holdouts (#372)",
+  "declared_before_scoring": true,
+  "status": "A declaration for a reported-only study. It decides nothing and moves no published figure.",
+  "holdout_windows": {
+    "file": "metadata/events.json",
+    "names": ["sep-2019", "mar-2020"],
+    "note": "Boundaries and checksums are the file's. The script refuses a window whose checksum is not the file's."
+  },
+  "panel": {
+    "sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+    "decision_time": "16:00",
+    "horizon_business_days": 1,
+    "minimum_history": 61
+  },
+  "predictors": {
+    "gbm_published_4": {
+      "kind": "uncalibrated gbm on the four features of exceedance_gbm.json",
+      "features": ["sofr_p25", "sofr_p75", "sofr_volume", "spread_bps"]
+    },
+    "gbm_published_9": {
+      "kind": "uncalibrated gbm on the nine features of the funding declaration the published calibrated model reads",
+      "features": [
+        "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
+        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"
+      ]
+    },
+    "dynamic_logit": {
+      "kind": "the frozen dynamic logit of #137 (ml.DYNAMIC_LOGIT_SETTINGS), no recalibration",
+      "features": [
+        "spread_bps", "days_to_month_end", "quarter_end", "tax_date",
+        "treasury_settlement_coupons", "reserve_balances"
+      ]
+    },
+    "note": "No published (calibrated) model is held out from these windows: the published records train on every crisis day once it is past. Every figure is labelled uncalibrated."
+  },
+  "benchmarks": ["climatology", "persistence_logistic"],
+  "reported_only_benchmarks": ["calendar_climatology"],
+  "thresholds": {
+    "pressure_bp": [5, 10],
+    "pressure_rule": "whole basis points, strictly greater than (docs/decisions/pressure-probability.md)",
+    "plain_leap": {
+      "jump_bp_h1": 3.0,
+      "source": "onset.LEAP_JUMP_BP[1]",
+      "rule": "round(s_t) - round(s_anchor) strictly greater than the jump, anchor as-of (onset.LeapTargets)"
+    }
+  },
+  "score": "Brier, per day; paired difference = benchmark Brier minus predictor Brier, positive favours the predictor",
+  "interval": {
+    "method": "stationary bootstrap",
+    "level": 0.9,
+    "mean_block_length": 2,
+    "replications": 2000
+  },
+  "splits": [
+    "all scored days",
+    "by regime (metadata/evaluation_splits.json)",
+    "by pressure-day type (metadata/evaluation_splits.json)",
+    "onset at-risk days (onset.at_risk_flags)",
+    "leap at-risk days and leap-onset events (onset.LeapTargets)"
+  ],
+  "pass_rule": {
+    "cell": "one predictor at one threshold against one benchmark",
+    "met_when": [
+      "the pooled paired Brier difference has its 90% interval above zero against climatology AND against persistence_logistic",
+      "no regime cell and no pressure-day-type cell has its 90% interval wholly below zero against either benchmark; a cell whose interval cannot be bootstrapped is reported and does not count"
+    ],
+    "not_met": "reported as not met; a point estimate favouring the predictor with an interval including zero is inconclusive",
+    "if_met": "nothing is published here. A publish follows docs/decisions/publish-rule.md: paired against the current published declaration on days before 2026-01-01, interval above zero, no regime or day-type cell worse beyond its interval. The live record is not changed."
+  },
+  "lockbox": "Every scored day is in a window before 2026-01-01. lockbox.require_unlocked checks it before any read or fit.",
+  "final_test_groups": "The final test's leap-onset and at-risk groups (docs/runs/final_test_near_blind.json) are reported as definitions applied to the holdout days, with day and event counts. That record is read for its group definitions, never rescored.",
+  "outputs": {
+    "result": "docs/pivot/studies/conditional_vs_climatology_holdout.json",
+    "page": "docs/pivot/conditional-vs-climatology-holdout.md"
+  }
+}
