@@ -1,0 +1,53 @@
+{
+  "status": "declared by the pull request that closes #429 before any diagnostic was computed; reported only, nothing here changes the bar, the judge's declaration or any published figure; the choices below are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "primary_threshold_bp": 5},
+  "false_alarms": {
+    "source": "docs/pivot/judge-amendment-result.md, Table 1 (the re-judge of #416 under the amended judge)",
+    "rows": {
+      "rule": "the five candidate rows with the most onsets flagged at lead >= 1; ties broken by the smaller worst false alarms per onset, then by name; the three reference rows (calendar_climatology, persistence_logistic, published_v1) are not candidates and are left out",
+      "excluded": ["calendar_climatology", "persistence_logistic", "published_v1"],
+      "chosen": ["two_part_gbm", "ngboost_laplace", "hierarchical_logistic", "settlement_quantile_timing", "scarcity_logistic"]
+    },
+    "flags": "the judge's own: a probability at or above the flag cut-off chosen refit by refit from the training window (pressure_judge.choose_cutoffs), at +5 bp, at each horizon h = 1 to 5",
+    "false_alarm": "a flag on a day that is not a pressure day (SOFR - IORB, on whole basis points, not strictly above +5 bp), on the days every horizon scores, as tier 1 counts them; the day split is the flagged (target) day, t + h",
+    "realised_spread_bp": {
+      "reading": "the spread of the flagged day on whole basis points (round(spread_bps))",
+      "buckets": [
+        {"label": "+4 to +5 bp", "min": 4, "max": 5},
+        {"label": "+1 to +3 bp", "min": 1, "max": 3},
+        {"label": "0 bp or below", "min": null, "max": 0}
+      ]
+    },
+    "distance_to_pressure_day": {
+      "reading": "panel days between the flagged day and the nearest pressure day (+5 bp), either side, read on the days to 2025-12-31 only; a flagged day within the last five panel days of the window may have a nearer pressure day after it that the window does not hold",
+      "buckets": [
+        {"label": "1 day", "min": 1, "max": 1},
+        {"label": "2 to 5 days", "min": 2, "max": 5},
+        {"label": "6 to 20 days", "min": 6, "max": 20},
+        {"label": "21 days or more", "min": 21, "max": null}
+      ]
+    },
+    "day_type": "the judge's day_type grouping (month_end, ordinary, quarter_end, tax_date), read as of the day; the regime grouping is reported beside it"
+  },
+  "power": {
+    "statistic": "the tier 1 recall conditions as the judge applies them at lead >= 1: the point recall is at least onset_recall_at_least (0.5) and the lower end of the bootstrap interval on recall is above the climatology recall at the same false alarms; the false-alarm limit is not simulated",
+    "model": "each onset is flagged independently with the true recall; the climatology recall is a constant on every onset; non-onset days contribute nothing to the recall, so only the days' order and the onset positions matter",
+    "true_recalls": [0.55, 0.6, 0.7, 0.8],
+    "climatology_recalls": [0.115, 0.231, 0.269],
+    "climatology_note": "the lowest, a typical and the highest climatology recall of Table 1 of the re-judge",
+    "bootstrap": "the judge's: stationary, 90% interval, block length and replications as in metadata/pressure_judge.json; a resample with no onset leaves the recall undefined, the interval is unavailable and the condition is not met (replicates are never dropped)",
+    "experiments": 500,
+    "seed": 429,
+    "development_window": {
+      "days": "the days every horizon scores, 2018-06-29 to 2025-12-31, from the published panel",
+      "onsets": "the 26 onsets the judge counts, at their positions in that window"
+    },
+    "confirmation_window": {
+      "days": 169,
+      "days_source": "docs/decisions/lockbox.md: 169 locked days from 2026-01-01, of which 5 are above +5 bp",
+      "onsets": [1, 2, 3, 4, 5],
+      "onsets_note": "a parameter, not a count: no day of the window is read. The lockbox record gives at most 5 pressure days in it, so at most 5 onsets",
+      "placement": "onsets evenly spaced over the window"
+    }
+  }
+}
