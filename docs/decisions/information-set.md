@@ -5,6 +5,10 @@ under the previous rule was re-scored or archived.
 
 > **Proposed in #267, for Eleonora to review:** the corrected wording of rule 1 below (the H.4.1
 > read lag). A decision is in force only once she merges it.
+>
+> **Proposed in #430, for Eleonora to review:** the amendment at the end of this record, which
+> records her ruling of 8 October 2026 (#374) on the New York Fed's back-filled repo-rate history.
+> It was drafted by the pull request that closes #430. A decision is in force only once she merges it.
 
 ## The rule
 
@@ -60,3 +64,31 @@ when the feature set was fixed; re-scoring them belongs with next-version resear
   instant is used anywhere. The effect is a possible optimism in the calibration scores, and it is
   limited to declared columns slower than the target (the H.4.1 weeklies, for example). It is
   bounded to those rows and left as is.
+
+## Amendment: back-filled repo-rate history is training history only (#374, #430)
+
+**Proposed, for Eleonora to review.** Eleonora ruled on 8 October 2026 (#374) that the New York Fed's
+back-filled history of SOFR, TGCR and BGCR may be used as training history. The Bank's reference-rate
+API begins on 2018-04-02. For the months before it, the Bank published a workbook of indicative values
+of the same three rates and their volumes, computed after the fact on the same method, from 2014-08-22
+to 2018-03-29. It carries no percentiles. Its source, checksum and what is known of its publication date
+are in `docs/pivot/backfilled-history-result.md`.
+
+1. **A back-filled value is training history.** It may sit in a fold's training frame, for a day before
+   2018-04-03, the first day the API serves. Rule 3 above is unchanged: a training target is admissible
+   only if it was observable by the fold's decision instant. The workbook's own properties date it May
+   2018, before the first scored decision instant; the Bank's original posting date is not recorded in
+   the file (see the result page).
+2. **It is never an as-of input at a scored decision instant.** No scored day is a back-filled day, and
+   no scored forecast is conditioned on a back-filled row (its feature date is a published day).
+   `repo_model.backfill.require_training_only` raises `LookAheadError` for a backtest in which either
+   is not so.
+3. **Nothing published moves.** No declaration in `docs/runs/` reads the back-fill, and the published
+   panel (digest in `metadata/funding_panel_manifest.json`) does not carry it. A model that trains on it
+   is a scratch measurement until a later decision puts it in a declaration.
+4. **The other inputs of the earlier months** (bill rates, Treasury auctions, the Desk's ON RRP results,
+   the H.8 first prints; FRED's reserves, TGA and IOER and the FR 2004 extract already reach back) are
+   fetched from their own sources for the same dates and carry the same rule. The calendar columns of
+   those months use the workbook's own publication days as the business-day schedule, because the market
+   holiday table begins on 2018-01-01.
+
