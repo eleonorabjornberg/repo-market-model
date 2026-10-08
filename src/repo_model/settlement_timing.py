@@ -6,7 +6,7 @@ a quantile regression and a probit, driven by the timing and size of payments an
 settlements. Adrian, Boyarchenko & Giannone (2019) turn a grid of predicted quantiles
 into a smooth conditional distribution by fitting a skewed t to it. This module only
 *declares* the candidates: which estimator on which inputs. The estimators are
-`ml._settlement_timing_predictor`'s, the cut-offs and the bar are
+`ml._settlement_timing_predictor`'s, the bar and the rule that chooses the flag cut-off are
 `metadata/pressure_judge.json`'s, and `scripts/settlement_timing.py` runs them.
 
 **Six candidates, two estimators on three nested sets of inputs**

@@ -71,14 +71,11 @@ class DeclarationTests(unittest.TestCase):
                 for key in want:
                     self.assertEqual(got[key], want[key], key)
 
-    def test_the_judge_reads_each_candidate_with_the_declared_cutoff(self):
+    def test_no_candidate_declares_a_fixed_cutoff(self):
+        # The flag cut-off is chosen from each refit's training window (`cutoff_rule`, #407).
         declaration = pj.load_declaration(DECLARATION)
         for entry in eb.CANDIDATES:
-            for tau in declaration.thresholds:
-                for horizon in declaration.horizons:
-                    self.assertEqual(declaration.cutoff(entry.name, tau, horizon), eb.CUTOFF)
-                    with self.assertRaises(ValueError):
-                        declaration.cutoff(entry.name, tau, horizon, eb.CUTOFF + 0.1)
+            self.assertNotIn("cutoffs", declaration.candidates[entry.name])
 
 
 if __name__ == "__main__":

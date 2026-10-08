@@ -281,6 +281,30 @@
       "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
       "calibration": "none (the skew-t's exceedance as fitted)"
     },
+    "time_to_pressure_hazard": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "none (discrete-time first-passage hazard, declared in metadata/pressure_hazard.json)"
+    },
+    "extreme_value_tail": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "none (logistic body of spread > u times a conditional generalised Pareto tail, declared in metadata/pressure_tail.json)"
+    },
     "rare_logistic_class_weight+recalibrated": {
       "role": "candidate",
       "features": [
@@ -346,97 +370,119 @@
       ],
       "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json"
     },
-    "extreme_value_tail": {
+    "two_part_logistic": {
       "role": "candidate",
       "features": [
         "spread_bps",
         "days_to_month_end",
         "quarter_end",
         "tax_date",
-        "reserve_balances",
-        "tga"
+        "treasury_settlement_coupons",
+        "reserve_balances"
       ],
-      "calibration": "none (logistic body of spread > u times a conditional generalised Pareto tail, declared in metadata/pressure_tail.json)"
+      "calibration": "none (P(spike) from a ridge logistic at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
     },
-    "time_to_pressure_hazard": {
+    "two_part_gbm": {
       "role": "candidate",
       "features": [
         "spread_bps",
         "days_to_month_end",
         "quarter_end",
         "tax_date",
-        "reserve_balances",
-        "tga"
+        "treasury_settlement_coupons",
+        "reserve_balances"
       ],
-      "calibration": "none (discrete-time first-passage hazard, declared in metadata/pressure_hazard.json)"
+      "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
     },
-    "recal_isotonic": {
+    "hierarchical_logistic": {
       "role": "candidate",
-      "track": "C (#380)",
+      "track": "H (#386)",
       "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
         "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
+        "tax_date",
         "treasury_settlement"
       ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "pressure model v1's raw distributional gbm (conformal PID with nested selection), recalibrated out of fold per threshold and horizon by the CORP isotonic fit (probability_calibration, 'isotonic')"
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
     },
-    "recal_platt": {
+    "markov_k2": {
       "role": "candidate",
-      "track": "C (#380)",
+      "track": "M (#384)",
       "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
-        "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
-        "treasury_settlement"
+        "spread_bps"
       ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "the same raw forecast, Platt out of fold per threshold and horizon (probability_calibration, 'platt'): the published recalibration, rerun as the track's pooled control"
+      "calibration": "none (Markov-switching forward filter, 2 states)"
     },
-    "recal_platt_group": {
+    "markov_k3": {
       "role": "candidate",
-      "track": "C (#380)",
+      "track": "M (#384)",
       "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
-        "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
-        "treasury_settlement"
+        "spread_bps"
       ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "the same raw forecast, Platt out of fold fitted per group (scarcity-state band x scheduled/ordinary day type, read as of the decision instant), pooled Platt when the group holds fewer than 60 earlier pairs or 3 events (group_calibration, 'group')"
+      "calibration": "none (Markov-switching forward filter, 3 states)"
     },
-    "recal_platt_weighted": {
+    "markov_k3_scarcity": {
       "role": "candidate",
-      "track": "C (#380)",
+      "track": "M (#384)",
       "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
         "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
-        "treasury_settlement"
+        "reserve_scarcity_state"
       ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "the same raw forecast, one Platt curve out of fold with the target group's earlier pairs weighted 1 and all others 0.25 (group_calibration, 'weighted'; regime-weighted calibration after Barber et al.)"
+      "calibration": "none (Markov-switching forward filter, 3 states)"
+    },
+    "gbm_reference": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
+    },
+    "ngboost_laplace": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
+    },
+    "ngboost_normal": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
+    },
+    "qrf": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
     }
   }
 }
