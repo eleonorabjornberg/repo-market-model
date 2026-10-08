@@ -9661,6 +9661,99 @@ class ProbitAndQuantileTests(unittest.TestCase):
         self.assertLess(curves[0][3], 0.02)
 
 
+class SettlementTimingConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the skew-t quantile regression of #379."""
+
+    IMPLEMENTATION = staticmethod(
+        lambda features, declaration, minimum_history=20: ml._settlement_timing_predictor(
+            "quantile_skewt", features, declaration, minimum_history
+        )
+    )
+    FACTORY = IMPLEMENTATION
+
+
+class SkewTSmootherTests(unittest.TestCase):
+    """The Adrian-Boyarchenko-Giannone smoother of the settlement-timing track (#379)."""
+
+    GRID = (0.01, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99)
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_it_recovers_a_student_t_law_from_its_quantiles(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        quantiles = stats.t.ppf(probabilities, 4) * 3.0 + 1.0
+        got = ml._skew_t_exceedance(quantiles, probabilities, [5.5, 10.5, 20.5])
+        want = 1.0 - stats.t.cdf((numpy_array([5.5, 10.5, 20.5]) - 1.0) / 3.0, 4)
+        for value, expected in zip(got, want):
+            self.assertAlmostEqual(value, float(expected), delta=0.005)
+
+    def test_it_carries_the_skew_the_quantiles_have(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        quantiles = stats.skewnorm.ppf(probabilities, 4.0) * 2.0
+        got = ml._skew_t_exceedance(quantiles, probabilities, [0.5, 2.5, 4.5])
+        want = stats.skewnorm.sf(numpy_array([0.5, 2.5, 4.5]) / 2.0, 4.0)
+        for value, expected in zip(got, want):
+            self.assertAlmostEqual(value, float(expected), delta=0.02)
+
+    def test_the_curve_does_not_rise_with_the_cut_and_stays_a_probability(self):
+        probabilities = list(self.GRID)
+        quantiles = [-3.0, -1.5, -1.0, -0.5, 0.0, 0.2, 0.4, 0.7, 1.2, 2.5, 5.0, 8.0, 30.0]
+        curve = ml._skew_t_exceedance(quantiles, probabilities, [0.5, 1.5, 5.5, 10.5, 20.5, 50.5])
+        self.assertEqual(list(curve), sorted(curve, reverse=True))
+        self.assertTrue(all(0.0 <= value <= 1.0 for value in curve))
+
+    def test_a_day_with_equal_quantiles_is_a_point_mass(self):
+        self.assertEqual(ml._skew_t_exceedance([2.0] * 13, list(self.GRID), [1.5, 2.5]), (1.0, 0.0))
+
+    def test_a_day_does_not_depend_on_the_days_fitted_before_it(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        first = stats.t.ppf(probabilities, 5) * 2.0
+        second = stats.t.ppf(probabilities, 3) * 6.0 + 4.0
+        alone = ml._skew_t_exceedance(second, probabilities, [5.5, 10.5])
+        ml._skew_t_exceedance(first, probabilities, [5.5, 10.5])
+        self.assertEqual(ml._skew_t_exceedance(second, probabilities, [5.5, 10.5]), alone)
+
+    def test_it_refuses_quantiles_that_do_not_match_the_grid(self):
+        with self.assertRaises(ValueError):
+            ml._skew_t_exceedance([0.0, 1.0, 2.0], list(self.GRID), [0.5])
+
+    def test_the_quantile_reading_refuses_an_unknown_smoother(self):
+        with self.assertRaises(ValueError):
+            ml._quantile_exceedance([[0.0]] * 40, [0.0] * 40, [[0.0]], (5.0,), smoother="spline")
+
+    def test_the_skew_t_reading_of_a_regression_is_a_conditional_law(self):
+        import numpy
+
+        rng = numpy.random.default_rng(2)
+        x = rng.normal(size=(1500, 1))
+        spread = 2.5 + 4.0 * x[:, 0] + rng.normal(size=1500)
+        curves = ml._quantile_exceedance(
+            x.tolist(), spread.tolist(), [[0.0], [1.0]], (0.5, 2.5, 6.5, 20.0), smoother="skew_t"
+        )
+        for curve in curves:
+            self.assertEqual(list(curve), sorted(curve, reverse=True))
+        self.assertAlmostEqual(curves[0][1], 0.5, delta=0.1)
+        self.assertAlmostEqual(curves[1][2], 0.5, delta=0.1)
+        self.assertLess(curves[0][3], 0.02)
+
+    def test_a_settlement_timing_form_is_one_of_the_two_declared(self):
+        with self.assertRaises(ValueError):
+            ml._settlement_timing_predictor("logistic", _PRESSURE_CALENDAR, _pressure_splits())
+
+
+def numpy_array(values):
+    import numpy
+
+    return numpy.asarray(values, dtype=float)
+
+
 class DirectPressureModelTests(unittest.TestCase):
     """The direct pressure models' design, pairs and guards (#114)."""
 
@@ -10030,6 +10123,148 @@ class ScarcityCalendarDesignTests(unittest.TestCase):
                 self.assertEqual(settings["monotonic_cst"], [0, 1, 1, 1, 1])
             else:
                 self.assertNotIn("monotonic_cst", settings)
+
+
+class ScarcityEventBarVariantTests(unittest.TestCase):
+    """The two variants of the scarcity-conditioned calendar scored under the event bar (#378).
+
+    Written first, and watched failing: before the variants existed every test
+    here raised `TypeError: _ScarcityCalendarDesign.__init__() got an
+    unexpected keyword argument 'interactions'` (or `'regime_pooled'`).
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, features=_SCARCITY_CALENDAR, **kwargs):
+        return ml._ScarcityCalendarDesign(features, _pressure_splits(), _FOUR_LEVEL, **kwargs)
+
+    def _observation(self, state, **values):
+        base = {
+            "sofr": 4.07, "iorb": 4.0, "reserve_scarcity_state": state,
+            "days_to_month_end": 12.0, "quarter_end": 0.0, "tax_date": 0.0,
+            "treasury_settlement": 0.0,
+        }
+        base.update(values)
+        return DailyObservation(date(2025, 9, 16), base)
+
+    def test_the_interaction_crosses_settlement_size_state_and_quarter_end_or_tax_date(self):
+        design = self.design(interactions=True)
+        self.assertEqual(design.names[-2:], (
+            "treasury_settlement_x_state_x_quarter_end", "treasury_settlement_x_state_x_tax_date",
+        ))
+        tax = design.row(self._observation(2.0, tax_date=1.0, treasury_settlement=70.0), None)
+        self.assertEqual(tax[-2:], [0.0, 140.0])
+        quarter = design.row(
+            self._observation(3.0, quarter_end=1.0, days_to_month_end=0.0, treasury_settlement=50.0), None
+        )
+        self.assertEqual(quarter[-2:], [150.0, 0.0])
+        ordinary = design.row(self._observation(3.0, treasury_settlement=50.0), None)
+        self.assertEqual(ordinary[-2:], [0.0, 0.0])
+        calm = design.row(self._observation(0.0, tax_date=1.0, treasury_settlement=70.0), None)
+        self.assertEqual(calm[-2:], [0.0, 0.0])
+
+    def test_the_interaction_variant_is_the_base_form_without_a_settlement(self):
+        without = _SCARCITY_CALENDAR[:-1]
+        self.assertEqual(self.design(without, interactions=True).names, self.design(without).names)
+        self.assertEqual(
+            self.design(interactions=True).names[: len(self.design().names)], self.design().names
+        )
+
+    def test_the_gbm_interactions_are_constrained_non_decreasing(self):
+        got = self.design(monotone=True, interactions=True).monotone
+        self.assertEqual(got, (0, 1, 1, 1, 1, 1, 1, 1))
+
+    def test_a_variant_is_one_variant(self):
+        with self.assertRaises(ValueError):
+            self.design(interactions=True, regime_pooled=True)
+        with self.assertRaises(ValueError):
+            self.design(regime_pooled=True, monotone=True)
+
+    def test_the_regime_design_adds_raw_scheduled_columns_and_declares_its_pooling(self):
+        design = self.design(regime_pooled=True)
+        self.assertEqual(
+            design.names[-4:], ("quarter_end", "month_end", "tax_date", "treasury_settlement")
+        )
+        pooled, deviating, regimes, scale = design.pooling
+        self.assertEqual(pooled, tuple(range(6)))
+        self.assertEqual(deviating, (0, 6, 7, 8, 9))
+        self.assertEqual(regimes, (0.0, 1.0, 2.0, 3.0))
+        self.assertEqual(scale, ml.REGIME_POOLING_SCALE)
+        got = design.row(self._observation(2.0, tax_date=1.0, treasury_settlement=70.0), None)
+        self.assertEqual(got[-4:], [0.0, 0.0, 1.0, 70.0])
+        self.assertEqual(got[2:6], [0.0, 0.0, 2.0, 140.0])
+
+    def test_the_regime_fit_is_the_pooled_fit_for_a_regime_with_no_training_day(self):
+        """A regime unseen in training is served the pooled model, never an extrapolation."""
+
+        design = self.design(regime_pooled=True)
+        xs, labels = [], []
+        for index in range(300):
+            state = float(index % 3)  # state 3 never appears in training
+            observation = self._observation(
+                state, quarter_end=1.0 if index % 5 == 0 else 0.0, sofr=4.0 + (index % 9) / 50.0,
+                treasury_settlement=float(index % 7) * 10.0,
+            )
+            xs.append(design.row(observation, None))
+            labels.append(1 if (state >= 1.0 and index % 4 == 0) else 0)
+        served = [design.row(self._observation(3.0, quarter_end=1.0, treasury_settlement=30.0), None)]
+        pooled_only = ml._fit_classifier("logistic", [x[:6] for x in xs], labels, [served[0][:6]])
+        got = ml._fit_classifier("logistic", xs, labels, served, pooling=design.pooling)
+        self.assertEqual(len(got), 1)
+        self.assertTrue(0.0 <= got[0] <= 1.0)
+        # Deviation columns of an unseen regime are all zero in training, so its
+        # coefficients are exactly zero; the served day differs from the pooled
+        # model only by the raw columns the pooled part does not carry.
+        self.assertAlmostEqual(got[0], pooled_only[0], delta=0.2)
+
+    def test_stronger_shrinkage_brings_a_regime_nearer_the_pooled_fit(self):
+        design = self.design(regime_pooled=True)
+        xs, labels = [], []
+        for index in range(400):
+            state = float(index % 4)
+            observation = self._observation(
+                state, tax_date=1.0 if index % 6 == 0 else 0.0, sofr=4.0 + (index % 9) / 50.0,
+                treasury_settlement=float(index % 7) * 10.0,
+            )
+            xs.append(design.row(observation, None))
+            labels.append(1 if (state == 3.0 and index % 9 < 5) else 0)
+        served = [design.row(self._observation(3.0, tax_date=1.0, treasury_settlement=30.0), None)]
+        pooled, deviating, regimes, _ = design.pooling
+        loose = ml._fit_classifier("logistic", xs, labels, served, pooling=(pooled, deviating, regimes, 1.0))
+        tight = ml._fit_classifier("logistic", xs, labels, served, pooling=(pooled, deviating, regimes, 0.01))
+        flat = ml._fit_classifier("logistic", [x[:6] for x in xs], labels, [served[0][:6]])
+        self.assertLess(abs(tight[0] - flat[0]), abs(loose[0] - flat[0]))
+
+    def test_a_backtest_runs_each_variant_under_every_guard(self):
+        from repo_model.scarcity import measurement_declaration
+
+        rows = _scarcity_calendar_panel()
+        for name, kwargs, form in (
+            ("interactions", {"interactions": True}, "logistic"),
+            ("interactions_gbm", {"interactions": True}, "gbm"),
+            ("regime_pooled", {"regime_pooled": True}, "logistic"),
+        ):
+            with self.subTest(name=name), measurement_declaration():
+                report = baseline.rolling_exceedance_backtest(
+                    rows,
+                    predictor=ml._scarcity_calendar_predictor(
+                        form, _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL,
+                        minimum_history=60, **kwargs,
+                    ),
+                    model_name=name,
+                    features=_SCARCITY_CALENDAR,
+                    registry=_PRESSURE_REGISTRY,
+                    decision_time=time(16, 0),
+                    taus=(5.0, 10.0),
+                    minimum_history=60,
+                    refit_every=21,
+                    horizon=1,
+                )
+            self.assertTrue(report.folds)
+            settings = report.model_settings["scarcity_calendar"]
+            self.assertEqual(bool(settings["interaction_terms"]), "interactions" in kwargs)
+            self.assertEqual(settings["regime_partial_pooling"] is not None, "regime_pooled" in kwargs)
 
 
 def _history_rows(start, end):
@@ -11206,6 +11441,199 @@ class PairedBootstrapPValueTests(unittest.TestCase):
     def test_series_of_different_lengths_are_refused(self):
         with self.assertRaises(ValueError):
             ml.paired_bootstrap_p_values([[0.1, 0.2], [0.1]], block_length=1, seed=1, replications=10)
+
+
+def _rare_factory(kind, treatment):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_rare_event_exceedance(kind, treatment, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_{kind}_{treatment}"
+    return factory
+
+
+class PressureLogisticClassWeightConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted logistic (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("logistic", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierClassWeightConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted gradient-boosted classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierFocalConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the focal-loss classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "focal"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureLogisticBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the event-balanced bootstrap logistic (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("logistic", "balanced_bootstrap"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the event-balanced bootstrap classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "balanced_bootstrap"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class RareEventTrainingTests(unittest.TestCase):
+    """Rare-event training (#381): reweighted fits learn from the spikes.
+
+    Recorded mutations (the resampling reads the training labels of one fit and
+    nothing else; the focal gradient is the loss's derivative):
+
+    * `_balanced_indices`: `rng.choice(events, ...)` replaced by
+      `rng.choice(numpy.arange(len(y)), ...)` (events drawn from every row):
+      `test_a_balanced_bootstrap_draws_half_its_rows_from_the_events` fails
+      with `AssertionError`.
+    * `_focal_gradient`: the `y == 1` branch's `- (1.0 - p) ** (gamma + 1.0)`
+      deleted: `test_the_focal_gradient_is_the_derivative_of_the_focal_loss`
+      fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def rare_data(self, n=1500, seed=0):
+        import numpy
+
+        rng = numpy.random.default_rng(seed)
+        x = rng.normal(size=(n, 2))
+        logit = -4.0 + 2.5 * x[:, 0]
+        y = (rng.uniform(size=n) < 1.0 / (1.0 + numpy.exp(-logit))).astype(int)
+        return x, y
+
+    def test_class_weights_equal_scikit_learn_balanced_weights(self):
+        import numpy
+        from sklearn.linear_model import LogisticRegression
+
+        x, y = self.rare_data()
+        got = ml._fit_rare_event("logistic", "class_weight", x, y, x[:5])
+        centre, scale = x.mean(axis=0), x.std(axis=0)
+        want = (
+            LogisticRegression(C=1.0, max_iter=5000, class_weight="balanced")
+            .fit((x - centre) / scale, y)
+            .predict_proba((x[:5] - centre) / scale)[:, 1]
+        )
+        self.assertTrue(numpy.allclose(got, want, atol=1e-12))
+
+    def test_every_treatment_raises_the_average_probability_above_the_plain_fit(self):
+        x, y = self.rare_data()
+        held_out, _ = self.rare_data(seed=1)
+        for kind, treatment in (
+            ("logistic", "class_weight"),
+            ("logistic", "balanced_bootstrap"),
+            ("gbm_classifier", "class_weight"),
+            ("gbm_classifier", "balanced_bootstrap"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment):
+                plain = ml._fit_classifier("logistic" if kind == "logistic" else "gbm", x, y, held_out)
+                treated = ml._fit_rare_event(kind, treatment, x, y, held_out)
+                self.assertGreater(sum(treated) / len(treated), 1.5 * sum(plain) / len(plain))
+
+    def test_every_treatment_ranks_the_events_above_chance(self):
+        from repo_model.pressure_judge import auroc
+
+        x, y = self.rare_data()
+        test_x, test_y = self.rare_data(seed=1)
+        for kind, treatment in (
+            ("logistic", "class_weight"),
+            ("logistic", "balanced_bootstrap"),
+            ("gbm_classifier", "class_weight"),
+            ("gbm_classifier", "balanced_bootstrap"),
+            ("gbm_classifier", "focal"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment):
+                got = ml._fit_rare_event(kind, treatment, x, y, test_x)
+                self.assertGreater(auroc(got, [int(v) for v in test_y]), 0.8)
+
+    def test_the_focal_gradient_is_the_derivative_of_the_focal_loss(self):
+        import numpy
+
+        def loss(z, y, gamma, alpha):
+            p = 1.0 / (1.0 + numpy.exp(-z))
+            return numpy.where(
+                y == 1, -alpha * (1 - p) ** gamma * numpy.log(p), -(1 - alpha) * p**gamma * numpy.log(1 - p)
+            )
+
+        z = numpy.linspace(-4.0, 4.0, 9)
+        for y in (1, 0):
+            labels = numpy.full(len(z), y)
+            for gamma, alpha in ((2.0, 0.75), (0.0, 0.5), (1.0, 0.3)):
+                step = 1e-6
+                want = (loss(z + step, labels, gamma, alpha) - loss(z - step, labels, gamma, alpha)) / (2 * step)
+                got = ml._focal_gradient(z, labels, gamma, alpha)
+                self.assertTrue(numpy.allclose(got, want, atol=1e-6), (y, gamma, alpha))
+
+    def test_the_focal_fit_is_deterministic(self):
+        x, y = self.rare_data(n=600)
+        first = ml._fit_rare_event("gbm_classifier", "focal", x, y, x[:20])
+        second = ml._fit_rare_event("gbm_classifier", "focal", x, y, x[:20])
+        self.assertEqual(first, second)
+
+    def test_a_balanced_bootstrap_draws_half_its_rows_from_the_events(self):
+        import numpy
+
+        _, y = self.rare_data()
+        rows = ml._balanced_indices(y, 7)
+        self.assertEqual(len(rows), len(y))
+        self.assertTrue(((rows >= 0) & (rows < len(y))).all())
+        self.assertEqual(int(y[rows].sum()), round(0.5 * len(y)))
+        self.assertTrue(numpy.array_equal(rows, ml._balanced_indices(y, 7)))
+        self.assertFalse(numpy.array_equal(rows, ml._balanced_indices(y, 8)))
+
+    def test_a_balanced_bootstrap_uses_the_training_labels_of_its_fit_only(self):
+        # Rows the fit is not given cannot appear: indices are positions in the labels passed in.
+        x, y = self.rare_data()
+        cut = 900
+        for seed in range(5):
+            self.assertLess(int(ml._balanced_indices(y[:cut], seed).max()), cut)
+
+    def test_a_balanced_bootstrap_of_one_class_is_refused(self):
+        import numpy
+
+        with self.assertRaises(ValueError):
+            ml._balanced_indices(numpy.zeros(50, dtype=int), 0)
+
+    def test_unsupported_treatments_are_refused_at_construction(self):
+        splits = _pressure_splits()
+        for kind, treatment in (
+            ("logistic", "focal"),
+            ("probit", "class_weight"),
+            ("gbm_classifier", "oversample"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment), self.assertRaises(ValueError):
+                ml.pressure_rare_event_exceedance(kind, treatment, _PRESSURE_CALENDAR, splits)
+
+    def test_the_declaration_names_the_treatment(self):
+        import numpy
+
+        predictor = ml.pressure_rare_event_exceedance(
+            "gbm_classifier", "focal", _PRESSURE_CALENDAR, _pressure_splits()
+        )
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        from test_baseline import regressor_frame
+
+        rows = _with_calendar(regressor_frame())
+        info = rule.information_set([r.date for r in rows], len(rows) - 1)
+        curves = predictor(rows[:-1], (rule.observation(rows, info),), (5.0,), information=rule)
+        settings = curves.model_settings["rare_event"]
+        self.assertEqual(settings["treatment"], "focal")
+        self.assertEqual(settings["focal"]["gamma"], 2.0)
+        import json
+
+        json.dumps(dict(curves.model_settings))  # a record, so plain dicts all the way down
+        self.assertTrue(numpy.isfinite(curves.curves[0][0]))
 
 
 if __name__ == "__main__":

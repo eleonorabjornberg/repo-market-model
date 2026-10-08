@@ -1,20 +1,63 @@
 {
-  "status": "declared by the pull request that closes #375 before any score was computed; the bar is Eleonora's ruling of 7 October 2026 on #374; the choices that ruling leaves open (the horizons the pass needs, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review",
-  "scoring": {"last_day": "2025-12-31"},
-  "thresholds_bp": [5, 10],
+  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review",
+  "scoring": {
+    "last_day": "2025-12-31"
+  },
+  "confirmation": {
+    "first": "2026-01-01",
+    "last": "2026-09-03",
+    "candidates": []
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
   "primary_threshold_bp": 5,
-  "horizons": [1, 2, 3, 4, 5],
-  "pass_horizons": [1, 2, 3, 4, 5],
-  "bar": {
-    "recall_at_least": 0.7,
-    "false_alarms_per_true_at_most": 1.0,
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "bootstrap": {
     "level": 0.9,
     "replications": 2000,
     "block_length": 10,
     "seed": 375
   },
-  "early_warning": {"usefulness_preference": 0.5},
-  "groupings": ["regime", "scarcity_state", "day_type"],
+  "tiers": {
+    "onset_warning": {
+      "lead_at_least": 1,
+      "recall_at_least": 0.5,
+      "false_alarms_per_onset_at_most": 2.0,
+      "far_lead_at_least": 3,
+      "far_recall_at_least": 0.3
+    },
+    "risky_dates": {
+      "scarcity_state_at_least": 2,
+      "lead": 5,
+      "auroc_at_least": 0.75
+    },
+    "no_crying_wolf": {
+      "abundant_scarcity_state": 0,
+      "abundant_regime": "2021-23",
+      "flags_per_year_at_most": 21,
+      "business_days_per_year": 252
+    },
+    "week_ahead": {
+      "days": 5,
+      "combine": "max"
+    }
+  },
+  "early_warning": {
+    "usefulness_preference": 0.5
+  },
+  "groupings": [
+    "regime",
+    "scarcity_state",
+    "day_type"
+  ],
   "benchmarks": {
     "climatology": "calendar_climatology",
     "persistence": "persistence_logistic"
@@ -22,56 +65,453 @@
   "candidates": {
     "calendar_climatology": {
       "role": "benchmark",
-      "features": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date"],
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date"
+      ],
       "calibration": "none",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "persistence_logistic": {
       "role": "benchmark",
-      "features": ["spread_bps"],
+      "features": [
+        "spread_bps"
+      ],
       "calibration": "none",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "published_v1": {
       "role": "baseline",
       "features": [
-        "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
       ],
       "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION)",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_logistic": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_gbm": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_logistic_interactions": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_gbm_interactions": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "scarcity_logistic_regime_pooled": {
+      "role": "candidate",
+      "track": "S (#378)",
+      "features": [
+        "days_to_month_end",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "settlement_probit_timing": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "probit",
+      "inputs": "timing",
+      "features": [
+        "spread_bps",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date"
+      ],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the ridge probit's probabilities as fitted)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "settlement_probit_scarcity": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "probit",
+      "inputs": "scarcity",
+      "features": [
+        "spread_bps",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga"
+      ],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the ridge probit's probabilities as fitted)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "settlement_probit_tga": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "probit",
+      "inputs": "tga",
+      "features": [
+        "spread_bps",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "tga_daily",
+        "tga_daily_change"
+      ],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the ridge probit's probabilities as fitted)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "settlement_quantile_timing": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "quantile",
+      "inputs": "timing",
+      "features": [
+        "spread_bps",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date"
+      ],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the skew-t's exceedance as fitted)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "settlement_quantile_scarcity": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "quantile",
+      "inputs": "scarcity",
+      "features": [
+        "spread_bps",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga"
+      ],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the skew-t's exceedance as fitted)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "settlement_quantile_tga": {
+      "role": "candidate",
+      "track": "T (#379)",
+      "form": "quantile",
+      "inputs": "tga",
+      "features": [
+        "spread_bps",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "tga_daily",
+        "tga_daily_change"
+      ],
+      "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+      "calibration": "none (the skew-t's exceedance as fitted)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_logistic_class_weight+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (class_weight), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_logistic_balanced_bootstrap+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_gbm_class_weight+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (class_weight), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_gbm_focal+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (focal), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "rare_gbm_balanced_bootstrap+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
+    },
+    "extreme_value_tail": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "none (logistic body of spread > u times a conditional generalised Pareto tail, declared in metadata/pressure_tail.json)",
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "recal_isotonic": {
       "role": "candidate",
       "track": "C (#380)",
-      "features": ["reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"],
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
       "calibration": "pressure model v1's raw distributional gbm (conformal PID with nested selection), recalibrated out of fold per threshold and horizon by the CORP isotonic fit (probability_calibration, 'isotonic')",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "recal_platt": {
       "role": "candidate",
       "track": "C (#380)",
-      "features": ["reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"],
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
       "calibration": "the same raw forecast, Platt out of fold per threshold and horizon (probability_calibration, 'platt'): the published recalibration, rerun as the track's pooled control",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "recal_platt_group": {
       "role": "candidate",
       "track": "C (#380)",
-      "features": ["reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"],
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
       "calibration": "the same raw forecast, Platt out of fold fitted per group (scarcity-state band x scheduled/ordinary day type, read as of the decision instant), pooled Platt when the group holds fewer than 60 earlier pairs or 3 events (group_calibration, 'group')",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     },
     "recal_platt_weighted": {
       "role": "candidate",
       "track": "C (#380)",
-      "features": ["reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"],
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
       "calibration": "the same raw forecast, one Platt curve out of fold with the target group's earlier pairs weighted 1 and all others 0.25 (group_calibration, 'weighted'; regime-weighted calibration after Barber et al.)",
-      "cutoffs": {"5": 0.2, "10": 0.2}
+      "cutoffs": {
+        "5": 0.2,
+        "10": 0.2
+      }
     }
   }
 }

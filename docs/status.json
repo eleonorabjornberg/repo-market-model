@@ -10,7 +10,7 @@
       "number": 2
     }
   ],
-  "commit": "09bbd17",
+  "commit": "a4ed50e",
   "figures": {
     "dependencies": 0,
     "event_windows": 2,
@@ -46,6 +46,7 @@
     "final_test_near_blind_integral_sensitivity.json",
     "funding_panel.manifest.json",
     "interior_calibration_243.json",
+    "interior_confirmation_408.json",
     "persistence_funding.json",
     "pressure_model_v1_h1.json",
     "pressure_model_v1_h2.json",
