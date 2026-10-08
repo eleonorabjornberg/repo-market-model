@@ -52,6 +52,7 @@ from repo_model.evaluation_splits import DAY_TYPES, load_split_declaration  # no
 from repo_model.splits import LookAheadError  # noqa: E402
 
 DECLARATION = REPO / "docs" / "declarations" / "interior_calibration_243.json"
+ADDENDUM = REPO / "docs" / "declarations" / "interior_calibration_243_addendum.json"
 V1_RECORD = REPO / "docs" / "runs" / "v1_interior_diagnosis.json"
 V2_RECORD = REPO / "docs" / "runs" / "pressure_model_v2_distribution_h1.json"
 MANIFEST = REPO / "metadata" / "funding_panel_manifest.json"
@@ -61,7 +62,9 @@ OUTPUT = REPO / "docs" / "runs" / "interior_calibration_243.json"
 LEVELS = (0.05, 0.25, 0.5, 0.75, 0.95)
 INTERIOR = (1, 2, 3)
 WINDOW = (date(2018, 6, 29), date(2025, 12, 31))
-CANDIDATES = ("conformal_pooled", "conformal_by_day_type", "interior_tracking", "pressure_model_v2")
+FIRST_CANDIDATES = ("conformal_pooled", "conformal_by_day_type", "interior_tracking", "pressure_model_v2")
+ADDENDUM_CANDIDATES = ("conformal_group_regime", "conformal_recency_regime", "conformal_aci", "conformal_pid_calendar")
+CANDIDATES = FIRST_CANDIDATES + ADDENDUM_CANDIDATES
 TAGS = ("month_end", "quarter_end", "year_end", "tax_date", "coupon_settlement")
 TURN = ("month_end", "quarter_end", "tax_date", "coupon_settlement")
 MINIMUM_CELL_DAYS = onset.MINIMUM_EVENTS
@@ -80,18 +83,26 @@ def _script(name):
 
 
 def declaration() -> dict:
-    return json.loads(DECLARATION.read_text(encoding="utf-8"))
+    """The first declaration, with the addendum's candidates added under their own names."""
+
+    first = json.loads(DECLARATION.read_text(encoding="utf-8"))
+    added = json.loads(ADDENDUM.read_text(encoding="utf-8"))["candidates"]
+    return {**first, "candidates": {**first["candidates"], **added}}
 
 
 def declaration_sha256() -> str:
     return hashlib.sha256(DECLARATION.read_bytes()).hexdigest()
 
 
+def addendum_sha256() -> str:
+    return hashlib.sha256(ADDENDUM.read_bytes()).hexdigest()
+
+
 def require_declared(name: str) -> None:
-    """Refuse a candidate the declaration does not list."""
+    """Refuse a candidate neither the declaration nor its addendum lists."""
 
     if name not in declaration()["candidates"]:
-        raise ValueError(f"candidate {name!r} is not in the declaration {DECLARATION.name}")
+        raise ValueError(f"candidate {name!r} is not in the declaration {DECLARATION.name} or {ADDENDUM.name}")
 
 
 def check_window(dates) -> None:
@@ -111,14 +122,16 @@ def _empirical(values, level):
     return ordered[low] + (position - low) * (ordered[high] - ordered[low])
 
 
-def conformal_interior(days, *, window, minimum, by_kind=False):
+def conformal_interior(days, *, window, minimum, by_kind=False, keys=None):
     """Each day's issued vector with q25, q50 and q75 shifted by their residual quantiles.
 
     `days` are in date order, each with `date`, `anchor`, `y`, `issued` and `kind`. The shift of
     level tau is the tau-quantile (linear interpolation) of `y - issued[tau]` over the last
     `window` earlier days whose label is observable at the day's anchor (`date <= anchor`), 0 while
     fewer than `minimum` are. With `by_kind` the residuals are those of days of the same `kind`,
-    or the pooled ones while that kind has fewer than `minimum`. The vector is sorted.
+    or the pooled ones while that kind has fewer than `minimum`. With `keys` (day fields, most
+    specific first) the first key whose same-valued residuals number `minimum` or more is used,
+    else the pooled ones; `by_kind` is `keys=("kind",)`. The vector is sorted.
 
     Raises:
         LookAheadError: if a day's anchor is not before the day.
@@ -131,15 +144,142 @@ def conformal_interior(days, *, window, minimum, by_kind=False):
             raise LookAheadError(f"{d['date']}: its anchor {d['anchor']} is not before the scored day")
         seen = bisect.bisect_right(dates, d["anchor"], 0, j)
         pool = list(range(max(0, seen - window), seen))
-        if by_kind:
-            same = [k for k in pool if days[k]["kind"] == d["kind"]]
+        for key in (("kind",) if by_kind else keys or ()):
+            same = [k for k in pool if days[k][key] == d[key]]
             if len(same) >= minimum:
                 pool = same
+                break
         vector = list(d["issued"])
         if len(pool) >= minimum:
             for i in INTERIOR:
                 residuals = [days[k]["y"] - days[k]["issued"][i] for k in pool]
                 vector[i] += _empirical(residuals, LEVELS[i])
+        out.append(sorted(vector))
+    return out
+
+
+def _observable(days, dates, j):
+    """How many earlier days have a label observable at day `j`'s anchor (days `[0, seen)`).
+
+    Raises:
+        LookAheadError: if the day's anchor is not before the day.
+    """
+
+    d = days[j]
+    if d["anchor"] >= d["date"]:
+        raise LookAheadError(f"{d['date']}: its anchor {d['anchor']} is not before the scored day")
+    return bisect.bisect_right(dates, d["anchor"], 0, j)
+
+
+def _weighted_quantile(values, weights, level):
+    """The weighted `level` quantile: weights at the midpoints of the cumulative weight, linear between."""
+
+    order = sorted(range(len(values)), key=values.__getitem__)
+    total = sum(weights)
+    cumulative, running = [], 0.0
+    for k in order:
+        running += weights[k]
+        cumulative.append((running - 0.5 * weights[k]) / total)
+    ordered = [values[k] for k in order]
+    if level <= cumulative[0]:
+        return ordered[0]
+    if level >= cumulative[-1]:
+        return ordered[-1]
+    at = bisect.bisect_right(cumulative, level)
+    span = cumulative[at] - cumulative[at - 1]
+    share = (level - cumulative[at - 1]) / span if span > 0 else 0.0
+    return ordered[at - 1] + share * (ordered[at] - ordered[at - 1])
+
+
+def weighted_conformal(days, *, window, minimum, half_life, off_regime_weight):
+    """(b) Recency- and regime-weighted residual quantiles (Barber et al., Beyond exchangeability).
+
+    As the pooled conformal candidate, but each residual in the trailing `window` observable days
+    has weight `0.5 ** (age / half_life)`, age counted in observable days back from the latest,
+    times `off_regime_weight` when the day is from another regime than the scored day's.
+    """
+
+    dates = [d["date"] for d in days]
+    out = []
+    for j, d in enumerate(days):
+        seen = _observable(days, dates, j)
+        pool = list(range(max(0, seen - window), seen))
+        vector = list(d["issued"])
+        if len(pool) >= minimum:
+            weights = [0.5 ** ((seen - 1 - k) / half_life) * (1.0 if days[k]["regime"] == d["regime"] else off_regime_weight)
+                       for k in pool]
+            for i in INTERIOR:
+                residuals = [days[k]["y"] - days[k]["issued"][i] for k in pool]
+                vector[i] += _weighted_quantile(residuals, weights, LEVELS[i])
+        out.append(sorted(vector))
+    return out
+
+
+def aci_conformal(days, *, window, minimum, gamma, clip):
+    """(c) Adaptive conformal inference on the interior levels (Gibbs & Candes).
+
+    Level `l_i` starts at `LEVELS[i]`. Before a day is issued, every earlier day whose label
+    became observable since the last one updates `l_i += gamma * (LEVELS[i] - 1[y < q_i])`, with
+    `q_i` the value issued that day, clipped to `clip`. The shift is the `l_i` quantile of the
+    trailing-`window` pooled residuals, 0 until `minimum` are observable.
+    """
+
+    dates = [d["date"] for d in days]
+    levels = {i: LEVELS[i] for i in INTERIOR}
+    issued_q = []
+    learned = 0
+    out = []
+    for j, d in enumerate(days):
+        seen = _observable(days, dates, j)
+        if seen < learned:
+            raise ValueError("an anchor moved back")
+        for k in range(learned, seen):
+            for i in INTERIOR:
+                levels[i] = min(clip[1], max(clip[0], levels[i] + gamma * (LEVELS[i] - (1.0 if days[k]["y"] < issued_q[k][i] else 0.0))))
+        learned = seen
+        pool = list(range(max(0, seen - window), seen))
+        vector = list(d["issued"])
+        if len(pool) >= minimum:
+            for i in INTERIOR:
+                residuals = [days[k]["y"] - days[k]["issued"][i] for k in pool]
+                vector[i] += _empirical(residuals, levels[i])
+        issued_q.append(list(vector))
+        out.append(sorted(vector))
+    return out
+
+
+def pid_calendar(days, *, window, minimum, step):
+    """(d) Conformal PID with a calendar scorecaster (Angelopoulos, Candes & Tibshirani).
+
+    Integrator `theta_i += step * (LEVELS[i] - 1[y < final q_i])` over days whose label is
+    observable at the anchor. Scorecaster: the `LEVELS[i]` quantile of `y - (issued_i + theta_i as it
+    stood that day)` over the trailing-`window` observable days of the day's `kind`, 0 while that
+    kind has fewer than `minimum`. The final `q_i` is issued + theta + scorecaster; sorted.
+    """
+
+    dates = [d["date"] for d in days]
+    theta = {i: 0.0 for i in INTERIOR}
+    final_q, net = [], []
+    learned = 0
+    out = []
+    for j, d in enumerate(days):
+        seen = _observable(days, dates, j)
+        if seen < learned:
+            raise ValueError("an anchor moved back")
+        for k in range(learned, seen):
+            for i in INTERIOR:
+                theta[i] += step * (LEVELS[i] - (1.0 if days[k]["y"] < final_q[k][i] else 0.0))
+        learned = seen
+        pool = [k for k in range(max(0, seen - window), seen) if days[k]["kind"] == d["kind"]]
+        vector = list(d["issued"])
+        for i in INTERIOR:
+            vector[i] += theta[i]
+        net.append(list(vector))
+        if len(pool) >= minimum:
+            for i in INTERIOR:
+                residuals = [days[k]["y"] - net[k][i] for k in pool]
+                vector[i] += _empirical(residuals, LEVELS[i])
+        final_q.append(list(vector))
         out.append(sorted(vector))
     return out
 
@@ -214,7 +354,7 @@ def cell_intervals(series, masks, seed):
 
 
 def load_days(panel_rows, splits, tag_rows):
-    """The published side's days: date, anchor, outcome, issued vector, calendar tags and kind."""
+    """The published side's days: date, anchor, outcome, issued vector, calendar tags, kind, regime and group."""
 
     v1 = json.loads(V1_RECORD.read_text(encoding="utf-8"))["v1_h1_per_day"]
     anchors = {a[0]: a[1] for a in json.loads(V2_RECORD.read_text(encoding="utf-8"))["anchors"]}
@@ -224,8 +364,13 @@ def load_days(panel_rows, splits, tag_rows):
         if iso > WINDOW[1].isoformat():
             continue
         tags = bc.tags_for(tag_rows[iso], date.fromisoformat(iso), splits.month_end_window)
+        kind = "turn" if any(t in TURN for t in tags) else "ordinary"
         days.append({"date": iso, "anchor": anchors[iso], "y": y, "issued": list(vector), "tags": tags,
-                     "kind": "turn" if any(t in TURN for t in tags) else "ordinary"})
+                     "kind": kind})
+    regimes, _types = _split_labels(splits, panel_rows, [date.fromisoformat(d["date"]) for d in days])
+    for d, regime in zip(days, regimes):
+        d["regime"] = regime
+        d["group"] = d["kind"] + "|" + regime
     return days
 
 
@@ -236,6 +381,16 @@ def candidate_vectors(name, days):
         return conformal_interior(days, window=spec["window_days"], minimum=spec["minimum_days"])
     if name == "conformal_by_day_type":
         return conformal_interior(days, window=spec["window_days"], minimum=spec["minimum_days"], by_kind=True)
+    if name == "conformal_group_regime":
+        return conformal_interior(days, window=spec["window_days"], minimum=spec["minimum_days"], keys=("group", "kind"))
+    if name == "conformal_recency_regime":
+        return weighted_conformal(days, window=spec["window_days"], minimum=spec["minimum_days"],
+                                  half_life=spec["half_life_days"], off_regime_weight=spec["off_regime_weight"])
+    if name == "conformal_aci":
+        return aci_conformal(days, window=spec["window_days"], minimum=spec["minimum_days"],
+                             gamma=spec["gamma"], clip=tuple(spec["level_clip"]))
+    if name == "conformal_pid_calendar":
+        return pid_calendar(days, window=spec["window_days"], minimum=spec["minimum_days"], step=spec["integrator_step"])
     if name == "interior_tracking":
         vectors, _choices = _script("interior_diagnosis").interior_tracking(days)
         return vectors
@@ -293,6 +448,9 @@ def score_command(args) -> int:
         "record": "interior calibration: candidates scored against the published distribution (h = 1)",
         "declaration": str(DECLARATION.relative_to(REPO)),
         "declaration_sha256": declaration_sha256(),
+        "addendum": str(ADDENDUM.relative_to(REPO)),
+        "addendum_sha256": addendum_sha256(),
+        "addendum_candidates": list(ADDENDUM_CANDIDATES),
         "panel_sha256": panel_sha256(args.panel),
         "window": {"first": days[0]["date"], "last": days[-1]["date"], "days": len(days)},
         "sign_convention": SIGN,
