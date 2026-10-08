@@ -4828,7 +4828,7 @@ def pressure_tail_exceedance(
     minimum_history: int,
     threshold_bp: float,
     record: Optional[List[Mapping[str, Any]]] = None,
-) -> ExceedancePredictor:
+) -> Any:
     """A logistic body with a conditional generalised Pareto tail (#383).
 
     `P(spread > tau) = P(spread > u) * S(tau - u)` with `u = threshold_bp`.
