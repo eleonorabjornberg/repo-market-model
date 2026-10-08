@@ -187,5 +187,73 @@ class RecordTests(unittest.TestCase):
                 self.assertIn("events", entry, tau)
 
 
+PAGE = REPO / "docs" / "diagnosis-exceedance-flattening.md"
+DRIVERS = ("Reserve-demand state", "Payment and settlement timing",
+           "Tax and quarter-end interactions with tightness", "TGA and issuance")
+
+
+def _v1():
+    spec = importlib.util.spec_from_file_location(
+        "pressure_model_v1_for_drivers", REPO / "scripts" / "pressure_model_v1.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class DriverSectionTests(unittest.TestCase):
+    """The ruling of 7 October 2026 on #373: the flattening is checked against the four drivers
+    `docs/pivot/literature.md` names, each read against the model's inputs and the registry's lags.
+
+    Written before the section existed: all four tests were run red on the page without it.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        text = PAGE.read_text()
+        marker = "## 4. The drivers the literature names"
+        cls.section = text.split(marker, 1)[1].split("\n## ", 1)[0] if marker in text else ""
+        cls.text = text
+
+    def _rows(self):
+        rows = {}
+        for line in self.section.splitlines():
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if line.startswith("|") and cells and cells[0] in DRIVERS:
+                rows[cells[0]] = cells
+        return rows
+
+    def test_each_driver_is_given_a_status(self):
+        rows = self._rows()
+        self.assertEqual(set(rows), set(DRIVERS))
+        for name, cells in rows.items():
+            self.assertIn(cells[1], ("carried", "partly carried", "absent"), name)
+
+    def test_the_model_inputs_it_names_are_the_declared_ones(self):
+        declared = _v1().GBM_FEATURES
+        for feature in declared:
+            self.assertIn(f"`{feature}`", self.section, feature)
+        for column in ("quarter_end", "tax_date", "days_to_month_end"):
+            self.assertNotIn(column, declared, column)
+            self.assertIn(f"`{column}`", self.section, column)
+
+    def test_the_lags_it_states_are_the_registry_s(self):
+        registry = json.loads((REPO / "metadata" / "sources.json").read_text())
+        lags = registry["fred_macro_latest_vintage"]["field_release_lags"]
+        for field in ("WRESBAL", "WTREGEN"):
+            self.assertEqual((lags[field]["days"], lags[field]["unit"]), (5, "calendar_days"))
+        self.assertIn("five calendar days", self.section)
+        sofr = registry["nyfed_sofr"]["release_lag"]
+        self.assertEqual((sofr["days"], sofr["unit"], sofr["available_time"]), (1, "business_days", "15:00"))
+        self.assertIn("one business day", self.section)
+
+    def test_every_absent_or_partly_carried_driver_is_a_remedy(self):
+        remedies = self.text.split("## Candidate remedies", 1)[1].split("\n## ", 1)[0].lower()
+        rows = self._rows()
+        self.assertTrue(rows)
+        for name, cells in rows.items():
+            if cells[1] != "carried":
+                self.assertIn(name.lower(), remedies, name)
+
+
 if __name__ == "__main__":
     unittest.main()

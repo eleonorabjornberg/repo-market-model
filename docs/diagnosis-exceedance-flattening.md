@@ -39,6 +39,10 @@ for) and discrimination, and compute no skill score, Brier score or interval.
 - **The Platt step shrinks the level but cannot restore the shape.** It is fitted per threshold on a nearly
   constant input. Then the monotone running minimum ties the thresholds: on most days the published +50 bp
   probability *is* the +20 bp probability.
+- **The literature's drivers are not the cause either, but the model lacks most of them.** Section 4 checks reserve
+  demand, settlement timing, tax and quarter-end interactions and TGA with issuance against the model's nine inputs and the
+  registry's lags: one is absent (the calendar), three are partly carried. They explain the quarter-end miss, not the
+  flat curve; they are remedies 6 to 8.
 - **The features rank well.** The raw +5 bp probability, used as a score for +20 and +50 bp events, ranks them
   better (AUC 0.94 and 0.91) than the raw +20 bp probability does for +20 bp events (0.70). The information is in the
   features and the lower quantiles; the tail law discards it.
@@ -202,6 +206,56 @@ and the first scored day at which five events had been seen was 2018-11-30, 2018
 Imbalance therefore bites twice: the quantile levels carry no tail information, and the recalibration has nothing to fit a tail
 with. A per-threshold remedy trained on these events inherits the same scarcity.
 
+## 4. The drivers the literature names
+
+Scope addition (Eleonora's ruling on #373, 7 October 2026): check the flattening against the drivers
+`docs/pivot/literature.md` names, show for each whether the model's inputs carry it as of the decision instant, and
+name the ones the model lacks as candidate remedies for #374. This section reads declarations, not scores: the model's
+inputs are `GBM_FEATURES` of `scripts/pressure_model_v1.py`, the lags are the registry's (`metadata/sources.json`), and
+no figure here is new. The decision instant is 16:00 New York on day D, for a target at D + h.
+
+The model reads nine inputs: `reserve_balances`, `sofr_p25`, `sofr_p75`, `sofr_volume`, `spread_bps`, `tbill_13w`,
+`tbill_4w`, `tga` and `treasury_settlement` (the last only at h = 1; it is scheduled one business day ahead, so it is not public at a longer horizon).
+No calendar column enters the distributional model.
+
+What each input is, as of 16:00 on D:
+
+| Input | Source field | Newest value public at 16:00 on D |
+|---|---|---|
+| `sofr_p25`, `sofr_p75`, `sofr_volume` | `nyfed_sofr` | day D−1's, final at 15:00 on D (lag: one business day) |
+| `spread_bps` | SOFR less IORB | IORB is available at 16:15 on its own date, after the decision, so the newest row with both is D−1's |
+| `tbill_4w`, `tbill_13w` | `treasury_bill_rates` | quote date available at 16:30 on its own date, so D−1's |
+| `reserve_balances` | `WRESBAL`, weekly (Wednesday level) | dated on a Wednesday and public five calendar days later at 16:30: the newest is 6 to 12 days old |
+| `tga` | `WTREGEN`, weekly (Wednesday level) | the same five-calendar-day lag, so 6 to 12 days old |
+| `treasury_settlement` (h = 1 only) | `treasury_auctions`, scheduled availability | the settlement of D+1, announced the day before at 15:00; the aggregate of bills, coupons and SOMA add-ons |
+
+| Driver | Status | Which inputs carry it, and how | What is absent |
+|---|---|---|---|
+| Reserve-demand state | partly carried | `reserve_balances` (a level, 6 to 12 days old), `sofr_p25`, `sofr_p75` and `sofr_volume` (the 25th to 75th percentile spread of SOFR, one business day old) and `spread_bps` | the ratio of reserves to bank assets, a reserve-demand slope or elasticity (the NY Fed's monthly series is in no registry source), the ON RRP balance (declared but off in the published panel: `on_rrp` maps to `RRPONTSYD`, which the registry refuses, #45), EFFR less IORB (`effr_minus_iorb_bp`, declared, read by no published declaration), the 1st and 99th SOFR percentiles (`SOFR_p1`, `SOFR_p99` are registry fields, not inputs) and any regime state |
+| Payment and settlement timing | partly carried | `treasury_settlement`, the day's aggregate, at h = 1 only | the bill, coupon and SOMA split (`treasury_settlement_bills`, `_coupons`, `_soma` are panel columns the model does not read), the settlement-day flags of #97 (`settlement_day`, `settlement_day_when_depleted`, composed features no declaration reads), and Fedwire payment data (monthly, not in the registry). At h = 2 to 5 no settlement input at all |
+| Tax and quarter-end interactions with tightness | absent | none. `quarter_end`, `tax_date` and `days_to_month_end` are calendar columns known before the decision instant, and the model does not read them (they enter the direct candidates of `DIRECT_FEATURES`, not `GBM_FEATURES`); there is no interaction with tightness either | the three calendar columns, `quarter_end_window` (#140), and their products with a tightness measure |
+| TGA and issuance | partly carried | `tga` (a level, 6 to 12 days old) and `treasury_settlement` (gross, h = 1) | net issuance, the change in the TGA, its interaction with reserves, `dealer_treasury_position` (the FR 2004 total, declared in `FEATURE_FIELDS`, not read) and the settlement split |
+
+How each bears on the flattening, from the tables in sections 1 and 2:
+
+- **Tax and quarter-end.** This is the driver the flattening hides most plainly. At quarter ends the published +10, +20
+  and +50 bp probabilities are 6.8%, 2.2% and 1.7% against realised 19%, 13% and 6.5% (31 days: descriptive), and the
+  +20 bp probability is the same 2.2% on a tax date, a month end and an ordinary day. A model without the calendar cannot
+  tell them apart; with the law of 3a it could not tell them apart at the upper thresholds even if it knew the date.
+- **Reserve-demand state.** The regimes in section 2 are the reserve-demand regimes in outline: the published probability
+  tracks the level of pressure from regime to regime (26% in 2018 to 2019, 3.2% in 2021 to 2023 at +5 bp), so the weekly
+  reserves level and the SOFR percentile spread carry the slow state. What they lack is a state variable: in 2025 to 2026
+  the +20 bp probability is 1.0% against 2.0% realised, and the table cannot say whether that is the reserves ratio moving.
+- **Settlement timing and TGA with issuance.** The model has the gross settlement the day before at h = 1 and a stale TGA
+  level. It has neither the split that separates a dealer-financed bill settlement from a coupon settlement, nor any
+  change in the TGA. Nothing in this page measures whether they would help: the check in 3c shows the information to rank
+  events is already in the features, not that these drivers are missing from it.
+
+**These drivers are not the cause of the flattening.** The cause is the law (3a). Adding any of them moves the lower
+quantiles and so the ranking, which 3c shows is already good (AUC 0.94 at +20 bp for the raw +5 bp probability). They
+cannot lift a probability above the 5% that the last segment carries. They are remedies for the level and the
+quarter-end miss in section 2, and they come after the fitted tail (remedy 1) or beside it, not instead of it.
+
 ## Not checked, or for Eleonora
 
 - **The data window.** Nothing after 2025-12-31 is scored. The 2026 behaviour of the curve was not read; the cause in
@@ -234,6 +288,16 @@ they answer a cause above:
    already found them behind persistence-logistic at +5 and +10 bp.
 5. **Stop printing a distinct +50 bp probability where it is the +20 bp value (3b).** A presentation change with no model
    change: publish the column as a tie, or drop it from the pooled table. It claims nothing new.
+6. **Calendar and tightness interactions (tax and quarter-end interactions with tightness; section 4).** Add `quarter_end`,
+   `tax_date`, `days_to_month_end` and their products with a tightness measure to the funding declaration's inputs. All
+   are known before the decision instant. It faces the quarter-end miss of section 2 and needs the tail of remedy 1
+   to move the upper thresholds at all.
+7. **A reserve-demand state (reserve-demand state; section 4).** Add what the model lacks: the ON RRP balance in
+   its depletion form (#88 declared it), `effr_minus_iorb_bp` (#98) and, if it can be downloaded as of its release, the
+   NY Fed reserve demand elasticity. Each is a data or input decision that is hers.
+8. **Settlement and TGA with issuance (payment and settlement timing; TGA and issuance; section 4).** Replace the gross
+   settlement with the bill, coupon and SOMA split, add the change in the TGA and its product with reserves, and the
+   settlement-day flags (#97).
 
 ## Reproduce
 
