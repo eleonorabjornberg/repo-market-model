@@ -107,6 +107,16 @@ def switched_on():
         yield
 
 
+def _keyed(value):
+    """`value` with every dict key a string, so it can be written sorted."""
+
+    if isinstance(value, dict):
+        return {str(key): _keyed(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_keyed(item) for item in value]
+    return value
+
+
 def _cell(value):
     return "" if value is None else repr(float(value))
 
@@ -306,7 +316,7 @@ def run_command(args) -> int:
             f"{tau:g}": {day.isoformat(): p for day, p in zip(forecast.dates, column)}
             for tau, column in forecast.probabilities.items()
         }
-        settings[name] = {"features": list(report.features), "model_settings": dict(report.model_settings)}
+        settings[name] = {"features": list(report.features), "model_settings": _keyed(dict(report.model_settings))}
         print(json.dumps({"horizon": h, "candidate": name, "done": True}), flush=True)
 
     for name, net in ((HIERARCHICAL, False), (HIERARCHICAL_NET, True)):
