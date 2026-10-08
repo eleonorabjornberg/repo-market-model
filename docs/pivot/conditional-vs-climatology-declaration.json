@@ -4,7 +4,10 @@
   "status": "A declaration for a reported-only study. It decides nothing and moves no published figure.",
   "holdout_windows": {
     "file": "metadata/events.json",
-    "names": ["sep-2019", "mar-2020"],
+    "names": [
+      "sep-2019",
+      "mar-2020"
+    ],
     "note": "Boundaries and checksums are the file's. The script refuses a window whose checksum is not the file's."
   },
   "panel": {
@@ -16,33 +19,63 @@
   "predictors": {
     "gbm_published_4": {
       "kind": "uncalibrated gbm on the four features of exceedance_gbm.json",
-      "features": ["sofr_p25", "sofr_p75", "sofr_volume", "spread_bps"]
+      "features": [
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps"
+      ]
     },
     "gbm_published_9": {
       "kind": "uncalibrated gbm on the nine features of the funding declaration the published calibrated model reads",
       "features": [
-        "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps",
-        "tbill_13w", "tbill_4w", "tga", "treasury_settlement"
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
       ]
     },
     "dynamic_logit": {
       "kind": "the frozen dynamic logit of #137 (ml.DYNAMIC_LOGIT_SETTINGS), no recalibration",
       "features": [
-        "spread_bps", "days_to_month_end", "quarter_end", "tax_date",
-        "treasury_settlement_coupons", "reserve_balances"
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
       ]
     },
     "note": "No published (calibrated) model is held out from these windows: the published records train on every crisis day once it is past. Every figure is labelled uncalibrated."
   },
-  "benchmarks": ["climatology", "persistence_logistic"],
-  "reported_only_benchmarks": ["calendar_climatology"],
+  "benchmarks": [
+    "climatology",
+    "persistence_logistic"
+  ],
+  "reported_only_benchmarks": [
+    "calendar_climatology"
+  ],
   "thresholds": {
-    "pressure_bp": [5, 10],
+    "pressure_bp": [
+      5,
+      10
+    ],
     "pressure_rule": "whole basis points, strictly greater than (docs/decisions/pressure-probability.md)",
     "plain_leap": {
       "jump_bp_h1": 3.0,
       "source": "onset.LEAP_JUMP_BP[1]",
-      "rule": "round(s_t) - round(s_anchor) strictly greater than the jump, anchor as-of (onset.LeapTargets)"
+      "rule": "round(s_t) - round(s_anchor) strictly greater than the jump, anchor as-of (onset.LeapTargets)",
+      "leap_benchmarks": {
+        "climatology": "the pooled leap frequency among the training days (every day before the window with an admissible as-of anchor)",
+        "persistence_logistic": "onset.leap_persistence_logistic: a logistic of the leap on the latest as-of jump and spread, fitted on the same training days",
+        "note": "A spread-level climatology curve is not a leap climatology, so the leap is benchmarked by these two, not by the pressure benchmarks' curves."
+      },
+      "predictor_reading": "A predictor's curve is read, for each day, at that day's leap level: floor(round(s_anchor) + jump) + 0.5 bp (onset.LeapTargets.event_threshold). The curve is requested at those levels together with +5 and +10 bp."
     }
   },
   "score": "Brier, per day; paired difference = benchmark Brier minus predictor Brier, positive favours the predictor",
