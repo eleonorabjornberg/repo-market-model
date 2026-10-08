@@ -1,0 +1,32 @@
+{
+  "status": "declared by the pull request that closes #384 before any score was computed; the candidates, the settings and the flagging cut-offs below are fixed here and are never tuned on a scored day",
+  "issue": 384,
+  "scoring": {"last_day": "2025-12-31"},
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "settings": {
+    "variance_floor_bp": 0.25,
+    "transition_prior": 1.0,
+    "max_iterations": 200,
+    "tolerance": 1e-07,
+    "tight_state_at_least": 2
+  },
+  "covariate": "reserve_scarcity_state (#115) read as of the source day, 1 where tight or scarce (2 or 3), 0 otherwise; carried forward over a gap and held over the horizon",
+  "candidates": {
+    "markov_k2": {
+      "states": 2,
+      "scarcity_covariate": false,
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "markov_k3": {
+      "states": 3,
+      "scarcity_covariate": false,
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    },
+    "markov_k3_scarcity": {
+      "states": 3,
+      "scarcity_covariate": true,
+      "cutoffs": {"5": 0.2, "10": 0.2}
+    }
+  }
+}
