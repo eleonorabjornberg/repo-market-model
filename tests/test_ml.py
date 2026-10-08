@@ -10267,6 +10267,100 @@ class ScarcityEventBarVariantTests(unittest.TestCase):
             self.assertEqual(settings["regime_partial_pooling"] is not None, "regime_pooled" in kwargs)
 
 
+class BalanceSheetDesignTests(unittest.TestCase):
+    """Balance-sheet days and the FR 2004 position in the scarcity-conditioned design (#427).
+
+    Written first, and watched failing: before the option existed every test
+    here raised `TypeError: _ScarcityCalendarDesign.__init__() got an
+    unexpected keyword argument 'balance_sheet'`.
+
+    Recorded mutation (applied in a scratch copy, run, reverted): in
+    `_ScarcityCalendarDesign.row`, `scored_day(observation.date, observation.values)`
+    replaced by `observation.date` (the flags read at the anchor row, not the
+    scored day): killed by `test_the_flags_are_the_scored_days_not_the_anchors`
+    (`AssertionError`).
+    """
+
+    FEATURES = _SCARCITY_CALENDAR + ("dealer_treasury_position",)
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, features=FEATURES, **kwargs):
+        return ml._ScarcityCalendarDesign(features, _pressure_splits(), _FOUR_LEVEL, balance_sheet=True, **kwargs)
+
+    def _observation(self, anchor, target, state=2.0, position=500.0, settlement=0.0):
+        from repo_model.data import days_to_month_end, quarter_end, tax_date
+
+        values = {
+            "sofr": 4.07, "iorb": 4.0, "reserve_scarcity_state": state,
+            "days_to_month_end": days_to_month_end(target), "quarter_end": quarter_end(target),
+            "tax_date": tax_date(target), "treasury_settlement": settlement,
+            "dealer_treasury_position": position,
+        }
+        return DailyObservation(anchor, values)
+
+    def test_the_balance_sheet_terms_enter_only_times_the_state(self):
+        base = ml._ScarcityCalendarDesign(self.FEATURES, _pressure_splits(), _FOUR_LEVEL).names
+        names = self.design().names
+        self.assertEqual(names[: len(base)], base)
+        self.assertEqual(
+            names[len(base):],
+            (
+                "foreign_bank_quarter_end_x_state", "foreign_bank_month_end_x_state", "gsib_year_end_x_state",
+                "dealer_position_x_state", "dealer_position_x_balance_sheet_day_x_state",
+                "dealer_position_x_settlement_x_state",
+            ),
+        )
+
+    def test_the_position_must_be_declared(self):
+        with self.assertRaises(ValueError):
+            self.design(_SCARCITY_CALENDAR)
+
+    def test_the_settlement_term_leaves_with_the_settlement(self):
+        features = tuple(name for name in self.FEATURES if name != "treasury_settlement")
+        self.assertNotIn("dealer_position_x_settlement_x_state", self.design(features).names)
+
+    def test_the_flags_are_the_scored_days_not_the_anchors(self):
+        design = self.design()
+        # Anchor Monday 2019-03-25, scored Wednesday 2019-03-27: in the run-up to the quarter-end.
+        got = dict(zip(design.names, design.row(self._observation(date(2019, 3, 25), date(2019, 3, 27)), None)))
+        self.assertEqual(got["foreign_bank_quarter_end_x_state"], 2.0)
+        self.assertEqual(got["dealer_position_x_balance_sheet_day_x_state"], 1000.0)
+        # Anchor in the run-up, scored day outside it.
+        got = dict(zip(design.names, design.row(self._observation(date(2019, 3, 29), date(2019, 4, 2)), None)))
+        self.assertEqual(got["foreign_bank_quarter_end_x_state"], 0.0)
+        self.assertEqual(got["dealer_position_x_balance_sheet_day_x_state"], 0.0)
+
+    def test_the_position_and_settlement_terms_are_in_dollar_billions_times_the_state(self):
+        design = self.design()
+        got = dict(zip(design.names, design.row(
+            self._observation(date(2019, 6, 3), date(2019, 6, 4), state=3.0, position=-40.0, settlement=70.0), None)))
+        self.assertEqual(got["dealer_treasury_position"], -40.0)
+        self.assertEqual(got["dealer_position_x_state"], -120.0)
+        self.assertEqual(got["dealer_position_x_settlement_x_state"], -8400.0)
+
+    def test_the_gbm_constraint_covers_the_flags_only(self):
+        design = self.design(monotone=True)
+        constrained = dict(zip(design.names, design.monotone))
+        for name in ("foreign_bank_quarter_end_x_state", "foreign_bank_month_end_x_state", "gsib_year_end_x_state"):
+            self.assertEqual(constrained[name], 1)
+        for name in ("dealer_treasury_position", "dealer_position_x_state",
+                     "dealer_position_x_balance_sheet_day_x_state", "dealer_position_x_settlement_x_state"):
+            self.assertEqual(constrained[name], 0)
+
+    def test_the_hierarchical_variant_carries_the_terms_in_its_pooled_columns(self):
+        design = self.design(regime_hierarchical=True)
+        self.assertIn("gsib_year_end_x_state", design.names)
+        self.assertIsNone(design.pooling[3])
+        row = design.row(self._observation(date(2019, 6, 3), date(2019, 6, 4)), None)
+        self.assertEqual(len(row), len(design.names))
+
+    def test_the_settings_declare_the_rules_and_their_sources(self):
+        settings = self.design().settings()["balance_sheet"]
+        self.assertEqual(sorted(settings["rules"]), sorted(r.name for r in __import__("repo_model.balance_sheet_days", fromlist=["x"]).RULES))
+
+
 class HierarchicalLogisticTests(unittest.TestCase):
     """The hierarchical logistic of the pressure label, shrinkage by empirical Bayes (#386).
 
