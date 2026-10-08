@@ -5479,6 +5479,174 @@ def pressure_onset_exceedance(
     return fit_predict
 
 
+# --------------------------------------------------------------------------
+# The risk-date severity model (#428, track V of #374)
+# --------------------------------------------------------------------------
+#
+# About 22 of the 26 scored onsets fall on dates the calendar names in advance. This model is fitted
+# on those dates alone and forecasts nothing on any other day: its probability on an ordinary day is
+# exactly 0 at every threshold, so it never flags one. Separate definitions, as the onset
+# classifier's are: the design and the pair builder are reused, not changed (the final test's
+# pinned checksums hash `_direct_pressure_predictor` and its helpers).
+
+#: The estimators of the risk-date model: a logistic and a gradient-boosted classifier of the pressure
+#: label, and a skew-t quantile regression of the spread itself (the severity of the day).
+#: Declared in `metadata/risk_date_severity.json`, not tuned.
+RISK_DATE_KINDS = ("logistic", "gbm_classifier", "quantile_skewt")
+
+
+class _RiskDateDesign(_PressureDesign):
+    """`_PressureDesign`'s row with the risk-date membership appended as its last element (#428).
+
+    A day is a *risk date* when its pressure-day type, read from the calendar columns as
+    `EvaluationSplits.day_type` reads them, is not `ordinary` (a quarter-end, a month-end or a tax
+    date), or when `treasury_settlement_coupons` is a declared input and the day settles a coupon.
+    Both are facts about the scored day known in advance; the coupon column is declared only at
+    horizon 1, where a settlement is public (`docs/decisions/information-set.md`). A day outside the
+    set returns a row of zeros: it is neither trained nor served, so none of its inputs is read.
+    """
+
+    def __init__(self, features: Sequence[str], declaration: Any, products: Sequence[Tuple[str, str]] = ()) -> None:
+        super().__init__(features, declaration, products)
+        if not self.calendar:
+            raise ValueError(
+                f"a risk date is named by the calendar columns {list(_CALENDAR_INPUTS)}; declare all three"
+            )
+
+    def member(self, observation: DailyObservation) -> bool:
+        if self.declaration.day_type(observation.values) != "ordinary":
+            return True
+        if "treasury_settlement_coupons" in self.settlements:
+            return self._value(observation, "treasury_settlement_coupons") > 0.0
+        return False
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        if not self.member(observation):
+            return [0.0] * (len(self.names) + 1)
+        return super().row(observation, tga_change) + [1.0]
+
+
+def pressure_risk_date_exceedance(
+    kind: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+) -> ExceedancePredictor:
+    """A model fitted and served on the declared risk dates only (#428).
+
+    `kind` is one of `RISK_DATE_KINDS`. Training pairs are the direct pairs of
+    `pressure_logistic_exceedance` (each label paired with what a forecast of it read at its own
+    decision instant) kept where the label day is a risk date (`_RiskDateDesign`); the logistic
+    and the classifier are fitted to `spread > tau` on those pairs, the quantile regression to the
+    spread of those days, read as a skew-t law (`_quantile_exceedance`). A forecast of a risk date
+    is the fit's probability; a forecast of any other day is exactly 0 at every threshold. The
+    curve across thresholds is made non-increasing. A risk date in the served rows needs a fit: a
+    frame with no risk-date pair raises `ValueError`.
+    """
+
+    if kind not in RISK_DATE_KINDS:
+        raise ValueError(f"a risk-date model is one of {list(RISK_DATE_KINDS)}, got {kind!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _RiskDateDesign(features, declaration)
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a risk-date model pairs each training label with what was public at that label's "
+                "own decision instant, which only the as-of rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a risk-date model needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        pairs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        flags = [pair[-1] for pair in pairs]
+        xs = [pair[:-1] for pair, flag in zip(pairs, flags) if flag]
+        spreads = [spread for spread, flag in zip(spreads, flags) if flag]
+        served_all = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        members = [day for day, served in enumerate(served_all) if served[-1]]
+        served = [served_all[day][:-1] for day in members]
+        columns: List[List[float]] = [[0.0] * len(feature_rows) for _ in taus]
+        if members:
+            if not xs:
+                raise ValueError("no risk-date training label has a complete as-of read")
+            fitted: dict = {}
+            if kind == "quantile_skewt":
+                law = _quantile_exceedance(
+                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t"
+                )
+                fits = [[curve[k] for curve in law] for k in range(len(taus))]
+            else:
+                fits = []
+                for tau in taus:
+                    labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+                    if len(set(labels)) < 2:
+                        fits.append([float(labels[0])] * len(served))
+                        continue
+                    key = tuple(labels)
+                    if key not in fitted:
+                        fitted[key] = _fit_classifier(kind, xs, labels, served)
+                    fits.append(fitted[key])
+            for position, fit in enumerate(fits):
+                for day, value in zip(members, fit):
+                    columns[position][day] = value
+        curves = []
+        for day in range(len(feature_rows)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(
+            {
+                "logistic": PRESSURE_LOGISTIC_SETTINGS,
+                "quantile_skewt": PRESSURE_QUANTILE_SKEWT_SETTINGS,
+            }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
+        )
+        settings["design"] = list(design.names)
+        settings["risk_dates"] = (
+            "quarter-end, month-end or tax date (day_type != ordinary)"
+            + (", or a coupon settlement" if "treasury_settlement_coupons" in design.settlements else "")
+        )
+        settings["risk_date_training_pairs"] = len(xs)
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
+
+
 def pressure_probit_exceedance(
     features: Sequence[str], declaration: Any, minimum_history: int = 20
 ) -> ExceedancePredictor:

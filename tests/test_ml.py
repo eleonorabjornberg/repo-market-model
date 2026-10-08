@@ -11955,6 +11955,138 @@ class OnsetLabelTests(unittest.TestCase):
             ml.pressure_onset_exceedance("logistic", "focal", _PRESSURE_CALENDAR, _pressure_splits())
 
 
+def _risk_factory(kind):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_risk_date_exceedance(kind, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_risk_date_{kind}"
+    return factory
+
+
+class PressureRiskDateLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date logistic (#428)."""
+
+    FACTORY = staticmethod(_risk_factory("logistic"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_exceedance)
+
+
+class PressureRiskDateClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date classifier (#428)."""
+
+    FACTORY = staticmethod(_risk_factory("gbm_classifier"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_exceedance)
+
+
+class PressureRiskDateQuantileConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date skew-t quantile regression (#428)."""
+
+    FACTORY = staticmethod(_risk_factory("quantile_skewt"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_exceedance)
+
+
+class RiskDateModelTests(unittest.TestCase):
+    """The risk-date severity model (#428) is trained and served on declared risk dates only.
+
+    A *risk date* is a day the calendar names in advance: a quarter-end, a month-end or a tax date as
+    `EvaluationSplits.day_type` reads them, and, where `treasury_settlement_coupons` is a declared input
+    (horizon 1), a day with a coupon settlement. On any other day the forecast is exactly 0 at every
+    threshold, so the model cannot flag an ordinary day.
+
+    Recorded mutations:
+
+    * `_RiskDateDesign.member`: `kind != "ordinary"` mutated to `True` (every day a risk date):
+      `test_an_ordinary_day_is_forecast_exactly_zero` fails with `AssertionError` (the ordinary day's
+      forecast is positive).
+    * `pressure_risk_date_exceedance`, the filter `if flags[k]` on the training pairs removed (the model
+      fitted on every day): `test_the_fit_reads_risk_dates_only` fails with `AssertionError` (the
+      fit counts every pair, not the risk-date pairs).
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, features=_PRESSURE_CALENDAR):
+        return ml._RiskDateDesign(features, _pressure_splits())
+
+    def observation(self, **values):
+        base = {"sofr": 5.1, "iorb": 5.0, "sofr_volume": 1.0, "quarter_end": 0.0, "tax_date": 0.0, "days_to_month_end": 12.0}
+        return DailyObservation(date(2024, 3, 12), {**base, **values})
+
+    def test_the_calendar_names_the_risk_dates(self):
+        design = self.design()
+        self.assertFalse(design.member(self.observation()))
+        self.assertTrue(design.member(self.observation(quarter_end=1.0)))
+        self.assertTrue(design.member(self.observation(tax_date=1.0)))
+        self.assertTrue(design.member(self.observation(days_to_month_end=0.0)))
+
+    def test_a_coupon_settlement_is_a_risk_date_only_where_it_is_a_declared_input(self):
+        plain = self.design()
+        with_coupons = self.design(_PRESSURE_CALENDAR + ("treasury_settlement_coupons",))
+        day = self.observation(treasury_settlement_coupons=40.0)
+        self.assertFalse(plain.member(day))
+        self.assertTrue(with_coupons.member(day))
+        self.assertFalse(with_coupons.member(self.observation(treasury_settlement_coupons=0.0)))
+
+    def test_a_marked_row_carries_the_membership_last(self):
+        design = self.design()
+        ordinary = design.row(self.observation(), None)
+        member = design.row(self.observation(quarter_end=1.0), None)
+        self.assertEqual((ordinary[-1], member[-1]), (0.0, 1.0))
+        self.assertEqual(len(ordinary), len(design.names) + 1)
+
+    def _predict(self, rows, scored, taus=(5.0, 10.0)):
+        predictor = ml.pressure_risk_date_exceedance("logistic", _PRESSURE_CALENDAR, _pressure_splits(), 20)
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        train = rows[:scored]
+        info = [rule.information_set([r.date for r in rows], k) for k in range(scored, scored + 1)]
+        feature_rows = [rule.observation(rows, i) for i in info]
+        return predictor(train, feature_rows, taus, information=rule)
+
+    def frame(self):
+        return _pressure_panel(160)
+
+    def test_an_ordinary_day_is_forecast_exactly_zero(self):
+        rows = self.frame()
+        ordinary = [k for k in range(80, len(rows) - 1) if not _is_risk(rows[k])]
+        for k in ordinary[:3]:
+            curve = self._predict(rows, k).curves[0]
+            self.assertEqual(tuple(curve), (0.0, 0.0))
+
+    def test_a_risk_day_gets_a_positive_forecast(self):
+        rows = self.frame()
+        member = [k for k in range(80, len(rows) - 1) if _is_risk(rows[k])]
+        curves = [self._predict(rows, k).curves[0] for k in member[:3]]
+        self.assertTrue(any(curve[0] > 0.0 for curve in curves))
+        for curve in curves:
+            self.assertGreaterEqual(curve[0], curve[1])
+
+    def test_the_fit_reads_risk_dates_only(self):
+        rows = self.frame()
+        scored = max(k for k in range(80, len(rows) - 1) if _is_risk(rows[k]))
+        used = self._predict(rows, scored).model_settings["risk_date_training_pairs"]
+        design = ml._RiskDateDesign(_PRESSURE_CALENDAR, _pressure_splits())
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        pairs, _ = ml._pressure_pairs(design, rule, rows[:scored], {})
+        self.assertEqual(used, sum(1 for pair in pairs if pair[-1]))
+        self.assertGreater(used, 0)
+        self.assertLess(used, len(pairs))
+
+    def test_a_kind_without_a_risk_date_form_is_refused(self):
+        with self.assertRaises(ValueError):
+            ml.pressure_risk_date_exceedance("probit", _PRESSURE_CALENDAR, _pressure_splits())
+        with self.assertRaises(ValueError):  # the calendar columns are what name a risk date
+            ml.pressure_risk_date_exceedance("logistic", ("spread_bps",), _pressure_splits())
+
+
+def _is_risk(row):
+    values = row.values
+    return (
+        float(values["quarter_end"]) == 1.0
+        or float(values["tax_date"]) == 1.0
+        or float(values["days_to_month_end"]) <= _pressure_splits().month_end_window
+    )
+
+
 class OptionalColumnTests(unittest.TestCase):
     """A declared column that enters with an observed indicator (`ml._OnsetDesign`, #409)."""
 
