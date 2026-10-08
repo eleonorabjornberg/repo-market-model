@@ -369,6 +369,48 @@
         "tga"
       ],
       "calibration": "none (discrete-time first-passage hazard, declared in metadata/pressure_hazard.json)"
+    },
+    "stacked_ensemble": {
+      "role": "candidate",
+      "track": "X (#410)",
+      "members": [
+        "ngboost_laplace",
+        "hierarchical_logistic",
+        "qrf",
+        "time_to_pressure_hazard",
+        "extreme_value_tail"
+      ],
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "features_note": "the inputs the members read, as of the decision instant; the stack adds none",
+      "calibration": "none (logistic stack on the members' logits, refitted every 21 scored days on earlier outcomes, declared in metadata/pressure_stack.json)"
+    },
+    "stack_equal_average": {
+      "role": "candidate",
+      "track": "X (#410)",
+      "members": [
+        "ngboost_laplace",
+        "hierarchical_logistic",
+        "qrf",
+        "time_to_pressure_hazard",
+        "extreme_value_tail"
+      ],
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "features_note": "the inputs the members read, as of the decision instant; the stack adds none",
+      "calibration": "none (the arithmetic mean of the members' probabilities, no fit; the comparison row of metadata/pressure_stack.json)"
     }
   }
 }
