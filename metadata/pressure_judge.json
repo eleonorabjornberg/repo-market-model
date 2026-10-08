@@ -1,5 +1,5 @@
 {
-  "status": "declared by the pull request that closes #375 before any score was computed; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the week-ahead combiner, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review",
+  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review",
   "scoring": {
     "last_day": "2025-12-31"
   },
