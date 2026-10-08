@@ -11220,35 +11220,35 @@ class PressureLogisticClassWeightConformanceTests(_PressureConformance, unittest
     """The conformance suite against the class-weighted logistic (#381)."""
 
     FACTORY = staticmethod(_rare_factory("logistic", "class_weight"))
-    IMPLEMENTATION = FACTORY
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
 
 
 class PressureClassifierClassWeightConformanceTests(_PressureConformance, unittest.TestCase):
     """The conformance suite against the class-weighted gradient-boosted classifier (#381)."""
 
     FACTORY = staticmethod(_rare_factory("gbm_classifier", "class_weight"))
-    IMPLEMENTATION = FACTORY
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
 
 
 class PressureClassifierFocalConformanceTests(_PressureConformance, unittest.TestCase):
     """The conformance suite against the focal-loss classifier (#381)."""
 
     FACTORY = staticmethod(_rare_factory("gbm_classifier", "focal"))
-    IMPLEMENTATION = FACTORY
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
 
 
 class PressureLogisticBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
     """The conformance suite against the event-balanced bootstrap logistic (#381)."""
 
     FACTORY = staticmethod(_rare_factory("logistic", "balanced_bootstrap"))
-    IMPLEMENTATION = FACTORY
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
 
 
 class PressureClassifierBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
     """The conformance suite against the event-balanced bootstrap classifier (#381)."""
 
     FACTORY = staticmethod(_rare_factory("gbm_classifier", "balanced_bootstrap"))
-    IMPLEMENTATION = FACTORY
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
 
 
 class RareEventTrainingTests(unittest.TestCase):
@@ -11395,6 +11395,9 @@ class RareEventTrainingTests(unittest.TestCase):
         settings = curves.model_settings["rare_event"]
         self.assertEqual(settings["treatment"], "focal")
         self.assertEqual(settings["focal"]["gamma"], 2.0)
+        import json
+
+        json.dumps(dict(curves.model_settings))  # a record, so plain dicts all the way down
         self.assertTrue(numpy.isfinite(curves.curves[0][0]))
 
 

@@ -4429,7 +4429,7 @@ def _direct_pressure_predictor(
             settings["rare_event"] = {
                 "treatment": rare,
                 **{
-                    key: (dict(value) if isinstance(value, Mapping) else value)
+                    key: _plain(value)
                     for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
                     if key in ("class_weight", rare)
                 },
@@ -4536,6 +4536,16 @@ def _fit_classifier(
     )
     model.fit(x, y)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def _plain(value: Any) -> Any:
+    """A read-only settings tree as plain dicts and lists, for a JSON record."""
+
+    if isinstance(value, Mapping):
+        return {key: _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    return value
 
 
 def _balanced_indices(labels: Any, seed: int) -> Any:
