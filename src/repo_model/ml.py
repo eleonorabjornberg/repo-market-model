@@ -596,6 +596,13 @@ from .splits import (
 
 __all__ = [
     "paired_bootstrap_p_values",
+    "MARKOV_SWITCHING_SETTINGS",
+    "FittedMarkovSwitching",
+    "fit_markov_switching",
+    "filter_markov_switching",
+    "markov_switching_exceedance",
+    "markov_switching_exceedance_curve",
+    "markov_switching_state_probabilities",
     "ARX_FEATURES",
     "CALIBRATIONS",
     "DEFAULT_CALIBRATION_FOLDS",
@@ -4054,6 +4061,21 @@ PRESSURE_RARE_EVENT_SETTINGS = MappingProxyType(
     }
 )
 
+#: Recency-weighted and windowed training of the class-weighted logistic (#411). Declared, not
+#: tuned. A pair's age is the number of panel rows between its label and the fit's last training
+#: row. `decay` weights a pair by 0.5 ** (age / half_life) and balances the classes on the
+#: weighted totals; `window` keeps only the pairs younger than the window, and falls back to
+#: the whole history when the window holds fewer than `minimum_window_events` events at the
+#: threshold (a calm stretch has none, and a fit without events has nothing to learn).
+PRESSURE_RECENCY_SETTINGS = MappingProxyType(
+    {
+        "modes": ("decay", "window"),
+        "half_lives": (63, 126, 252),
+        "windows": (252, 504),
+        "minimum_window_events": 10,
+    }
+)
+
 #: The panel days over which the TGA change is measured: one week of panel
 #: rows, the H.4.1 print's cadence.
 TGA_CHANGE_ROWS = 5
@@ -4283,8 +4305,11 @@ def _pressure_pairs(
     information: InformationRule,
     train_rows: Sequence[DailyObservation],
     cache: dict,
+    positions: Optional[List[int]] = None,
 ) -> Tuple[List[List[float]], List[float]]:
     """Direct (horizon-matched) training pairs under the as-of rule.
+
+    `positions`, when given, receives each pair's label row index in `train_rows`.
 
     Each label `t` is paired with the design row a forecast of `t` would have
     read at its own decision instant (`information.information_set`), checked
@@ -4321,6 +4346,8 @@ def _pressure_pairs(
         if pair is not None:
             xs.append(pair[0])
             ys.append(pair[1])
+            if positions is not None:
+                positions.append(target)
     return xs, ys
 
 
@@ -4338,8 +4365,15 @@ def _direct_pressure_predictor(
     history: Optional[Tuple[Sequence[Any], Any]] = None,
     design: Optional[Any] = None,
     rare: Optional[str] = None,
+    recency: Optional[Tuple[str, int]] = None,
 ) -> Any:
     """The fit-and-predict behind both direct models; `kind` picks the estimator.
+
+    `recency`, for the recency study (#411): `(mode, parameter)`, a mode of
+    `PRESSURE_RECENCY_SETTINGS["modes"]` with its half-life or window in panel
+    rows. It applies to the class-weighted logistic only (`kind="logistic"`,
+    `rare="class_weight"`) and is read off the fit's own training pairs, by their
+    age from that fit's last training row (`_fit_recency_logistic`).
 
     `rare`, for the rare-event study (#381): a treatment of
     `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`, applied inside each fit to
@@ -4373,6 +4407,14 @@ def _direct_pressure_predictor(
             )
         if rare == "focal" and kind != "gbm_classifier":
             raise ValueError("the focal loss is the gradient-boosted classifier's")
+    if recency is not None:
+        mode, parameter = recency
+        if kind != "logistic" or rare != "class_weight":
+            raise ValueError("recency weighting is the class-weighted logistic's")
+        if mode not in PRESSURE_RECENCY_SETTINGS["modes"]:
+            raise ValueError(f"unknown recency mode {mode!r}; one of {list(PRESSURE_RECENCY_SETTINGS['modes'])}")
+        if parameter < 1:
+            raise ValueError(f"a recency half-life or window must be positive, got {parameter}")
     if design is None:
         design = _PressureDesign(features, declaration, products)
     monotone = getattr(design, "monotone", None)
@@ -4406,9 +4448,11 @@ def _direct_pressure_predictor(
                 "the TGA change is read off each forecast's own as-of history; "
                 "one history per feature row is required"
             )
-        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        positions: List[int] = []
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache, positions)
         if not xs:
             raise ValueError("no training label has a complete as-of read")
+        ages = [len(train_rows) - 1 - position for position in positions]
         served = [
             design.row(
                 row,
@@ -4460,6 +4504,7 @@ def _direct_pressure_predictor(
                     rare=rare,
                     shrinkage_trace=shrinkage,
                     effects_trace=effects,
+                    recency=None if recency is None else (recency[0], recency[1], ages),
                 )
             columns.append(fitted[key])
         curves = []
@@ -4486,6 +4531,12 @@ def _direct_pressure_predictor(
                     for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
                     if key in ("class_weight", rare)
                 },
+            }
+        if recency is not None:
+            settings["recency"] = {
+                "mode": recency[0],
+                "parameter": recency[1],
+                "minimum_window_events": PRESSURE_RECENCY_SETTINGS["minimum_window_events"],
             }
         if history is not None:
             pool = pooled["pool"]
@@ -4535,8 +4586,12 @@ def _fit_classifier(
     shrinkage_trace: Optional[List[float]] = None,
     effects_trace: Optional[List[dict]] = None,
     rare: Optional[str] = None,
+    recency: Optional[Tuple[str, int, Sequence[int]]] = None,
 ) -> List[float]:
     """Fit one estimator to one threshold's labels; P(label = 1) at `served`.
+
+    `recency`, the class-weighted logistic's only (#411): `(mode, parameter,
+    ages)`, one age per training pair (`_fit_recency_logistic`).
 
     `pooling`, the logistic's only (#378): `(pooled columns, deviation columns,
     regimes, scale)`. Column 1 is the regime. The fit is the pooled columns plus,
@@ -4564,6 +4619,10 @@ def _fit_classifier(
     x = numpy.asarray(xs, dtype=float)
     y = numpy.asarray(labels, dtype=int)
     z = numpy.asarray(served, dtype=float)
+    if recency is not None:
+        if kind != "logistic" or rare != "class_weight" or monotone is not None:
+            raise ValueError("recency weighting is the unconstrained class-weighted logistic's")
+        return _fit_recency_logistic(x, y, z, numpy.asarray(recency[2], dtype=float), recency[0], recency[1])
     if rare is not None:
         if monotone is not None:
             raise ValueError("a monotone constraint is not combined with a rare-event treatment")
@@ -4721,6 +4780,49 @@ def _fit_focal(x: Any, y: Any, z: Any) -> List[float]:
             [value.get(int(node), 0.0) for node in tree.apply(z)]
         )
     return [float(p) for p in 1.0 / (1.0 + numpy.exp(-served))]
+
+
+def _fit_recency_logistic(x: Any, y: Any, z: Any, ages: Any, mode: str, parameter: float) -> List[float]:
+    """The class-weighted logistic fitted to favour recent pairs (#411); P(label = 1) at `z`.
+
+    `ages` is each pair's age in panel rows from the fit's last training row, so it reads
+    the training pairs of this one fit and nothing later.
+
+    * `decay`: pair weight 0.5 ** (age / parameter), times a class weight that balances the
+      two classes on the *weighted* totals (n_w / (2 W_class), the form
+      `class_weight="balanced"` takes for unit weights).
+    * `window`: only pairs with age < parameter, class-balanced; the whole history when the
+      window holds fewer than `PRESSURE_RECENCY_SETTINGS["minimum_window_events"]` events or
+      lacks a class.
+    """
+
+    import numpy
+    from sklearn.linear_model import LogisticRegression
+
+    if mode not in PRESSURE_RECENCY_SETTINGS["modes"]:
+        raise ValueError(f"unknown recency mode {mode!r}; one of {list(PRESSURE_RECENCY_SETTINGS['modes'])}")
+    if len(ages) != len(y):
+        raise ValueError("one age per training pair is required")
+    if mode == "decay":
+        weight = 0.5 ** (ages / float(parameter))
+    else:
+        keep = ages < parameter
+        if y[keep].sum() < PRESSURE_RECENCY_SETTINGS["minimum_window_events"] or y[keep].sum() == keep.sum():
+            keep = numpy.ones(len(y), dtype=bool)
+        weight = keep.astype(float)
+    total = weight.sum()
+    for label in (0, 1):
+        mass = weight[y == label].sum()
+        if mass <= 0.0:
+            raise ValueError("a recency fit needs both classes among its weighted pairs")
+        weight = numpy.where(y == label, weight * total / (2.0 * mass), weight)
+    used = weight > 0.0
+    centre = x[used].mean(axis=0)
+    scale = x[used].std(axis=0)
+    scale[scale == 0.0] = 1.0
+    model = LogisticRegression(C=PRESSURE_LOGISTIC_SETTINGS["C"], max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"])
+    model.fit((x[used] - centre) / scale, y[used], sample_weight=weight[used])
+    return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
 
 
 def _fit_rare_event(kind: str, treatment: str, x: Any, y: Any, z: Any) -> List[float]:
@@ -5152,8 +5254,12 @@ def pressure_rare_event_exceedance(
     features: Sequence[str],
     declaration: Any,
     minimum_history: int = 20,
+    recency: Optional[Tuple[str, int]] = None,
 ) -> ExceedancePredictor:
     """The direct logistic or classifier fitted for the rare event (#381).
+
+    `recency`, `(mode, parameter)` of `PRESSURE_RECENCY_SETTINGS` (#411): the
+    class-weighted logistic with a decaying sample weight or a trailing window.
 
     `kind` is `"logistic"` or `"gbm_classifier"`; `treatment` is one of
     `PRESSURE_RARE_EVENT_SETTINGS["treatments"]`: `class_weight`, `focal`
@@ -5165,7 +5271,7 @@ def pressure_rare_event_exceedance(
     """
 
     return _direct_pressure_predictor(
-        kind, features, declaration, minimum_history, rare=treatment
+        kind, features, declaration, minimum_history, rare=treatment, recency=recency
     )
 
 
@@ -6517,3 +6623,318 @@ def paired_bootstrap_p_values(
         done += size
     total = replications + 1
     return [(float((1 + u) / total), float((1 + d) / total)) for u, d in zip(up, down)]
+
+
+# --------------------------------------------------------------------------
+# Markov-switching regimes (#384; track M of #374)
+# --------------------------------------------------------------------------
+#
+# A hidden Markov model of the spread (SOFR - IORB, bp) with two or three latent
+# states -- calm, tight, stressed -- each Gaussian in the spread. The transition
+# matrix is one of two, picked by a binary covariate: whether the reserve-scarcity
+# state of #115 read as of the source day is tight or scarce (state 2 or 3). The
+# model is fitted by EM on the training frame, then *forward-filtered* through each
+# forecast's own as-of history: the filter never smooths, so no future row reaches
+# a state probability. The probability of a pressure day `h` panel days ahead is
+# the filtered state distribution carried `h` steps by the transition matrix of
+# the latest known covariate, then the mixture's tail above the threshold.
+
+#: What the fit is built with. Declared in `metadata/pressure_track_m.json`
+#: before any scoring; a test pins the two together.
+MARKOV_SWITCHING_SETTINGS = MappingProxyType(
+    {
+        "variance_floor_bp": 0.25,
+        "transition_prior": 1.0,
+        "max_iterations": 200,
+        "tolerance": 1e-7,
+        "tight_state_at_least": 2,
+    }
+)
+
+#: The share of the sorted training spreads each initial state starts from, by
+#: state count: most days calm, a tail stressed. Fixed, so the fit is deterministic.
+_MARKOV_INITIAL_SHARES = MappingProxyType({2: (0.8, 0.2), 3: (0.6, 0.3, 0.1)})
+
+
+class FittedMarkovSwitching(NamedTuple):
+    """A fitted Gaussian hidden Markov model with covariate-dependent transitions."""
+
+    means: Tuple[float, ...]
+    sigmas: Tuple[float, ...]
+    #: `transitions[z][i][j]`: from state i to j when the source day's covariate is z.
+    transitions: Tuple[Tuple[Tuple[float, ...], ...], ...]
+    initial: Tuple[float, ...]
+    log_likelihood: float
+    iterations: int
+
+
+def _gaussian_density(y: Any, means: Any, sigmas: Any) -> Any:
+    import numpy
+
+    z = (y[:, None] - means[None, :]) / sigmas[None, :]
+    density = numpy.exp(-0.5 * z * z) / (sigmas[None, :] * math.sqrt(2.0 * math.pi))
+    # A missing spread informs no state.
+    density[numpy.isnan(y), :] = 1.0
+    return density
+
+
+def _forward(density: Any, transitions: Any, covariates: Any, initial: Any) -> Tuple[Any, Any]:
+    """Scaled forward pass: the filtered distribution at each row, and the scales."""
+
+    import numpy
+
+    length, states = density.shape
+    alpha = numpy.empty((length, states))
+    scales = numpy.empty(length)
+    step = initial * density[0]
+    for t in range(length):
+        if t:
+            step = (alpha[t - 1] @ transitions[covariates[t - 1]]) * density[t]
+        total = step.sum()
+        if not total > 0.0:
+            # A spread no state can reach (the floor keeps this to a float underflow).
+            total = 1e-300
+            step = numpy.full(states, 1.0 / states) * total
+        scales[t] = total
+        alpha[t] = step / total
+    return alpha, scales
+
+
+def fit_markov_switching(
+    spreads: Sequence[Optional[float]],
+    covariates: Sequence[int],
+    states: int = 3,
+) -> FittedMarkovSwitching:
+    """Baum-Welch on the training spreads, deterministic.
+
+    Args:
+        spreads: the spread in bp per training row, `None` where unobserved.
+        covariates: 0 or 1 per row; the transition out of row t uses matrix
+            `covariates[t]`.
+        states: 2 or 3.
+
+    Raises:
+        ValueError: on a state count off the declared two, a covariate that is
+            not 0 or 1, rows of unequal length, or too few observed spreads for
+            the states.
+    """
+
+    import numpy
+
+    if states not in _MARKOV_INITIAL_SHARES:
+        raise ValueError(f"states must be one of {sorted(_MARKOV_INITIAL_SHARES)}, got {states!r}")
+    if len(spreads) != len(covariates):
+        raise ValueError("spreads and covariates must have one entry per row")
+    if any(c not in (0, 1) for c in covariates):
+        raise ValueError("a transition covariate is 0 or 1")
+    y = numpy.array([numpy.nan if v is None else float(v) for v in spreads])
+    z = numpy.asarray(covariates, dtype=int)
+    observed = y[~numpy.isnan(y)]
+    if len(observed) < 5 * states:
+        raise ValueError(f"{len(observed)} observed spreads cannot fit {states} states")
+    floor = float(MARKOV_SWITCHING_SETTINGS["variance_floor_bp"])
+    prior = float(MARKOV_SWITCHING_SETTINGS["transition_prior"])
+
+    ordered = numpy.sort(observed)
+    edges = numpy.cumsum((0.0,) + _MARKOV_INITIAL_SHARES[states])
+    means = numpy.empty(states)
+    sigmas = numpy.empty(states)
+    for k in range(states):
+        lo, hi = int(edges[k] * len(ordered)), max(int(edges[k + 1] * len(ordered)), int(edges[k] * len(ordered)) + 2)
+        part = ordered[lo:hi]
+        means[k] = part.mean()
+        sigmas[k] = max(part.std(), floor)
+    stay = 0.9
+    base = numpy.full((states, states), (1.0 - stay) / (states - 1))
+    numpy.fill_diagonal(base, stay)
+    transitions = numpy.stack([base, base])
+    initial = numpy.full(states, 1.0 / states)
+
+    previous = -math.inf
+    iterations = 0
+    log_likelihood = -math.inf
+    for iterations in range(1, int(MARKOV_SWITCHING_SETTINGS["max_iterations"]) + 1):
+        density = _gaussian_density(y, means, sigmas)
+        alpha, scales = _forward(density, transitions, z, initial)
+        log_likelihood = float(numpy.log(scales).sum())
+        beta = numpy.ones_like(alpha)
+        for t in range(len(y) - 2, -1, -1):
+            beta[t] = transitions[z[t]] @ (density[t + 1] * beta[t + 1]) / scales[t + 1]
+        gamma = alpha * beta
+        gamma /= gamma.sum(axis=1, keepdims=True)
+        counts = numpy.zeros((2, states, states))
+        for t in range(len(y) - 1):
+            xi = alpha[t][:, None] * transitions[z[t]] * (density[t + 1] * beta[t + 1])[None, :]
+            counts[z[t]] += xi / xi.sum()
+        counts += prior / states
+        transitions = counts / counts.sum(axis=2, keepdims=True)
+        initial = gamma[0] / gamma[0].sum()
+        weight = gamma[~numpy.isnan(y)]
+        values = y[~numpy.isnan(y)]
+        mass = weight.sum(axis=0)
+        means = (weight * values[:, None]).sum(axis=0) / mass
+        variance = (weight * (values[:, None] - means[None, :]) ** 2).sum(axis=0) / mass
+        sigmas = numpy.maximum(numpy.sqrt(variance), floor)
+        if abs(log_likelihood - previous) < float(MARKOV_SWITCHING_SETTINGS["tolerance"]) * max(1.0, abs(log_likelihood)):
+            break
+        previous = log_likelihood
+    order = numpy.argsort(means)
+    return FittedMarkovSwitching(
+        means=tuple(float(v) for v in means[order]),
+        sigmas=tuple(float(v) for v in sigmas[order]),
+        transitions=tuple(
+            tuple(tuple(float(v) for v in row) for row in matrix[numpy.ix_(order, order)])
+            for matrix in transitions
+        ),
+        initial=tuple(float(v) for v in initial[order]),
+        log_likelihood=log_likelihood,
+        iterations=iterations,
+    )
+
+
+def filter_markov_switching(
+    fitted: FittedMarkovSwitching,
+    spreads: Sequence[Optional[float]],
+    covariates: Sequence[int],
+) -> Tuple[float, ...]:
+    """The filtered state distribution at the last row: forward pass only.
+
+    Row t's distribution reads rows 0..t and nothing after it; there is no
+    backward pass, so this is what a forecaster at row t could have computed.
+    """
+
+    import numpy
+
+    if not len(spreads) or len(spreads) != len(covariates):
+        raise ValueError("a filter needs one covariate per spread, and at least one row")
+    y = numpy.array([numpy.nan if v is None else float(v) for v in spreads])
+    density = _gaussian_density(y, numpy.array(fitted.means), numpy.array(fitted.sigmas))
+    alpha, _ = _forward(
+        density,
+        numpy.array(fitted.transitions),
+        numpy.asarray(covariates, dtype=int),
+        numpy.array(fitted.initial),
+    )
+    return tuple(float(v) for v in alpha[-1])
+
+
+def markov_switching_state_probabilities(
+    fitted: FittedMarkovSwitching, filtered: Sequence[float], covariate: int, steps: int
+) -> Tuple[float, ...]:
+    """The state distribution `steps` rows after a filtered one, the covariate held."""
+
+    import numpy
+
+    if steps < 0:
+        raise ValueError(f"steps must not be negative, got {steps}")
+    matrix = numpy.linalg.matrix_power(numpy.array(fitted.transitions[covariate]), steps)
+    return tuple(float(v) for v in numpy.asarray(filtered, dtype=float) @ matrix)
+
+
+def markov_switching_exceedance_curve(
+    fitted: FittedMarkovSwitching, distribution: Sequence[float], taus: Sequence[float]
+) -> Tuple[float, ...]:
+    """`P(spread > tau)` on whole basis points: the mixture's tail above `tau + 1/2`."""
+
+    curve = []
+    for tau in taus:
+        total = 0.0
+        for weight, mean, sigma in zip(distribution, fitted.means, fitted.sigmas):
+            total += weight * 0.5 * math.erfc((float(tau) + 0.5 - mean) / (sigma * math.sqrt(2.0)))
+        curve.append(min(1.0, max(0.0, total)))
+    return tuple(curve)
+
+
+def _tight_covariates(rows: Sequence[DailyObservation], column: Optional[str]) -> List[int]:
+    """The transition covariate per row: 1 where the scarcity state read is tight or scarce.
+
+    A row whose state is unread carries the last read forward (that value was
+    public before it); before any read the covariate is 0.
+    """
+
+    if column is None:
+        return [0] * len(rows)
+    threshold = MARKOV_SWITCHING_SETTINGS["tight_state_at_least"]
+    out: List[int] = []
+    latest = 0
+    for row in rows:
+        value = row.values.get(column)
+        if value is not None and math.isfinite(float(value)):
+            latest = 1 if float(value) >= threshold else 0
+        out.append(latest)
+    return out
+
+
+def markov_switching_exceedance(
+    states: int = 3,
+    minimum_history: int = 20,
+    scarcity_column: Optional[str] = None,
+) -> ExceedancePredictor:
+    """Pressure probabilities from a Markov-switching spread model (#384).
+
+    Fitted by EM on each refit block's training frame, filtered forward through
+    each forecast's own as-of history, carried `information.horizon` rows ahead.
+    With `scarcity_column` (`scarcity.RESERVE_SCARCITY_STATE`) the transition
+    matrix depends on whether that state, as read, is tight or scarce.
+
+    Raises:
+        ValueError: on a short frame, a call without the as-of rule or without
+            each row's history, or a state count off the declared two.
+        LookAheadError: if a history runs past its forecast's anchor.
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None or histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "a Markov-switching forecast is filtered through its own as-of history; "
+                "it was called without the rule or without one history per feature row"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a Markov-switching model needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        fitted = fit_markov_switching(
+            [_observed_spread(row, "markov_switching") for row in train_rows],
+            _tight_covariates(train_rows, scarcity_column),
+            states=states,
+        )
+        curves = []
+        for feature_row, history in zip(feature_rows, histories):
+            if not history:
+                raise ValueError("a forecast's as-of history is empty")
+            if history[-1].date > feature_row.date:
+                raise LookAheadError(
+                    f"the filter for the forecast anchored {feature_row.date} was handed "
+                    f"history through {history[-1].date}"
+                )
+            covariates = _tight_covariates(history, scarcity_column)
+            filtered = filter_markov_switching(
+                fitted, [_observed_spread(row, "markov_switching") for row in history], covariates
+            )
+            distribution = markov_switching_state_probabilities(
+                fitted, filtered, covariates[-1], information.horizon
+            )
+            curves.append(markov_switching_exceedance_curve(fitted, distribution, taus))
+        read = ("spread_bps",) + ((scarcity_column,) if scarcity_column else ())
+        settings = dict(MARKOV_SWITCHING_SETTINGS, states=states)
+        if scarcity_column:
+            settings["scarcity_state"] = scarcity_column
+        return ExceedanceCurves(
+            tuple(curves),
+            read,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=tuple(history[-1].date for history in histories),
+        )
+
+    return fit_predict

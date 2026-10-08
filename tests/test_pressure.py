@@ -205,3 +205,105 @@ class ScorecardTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OnlineRecalibrationTests(unittest.TestCase):
+    """Online recalibration (#411): the map learns day by day, from public outcomes only."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows = weekday_rows(spreads())
+        cls.report = backtest(cls.rows, horizon=3)
+
+    def flipped(self, index):
+        """`report` with fold `index`'s outcomes inverted, both thresholds."""
+
+        outcomes = list(self.report.outcomes)
+        outcomes[index] = tuple(1 - o for o in outcomes[index])
+        return dataclasses.replace(self.report, outcomes=tuple(outcomes))
+
+    def settled_fold(self):
+        """A fold past the minimum with two unresolved days before it (horizon 3)."""
+
+        for index in range(len(self.report.folds)):
+            fold = self.report.folds[index]
+            if index > pressure.ONLINE_RECALIBRATION["minimum_pairs"] + 20:
+                unresolved = [j for j in range(index) if self.report.scored_dates[j] > fold.feature_date]
+                if len(unresolved) >= 2:
+                    return index, unresolved
+        self.fail("no fold has an unresolved day before it")
+
+    def test_it_is_an_independent_sequential_update_on_resolved_days(self):
+        for method in ("online_platt", "adaptive_offset"):
+            with self.subTest(method=method):
+                cfg = pressure.ONLINE_RECALIBRATION[method]
+                got = pressure.online_recalibrated(self.report, method)
+                forecast, _, outcomes = self.report.at_tau(0)
+                folds = self.report.folds
+                a, b, applied = 0.0, 1.0, 0
+                for index in range(len(folds)):
+                    resolved = [j for j in range(index) if self.report.scored_dates[j] <= folds[index].feature_date]
+                    while applied < len(resolved):
+                        j = applied
+                        u = math.log(max(1e-6, min(1 - 1e-6, forecast[j])) / (1 - max(1e-6, min(1 - 1e-6, forecast[j]))))
+                        err = outcomes[j] - 1.0 / (1.0 + math.exp(-(a + b * u)))
+                        a += cfg["intercept_rate"] * err
+                        if method == "online_platt":
+                            b = min(cfg["slope_bounds"][1], max(cfg["slope_bounds"][0], b + cfg["slope_rate"] * err * u))
+                        applied += 1
+                    events = sum(outcomes[j] for j in resolved)
+                    if (
+                        len(resolved) >= pressure.ONLINE_RECALIBRATION["minimum_pairs"]
+                        and pressure.ONLINE_RECALIBRATION["minimum_events"] <= events < len(resolved)
+                    ):
+                        p = min(1 - 1e-6, max(1e-6, forecast[index]))
+                        want = 1.0 / (1.0 + math.exp(-(a + b * math.log(p / (1 - p)))))
+                        self.assertAlmostEqual(got.forecast[index][0], want, places=12)
+                    else:
+                        self.assertEqual(got.forecast[index][0], forecast[index])
+
+    def test_a_forecast_never_depends_on_an_outcome_after_its_feature_date(self):
+        """Flipping an unresolved day's outcome leaves the forecast alone; a resolved day's moves it.
+
+        Written red first: with the learning step reading every earlier scored day
+        (not only those on or before the feature date), the unresolved flip moves the
+        forecast.
+
+        Recorded mutation (CLAUDE.md), the public-outcome rule dropped: in
+        `pressure.online_recalibrated`, `while nxt < index and dates[nxt] <=
+        fold.feature_date` mutated to `while nxt < index`. `_require_resolved` then
+        raises `LookAheadError` on the first fold with an unresolved day before it,
+        and this test errors with it.
+        """
+
+        index, unresolved = self.settled_fold()
+        for method in ("online_platt", "adaptive_offset"):
+            with self.subTest(method=method):
+                base = pressure.online_recalibrated(self.report, method).forecast[index]
+                with_unresolved_flipped = dataclasses.replace(
+                    self.report, outcomes=self.flipped(unresolved[0]).outcomes
+                )
+                self.assertEqual(
+                    pressure.online_recalibrated(with_unresolved_flipped, method).forecast[index], base
+                )
+                resolved = index - 6
+                self.assertLess(self.report.scored_dates[resolved], self.report.folds[index].feature_date)
+                moved = pressure.online_recalibrated(self.flipped(resolved), method).forecast[index]
+                self.assertNotEqual(moved, base)
+
+    def test_the_guard_refuses_an_outcome_after_the_feature_date(self):
+        with self.assertRaises(pressure.LookAheadError):
+            pressure._require_resolved(date(2025, 3, 5), date(2025, 3, 4), date(2025, 3, 7))
+        pressure._require_resolved(date(2025, 3, 4), date(2025, 3, 4), date(2025, 3, 7))
+
+    def test_curves_stay_non_increasing_and_the_grid_is_unchanged(self):
+        got = pressure.online_recalibrated(self.report, "online_platt")
+        for curve in got.forecast:
+            self.assertGreaterEqual(curve[0], curve[1])
+        self.assertEqual(got.outcomes, self.report.outcomes)
+        self.assertEqual(got.scored_dates, self.report.scored_dates)
+        self.assertTrue(got.model_name.endswith("+online_platt"))
+
+    def test_an_unknown_method_is_refused(self):
+        with self.assertRaises(ValueError):
+            pressure.online_recalibrated(self.report, "isotonic")

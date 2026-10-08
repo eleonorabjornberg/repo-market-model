@@ -5,7 +5,7 @@ classifier on the scarcity-conditioned calendar, `scarcity_calendar`) are
 re-scored by the pressure-day judge (`pressure_judge`, #375), with two variants
 added. Everything here was committed before the first score:
 `metadata/pressure_judge.json` carries each candidate's features, calibration
-step and flagging cut-off, and a test pins them to this module.
+step, and a test pins them to this module.
 
 **The five candidates**, by `CANDIDATES`:
 
@@ -29,9 +29,9 @@ All five are recalibrated out of fold (`pressure.recalibrated`) as #128's
 forms were. The state is #115's, with its merged cut-points, read as-of; it is
 off in every published declaration and switched on for these runs only.
 
-The flagging cut-off is 0.2 at both thresholds and every horizon, the value the
-benchmark rows of `metadata/pressure_judge.json` carry. It is declared here and
-never tuned on a scored day.
+The flagging cut-off is not declared here: the judge chooses it at each refit
+and horizon from the refit's training window alone (`pressure_judge.cutoff_rule`,
+#407), for these candidates as for every other.
 
 Standard library only, like the rest of `src/` outside `ml.py`.
 """
@@ -46,7 +46,6 @@ from . import scarcity_calendar as sc
 __all__ = [
     "CALIBRATION",
     "CANDIDATES",
-    "CUTOFF",
     "Candidate",
     "STATE_FORM",
     "candidate",
@@ -56,9 +55,6 @@ __all__ = [
 
 #: The state form every candidate reads: #128's form (a), the four levels as #115 built them.
 STATE_FORM = "four_level"
-
-#: The flagging cut-off of every candidate, at +5 and +10 bp and every horizon.
-CUTOFF = 0.2
 
 CALIBRATION = "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
 
@@ -110,5 +106,4 @@ def declaration_entry(name: str) -> dict:
         "role": "candidate",
         "features": sorted(features_at_horizon(name, 1)),
         "calibration": CALIBRATION,
-        "cutoffs": {"5": CUTOFF, "10": CUTOFF},
     }

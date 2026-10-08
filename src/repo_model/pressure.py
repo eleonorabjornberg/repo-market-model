@@ -35,6 +35,7 @@ from .baseline import (
     benchmark_comparison_document,
 )
 from .data import DailyObservation, exceeds_bp
+from .splits import LookAheadError
 from .metrics import (
     MetricError,
     average_precision,
@@ -45,8 +46,10 @@ from .metrics import (
 __all__ = [
     "ALARM_LEVELS",
     "ONSET_QUIET_DAYS",
+    "ONLINE_RECALIBRATION",
     "RECALIBRATION",
     "lead_times",
+    "online_recalibrated",
     "onsets",
     "recalibrated",
     "scorecard",
@@ -131,6 +134,94 @@ def recalibrated(report: ExceedanceBacktestReport) -> ExceedanceBacktestReport:
     return dataclasses.replace(
         report, forecast=tuple(curves), model_name=f"{report.model_name}+recalibrated"
     )
+
+
+#: The online recalibrations of #411, declared before any score and not tuned. Both update on one
+#: resolved day at a time, in date order, and are the identity until `minimum_pairs` resolved days
+#: holding `minimum_events` events (and not only events) have been seen, as `RECALIBRATION` is.
+#: `online_platt` moves the intercept and slope of `sigmoid(a + b * logit p)` by a gradient step
+#: of the log loss (starting from a = 0, b = 1; b is kept within `slope_bounds`). `adaptive_offset`
+#: moves the intercept alone by `rate * (outcome - calibrated p)`, the update adaptive conformal
+#: inference makes to its level, applied to the logit of the probability.
+ONLINE_RECALIBRATION = {
+    "online_platt": {"intercept_rate": 0.05, "slope_rate": 0.01, "slope_bounds": (0.2, 3.0)},
+    "adaptive_offset": {"intercept_rate": 0.05},
+    "minimum_pairs": 250,
+    "minimum_events": 5,
+    "probability_floor": 1e-6,
+    "description": (
+        "per threshold, a calibration map updated one resolved day at a time on the candidate's own "
+        "earlier forecasts whose scored day is on or before the forecast's feature date (the latest "
+        "day whose spread was public at its decision instant); never an outcome later than that"
+    ),
+}
+
+
+def _require_resolved(pair_date: date, feature_date: date, scored_date: date) -> None:
+    """Refuse to learn from an outcome that was not public at the forecast's decision instant."""
+
+    if pair_date > feature_date:
+        raise LookAheadError(
+            f"an online recalibration of the forecast for {scored_date} would learn from the "
+            f"outcome of {pair_date}, after its feature date {feature_date}"
+        )
+
+
+def online_recalibrated(report: ExceedanceBacktestReport, method: str) -> ExceedanceBacktestReport:
+    """`report` with every forecast recalibrated online (`ONLINE_RECALIBRATION[method]`, #411).
+
+    For the forecast of day i, the map has been updated on every earlier scored day whose
+    date is on or before fold i's `feature_date`, in date order, each with its own forecast
+    and outcome. Each threshold is recalibrated on its own and the curve is then made
+    non-increasing in tau by a running minimum, as `recalibrated` does.
+    """
+
+    if method not in ("online_platt", "adaptive_offset"):
+        raise ValueError(f"unknown online recalibration {method!r}")
+    cfg = ONLINE_RECALIBRATION[method]
+    floor = ONLINE_RECALIBRATION["probability_floor"]
+
+    def logit(p: float) -> float:
+        p = min(1.0 - floor, max(floor, p))
+        return math.log(p / (1.0 - p))
+
+    count = len(report.folds)
+    dates = [fold.scored_date for fold in report.folds]
+    if any(later < earlier for earlier, later in zip(dates, dates[1:])):
+        raise ValueError("an online recalibration reads folds in date order")
+    columns: List[List[float]] = [[0.0] * count for _ in report.taus]
+    for position in range(len(report.taus)):
+        forecast, _, outcomes = report.at_tau(position)
+        a, b = 0.0, 1.0
+        seen = events = 0
+        nxt = 0
+        for index in range(count):
+            fold = report.folds[index]
+            while nxt < index and dates[nxt] <= fold.feature_date:
+                _require_resolved(dates[nxt], fold.feature_date, fold.scored_date)
+                u = logit(forecast[nxt])
+                err = outcomes[nxt] - _sigmoid(a + b * u)
+                a += cfg["intercept_rate"] * err
+                if method == "online_platt":
+                    b = min(cfg["slope_bounds"][1], max(cfg["slope_bounds"][0], b + cfg["slope_rate"] * err * u))
+                seen += 1
+                events += outcomes[nxt]
+                nxt += 1
+            if (
+                seen >= ONLINE_RECALIBRATION["minimum_pairs"]
+                and ONLINE_RECALIBRATION["minimum_events"] <= events < seen
+            ):
+                columns[position][index] = _sigmoid(a + b * logit(forecast[index]))
+            else:
+                columns[position][index] = forecast[index]
+    curves = []
+    for day in range(count):
+        curve: List[float] = []
+        for position in range(len(report.taus)):
+            value = columns[position][day]
+            curve.append(value if not curve else min(curve[-1], value))
+        curves.append(tuple(curve))
+    return dataclasses.replace(report, forecast=tuple(curves), model_name=f"{report.model_name}+{method}")
 
 
 def _reliability_steps(probabilities: Sequence[float], outcomes: Sequence[int]) -> List[dict]:

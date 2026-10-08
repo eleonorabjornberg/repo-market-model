@@ -11589,6 +11589,257 @@ class PairedBootstrapPValueTests(unittest.TestCase):
             ml.paired_bootstrap_p_values([[0.1, 0.2], [0.1]], block_length=1, seed=1, replications=10)
 
 
+
+# --------------------------------------------------------------------------
+# Markov-switching regimes (#384)
+# --------------------------------------------------------------------------
+
+
+def _regime_series(count=1500, seed=1, stay_calm=(0.97, 0.97), leave_stress=(0.85, 0.85)):
+    """A calm/stressed spread series and its covariate; the covariate picks the persistence."""
+
+    rng = random.Random(seed)
+    spreads, covariates, state = [], [], 0
+    for index in range(count):
+        z = 1 if (index // 250) % 2 else 0
+        if state == 0 and rng.random() > stay_calm[z]:
+            state = 1
+        elif state == 1 and rng.random() > leave_stress[z]:
+            state = 0
+        spreads.append(rng.gauss((0.0, 8.0)[state], (1.0, 4.0)[state]))
+        covariates.append(z)
+    return spreads, covariates
+
+
+class MarkovSwitchingTests(unittest.TestCase):
+    def setUp(self):
+        require_extra(self)
+
+    def test_em_recovers_a_two_state_law(self):
+        spreads, covariates = _regime_series()
+        fitted = ml.fit_markov_switching(spreads, [0] * len(spreads), states=2)
+        self.assertAlmostEqual(fitted.means[0], 0.0, delta=0.3)
+        self.assertAlmostEqual(fitted.means[1], 8.0, delta=1.0)
+        self.assertAlmostEqual(fitted.sigmas[0], 1.0, delta=0.2)
+        self.assertAlmostEqual(fitted.sigmas[1], 4.0, delta=0.8)
+        self.assertAlmostEqual(fitted.transitions[0][0][0], 0.97, delta=0.02)
+        self.assertAlmostEqual(fitted.transitions[0][1][0], 0.15, delta=0.06)
+
+    def test_the_covariate_picks_the_transition_matrix(self):
+        """Calm is far stickier when the covariate is 0 than when it is 1."""
+
+        spreads, covariates = _regime_series(
+            count=6000, seed=2, stay_calm=(0.995, 0.90), leave_stress=(0.5, 0.95)
+        )
+        fitted = ml.fit_markov_switching(spreads, covariates, states=2)
+        self.assertGreater(fitted.transitions[0][0][0], 0.98)
+        self.assertLess(fitted.transitions[1][0][0], 0.95)
+        self.assertGreater(fitted.transitions[1][1][1], fitted.transitions[0][1][1])
+
+    def test_a_three_state_fit_orders_its_states_by_mean(self):
+        spreads, covariates = _regime_series()
+        fitted = ml.fit_markov_switching(spreads, covariates, states=3)
+        self.assertEqual(list(fitted.means), sorted(fitted.means))
+        for matrix in fitted.transitions:
+            for row in matrix:
+                self.assertAlmostEqual(sum(row), 1.0)
+
+    def test_the_fit_is_deterministic(self):
+        spreads, covariates = _regime_series(count=600)
+        self.assertEqual(
+            ml.fit_markov_switching(spreads, covariates, states=3),
+            ml.fit_markov_switching(spreads, covariates, states=3),
+        )
+
+    def test_a_bad_state_count_or_covariate_is_refused(self):
+        spreads, covariates = _regime_series(count=300)
+        with self.assertRaises(ValueError):
+            ml.fit_markov_switching(spreads, covariates, states=4)
+        with self.assertRaises(ValueError):
+            ml.fit_markov_switching(spreads, [2] * len(spreads), states=2)
+        with self.assertRaises(ValueError):
+            ml.fit_markov_switching(spreads[:8], covariates[:8], states=2)
+
+    def test_the_filter_reads_each_row_and_none_after_it(self):
+        """Row t's filtered distribution is the same whatever follows t.
+
+        The filter is forward-only: changing every row after t, or dropping
+        them, leaves the distribution at t unchanged. A smoother would move it.
+        """
+
+        spreads, covariates = _regime_series(count=400, seed=3)
+        fitted = ml.fit_markov_switching(spreads, covariates, states=2)
+        cut = 200
+        at_cut = ml.filter_markov_switching(fitted, spreads[:cut], covariates[:cut])
+        changed = spreads[:cut] + [50.0] * 50
+        again = ml.filter_markov_switching(fitted, changed[:cut], covariates[:cut])
+        self.assertEqual(at_cut, again)
+        later = ml.filter_markov_switching(fitted, spreads[: cut + 50], covariates[: cut + 50])
+        self.assertNotEqual(at_cut, later)
+
+    def test_a_missing_spread_informs_no_state(self):
+        spreads, covariates = _regime_series(count=300, seed=4)
+        fitted = ml.fit_markov_switching(spreads, covariates, states=2)
+        filtered = ml.filter_markov_switching(fitted, spreads[:100] + [None], covariates[:101])
+        carried = ml.markov_switching_state_probabilities(
+            fitted, ml.filter_markov_switching(fitted, spreads[:100], covariates[:100]),
+            covariates[99], 1,
+        )
+        for a, b in zip(filtered, carried):
+            self.assertAlmostEqual(a, b)
+
+    def test_the_exceedance_curve_is_the_mixture_tail_on_whole_basis_points(self):
+        fitted = ml.FittedMarkovSwitching(
+            means=(0.0, 10.0), sigmas=(1.0, 2.0),
+            transitions=(((0.9, 0.1), (0.2, 0.8)),) * 2, initial=(0.5, 0.5),
+            log_likelihood=0.0, iterations=1,
+        )
+        curve = ml.markov_switching_exceedance_curve(fitted, (0.25, 0.75), (5.0, 10.0))
+
+        def tail(x, mean, sigma):
+            return 0.5 * math.erfc((x - mean) / (sigma * math.sqrt(2.0)))
+
+        self.assertAlmostEqual(
+            curve[0], 0.25 * tail(5.5, 0.0, 1.0) + 0.75 * tail(5.5, 10.0, 2.0)
+        )
+        self.assertGreater(curve[0], curve[1])
+        self.assertEqual(ml.markov_switching_exceedance_curve(fitted, (1.0, 0.0), (1e6,)), (0.0,))
+
+    def test_carrying_the_state_forward_follows_the_transition_matrix(self):
+        fitted = ml.FittedMarkovSwitching(
+            means=(0.0, 10.0), sigmas=(1.0, 2.0),
+            transitions=(((0.9, 0.1), (0.2, 0.8)), ((0.5, 0.5), (0.5, 0.5))),
+            initial=(0.5, 0.5), log_likelihood=0.0, iterations=1,
+        )
+        self.assertEqual(ml.markov_switching_state_probabilities(fitted, (1.0, 0.0), 0, 0), (1.0, 0.0))
+        one = ml.markov_switching_state_probabilities(fitted, (1.0, 0.0), 0, 1)
+        self.assertAlmostEqual(one[1], 0.1)
+        two = ml.markov_switching_state_probabilities(fitted, (1.0, 0.0), 0, 2)
+        self.assertAlmostEqual(two[1], 0.9 * 0.1 + 0.1 * 0.8)
+        held = ml.markov_switching_state_probabilities(fitted, (1.0, 0.0), 1, 5)
+        self.assertAlmostEqual(held[1], 0.5)
+
+
+def _regime_frame(count=140, seed=5):
+    spreads, _ = _regime_series(count=count, seed=seed)
+    rows, when = [], date(2024, 1, 1)
+    for spread in spreads:
+        while when.weekday() >= 5:
+            when += timedelta(days=1)
+        rows.append(
+            DailyObservation(
+                when,
+                {"spread_bps": spread, "sofr": 4.0 + spread / 100.0, "iorb": 4.0},
+            )
+        )
+        when += timedelta(days=1)
+    return rows
+
+
+class MarkovSwitchingPredictorTests(unittest.TestCase):
+    def setUp(self):
+        require_extra(self)
+        self.rows = _regime_frame()
+        self.rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0), horizon=2
+        )
+
+    def call(self, predictor, train, feature_rows, histories, taus=(5.0, 10.0)):
+        return predictor(train, feature_rows, taus, information=self.rule, histories=histories)
+
+    def test_a_history_past_its_forecast_is_refused(self):
+        """The filter is told its anchor and refuses a history that runs past it.
+
+        Recorded mutation (#384): replacing the condition `history[-1].date >
+        feature_row.date` in `markov_switching_exceedance`'s `fit_predict` with
+        `False` (so the filter reads the row after the anchor) made this test
+        fail with `AssertionError: LookAheadError not raised`; restored, it passes.
+        """
+
+        predictor = ml.markov_switching_exceedance(states=2, minimum_history=20)
+        train, feature_rows = self.rows[:100], self.rows[100:102]
+        histories = [self.rows[:101], self.rows[:103]]
+        with self.assertRaises(LookAheadError):
+            self.call(predictor, train, feature_rows, histories)
+
+    def test_it_will_not_forecast_without_the_rule_or_the_histories(self):
+        predictor = ml.markov_switching_exceedance(states=2, minimum_history=20)
+        with self.assertRaises(ValueError):
+            predictor(self.rows[:100], self.rows[100:101], (5.0,))
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:100], self.rows[100:102], [self.rows[:101]])
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:100], self.rows[100:101], [[]])
+
+    def test_a_short_frame_is_refused(self):
+        predictor = ml.markov_switching_exceedance(states=2, minimum_history=60)
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:59], self.rows[59:60], [self.rows[:60]])
+
+    def test_the_curve_depends_on_the_history_and_ends_at_the_anchor(self):
+        predictor = ml.markov_switching_exceedance(states=2, minimum_history=20)
+        train, feature_rows = self.rows[:100], self.rows[100:102]
+        result = self.call(predictor, train, feature_rows, [self.rows[:101], self.rows[:102]])
+        self.assertEqual(result.history_ends, (feature_rows[0].date, feature_rows[1].date))
+        self.assertEqual(result.features_read, ("spread_bps",))
+        self.assertEqual(result.model_settings["states"], 2)
+        for curve in result.curves:
+            self.assertGreaterEqual(curve[0], curve[1])
+
+    def test_a_stressed_history_raises_the_probability(self):
+        predictor = ml.markov_switching_exceedance(states=2, minimum_history=20)
+        train, feature_rows = self.rows[:100], self.rows[100:101]
+        calm = [DailyObservation(r.date, dict(r.values, sofr=4.0)) for r in self.rows[:101]]
+        hot = calm[:-5] + [DailyObservation(r.date, dict(r.values, sofr=4.09)) for r in calm[-5:]]
+        low = self.call(predictor, train, feature_rows, [calm]).curves[0][0]
+        high = self.call(predictor, train, feature_rows, [hot]).curves[0][0]
+        self.assertGreater(high, low)
+
+    def test_the_scarcity_column_moves_the_transition_covariate(self):
+        column = "reserve_scarcity_state"
+        rows = [
+            DailyObservation(r.date, dict(r.values, **{column: 3.0 if i >= 50 else 0.0}))
+            for i, r in enumerate(self.rows)
+        ]
+        self.assertEqual(sum(ml._tight_covariates(rows, column)), len(rows) - 50)
+        self.assertEqual(sum(ml._tight_covariates(rows, None)), 0)
+        gap = [DailyObservation(r.date, dict(r.values, **{column: None})) for r in rows[:5]]
+        self.assertEqual(ml._tight_covariates(gap, column), [0] * 5)
+        later = rows[49:51] + gap
+        self.assertEqual(ml._tight_covariates(later, column), [0, 1, 1, 1, 1, 1, 1])
+
+    def test_the_declaration_pins_the_settings(self):
+        path = Path(__file__).resolve().parents[1] / "metadata" / "pressure_track_m.json"
+        document = json.loads(path.read_text())
+        self.assertEqual(document["settings"], dict(ml.MARKOV_SWITCHING_SETTINGS))
+        self.assertEqual(document["horizons"], [1, 2, 3, 4, 5])
+        self.assertEqual(document["thresholds_bp"], [5, 10])
+        self.assertLess(document["scoring"]["last_day"], "2026-01-01")
+        for candidate in document["candidates"].values():
+            self.assertIn(candidate["states"], (2, 3))
+            self.assertEqual(sorted(candidate["cutoffs"]), ["10", "5"])
+
+
+class MarkovSwitchingConformanceTests(ExceedancePredictorConformance, unittest.TestCase):
+    """The conformance suite against `ml.markov_switching_exceedance` (#384)."""
+
+    IMPLEMENTATION = staticmethod(ml.markov_switching_exceedance)
+
+    def setUp(self):
+        require_extra(self)
+
+    def make_predictor(self):
+        predictor = ml.markov_switching_exceedance(states=2, minimum_history=self.MINIMUM_HISTORY)
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0))
+        full = self.frame()
+
+        def bound(train_rows, feature_rows, taus):
+            histories = [[r for r in full if r.date <= f.date] for f in feature_rows]
+            return predictor(train_rows, feature_rows, taus, information=rule, histories=histories)
+
+        return bound
+
+
 def _rare_factory(kind, treatment):
     def factory(features, declaration, minimum_history=20):
         return ml.pressure_rare_event_exceedance(kind, treatment, features, declaration, minimum_history)
@@ -11780,6 +12031,132 @@ class RareEventTrainingTests(unittest.TestCase):
 
         json.dumps(dict(curves.model_settings))  # a record, so plain dicts all the way down
         self.assertTrue(numpy.isfinite(curves.curves[0][0]))
+
+
+def _recency_factory(mode, parameter):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_rare_event_exceedance(
+            "logistic", "class_weight", features, declaration, minimum_history, recency=(mode, parameter)
+        )
+
+    factory.__name__ = f"pressure_logistic_{mode}_{parameter}"
+    return factory
+
+
+class PressureLogisticDecayConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the decay-weighted class-weighted logistic (#411)."""
+
+    FACTORY = staticmethod(_recency_factory("decay", 30))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureLogisticWindowConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the windowed class-weighted logistic (#411)."""
+
+    FACTORY = staticmethod(_recency_factory("window", 40))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class RecencyTrainingTests(unittest.TestCase):
+    """Recency-weighted and windowed fits (#411): recent pairs count more, only the fit's own pairs are read.
+
+    Recorded mutation (the window keeps only the pairs younger than it):
+    in `_fit_recency_logistic`, `keep = ages < parameter` replaced by
+    `keep = ages >= 0` (every pair kept): `test_a_window_fit_is_the_class_weighted_fit_of_its_pairs`
+    fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def drifting(self, n=1200, seed=3):
+        """Old pairs: the event follows x0. The last 300: it follows -x0. Age 0 is the newest."""
+
+        import numpy
+
+        rng = numpy.random.default_rng(seed)
+        x = rng.normal(size=(n, 2))
+        sign = numpy.where(numpy.arange(n) < n - 300, 1.0, -1.0)
+        y = (rng.uniform(size=n) < 1.0 / (1.0 + numpy.exp(-(-2.5 + 2.5 * sign * x[:, 0])))).astype(int)
+        ages = numpy.arange(n)[::-1].astype(float)
+        return x, y, ages
+
+    def test_a_very_long_half_life_is_the_class_weighted_fit(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        got = ml._fit_recency_logistic(x, y, x[:10], ages, "decay", 1e12)
+        want = ml._fit_rare_event("logistic", "class_weight", x, y, x[:10])
+        self.assertTrue(numpy.allclose(got, want, atol=1e-6))
+
+    def test_a_short_half_life_follows_the_recent_relation(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        probe = numpy.array([[2.0, 0.0], [-2.0, 0.0]])
+        flat = ml._fit_recency_logistic(x, y, probe, ages, "decay", 1e12)
+        recent = ml._fit_recency_logistic(x, y, probe, ages, "decay", 60)
+        self.assertGreater(flat[0], flat[1])  # the old relation dominates
+        self.assertLess(recent[0], recent[1])  # the last 300 days' relation
+
+    def test_decay_balances_the_classes_on_the_weighted_totals(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        p = numpy.array(ml._fit_recency_logistic(x, y, x, ages, "decay", 90))
+        plain = numpy.array(ml._fit_classifier("logistic", x, y, x))
+        self.assertGreater(p.mean(), 1.5 * plain.mean())
+
+    def test_a_window_fit_is_the_class_weighted_fit_of_its_pairs(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        got = ml._fit_recency_logistic(x, y, x[:10], ages, "window", 300)
+        keep = ages < 300
+        want = ml._fit_rare_event("logistic", "class_weight", x[keep], y[keep], x[:10])
+        # Same pairs; the standardizer and the weights are the window's own.
+        self.assertTrue(numpy.allclose(got, want, atol=1e-9))
+        whole = ml._fit_rare_event("logistic", "class_weight", x, y, x[:10])
+        self.assertFalse(numpy.allclose(got, whole, atol=1e-3))
+
+    def test_a_window_with_too_few_events_falls_back_to_the_whole_history(self):
+        import numpy
+
+        x, y, ages = self.drifting()
+        y = y.copy()
+        y[ages < 100] = 0
+        got = ml._fit_recency_logistic(x, y, x[:10], ages, "window", 100)
+        want = ml._fit_rare_event("logistic", "class_weight", x, y, x[:10])
+        self.assertTrue(numpy.allclose(got, want, atol=1e-9))
+
+    def test_unsupported_recency_is_refused_at_construction(self):
+        splits = _pressure_splits()
+        for kind, treatment, recency in (
+            ("gbm_classifier", "class_weight", ("decay", 60)),
+            ("logistic", "balanced_bootstrap", ("decay", 60)),
+            ("logistic", "class_weight", ("ewma", 60)),
+            ("logistic", "class_weight", ("window", 0)),
+        ):
+            with self.subTest(kind=kind, treatment=treatment, recency=recency), self.assertRaises(ValueError):
+                ml.pressure_rare_event_exceedance(
+                    kind, treatment, _PRESSURE_CALENDAR, splits, recency=recency
+                )
+
+    def test_the_declaration_names_the_recency(self):
+        predictor = ml.pressure_rare_event_exceedance(
+            "logistic", "class_weight", _PRESSURE_CALENDAR, _pressure_splits(), recency=("decay", 126)
+        )
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        from test_baseline import regressor_frame
+
+        rows = _with_calendar(regressor_frame())
+        info = rule.information_set([r.date for r in rows], len(rows) - 1)
+        curves = predictor(rows[:-1], (rule.observation(rows, info),), (5.0,), information=rule)
+        self.assertEqual(curves.model_settings["recency"]["mode"], "decay")
+        self.assertEqual(curves.model_settings["recency"]["parameter"], 126)
+        import json
+
+        json.dumps(dict(curves.model_settings))
 
 
 if __name__ == "__main__":
