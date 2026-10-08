@@ -19,14 +19,17 @@ the bar a pressure probability must clear, on days up to 2025-12-31:
 * **Tier 3, no crying wolf.** In abundant-reserve stretches (scarcity state 0,
   and the 2021-23 regime) at most 21 flags per 252 business days, at each lead 1
   to 5; and calibration by regime (CORP reliability; predicted frequency within
-  the interval of the realised one).
+  the interval of the realised one), tested only in regimes with at least one
+  pressure day (+5 bp) in the scored window and reported in the others.
 * **Tier 4, continuation.** Brier at +5 bp against the persistence-logistic,
   paired, at each lead 1 to 5 (reported only). +10 bp is reported only.
 * **Tier 5, week-ahead window.** P(at least one pressure day in the next 5
   business days), forecast each day: calibrated and better than climatology on
   Brier, paired, with a 90% interval excluding zero.
 * **Pass rule.** Tier 1 at lead >= 1, tier 3 at every lead, and tier 5, all on
-  2018-06-29 to 2025-12-31. **Confirmation:** one look at 2026-01-01 to
+  2018-06-29 to 2025-12-31. Beside it, for every row, the same three tiers on the
+  scarce regime's days alone (scarcity state >= the tier 2 state): reported, not
+  part of the rule. **Confirmation:** one look at 2026-01-01 to
   2026-09-03 for a candidate named in the declaration's `confirmation.candidates`
   before the look; the judge refuses that window otherwise (`require_scored_days`).
 
@@ -36,12 +39,22 @@ threshold and horizon) produced elsewhere, and `benchmark_forecasts` produces
 the two benchmarks the same way every candidate is produced.
 
 **The declaration is a file the judge reads** (`metadata/pressure_judge.json`):
-every candidate, its features, its calibration step, its flagging cut-off, the
-thresholds, the horizons, the tier limits and the pass rule, committed before any
-score is computed. `Declaration.cutoff` is the only way a cut-off enters a score,
-and it refuses a candidate or threshold the file does not carry and a requested
-cut-off that differs from the declared one: a cut-off is never tuned on scored
-days. Every result carries the declaration's digest.
+every candidate, its features and calibration step, the rule that chooses its
+flag cut-off, the thresholds, the horizons, the tier limits and the pass rule,
+committed before any score is computed. Every result carries the declaration's
+digest.
+
+**The flag cut-off** (ruling of 8 October 2026, #407, replacing the fixed 0.2
+placeholder). It is not declared per candidate: the declared `cutoff_rule` chooses it,
+for every candidate and benchmark alike, at each refit and horizon, from that refit's
+training window alone. `select_cutoff` takes the cut-off with the highest onset recall
+whose false alarms per onset on the window are at most the limit (2); `choose_cutoffs`
+applies it block by block, the window of a block being the forecast's own earlier
+walk-forward probabilities on the days whose outcome was known at the block's first
+decision instant. A window with no onset, or with no cut-off within the limit that
+flags an onset, flags nothing. No scored day is read: `select_cutoff` raises
+`LookAheadError` for a window that reaches past the refit's training end, and the
+judge refuses cut-offs that did not come from `choose_cutoffs` under this declaration.
 
 **The scored days.** `require_scored_days` refuses a day in a lockbox tier that
 has not been opened (`docs/decisions/lockbox.md`), and a day outside the window
@@ -108,6 +121,7 @@ __all__ = [
     "auroc",
     "benchmark_forecasts",
     "build_grid",
+    "choose_cutoffs",
     "forecasts_from_horizon_document",
     "judge",
     "load_declaration",
@@ -115,6 +129,7 @@ __all__ = [
     "report_forecast",
     "restrict_forecast",
     "require_scored_days",
+    "select_cutoff",
     "usefulness",
 ]
 
@@ -149,6 +164,8 @@ class Declaration:
     replications: int
     block_length: int
     seed: int
+    cutoff_false_alarms_at_most: float
+    cutoff_refit_every: int
     onset_lead: int
     onset_recall_at_least: float
     onset_false_alarms_at_most: float
@@ -169,41 +186,6 @@ class Declaration:
     persistence: str
     candidates: Mapping[str, Mapping[str, Any]]
 
-    def cutoff(
-        self,
-        name: str,
-        tau: float,
-        horizon: int,
-        requested: Optional[float] = None,
-    ) -> float:
-        """The flagging cut-off the declaration carries for one candidate cell.
-
-        Raises:
-            ValueError: if the candidate or its cut-off at `tau` is not
-                declared, or `requested` differs from the declared cut-off. A
-                cut-off that is not in the file was not declared before
-                scoring.
-        """
-
-        entry = self.candidates.get(name)
-        if entry is None:
-            raise ValueError(f"{name!r} is not a declared candidate in {self.path}")
-        cutoffs = entry["cutoffs"].get(_key(tau))
-        if cutoffs is None:
-            raise ValueError(
-                f"{name!r} declares no cut-off at {_key(tau)} bp in {self.path}; "
-                f"a cut-off is declared before scoring, never chosen on scored days"
-            )
-        declared = cutoffs if not isinstance(cutoffs, Mapping) else cutoffs.get(str(horizon))
-        if declared is None:
-            raise ValueError(f"{name!r} declares no cut-off at {_key(tau)} bp, h = {horizon}")
-        if requested is not None and float(requested) != float(declared):
-            raise ValueError(
-                f"cut-off {requested} for {name!r} at {_key(tau)} bp is not the declared "
-                f"{declared}; the judge scores the declared cut-off only"
-            )
-        return float(declared)
-
     def document(self) -> dict:
         """What a result carries about the declaration it was judged under."""
 
@@ -216,6 +198,12 @@ class Declaration:
                 "first": self.confirmation_first.isoformat(),
                 "last": self.confirmation_last.isoformat(),
                 "candidates": list(self.confirmation_candidates),
+            },
+            "cutoff_rule": {
+                "false_alarms_per_onset_at_most": self.cutoff_false_alarms_at_most,
+                "refit_every": self.cutoff_refit_every,
+                "no_onsets": "never_flag",
+                "none_meets_limit": "never_flag",
             },
             "thresholds_bp": list(self.thresholds),
             "primary_threshold_bp": self.primary,
@@ -252,7 +240,7 @@ class Declaration:
             "climatology": self.climatology,
             "persistence": self.persistence,
             "candidates": {
-                name: {key: entry[key] for key in ("role", "features", "calibration", "cutoffs")}
+                name: {key: entry[key] for key in ("role", "features", "calibration")}
                 for name, entry in self.candidates.items()
             },
         }
@@ -324,7 +312,8 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
         raise ValueError(f"{path} must hold an object")
     for key in (
         "status", "scoring", "confirmation", "thresholds_bp", "primary_threshold_bp",
-        "horizons", "bootstrap", "tiers", "early_warning", "groupings", "benchmarks", "candidates",
+        "horizons", "bootstrap", "cutoff_rule", "tiers", "early_warning", "groupings", "benchmarks",
+        "candidates",
     ):
         if key not in document:
             raise ValueError(f"{path} declares no {key!r}")
@@ -349,6 +338,13 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
     if not horizons or list(horizons) != sorted(set(horizons)):
         raise ValueError(f"{path}: horizons must be ascending and distinct")
     bootstrap = document["bootstrap"]
+    rule = _section(document, "cutoff_rule")
+    for key in ("no_onsets", "none_meets_limit"):
+        if rule.get(key) != "never_flag":
+            raise ValueError(
+                f"{path}: cutoff_rule.{key} must be 'never_flag' (the only rule the judge applies), "
+                f"got {rule.get(key)!r}"
+            )
     onset = _section(document, "tiers", "onset_warning")
     risky = _section(document, "tiers", "risky_dates")
     wolf = _section(document, "tiers", "no_crying_wolf")
@@ -378,24 +374,14 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
             raise ValueError(f"{path}: candidate {name!r} must be an object")
         if entry.get("role") not in _ROLES:
             raise ValueError(f"{path}: candidate {name!r} needs a role in {list(_ROLES)}")
-        for key in ("features", "calibration", "cutoffs"):
+        for key in ("features", "calibration"):
             if key not in entry:
                 raise ValueError(f"{path}: candidate {name!r} declares no {key!r}")
-        cutoffs = entry["cutoffs"]
-        if not isinstance(cutoffs, dict):
-            raise ValueError(f"{path}: candidate {name!r} cutoffs must be an object")
-        for tau in thresholds:
-            declared = cutoffs.get(_key(tau))
-            where = f"{path}: {name!r} cut-off at {_key(tau)} bp"
-            if declared is None:
-                raise ValueError(f"{where} is not declared; declare it before scoring")
-            if isinstance(declared, dict):
-                if sorted(declared) != sorted(str(h) for h in horizons):
-                    raise ValueError(f"{where} must name every horizon {list(horizons)}")
-                for h, value in declared.items():
-                    _number(value, f"{where}, h = {h}", 0.0, 1.0, open_ends=True)
-            else:
-                _number(declared, where, 0.0, 1.0, open_ends=True)
+        if "cutoffs" in entry:
+            raise ValueError(
+                f"{path}: candidate {name!r} declares a fixed 'cutoffs'; a flag cut-off is chosen from "
+                f"each refit's training window by the declared 'cutoff_rule', never declared per candidate"
+            )
         candidates[name] = entry
 
     look = tuple(confirmation.get("candidates", ()))
@@ -424,6 +410,10 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
         replications=_integer(bootstrap.get("replications"), "bootstrap.replications", 2),
         block_length=_integer(bootstrap.get("block_length"), "bootstrap.block_length"),
         seed=_integer(bootstrap.get("seed"), "bootstrap.seed", 0),
+        cutoff_false_alarms_at_most=_number(
+            rule.get("false_alarms_per_onset_at_most"), "cutoff_rule.false_alarms_per_onset_at_most", 0.0, 1000.0
+        ),
+        cutoff_refit_every=_integer(rule.get("refit_every"), "cutoff_rule.refit_every"),
         onset_lead=onset_lead,
         onset_recall_at_least=_number(onset.get("recall_at_least"), "onset_warning.recall_at_least", 0.0, 1.0),
         onset_false_alarms_at_most=_number(
@@ -471,16 +461,33 @@ class Grid:
     outcomes: Mapping[float, Tuple[int, ...]]
     groups: Mapping[str, Tuple[str, ...]]
     onset: Tuple[int, ...]
+    onsets: Optional[Mapping[float, Tuple[int, ...]]] = None
+
+    def onset_at(self, tau: float, primary: float) -> Tuple[int, ...]:
+        """The 0/1 onset flag per day at `tau`: `onset` at the primary threshold, else `onsets[tau]`."""
+
+        if tau == primary:
+            return self.onset
+        if self.onsets is None or tau not in self.onsets:
+            raise ValueError(f"grid h = {self.horizon}: no onset flags at {_key(tau)} bp")
+        return tuple(self.onsets[tau])
 
 
 @dataclass(frozen=True)
 class Forecast:
-    """One candidate's walk-forward probabilities at one horizon."""
+    """One candidate's walk-forward probabilities at one horizon.
+
+    `cutoffs[tau][k]` is the flag cut-off in force on scored day k (`math.inf`:
+    the refit's rule flags nothing). It is set by `choose_cutoffs` and by nothing
+    else: `cutoff_rule` is the digest of the declaration it was chosen under.
+    """
 
     name: str
     horizon: int
     dates: Tuple[date, ...]
     probabilities: Mapping[float, Tuple[float, ...]]
+    cutoffs: Optional[Mapping[float, Tuple[float, ...]]] = None
+    cutoff_rule: Optional[str] = None
 
 
 def require_scored_days(
@@ -593,6 +600,17 @@ def _check_forecasts(
                     raise ValueError(
                         f"{forecast.name!r} h = {forecast.horizon}: probability {p!r} is not in [0, 1]"
                     )
+        if forecast.cutoffs is not None:
+            if forecast.cutoff_rule != declaration.sha256:
+                raise ValueError(
+                    f"{forecast.name!r} h = {forecast.horizon}: its cut-offs were not chosen under "
+                    f"{declaration.path} (digest {declaration.sha256[:12]}); the judge scores cut-offs "
+                    f"chosen by `choose_cutoffs` from training data under the declared rule only"
+                )
+            for tau in declaration.thresholds:
+                column = forecast.cutoffs.get(tau)
+                if column is None or len(column) != len(grid.dates):
+                    raise ValueError(f"{forecast.name!r} h = {forecast.horizon}: no cut-off column at {_key(tau)} bp")
         by_name[forecast.name][forecast.horizon] = forecast
     for name, per_horizon in by_name.items():
         missing = [h for h in declaration.horizons if h not in per_horizon]
@@ -607,6 +625,134 @@ def _check_forecasts(
                 f"candidate against it"
             )
     return by_name
+
+
+# --------------------------------------------------------------------------
+# The flag cut-off, chosen from training data only
+# --------------------------------------------------------------------------
+
+
+def select_cutoff(
+    declaration: Declaration,
+    *,
+    days: Sequence[date],
+    probabilities: Sequence[float],
+    pressure: Sequence[int],
+    onset: Sequence[int],
+    training_end: Optional[date],
+) -> float:
+    """The flag cut-off for one refit, chosen on its training window alone.
+
+    The cut-off with the highest onset recall whose false alarms per onset on
+    the window are at most the declared limit (`cutoff_rule`). A false alarm is
+    a flag on a day that is not a pressure day, counted per onset of the window,
+    as tier 1 counts it. Candidate cut-offs are the window's own probabilities;
+    of cut-offs with the same recall the highest wins. A window with no onset, or
+    in which no cut-off within the limit flags an onset, flags nothing: the
+    cut-off is `math.inf`, as the declared rule says.
+
+    Raises:
+        LookAheadError: if a day of the window is after `training_end`, the last
+            day whose outcome the refit could read, or the window has a day and
+            no training end.
+        ValueError: if the series differ in length.
+    """
+
+    if not len(days) == len(probabilities) == len(pressure) == len(onset):
+        raise ValueError("the cut-off window needs one probability, outcome and onset flag per day")
+    if days:
+        late = [day for day in days if training_end is None or day > training_end]
+        if late:
+            raise LookAheadError(
+                f"cut-off chosen from {len(late)} day(s) from {min(late)} on, after the refit's "
+                f"training end ({training_end}); a flag cut-off is chosen on training data only"
+            )
+    onsets = sum(onset)
+    if not onsets:
+        return math.inf
+    by_value: Dict[float, List[int]] = {}
+    for index, p in enumerate(probabilities):
+        by_value.setdefault(p, []).append(index)
+    caught, false_alarms = 0, 0
+    best_recall, best = 0, math.inf
+    for value in sorted(by_value, reverse=True):
+        for index in by_value[value]:
+            if onset[index]:
+                caught += 1
+            elif not pressure[index]:
+                false_alarms += 1
+        if false_alarms / onsets > declaration.cutoff_false_alarms_at_most + 1e-12:
+            break
+        if caught > best_recall:
+            best_recall, best = caught, value
+    return best
+
+
+def choose_cutoffs(
+    declaration: Declaration,
+    grids: Mapping[int, Grid],
+    forecasts: Sequence[Forecast],
+    calendar: Sequence[date],
+) -> List[Forecast]:
+    """Each forecast with the flag cut-off in force on every day, chosen refit by refit.
+
+    The model is refitted every `cutoff_rule.refit_every` scored days from the
+    first (the shared fold grid's blocks). The cut-off of a block is
+    `select_cutoff` on the forecast's own earlier walk-forward probabilities and
+    the outcomes known at the block's first decision instant: the scored days up
+    to the business day before that instant (SOFR for a day is published the
+    morning after). A block with no such day flags nothing. No day of the block
+    or after it is read. Every forecast and threshold is treated alike, the
+    benchmarks included.
+
+    `grids` must cover the forecasts' days, which may reach past the days a
+    comparison scores (the single look reads the development days as training).
+
+    Raises:
+        LookAheadError: if a window reaches past its training end.
+        ValueError: if a forecast's days are not its grid's, or are not panel days.
+    """
+
+    position = {day: k for k, day in enumerate(calendar)}
+    step = declaration.cutoff_refit_every
+    out = []
+    for forecast in forecasts:
+        grid = grids[forecast.horizon]
+        if tuple(forecast.dates) != tuple(grid.dates):
+            raise ValueError(
+                f"{forecast.name!r} h = {forecast.horizon}: forecasts are not on the grid's days; "
+                f"cut-offs are chosen on the grid the forecast was scored on"
+            )
+        missing = [day for day in forecast.dates if day not in position]
+        if missing:
+            raise ValueError(f"{forecast.name!r}: scored day {missing[0]} is not a panel day")
+        cutoffs: Dict[float, List[float]] = {tau: [] for tau in declaration.thresholds}
+        for start in range(0, len(forecast.dates), step):
+            block = forecast.dates[start : start + step]
+            last_known = position[block[0]] - forecast.horizon - 1
+            training_end = calendar[last_known] if last_known >= 0 else None
+            window = [k for k in range(start) if training_end is not None and forecast.dates[k] <= training_end]
+            for tau in declaration.thresholds:
+                value = select_cutoff(
+                    declaration,
+                    days=[forecast.dates[k] for k in window],
+                    probabilities=[forecast.probabilities[tau][k] for k in window],
+                    pressure=[grid.outcomes[tau][k] for k in window],
+                    onset=[grid.onset_at(tau, declaration.primary)[k] for k in window],
+                    training_end=training_end,
+                )
+                cutoffs[tau].extend([value] * len(block))
+        out.append(
+            Forecast(
+                name=forecast.name,
+                horizon=forecast.horizon,
+                dates=forecast.dates,
+                probabilities=forecast.probabilities,
+                cutoffs={tau: tuple(column) for tau, column in cutoffs.items()},
+                cutoff_rule=declaration.sha256,
+            )
+        )
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -962,14 +1108,28 @@ def judge(
     if list(calendar) != sorted(set(calendar)):
         raise ValueError("the calendar must be ascending and distinct")
     holdouts = dict(holdouts or {})
-    for name in sorted(by_name):
-        for horizon in declaration.horizons:
-            for tau in declaration.thresholds:
-                declaration.cutoff(name, tau, horizon)
+    # A forecast without cut-offs gets them chosen here, from the days of its own grid. The single
+    # look passes forecasts cut to its window with the cut-offs `choose_cutoffs` chose on the
+    # development days before it.
+    unchosen = [f for f in forecasts if f.cutoffs is None]
+    if confirmation and unchosen:
+        raise ValueError(
+            f"{unchosen[0].name!r} h = {unchosen[0].horizon}: the single look needs cut-offs chosen on "
+            f"the development days before its window (`choose_cutoffs`), not on the window itself"
+        )
+    chosen = {(f.name, f.horizon): f for f in choose_cutoffs(declaration, grids, unchosen, calendar)}
+    by_name = {
+        name: {h: chosen.get((name, h), forecast) for h, forecast in per_horizon.items()}
+        for name, per_horizon in by_name.items()
+    }
 
+    scarce = _scarce_inputs(declaration, grids, by_name)
     result_candidates: Dict[str, dict] = {}
     for name in sorted(by_name, key=lambda n: (declaration.candidates[n]["role"] != "benchmark", n)):
         result_candidates[name] = _candidate(declaration, name, grids, by_name, calendar, holdouts)
+        result_candidates[name]["verdict"]["scarce_regime"] = _scarce_verdict(
+            declaration, name, scarce, calendar
+        )
 
     first = grids[declaration.horizons[0]]
     return {
@@ -985,6 +1145,94 @@ def judge(
     }
 
 
+def _scarce_inputs(
+    declaration: Declaration, grids: Mapping[int, Grid], by_name: Mapping[str, Mapping[int, Forecast]]
+) -> Optional[Tuple[Dict[int, Grid], Dict[str, Dict[int, Forecast]]]]:
+    """The grids and forecasts cut to the days in the scarce regime (scarcity state at least the
+    declared one, read as of each horizon's decision instant), or `None` if a horizon has none."""
+
+    keep: Dict[int, List[int]] = {}
+    for horizon, grid in grids.items():
+        keep[horizon] = [
+            k
+            for k, state in enumerate(grid.groups["scarcity_state"])
+            if str(state).lstrip("-").isdigit() and int(state) >= declaration.risky_state_at_least
+        ]
+        if not keep[horizon]:
+            return None
+
+    def pick(values: Sequence[Any], positions: Sequence[int]) -> Tuple[Any, ...]:
+        return tuple(values[k] for k in positions)
+
+    scarce_grids = {
+        horizon: Grid(
+            horizon=horizon,
+            dates=pick(grid.dates, keep[horizon]),
+            outcomes={tau: pick(column, keep[horizon]) for tau, column in grid.outcomes.items()},
+            groups={dimension: pick(labels, keep[horizon]) for dimension, labels in grid.groups.items()},
+            onset=pick(grid.onset, keep[horizon]),
+            onsets=None
+            if grid.onsets is None
+            else {tau: pick(column, keep[horizon]) for tau, column in grid.onsets.items()},
+        )
+        for horizon, grid in grids.items()
+    }
+    scarce_forecasts = {
+        name: {
+            horizon: Forecast(
+                name=name,
+                horizon=horizon,
+                dates=pick(forecast.dates, keep[horizon]),
+                probabilities={tau: pick(c, keep[horizon]) for tau, c in forecast.probabilities.items()},
+                cutoffs={tau: pick(c, keep[horizon]) for tau, c in forecast.cutoffs.items()},
+                cutoff_rule=forecast.cutoff_rule,
+            )
+            for horizon, forecast in per_horizon.items()
+        }
+        for name, per_horizon in by_name.items()
+    }
+    return scarce_grids, scarce_forecasts
+
+
+def _scarce_verdict(
+    declaration: Declaration,
+    name: str,
+    scarce: Optional[Tuple[Dict[int, Grid], Dict[str, Dict[int, Forecast]]]],
+    calendar: Sequence[date],
+) -> dict:
+    """The pass rule on the scarce regime's days alone: reported, never part of the pass rule.
+
+    Tiers 1, 3 and 5 are judged exactly as on all days, with the cut-offs the forecast already
+    carries, on the days whose scarcity state is at least `risky_dates.scarcity_state_at_least`.
+    The week-ahead tier then reads the decision days whose five target days are all scarce.
+    """
+
+    out: Dict[str, Any] = {
+        "reported_only": True,
+        "scarcity_state_at_least": declaration.risky_state_at_least,
+    }
+    if scarce is None:
+        out.update(passes=False, unavailable="a judged horizon has no day in the scarce regime")
+        return out
+    grids, by_name = scarce
+    result = _candidate(declaration, name, grids, by_name, calendar, {}, lean=True)
+    verdict = result["verdict"]
+    near = result["tiers"]["onset_warning"][f"lead_at_least_{declaration.onset_lead}"]
+    out.update(
+        days_by_horizon={str(h): len(grid.dates) for h, grid in grids.items()},
+        onsets=near.get("onsets"),
+        events_by_horizon={str(h): sum(grid.outcomes[declaration.primary]) for h, grid in grids.items()},
+        tier_1_onset_warning=verdict["tier_1_onset_warning"],
+        tier_3_no_crying_wolf=verdict["tier_3_no_crying_wolf"],
+        tier_5_week_ahead=verdict["tier_5_week_ahead"],
+        recall=near.get("recall"),
+        worst_false_alarms_per_onset=near.get("worst_false_alarms_per_onset"),
+        week_ahead_days=result["tiers"]["week_ahead"].get("days"),
+        passes=verdict["passes"],
+    )
+    return out
+
+
 def _candidate(
     declaration: Declaration,
     name: str,
@@ -992,7 +1240,12 @@ def _candidate(
     by_name: Mapping[str, Mapping[int, Forecast]],
     calendar: Sequence[date],
     holdouts: Mapping[str, Tuple[date, date]],
+    *,
+    lean: bool = False,
 ) -> dict:
+    """One candidate's evidence. `lean` is the scarce-regime pass: the primary threshold, the regime
+    split and the three tiers of the pass rule only."""
+
     entry = declaration.candidates[name]
     primary = _key(declaration.primary)
     scored = [h for h in declaration.horizons if h in by_name[name]]
@@ -1000,25 +1253,31 @@ def _candidate(
     for horizon in scored:
         grid = grids[horizon]
         per_tau: Dict[str, dict] = {}
-        for tau in declaration.thresholds:
+        for tau in ((declaration.primary,) if lean else declaration.thresholds):
             forecast = by_name[name][horizon].probabilities[tau]
             outcomes = grid.outcomes[tau]
-            cutoff = declaration.cutoff(name, tau, horizon)
-            flags = [1 if p >= cutoff else 0 for p in forecast]
+            cutoffs = by_name[name][horizon].cutoffs[tau]
+            flags = [1 if p >= c else 0 for p, c in zip(forecast, cutoffs)]
             per_tau[_key(tau)] = _row(
-                declaration, name, horizon, tau, grid, forecast, outcomes, cutoff, flags, by_name, holdouts
+                declaration, name, horizon, tau, grid, forecast, outcomes, cutoffs, flags, by_name, holdouts,
+                lean=lean,
             )
         per_horizon[str(horizon)] = per_tau
 
+    onset_tiers = {
+        f"lead_at_least_{declaration.onset_lead}": _onset_tier(declaration, name, declaration.onset_lead, scored, grids, by_name),
+    }
+    if not lean:
+        onset_tiers[f"lead_at_least_{declaration.far_lead}"] = _onset_tier(
+            declaration, name, declaration.far_lead, scored, grids, by_name
+        )
     tiers = {
-        "onset_warning": {
-            f"lead_at_least_{declaration.onset_lead}": _onset_tier(declaration, name, declaration.onset_lead, scored, grids, by_name),
-            f"lead_at_least_{declaration.far_lead}": _onset_tier(declaration, name, declaration.far_lead, scored, grids, by_name),
-        },
-        "risky_dates": _risky_dates(declaration, name, scored, grids, by_name),
+        "onset_warning": onset_tiers,
         "no_crying_wolf": {h: per_horizon[h][primary]["no_crying_wolf"] for h in per_horizon},
         "week_ahead": _week_ahead(declaration, name, scored, grids, by_name, calendar),
     }
+    if not lean:
+        tiers["risky_dates"] = _risky_dates(declaration, name, scored, grids, by_name)
     near = tiers["onset_warning"][f"lead_at_least_{declaration.onset_lead}"]
     wolf_by_horizon = {
         str(h): bool(tiers["no_crying_wolf"][str(h)]["ok"]) if str(h) in tiers["no_crying_wolf"] else False
@@ -1054,10 +1313,12 @@ def _row(
     grid: Grid,
     probabilities: Sequence[float],
     outcomes: Sequence[int],
-    cutoff: float,
+    cutoffs: Sequence[float],
     flags: Sequence[int],
     by_name: Mapping[str, Mapping[int, Forecast]],
     holdouts: Mapping[str, Tuple[date, date]],
+    *,
+    lean: bool = False,
 ) -> dict:
     count = len(outcomes)
     summary = _flags_summary(flags, outcomes)
@@ -1065,7 +1326,7 @@ def _row(
         "days": count,
         "events": sum(outcomes),
         "base_rate": sum(outcomes) / count,
-        "cutoff": cutoff,
+        "cutoff": _cutoff_summary(cutoffs),
         "flags": summary,
         **_decomposition(probabilities, outcomes),
         "reliability_steps": _reliability_steps(probabilities, outcomes),
@@ -1085,7 +1346,7 @@ def _row(
     index: Dict[str, Tuple[str, str]] = {}
     primary = tau == declaration.primary
     if primary:
-        for dimension in dict.fromkeys(declaration.groupings + ("regime",)):
+        for dimension in ("regime",) if lean else dict.fromkeys(declaration.groupings + ("regime",)):
             for label, members in _group_cells(grid, dimension).items():
                 key = f"{dimension}\x00{label}"
                 cells[key] = _paired_vectors(probabilities, climatology, persistence, outcomes, members)
@@ -1126,20 +1387,39 @@ def _row(
                 "realised_minus_predicted": cell["realised_minus_predicted"],
             }
         row["splits"] = splits
-        row["no_crying_wolf"] = _no_crying_wolf(declaration, grid, flags, splits)
+        row["no_crying_wolf"] = _no_crying_wolf(declaration, grid, flags, splits, restricted=lean)
     held: Dict[str, dict] = {}
-    for window, (first, last) in holdouts.items():
+    for window, (first, last) in ({} if lean else holdouts).items():
         positions = [k for k, day in enumerate(grid.dates) if first <= day <= last]
         held[window] = _holdout_cell(positions, probabilities, climatology, outcomes, flags)
-    if holdouts:
+    if holdouts and not lean:
         row["holdouts"] = held
     return row
 
 
+def _cutoff_summary(cutoffs: Sequence[float]) -> dict:
+    """The cut-offs chosen over the scored days: how many days flag nothing, and the spread of the rest."""
+
+    finite = sorted(c for c in cutoffs if not math.isinf(c))
+    out: Dict[str, Any] = {"days_never_flag": len(cutoffs) - len(finite), "days": len(cutoffs)}
+    if finite:
+        out.update(minimum=finite[0], median=_quantile(finite, 0.5), maximum=finite[-1])
+    return out
+
+
 def _no_crying_wolf(
-    declaration: Declaration, grid: Grid, flags: Sequence[int], splits: Mapping[str, Mapping[str, dict]]
+    declaration: Declaration,
+    grid: Grid,
+    flags: Sequence[int],
+    splits: Mapping[str, Mapping[str, dict]],
+    *,
+    restricted: bool = False,
 ) -> dict:
-    """Tier 3 at one lead: the alarm rate in abundant stretches and calibration by regime."""
+    """Tier 3 at one lead: the alarm rate in abundant stretches and calibration by regime.
+
+    `restricted` is the scarce-regime reading, where an abundant stretch may have no day left in
+    the days scored; an empty stretch then has no alarm rate to exceed.
+    """
 
     stretches = {
         f"scarcity_state_{declaration.abundant_state}": [
@@ -1158,15 +1438,23 @@ def _no_crying_wolf(
             "flags": flagged,
             "flags_per_year": rate,
             "at_most": declaration.flags_per_year_at_most,
-            "ok": rate is not None and rate <= declaration.flags_per_year_at_most,
+            "ok": (rate is None and restricted) or (rate is not None and rate <= declaration.flags_per_year_at_most),
         }
-    calibrated = {
-        label: _covers_zero(cell["realised_minus_predicted"]) for label, cell in splits["regime"].items()
-    }
+    # Calibration is tested in the regimes that had a pressure day (+5 bp) in the scored window; the
+    # others are reported (does the interval cover zero?) and do not count (ruling of 8 October 2026).
+    tested: Dict[str, bool] = {}
+    reported: Dict[str, dict] = {}
+    for label, cell in splits["regime"].items():
+        covers = _covers_zero(cell["realised_minus_predicted"])
+        if cell["events"] > 0:
+            tested[label] = covers
+        else:
+            reported[label] = {"days": cell["days"], "events": 0, "covers_zero": covers}
     return {
         "abundant_stretches": abundant,
-        "calibrated_by_regime": calibrated,
-        "ok": all(c["ok"] for c in abundant.values()) and all(calibrated.values()),
+        "calibrated_by_regime": tested,
+        "calibration_reported_regimes": reported,
+        "ok": all(c["ok"] for c in abundant.values()) and all(tested.values()),
     }
 
 
@@ -1200,8 +1488,8 @@ def _onset_tier(
     for h in horizons:
         at = [position[h][day] for day in common]
         pressure = [grids[h].outcomes[tau][k] for k in at]
-        cutoff = declaration.cutoff(name, tau, h)
-        flags = [1 if by_name[name][h].probabilities[tau][k] >= cutoff else 0 for k in at]
+        chosen = by_name[name][h]
+        flags = [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at]
         raised = sum(1 for f, y in zip(flags, pressure) if f and not y)
         weights = matched_false_alarm_weights(
             [by_name[declaration.climatology][h].probabilities[tau][k] for k in at], pressure, raised
@@ -1393,6 +1681,10 @@ def restrict_forecast(forecast: Forecast, first: date, last: date) -> Forecast:
         horizon=forecast.horizon,
         dates=tuple(forecast.dates[k] for k in keep),
         probabilities={tau: tuple(column[k] for k in keep) for tau, column in forecast.probabilities.items()},
+        cutoffs=None
+        if forecast.cutoffs is None
+        else {tau: tuple(column[k] for k in keep) for tau, column in forecast.cutoffs.items()},
+        cutoff_rule=forecast.cutoff_rule,
     )
 
 
@@ -1517,7 +1809,8 @@ def build_grid(
     from . import pressure
 
     by_date = {row.date: row for row in rows}
-    onsets = set(pressure.onsets(rows, declaration.primary, scored_dates))
+    onset_days = {tau: set(pressure.onsets(rows, tau, scored_dates)) for tau in declaration.thresholds}
+    onsets = onset_days[declaration.primary]
     missing = [day for day in scored_dates if day not in by_date]
     if missing:
         raise ValueError(f"scored day {missing[0]} is not a row of the panel")
@@ -1540,6 +1833,9 @@ def build_grid(
         },
         groups={dimension: tuple(labels) for dimension, labels in groups.items()},
         onset=tuple(1 if day in onsets else 0 for day in scored_dates),
+        onsets={
+            tau: tuple(1 if day in days else 0 for day in scored_dates) for tau, days in onset_days.items()
+        },
     )
 
 
