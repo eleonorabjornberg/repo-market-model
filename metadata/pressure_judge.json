@@ -47,7 +47,7 @@
     },
     "week_ahead": {
       "days": 5,
-      "combine": "independence"
+      "combine": "max"
     }
   },
   "early_warning": {
