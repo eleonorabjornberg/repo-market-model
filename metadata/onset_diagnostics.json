@@ -6,7 +6,7 @@
     "rows": {
       "rule": "the five candidate rows with the most onsets flagged at lead >= 1; ties broken by the smaller worst false alarms per onset, then by name; the three reference rows (calendar_climatology, persistence_logistic, published_v1) are not candidates and are left out",
       "excluded": ["calendar_climatology", "persistence_logistic", "published_v1"],
-      "chosen": ["two_part_gbm", "ngboost_laplace", "hierarchical_logistic", "settlement_quantile_timing", "scarcity_logistic"]
+      "chosen": ["two_part_gbm", "ngboost_laplace", "hierarchical_logistic", "settlement_quantile_timing", "scarcity_logistic_interactions"]
     },
     "flags": "the judge's own: a probability at or above the flag cut-off chosen refit by refit from the training window (pressure_judge.choose_cutoffs), at +5 bp, at each horizon h = 1 to 5",
     "false_alarm": "a flag on a day that is not a pressure day (SOFR - IORB, on whole basis points, not strictly above +5 bp), on the days every horizon scores, as tier 1 counts them; the day split is the flagged (target) day, t + h",
@@ -44,7 +44,7 @@
     },
     "confirmation_window": {
       "days": 169,
-      "days_source": "docs/decisions/lockbox.md: 169 locked days from 2026-01-01, of which 5 are above +5 bp",
+      "days_source": "docs/decisions/lockbox.md, the table of tier starts: from 2026-01-01, 169 locked days, 5 of them above +5 bp",
       "onsets": [1, 2, 3, 4, 5],
       "onsets_note": "a parameter, not a count: no day of the window is read. The lockbox record gives at most 5 pressure days in it, so at most 5 onsets",
       "placement": "onsets evenly spaced over the window"
