@@ -157,7 +157,7 @@ class DeclarationTests(unittest.TestCase):
 
 
 class JudgeDeclarationTests(unittest.TestCase):
-    """The track's candidates are declared in the judge's file, with a cut-off each."""
+    """The track's candidates are declared in the judge's file, and none declares a cut-off: the judge's rule chooses it from the refit's training window."""
 
     def test_every_recalibration_candidate_is_declared_before_scoring(self):
         from repo_model import pressure_judge as pj
@@ -166,9 +166,7 @@ class JudgeDeclarationTests(unittest.TestCase):
         for name in ("recal_isotonic", "recal_platt", "recal_platt_group", "recal_platt_weighted"):
             with self.subTest(name=name):
                 self.assertEqual(declaration.candidates[name]["role"], "candidate")
-                for tau in declaration.thresholds:
-                    for horizon in declaration.horizons:
-                        declaration.cutoff(name, tau, horizon)
+                self.assertNotIn("cutoffs", declaration.candidates[name])
 
 
 if __name__ == "__main__":
