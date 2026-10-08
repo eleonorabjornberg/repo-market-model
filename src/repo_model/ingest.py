@@ -132,6 +132,49 @@ OFR_STFM_MNEMONICS = ("REPO-DVP_AR_OO-P", "REPO-DVP_AR_OO-F", "REPO-DVP_TV_OO-F"
 #: values dated before it were filled in later.
 OFR_STFM_REAL_TIME_START = date(2020, 9, 9)
 _OFR_MNEMONIC_RE = re.compile(r"^[A-Z0-9]+-[A-Z0-9_]+-[A-Z]$")
+#: The OFR's other repo segments (#377): the overnight/open average rate,
+#: preliminary and final, and the overnight/open volume, final, of the tri-party
+#: and GCF segments. Fetched with `fetch_ofr_stfm_repo` and read by the same
+#: parser as the DVP series, but declared as a source of their own,
+#: `ofr_stfm_repo_segments`, in `metadata/sources_measurement.json`: the frozen
+#: `metadata/sources.json` is not edited. Read by `measurement_fields` and by no
+#: published declaration.
+OFR_STFM_SEGMENTS_SOURCE_ID = "ofr_stfm_repo_segments"
+OFR_STFM_SEGMENT_MNEMONICS = (
+    "REPO-TRI_AR_OO-P",
+    "REPO-TRI_AR_OO-F",
+    "REPO-TRI_TV_OO-F",
+    "REPO-GCF_AR_OO-P",
+    "REPO-GCF_AR_OO-F",
+    "REPO-GCF_TV_OO-F",
+)
+#: The daily Treasury General Account balance (#377), from the Daily Treasury
+#: Statement's Table I (Operating Cash Balance) on Fiscal Data: one unmodified
+#: JSON response per calendar year, saved by `fetch_treasury_dts_tga` and read
+#: by `_treasury_dts_tga_rows`. Off in every published declaration
+#: (`contract.UNMODELLED_SOURCES`).
+TREASURY_DTS_TGA_SOURCE_ID = "treasury_dts_tga"
+TREASURY_DTS_TGA_URL = (
+    "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/"
+    "operating_cash_balance"
+)
+#: Its one field: the day's closing TGA balance, in USD billions (the statement
+#: reports millions).
+TREASURY_DTS_TGA_FIELD = "TGA_CLOSE"
+#: The statement's closing-balance line has had three names. Through the end of
+#: 2021 Table I reported the Federal Reserve Account (the TGA proper; tax and
+#: loan note balances are other lines), then "Treasury General Account (TGA)";
+#: both carry the closing balance in `close_today_bal`. From the statement's
+#: April 2022 redesign the line is "Treasury General Account (TGA) Closing
+#: Balance" and the balance sits in `open_today_bal` (`close_today_bal` is the
+#: string "null"): the redesign lists each line once, under the day it
+#: describes.
+TREASURY_DTS_TGA_CLOSE_IN_CLOSE_COLUMN = (
+    "Federal Reserve Account",
+    "Treasury General Account (TGA)",
+)
+TREASURY_DTS_TGA_CLOSE_IN_OPEN_COLUMN = ("Treasury General Account (TGA) Closing Balance",)
+TREASURY_DTS_TGA_PAGE_SIZE = 10000
 #: The Board's Data Download Program, full-release packages (#129): the H.15
 #: (`RIFSPFF_N.B`, the daily effective federal funds rate) and the Policy Rates
 #: release (`RESBME_N.D` IOER, `RESBM_N.D` IORB). One zip of SDMX XML per
@@ -431,8 +474,12 @@ def fetch_ofr_stfm_repo(
     output_root: Path,
     mnemonics: Sequence[str] = OFR_STFM_MNEMONICS,
     downloader: Callable[[str], bytes] = _download,
+    source_id: str = OFR_STFM_SOURCE_ID,
 ) -> List[SnapshotArtifact]:
     """Fetch one OFR `timeseries` response per mnemonic, saved unmodified (#187).
+
+    `source_id` is the source the snapshots are saved under: `ofr_stfm_repo`,
+    or `ofr_stfm_repo_segments` for `OFR_STFM_SEGMENT_MNEMONICS` (#377).
 
     Each is one plain GET of `OFR_STFM_TIMESERIES_URL?mnemonic=...`, validated
     as a list of `[date, value]` pairs before it is saved, so a response the
@@ -440,6 +487,8 @@ def fetch_ofr_stfm_repo(
     """
 
     artifacts: List[SnapshotArtifact] = []
+    if source_id not in (OFR_STFM_SOURCE_ID, OFR_STFM_SEGMENTS_SOURCE_ID):
+        raise ValueError(f"not an OFR source: {source_id!r}")
     retrieved_at = datetime.now(timezone.utc)
     for mnemonic in mnemonics:
         if not _OFR_MNEMONIC_RE.match(mnemonic):
@@ -449,7 +498,7 @@ def fetch_ofr_stfm_repo(
         _ofr_pairs(json.loads(payload), mnemonic)
         artifacts.append(
             _save_snapshot(
-                source_id=OFR_STFM_SOURCE_ID,
+                source_id=source_id,
                 url=url,
                 payload=payload,
                 output_root=output_root,
@@ -519,6 +568,140 @@ def _ofr_stfm_rows(artifact: SnapshotArtifact, payload: bytes):
             )
         )
     return rows
+
+
+def fetch_treasury_dts_tga(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """Fetch the Daily Treasury Statement's TGA closing balance, one snapshot per line name per calendar year (#377).
+
+    Each is one plain GET of Fiscal Data's `operating_cash_balance` table,
+    filtered to one closing-balance line name (`TREASURY_DTS_TGA_CLOSE_IN_*`)
+    and to the year's dates, and saved unmodified, as `fetch_nyfed_on_rrp`
+    saves a year. A name the year never used yields an empty list, which is
+    saved: it is the record that the line was asked for and absent. A response is validated by the parser before it is saved, and one
+    that does not fit on a single page is refused rather than archived short.
+    """
+
+    start_date = date.fromisoformat(start)
+    end_date = date.fromisoformat(end)
+    if start_date > end_date:
+        raise ValueError("Daily Treasury Statement start date must not follow end date")
+    names = TREASURY_DTS_TGA_CLOSE_IN_CLOSE_COLUMN + TREASURY_DTS_TGA_CLOSE_IN_OPEN_COLUMN
+    artifacts: List[SnapshotArtifact] = []
+    retrieved_at = datetime.now(timezone.utc)
+    for year in range(start_date.year, end_date.year + 1):
+        window_start = max(start_date, date(year, 1, 1))
+        window_end = min(end_date, date(year, 12, 31))
+        for name in names:
+            # One request per line name: Fiscal Data's `in` filter does not take
+            # a name that holds parentheses, and silently matches nothing for it.
+            query = urlencode(
+                {
+                    "fields": "record_date,account_type,open_today_bal,close_today_bal",
+                    "filter": (
+                        f"record_date:gte:{window_start.isoformat()},"
+                        f"record_date:lte:{window_end.isoformat()},"
+                        f"account_type:eq:{name}"
+                    ),
+                    "sort": "record_date",
+                    "page[size]": str(TREASURY_DTS_TGA_PAGE_SIZE),
+                }
+            )
+            url = f"{TREASURY_DTS_TGA_URL}?{query}"
+            payload = downloader(url)
+            _treasury_dts_tga_pairs(json.loads(payload))
+            artifacts.append(
+                _save_snapshot(
+                    source_id=TREASURY_DTS_TGA_SOURCE_ID,
+                    url=url,
+                    payload=payload,
+                    output_root=output_root,
+                    suffix="json",
+                    retrieved_at=retrieved_at,
+                )
+            )
+    return artifacts
+
+
+def _treasury_dts_tga_pairs(parsed: object) -> List[Tuple[date, float]]:
+    """A Fiscal Data `operating_cash_balance` response as `(date, USD billions)` pairs.
+
+    Exactly one closing-balance line per date: a date with two, or a line of a
+    name `TREASURY_DTS_TGA_CLOSE_*` does not list, is refused, and so is a
+    response whose `meta.total-count` exceeds what it carries.
+    """
+
+    if not isinstance(parsed, dict) or not isinstance(parsed.get("data"), list):
+        raise ValueError("Daily Treasury Statement response carries no data list")
+    meta = parsed.get("meta")
+    total = meta.get("total-count") if isinstance(meta, dict) else None
+    if total is not None and int(total) != len(parsed["data"]):
+        raise ValueError(
+            f"Daily Treasury Statement response carries {len(parsed['data'])} of "
+            f"{total} lines: a truncated page is not archived"
+        )
+    found: Dict[date, float] = {}
+    for number, line in enumerate(parsed["data"], start=1):
+        if not isinstance(line, dict):
+            raise ValueError(f"Daily Treasury Statement line {number} is not an object")
+        name = line.get("account_type")
+        if name in TREASURY_DTS_TGA_CLOSE_IN_CLOSE_COLUMN:
+            column = "close_today_bal"
+        elif name in TREASURY_DTS_TGA_CLOSE_IN_OPEN_COLUMN:
+            column = "open_today_bal"
+        else:
+            raise ValueError(f"Daily Treasury Statement line {number} is {name!r}, not a closing balance")
+        try:
+            ref_date = date.fromisoformat(str(line.get("record_date")))
+        except ValueError as exc:
+            raise ValueError(
+                f"Daily Treasury Statement line {number} has no valid record_date: {line.get('record_date')!r}"
+            ) from exc
+        raw = line.get(column)
+        try:
+            millions = float(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Daily Treasury Statement {name} on {ref_date} has a non-numeric {column}: {raw!r}"
+            ) from exc
+        if ref_date in found:
+            raise ValueError(f"Daily Treasury Statement has two closing balances on {ref_date}")
+        found[ref_date] = millions / 1000.0
+    return sorted(found.items())
+
+
+def _treasury_dts_tga_rows(artifact: SnapshotArtifact, payload: bytes):
+    """One observation per statement date: the TGA's closing balance, USD billions (#377).
+
+    `available_at` is the registry's declaration (`treasury_dts_tga.release_lag`):
+    16:30 New York time on the next business day after the statement's date, 30
+    minutes after the 16:00 at which Treasury publishes the statement. It is
+    capped at the snapshot's retrieval, as the other adapters cap theirs.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    zone = ZoneInfo("America/New_York")
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    return [
+        PointInTimeObservation(
+            series_id=TREASURY_DTS_TGA_FIELD,
+            ref_date=ref_date,
+            available_at=min(
+                datetime.combine(_next_business_day(ref_date, 1), time(16, 30), tzinfo=zone),
+                retrieved,
+            ),
+            value=value,
+            vintage_id=f"{artifact.retrieved_at}:{TREASURY_DTS_TGA_FIELD}",
+            source_sha=artifact.sha256,
+        )
+        for ref_date, value in _treasury_dts_tga_pairs(json.loads(payload))
+    ]
 
 
 def _fetch_nyfed_operation_results(
@@ -4505,8 +4688,10 @@ def parse_snapshots(
         elif artifact.source_id == NYFED_SRF_SOURCE_ID:
             # Also before the prefix test: operation results, not a refRates list.
             parsed_rows = _nyfed_srf_rows(artifact, payload)
-        elif artifact.source_id == OFR_STFM_SOURCE_ID:
+        elif artifact.source_id in (OFR_STFM_SOURCE_ID, OFR_STFM_SEGMENTS_SOURCE_ID):
             parsed_rows = _ofr_stfm_rows(artifact, payload)
+        elif artifact.source_id == TREASURY_DTS_TGA_SOURCE_ID:
+            parsed_rows = _treasury_dts_tga_rows(artifact, payload)
         elif artifact.source_id == FRB_DDP_SOURCE_ID:
             parsed_rows = _frb_ddp_rows(artifact, payload, registry)
         elif artifact.source_id == FRB_H8_SOURCE_ID:

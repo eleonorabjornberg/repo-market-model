@@ -1,7 +1,7 @@
 # Draft amendment to `lockbox.md`: the live record
 
 **Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #215, as that directive
-asks, and amended by the ones that close #277 and #257. It takes effect only when Eleonora merges the
+asks, amended by the ones that close #277, #257 and #245 (pressure model v2). It takes effect only when Eleonora merges the
 section below into `docs/decisions/lockbox.md`, under the heading it carries. Since #277
 (Eleonora's ruling on #269 item 6), `scripts/live_score.py` no longer reads that heading: it scores only through
 `lockbox.require_unlocked`, so it refuses any day `metadata/lockbox.json` has not opened. A scoring date opens
@@ -64,6 +64,18 @@ append-only `live-log` branch (`.github/workflows/live-log.yml`, `scripts/live_r
     > blind but not live: forecasts reconstructed after the fact by the frozen code from inputs fetched at scoring time (latest vintage); reported only, not evidence
 
   - The CRPS gap cells at h = 2 to 5 also carry the "not evidence" label above (#229).
+- **Pressure model v2 is logged alongside the unchanged v1** (Eleonora's ruling of 6 October 2026 on #245; #244
+  built v2). Each day's file also carries `distributions.published_v2`: v2's quantiles at h = 1, its record
+  (`docs/runs/pressure_model_v2_distribution_h1.json`) and its declaration digest. v1's fields, its pre-registration
+  and its verdict are unchanged. v2's days are blind-tier days, **opened only on the scoring dates above**, and only
+  for the days on which v2 was logged. v2 was chosen on 2018–2025, after #243, so only its live record is evidence
+  for it.
+  - v2's primary cell is CRPS at h = 1, v2 against as-of persistence, over v2's logged days only, under the final
+    test's pass rule, labels and bootstrap settings. A second cell, v1's published distribution against v2 on the
+    days both are logged, is reported only. v2's block is separate and labelled, and it never enters v1's verdict.
+  - v2's verdict is fixed once, at the first scoring date that scores any day of v2's primary cell. **Proposed:** the
+    same dates as v1 (`FIRST_SCORING_DATES`, then every 1 October). **A question for Eleonora to confirm or change.**
+    It is fixed at the first scoring date with a scored v2 day, not at a calendar date.
 
 ### The scoring procedure, the outcome source, the observation cutoff and the publication behaviour (#257)
 
@@ -119,8 +131,8 @@ Drafted for her. It fixes how a scoring run is made, so that the evidence can be
   last change not under it. A later change to a covered function is a decision of hers and re-pins this value.
   *Proposed, hers to merge:* the pin in the next two lines.
 
-- **Live scorer checksum:** `ae9b94b50247f2776317b86021231e51cecc830bff21df7ffc923933009c0613`
-- **Live scorer checksum taken at:** `37cc995699af4bc13fc7bcd4cd4ef7074905216f`
+- **Live scorer checksum:** `c3d4bb30931e343211d918c0639a0e9452382391d0fd2cf5ad00e8e1c9c9c017`
+- **Live scorer checksum taken at:** `0fefd8fa1f10a18df613737c77bf68d9091a1df1`
 - **The gap.** The blind gap's raw inputs, fetched once at scoring time, are archived on `live-raw` as
   `raw/<date>-gap/` before the reconstruction reads them. Its day boundaries are computed by the pinned code's own
   calendar and the scorer asserts they equal the ones it computes from main's; a difference refuses the run.

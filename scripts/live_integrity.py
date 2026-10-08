@@ -92,8 +92,9 @@ PANEL_PATTERN = re.compile(r"^live/(\d{4}-\d{2}-\d{2})\.panel\.csv$")
 
 IDENTITY = "https://github.com/eleonorabjornberg/repo-market-model/.github/workflows/live-log.yml@refs/heads/main"
 OIDC_ISSUER = "https://token.actions.githubusercontent.com"
-#: Fulcio's certificate extension for the OIDC issuer (v1: the raw string; v2: a DER UTF8String).
-_ISSUER_OIDS = ("1.3.6.1.4.1.57264.1.1", "1.3.6.1.4.1.57264.1.8")
+#: Fulcio's certificate extension for the OIDC issuer: v2 is a DER UTF8String; v1 (deprecated) is the raw string.
+_ISSUER_V1 = "1.3.6.1.4.1.57264.1.1"
+_ISSUER_V2 = "1.3.6.1.4.1.57264.1.8"
 #: The online check, for a day D (cosign checks the Fulcio chain, the signature and the tree head):
 ONLINE_COMMAND = f"""\
 uuid=$(jq -r .uuid live/D.rekor)
@@ -401,6 +402,15 @@ def _oid(content: bytes) -> str:
     return ".".join(str(p) for p in parts)
 
 
+def _der_utf8(octets: bytes) -> str:
+    """The string in a DER UTF8String that fills `octets` exactly (tag 0x0c, length, content)."""
+
+    tag, begin, stop = _der(octets, 0)
+    if tag != 0x0C or stop != len(octets):
+        raise ValueError("the certificate's issuer is not a single DER UTF8String")
+    return octets[begin:stop].decode("utf-8", "replace")
+
+
 def certificate_identity(pem: str):
     """The signing certificate's identity (a SAN URI) and its OIDC issuer, from the DER.
 
@@ -419,7 +429,7 @@ def certificate_identity(pem: str):
     extensions = [f for f in fields if f[0] == 0xA3]
     if len(extensions) != 1:
         raise ValueError("the signing certificate has no extensions")
-    uris, issuer = [], None
+    uris, issuer, legacy_issuer = [], None, None
     seq = _children(der, extensions[0][1], extensions[0][2])[0]
     for ext in _children(der, seq[1], seq[2]):
         parts = _children(der, ext[1], ext[2])
@@ -431,8 +441,15 @@ def certificate_identity(pem: str):
             for tag, begin, stop in _children(octets, names[1], names[2]):
                 if tag == 0x86:
                     uris.append(octets[begin:stop].decode("utf-8", "replace"))
-        elif oid in _ISSUER_OIDS:
-            issuer = octets.decode("utf-8", "replace")
+        elif oid == _ISSUER_V1:
+            legacy_issuer = octets.decode("utf-8", "replace")
+        elif oid == _ISSUER_V2:
+            try:
+                issuer = _der_utf8(octets)
+            except ValueError as error:
+                raise ValueError(f"the signing certificate cannot be read: {error}") from error
+    if issuer is None:
+        issuer = legacy_issuer
     if len(uris) != 1:
         raise ValueError(f"the signing certificate must carry exactly one SAN URI, not {len(uris)}")
     return uris[0], issuer
