@@ -9706,8 +9706,8 @@ class TwoPartPressureTests(unittest.TestCase):
         """Both parts learn from `_pressure_pairs(train_rows)`, the as-of-paired labels, and nothing else.
 
         Mutation recorded (#382): in `_direct_pressure_predictor`'s `fit_predict`, changing
-        `_pressure_pairs(design, information, train_rows, cache)` to pass
-        `list(train_rows) + list(feature_rows)` made this fail with AssertionError (the
+        `_pressure_pairs(design, information, train_rows, cache, positions)` to pass
+        `list(train_rows) + list(feature_rows)` as the rows made this fail with AssertionError (the
         pairs were built from rows that included the served days).
         """
 
@@ -9720,9 +9720,9 @@ class TwoPartPressureTests(unittest.TestCase):
         seen = []
         real = ml._pressure_pairs
 
-        def spy(design, information, frame, cache):
+        def spy(design, information, frame, cache, *rest):
             seen.append([row.date for row in frame])
-            return real(design, information, frame, cache)
+            return real(design, information, frame, cache, *rest)
 
         with mock.patch.object(ml, "_pressure_pairs", spy):
             predictor(train, served, (5.0, 10.0), information=rule)
