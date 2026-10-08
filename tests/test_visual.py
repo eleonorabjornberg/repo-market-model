@@ -1261,6 +1261,40 @@ class NewcomerBandBase(unittest.TestCase):
                 if lockbox.locked_tier(emit_visual.date.fromisoformat(r["date"]), self.locked) is not None]
 
 
+class DecisionInstantBufferTests(NewcomerBandBase):
+    """The band's sub-lane and the history chapter read ON RRP at the decision instant, not the day itself (#348).
+
+    On 2021-03-31 the result public at 16:00 that day was abundant, and the one public at 16:00 on the day
+    before was scarce; N3, N4 and N5 call it scarce. The first panel day has no decision instant.
+
+    Recorded mutation: in `buffer_scarce`, `date.fromisoformat(previous[-1])` -> `day`. test_the_history_split_reads_the_decision_instant
+    then failed with AssertionError (2021-03-31 was not scarce) and test_the_sub_lane_is_n3s_scarce_cash with
+    AssertionError on the same day.
+    """
+
+    def test_the_history_split_reads_the_decision_instant(self):
+        from repo_model import contract
+        low = emit_visual.history_buffer_low(self.on_rrp, self.rows, self.decision, self.registry)
+        dates = [r["date"] for r in self.rows]
+        for r in emit_visual.counted([dict(x) for x in self.rows], self.locked):
+            if r["date"] == dates[0]:
+                continue
+            prev = emit_visual.date.fromisoformat(max(x for x in dates if x < r["date"]))
+            _, value = emit_visual.on_rrp_as_of(self.on_rrp, prev, self.decision, self.registry)
+            with self.subTest(day=r["date"]):
+                self.assertEqual(low(r["date"]), value < contract.ON_RRP_DEPLETION_BREAK_BN)
+        self.assertTrue(low("2021-03-31"))
+
+    def test_the_band_marks_2021_03_31_scarce(self):
+        data, _ = self.base
+        self.assertTrue(any(a <= "2021-03-31" <= b for a, b in data["buffer_spans"]))
+
+    def test_the_first_panel_day_has_no_decision_instant(self):
+        with self.assertRaises(ValueError):
+            emit_visual.buffer_scarce(self.on_rrp, self.rows, emit_visual.date.fromisoformat(self.rows[0]["date"]),
+                                      self.decision, self.registry)
+
+
 class NewcomerBandTests(NewcomerBandBase):
     """The band shades #115's state, read as-of, with the ON RRP buffer as a sub-lane."""
 
@@ -1318,14 +1352,20 @@ class NewcomerBandTests(NewcomerBandBase):
         self.assertEqual(data["rises"], {str(t): table["rises"][f"gt_{t}bp"] for t in (5, 10)})
 
     def test_the_sub_lane_is_n3s_scarce_cash(self):
-        """The sub-lane marks the days N3's 2x2 calls scarce: ON RRP read at 16:00 below the break."""
+        """The sub-lane marks the days N3's 2x2 calls scarce: the ON RRP result public at the decision instant.
+
+        The decision instant of a day is the declared time on the last panel day before it (#348), as N3, N4
+        and N5 read it (#198), not the day itself.
+        """
         from repo_model import contract
         data, _ = self.base
         below = set()
         for start, end in data["buffer_spans"]:
             below |= {d.day for d in self.scored if start <= d.day.isoformat() <= end}
+        dates = [r["date"] for r in self.rows]
         for d in self.scored:
-            _, value = emit_visual.on_rrp_as_of(self.on_rrp, d.day, self.decision, self.registry)
+            prev = emit_visual.date.fromisoformat(max(x for x in dates if x < d.day.isoformat()))
+            _, value = emit_visual.on_rrp_as_of(self.on_rrp, prev, self.decision, self.registry)
             with self.subTest(day=d.day.isoformat()):
                 self.assertEqual(d.day in below, value < contract.ON_RRP_DEPLETION_BREAK_BN)
 
