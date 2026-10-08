@@ -892,6 +892,7 @@ CRPS_SCORERS = {
     "scripts/settlement_flag_candidate.crps_side": ("delegates", _WALK),
     "scripts/forecast_daily.reproduction_check": ("delegates", "compares the published series with " + _WALK),
     "scripts/forecast_daily.reproduction_check_horizon": ("delegates", "compares the final test's cell with " + _WALK),
+    "scripts/calendar_bands_418.mean_crps": ("delegates", "the mean loss of a published daily record's days, which `score` builds from `_WALK`'s records and refuses after the panel end"),
     "scripts/interior_diagnosis._crps": ("delegates", "one loss; " + _WALK),
     "scripts/pressure_model_v2._crps": ("delegates", "one loss; " + _WALK),
     "scripts/interior_calibration_judge._crps": ("delegates", "one loss; `score_command` calls `check_window` (which calls lockbox.require_unlocked) on every day before any is scored"),
