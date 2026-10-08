@@ -634,6 +634,8 @@ __all__ = [
     "TGA_CHANGE_ROWS",
     "pressure_classifier_exceedance",
     "pressure_probit_exceedance",
+    "pressure_two_part_exceedance",
+    "TWO_PART_SETTINGS",
     "pressure_quantile_exceedance",
     "pressure_logistic_exceedance",
     "PRESSURE_TAIL_SETTINGS",
@@ -4000,6 +4002,23 @@ PRESSURE_QUANTILE_SETTINGS = MappingProxyType(
         "and continued at the outer segments' slopes to 0 and 1",
     }
 )
+#: The two-part pressure model (#382, track S of #374): P(spike) from a classifier, times a
+#: conditional law of the spike's size. Chosen before scoring, not tuned. The size is the
+#: spread's whole-bp excess over the spike threshold, geometric on 1, 2, ... with a
+#: log-linear mean on the same design (a ridge Poisson fit of excess - 1, so the mean is
+#: consistent without a distributional assumption), pooled to one mean when the training
+#: frame has fewer than `min_spike_days` spikes.
+TWO_PART_SETTINGS = MappingProxyType(
+    {
+        "spike_bp": 5.0,
+        "size_law": "geometric excess over the spike threshold",
+        "size_mean": "1 + PoissonRegressor(alpha, log link) on the standardized design, fitted on spike days",
+        "alpha": 1.0,
+        "max_iter": 1000,
+        "min_spike_days": 20,
+        "reading": "P(spread > tau) = P(spike) * (1 - 1/mean)^(tau - spike_bp) for tau >= spike_bp",
+    }
+)
 #: The quantile regression of the settlement-timing track (#379; Adrian, Boyarchenko &
 #: Giannone 2019): the quantile grid of `PRESSURE_QUANTILE_SETTINGS`, smoothed into a
 #: skew-t by least squares on the predicted quantiles, in place of linear interpolation.
@@ -4488,7 +4507,11 @@ def _direct_pressure_predictor(
                 xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t" if kind == "quantile_skewt" else "linear"
             )
             columns = [[curve[k] for curve in law] for k in range(len(taus))]
-        for tau in taus if kind not in ("quantile", "quantile_skewt") else ():
+        if kind.startswith("two_part_"):
+            columns = _two_part_columns(
+                kind[len("two_part_"):], xs, spreads, served, [float(tau) for tau in taus], monotone
+            )
+        for tau in taus if kind not in ("quantile", "quantile_skewt") and not kind.startswith("two_part_") else ():
             labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
@@ -4520,6 +4543,8 @@ def _direct_pressure_predictor(
                 "logistic": PRESSURE_LOGISTIC_SETTINGS,
                 "probit": PRESSURE_PROBIT_SETTINGS,
                 "quantile": PRESSURE_QUANTILE_SETTINGS,
+                "two_part_logistic": {**PRESSURE_LOGISTIC_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
+                "two_part_gbm_classifier": {**PRESSURE_CLASSIFIER_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
                 "quantile_skewt": PRESSURE_QUANTILE_SKEWT_SETTINGS,
             }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
         )
@@ -4575,6 +4600,86 @@ def _direct_pressure_predictor(
         )
 
     return fit_predict
+
+
+def _geometric_size_survival(
+    xs: Sequence[Sequence[float]],
+    excess: Sequence[float],
+    served: Sequence[Sequence[float]],
+    steps: Sequence[float],
+) -> List[Tuple[float, ...]]:
+    """P(excess > t | x) at each served row and each step t, for a geometric size law (#382).
+
+    `xs` and `excess` are the spike days' design rows and whole-bp excess over the
+    spike threshold (each at least 1). The excess is geometric on 1, 2, ... with mean
+    m(x) = 1 + exp(linear index), the index fitted by a ridge Poisson regression of
+    `excess - 1` on the standardized design (`TWO_PART_SETTINGS`); then
+    P(excess > t) = (1 - 1/m)^t, which is 1 at t = 0 and non-increasing in t. With fewer
+    than `TWO_PART_SETTINGS["min_spike_days"]` spike days the mean is the pooled one.
+    """
+
+    import numpy
+
+    settings = TWO_PART_SETTINGS
+    e = numpy.asarray(excess, dtype=float)
+    if len(e) and float(e.min()) < 1.0:
+        raise ValueError("the excess over the spike threshold is at least one whole basis point")
+    z = numpy.asarray(served, dtype=float)
+    if len(e) == 0:
+        mean = numpy.full(len(z), 1.0)
+    elif len(e) < settings["min_spike_days"]:
+        mean = numpy.full(len(z), float(e.mean()))
+    else:
+        from sklearn.linear_model import PoissonRegressor
+
+        x = numpy.asarray(xs, dtype=float)
+        centre, scale = _standardizer(x)
+        model = PoissonRegressor(alpha=settings["alpha"], max_iter=settings["max_iter"])
+        model.fit((x - centre) / scale, e - 1.0)
+        mean = 1.0 + model.predict((z - centre) / scale)
+    ratio = numpy.clip(1.0 - 1.0 / numpy.maximum(mean, 1.0), 0.0, 1.0)
+    return [tuple(float(r) ** float(t) for t in steps) for r in ratio]
+
+
+def _two_part_columns(
+    classifier: str,
+    xs: Sequence[Sequence[float]],
+    spreads: Sequence[float],
+    served: Sequence[Sequence[float]],
+    taus: Sequence[float],
+    monotone: Optional[Sequence[int]],
+) -> List[List[float]]:
+    """One exceedance column per tau: P(spike) times the conditional size survival (#382)."""
+
+    spike = float(TWO_PART_SETTINGS["spike_bp"])
+    labels = [1 if exceeds_bp(value, spike) else 0 for value in spreads]
+    if len(set(labels)) < 2:
+        p_spike = [float(labels[0])] * len(served)
+    else:
+        p_spike = _fit_classifier(classifier, xs, labels, served, monotone=monotone)
+    spike_rows = [x for x, label in zip(xs, labels) if label]
+    excess = [round(float(value)) - spike for value, label in zip(spreads, labels) if label]
+    above = [tau for tau in taus if tau >= spike]
+    survival = _geometric_size_survival(spike_rows, excess, served, [tau - spike for tau in above])
+    columns = []
+    for tau in taus:
+        if tau >= spike:
+            k = above.index(tau)
+            columns.append([p_spike[day] * survival[day][k] for day in range(len(served))])
+            continue
+        # below the spike threshold the size law says nothing: the classifier on that threshold's own label
+        direct = [1 if exceeds_bp(value, tau) else 0 for value in spreads]
+        columns.append(
+            [float(direct[0])] * len(served)
+            if len(set(direct)) < 2
+            else _fit_classifier(classifier, xs, direct, served, monotone=monotone)
+        )
+    # No smoothing and no prior: the parametric tail never reaches past the largest
+    # spread the fit has seen, so a threshold above every training spread is a hard zero.
+    for k, tau in enumerate(taus):
+        if not any(exceeds_bp(value, tau) for value in spreads):
+            columns[k] = [0.0] * len(served)
+    return columns
 
 
 def _fit_classifier(
@@ -5489,6 +5594,35 @@ def pressure_probit_exceedance(
     """
 
     return _direct_pressure_predictor("probit", features, declaration, minimum_history)
+
+
+def pressure_two_part_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    classifier: str = "logistic",
+) -> ExceedancePredictor:
+    """A two-part (hurdle) model of the pressure label and its size (#382).
+
+    Part one is `classifier` ("logistic" or "gbm_classifier") on `spread > +5 bp`,
+    the spike. Part two is the conditional law of the spike's size (the whole-bp
+    excess over +5 bp) on the same design, fitted on the spike days only
+    (`_geometric_size_survival`). The exceedance at tau >= 5 bp is their product,
+    `P(spike) * P(excess > tau - 5 | spike)`, so the curve is non-increasing in tau by
+    construction and its +5 bp value is the classifier's. A threshold below +5 bp, where
+    the size law is silent, is the classifier on that threshold's own label. Fitted on the
+    direct, as-of-paired pairs (`_pressure_pairs`) like the other direct models.
+
+    Raises:
+        ValueError: on a design the features cannot support, a short frame, or a call
+            without the as-of rule.
+    """
+
+    if classifier not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"the spike part is a logistic or a gbm_classifier, got {classifier!r}")
+    return _direct_pressure_predictor(
+        f"two_part_{classifier}", features, declaration, minimum_history
+    )
 
 
 def pressure_quantile_exceedance(
