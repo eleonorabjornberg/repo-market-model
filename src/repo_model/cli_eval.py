@@ -362,6 +362,31 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The onset classifier (#409): the direct logistic or classifier fitted to the onset label.
+        "pressure_onset_logistic": _ModelChoice(
+            declared=_DeferredFactory("pressure_onset_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                "class_weight",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_onset_classifier": _ModelChoice(
+            declared=_DeferredFactory("pressure_onset_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                "class_weight",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         "pressure_logistic_bootstrap": _ModelChoice(
             declared=_DeferredFactory("pressure_rare_event_exceedance"),
             build=lambda factory, regressors, regime, minimum_history, settings: factory(
