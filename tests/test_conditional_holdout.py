@@ -35,7 +35,7 @@ class DeclarationTests(unittest.TestCase):
         study = _load()
         declared = json.loads(DECLARATION.read_text())
         self.assertEqual(study.DECLARATION_PATH, DECLARATION)
-        self.assertEqual(set(declared["predictors"]) - {"note"}, set(study.PREDICTORS))
+        self.assertEqual(set(declared["predictors"]) - {"note", "fit_failure_rule"}, set(study.PREDICTORS))
         for name, entry in study.PREDICTORS.items():
             self.assertEqual(list(entry), declared["predictors"][name]["features"])
         self.assertEqual(tuple(declared["benchmarks"]), study.BENCHMARKS)
@@ -112,6 +112,32 @@ class PassRuleTests(unittest.TestCase):
         rule = _load().cell_verdict
         pooled = {"climatology": _paired(-0.3, -0.1), "persistence_logistic": _paired(0.02, 0.3)}
         self.assertEqual(rule(pooled, []), "not_met")
+
+
+class EarlyWarningMetricTests(unittest.TestCase):
+    def test_auroc_counts_ties_as_half_and_needs_both_classes(self):
+        study = _load()
+        self.assertEqual(study.auroc([0.9, 0.8, 0.2, 0.1], [1, 1, 0, 0]), 1.0)
+        self.assertEqual(study.auroc([0.1, 0.2, 0.8, 0.9], [1, 1, 0, 0]), 0.0)
+        self.assertEqual(study.auroc([0.5, 0.5, 0.5, 0.5], [1, 0, 1, 0]), 0.5)
+        self.assertIsNone(study.auroc([0.3, 0.4], [1, 1]))
+
+    def test_usefulness_is_sarlins_against_the_best_blind_policy(self):
+        study = _load()
+        perfect = study.usefulness([0.9, 0.8, 0.2, 0.1], [1, 1, 0, 0], mu=0.5)
+        self.assertEqual(perfect["absolute"], 0.5)
+        self.assertEqual(perfect["relative"], 1.0)
+        useless = study.usefulness([0.5, 0.5, 0.5, 0.5], [1, 0, 1, 0], mu=0.5)
+        self.assertEqual(useless["absolute"], 0.0)
+        self.assertIsNone(study.usefulness([0.3, 0.4], [1, 1], mu=0.5))
+
+    def test_lead_is_one_when_the_onset_was_flagged_and_empty_without_onsets(self):
+        study = _load()
+        days = [date(2019, 9, 16), date(2019, 9, 17)]
+        found = study.lead_time([0.7, 0.2], days, [days[0]], level=0.5)
+        self.assertEqual((found["onsets"], found["flagged"], found["mean_lead_days"]), (1, 1, 1.0))
+        none = study.lead_time([0.7, 0.2], days, [], level=0.5)
+        self.assertEqual((none["onsets"], none["mean_lead_days"]), (0, None))
 
 
 class LeapLevelTests(unittest.TestCase):

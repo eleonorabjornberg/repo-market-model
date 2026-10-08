@@ -30,7 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from repo_model import cli_eval, ml, onset  # noqa: E402
+from repo_model import cli_eval, ml, onset, pressure  # noqa: E402
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import split_document  # noqa: E402
 from repo_model.cli import build_parser  # noqa: E402
@@ -62,7 +62,11 @@ PREDICTORS = {
         "treasury_settlement_coupons", "reserve_balances",
     ),
 }
+PREDICTORS["probit_literature"] = PREDICTORS["dynamic_logit"]
+PREDICTORS["quantile_literature"] = PREDICTORS["dynamic_logit"]
 BENCHMARK_FEATURES = ("spread_bps",)
+USEFULNESS_MU = 0.5
+ALARM_LEVEL = 0.5
 TARGETS = ("pressure_5", "pressure_10", "leap")
 
 
@@ -81,6 +85,61 @@ def check_declaration(declared) -> None:
             f"the declaration names windows {declared['holdout_windows']['names']}, "
             f"but {EVENTS.name} declares {names}"
         )
+
+
+def auroc(forecast, outcome):
+    """Mann-Whitney area under the ROC, ties one half; `None` when a class is empty."""
+
+    positives = [f for f, o in zip(forecast, outcome) if o]
+    negatives = [f for f, o in zip(forecast, outcome) if not o]
+    if not positives or not negatives:
+        return None
+    wins = sum(
+        1.0 if p > n else 0.5 if p == n else 0.0 for p in positives for n in negatives
+    )
+    return wins / (len(positives) * len(negatives))
+
+
+def usefulness(forecast, outcome, *, mu=USEFULNESS_MU):
+    """Sarlin's usefulness of the best alarm `forecast >= theta`, in sample.
+
+    loss(theta) = mu * missed-event rate + (1 - mu) * false-alarm rate;
+    absolute = min(mu, 1 - mu) - min over theta of loss. `None` when a class is empty.
+    """
+
+    positives = sum(1 for o in outcome if o)
+    negatives = len(outcome) - positives
+    if not positives or not negatives:
+        return None
+    blind = min(mu, 1.0 - mu)
+    best = min(
+        mu * sum(1 for f, o in zip(forecast, outcome) if o and f < theta) / positives
+        + (1.0 - mu) * sum(1 for f, o in zip(forecast, outcome) if not o and f >= theta) / negatives
+        for theta in sorted(set(forecast))
+    )
+    return {"mu": mu, "loss": best, "absolute": blind - best, "relative": (blind - best) / blind}
+
+
+def lead_time(forecast, days, onset_days, *, level=ALARM_LEVEL):
+    """`pressure.lead_times` at this study's one horizon (h = 1)."""
+
+    by_day = dict(zip(days, forecast))
+    found = pressure.lead_times({1: by_day}, list(onset_days), level)
+    return {key: found[key] for key in ("alarm_level", "onsets", "flagged", "mean_lead_days")}
+
+
+def early_warning(forecast, outcome, days, target, rows, targets):
+    """AUROC, usefulness and lead time of one model at one target, pooled."""
+
+    if target == "leap":
+        onset_days = [days[k] for k in onset.leap_onset_group(targets, days) if outcome[k]]
+    else:
+        onset_days = pressure.onsets(rows, float(target.split("_")[1]), days)
+    return {
+        "auroc": auroc(forecast, outcome),
+        "usefulness": usefulness(forecast, outcome),
+        "lead_time": lead_time(forecast, days, onset_days),
+    }
 
 
 def leap_level(*, anchor_bp: float, jump_bp: float) -> float:
@@ -138,6 +197,14 @@ def _candidates(declaration):
     for name, features in PREDICTORS.items():
         if name.startswith("gbm"):
             predictor = _predictor("gbm", features)
+        elif name == "probit_literature":
+            predictor = ml.pressure_probit_exceedance(
+                features, declaration, minimum_history=MINIMUM_HISTORY
+            )
+        elif name == "quantile_literature":
+            predictor = ml.pressure_quantile_exceedance(
+                features, declaration, minimum_history=MINIMUM_HISTORY
+            )
         else:
             predictor = ml.dynamic_logit_exceedance(
                 features, declaration, minimum_history=MINIMUM_HISTORY
@@ -183,23 +250,32 @@ def run(panel_path: Path, journal: Path) -> dict:
     require_unlocked(days, where="conditional_holdout")
     taus = tuple(sorted({float(t) for t in PRESSURE_TAUS} | set(levels)))
 
-    curves, last_train = {}, {}
+    curves, last_train, not_scored = {}, {}, {}
     for name, predictor, features in _candidates(declaration):
         per_day = []
         for window in windows:
-            report = evaluate_event_window(
-                rows, predictor, window, features=features, registry=registry,
-                decision_time=DECISION_TIME, taus=taus,
-                model_config={
-                    "model": name, "study": "conditional_holdout (#372)",
-                    "features": sorted(features), "minimum_history": MINIMUM_HISTORY,
-                    "taus_bp": list(taus),
-                },
-                journal_path=journal,
-            )
+            try:
+                report = evaluate_event_window(
+                    rows, predictor, window, features=features, registry=registry,
+                    decision_time=DECISION_TIME, taus=taus,
+                    model_config={
+                        "model": name, "study": "conditional_holdout (#372)",
+                        "features": sorted(features), "minimum_history": MINIMUM_HISTORY,
+                        "taus_bp": list(taus),
+                    },
+                    journal_path=journal,
+                )
+            except ValueError as error:
+                if name in BENCHMARKS:
+                    raise
+                not_scored[name] = f"{window.name}: {error}"
+                per_day = None
+                break
             last_train[window.name] = report.last_train_date
             for when, curve in zip(report.scored_dates, report.exceedance):
                 per_day.append((when, curve))
+        if per_day is None:
+            continue
         if [d for d, _ in per_day] != days:
             raise ValueError(f"{name} scored different days from the declared windows")
         curves[name] = [curve for _, curve in per_day]
@@ -249,6 +325,7 @@ def run(panel_path: Path, journal: Path) -> dict:
         "days": [d.isoformat() for d in days],
         "leap": {"jump_bp": jump, "levels_bp": levels},
         "bootstrap": {"block_length": BLOCK_LENGTH, "replications": REPLICATIONS, "level": LEVEL},
+        "not_scored": not_scored,
         "results": {},
     }
     for target in TARGETS:
@@ -256,6 +333,9 @@ def run(panel_path: Path, journal: Path) -> dict:
         target_groups = leap_groups if target == "leap" else groups
         entry = {"days": len(days), "events": sum(outcome)}
         for position, name in enumerate(PREDICTORS):
+            if name not in curves:
+                entry[name] = {"not_scored": not_scored[name], "verdict": "not scored"}
+                continue
             columns = {
                 model: forecasts[model][target] for model in (name,) + BENCHMARKS
             }
@@ -285,6 +365,11 @@ def run(panel_path: Path, journal: Path) -> dict:
                 "splits": splits,
                 "verdict": cell_verdict(pooled, cells),
             }
+        for model in list(PREDICTORS) + list(BENCHMARKS):
+            if model in forecasts:
+                entry.setdefault(model, {})["early_warning"] = early_warning(
+                    forecasts[model][target], outcome, days, target, rows, targets
+                )
         document["results"][target] = entry
     return document
 
