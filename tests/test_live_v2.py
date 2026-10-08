@@ -24,7 +24,7 @@ import json
 import unittest
 from datetime import date
 
-from test_live_record import _record, _scoring_records, _script, live, score, SPLITS  # noqa: F401
+from test_live_record import _have_ml, _record, _scoring_records, _script, live, score, SPLITS  # noqa: F401
 from test_live_record import setUpModule, tearDownModule  # noqa: F401
 
 from repo_model.contract import QUANTILE_LEVELS
@@ -277,6 +277,7 @@ if __name__ == "__main__":
     unittest.main()
 
 
+@unittest.skipUnless(_have_ml(), "pressure model v2 needs the ml extra")
 class V2AgreementTests(unittest.TestCase):
     """The daily script's v2 vector is the one v2's walk published for that target day.
 
