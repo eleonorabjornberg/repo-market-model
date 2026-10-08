@@ -9,16 +9,24 @@ tests build small synthetic series so each rule has a known answer.
 
 **Recorded mutations** (CLAUDE.md: each new leakage guard carries one that kills it).
 
-* `Declaration.cutoff` refuses a cut-off the declaration does not carry, and a
-  requested cut-off that differs from the declared one. Mutation 1: in
-  `pressure_judge.Declaration.cutoff`, replace the `raise ValueError(...)` for a
-  missing cut-off with `return 0.5`; the failing test was
-  `test_refuses_a_cutoff_that_is_not_declared`, which raised `AssertionError`
-  (`ValueError not raised`). Mutation 2: replace
-  `if requested is not None and float(requested) != float(declared):` with
-  `if False:`; the failing test was
-  `test_refuses_a_requested_cutoff_that_differs_from_the_declared_one`, also
-  `AssertionError` (`ValueError not raised`).
+* A flag cut-off is chosen from a refit's training window alone (#407; the fixed,
+  declared cut-off of #375 is gone). `select_cutoff` refuses a window that reaches
+  past the refit's training end. Mutation 1: in `pressure_judge.select_cutoff`,
+  replace `if late:` with `if False:`; the failing tests were
+  `test_a_window_that_reaches_past_the_training_end_is_refused` and
+  `test_a_window_with_a_day_but_no_training_end_is_refused`, which raised
+  `AssertionError` (`LookAheadError not raised`).
+  Mutation 2: in `pressure_judge.choose_cutoffs`, replace
+  `last_known = position[block[0]] - forecast.horizon - 1` with
+  `last_known = position[block[0]] - forecast.horizon` (the training window
+  then reaches the day before the first decision instant, whose outcome is not
+  yet published); the failing test was
+  `test_training_ends_the_business_day_before_the_first_decision_instant`
+  (`AssertionError: False is not true`). Mutation 3: in
+  `pressure_judge._check_forecasts`, replace
+  `if forecast.cutoff_rule != declaration.sha256:` with `if False:`; the failing
+  test was `test_refuses_cutoffs_that_were_not_chosen_under_this_declaration`
+  (`AssertionError: ValueError not raised`).
 * `require_scored_days` refuses a day the lockbox holds.
   Mutation: delete the `lockbox.require_unlocked(...)` call in
   `pressure_judge.require_scored_days`. The failing tests were
@@ -49,6 +57,7 @@ tests build small synthetic series so each rule has a known answer.
 from __future__ import annotations
 
 import json
+import math
 import tempfile
 import unittest
 from datetime import date, timedelta
@@ -76,6 +85,10 @@ def _declaration(**overrides):
         "primary_threshold_bp": 5,
         "horizons": [1, 2],
         "bootstrap": {"level": 0.9, "replications": 200, "block_length": 5, "seed": 375},
+        "cutoff_rule": {
+            "false_alarms_per_onset_at_most": 2.0, "refit_every": 20,
+            "no_onsets": "never_flag", "none_meets_limit": "never_flag",
+        },
         "tiers": {
             "onset_warning": {
                 "lead_at_least": 1, "recall_at_least": 0.5, "false_alarms_per_onset_at_most": 2.0,
@@ -94,19 +107,15 @@ def _declaration(**overrides):
         "candidates": {
             "calendar_climatology": {
                 "role": "benchmark", "features": ["day_type"], "calibration": "none",
-                "cutoffs": {"5": 0.2, "10": 0.2},
             },
             "persistence_logistic": {
                 "role": "benchmark", "features": ["spread_bps"], "calibration": "none",
-                "cutoffs": {"5": 0.2, "10": 0.2},
             },
             "sharp": {
                 "role": "candidate", "features": ["x"], "calibration": "none",
-                "cutoffs": {"5": 0.5, "10": 0.5},
             },
             "published": {
                 "role": "baseline", "features": ["x"], "calibration": "none",
-                "cutoffs": {"5": 0.5, "10": 0.5},
             },
         },
     }
@@ -126,21 +135,24 @@ def _load(**overrides):
 
 
 class Series:
-    """A 400-day series: a pressure day every 20th day, each an onset; flat climatology.
+    """A 400-day series: a pressure day every 20th day (k = 4, 24, ...), each an onset.
 
     The first 200 days are scarcity state 0, the rest state 2. Regime "a" is
-    2019, regime "b" the rest. Every 10th day is a scheduled risk date.
+    2019, regime "b" the rest. Every 10th day (k = 4, 14, ...) is a scheduled risk
+    date. With the declaration's refit every 20 days, the first refit has no
+    training window and flags nothing, so a candidate that flags every pressure
+    day it has seen misses the first onset only.
     """
 
     def __init__(self, count=400, start=date(2019, 1, 1)):
         self.dates = tuple(_weekdays(count, start))
-        self.y5 = tuple(1 if k % 20 == 19 else 0 for k in range(count))
-        self.y10 = tuple(1 if k % 40 == 39 else 0 for k in range(count))
+        self.y5 = tuple(1 if k % 20 == 4 else 0 for k in range(count))
+        self.y10 = tuple(1 if k % 40 == 24 else 0 for k in range(count))
         self.groups = {
             "regime": tuple("a" if d.year == 2019 else "b" for d in self.dates),
-            "day_type": tuple("quarter_end" if k % 10 == 9 else "ordinary" for k in range(count)),
+            "day_type": tuple("quarter_end" if k % 10 == 4 else "ordinary" for k in range(count)),
             "scarcity_state": tuple("0" if k < 200 else "2" for k in range(count)),
-            "risk_date": tuple("1" if k % 10 == 9 else "0" for k in range(count)),
+            "risk_date": tuple("1" if k % 10 == 4 else "0" for k in range(count)),
         }
 
     def grid(self, horizon):
@@ -150,6 +162,7 @@ class Series:
             outcomes={5.0: self.y5, 10.0: self.y10},
             groups=self.groups,
             onset=self.y5,
+            onsets={5.0: self.y5, 10.0: self.y10},
         )
 
     def forecast(self, name, horizon, p5, p10=None):
@@ -187,43 +200,36 @@ class DeclarationTests(unittest.TestCase):
         declaration = _load()
         self.assertEqual(declaration.horizons, (1, 2))
         self.assertEqual(len(declaration.sha256), 64)
-        self.assertEqual(declaration.cutoff("sharp", 5.0, 1), 0.5)
         self.assertEqual(declaration.week_days, 2)
 
-    def test_refuses_a_cutoff_that_is_not_declared(self):
+    def test_the_cutoff_rule_is_declared_and_read(self):
         declaration = _load()
-        with self.assertRaises(ValueError):
-            declaration.cutoff("sharp", 20.0, 1)
-        with self.assertRaises(ValueError):
-            declaration.cutoff("not_declared", 5.0, 1)
+        self.assertEqual(declaration.cutoff_false_alarms_at_most, 2.0)
+        self.assertEqual(declaration.cutoff_refit_every, 20)
+        self.assertEqual(pj.load_declaration().cutoff_false_alarms_at_most, 2.0)
+        self.assertEqual(pj.load_declaration().cutoff_refit_every, 21)
 
-    def test_refuses_a_requested_cutoff_that_differs_from_the_declared_one(self):
-        declaration = _load()
-        self.assertEqual(declaration.cutoff("sharp", 5.0, 1, requested=0.5), 0.5)
-        with self.assertRaises(ValueError):
-            declaration.cutoff("sharp", 5.0, 1, requested=0.3)
-
-    def test_a_candidate_with_no_cutoff_for_a_threshold_does_not_load(self):
+    def test_a_declaration_without_a_cutoff_rule_does_not_load(self):
         document = _declaration()
-        del document["candidates"]["sharp"]["cutoffs"]["10"]
+        del document["cutoff_rule"]
         with self.assertRaises(ValueError):
             pj.load_declaration(_write(document))
 
-    def test_a_cutoff_must_be_a_probability(self):
-        for bad in (0.0, 1.0, 1.5, True, "0.5"):
+    def test_the_rules_for_a_window_without_onsets_must_be_declared_as_never_flag(self):
+        for key in ("no_onsets", "none_meets_limit"):
             document = _declaration()
-            document["candidates"]["sharp"]["cutoffs"]["5"] = bad
-            with self.assertRaises(ValueError, msg=repr(bad)):
+            document["cutoff_rule"][key] = "flag_everything"
+            with self.assertRaises(ValueError, msg=key):
+                pj.load_declaration(_write(document))
+            del document["cutoff_rule"][key]
+            with self.assertRaises(ValueError, msg=key):
                 pj.load_declaration(_write(document))
 
-    def test_a_per_horizon_cutoff_must_cover_every_horizon(self):
+    def test_a_candidate_may_not_declare_a_fixed_cutoff(self):
         document = _declaration()
-        document["candidates"]["sharp"]["cutoffs"]["5"] = {"1": 0.4}
+        document["candidates"]["sharp"]["cutoffs"] = {"5": 0.2, "10": 0.2}
         with self.assertRaises(ValueError):
             pj.load_declaration(_write(document))
-        document["candidates"]["sharp"]["cutoffs"]["5"] = {"1": 0.4, "2": 0.3}
-        declaration = pj.load_declaration(_write(document))
-        self.assertEqual(declaration.cutoff("sharp", 5.0, 2), 0.3)
 
     def test_the_benchmarks_must_be_declared_candidates(self):
         document = _declaration()
@@ -318,14 +324,38 @@ class GuardTests(unittest.TestCase):
         named = _load()
         unnamed = _load(confirmation={"first": "2026-01-01", "last": "2026-09-03", "candidates": []})
         grids, forecasts = series.everything(lambda h: series.perfect(h))
-        result = pj.judge(named, grids, forecasts, calendar=series.dates, confirmation=True)
+        chosen = pj.choose_cutoffs(named, grids, forecasts, series.dates)
+        result = pj.judge(named, grids, chosen, calendar=series.dates, confirmation=True)
         self.assertEqual(result["mode"], "confirmation")
+        chosen = pj.choose_cutoffs(unnamed, grids, forecasts, series.dates)
         with self.assertRaises(ValueError):
-            pj.judge(unnamed, grids, forecasts, calendar=series.dates, confirmation=True)
+            pj.judge(unnamed, grids, chosen, calendar=series.dates, confirmation=True)
         # In development the same declaration scores the candidate without a list.
         development = Series()
         grids, forecasts = development.everything(lambda h: development.perfect(h))
         pj.judge(unnamed, grids, forecasts, calendar=development.dates)
+
+    def test_the_look_needs_cutoffs_chosen_on_the_days_before_its_window(self):
+        series = Series(count=60, start=date(2026, 1, 5))
+        grids, forecasts = series.everything(lambda h: series.perfect(h))
+        with self.assertRaises(ValueError):
+            pj.judge(_load(), grids, forecasts, calendar=series.dates, confirmation=True)
+
+    def test_refuses_cutoffs_that_were_not_chosen_under_this_declaration(self):
+        series = Series()
+        grids, forecasts = series.everything(lambda h: series.perfect(h))
+        declaration = _load()
+        chosen = pj.choose_cutoffs(declaration, grids, forecasts, series.dates)
+        pj.judge(declaration, grids, chosen, calendar=series.dates)
+        forged = [
+            pj.Forecast(
+                name=f.name, horizon=f.horizon, dates=f.dates, probabilities=f.probabilities,
+                cutoffs={tau: (0.2,) * len(f.dates) for tau in f.probabilities}, cutoff_rule="0" * 64,
+            )
+            for f in forecasts
+        ]
+        with self.assertRaises(ValueError):
+            pj.judge(declaration, grids, forged, calendar=series.dates)
 
     def test_refuses_a_candidate_that_is_not_declared(self):
         series = Series()
@@ -373,6 +403,209 @@ class GuardTests(unittest.TestCase):
             pj.judge(_load(), grids, forecasts, calendar=series.dates)
 
 
+class CutoffTests(unittest.TestCase):
+    """The flag cut-off is chosen from a refit's training window alone (#407)."""
+
+    def days(self, count):
+        return _weekdays(count)
+
+    def test_picks_the_cutoff_with_the_most_onset_recall_within_the_false_alarm_limit(self):
+        # Onsets at p = .9 and .5; non-pressure days at .7, .6, .4, .3 (limit: 2 per onset = 4 in all).
+        days = self.days(8)
+        p = [0.9, 0.7, 0.6, 0.5, 0.4, 0.3, 0.1, 0.1]
+        pressure = [1, 0, 0, 1, 0, 0, 0, 0]
+        onset = [1, 0, 0, 1, 0, 0, 0, 0]
+        declaration = _load()
+        got = pj.select_cutoff(
+            declaration, days=days, probabilities=p, pressure=pressure, onset=onset, training_end=days[-1]
+        )
+        # At 0.5 both onsets are caught with 2 false alarms (1 per onset); at 0.3 also two, with 4
+        # false alarms (2 per onset, within the limit) -- the same recall, so the higher cut-off wins.
+        self.assertEqual(got, 0.5)
+
+    def test_a_lower_cutoff_that_buys_recall_within_the_limit_is_taken(self):
+        days = self.days(6)
+        p = [0.9, 0.8, 0.7, 0.6, 0.2, 0.1]
+        pressure = [0, 0, 1, 0, 1, 0]
+        onset = [0, 0, 1, 0, 1, 0]
+        got = pj.select_cutoff(
+            _load(), days=days, probabilities=p, pressure=pressure, onset=onset, training_end=days[-1]
+        )
+        # 0.7: one of two onsets, 2 false alarms (1 per onset). 0.2: both onsets, 3 false alarms (1.5 per onset).
+        self.assertEqual(got, 0.2)
+
+    def test_stops_at_the_limit(self):
+        days = self.days(4)
+        p = [0.9, 0.8, 0.7, 0.6]
+        pressure = [0, 0, 0, 1]
+        onset = [0, 0, 0, 1]
+        got = pj.select_cutoff(
+            _load(), days=days, probabilities=p, pressure=pressure, onset=onset, training_end=days[-1]
+        )
+        # The one onset is reached only after 3 false alarms (3 per onset), over the limit of 2.
+        self.assertEqual(got, math.inf)
+        # With a second onset to share them (1.5 per onset), it is reached.
+        five = self.days(5)
+        got = pj.select_cutoff(
+            _load(), days=five, probabilities=[0.95, 0.9, 0.8, 0.7, 0.6],
+            pressure=[1, 0, 0, 0, 1], onset=[1, 0, 0, 0, 1], training_end=five[-1],
+        )
+        self.assertEqual(got, 0.6)
+
+    def test_a_window_with_no_onset_never_flags(self):
+        days = self.days(4)
+        got = pj.select_cutoff(
+            _load(), days=days, probabilities=[0.9, 0.8, 0.1, 0.1], pressure=[0, 0, 0, 0],
+            onset=[0, 0, 0, 0], training_end=days[-1],
+        )
+        self.assertEqual(got, math.inf)
+
+    def test_an_empty_window_never_flags(self):
+        self.assertEqual(
+            pj.select_cutoff(
+                _load(), days=[], probabilities=[], pressure=[], onset=[], training_end=None
+            ),
+            math.inf,
+        )
+
+    def test_a_window_that_reaches_past_the_training_end_is_refused(self):
+        """Guard: a cut-off is not chosen from a day after the refit's training end.
+
+        Mutation: in `pressure_judge.select_cutoff`, replace `if late:` with `if False:`; the failing
+        tests were `test_a_window_that_reaches_past_the_training_end_is_refused` and
+        `test_a_window_with_a_day_but_no_training_end_is_refused`, which raised `AssertionError`
+        (`LookAheadError not raised`).
+        """
+
+        days = self.days(5)
+        kwargs = dict(
+            probabilities=[0.1, 0.2, 0.3, 0.4, 0.9], pressure=[0, 0, 0, 0, 1], onset=[0, 0, 0, 0, 1]
+        )
+        with self.assertRaises(LookAheadError):
+            pj.select_cutoff(_load(), days=days, training_end=days[3], **kwargs)
+        # The same window is fine once the training end reaches its last day.
+        self.assertEqual(pj.select_cutoff(_load(), days=days, training_end=days[4], **kwargs), 0.9)
+
+    def test_a_window_with_a_day_but_no_training_end_is_refused(self):
+        days = self.days(2)
+        with self.assertRaises(LookAheadError):
+            pj.select_cutoff(
+                _load(), days=days, probabilities=[0.1, 0.9], pressure=[0, 1], onset=[0, 1],
+                training_end=None,
+            )
+
+    def test_the_window_lengths_must_agree(self):
+        days = self.days(3)
+        with self.assertRaises(ValueError):
+            pj.select_cutoff(
+                _load(), days=days, probabilities=[0.1, 0.9], pressure=[0, 1, 0], onset=[0, 1, 0],
+                training_end=days[-1],
+            )
+
+
+class ChooseCutoffsTests(unittest.TestCase):
+    """`choose_cutoffs`: one cut-off per refit block, from the days known at the block's first decision."""
+
+    def one_onset(self, position):
+        """A 60-day series with a single pressure day (an onset) at `position`, flagged with p = 1."""
+
+        series = Series(count=60)
+        series.y5 = tuple(1 if k == position else 0 for k in range(60))
+        series.y10 = tuple(0 for _ in range(60))
+        forecast = series.forecast(
+            "sharp", 1, [1.0 if k == position else 0.0 for k in range(60)], [0.0] * 60
+        )
+        return series, forecast
+
+    def cutoffs(self, series, forecast, horizon=1):
+        declaration = _load()
+        grid = series.grid(horizon)
+        forecast = pj.Forecast(
+            name=forecast.name, horizon=horizon, dates=forecast.dates, probabilities=forecast.probabilities
+        )
+        (chosen,) = pj.choose_cutoffs(declaration, {horizon: grid}, [forecast], series.dates)
+        return chosen.cutoffs[5.0]
+
+    def test_the_first_refit_has_no_training_window_and_flags_nothing(self):
+        series, forecast = self.one_onset(4)
+        cutoffs = self.cutoffs(series, forecast)
+        self.assertTrue(all(math.isinf(c) for c in cutoffs[:20]))
+        self.assertEqual(cutoffs[20:40], (1.0,) * 20)
+        self.assertEqual(cutoffs[40:], (1.0,) * 20)
+
+    def test_the_cutoff_is_constant_within_a_refit_block(self):
+        series, forecast = self.one_onset(4)
+        cutoffs = self.cutoffs(series, forecast)
+        for start in (0, 20, 40):
+            self.assertEqual(len(set(cutoffs[start : start + 20])), 1)
+
+    def test_training_ends_the_business_day_before_the_first_decision_instant(self):
+        # Block 1 starts at day 20; at horizon 1 its first decision instant is day 19, and a day's
+        # outcome is read from the next morning, so day 18 is the last training day. An onset on
+        # day 18 is read; one on day 19 is not.
+        series, forecast = self.one_onset(18)
+        self.assertEqual(self.cutoffs(series, forecast)[20], 1.0)
+        series, forecast = self.one_onset(19)
+        self.assertTrue(math.isinf(self.cutoffs(series, forecast)[20]))
+        # At horizon 2 the decision instant is day 18 and the last training day 17.
+        series, forecast = self.one_onset(17)
+        self.assertEqual(self.cutoffs(series, forecast, horizon=2)[20], 1.0)
+        series, forecast = self.one_onset(18)
+        self.assertTrue(math.isinf(self.cutoffs(series, forecast, horizon=2)[20]))
+
+    def test_no_day_of_the_block_or_after_it_is_read(self):
+        series = Series()
+        base = series.perfect(1)
+        reference = self.cutoffs(series, base)
+        # Rewrite every probability and outcome from day 220 on: blocks starting by day 220
+        # (their windows end by day 218) are unchanged.
+        late = [0.3 if k >= 220 else p for k, p in enumerate(base.probabilities[5.0])]
+        series.y5 = tuple(0 if k >= 220 else y for k, y in enumerate(series.y5))
+        changed = self.cutoffs(series, series.forecast("sharp", 1, late, late))
+        self.assertEqual(changed[:221], reference[:221])
+        self.assertEqual(changed[220], reference[220])
+
+    def test_each_threshold_uses_its_own_pressure_days_and_onsets(self):
+        series = Series()
+        forecast = series.forecast(
+            "sharp", 1,
+            [0.8 if y else 0.0 for y in series.y5],
+            [0.6 if y else 0.0 for y in series.y10],
+        )
+        declaration = _load()
+        (chosen,) = pj.choose_cutoffs(declaration, {1: series.grid(1)}, [forecast], series.dates)
+        # +5 bp: onsets every 20 days, flagged at 0.8. +10 bp: every 40 days, at 0.6.
+        self.assertEqual(chosen.cutoffs[5.0][100], 0.8)
+        self.assertEqual(chosen.cutoffs[10.0][100], 0.6)
+        self.assertEqual(chosen.cutoff_rule, declaration.sha256)
+
+    def test_a_grid_without_onsets_at_a_threshold_is_refused(self):
+        series = Series()
+        grid = series.grid(1)
+        grid = pj.Grid(
+            horizon=1, dates=grid.dates, outcomes=grid.outcomes, groups=grid.groups, onset=grid.onset
+        )
+        with self.assertRaises(ValueError):
+            pj.choose_cutoffs(_load(), {1: grid}, [series.perfect(1)], series.dates)
+
+    def test_forecasts_must_be_on_the_grids_days(self):
+        series = Series()
+        shorter = pj.Forecast(
+            name="sharp", horizon=1, dates=series.dates[:-1],
+            probabilities={tau: column[:-1] for tau, column in series.perfect(1).probabilities.items()},
+        )
+        with self.assertRaises(ValueError):
+            pj.choose_cutoffs(_load(), {1: series.grid(1)}, [shorter], series.dates)
+
+    def test_a_forecast_cut_to_the_look_window_keeps_the_cutoffs_chosen_before_it(self):
+        series = Series()
+        declaration = _load()
+        (chosen,) = pj.choose_cutoffs(declaration, {1: series.grid(1)}, [series.perfect(1)], series.dates)
+        cut = pj.restrict_forecast(chosen, series.dates[100], series.dates[199])
+        self.assertEqual(cut.cutoffs[5.0], chosen.cutoffs[5.0][100:200])
+        self.assertEqual(cut.cutoff_rule, declaration.sha256)
+
+
 class MetricTests(unittest.TestCase):
     def test_auroc_counts_ties_as_half(self):
         self.assertEqual(pj.auroc([0.9, 0.8, 0.1, 0.2], [1, 1, 0, 0]), 1.0)
@@ -416,7 +649,9 @@ class TierTests(unittest.TestCase):
         sharp = result["candidates"]["sharp"]
         near = sharp["tiers"]["onset_warning"]["lead_at_least_1"]
         self.assertEqual(near["onsets"], 20)
-        self.assertEqual(near["recall"]["mean"], 1.0)
+        # The first refit has no training window and flags nothing: 19 of 20 onsets are flagged.
+        self.assertEqual(near["onsets_flagged"], 19)
+        self.assertEqual(near["recall"]["mean"], 0.95)
         self.assertEqual(near["climatology_recall"], 0.0)
         self.assertEqual(near["worst_false_alarms_per_onset"], 0.0)
         self.assertTrue(all(near["criteria"].values()))
@@ -433,35 +668,54 @@ class TierTests(unittest.TestCase):
         self.assertTrue(verdict["passes"])
         row = sharp["horizons"]["1"]["5"]
         self.assertEqual(row["auroc"], 1.0)
-        self.assertEqual(row["usefulness"]["relative"], 1.0)
+        # Loss 0.5 * (1 missed onset of 20) against a default of 0.5.
+        self.assertAlmostEqual(row["usefulness"]["relative"], 0.95)
 
-    def test_the_cutoff_is_read_from_the_declaration_not_the_scored_days(self):
+    def test_the_cutoff_is_chosen_from_training_days_not_declared(self):
         series = Series()
-        # Probabilities of 0.4 on events: the declared 0.5 flags nothing.
+        # Probabilities of 0.4 on events and 0 elsewhere: a fixed 0.5 would flag nothing, the
+        # training windows put the cut-off at 0.4.
         weak = lambda h: series.forecast("sharp", h, [0.4 if y else 0.0 for y in series.y5])
         grids, forecasts = series.everything(weak)
         result = pj.judge(_load(), grids, forecasts, calendar=series.dates)
         sharp = result["candidates"]["sharp"]
-        self.assertEqual(sharp["horizons"]["1"]["5"]["cutoff"], 0.5)
-        self.assertEqual(sharp["horizons"]["1"]["5"]["flags"]["alarms"], 0)
-        self.assertEqual(sharp["tiers"]["onset_warning"]["lead_at_least_1"]["recall"]["mean"], 0.0)
-        self.assertFalse(sharp["verdict"]["passes"])
-        # The same forecasts under a declared cut-off of 0.3 flag every onset.
-        candidates = {**_declaration()["candidates"], "sharp": {
-            "role": "candidate", "features": ["x"], "calibration": "none", "cutoffs": {"5": 0.3, "10": 0.3}}}
-        result = pj.judge(_load(candidates=candidates), grids, forecasts, calendar=series.dates)
-        self.assertEqual(result["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]["recall"]["mean"], 1.0)
+        cutoff = sharp["horizons"]["1"]["5"]["cutoff"]
+        self.assertEqual((cutoff["minimum"], cutoff["median"], cutoff["maximum"]), (0.4, 0.4, 0.4))
+        # The first refit (days 0-19) has no training window.
+        self.assertEqual(cutoff["days_never_flag"], 20)
+        self.assertEqual(sharp["horizons"]["1"]["5"]["flags"]["alarms"], 19)
+        self.assertEqual(sharp["tiers"]["onset_warning"]["lead_at_least_1"]["onsets_flagged"], 19)
 
-    def test_too_many_false_alarms_fail_tier_one(self):
+    def test_a_noisy_candidate_is_muted_by_its_own_training_window(self):
         series = Series()
+        # Flags 12 days of every 20, the onset among them: 11 false alarms per onset in training, over
+        # the limit of 2, so the rule never flags it.
         noisy = lambda h: series.forecast(
-            "sharp", h, [1.0 if (y or k % 20 < 9) else 0.0 for k, y in enumerate(series.y5)]
+            "sharp", h, [1.0 if k % 20 < 12 else 0.0 for k in range(len(series.dates))]
         )
-        near = series.judged(noisy)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
-        self.assertEqual(near["recall"]["mean"], 1.0)
-        self.assertAlmostEqual(near["worst_false_alarms_per_onset"], 9.0)
+        sharp = series.judged(noisy)["candidates"]["sharp"]
+        self.assertEqual(sharp["tiers"]["onset_warning"]["lead_at_least_1"]["onsets_flagged"], 0)
+        self.assertEqual(sharp["horizons"]["1"]["5"]["flags"]["alarms"], 0)
+        self.assertEqual(sharp["horizons"]["1"]["5"]["cutoff"]["days_never_flag"], 400)
+
+    def test_false_alarms_over_the_tier_limit_fail_tier_one(self):
+        series = Series()
+        # One false alarm the day before each onset: within the training limit of 2 per onset, so it
+        # is flagged, and over a tier limit of 0.5.
+        noisy = lambda h: series.forecast(
+            "sharp", h, [1.0 if (y or k % 20 == 3) else 0.0 for k, y in enumerate(series.y5)]
+        )
+        strict = _declaration()
+        strict["tiers"]["onset_warning"]["false_alarms_per_onset_at_most"] = 0.5
+        grids, forecasts = series.everything(noisy)
+        near = pj.judge(pj.load_declaration(_write(strict)), grids, forecasts, calendar=series.dates)[
+            "candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(near["onsets_flagged"], 19)
+        self.assertAlmostEqual(near["worst_false_alarms_per_onset"], 19 / 20)
         self.assertFalse(near["criteria"]["false_alarms"])
         self.assertFalse(near["passes"])
+        near = series.judged(noisy)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertTrue(near["criteria"]["false_alarms"])
 
     def test_a_candidate_that_only_matches_climatology_fails(self):
         series = Series()
@@ -483,7 +737,7 @@ class TierTests(unittest.TestCase):
             forecasts.append(series.perfect(h))
         result = pj.judge(_load(), grids, forecasts, calendar=series.dates)
         near = result["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
-        self.assertEqual(near["recall"]["mean"], 1.0)
+        self.assertEqual(near["recall"]["mean"], 0.95)
         self.assertEqual(near["climatology_recall"], 1.0)
         self.assertTrue(near["criteria"]["recall"])
         self.assertFalse(near["criteria"]["recall_above_climatology"])
@@ -491,39 +745,51 @@ class TierTests(unittest.TestCase):
 
     def test_the_climatology_is_matched_on_false_alarms_not_on_flags(self):
         series = Series()
-        # A candidate that flags every pressure day plus 19 days in 20 raises many false
-        # alarms; a flat climatology flags in proportion and so catches few onsets.
-        noisy = lambda h: series.forecast("sharp", h, [1.0 if (y or k % 20 != 0) else 0.0 for k, y in enumerate(series.y5)])
+        # A candidate that flags each onset and the two days before it raises 2 false alarms per
+        # onset; a flat climatology that spends the same budget flags in proportion and so
+        # catches few onsets.
+        noisy = lambda h: series.forecast(
+            "sharp", h, [1.0 if k % 20 in (2, 3, 4) else 0.0 for k in range(len(series.dates))]
+        )
         near = series.judged(noisy)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
-        self.assertEqual(near["recall"]["mean"], 1.0)
-        # 360 false alarms of 380 non-pressure days at each of two horizons: a flat
-        # climatology that spends the same budget flags 360/380 of the onsets at each,
-        # and misses one only when it misses at both.
-        self.assertAlmostEqual(near["climatology_recall"], 1.0 - (20 / 380) ** 2, places=6)
+        self.assertEqual(near["recall"]["mean"], 0.95)
+        self.assertEqual(near["worst_false_alarms_per_onset"], 38 / 20)
+        # 38 false alarms of 380 non-pressure days at each of two horizons: a flat climatology
+        # that spends the same budget flags a tenth of the days at each, and misses an onset
+        # only when it misses at both.
+        self.assertAlmostEqual(near["climatology_recall"], 1.0 - 0.9 ** 2, places=6)
 
     def test_lead_at_least_reads_the_longest_horizon_that_flagged_the_onset(self):
         series = Series()
         # Flags the onsets at h = 1 only: caught at lead >= 1, not at lead >= 2.
         one_day = lambda h: series.perfect(h) if h == 1 else series.flat("sharp", h, 0.0)
         tiers = series.judged(one_day)["candidates"]["sharp"]["tiers"]["onset_warning"]
-        self.assertEqual(tiers["lead_at_least_1"]["recall"]["mean"], 1.0)
+        self.assertEqual(tiers["lead_at_least_1"]["recall"]["mean"], 0.95)
         self.assertEqual(tiers["lead_at_least_2"]["recall"]["mean"], 0.0)
         self.assertFalse(tiers["lead_at_least_2"]["meets_far_recall"])
         # Flags at h = 2 only: caught at lead >= 1 as well, and at lead >= 2.
         two_days = lambda h: series.perfect(h) if h == 2 else series.flat("sharp", h, 0.0)
         tiers = series.judged(two_days)["candidates"]["sharp"]["tiers"]["onset_warning"]
-        self.assertEqual(tiers["lead_at_least_1"]["recall"]["mean"], 1.0)
-        self.assertEqual(tiers["lead_at_least_2"]["recall"]["mean"], 1.0)
+        self.assertEqual(tiers["lead_at_least_1"]["recall"]["mean"], 0.95)
+        self.assertEqual(tiers["lead_at_least_2"]["recall"]["mean"], 0.95)
         self.assertTrue(tiers["lead_at_least_2"]["meets_far_recall"])
         self.assertTrue(tiers["lead_at_least_2"]["reported_only"])
 
+    def _wolf(self, series, h=None):
+        """Flags each onset and the two days before it, until day 200, then the onsets only."""
+
+        return series.forecast(
+            "sharp", h, [1.0 if (y or (k < 200 and k % 20 in (2, 3))) else 0.0 for k, y in enumerate(series.y5)]
+        )
+
     def test_a_flag_on_every_abundant_day_is_crying_wolf(self):
         series = Series()
-        wolf = lambda h: series.forecast("sharp", h, [1.0 if k < 200 or y else 0.0 for k, y in enumerate(series.y5)])
-        result = series.judged(wolf)["candidates"]["sharp"]
+        result = series.judged(lambda h: self._wolf(series, h))["candidates"]["sharp"]
         tier = result["tiers"]["no_crying_wolf"]["1"]
         stretch = tier["abundant_stretches"]["scarcity_state_0"]
         self.assertEqual(stretch["days"], 200)
+        # 9 refits of 3 flags in the 200 abundant days.
+        self.assertEqual(stretch["flags"], 27)
         self.assertGreater(stretch["flags_per_year"], 21)
         self.assertFalse(stretch["ok"])
         self.assertFalse(tier["ok"])
@@ -534,8 +800,8 @@ class TierTests(unittest.TestCase):
         series = Series()
         result = series.judged(lambda h: series.perfect(h))["candidates"]["sharp"]
         stretch = result["tiers"]["no_crying_wolf"]["1"]["abundant_stretches"]["scarcity_state_0"]
-        # Ten pressure days flagged in 200 days.
-        self.assertAlmostEqual(stretch["flags_per_year"], 10 / 200 * 252)
+        # Nine of the ten pressure days of the 200 days are flagged (the first refit flags nothing).
+        self.assertAlmostEqual(stretch["flags_per_year"], 9 / 200 * 252)
         regime = result["tiers"]["no_crying_wolf"]["1"]["abundant_stretches"]["regime_b"]
         self.assertTrue(regime["days"] > 0)
 
@@ -550,15 +816,68 @@ class TierTests(unittest.TestCase):
         self.assertTrue(result["tiers"]["no_crying_wolf"]["1"]["abundant_stretches"]["scarcity_state_0"]["ok"])
         self.assertFalse(result["tiers"]["no_crying_wolf"]["1"]["ok"])
 
+    def test_calibration_is_tested_only_in_regimes_with_a_pressure_day(self):
+        series = Series()
+        # Pressure only from day 261 on, the start of regime "b": regime "a" has no pressure day.
+        series.y5 = tuple(1 if (k >= 261 and k % 20 == 4) else 0 for k in range(400))
+        series.y10 = tuple(0 for _ in range(400))
+        # Regime "a" is predicted at 10% where nothing happens (miscalibrated); regime "b" at the
+        # 5% it runs at.
+        forecast = lambda h: series.forecast(
+            "sharp", h, [0.1 if k < 261 else 0.05 for k in range(400)], [0.0] * 400
+        )
+        result = series.judged(forecast)["candidates"]["sharp"]
+        wolf = result["tiers"]["no_crying_wolf"]["1"]
+        self.assertEqual(wolf["calibrated_by_regime"], {"b": True})
+        self.assertEqual(set(wolf["calibration_reported_regimes"]), {"a"})
+        self.assertFalse(wolf["calibration_reported_regimes"]["a"]["covers_zero"])
+        self.assertEqual(wolf["calibration_reported_regimes"]["a"]["events"], 0)
+        # The untested regime does not decide tier 3.
+        self.assertTrue(wolf["ok"])
+
     def test_tier_three_needs_every_lead(self):
         series = Series()
-        wolf_at_two = lambda h: series.perfect(h) if h == 1 else series.forecast(
-            "sharp", h, [1.0 if k < 200 or y else 0.0 for k, y in enumerate(series.y5)]
-        )
+        wolf_at_two = lambda h: series.perfect(h) if h == 1 else self._wolf(series, h)
         verdict = series.judged(wolf_at_two)["candidates"]["sharp"]["verdict"]
         self.assertTrue(verdict["tier_3_no_crying_wolf_by_horizon"]["1"])
         self.assertFalse(verdict["tier_3_no_crying_wolf_by_horizon"]["2"])
         self.assertFalse(verdict["passes"])
+
+    def test_the_scarce_regime_pass_is_reported_beside_the_pass_rule(self):
+        series = Series()
+        verdict = series.judged(lambda h: series.perfect(h))["candidates"]["sharp"]["verdict"]
+        scarce = verdict["scarce_regime"]
+        self.assertTrue(scarce["reported_only"])
+        self.assertEqual(scarce["scarcity_state_at_least"], 2)
+        # Days 200-399 are state 2: ten onsets, none missed (every refit from day 200 has seen onsets).
+        self.assertEqual(scarce["days_by_horizon"], {"1": 200, "2": 200})
+        self.assertEqual(scarce["onsets"], 10)
+        self.assertEqual(scarce["recall"]["mean"], 1.0)
+        self.assertTrue(scarce["tier_1_onset_warning"])
+        self.assertTrue(scarce["tier_3_no_crying_wolf"])
+        self.assertTrue(scarce["tier_5_week_ahead"])
+        self.assertTrue(scarce["passes"])
+
+    def test_the_scarce_regime_pass_is_not_part_of_the_pass_rule(self):
+        series = Series()
+        # Pressure only in the first 200 days (all abundant): the scarce regime has no onset, so it
+        # cannot pass, and the pass rule on all days does not care.
+        series.y5 = tuple(1 if (k < 200 and k % 20 == 4) else 0 for k in range(400))
+        series.y10 = tuple(0 for _ in range(400))
+        perfect = lambda h: series.forecast(
+            "sharp", h, [1.0 if y else 0.0 for y in series.y5], [0.0] * 400
+        )
+        verdict = series.judged(perfect)["candidates"]["sharp"]["verdict"]
+        self.assertFalse(verdict["scarce_regime"]["passes"])
+        self.assertFalse(verdict["scarce_regime"]["tier_1_onset_warning"])
+        self.assertTrue(verdict["passes"])
+
+    def test_the_scarce_regime_is_unavailable_with_no_scarce_day(self):
+        series = Series()
+        series.groups = {**series.groups, "scarcity_state": tuple("0" for _ in range(400))}
+        verdict = series.judged(lambda h: series.perfect(h))["candidates"]["sharp"]["verdict"]
+        self.assertFalse(verdict["scarce_regime"]["passes"])
+        self.assertIn("unavailable", verdict["scarce_regime"])
 
     def test_risky_dates_are_scored_in_scarcity_state_two_or_more(self):
         series = Series()
@@ -575,10 +894,10 @@ class TierTests(unittest.TestCase):
     def test_the_week_ahead_window_is_one_if_any_of_the_next_days_is_a_pressure_day(self):
         series = Series()
         week = series.judged(lambda h: series.perfect(h))["candidates"]["sharp"]["tiers"]["week_ahead"]
-        # Decision days 0..397 have both targets: pressure days at 19, 39, ... flag the
+        # Decision days 0..397 have both targets: pressure days at 4, 24, ... flag the
         # two days before them.
         self.assertEqual(week["days"], 398)
-        self.assertEqual(week["events"], 39)
+        self.assertEqual(week["events"], 40)
         self.assertEqual(week["brier"], 0.0)
         self.assertEqual(week["combine"], "independence")
 
@@ -610,7 +929,8 @@ class TierTests(unittest.TestCase):
         self.assertEqual(set(row["splits"]), {"regime", "day_type"})
         self.assertEqual(set(row["splits"]["regime"]), {"a", "b"})
         cell = row["splits"]["regime"]["a"]
-        self.assertEqual(cell["flags"]["recall"], 1.0)
+        # Regime "a" (2019) holds 13 onsets; the first falls in the refit with no training window.
+        self.assertEqual(cell["flags"]["recall"], 12 / 13)
         self.assertIn("brier_difference_vs_climatology", cell)
         self.assertIn("realised_minus_predicted", cell)
         held = row["holdouts"]["window"]
@@ -699,6 +1019,9 @@ class InputTests(unittest.TestCase):
         self.assertEqual(grid.outcomes[5.0], (0,) * 6 + (1, 1, 1))
         self.assertEqual(grid.outcomes[10.0], (0,) * 8 + (1,))
         self.assertEqual(grid.onset, (0,) * 6 + (1, 0, 0))
+        # Onsets at every declared threshold, for the cut-off rule: +10 bp opens on the 11.
+        self.assertEqual(grid.onsets[5.0], grid.onset)
+        self.assertEqual(grid.onsets[10.0], (0,) * 8 + (1,))
         self.assertEqual(grid.groups["scarcity_state"][6:8], ("2", "unknown"))
         self.assertEqual(grid.groups["regime"], ("2018-19",) * 9)
         self.assertEqual(grid.groups["risk_date"], ("0",) * 6 + ("1", "0", "1"))

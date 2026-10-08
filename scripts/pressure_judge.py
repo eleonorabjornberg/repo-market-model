@@ -205,24 +205,32 @@ def judge_command(args) -> int:
         if document["panel_sha256"] != digest:
             raise SystemExit(f"{path} was scored on another panel ({document['panel_sha256'][:8]})")
         forecasts.extend(pj.forecasts_from_horizon_document(document))
+    # The flag cut-off of every forecast is chosen refit by refit from the development days before it
+    # (`pressure_judge.choose_cutoffs`), on a grid of all the days the forecast file holds; the single
+    # look then scores the declared window and nothing else.
+    last = declaration.confirmation_last if args.confirmation else declaration.last_day
+    states = {horizon: _scarcity_states(horizon, last) for horizon in declaration.horizons}
+
+    def grids_of(forecasts):
+        out = {}
+        for horizon in declaration.horizons:
+            reference = next(f for f in forecasts if f.horizon == horizon and f.name == declaration.climatology)
+            out[horizon] = pj.build_grid(
+                declaration, horizon, rows, reference.dates, splits, scarcity_state=states[horizon]
+            )
+        return out
+
+    calendar = [row.date for row in rows]
+    forecasts = pj.choose_cutoffs(declaration, grids_of(forecasts), forecasts, calendar)
     if args.confirmation:
         forecasts = [
             pj.restrict_forecast(f, declaration.confirmation_first, declaration.confirmation_last)
             for f in forecasts
         ]
-
-    grids = {}
-    for horizon in declaration.horizons:
-        reference = next(f for f in forecasts if f.horizon == horizon and f.name == declaration.climatology)
-        grids[horizon] = pj.build_grid(
-            declaration, horizon, rows, reference.dates, splits,
-            scarcity_state=_scarcity_states(
-                horizon, declaration.confirmation_last if args.confirmation else declaration.last_day
-            ),
-        )
+    grids = grids_of(forecasts)
     result = pj.judge(
         declaration, grids, forecasts,
-        calendar=[row.date for row in rows], holdouts=_holdouts(), confirmation=args.confirmation,
+        calendar=calendar, holdouts=_holdouts(), confirmation=args.confirmation,
     )
     result["provenance"] = {
         "panel_sha256": digest,
@@ -260,6 +268,26 @@ def _yes(value):
     return "–" if value is None else ("yes" if value else "no")
 
 
+def _scarce_line(scarce):
+    """The pass within the scarce regime alone: reported, not part of the pass rule."""
+
+    if "unavailable" in scarce:
+        return f" Scarce regime alone (reported only): {scarce['unavailable']}."
+    return (
+        f" Scarce regime alone (state >= {scarce['scarcity_state_at_least']}, reported only): "
+        f"{'pass' if scarce['passes'] else 'fail'} (tier 1 {_yes(scarce['tier_1_onset_warning'])}, "
+        f"tier 3 {_yes(scarce['tier_3_no_crying_wolf'])}, tier 5 {_yes(scarce['tier_5_week_ahead'])}; "
+        f"{scarce['onsets']} onsets)."
+    )
+
+
+def _cutoff(summary):
+    """The cut-offs chosen over the scored days: their median, and the days that flag nothing."""
+
+    median = "–" if "median" not in summary else f"{summary['median']:.3g}"
+    return f"{median} ({summary['days_never_flag']} of {summary['days']} days never flag)"
+
+
 def markdown(result) -> str:
     declaration = result["declaration"]
     primary = f"{declaration['primary_threshold_bp']:g}"
@@ -284,7 +312,8 @@ def markdown(result) -> str:
             "",
             f"Tier 1 {_yes(verdict['tier_1_onset_warning'])}, tier 3 {_yes(verdict['tier_3_no_crying_wolf'])}, "
             f"tier 5 {_yes(verdict['tier_5_week_ahead'])}."
-            + (f" Not scored at horizons {verdict['not_scored']}." if verdict["not_scored"] else ""),
+            + (f" Not scored at horizons {verdict['not_scored']}." if verdict["not_scored"] else "")
+            + _scarce_line(verdict["scarce_regime"]),
             "",
             "| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | worst false alarms per onset | criteria |",
             "|---|---|---|---|---|---|---|",
@@ -315,7 +344,7 @@ def markdown(result) -> str:
             row = per_tau[primary]
             paired = row["paired"]
             lines.append(
-                f"| {horizon} | {row['cutoff']:g} | {row['flags']['alarms']} | {_f(row['flags']['recall'])} | "
+                f"| {horizon} | {_cutoff(row['cutoff'])} | {row['flags']['alarms']} | {_f(row['flags']['recall'])} | "
                 f"{_f(row['flags']['precision'])} | {_f(row['brier'], 4)} | "
                 f"{_cell(paired['vs_calendar_climatology']['brier_difference'])} | "
                 f"{_cell(paired['vs_persistence_logistic']['brier_difference'])} | "
@@ -328,7 +357,13 @@ def markdown(result) -> str:
                 f"{label}: {_f(c['flags_per_year'], 1)} over {c['days']} days" for label, c in wolf["abundant_stretches"].items()
             )
             calibrated = ", ".join(f"{k} {_yes(v)}" for k, v in wolf["calibrated_by_regime"].items())
-            lines.append(f"- h = {horizon}: {stretches}. Calibrated: {calibrated}.")
+            reported = ", ".join(
+                f"{k} {_yes(v['covers_zero'])}" for k, v in wolf["calibration_reported_regimes"].items()
+            )
+            lines.append(
+                f"- h = {horizon}: {stretches}. Calibrated (regimes with a pressure day): {calibrated or 'none'}."
+                + (f" Reported, no pressure day: {reported}." if reported else "")
+            )
         risky = candidate["tiers"]["risky_dates"]
         lines += ["", "Tier 2 (reported only): " + (
             risky["unavailable"] if "unavailable" in risky

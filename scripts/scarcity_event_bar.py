@@ -2,7 +2,7 @@
 
 A scratch measurement, not a record: it writes JSON to the path it is given and
 nothing into `docs/runs/`. The candidates, their features, calibration and
-flagging cut-off are in `metadata/pressure_judge.json` (pinned to
+flagging-cut-off rule are in `metadata/pressure_judge.json` (pinned to
 `repo_model.scarcity_event_bar` by a test), which this script refuses to read
 unless it is committed and unchanged. The state and its inputs are off in every
 published declaration; they are switched on for these runs only, on the scratch
@@ -84,7 +84,6 @@ def forecasts_command(args) -> int:
     wanted = args.candidate or [c.name for c in eb.CANDIDATES]
     for name in wanted:
         eb.candidate(name)
-        declaration.cutoff(name, declaration.primary, args.horizon, eb.CUTOFF)
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
