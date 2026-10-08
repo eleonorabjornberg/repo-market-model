@@ -1,0 +1,32 @@
+{
+  "status": "declared by the pull request that closes #387 (track Z of #374) before any score was computed; the choices it leaves to Eleonora (the window cut-off, the window benchmarks, the treasury_settlement size left out) are listed in that pull request",
+  "candidate": "time_to_pressure_hazard",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "features": [
+    "spread_bps", "days_to_month_end", "quarter_end", "tax_date", "reserve_balances", "tga"
+  ],
+  "model": {
+    "structure": "discrete-time first-passage hazard lambda_k = P(first pressure day is lead k | none before), pooled over leads k = 1..h with a dummy per lead, the spread decaying as 1/k, the lead's pressure-day type (quarter end, month end, tax date) alone and times the reserves scarcity state, and the decision's spread, reserves and TGA change (alone and times reserves)",
+    "per_day": "P(pressure on lead h) = sum_j F_j * q_(h-j), F_j the first-passage probability, q_m the probability the pressure persists m days past the first pressure day (a second pooled logistic on the training episodes)",
+    "window": "P(at least one pressure day in the next N business days) = 1 - prod_(k<=N)(1 - lambda_k), from decision-instant covariates at horizon 1",
+    "estimator": "scikit-learn LogisticRegression, C = 1.0, L2, columns standardised on the fit rows, as ml.PRESSURE_LOGISTIC_SETTINGS",
+    "labels": "one fit per threshold on that threshold's own pressure-day label (+5 bp and +10 bp), never an all-days loss",
+    "treasury_settlement": "left out at every horizon: its size is public one business day ahead only (#170), and the lead's settlement terms enter through the pressure-day type of the lead's date"
+  },
+  "window": {
+    "days": 5,
+    "cutoffs": {"5": 0.5, "10": 0.5},
+    "benchmarks": {
+      "climatology": "frequency of the window event among training decisions with the same set of pressure-day types in their window, the global frequency where fewer than 10 decisions share the set",
+      "persistence": "logistic on the latest public spread, fitted to the window label"
+    }
+  },
+  "cutoffs": {"5": 0.2, "10": 0.2}
+}

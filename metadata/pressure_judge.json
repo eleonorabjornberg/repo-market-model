@@ -280,6 +280,95 @@
       ],
       "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
       "calibration": "none (the skew-t's exceedance as fitted)"
+    },
+    "rare_logistic_class_weight+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (class_weight), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json"
+    },
+    "rare_logistic_balanced_bootstrap+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json"
+    },
+    "rare_gbm_class_weight+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (class_weight), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json"
+    },
+    "rare_gbm_focal+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (focal), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json"
+    },
+    "rare_gbm_balanced_bootstrap+recalibrated": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json"
+    },
+    "extreme_value_tail": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "none (logistic body of spread > u times a conditional generalised Pareto tail, declared in metadata/pressure_tail.json)"
+    },
+    "time_to_pressure_hazard": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "tga"
+      ],
+      "calibration": "none (discrete-time first-passage hazard, declared in metadata/pressure_hazard.json)"
     }
   }
 }

@@ -324,6 +324,15 @@ NOT_ENTRY_POINTS = {
         "_as_of_folds, which calls require_unlocked, and pressure_judge.judge guards the "
         "scored days itself"
     ),
+    "pressure_hazard._decisions": (
+        "reads each training decision's as-of covariates inside a fit's own training "
+        "frame (#387), as ml._pressure_pairs does; scores nothing, the backtest that "
+        "calls the predictor guards the scored days"
+    ),
+    "pressure_hazard.gap_to_anchor": (
+        "measures the rule's scored-day-to-anchor distance on a synthetic run of "
+        "business days (#387); reads no panel row and scores nothing"
+    ),
     "ml._held_out_read": "a calibration read inside a fit's own training frame",
     "ml._pressure_pairs": (
         "builds the direct pressure models' training pairs inside a fit's own "
