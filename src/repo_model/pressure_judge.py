@@ -436,7 +436,9 @@ def _check_forecasts(
         by_name[forecast.name][forecast.horizon] = forecast
     for name, per_horizon in by_name.items():
         missing = [h for h in declaration.horizons if h not in per_horizon]
-        if missing:
+        # The published baseline is a scored run of its own (hours at each
+        # horizon); it may cover fewer horizons, and the result says which.
+        if missing and declaration.candidates[name]["role"] != "baseline":
             raise ValueError(f"{name!r} has no forecasts at horizons {missing}")
     for label, name in (("climatology", declaration.climatology), ("persistence", declaration.persistence)):
         if name not in by_name:
@@ -802,8 +804,8 @@ def judge(
     for name in sorted(by_name, key=lambda n: (declaration.candidates[n]["role"] != "benchmark", n)):
         entry = declaration.candidates[name]
         per_horizon: Dict[str, dict] = {}
-        flags_by: Dict[Tuple[int, float], List[int]] = {}
-        for horizon in declaration.horizons:
+        scored = [h for h in declaration.horizons if h in by_name[name]]
+        for horizon in scored:
             grid = grids[horizon]
             per_tau: Dict[str, dict] = {}
             for tau in declaration.thresholds:
@@ -811,7 +813,6 @@ def judge(
                 outcomes = grid.outcomes[tau]
                 cutoff = declaration.cutoff(name, tau, horizon)
                 flags = [1 if p >= cutoff else 0 for p in forecast]
-                flags_by[(horizon, tau)] = flags
                 per_tau[_key(tau)] = _row(
                     declaration, name, horizon, tau, grid, forecast, outcomes, cutoff, flags,
                     by_name, holdouts,
@@ -819,19 +820,26 @@ def judge(
             per_horizon[str(horizon)] = per_tau
         primary = _key(declaration.primary)
         by_horizon_pass = {
-            str(h): bool(per_horizon[str(h)][primary]["bar"]["passes"]) for h in declaration.pass_horizons
+            str(h): bool(per_horizon[str(h)][primary]["bar"]["passes"]) if h in scored else False
+            for h in declaration.pass_horizons
         }
         result_candidates[name] = {
             "role": entry["role"],
             "features": entry["features"],
             "calibration": entry["calibration"],
             "horizons": per_horizon,
-            "lead_time": _lead_time(declaration, grids, by_name[name], name),
+            "scored_horizons": scored,
+            "lead_time": (
+                _lead_time(declaration, grids, by_name[name], name)
+                if len(scored) == len(declaration.horizons)
+                else {"unavailable": "lead time reads every horizon and this row was scored at some only"}
+            ),
             "verdict": {
                 "threshold_bp": declaration.primary,
                 "pass_horizons": list(declaration.pass_horizons),
                 "by_horizon": by_horizon_pass,
                 "passes": all(by_horizon_pass.values()),
+                "not_scored": [h for h in declaration.pass_horizons if h not in scored],
                 "passes_at_horizon_1": per_horizon["1"][primary]["bar"]["passes"] if "1" in per_horizon else None,
             },
         }

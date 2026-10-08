@@ -272,7 +272,13 @@ def markdown(result) -> str:
                 f"{'pass' if row['bar']['passes'] else 'fail'} |"
             )
         lead = candidate["lead_time"]
-        lines += ["", f"Lead time at +{primary} bp: {lead['flagged']} of {lead['onsets']} onsets flagged, mean {_f(lead['mean_lead_days'], 2)} days.", ""]
+        lines += [
+            "",
+            f"Lead time at +{primary} bp: {lead['flagged']} of {lead['onsets']} onsets flagged, mean {_f(lead['mean_lead_days'], 2)} days."
+            if "onsets" in lead
+            else f"Lead time: {lead['unavailable']}.",
+            "",
+        ]
         first = next(iter(candidate["horizons"]))
         row = candidate["horizons"][first][primary]
         lines += [

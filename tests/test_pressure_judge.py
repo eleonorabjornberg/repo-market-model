@@ -85,6 +85,10 @@ def _declaration(**overrides):
                 "role": "candidate", "features": ["x"], "calibration": "none",
                 "cutoffs": {"5": 0.5, "10": 0.5},
             },
+            "published": {
+                "role": "baseline", "features": ["x"], "calibration": "none",
+                "cutoffs": {"5": 0.5, "10": 0.5},
+            },
         },
     }
     document.update(overrides)
@@ -407,6 +411,25 @@ class BarTests(unittest.TestCase):
         self.assertEqual(lead["onsets"], 40)
         self.assertEqual(lead["flagged"], 40)
         self.assertEqual(lead["mean_lead_days"], 1.0)
+
+    def test_the_published_baseline_may_cover_fewer_horizons_and_cannot_then_pass(self):
+        series = Series()
+        grids, forecasts = series.everything(lambda h: series.perfect(h))
+        forecasts.append(series.perfect(1, name="published"))
+        result = pj.judge(_load(), grids, forecasts)
+        published = result["candidates"]["published"]
+        self.assertEqual(published["scored_horizons"], [1])
+        self.assertEqual(list(published["horizons"]), ["1"])
+        self.assertTrue(published["horizons"]["1"]["5"]["bar"]["passes"])
+        self.assertFalse(published["verdict"]["passes"])
+        self.assertEqual(published["verdict"]["not_scored"], [2])
+
+    def test_a_candidate_that_is_not_a_baseline_must_cover_every_horizon(self):
+        series = Series()
+        grids, forecasts = series.everything(lambda h: series.perfect(h))
+        forecasts = [f for f in forecasts if not (f.name == "sharp" and f.horizon == 2)]
+        with self.assertRaises(ValueError):
+            pj.judge(_load(), grids, forecasts)
 
     def test_the_benchmarks_are_judged_too(self):
         series = Series()
