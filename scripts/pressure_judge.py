@@ -423,7 +423,7 @@ def summary_tables(result, horizon="1") -> str:
     false alarms per onset), tier 3 (the worst alarm rate in the abundant stretches over the leads, and the
     regimes with a pressure day that are calibrated at the first lead), tier 5, the pass, and the pass
     within the scarce regime alone (reported, not part of the rule). Tables 2 and 3: at `horizon`, the
-    onset recall and the Brier difference against calendar climatology (positive: the model is better,
+    share of pressure days flagged and the Brier difference against calendar climatology (positive: the model is better,
     90% interval) in every regime and every pressure-day type.
     """
 
@@ -483,7 +483,7 @@ def summary_tables(result, horizon="1") -> str:
                     labels[dimension].append(label)
     columns = [(d, label) for d in ("regime", "day_type") for label in labels.get(d, [])]
     for title, render in (
-        (f"Table 2. Onset recall at h = {horizon} (+{primary} bp), by regime and pressure-day type: flagged / pressure days in the group.",
+        (f"Table 2. Share of the pressure days flagged at h = {horizon} (+{primary} bp), by regime and pressure-day type; the number of pressure days in the group in brackets.",
          lambda cell: "–" if not cell["events"] else f"{_f(cell['flags']['recall'], 2)} ({cell['events']})"),
         (f"Table 3. Brier difference against calendar climatology at h = {horizon} (+{primary} bp), by regime and pressure-day type "
          "(positive: better than climatology; 90% interval).",
