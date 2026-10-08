@@ -3987,6 +3987,25 @@ PRESSURE_QUANTILE_SETTINGS = MappingProxyType(
         "and continued at the outer segments' slopes to 0 and 1",
     }
 )
+#: The quantile regression of the settlement-timing track (#379; Adrian, Boyarchenko &
+#: Giannone 2019): the quantile grid of `PRESSURE_QUANTILE_SETTINGS`, smoothed into a
+#: skew-t by least squares on the predicted quantiles, in place of linear interpolation.
+#: Chosen before scoring, not tuned.
+PRESSURE_QUANTILE_SKEWT_SETTINGS = MappingProxyType(
+    {
+        "estimator": "QuantileRegressor",
+        "solver": "highs",
+        "alpha": 0.0,
+        "standardized": True,
+        "quantile_grid": PRESSURE_QUANTILE_SETTINGS["quantile_grid"],
+        "smoother": "Azzalini-Capitanio skew-t (location, scale, shape, degrees of freedom), "
+        "fitted to the day's sorted predicted quantiles by least squares on the quantile "
+        "function (Nelder-Mead, fixed start); the CDF is the density's trapezoid integral "
+        "on a fixed grid",
+        "start": {"shape": 0.0, "degrees_of_freedom": 8.0},
+        "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5)",
+    }
+)
 PRESSURE_CLASSIFIER_SETTINGS = MappingProxyType(
     {
         "estimator": "HistGradientBoostingClassifier",
@@ -4009,6 +4028,12 @@ SCARCITY_STATE = "reserve_balances_usd_tn"
 
 _CALENDAR_INPUTS = ("days_to_month_end", "quarter_end", "tax_date")
 _PRESSURE_DAY_TYPES = ("quarter_end", "month_end", "tax_date")
+#: The day types the settlement x state interaction variant crosses with (#378).
+_INTERACTION_DAY_TYPES = ("quarter_end", "tax_date")
+#: The regime-pooled variant's shrinkage (#378): a regime's deviation columns are
+#: scaled by this before the one L2 penalty, so its deviations carry
+#: `1 / scale ** 2` times the pooled columns' penalty. Declared, not tuned.
+REGIME_POOLING_SCALE = 0.5
 #: The scheduled settlement columns the design reads as scheduled-pressure
 #: terms: the total (#114) and the coupon part alone (#137).
 _SETTLEMENT_INPUTS = ("treasury_settlement", "treasury_settlement_coupons")
@@ -4350,17 +4375,21 @@ def _direct_pressure_predictor(
         # Two thresholds with no training spread between them have one label
         # vector, so one fit: the estimator is deterministic in its labels.
         fitted: dict = {}
-        if kind == "quantile":
-            law = _quantile_exceedance(xs, spreads, served, [float(tau) for tau in taus])
+        if kind in ("quantile", "quantile_skewt"):
+            law = _quantile_exceedance(
+                xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t" if kind == "quantile_skewt" else "linear"
+            )
             columns = [[curve[k] for curve in law] for k in range(len(taus))]
-        for tau in taus if kind != "quantile" else ():
+        for tau in taus if kind not in ("quantile", "quantile_skewt") else ():
             labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
                 continue
             key = tuple(labels)
             if key not in fitted:
-                fitted[key] = _fit_classifier(kind, xs, labels, served, monotone=monotone)
+                fitted[key] = _fit_classifier(
+                    kind, xs, labels, served, monotone=monotone, pooling=getattr(design, "pooling", None)
+                )
             columns.append(fitted[key])
         curves = []
         for day in range(len(served)):
@@ -4374,6 +4403,7 @@ def _direct_pressure_predictor(
                 "logistic": PRESSURE_LOGISTIC_SETTINGS,
                 "probit": PRESSURE_PROBIT_SETTINGS,
                 "quantile": PRESSURE_QUANTILE_SETTINGS,
+                "quantile_skewt": PRESSURE_QUANTILE_SKEWT_SETTINGS,
             }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
         )
         settings["design"] = list(design.names)
@@ -4417,8 +4447,17 @@ def _fit_classifier(
     labels: Sequence[int],
     served: Sequence[Sequence[float]],
     monotone: Optional[Sequence[int]] = None,
+    pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None,
 ) -> List[float]:
     """Fit one estimator to one threshold's labels; P(label = 1) at `served`.
+
+    `pooling`, the logistic's only (#378): `(pooled columns, deviation columns,
+    regimes, scale)`. Column 1 is the regime. The fit is the pooled columns plus,
+    for each regime, an intercept and the deviation columns, each multiplied by
+    `scale` and by the regime's indicator, under the one L2 penalty: a regime's
+    deviations are shrunk toward the pooled fit, and a regime with no training
+    day is served the pooled fit. `None` passes nothing, so every other fit is
+    unchanged.
 
     `monotone`, the classifier's only: one of -1, 0, +1 per design column,
     passed to scikit-learn as `monotonic_cst` (#128). `None`, the default,
@@ -4439,6 +4478,11 @@ def _fit_classifier(
         centre = x.mean(axis=0)
         scale = x.std(axis=0)
         scale[scale == 0.0] = 1.0
+        if pooling is not None:
+            pooled, deviating, regimes, shrink = pooling
+            x = _pool_columns((x - centre) / scale, x[:, 1], pooled, deviating, regimes, shrink)
+            z = _pool_columns((z - centre) / scale, z[:, 1], pooled, deviating, regimes, shrink)
+            centre, scale = numpy.zeros(x.shape[1]), numpy.ones(x.shape[1])
         model = LogisticRegression(
             C=PRESSURE_LOGISTIC_SETTINGS["C"],
             max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
@@ -4469,6 +4513,26 @@ def _fit_classifier(
     )
     model.fit(x, y)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def _pool_columns(
+    standardized: Any,
+    regime: Any,
+    pooled: Sequence[int],
+    deviating: Sequence[int],
+    regimes: Sequence[float],
+    shrink: float,
+) -> Any:
+    """The partially pooled design (#378): pooled columns, then each regime's shrunk deviations."""
+
+    import numpy
+
+    blocks = [standardized[:, list(pooled)]]
+    for level in regimes:
+        indicator = (regime == level).astype(float)[:, None]
+        blocks.append(shrink * indicator)
+        blocks.append(shrink * indicator * standardized[:, list(deviating)])
+    return numpy.hstack(blocks)
 
 
 def _fit_probit(x: Any, y: Any, z: Any) -> List[float]:
@@ -4517,13 +4581,97 @@ def _fit_probit(x: Any, y: Any, z: Any) -> List[float]:
     return [float(p) for p in norm.cdf(w[0] + ((z - centre) / scale) @ w[1:])]
 
 
+#: The fixed grid the skew-t's CDF is integrated on (#379): the standardized variable
+#: from about -2,700 to +2,700, dense near zero, so a heavy tail (a few degrees of
+#: freedom) still has its mass inside the grid.
+_SKEW_T_POINTS = 1501
+_SKEW_T_SPAN = 7.5
+_SKEW_T_MINIMUM_SCALE = 1e-3
+
+
+def _skew_t_cdf_grid(shape: float, dof: float) -> Tuple[Any, Any]:
+    """The Azzalini-Capitanio skew-t's standardized CDF on the fixed grid.
+
+    The density is `2 t_dof(z) T_(dof+1)(shape z sqrt((dof+1) / (z^2 + dof)))`;
+    its trapezoid integral is normalized to end at 1. Returns `(z, cdf)`.
+    """
+
+    import numpy
+    from scipy import stats
+
+    z = numpy.sinh(numpy.linspace(-_SKEW_T_SPAN, _SKEW_T_SPAN, _SKEW_T_POINTS)) * 3.0
+    density = 2.0 * stats.t.pdf(z, dof) * stats.t.cdf(shape * z * numpy.sqrt((dof + 1.0) / (z * z + dof)), dof + 1.0)
+    cdf = numpy.concatenate([[0.0], numpy.cumsum(0.5 * (density[1:] + density[:-1]) * numpy.diff(z))])
+    return z, cdf / cdf[-1]
+
+
+def _skew_t_exceedance(
+    quantiles: Any, probabilities: Any, cuts: Sequence[float]
+) -> Tuple[float, ...]:
+    """P(spread > cut) from one day's predicted quantiles, through a fitted skew-t.
+
+    Adrian, Boyarchenko & Giannone (2019): the predicted quantiles of the
+    conditional distribution are smoothed into a skewed t by least squares on the
+    quantile function over the grid's probabilities; the exceedance is read off the
+    fitted CDF. The start is fixed (`PRESSURE_QUANTILE_SKEWT_SETTINGS`), so a day's
+    law does not depend on the days fitted before it. Non-increasing in the cut by
+    construction. A day whose quantiles are all equal is a point mass there.
+
+    Args:
+        quantiles: the day's predicted quantiles, sorted, one per probability.
+        probabilities: the quantile grid, increasing, inside (0, 1).
+        cuts: the spread levels (bp) at which the exceedance is read.
+    """
+
+    import numpy
+    from scipy.optimize import minimize
+
+    q = numpy.asarray(quantiles, dtype=float)
+    p = numpy.asarray(probabilities, dtype=float)
+    if q.shape != p.shape:
+        raise ValueError(f"{len(q)} quantiles for {len(p)} probabilities")
+    if float(q[-1] - q[0]) < _SKEW_T_MINIMUM_SCALE:
+        return tuple(1.0 if float(q.mean()) > cut else 0.0 for cut in cuts)
+    start = PRESSURE_QUANTILE_SKEWT_SETTINGS["start"]
+    spread = max(float(q[-1] - q[0]) / 4.0, _SKEW_T_MINIMUM_SCALE)
+
+    def law(theta: Any) -> Tuple[Any, Any, float, float]:
+        z, cdf = _skew_t_cdf_grid(float(theta[2]), 1.0 + math.exp(float(theta[3])))
+        return z, cdf, float(theta[0]), math.exp(float(theta[1]))
+
+    def loss(theta: Any) -> float:
+        if abs(theta[2]) > 50.0 or not -3.0 < theta[3] < 8.0:
+            return 1e12
+        z, cdf, location, scale = law(theta)
+        return float(numpy.sum((location + scale * numpy.interp(p, cdf, z) - q) ** 2))
+
+    theta0 = numpy.array(
+        [float(numpy.median(q)), math.log(spread), start["shape"], math.log(start["degrees_of_freedom"] - 1.0)]
+    )
+    # Nelder-Mead's default simplex perturbs a zero start (the shape) by 0.00025, which
+    # leaves it a symmetric law; the simplex is spelled out, one step per parameter.
+    steps = numpy.array([0.25 * spread, 0.3, 1.5, 0.7])
+    simplex = numpy.vstack([theta0] + [theta0 + numpy.eye(4)[k] * steps[k] for k in range(4)])
+    fit = minimize(
+        loss, theta0, method="Nelder-Mead",
+        options={"maxiter": 400, "xatol": 1e-3, "fatol": 1e-9, "initial_simplex": simplex},
+    )
+    z, cdf, location, scale = law(fit.x)
+    below = numpy.interp((numpy.asarray(cuts, dtype=float) - location) / scale, z, cdf)
+    return tuple(float(min(1.0, max(0.0, 1.0 - value))) for value in below)
+
+
 def _quantile_exceedance(
     xs: Sequence[Sequence[float]],
     spreads: Sequence[float],
     served: Sequence[Sequence[float]],
     taus: Sequence[float],
+    smoother: str = "linear",
 ) -> List[Tuple[float, ...]]:
     """Linear quantile regressions of the spread, read as P(spread > tau) per day.
+
+    `smoother` is `"linear"` (the default: linear interpolation between the
+    predicted quantiles) or `"skew_t"` (`_skew_t_exceedance`, #379).
 
     One `QuantileRegressor` per grid quantile (`PRESSURE_QUANTILE_SETTINGS`), on
     columns standardized on `xs`. A day's predicted quantiles are sorted (the
@@ -4552,6 +4700,13 @@ def _quantile_exceedance(
     )
     predicted.sort(axis=1)
     probabilities = numpy.asarray(grid, dtype=float)
+    if smoother == "skew_t":
+        return [
+            _skew_t_exceedance(row, probabilities, [math.floor(float(tau)) + 0.5 for tau in taus])
+            for row in predicted
+        ]
+    if smoother != "linear":
+        raise ValueError(f"a quantile smoother is 'linear' or 'skew_t', got {smoother!r}")
     curves = []
     for row in predicted:
         # Beyond the outer quantiles the law runs on at the outer segment's slope
@@ -4648,6 +4803,32 @@ def pressure_quantile_exceedance(
     return _direct_pressure_predictor("quantile", features, declaration, minimum_history)
 
 
+#: The settlement-timing track's two estimators (#379), by the kind each names. Study
+#: candidates, not declared models: no public factory and no `--model` name reaches
+#: them, as with `SCARCITY_CALENDAR_KINDS`.
+SETTLEMENT_TIMING_KINDS = MappingProxyType({"probit": "probit", "quantile_skewt": "quantile_skewt"})
+
+
+def _settlement_timing_predictor(
+    form: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+) -> Any:
+    """A probit or a skew-t quantile regression on settlement timing and scarcity (#379).
+
+    `form` is `"probit"`, the ridge probit of #372 at each threshold, or
+    `"quantile_skewt"`, the linear quantile regressions of #372 smoothed into a skew-t
+    in the Adrian-Boyarchenko-Giannone way, both on `_PressureDesign`'s design of
+    `features` (settlement size and timing, the calendar, the reserve-scarcity state
+    and the TGA, as declared) and the same direct pairs under the as-of rule.
+    """
+
+    if form not in SETTLEMENT_TIMING_KINDS:
+        raise ValueError(f"a settlement-timing form is one of {sorted(SETTLEMENT_TIMING_KINDS)}, got {form!r}")
+    return _direct_pressure_predictor(SETTLEMENT_TIMING_KINDS[form], features, declaration, minimum_history)
+
+
 # --------------------------------------------------------------------------
 # The scarcity-conditioned calendar (#128)
 # --------------------------------------------------------------------------
@@ -4691,9 +4872,15 @@ class _ScarcityCalendarDesign:
         state_levels: Mapping[float, float],
         *,
         monotone: bool = False,
+        interactions: bool = False,
+        regime_pooled: bool = False,
     ) -> None:
         from .scarcity import RESERVE_SCARCITY_STATE, STATE_LABELS
 
+        if interactions and regime_pooled:
+            raise ValueError("the interaction variant and the regime-pooled variant are separate candidates")
+        if regime_pooled and monotone:
+            raise ValueError("partial pooling is the logistic's; the classifier's constraint does not apply to it")
         declared = tuple(dict.fromkeys(str(name) for name in features))
         for required in ("spread_bps", RESERVE_SCARCITY_STATE) + _CALENDAR_INPUTS:
             if required not in declared:
@@ -4724,12 +4911,31 @@ class _ScarcityCalendarDesign:
             and name not in SPREAD_COMPONENTS
         )
         scheduled = list(_PRESSURE_DAY_TYPES) + (["treasury_settlement"] if self.settlement else [])
-        self.names = tuple(
-            ["spread_bps", RESERVE_SCARCITY_STATE, *self.linear]
-            + [f"{name}_x_state" for name in scheduled]
+        names = ["spread_bps", RESERVE_SCARCITY_STATE, *self.linear] + [f"{name}_x_state" for name in scheduled]
+        # The interaction variant (#378): the settlement's size times the state
+        # times the tax date or the quarter-end (the September 2019 pattern).
+        # It needs the settlement, which is public only at horizon 1, so
+        # without it the variant adds nothing and is the base form.
+        self.interaction_types: Tuple[str, ...] = (
+            _INTERACTION_DAY_TYPES if interactions and self.settlement else ()
         )
+        names += [f"treasury_settlement_x_state_x_{kind}" for kind in self.interaction_types]
+        # The regime-pooled variant (#378): the scheduled terms and the spread
+        # get a deviation per scarcity regime, shrunk toward the pooled fit.
+        self.pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], float]] = None
+        if regime_pooled:
+            pooled_columns = tuple(range(len(names)))
+            raw = list(_PRESSURE_DAY_TYPES) + (["treasury_settlement"] if self.settlement else [])
+            names += raw
+            deviation_columns = (0,) + tuple(range(len(pooled_columns), len(names)))
+            self.pooling = (
+                pooled_columns, deviation_columns, tuple(sorted(set(self.state_levels.values()))), REGIME_POOLING_SCALE
+            )
+        self.names = tuple(names)
         self.monotone: Optional[Tuple[int, ...]] = (
-            tuple([0, 1] + [0] * len(self.linear) + [1] * len(scheduled)) if monotone else None
+            tuple([0, 1] + [0] * len(self.linear) + [1] * len(scheduled) + [1] * len(self.interaction_types))
+            if monotone
+            else None
         )
 
     def needs_history(self) -> bool:
@@ -4741,6 +4947,12 @@ class _ScarcityCalendarDesign:
             "state_column": self.state_column,
             "state_levels": {f"{key:g}": value for key, value in sorted(self.state_levels.items())},
             "scheduled_terms": "each times the mapped state only, no main effect",
+            "interaction_terms": [f"treasury_settlement x state x {kind}" for kind in self.interaction_types],
+            "regime_partial_pooling": (
+                None
+                if self.pooling is None
+                else {"regimes": list(self.pooling[2]), "deviation_scale": self.pooling[3]}
+            ),
         }
 
     def _value(self, row: DailyObservation, column: str) -> float:
@@ -4774,6 +4986,13 @@ class _ScarcityCalendarDesign:
         if self.settlement:
             scheduled.append(self._value(observation, "treasury_settlement"))
         values += [term * state for term in scheduled]
+        if self.interaction_types:
+            size = self._value(observation, "treasury_settlement")
+            values += [size * state * (1.0 if kind == name else 0.0) for name in self.interaction_types]
+        if self.pooling is not None:
+            values += scheduled[:len(_PRESSURE_DAY_TYPES)]
+            if self.settlement:
+                values.append(self._value(observation, "treasury_settlement"))
         return values
 
 
@@ -4787,6 +5006,9 @@ def _scarcity_calendar_predictor(
     declaration: Any,
     state_levels: Mapping[float, float],
     minimum_history: int = 20,
+    *,
+    interactions: bool = False,
+    regime_pooled: bool = False,
 ) -> Any:
     """The scarcity-conditioned calendar (#128), as a direct pressure model.
 
@@ -4801,11 +5023,19 @@ def _scarcity_calendar_predictor(
     (`_direct_pressure_predictor(history=...)`). The state it reads is off in
     every published declaration; adopting it is Eleonora's, and an adoption
     would give it a public factory, a conformance case and a `--model` name.
+
+    Two variants (#378, `repo_model.scarcity_event_bar`): `interactions` adds
+    the settlement's size x state x quarter-end and x tax date; `regime_pooled`
+    (the logistic only) gives the spread and each scheduled term a deviation per
+    scarcity regime, partially pooled toward the pooled fit.
     """
 
     if form not in SCARCITY_CALENDAR_KINDS:
         raise ValueError(f"a scarcity-calendar form is one of {sorted(SCARCITY_CALENDAR_KINDS)}, got {form!r}")
-    design = _ScarcityCalendarDesign(features, declaration, state_levels, monotone=form == "gbm")
+    design = _ScarcityCalendarDesign(
+        features, declaration, state_levels, monotone=form == "gbm",
+        interactions=interactions, regime_pooled=regime_pooled,
+    )
     return _direct_pressure_predictor(
         SCARCITY_CALENDAR_KINDS[form], features, declaration, minimum_history, design=design
     )
