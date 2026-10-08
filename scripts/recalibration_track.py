@@ -12,6 +12,8 @@ score is computed; this script refuses to run unless that file is committed.
         --output OUT/bench_hH.json
     PYTHONPATH=src python3 scripts/pressure_judge.py judge --panel PANEL \\
         --output OUT/judge.json --markdown OUT/judge.md OUT/bench_h?.json OUT/recal_h?.json
+    PYTHONPATH=src python3 scripts/recalibration_track.py compare --panel PANEL \\
+        --output OUT/paired.json OUT/recal_h?.json
 
 The raw forecast is pressure model v1's `distributional_gbm`: the published
 funding declaration's gbm, conformal PID with nested selection, before any
@@ -142,6 +144,43 @@ def horizon_command(args) -> int:
     return 0
 
 
+def compare_command(args) -> int:
+    """Paired Brier difference of each recalibrator against the pooled Platt control (positive = better)."""
+
+    from datetime import date
+
+    from repo_model.data import exceeds_bp
+    from repo_model.metrics import stationary_bootstrap_interval
+
+    declaration = pj.load_declaration()
+    rows = load_daily_panel(args.panel)
+    by_date = {row.date: row for row in rows}
+    out = {}
+    for path in args.inputs:
+        document = json.loads(Path(path).read_text())
+        horizon = int(document["horizon"])
+        for tau in declaration.thresholds:
+            key = f"{tau:g}"
+            control = document["forecasts"]["recal_platt"][key]
+            days = sorted(control)
+            pj.require_scored_days(declaration, [date.fromisoformat(d) for d in days], where="recalibration_track.compare")
+            y = [int(exceeds_bp(by_date[date.fromisoformat(d)].spread_bps, tau)) for d in days]
+            for name in ("recal_isotonic", "recal_platt_group", "recal_platt_weighted"):
+                column = document["forecasts"][name][key]
+                diffs = [(control[d] - o) ** 2 - (column[d] - o) ** 2 for d, o in zip(days, y)]
+                lower, upper = stationary_bootstrap_interval(
+                    lambda idx: sum(diffs[i] for i in idx) / len(idx), len(diffs),
+                    block_length=declaration.block_length, seed=declaration.seed,
+                    replications=declaration.replications, level=declaration.level,
+                )
+                out[f"h{horizon}_{key}bp_{name}_vs_recal_platt"] = {
+                    "mean": sum(diffs) / len(diffs), "lower": lower, "upper": upper, "days": len(diffs),
+                }
+    args.output.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output), "rows": len(out)}))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -150,6 +189,11 @@ def main(argv=None) -> int:
     one.add_argument("--horizon", type=int, choices=(1, 2, 3, 4, 5), required=True)
     one.add_argument("--output", type=Path, required=True)
     one.set_defaults(func=horizon_command)
+    cmp_ = commands.add_parser("compare", help="paired Brier of each recalibrator against pooled Platt")
+    cmp_.add_argument("--panel", type=Path, required=True)
+    cmp_.add_argument("--output", type=Path, required=True)
+    cmp_.add_argument("inputs", nargs="+", type=Path)
+    cmp_.set_defaults(func=compare_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
