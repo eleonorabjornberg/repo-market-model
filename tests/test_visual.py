@@ -2641,21 +2641,24 @@ class ForecastDailySectionTests(unittest.TestCase):
             "band_50": band(1, 3),
         }
 
-    def period_days(self, first, last):
-        return [d for d in self.record["days"] if first <= d["date"] <= last]
+    calendar = json.loads((ROOT / "docs/runs/published_distribution_calendar_daily_h1.json").read_text(encoding="utf-8"))
+
+    def period_days(self, first, last, series="v1"):
+        record = self.calendar if series == "calendar" else self.record
+        return [d for d in record["days"] if first <= d["date"] <= last]
 
     def test_the_record_is_an_input(self):
         self.assertIn(emit_visual.FORECAST_DAILY, emit_visual.INPUTS)
         self.assertEqual(self.doc["provenance"]["inputs"],
-                         {emit_visual.FORECAST_DAILY: emit_visual.sha256(ROOT / emit_visual.FORECAST_DAILY)})
+                         {rel: emit_visual.sha256(ROOT / rel)
+                          for rel in (emit_visual.FORECAST_DAILY, emit_visual.FORECAST_DAILY_CALENDAR)})
 
     def test_the_accuracy_table_is_recomputed_from_the_record(self):
         for data in (self.data, self.doc["data"]):
             self.assertEqual([p["key"] for p in data["periods"]], ["2018-2025", "2026"])
             for period in data["periods"]:
-                days = self.period_days(period["first"], period["last"])
-                want = self.expected(days)
                 for row in period["rows"]:
+                    want = self.expected(self.period_days(period["first"], period["last"], row["series"]))
                     with self.subTest(period=period["key"], series=row["series"]):
                         for key in ("days", "mean_abs_error", "median_abs_error", "within_1", "within_2"):
                             self.assertAlmostEqual(row[key], want[key], places=12, msg=key)
