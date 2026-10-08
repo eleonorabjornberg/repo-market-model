@@ -616,21 +616,34 @@
     },
     "coverage": [
       "DVP Service overnight/open average rate, preliminary and final, from 2018-05-08; published in real time from 2020-09-09",
-      "DVP Service overnight/open transaction volume, final"
+      "DVP Service overnight/open transaction volume, final",
+      "Tri-party (TRI) and GCF overnight/open average rate, preliminary and final, and transaction volume, final, added for #377"
     ],
     "field_frequencies": {
       "REPO-DVP_AR_OO-F": "business_daily",
       "REPO-DVP_AR_OO-P": "business_daily",
-      "REPO-DVP_TV_OO-F": "business_daily"
+      "REPO-DVP_TV_OO-F": "business_daily",
+      "REPO-TRI_AR_OO-P": "business_daily",
+      "REPO-TRI_AR_OO-F": "business_daily",
+      "REPO-TRI_TV_OO-F": "business_daily",
+      "REPO-GCF_AR_OO-P": "business_daily",
+      "REPO-GCF_AR_OO-F": "business_daily",
+      "REPO-GCF_TV_OO-F": "business_daily"
     },
     "fields": [
       "REPO-DVP_AR_OO-F",
       "REPO-DVP_AR_OO-P",
-      "REPO-DVP_TV_OO-F"
+      "REPO-DVP_TV_OO-F",
+      "REPO-TRI_AR_OO-P",
+      "REPO-TRI_AR_OO-F",
+      "REPO-TRI_TV_OO-F",
+      "REPO-GCF_AR_OO-P",
+      "REPO-GCF_AR_OO-F",
+      "REPO-GCF_TV_OO-F"
     ],
     "frequency": "business daily",
     "identities": [],
-    "limitation": "Off in every published declaration (#187). REPO-DVP_AR_OO-P (percent) is the one field a scored column reads: ofr_dvp_minus_bgcr_bp, the rate minus BGCR in whole basis points, None before 2020-09-09. REPO-DVP_AR_OO-F (percent) and REPO-DVP_TV_OO-F (USD) are read by no column; they serve only scripts/dvp_segment_inputs.py's descriptive check (preliminary against final, and the volume rebuilt from SOFR and BGCR). A missing value is a day with no trading or with disclosure edits applied (the series' own note). Each snapshot is one unmodified timeseries response per series; a re-fetch can differ.",
+    "limitation": "Off in every published declaration (#187). REPO-DVP_AR_OO-P (percent) is the one field a scored column reads: ofr_dvp_minus_bgcr_bp, the rate minus BGCR in whole basis points, None before 2020-09-09. REPO-DVP_AR_OO-F (percent) and REPO-DVP_TV_OO-F (USD) are read by no column; they serve only scripts/dvp_segment_inputs.py's descriptive check (preliminary against final, and the volume rebuilt from SOFR and BGCR). A missing value is a day with no trading or with disclosure edits applied (the series' own note). Each snapshot is one unmodified timeseries response per series; a re-fetch can differ. #377 adds the tri-party and GCF segments' overnight/open series (REPO-TRI_* and REPO-GCF_*, rate preliminary and final, volume final), fetched and declared the same way; REPO-TRI_AR_OO-P (percent) and REPO-GCF_AR_OO-P (percent) are read by the measurement fields ofr_tri_rate and ofr_gcf_rate (repo_model.measurement_fields), off in every published declaration; the final series and the volumes are read by no column.",
     "provider": "Office of Financial Research",
     "release_lag": {
       "available_time": "16:00",
@@ -645,6 +658,39 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://data.financialresearch.gov/v1/series/timeseries"
+  },
+  "treasury_dts_tga": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #377. The API states no publication time and keeps no vintages (it serves the current table), so the instant is Treasury's published schedule, not a measured one, and it is NOT VERIFIED from this environment: fiscaldata.treasury.gov (the dataset page that states the schedule) is refused by the proxy, and only the api. host is reachable. The schedule used is that the Daily Treasury Statement for a business day is published at 4:00 PM ET on the next business day. 16:30 ET is declared, 30 minutes after it and the same margin the bill-rate declaration takes over its bulk file's time, so a decision at 16:00 ET on that next business day does not read it and the first decision that does is the one after. The series' meaning and units were checked against FRED's WTREGEN (the H.4.1's weekly average of the TGA): the 7-calendar-day average of the daily closing balances ending each Wednesday, carried across weekends and holidays, matches WTREGEN to within 0.0009 USD billions on every one of the 451 Wednesdays 2018-01-17 to 2026-09-02 (tests/fixtures/snapshots/dts_inputs against funding_inputs/fred-macro-latest-vintage), which also settles that the line named 'Federal Reserve Account', 'Treasury General Account (TGA)' and 'Treasury General Account (TGA) Closing Balance' are one series across the renames. Units: the statement reports USD millions; the adapter divides by 1000.",
+      "publication": "Daily Treasury Statement (Bureau of the Fiscal Service), Table I, Operating Cash Balance, served as Fiscal Data's accounting/dts/operating_cash_balance table; published at 4:00 PM ET on the business day after the date it describes."
+    },
+    "coverage": [
+      "Treasury General Account closing balance, daily, 2018-01-02 onwards in the tracked snapshots (the table runs from 2005-10-03)"
+    ],
+    "field_frequencies": {
+      "TGA_CLOSE": "business_daily"
+    },
+    "fields": [
+      "TGA_CLOSE"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#377): the TGA the published declarations read is FRED's weekly WTREGEN (fred_macro_latest_vintage), and this daily series is read only by the measurement fields tga_daily, tga_daily_change and tga_change_x_reserves (repo_model.measurement_fields). The closing-balance line has had three names (the Federal Reserve Account, the Treasury General Account (TGA), and from the April 2022 redesign the Treasury General Account (TGA) Closing Balance, whose value sits in the open_today_bal column); the adapter reads each in its own column and refuses a date with two closing balances. Each snapshot is one unmodified, year-wide response; a re-fetch can differ.",
+    "provider": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+    "release_lag": {
+      "available_time": "16:30",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Declared 8 October 2026 (#377). The statement for a business day is published at 4:00 PM ET on the next business day (availability_provenance); 16:30 ET that day is declared, so the 16:00 ET decision of that day does not read it. The API states no publication time and keeps no vintages.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the Fiscal Data schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance"
   },
   "sec_nmfp": {
     "access": "public",

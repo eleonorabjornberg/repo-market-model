@@ -45,6 +45,7 @@ from .ingest import (
     fetch_nyfed_reference_rate,
     fetch_sec_nmfp_archives,
     fetch_treasury_bill_rates,
+    fetch_treasury_dts_tga,
     load_snapshot_manifest,
     load_sec_nmfp_archive_manifest,
     load_source_registry,
@@ -111,6 +112,10 @@ def _fetch(args: argparse.Namespace) -> int:
         artifacts = fetch_ofr_stfm_repo(
             output_root=args.output_root,
             mnemonics=tuple(args.mnemonic) if args.mnemonic else OFR_STFM_MNEMONICS,
+        )
+    elif args.source == "treasury-dts-tga":
+        artifacts = fetch_treasury_dts_tga(
+            output_root=args.output_root, start=args.start, end=args.end
         )
     elif args.source == "h8":
         artifacts = fetch_frb_h8_archive(
@@ -378,12 +383,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     fetch.add_argument(
         "source",
         choices=NYFED_RATE_SOURCES
-        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8", "ofr-stfm"),
+        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8", "ofr-stfm", "treasury-dts-tga"),
     )
     fetch.add_argument(
         "--start",
         default="2018-04-03",
-        help="effective start date (treasury-bill-rates and effr: every year from here to --end; "
+        help="effective start date (treasury-bill-rates, effr and treasury-dts-tga: every year from here to --end; "
         "h8: every archived release from here to --end; "
         "fr2004 and fred-macro take no range)",
     )
