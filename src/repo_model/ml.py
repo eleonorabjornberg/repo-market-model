@@ -628,6 +628,11 @@ __all__ = [
     "pressure_probit_exceedance",
     "pressure_quantile_exceedance",
     "pressure_logistic_exceedance",
+    "PRESSURE_TAIL_SETTINGS",
+    "TAIL_SCALE_COLUMNS",
+    "CensoredGpd",
+    "fit_censored_gpd",
+    "pressure_tail_exceedance",
 ]
 
 #: The level the point forecast is read at. The contract grid carries it, and a
@@ -4646,6 +4651,320 @@ def pressure_quantile_exceedance(
     """
 
     return _direct_pressure_predictor("quantile", features, declaration, minimum_history)
+
+
+# --------------------------------------------------------------------------
+# The extreme-value tail (#383, track E of #374)
+# --------------------------------------------------------------------------
+#
+# P(spread > tau) = P(spread > u) * S(tau - u), for a declared high threshold
+# `u` below the lowest tau: a logistic body for the exceedance of `u`, and a
+# generalised Pareto survival `S` for the excess, its scale a log-linear
+# function of the reserve-scarcity state and the pressure-day type, fitted by
+# maximum likelihood on the training excesses. Declared in
+# `metadata/pressure_tail.json` before any score was computed.
+#
+# The spread is published to the basis point, so an integer spread `k` is an
+# excess in an interval, not a point. With the continuous latent spread rounded
+# to the basis point, `spread > u` is the latent spread above `u + 0.5`, the
+# excess `Z` is measured from there, `spread = k` is `Z` in `[k - u - 1, k - u)`,
+# and `spread > tau` is `Z >= tau - u`. The likelihood of an observation is the
+# probability of its bin, `S(k - u - 1) - S(k - u)`, and a forecast of
+# `spread > tau` is `S(tau - u)`.
+
+#: Chosen before scoring, not tuned. The scale's columns are standardised on the
+#: excess rows and ridge-penalised with `C` as the direct logistic's, the shape
+#: is one constant per fit inside `GPD_SHAPE_BOUNDS` (the floor of
+#: `docs/decisions/tail-shape-floor.md`), and a fit with fewer excesses than
+#: `minimum_excesses` is an exponential (shape 0) with one constant scale.
+PRESSURE_TAIL_SETTINGS = MappingProxyType(
+    {
+        "body": "logistic (PRESSURE_LOGISTIC_SETTINGS) on the label spread > u",
+        "tail": "generalised Pareto on the excess over u + 0.5 bp, interval-censored to the basis point",
+        "estimator": "maximum likelihood, BFGS with finite-difference gradient (numpy)",
+        "scale": "log-linear in reserves (USD trillions) and the pressure-day type, standardised",
+        "C": 1.0,
+        "shape": "constant per fit, 0.5 * expit(s), inside GPD_SHAPE_BOUNDS",
+        "minimum_excesses": 30,
+        "fallback": "exponential, constant scale, below minimum_excesses; no excess: tail probability 0",
+    }
+)
+
+#: The scale's design columns, in `_PressureDesign`'s names.
+TAIL_SCALE_COLUMNS = ("reserve_balances",) + _PRESSURE_DAY_TYPES
+
+
+class CensoredGpd(NamedTuple):
+    """A fitted generalised Pareto tail with a log-linear scale.
+
+    `mode` is `"gpd"` (shape fitted), `"exponential"` (too few excesses for a
+    shape) or `"none"` (no excess at all: the tail probability is 0).
+    """
+
+    mode: str
+    excesses: int
+    intercept: float
+    coefficients: Any
+    centre: Any
+    scale: Any
+    shape: float
+    log_likelihood: float
+
+    def sigma(self, columns: Any) -> Any:
+        import numpy
+
+        z = (numpy.atleast_2d(numpy.asarray(columns, dtype=float)) - self.centre) / self.scale
+        return numpy.exp(self.intercept + z @ self.coefficients)
+
+    def survival(self, excess: float, columns: Any) -> Any:
+        """`S(excess)` at each row of `columns`; 0 when there is no excess to read."""
+
+        import numpy
+
+        rows = numpy.atleast_2d(numpy.asarray(columns, dtype=float)).shape[0]
+        if self.mode == "none":
+            return numpy.zeros(rows)
+        return numpy.exp(_gpd_log_survival(float(excess), self.sigma(columns), self.shape))
+
+
+def _gpd_log_survival(z: Any, sigma: Any, shape: float) -> Any:
+    """`log S(z)` of a generalised Pareto with scale `sigma` and `shape` >= 0."""
+
+    import numpy
+
+    z = numpy.asarray(z, dtype=float)
+    if shape < 1e-8:
+        return -z / sigma
+    return -numpy.log1p(shape * z / sigma) / shape
+
+
+def fit_censored_gpd(
+    columns: Any,
+    bins: Any,
+    c: float = 1.0,
+    minimum_excesses: int = 30,
+) -> CensoredGpd:
+    """Maximum-likelihood generalised Pareto tail for basis-point-rounded excesses.
+
+    Args:
+        columns: one row per excess, the scale's covariates.
+        bins: each excess `k - u` as an integer of at least 1: the observation
+            is the interval `[bins - 1, bins)` of the excess over `u + 0.5`.
+        c: the ridge's `C` on the standardised columns (the intercept is free).
+        minimum_excesses: fewer rows than this fit an exponential, constant
+            scale; no rows at all fit nothing.
+
+    Raises:
+        ValueError: on a bin below 1 or rows and bins of different length.
+    """
+
+    _estimator_class()
+    import numpy
+
+    x = numpy.asarray(columns, dtype=float)
+    k = numpy.asarray(bins, dtype=float)
+    if len(k) == 0 and x.size == 0:
+        width = x.shape[1] if x.ndim == 2 else 0
+        return CensoredGpd("none", 0, 0.0, numpy.zeros(width), numpy.zeros(width), numpy.ones(width), 0.0, 0.0)
+    if x.ndim != 2 or len(x) != len(k):
+        raise ValueError(f"{len(k)} excesses need as many covariate rows, got shape {x.shape}")
+    width = x.shape[1]
+    if (k < 1.0).any():
+        raise ValueError("an excess bin is at least 1 basis point above the threshold")
+    centre, scale = _standardizer(x)
+    z = (x - centre) / scale
+    lower, upper = k - 1.0, k
+    penalty = 1.0 / c
+    gpd = len(k) >= minimum_excesses
+
+    def unpack(theta: Any) -> Tuple[float, Any, float]:
+        if not gpd:
+            return float(theta[0]), numpy.zeros(width), 0.0
+        return float(theta[0]), theta[1 : 1 + width], 0.5 * float(_expit(theta[1 + width]))
+
+    def objective(theta: Any) -> float:
+        intercept, beta, shape = unpack(theta)
+        with numpy.errstate(all="ignore"):  # a wild line-search step is refused by `_bfgs`
+            sigma = numpy.exp(intercept + z @ beta)
+            log_low = _gpd_log_survival(lower, sigma, shape)
+            log_high = _gpd_log_survival(upper, sigma, shape)
+            gap = numpy.maximum(-numpy.expm1(log_high - log_low), 1e-300)
+            value = -float(numpy.sum(log_low + numpy.log(gap)))
+        return value + 0.5 * penalty * float(numpy.sum(beta**2))
+
+    def with_gradient(theta: Any) -> Tuple[float, Any]:
+        value = objective(theta)
+        gradient = numpy.zeros(len(theta))
+        for index in range(len(theta)):
+            step = 1e-6 * max(1.0, abs(float(theta[index])))
+            up, down = theta.copy(), theta.copy()
+            up[index] += step
+            down[index] -= step
+            gradient[index] = (objective(up) - objective(down)) / (2.0 * step)
+        return value, gradient
+
+    start = [math.log(float(numpy.mean(k - 0.5)))]
+    if gpd:
+        start += [0.0] * width + [-2.0]
+    theta, value = _bfgs(with_gradient, numpy.asarray(start, dtype=float))
+    intercept, beta, shape = unpack(theta)
+    penalised = 0.5 * penalty * float(numpy.sum(beta**2))
+    return CensoredGpd(
+        "gpd" if gpd else "exponential",
+        int(len(k)),
+        intercept,
+        beta,
+        centre,
+        scale,
+        shape,
+        -(value - penalised),
+    )
+
+
+def pressure_tail_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    *,
+    minimum_history: int,
+    threshold_bp: float,
+    record: Optional[List[Mapping[str, Any]]] = None,
+) -> ExceedancePredictor:
+    """A logistic body with a conditional generalised Pareto tail (#383).
+
+    `P(spread > tau) = P(spread > u) * S(tau - u)` with `u = threshold_bp`.
+    The body is a direct logistic of `spread > u` on `_PressureDesign`'s design
+    (as `pressure_logistic_exceedance` fits any threshold); the tail is
+    `fit_censored_gpd` on the training pairs whose spread exceeds `u`, its scale
+    depending on `TAIL_SCALE_COLUMNS`. Both are fitted on the direct pairs under
+    the run's as-of rule, so a training label is paired with what was public at
+    its own decision instant, and a forecast's TGA change is read off its own
+    as-of history.
+
+    `record`, when a list, receives one mapping per fit: its fit summary and,
+    for each served row in order, the body probability, scale and shape, which
+    is what the tail diagnostics are computed from.
+
+    Raises:
+        ValueError: on a design without reserves and the calendar (the scale
+            depends on both), a `tau` not above `u`, a short frame, or a call
+            without the as-of rule.
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _PressureDesign(features, declaration)
+    if not (design.scarcity and design.calendar):
+        raise ValueError(
+            "the tail's scale depends on the reserve-scarcity state and the pressure-day "
+            "type; declare reserve_balances and the three calendar columns"
+        )
+    scale_index = [design.names.index(name) for name in TAIL_SCALE_COLUMNS]
+    settings_minimum = int(PRESSURE_TAIL_SETTINGS["minimum_excesses"])
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a tail model pairs each training label with what was public at that "
+                "label's own decision instant, which only the as-of rule can say; it "
+                "was called without one"
+            )
+        for tau in taus:
+            if float(tau) <= threshold_bp:
+                raise ValueError(
+                    f"the tail starts at u = {threshold_bp:g} bp and gives no probability "
+                    f"at tau = {float(tau):g} bp, which is not above it"
+                )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a tail model needs at least {minimum_history} training rows, got "
+                f"{len(train_rows)}"
+            )
+        if design.needs_history() and (
+            histories is None or len(histories) != len(feature_rows)
+        ):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; "
+                "one history per feature row is required"
+            )
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        labels = [1 if exceeds_bp(value, threshold_bp) else 0 for value in spreads]
+        if len(set(labels)) < 2:
+            body = [float(labels[0])] * len(served)
+        else:
+            body = _fit_classifier("logistic", xs, labels, served)
+        excess_rows = [i for i, label in enumerate(labels) if label]
+        tail = fit_censored_gpd(
+            [[xs[i][j] for j in scale_index] for i in excess_rows],
+            [round(spreads[i] - threshold_bp) for i in excess_rows],
+            c=PRESSURE_TAIL_SETTINGS["C"],
+            minimum_excesses=settings_minimum,
+        )
+        served_scale = [[row[j] for j in scale_index] for row in served]
+        columns = [
+            [float(b * s) for b, s in zip(body, tail.survival(float(tau) - threshold_bp, served_scale))]
+            for tau in taus
+        ]
+        if record is not None:
+            sigmas = [float(s) for s in tail.sigma(served_scale)] if tail.mode != "none" else [0.0] * len(served)
+            record.append(
+                {
+                    "mode": tail.mode,
+                    "excesses": tail.excesses,
+                    "train_rows": len(train_rows),
+                    "train_end": train_rows[-1].date.isoformat(),
+                    "shape": tail.shape,
+                    "intercept": tail.intercept,
+                    "coefficients": {
+                        name: float(value) for name, value in zip(TAIL_SCALE_COLUMNS, tail.coefficients)
+                    },
+                    "log_likelihood": tail.log_likelihood,
+                    "served": [
+                        {"date": row.date.isoformat(), "body": float(b), "sigma": s}
+                        for row, b, s in zip(feature_rows, body, sigmas)
+                    ],
+                }
+            )
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(PRESSURE_TAIL_SETTINGS)
+        settings["threshold_bp"] = threshold_bp
+        settings["design"] = list(design.names)
+        settings["scale_columns"] = list(TAIL_SCALE_COLUMNS)
+        settings["scarcity_state"] = SCARCITY_STATE
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
 
 
 # --------------------------------------------------------------------------
