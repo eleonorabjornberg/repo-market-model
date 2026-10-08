@@ -445,6 +445,18 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The two-part (hurdle) pressure model (#382): P(spike) from a classifier times a
+        # conditional size law, on the same direct design; the logistic spike part.
+        "pressure_two_part": _ModelChoice(
+            declared=_DeferredFactory("pressure_two_part_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         # The dynamic pressure logit and its ordinal version (#137): the
         # direct design plus the lagged event indicator and the model's own
         # lagged index, read off each forecast's as-of history.

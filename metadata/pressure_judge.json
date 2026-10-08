@@ -481,6 +481,74 @@
       ],
       "calibration": "class-weighted logistic (track W), then adaptive_offset (pressure.ONLINE_RECALIBRATION) on resolved earlier days; metadata/recency_adaptive_training.json"
     },
+    "recal_isotonic": {
+      "role": "candidate",
+      "track": "C (#380)",
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
+      "calibration": "pressure model v1's raw distributional gbm (conformal PID with nested selection), recalibrated out of fold per threshold and horizon by the CORP isotonic fit (probability_calibration, 'isotonic')"
+    },
+    "recal_platt": {
+      "role": "candidate",
+      "track": "C (#380)",
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
+      "calibration": "the same raw forecast, Platt out of fold per threshold and horizon (probability_calibration, 'platt'): the published recalibration, rerun as the track's pooled control"
+    },
+    "recal_platt_group": {
+      "role": "candidate",
+      "track": "C (#380)",
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
+      "calibration": "the same raw forecast, Platt out of fold fitted per group (scarcity-state band x scheduled/ordinary day type, read as of the decision instant), pooled Platt when the group holds fewer than 60 earlier pairs or 3 events (group_calibration, 'group')"
+    },
+    "recal_platt_weighted": {
+      "role": "candidate",
+      "track": "C (#380)",
+      "features": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
+      "calibration": "the same raw forecast, one Platt curve out of fold with the target group's earlier pairs weighted 1 and all others 0.25 (group_calibration, 'weighted'; regime-weighted calibration after Barber et al.)"
+    },
     "onset_logistic+recalibrated": {
       "role": "candidate",
       "track": "O (#409)",
@@ -600,6 +668,30 @@
       ],
       "features_at_horizon_2_or_more": "without treasury_settlement",
       "calibration": "onset-label fit (class_weight), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json"
+    },
+    "two_part_logistic": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (P(spike) from a ridge logistic at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
+    },
+    "two_part_gbm": {
+      "role": "candidate",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
     },
     "risk_logistic": {
       "role": "candidate",
