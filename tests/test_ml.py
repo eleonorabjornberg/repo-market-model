@@ -9627,6 +9627,124 @@ class PressureQuantileConformanceTests(_PressureConformance, unittest.TestCase):
     FACTORY = staticmethod(ml.pressure_quantile_exceedance)
 
 
+_TWO_PART_FEATURES = tuple(name for name in _PRESSURE_FULL if name != "tga")
+
+
+class PressureTwoPartLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_two_part_exceedance` (#382), logistic spike part."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_two_part_exceedance)
+    FACTORY = staticmethod(ml.pressure_two_part_exceedance)
+
+
+class PressureTwoPartClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The same suite with the gradient-boosted classifier as the spike part (#382)."""
+
+    IMPLEMENTATION = staticmethod(
+        lambda *a, **k: ml.pressure_two_part_exceedance(*a, classifier="gbm_classifier", **k)
+    )
+    FACTORY = staticmethod(
+        lambda *a, **k: ml.pressure_two_part_exceedance(*a, classifier="gbm_classifier", **k)
+    )
+
+
+class TwoPartPressureTests(unittest.TestCase):
+    """The two-part model: P(spike) times a conditional size law (#382)."""
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_the_geometric_size_law_recovers_a_known_tail(self):
+        import numpy
+
+        rng = numpy.random.default_rng(3)
+        x = rng.normal(size=(6000, 1))
+        mean = 1.0 + numpy.exp(0.5 + 0.5 * x[:, 0])
+        # excess over the spike is geometric on 1, 2, ... with mean `mean`
+        excess = rng.geometric(1.0 / mean)
+        survival = ml._geometric_size_survival(
+            x.tolist(), excess.tolist(), [[-1.0], [0.0], [1.0]], (1.0, 5.0)
+        )
+        for served, row in zip((-1.0, 0.0, 1.0), survival):
+            m = 1.0 + float(numpy.exp(0.5 + 0.5 * served))
+            for tau_excess, got in zip((1.0, 5.0), row):
+                self.assertAlmostEqual(got, (1.0 - 1.0 / m) ** tau_excess, delta=0.07)  # ridge shrinks the slope a little
+
+    def test_the_survival_is_one_at_no_excess_and_falls_with_the_excess(self):
+        x = [[float(i % 7)] for i in range(80)]
+        excess = [1 + i % 9 for i in range(80)]
+        row = ml._geometric_size_survival(x, excess, [[3.0]], (0.0, 1.0, 5.0, 45.0))[0]
+        self.assertEqual(row[0], 1.0)
+        self.assertEqual(list(row), sorted(row, reverse=True))
+        self.assertGreater(row[1], row[3])
+
+    def test_too_few_spike_days_fall_back_to_the_pooled_size_law(self):
+        # fewer than TWO_PART_SETTINGS["min_spike_days"] spikes: the slope is not fitted
+        x = [[float(i)] for i in range(30)]
+        excess = [4, 8, 2]
+        low = ml._geometric_size_survival(x[:3], excess, [[0.0], [29.0]], (5.0,))
+        self.assertEqual(low[0], low[1])
+
+    def test_the_spike_part_at_the_spike_threshold_is_the_plain_classifier(self):
+        """At the spike threshold the two-part curve is the direct classifier's, unchanged."""
+
+        rows = _pressure_panel()
+        splits = _pressure_splits()
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _TWO_PART_FEATURES, decision_time=time(16, 0))
+        train, served = rows[:150], rows[150:160]
+        plain = ml.pressure_logistic_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (5.0,), information=rule
+        )
+        two = ml.pressure_two_part_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (5.0, 10.0, 20.0, 50.0), information=rule
+        )
+        for want, got in zip(plain.curves, two.curves):
+            self.assertAlmostEqual(want[0], got[0], places=12)
+            self.assertEqual(list(got), sorted(got, reverse=True))
+
+    def test_both_parts_are_fitted_on_the_training_pairs_only(self):
+        """Both parts learn from `_pressure_pairs(train_rows)`, the as-of-paired labels, and nothing else.
+
+        Mutation recorded (#382): in `_direct_pressure_predictor`'s `fit_predict`, changing
+        `_pressure_pairs(design, information, train_rows, cache)` to pass
+        `list(train_rows) + list(feature_rows)` made this fail with AssertionError (the
+        pairs were built from rows that included the served days).
+        """
+
+        from unittest import mock
+
+        rows = _pressure_panel()
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _TWO_PART_FEATURES, decision_time=time(16, 0))
+        train, served = rows[:150], rows[150:155]
+        predictor = ml.pressure_two_part_exceedance(_TWO_PART_FEATURES, _pressure_splits(), minimum_history=20)
+        seen = []
+        real = ml._pressure_pairs
+
+        def spy(design, information, frame, cache):
+            seen.append([row.date for row in frame])
+            return real(design, information, frame, cache)
+
+        with mock.patch.object(ml, "_pressure_pairs", spy):
+            predictor(train, served, (5.0, 10.0), information=rule)
+        self.assertEqual(seen, [[row.date for row in train]])
+        self.assertTrue(all(day < served[0].date for day in seen[0]))
+
+    def test_a_threshold_below_the_spike_is_the_classifier_on_its_own_label(self):
+        rows = _pressure_panel()
+        splits = _pressure_splits()
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _TWO_PART_FEATURES, decision_time=time(16, 0))
+        train, served = rows[:150], rows[150:158]
+        two = ml.pressure_two_part_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (2.0, 5.0, 10.0), information=rule
+        )
+        plain = ml.pressure_logistic_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (2.0, 5.0), information=rule
+        )
+        for want, got in zip(plain.curves, two.curves):
+            self.assertAlmostEqual(want[0], got[0], places=12)
+            self.assertEqual(list(got), sorted(got, reverse=True))
+
+
 class ProbitAndQuantileTests(unittest.TestCase):
     def setUp(self):
         require_extra(self)
