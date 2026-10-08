@@ -19,7 +19,10 @@ walk-forward on the shared fold grid at +5 and +10 bp, days before 2026-01-01 on
 recalibrates it out of fold against the pressure-day outcome (`pressure.recalibrated`).
 The output has the shape of `pressure_model_v1.py horizon`'s: `forecasts` holds every
 candidate `+recalibrated`, the form the judge declares; the onset-rate raw fits are kept
-under `unrecalibrated_forecasts` as an ablation.
+under `unrecalibrated_forecasts` as an ablation. After the judge, `leads` reports the onset
+recall and the false alarms per onset at each lead h = 1 to 5 under the judge's own cut-offs:
+
+    PYTHONPATH=src python3 scripts/onset_classifier.py leads --panel PUBLISHED.csv --output OUT/leads.json OUT/bench_h?.json OUT/onset_h?.json
 """
 
 from __future__ import annotations
@@ -149,6 +152,72 @@ def run_command(args) -> int:
     return 0
 
 
+def leads_command(args) -> int:
+    """Onset recall and false alarms per onset at each lead, under the judge's own cut-offs.
+
+    The judge reports the onset tier at "lead at least 1" and "at least 3"; this reads the same
+    grids and the cut-offs `pressure_judge.choose_cutoffs` chooses for each forecast, and reports
+    the share of +5 bp onsets flagged at exactly horizon h and the false alarms (flags on days
+    that are not pressure days) per onset, for h = 1 to 5.
+    """
+
+    sys.path.insert(0, str(REPO / "scripts"))
+    import pressure_judge as script
+
+    from repo_model import pressure_judge as pj
+
+    declaration = pj.load_declaration()
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(SPLITS)
+    digest = panel_sha256(args.panel)
+    forecasts = []
+    for path in args.inputs:
+        document = json.loads(Path(path).read_text())
+        if document["panel_sha256"] != digest:
+            raise SystemExit(f"{path} was scored on another panel ({document['panel_sha256'][:8]})")
+        forecasts.extend(pj.forecasts_from_horizon_document(document))
+    states = {h: script._scarcity_states(h, declaration.last_day) for h in declaration.horizons}
+
+    def grids_of(items):
+        out = {}
+        for h in declaration.horizons:
+            reference = next(f for f in items if f.horizon == h and f.name == declaration.climatology)
+            out[h] = pj.build_grid(declaration, h, rows, reference.dates, splits, scarcity_state=states[h])
+        return out
+
+    calendar = [row.date for row in rows]
+    chosen = pj.choose_cutoffs(declaration, grids_of(forecasts), forecasts, calendar)
+    grids = grids_of(chosen)
+    tau = declaration.primary
+    table = {}
+    for forecast in chosen:
+        grid = grids[forecast.horizon]
+        flags = [1 if p >= c else 0 for p, c in zip(forecast.probabilities[tau], forecast.cutoffs[tau])]
+        outcomes, onset = grid.outcomes[tau], grid.onset_at(tau, tau)
+        onsets = sum(onset)
+        caught = sum(f and o for f, o in zip(flags, onset))
+        false_alarms = sum(f and not y for f, y in zip(flags, outcomes))
+        table.setdefault(forecast.name, {})[str(forecast.horizon)] = {
+            "onsets": onsets,
+            "onsets_flagged": caught,
+            "recall": caught / onsets if onsets else None,
+            "flags": sum(flags),
+            "false_alarms": false_alarms,
+            "false_alarms_per_onset": false_alarms / onsets if onsets else None,
+        }
+    args.output.write_text(json.dumps(table, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print("| model | " + " | ".join(f"h={h}" for h in declaration.horizons) + " |")
+    print("|---|" + "---|" * len(declaration.horizons))
+    for name in sorted(table):
+        cells = [
+            f"{c['onsets_flagged']}/{c['onsets']} ({c['recall']:.2f}), {c['false_alarms_per_onset']:.2f}"
+            for c in (table[name][str(h)] for h in declaration.horizons)
+        ]
+        print(f"| {name} | " + " | ".join(cells) + " |")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -159,6 +228,11 @@ def main(argv=None) -> int:
     run.add_argument("--candidate")
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(handler=run_command)
+    leads = commands.add_parser("leads", help="onset recall and false alarms per onset at each lead")
+    leads.add_argument("--panel", type=Path, required=True)
+    leads.add_argument("--output", type=Path, required=True)
+    leads.add_argument("inputs", nargs="+", type=Path)
+    leads.set_defaults(handler=leads_command)
     args = parser.parse_args(argv)
     return args.handler(args)
 
