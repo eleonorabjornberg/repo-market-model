@@ -2,7 +2,7 @@
 
 A scratch measurement, not a record: it writes JSON and a Markdown summary to
 the paths it is given, and nothing into `docs/runs/`. The bar, the thresholds,
-the horizons and every flagging cut-off are in `metadata/pressure_judge.json`,
+the horizons and the rule that chooses every flagging cut-off are in `metadata/pressure_judge.json`,
 which this script refuses to read unless it is committed and unchanged: a
 declaration is made before scoring, not edited beside it.
 
@@ -26,7 +26,14 @@ dates), and writes the evidence of Eleonora's replacement bar (tiers 1 to 5 and
 the pass rule) for every declared candidate. Scored days are before 2026-01-01
 (`docs/decisions/lockbox.md`, #374); `--confirmation` is the single look at
 2026-01-01 to 2026-09-03 and scores only the candidates the declaration names
-for it.
+for it. The flag cut-off of every row is chosen by the declaration's `cutoff_rule`, refit by refit, from
+the days before the refit (`pressure_judge.choose_cutoffs`, #407); the look reads the development days as
+training and scores its window only.
+
+    PYTHONPATH=src python3 scripts/pressure_judge.py table OUT/judge.json [--horizon H] [--output OUT/tables.md]
+
+`table` prints the verdicts of a `judge` file in one row per model, then the models split by regime and
+pressure-day type (the table a pull request carries).
 """
 
 from __future__ import annotations
@@ -409,6 +416,105 @@ def markdown(result) -> str:
     return "\n".join(lines) + "\n"
 
 
+def summary_tables(result, horizon="1") -> str:
+    """The judge's verdicts in one row per model, then the same models split by regime and pressure-day type.
+
+    Table 1: tier 1 (recall with its interval, climatology's recall at the same false alarms, the worst
+    false alarms per onset), tier 3 (the worst alarm rate in the abundant stretches over the leads, and the
+    regimes with a pressure day that are calibrated at the first lead), tier 5, the pass, and the pass
+    within the scarce regime alone (reported, not part of the rule). Tables 2 and 3: at `horizon`, the
+    onset recall and the Brier difference against calendar climatology (positive: the model is better,
+    90% interval) in every regime and every pressure-day type.
+    """
+
+    declaration = result["declaration"]
+    primary = f"{declaration['primary_threshold_bp']:g}"
+    near = f"lead_at_least_{declaration['tiers']['onset_warning']['lead_at_least']}"
+    lines = [
+        f"Table 1. Tiers at +{primary} bp, h = 1 to 5; 90% stationary-bootstrap intervals. "
+        f"The pass rule is tier 1 at lead >= 1, tier 3 at every lead and tier 5.",
+        "",
+        "| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset (limit 2) "
+        "| tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes with pressure, h = 1 | tier 5: calibrated, beats clim. "
+        "| pass | scarce regime alone (tiers 1 / 3 / 5) |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for name, candidate in result["candidates"].items():
+        onset = candidate["tiers"]["onset_warning"][near]
+        recall = onset.get("recall") or {}
+        interval = recall.get("interval")
+        shown = _f(recall.get("mean")) + (f" [{interval['lower']:.3f}, {interval['upper']:.3f}]" if interval else "")
+        wolf = candidate["tiers"]["no_crying_wolf"]
+        worst = {}
+        for tier in wolf.values():
+            for label, stretch in tier["abundant_stretches"].items():
+                rate = stretch["flags_per_year"]
+                worst[label] = rate if worst.get(label) is None or (rate is not None and rate > worst[label]) else worst[label]
+        state0 = worst.get(f"scarcity_state_{declaration['tiers']['no_crying_wolf']['abundant_scarcity_state']}")
+        regime = worst.get(f"regime_{declaration['tiers']['no_crying_wolf']['abundant_regime']}")
+        first = wolf[next(iter(wolf))]
+        tested = first["calibrated_by_regime"]
+        week = candidate["tiers"]["week_ahead"]
+        week_cell = (
+            "–" if "criteria" not in week
+            else f"{_yes(week['criteria']['calibrated'])}, {_yes(week['criteria']['beats_climatology_brier'])}"
+        )
+        verdict = candidate["verdict"]
+        scarce = verdict["scarce_regime"]
+        scarce_cell = (
+            "unavailable" if "unavailable" in scarce
+            else f"{'pass' if scarce['passes'] else 'fail'} ({_yes(scarce['tier_1_onset_warning'])} / "
+            f"{_yes(scarce['tier_3_no_crying_wolf'])} / {_yes(scarce['tier_5_week_ahead'])})"
+        )
+        lines.append(
+            f"| {name} | {onset.get('onsets_flagged', '–')} of {onset.get('onsets', '–')} | {shown} | "
+            f"{_f(onset.get('climatology_recall'))} | {_f(onset.get('worst_false_alarms_per_onset'), 2)} | "
+            f"{_f(state0, 1)} / {_f(regime, 1)} | {sum(tested.values())} of {len(tested)} | {week_cell} | "
+            f"{'PASS' if verdict['passes'] else 'fail'} (tiers {_yes(verdict['tier_1_onset_warning'])} / "
+            f"{_yes(verdict['tier_3_no_crying_wolf'])} / {_yes(verdict['tier_5_week_ahead'])}) | {scarce_cell} |"
+        )
+    labels = {}
+    for candidate in result["candidates"].values():
+        splits = candidate["horizons"].get(horizon, {}).get(primary, {}).get("splits", {})
+        for dimension in ("regime", "day_type"):
+            for label in splits.get(dimension, {}):
+                labels.setdefault(dimension, [])
+                if label not in labels[dimension]:
+                    labels[dimension].append(label)
+    columns = [(d, label) for d in ("regime", "day_type") for label in labels.get(d, [])]
+    for title, render in (
+        (f"Table 2. Onset recall at h = {horizon} (+{primary} bp), by regime and pressure-day type: flagged / pressure days in the group.",
+         lambda cell: "–" if not cell["events"] else f"{_f(cell['flags']['recall'], 2)} ({cell['events']})"),
+        (f"Table 3. Brier difference against calendar climatology at h = {horizon} (+{primary} bp), by regime and pressure-day type "
+         "(positive: better than climatology; 90% interval).",
+         lambda cell: _cell(cell["brier_difference_vs_climatology"])),
+    ):
+        lines += [
+            "",
+            title,
+            "",
+            "| model | " + " | ".join(f"{d}: {label}" for d, label in columns) + " |",
+            "|---|" + "---|" * len(columns),
+        ]
+        for name, candidate in result["candidates"].items():
+            splits = candidate["horizons"].get(horizon, {}).get(primary, {}).get("splits", {})
+            cells = [
+                render(splits[d][label]) if d in splits and label in splits[d] else "–" for d, label in columns
+            ]
+            lines.append(f"| {name} | " + " | ".join(cells) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def table_command(args) -> int:
+    result = json.loads(args.judge.read_text())
+    text = summary_tables(result, args.horizon)
+    if args.output:
+        args.output.write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -432,6 +538,11 @@ def main(argv=None) -> int:
     )
     judge.add_argument("inputs", nargs="+", type=Path)
     judge.set_defaults(run=judge_command)
+    table = commands.add_parser("table", help="the judge's verdicts in one row per model, split by regime and day type")
+    table.add_argument("judge", type=Path, help="a judge.json written by `judge`")
+    table.add_argument("--horizon", default="1")
+    table.add_argument("--output", type=Path)
+    table.set_defaults(run=table_command)
     args = parser.parse_args(argv)
     return args.run(args)
 
