@@ -1,0 +1,380 @@
+{
+ "calendar_climatology": {
+  "1": {
+   "false_alarms": 126,
+   "false_alarms_per_onset": 4.666666666666667,
+   "flags": 198,
+   "onsets": 27,
+   "onsets_flagged": 9,
+   "recall": 0.3333333333333333
+  },
+  "2": {
+   "false_alarms": 127,
+   "false_alarms_per_onset": 4.884615384615385,
+   "flags": 196,
+   "onsets": 26,
+   "onsets_flagged": 10,
+   "recall": 0.38461538461538464
+  },
+  "3": {
+   "false_alarms": 128,
+   "false_alarms_per_onset": 4.923076923076923,
+   "flags": 196,
+   "onsets": 26,
+   "onsets_flagged": 10,
+   "recall": 0.38461538461538464
+  },
+  "4": {
+   "false_alarms": 129,
+   "false_alarms_per_onset": 4.961538461538462,
+   "flags": 196,
+   "onsets": 26,
+   "onsets_flagged": 10,
+   "recall": 0.38461538461538464
+  },
+  "5": {
+   "false_alarms": 130,
+   "false_alarms_per_onset": 5.0,
+   "flags": 196,
+   "onsets": 26,
+   "onsets_flagged": 10,
+   "recall": 0.38461538461538464
+  }
+ },
+ "onset_gbm_class_weight+recalibrated": {
+  "1": {
+   "false_alarms": 89,
+   "false_alarms_per_onset": 3.2962962962962963,
+   "flags": 136,
+   "onsets": 27,
+   "onsets_flagged": 8,
+   "recall": 0.2962962962962963
+  },
+  "2": {
+   "false_alarms": 45,
+   "false_alarms_per_onset": 1.7307692307692308,
+   "flags": 76,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  },
+  "3": {
+   "false_alarms": 59,
+   "false_alarms_per_onset": 2.269230769230769,
+   "flags": 89,
+   "onsets": 26,
+   "onsets_flagged": 4,
+   "recall": 0.15384615384615385
+  },
+  "4": {
+   "false_alarms": 42,
+   "false_alarms_per_onset": 1.6153846153846154,
+   "flags": 59,
+   "onsets": 26,
+   "onsets_flagged": 6,
+   "recall": 0.23076923076923078
+  },
+  "5": {
+   "false_alarms": 78,
+   "false_alarms_per_onset": 3.0,
+   "flags": 110,
+   "onsets": 26,
+   "onsets_flagged": 4,
+   "recall": 0.15384615384615385
+  }
+ },
+ "onset_gbm_class_weight_funding+recalibrated": {
+  "1": {
+   "false_alarms": 88,
+   "false_alarms_per_onset": 3.259259259259259,
+   "flags": 135,
+   "onsets": 27,
+   "onsets_flagged": 8,
+   "recall": 0.2962962962962963
+  },
+  "2": {
+   "false_alarms": 45,
+   "false_alarms_per_onset": 1.7307692307692308,
+   "flags": 76,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  },
+  "3": {
+   "false_alarms": 59,
+   "false_alarms_per_onset": 2.269230769230769,
+   "flags": 89,
+   "onsets": 26,
+   "onsets_flagged": 4,
+   "recall": 0.15384615384615385
+  },
+  "4": {
+   "false_alarms": 42,
+   "false_alarms_per_onset": 1.6153846153846154,
+   "flags": 59,
+   "onsets": 26,
+   "onsets_flagged": 6,
+   "recall": 0.23076923076923078
+  },
+  "5": {
+   "false_alarms": 78,
+   "false_alarms_per_onset": 3.0,
+   "flags": 111,
+   "onsets": 26,
+   "onsets_flagged": 4,
+   "recall": 0.15384615384615385
+  }
+ },
+ "onset_gbm_focal+recalibrated": {
+  "1": {
+   "false_alarms": 74,
+   "false_alarms_per_onset": 2.740740740740741,
+   "flags": 106,
+   "onsets": 27,
+   "onsets_flagged": 8,
+   "recall": 0.2962962962962963
+  },
+  "2": {
+   "false_alarms": 40,
+   "false_alarms_per_onset": 1.5384615384615385,
+   "flags": 51,
+   "onsets": 26,
+   "onsets_flagged": 1,
+   "recall": 0.038461538461538464
+  },
+  "3": {
+   "false_alarms": 49,
+   "false_alarms_per_onset": 1.8846153846153846,
+   "flags": 78,
+   "onsets": 26,
+   "onsets_flagged": 4,
+   "recall": 0.15384615384615385
+  },
+  "4": {
+   "false_alarms": 50,
+   "false_alarms_per_onset": 1.9230769230769231,
+   "flags": 70,
+   "onsets": 26,
+   "onsets_flagged": 6,
+   "recall": 0.23076923076923078
+  },
+  "5": {
+   "false_alarms": 56,
+   "false_alarms_per_onset": 2.1538461538461537,
+   "flags": 78,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  }
+ },
+ "onset_logistic+recalibrated": {
+  "1": {
+   "false_alarms": 92,
+   "false_alarms_per_onset": 3.4074074074074074,
+   "flags": 148,
+   "onsets": 27,
+   "onsets_flagged": 11,
+   "recall": 0.4074074074074074
+  },
+  "2": {
+   "false_alarms": 61,
+   "false_alarms_per_onset": 2.3461538461538463,
+   "flags": 94,
+   "onsets": 26,
+   "onsets_flagged": 6,
+   "recall": 0.23076923076923078
+  },
+  "3": {
+   "false_alarms": 73,
+   "false_alarms_per_onset": 2.8076923076923075,
+   "flags": 106,
+   "onsets": 26,
+   "onsets_flagged": 8,
+   "recall": 0.3076923076923077
+  },
+  "4": {
+   "false_alarms": 61,
+   "false_alarms_per_onset": 2.3461538461538463,
+   "flags": 93,
+   "onsets": 26,
+   "onsets_flagged": 5,
+   "recall": 0.19230769230769232
+  },
+  "5": {
+   "false_alarms": 35,
+   "false_alarms_per_onset": 1.3461538461538463,
+   "flags": 57,
+   "onsets": 26,
+   "onsets_flagged": 7,
+   "recall": 0.2692307692307692
+  }
+ },
+ "onset_logistic_class_weight+recalibrated": {
+  "1": {
+   "false_alarms": 21,
+   "false_alarms_per_onset": 0.7777777777777778,
+   "flags": 34,
+   "onsets": 27,
+   "onsets_flagged": 5,
+   "recall": 0.18518518518518517
+  },
+  "2": {
+   "false_alarms": 9,
+   "false_alarms_per_onset": 0.34615384615384615,
+   "flags": 14,
+   "onsets": 26,
+   "onsets_flagged": 1,
+   "recall": 0.038461538461538464
+  },
+  "3": {
+   "false_alarms": 6,
+   "false_alarms_per_onset": 0.23076923076923078,
+   "flags": 10,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  },
+  "4": {
+   "false_alarms": 2,
+   "false_alarms_per_onset": 0.07692307692307693,
+   "flags": 5,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  },
+  "5": {
+   "false_alarms": 4,
+   "false_alarms_per_onset": 0.15384615384615385,
+   "flags": 8,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  }
+ },
+ "onset_logistic_class_weight_funding+recalibrated": {
+  "1": {
+   "false_alarms": 20,
+   "false_alarms_per_onset": 0.7407407407407407,
+   "flags": 33,
+   "onsets": 27,
+   "onsets_flagged": 4,
+   "recall": 0.14814814814814814
+  },
+  "2": {
+   "false_alarms": 9,
+   "false_alarms_per_onset": 0.34615384615384615,
+   "flags": 14,
+   "onsets": 26,
+   "onsets_flagged": 1,
+   "recall": 0.038461538461538464
+  },
+  "3": {
+   "false_alarms": 6,
+   "false_alarms_per_onset": 0.23076923076923078,
+   "flags": 10,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  },
+  "4": {
+   "false_alarms": 2,
+   "false_alarms_per_onset": 0.07692307692307693,
+   "flags": 5,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  },
+  "5": {
+   "false_alarms": 4,
+   "false_alarms_per_onset": 0.15384615384615385,
+   "flags": 8,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  }
+ },
+ "persistence_logistic": {
+  "1": {
+   "false_alarms": 72,
+   "false_alarms_per_onset": 2.6666666666666665,
+   "flags": 133,
+   "onsets": 27,
+   "onsets_flagged": 4,
+   "recall": 0.14814814814814814
+  },
+  "2": {
+   "false_alarms": 89,
+   "false_alarms_per_onset": 3.423076923076923,
+   "flags": 170,
+   "onsets": 26,
+   "onsets_flagged": 6,
+   "recall": 0.23076923076923078
+  },
+  "3": {
+   "false_alarms": 73,
+   "false_alarms_per_onset": 2.8076923076923075,
+   "flags": 120,
+   "onsets": 26,
+   "onsets_flagged": 6,
+   "recall": 0.23076923076923078
+  },
+  "4": {
+   "false_alarms": 82,
+   "false_alarms_per_onset": 3.1538461538461537,
+   "flags": 141,
+   "onsets": 26,
+   "onsets_flagged": 6,
+   "recall": 0.23076923076923078
+  },
+  "5": {
+   "false_alarms": 73,
+   "false_alarms_per_onset": 2.8076923076923075,
+   "flags": 127,
+   "onsets": 26,
+   "onsets_flagged": 5,
+   "recall": 0.19230769230769232
+  }
+ },
+ "published_v1": {
+  "1": {
+   "false_alarms": 61,
+   "false_alarms_per_onset": 2.259259259259259,
+   "flags": 123,
+   "onsets": 27,
+   "onsets_flagged": 2,
+   "recall": 0.07407407407407407
+  },
+  "2": {
+   "false_alarms": 40,
+   "false_alarms_per_onset": 1.5384615384615385,
+   "flags": 85,
+   "onsets": 26,
+   "onsets_flagged": 0,
+   "recall": 0.0
+  },
+  "3": {
+   "false_alarms": 31,
+   "false_alarms_per_onset": 1.1923076923076923,
+   "flags": 62,
+   "onsets": 26,
+   "onsets_flagged": 0,
+   "recall": 0.0
+  },
+  "4": {
+   "false_alarms": 33,
+   "false_alarms_per_onset": 1.2692307692307692,
+   "flags": 48,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  },
+  "5": {
+   "false_alarms": 38,
+   "false_alarms_per_onset": 1.4615384615384615,
+   "flags": 57,
+   "onsets": 26,
+   "onsets_flagged": 2,
+   "recall": 0.07692307692307693
+  }
+ }
+}

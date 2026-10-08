@@ -1,0 +1,33 @@
+{
+  "status": "declared by the pull request that closes #409 before any score was computed; nothing here is tuned on a scored day; the choices below are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "minimum_history": 61, "refit_every": 21, "decision_time": "16:00"},
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "target": {
+    "label": "an onset at the threshold: a day with SOFR - IORB above it and no such day on the five panel days before it (pressure.onsets, pressure.ONSET_QUIET_DAYS)",
+    "per_day": "the horizon-h file holds P(day t+h is an onset), read at the decision instant of day t, h = 1 to 5; a training day with fewer than five panel days before it trains no pair",
+    "within_lead": "'an onset within lead h' is read through the five horizon files: an onset is flagged with lead h when its own horizon-h probability reached the cut-off, and 'at least h' when any horizon from h to 5 did (the judge's onset tier)",
+    "five_day_window": "P(an onset or pressure day in the next five business days) is the judge's week-ahead tier: the maximum of the five per-day probabilities (pressure_judge.json tiers.week_ahead.combine)"
+  },
+  "features": {
+    "base": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date", "treasury_settlement", "reserve_balances", "reserve_scarcity_state", "tga"],
+    "funding": ["tga_daily", "tga_daily_change"],
+    "optional_funding": ["ofr_tri_rate", "ofr_gcf_rate"],
+    "note": "base: the calendar, the reserve-scarcity state (#115) with reserves, and the weekly TGA change as the direct-model design reads them; funding: the daily TGA balance and its change (#377); optional_funding: the OFR tri-party and GCF overnight rates (#377), which enter with an observed indicator and a zero where not yet public, because the tri-party rate is real-time only from 2020-09-09 and the GCF rate is present on a minority of days; treasury_settlement leaves the inputs at h >= 2 (scheduled one business day ahead, so not public)"
+  },
+  "weighting": {
+    "settings": "ml.PRESSURE_RARE_EVENT_SETTINGS (#381): class_weight 'balanced' inside each fit's training rows, or the focal loss; unweighted for the one reference row",
+    "scarcity_state": "reserve_scarcity_state (0 to 3) enters as a level, and reserves multiply every scheduled term, as in the settlement-timing track (#379)"
+  },
+  "recalibration": "pressure.RECALIBRATION: Platt on the candidate's own earlier forecasts against the pressure-day outcome, out of fold, per threshold; this is the judged form because the onset probability alone sits on the onset-rate scale and the judge calibrates against pressure days; the raw fits are kept as an ablation",
+  "judged_form": "+recalibrated",
+  "cutoffs": "chosen by the judge's cutoff_rule from each refit's training window alone (pressure_judge.json); none is declared here",
+  "candidates": {
+    "onset_logistic": {"kind": "logistic", "treatment": null, "inputs": ["base", "funding"], "optional": []},
+    "onset_logistic_class_weight": {"kind": "logistic", "treatment": "class_weight", "inputs": ["base", "funding"], "optional": []},
+    "onset_gbm_class_weight": {"kind": "gbm_classifier", "treatment": "class_weight", "inputs": ["base", "funding"], "optional": []},
+    "onset_gbm_focal": {"kind": "gbm_classifier", "treatment": "focal", "inputs": ["base", "funding"], "optional": []},
+    "onset_logistic_class_weight_funding": {"kind": "logistic", "treatment": "class_weight", "inputs": ["base", "funding", "optional_funding"], "optional": ["ofr_tri_rate", "ofr_gcf_rate"]},
+    "onset_gbm_class_weight_funding": {"kind": "gbm_classifier", "treatment": "class_weight", "inputs": ["base", "funding", "optional_funding"], "optional": ["ofr_tri_rate", "ofr_gcf_rate"]}
+  }
+}
