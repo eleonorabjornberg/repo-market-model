@@ -158,6 +158,8 @@ RUNS = "docs/runs"
 FINAL_TEST = f"{RUNS}/final_test_near_blind.json"
 #: The published distribution's daily forecasts at h = 1 (#246).
 FORECAST_DAILY = f"{RUNS}/published_distribution_daily_h1.json"
+#: The same distribution with the middle band recalibrated (#418, Eleonora's ruling of 8 October 2026 on #415).
+FORECAST_DAILY_CALENDAR = f"{RUNS}/published_distribution_calendar_daily_h1.json"
 SNAPSHOTS = "tests/fixtures/snapshots"
 REPOSITORY = "eleonorabjornberg/repo-market-model"
 TEMPLATE = "site/template.html"
@@ -192,6 +194,8 @@ INPUTS = (
     ISSUES,
     FINAL_TEST,
     FORECAST_DAILY,
+    FORECAST_DAILY_CALENDAR,
+    "docs/calendar_bands_418.md",
     f":(glob){RUNS}/*.json",
     SNAPSHOTS,
 )
@@ -375,6 +379,7 @@ FINAL_TEST_STRESS_TARGETS = (("+5bp", "+5"), ("+10bp", "+10"))
 #: daily record is published, it is added here, with no other change.
 FORECAST_DAILY_SERIES = (
     {"key": "v1", "label": "The published model", "record": FORECAST_DAILY},
+    {"key": "calendar", "label": "Middle band recalibrated", "record": FORECAST_DAILY_CALENDAR},
 )
 #: The quantile levels the section reads: the 90% band is the outer pair, the 50% band the inner.
 FORECAST_DAILY_LEVELS = [0.05, 0.25, 0.5, 0.75, 0.95]
@@ -3116,6 +3121,29 @@ def forecast_takeaways(recent, worst, year):
             f"The biggest miss in {year} was about {miss:.0f} bp ({when.day} {when:%B})."]
 
 
+def recalibration_note(drawn):
+    """The plain paragraph under the forecast chart on the recalibrated middle band (#418), from the two records.
+
+    The 50% band's share of days inside it, to the nearest percent, for the published model and for the
+    recalibrated one, on 2018-2025 and on 2026; the record says whether the 90% band moved. Empty unless the
+    recalibrated series is drawn.
+    """
+    by_key = {entry["key"]: days for entry, _, days in drawn}
+    if "calendar" not in by_key:
+        return ""
+    shares = {}
+    for name, keep in (("2018-2025", lambda iso: iso < FORECAST_DAILY_SPLIT), ("2026", lambda iso: iso >= FORECAST_DAILY_SPLIT)):
+        shares[name] = [100 * forecast_accuracy([d for d in by_key[k] if keep(d["date"])])["band_50"]["inside"]
+                        for k in ("v1", "calendar")]
+    return (f"<p class='prose'>The middle band, the range that should hold half of all days, has been recalibrated. It "
+            f"used to be too narrow: the actual spread landed inside it on {shares['2018-2025'][0]:.0f}% of days in "
+            f"2018-2025 and {shares['2026'][0]:.0f}% in 2026. It now holds {shares['2018-2025'][1]:.0f}% and "
+            f"{shares['2026'][1]:.0f}%. The band moves by what recent misses on the "
+            f"same kind of day (a month-end, a quarter-end, a tax date, a coupon settlement or an ordinary day) say it "
+            f"should have been. The 90% band is not adjusted. The limits above describe the live forecast, which is "
+            f"unchanged. <a href='{BLOB}docs/calendar_bands_418.md'>The before and after tables</a>.</p>")
+
+
 def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
     """The "Forecast against what happened" section (#246), read off each series' record.
 
@@ -3203,7 +3231,7 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
         line("Days within 2 bp of the median", lambda r: f"{100 * r['within_2']:.0f}%"),
         line("Largest misses, actual minus median", largest),
         line("Actual inside the 90% band (misses below, above)", lambda r: band(r, "band_90")),
-        line(f"Actual inside the 50% band, {FORECAST_DAILY_50_LABEL} (misses below, above)",
+        line("Actual inside the 50% band (misses below, above)",
              lambda r: band(r, "band_50")),
         line("Mean width of the 90% band, bp", lambda r: f"{r['band_90']['width']:.2f}"),
         line("Mean width of the 50% band, bp", lambda r: f"{r['band_50']['width']:.2f}"),
@@ -3225,6 +3253,7 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
     takeaways = forecast_takeaways(recent, misses[0], date.fromisoformat(periods[1]["first"]).year)
     fills = {
         "fd_takeaways": "<ul class='ftlist'>" + "".join(f"<li>{html.escape(t)}</li>" for t in takeaways) + "</ul>",
+        "fd_recalibration": recalibration_note(drawn),
         "fd_table": table,
         "fd_misses": miss_table,
         "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'><code>{FORECAST_DAILY}"
