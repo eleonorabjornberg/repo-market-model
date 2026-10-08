@@ -10267,6 +10267,152 @@ class ScarcityEventBarVariantTests(unittest.TestCase):
             self.assertEqual(settings["regime_partial_pooling"] is not None, "regime_pooled" in kwargs)
 
 
+class HierarchicalLogisticTests(unittest.TestCase):
+    """The hierarchical logistic of the pressure label, shrinkage by empirical Bayes (#386).
+
+    Written first, and watched failing: before the variant existed every test
+    here raised `AttributeError: module 'repo_model.ml' has no attribute
+    '_empirical_bayes_scale'` or `TypeError: _ScarcityCalendarDesign.__init__()
+    got an unexpected keyword argument 'regime_hierarchical'`.
+
+    Recorded mutations (applied in a scratch copy, run, reverted):
+
+    * `_laplace_log_evidence`: the `- 0.5 * logdet` term deleted (the Occam
+      factor): killed by `test_the_evidence_prefers_the_smaller_scale_for_an_irrelevant_deviation`
+      (`AssertionError`). The same mutation also failed
+      `test_regimes_that_agree_are_pooled_by_the_smallest_scale` and
+      `test_regimes_that_differ_are_given_a_larger_scale`.
+    * `_empirical_bayes_scale`: `x[:, 1]` (the regime column) replaced by
+      `x[:, 0]` in the `_pool_columns` call: killed by
+      `test_regimes_that_differ_are_given_a_larger_scale` (`AssertionError`).
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, **kwargs):
+        return ml._ScarcityCalendarDesign(
+            _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL, regime_hierarchical=True, **kwargs
+        )
+
+    def _data(self, differ, rows=480):
+        """A pooled design with a regime column, labels that do (or do not) depend on the regime."""
+
+        import numpy
+
+        rng = numpy.random.RandomState(7)
+        regime = numpy.arange(rows) % 4
+        x = rng.normal(size=(rows, 2))
+        logit = -2.0 + 0.8 * x[:, 0]
+        if differ:
+            logit = logit + numpy.array([-2.0, 0.0, 1.0, 3.0])[regime] + (regime == 3) * 1.5 * x[:, 1]
+        y = (rng.uniform(size=rows) < 1.0 / (1.0 + numpy.exp(-logit))).astype(int)
+        columns = numpy.column_stack([x[:, 0], regime.astype(float), x[:, 1]])
+        return columns, y
+
+    def test_the_variant_is_declared_with_no_fixed_scale(self):
+        design = self.design()
+        self.assertIsNone(design.pooling[3])
+        self.assertEqual(design.names, ml._ScarcityCalendarDesign(
+            _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL, regime_pooled=True).names)
+        self.assertEqual(design.settings()["regime_partial_pooling"]["deviation_scale"], "empirical Bayes")
+
+    def test_the_variant_is_one_variant(self):
+        with self.assertRaises(ValueError):
+            self.design(interactions=True)
+        with self.assertRaises(ValueError):
+            self.design(monotone=True)
+        with self.assertRaises(ValueError):
+            ml._ScarcityCalendarDesign(
+                _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL, regime_hierarchical=True, regime_pooled=True
+            )
+
+    def test_the_evidence_prefers_the_smaller_scale_for_an_irrelevant_deviation(self):
+        import numpy
+
+        columns, y = self._data(differ=False)
+        pooled = (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0)
+        z = (columns - columns.mean(axis=0)) / columns.std(axis=0)
+        small = ml._laplace_log_evidence(ml._pool_columns(z, columns[:, 1], *pooled, 0.05), y)
+        large = ml._laplace_log_evidence(ml._pool_columns(z, columns[:, 1], *pooled, 4.0), y)
+        self.assertGreater(small, large)
+        self.assertTrue(numpy.isfinite(small) and numpy.isfinite(large))
+
+    def test_regimes_that_agree_are_pooled_by_the_smallest_scale(self):
+        columns, y = self._data(differ=False)
+        got = ml._empirical_bayes_scale(columns, y, (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0))
+        self.assertEqual(got, min(ml.REGIME_SHRINKAGE_GRID))
+
+    def test_regimes_that_differ_are_given_a_larger_scale(self):
+        agree, differ = self._data(differ=False), self._data(differ=True)
+        base = ml._empirical_bayes_scale(*agree, (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0))
+        got = ml._empirical_bayes_scale(*differ, (0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0))
+        self.assertGreater(got, base)
+
+    def test_the_fit_records_the_scale_it_chose_and_is_deterministic(self):
+        columns, y = self._data(differ=True)
+        pooling = ((0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0), None)
+        first, second = [], []
+        a = ml._fit_classifier("logistic", columns, y, columns[:20], pooling=pooling, shrinkage_trace=first)
+        b = ml._fit_classifier("logistic", columns, y, columns[:20], pooling=pooling, shrinkage_trace=second)
+        self.assertEqual(a, b)
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 1)
+        self.assertIn(first[0], ml.REGIME_SHRINKAGE_GRID)
+        self.assertTrue(all(0.0 < p < 1.0 for p in a))
+
+    def test_the_regime_effects_add_the_pooled_coefficient_and_the_shrunk_deviation(self):
+        import numpy
+
+        # Columns: pooled 0 and 1; deviating 0 and 2 (column 2 is not pooled); two regimes.
+        coefficients = numpy.array([0.5, 2.0, 1.0, 0.1, 0.2, 3.0, 0.4, 0.6])
+        scale = numpy.array([2.0, 1.0, 4.0])
+        got = ml._regime_effects(coefficients, (0, 1), (0, 2), (0.0, 1.0), 0.5, scale)
+        self.assertEqual(got["shrink"], 0.5)
+        self.assertEqual(got["pooled"], {0: 0.25, 1: 2.0})
+        # regime 0: intercept 0.5 * 1.0; column 0: (0.5 + 0.5 * 0.1) / 2; column 2: 0.5 * 0.2 / 4
+        self.assertAlmostEqual(got["regimes"][0.0]["intercept"], 0.5)
+        self.assertAlmostEqual(got["regimes"][0.0][0], 0.275)
+        self.assertAlmostEqual(got["regimes"][0.0][2], 0.025)
+        self.assertEqual(got["regimes"][0.0][1], 2.0)
+        # regime 1: intercept 0.5 * 3.0; column 0: (0.5 + 0.5 * 0.4) / 2; column 2: 0.5 * 0.6 / 4
+        self.assertAlmostEqual(got["regimes"][1.0]["intercept"], 1.5)
+        self.assertAlmostEqual(got["regimes"][1.0][0], 0.35)
+        self.assertAlmostEqual(got["regimes"][1.0][2], 0.075)
+
+    def test_a_fixed_scale_is_untouched(self):
+        columns, y = self._data(differ=True)
+        trace = []
+        fixed = ((0, 2), (0, 2), (0.0, 1.0, 2.0, 3.0), 0.5)
+        ml._fit_classifier("logistic", columns, y, columns[:5], pooling=fixed, shrinkage_trace=trace)
+        self.assertEqual(trace, [])
+
+    def test_a_backtest_runs_the_variant_under_every_guard_and_records_the_shrinkage(self):
+        from repo_model.scarcity import measurement_declaration
+
+        rows = _scarcity_calendar_panel()
+        with measurement_declaration():
+            report = baseline.rolling_exceedance_backtest(
+                rows,
+                predictor=ml._scarcity_calendar_predictor(
+                    "logistic", _SCARCITY_CALENDAR, _pressure_splits(), _FOUR_LEVEL,
+                    minimum_history=60, regime_hierarchical=True,
+                ),
+                model_name="hierarchical_logistic",
+                features=_SCARCITY_CALENDAR,
+                registry=_PRESSURE_REGISTRY,
+                decision_time=time(16, 0),
+                taus=(5.0, 10.0),
+                minimum_history=60,
+                refit_every=21,
+                horizon=1,
+            )
+        self.assertTrue(report.folds)
+        chosen = report.model_settings["scarcity_calendar"]["regime_partial_pooling"]
+        self.assertEqual(chosen["deviation_scale"], "empirical Bayes")
+        self.assertTrue(chosen["grid"])
+
+
 def _history_rows(start, end):
     """Pre-SOFR history rows (#129) on weekdays, EFFR - IOER cycling through +8 bp."""
 
@@ -11735,6 +11881,107 @@ class PressureClassifierBootstrapConformanceTests(_PressureConformance, unittest
 
     FACTORY = staticmethod(_rare_factory("gbm_classifier", "balanced_bootstrap"))
     IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+def _onset_factory(kind, treatment):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_onset_exceedance(kind, treatment, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_onset_{kind}_{treatment}"
+    return factory
+
+
+class PressureOnsetLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted onset logistic (#409)."""
+
+    FACTORY = staticmethod(_onset_factory("logistic", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_onset_exceedance)
+
+
+class PressureOnsetClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted onset classifier (#409)."""
+
+    FACTORY = staticmethod(_onset_factory("gbm_classifier", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_onset_exceedance)
+
+
+class OnsetLabelTests(unittest.TestCase):
+    """The onset label (#409): a pressure day with five quiet panel days before it.
+
+    Recorded mutations:
+
+    * `_onset_labels`: the slice `train_rows[target - ONSET_QUIET_DAYS : target]`
+      widened to `train_rows[target - ONSET_QUIET_DAYS : target + 1]` (the target
+      itself counted among its own quiet days, so no pressure day is an onset):
+      `test_the_label_is_the_pressure_onset_rule` fails with `AssertionError`.
+    * `_onset_labels`: the slice shortened to `train_rows[target - 4 : target]`
+      (four quiet days): the same test fails with `AssertionError`.
+    """
+
+    SPREADS = [0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 6]
+
+    def rows(self):
+        from datetime import timedelta
+
+        return [
+            DailyObservation(date(2024, 1, 1) + timedelta(days=k), {"sofr": 5.0 + value / 100.0, "iorb": 5.0})
+            for k, value in enumerate(self.SPREADS)
+        ]
+
+    def test_the_label_is_the_pressure_onset_rule(self):
+        from repo_model import pressure
+        from repo_model.data import exceeds_bp
+
+        rows = self.rows()
+        targets = list(range(ml.ONSET_QUIET_DAYS, len(rows)))
+        exceeds = [1 if exceeds_bp(rows[t].spread_bps, 5.0) else 0 for t in targets]
+        labels = ml._onset_labels(exceeds, targets, rows, 5.0)
+        # Day 6 opens an episode, day 7 continues it, day 15 follows seven quiet days; day 20 has a
+        # pressure day exactly five days before it, and day 27 (a 6 bp print) follows seven quiet ones.
+        self.assertEqual([t for t, label in zip(targets, labels) if label], [6, 15, 27])
+        scored = [row.date for row in rows[ml.ONSET_QUIET_DAYS:]]
+        by_rule = pressure.onsets(rows, 5.0, scored)
+        self.assertEqual([rows[t].date for t, label in zip(targets, labels) if label], list(by_rule))
+
+    def test_no_threshold_above_the_spreads_gives_no_onset(self):
+        rows = self.rows()
+        targets = list(range(ml.ONSET_QUIET_DAYS, len(rows)))
+        self.assertEqual(sum(ml._onset_labels([0] * len(targets), targets, rows, 50.0)), 0)
+
+    def test_a_quantile_kind_has_no_onset_label(self):
+        with self.assertRaises(ValueError):
+            ml.pressure_onset_exceedance("probit", None, _PRESSURE_CALENDAR, _pressure_splits())
+        with self.assertRaises(ValueError):
+            ml.pressure_onset_exceedance("logistic", "focal", _PRESSURE_CALENDAR, _pressure_splits())
+
+
+class OptionalColumnTests(unittest.TestCase):
+    """A declared column that enters with an observed indicator (`ml._OnsetDesign`, #409)."""
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, **options):
+        return ml._OnsetDesign(("spread_bps", "ofr_tri_rate"), _pressure_splits(), **options)
+
+    def test_a_hole_is_a_zero_with_the_indicator_off(self):
+        design = self.design(optional=("ofr_tri_rate",))
+        self.assertEqual(design.names, ("spread_bps", "ofr_tri_rate", "ofr_tri_rate_observed"))
+        seen = DailyObservation(date(2024, 1, 2), {"sofr": 5.1, "iorb": 5.0, "ofr_tri_rate": 5.05})
+        hole = DailyObservation(date(2024, 1, 2), {"sofr": 5.1, "iorb": 5.0, "ofr_tri_rate": None})
+        self.assertEqual(design.row(seen, None)[1:], [5.05, 1.0])
+        self.assertEqual(design.row(hole, None)[1:], [0.0, 0.0])
+
+    def test_without_the_option_a_hole_is_still_refused(self):
+        hole = DailyObservation(date(2024, 1, 2), {"sofr": 5.1, "iorb": 5.0, "ofr_tri_rate": None})
+        with self.assertRaises(ValueError):
+            self.design().row(hole, None)
+
+    def test_an_optional_column_must_be_a_declared_linear_column(self):
+        with self.assertRaises(ValueError):
+            self.design(optional=("ofr_gcf_rate",))
+        with self.assertRaises(ValueError):
+            ml._OnsetDesign(("spread_bps", "reserve_balances"), _pressure_splits(), optional=("reserve_balances",))
 
 
 class RareEventTrainingTests(unittest.TestCase):
