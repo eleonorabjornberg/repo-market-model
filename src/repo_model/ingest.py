@@ -134,8 +134,12 @@ OFR_STFM_REAL_TIME_START = date(2020, 9, 9)
 _OFR_MNEMONIC_RE = re.compile(r"^[A-Z0-9]+-[A-Z0-9_]+-[A-Z]$")
 #: The OFR's other repo segments (#377): the overnight/open average rate,
 #: preliminary and final, and the overnight/open volume, final, of the tri-party
-#: and GCF segments. Fetched with the same function and read by the same parser
-#: as the DVP series; read by `measurement_fields` and by no published declaration.
+#: and GCF segments. Fetched with `fetch_ofr_stfm_repo` and read by the same
+#: parser as the DVP series, but declared as a source of their own,
+#: `ofr_stfm_repo_segments`, in `metadata/sources_measurement.json`: the frozen
+#: `metadata/sources.json` is not edited. Read by `measurement_fields` and by no
+#: published declaration.
+OFR_STFM_SEGMENTS_SOURCE_ID = "ofr_stfm_repo_segments"
 OFR_STFM_SEGMENT_MNEMONICS = (
     "REPO-TRI_AR_OO-P",
     "REPO-TRI_AR_OO-F",
@@ -470,8 +474,12 @@ def fetch_ofr_stfm_repo(
     output_root: Path,
     mnemonics: Sequence[str] = OFR_STFM_MNEMONICS,
     downloader: Callable[[str], bytes] = _download,
+    source_id: str = OFR_STFM_SOURCE_ID,
 ) -> List[SnapshotArtifact]:
     """Fetch one OFR `timeseries` response per mnemonic, saved unmodified (#187).
+
+    `source_id` is the source the snapshots are saved under: `ofr_stfm_repo`,
+    or `ofr_stfm_repo_segments` for `OFR_STFM_SEGMENT_MNEMONICS` (#377).
 
     Each is one plain GET of `OFR_STFM_TIMESERIES_URL?mnemonic=...`, validated
     as a list of `[date, value]` pairs before it is saved, so a response the
@@ -479,6 +487,8 @@ def fetch_ofr_stfm_repo(
     """
 
     artifacts: List[SnapshotArtifact] = []
+    if source_id not in (OFR_STFM_SOURCE_ID, OFR_STFM_SEGMENTS_SOURCE_ID):
+        raise ValueError(f"not an OFR source: {source_id!r}")
     retrieved_at = datetime.now(timezone.utc)
     for mnemonic in mnemonics:
         if not _OFR_MNEMONIC_RE.match(mnemonic):
@@ -488,7 +498,7 @@ def fetch_ofr_stfm_repo(
         _ofr_pairs(json.loads(payload), mnemonic)
         artifacts.append(
             _save_snapshot(
-                source_id=OFR_STFM_SOURCE_ID,
+                source_id=source_id,
                 url=url,
                 payload=payload,
                 output_root=output_root,
@@ -4678,7 +4688,7 @@ def parse_snapshots(
         elif artifact.source_id == NYFED_SRF_SOURCE_ID:
             # Also before the prefix test: operation results, not a refRates list.
             parsed_rows = _nyfed_srf_rows(artifact, payload)
-        elif artifact.source_id == OFR_STFM_SOURCE_ID:
+        elif artifact.source_id in (OFR_STFM_SOURCE_ID, OFR_STFM_SEGMENTS_SOURCE_ID):
             parsed_rows = _ofr_stfm_rows(artifact, payload)
         elif artifact.source_id == TREASURY_DTS_TGA_SOURCE_ID:
             parsed_rows = _treasury_dts_tga_rows(artifact, payload)

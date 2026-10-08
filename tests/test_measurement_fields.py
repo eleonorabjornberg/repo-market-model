@@ -20,7 +20,8 @@ from repo_model.ingest import SnapshotArtifact, load_snapshot_manifest, parse_sn
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
-REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text())
+PUBLISHED = json.loads((ROOT / "metadata" / "sources.json").read_text())
+REGISTRY = measurement_fields.load_registry()
 SNAPSHOTS = ROOT / "tests" / "fixtures" / "snapshots"
 NEW_YORK = ZoneInfo("America/New_York")
 
@@ -202,11 +203,11 @@ class TrackedSnapshotTests(unittest.TestCase):
 
     def test_the_registry_declares_every_new_series(self):
         self.assertEqual(REGISTRY["treasury_dts_tga"]["fields"], ["TGA_CLOSE"])
-        for mnemonic in ingest.OFR_STFM_SEGMENT_MNEMONICS:
-            self.assertIn(mnemonic, REGISTRY["ofr_stfm_repo"]["fields"])
-            self.assertIn(mnemonic, REGISTRY["ofr_stfm_repo"]["field_frequencies"])
+        segments = REGISTRY[ingest.OFR_STFM_SEGMENTS_SOURCE_ID]
+        self.assertEqual(sorted(segments["fields"]), sorted(ingest.OFR_STFM_SEGMENT_MNEMONICS))
+        self.assertEqual(sorted(segments["field_frequencies"]), sorted(segments["fields"]))
         for field in ("SOFR_p1", "SOFR_p99"):
-            self.assertIn(field, REGISTRY["nyfed_sofr"]["fields"])
+            self.assertIn(field, PUBLISHED["nyfed_sofr"]["fields"])
 
     def test_every_new_series_has_a_snapshot_with_its_checksum(self):
         seen = set()
@@ -345,8 +346,24 @@ class OffInEveryDeclarationTests(unittest.TestCase):
                 self.assertIn(source, REGISTRY, column)
                 self.assertIn(field, REGISTRY[source]["fields"], f"{column}: {source}.{field}")
 
-    def test_the_new_source_is_declared_unmodelled(self):
-        self.assertIn("treasury_dts_tga", contract.UNMODELLED_SOURCES)
+    def test_the_new_sources_stay_out_of_the_frozen_registry(self):
+        """`metadata/sources.json` is frozen by the final-test pre-registration (bytes), so it is not edited."""
+
+        for source in ("treasury_dts_tga", ingest.OFR_STFM_SEGMENTS_SOURCE_ID):
+            self.assertNotIn(source, PUBLISHED)
+            self.assertNotIn(source, contract.UNMODELLED_SOURCES)
+            self.assertIn(source, REGISTRY)
+
+    def test_the_two_registries_must_not_overlap(self):
+        with tempfile.TemporaryDirectory() as directory:
+            both = Path(directory) / "both.json"
+            both.write_text(json.dumps({"nyfed_sofr": PUBLISHED["nyfed_sofr"]}))
+            with self.assertRaises(ValueError):
+                measurement_fields.load_registry(measurement=both)
+
+    def test_each_new_declaration_is_a_valid_release_lag(self):
+        for source in ("treasury_dts_tga", ingest.OFR_STFM_SEGMENTS_SOURCE_ID):
+            self.assertEqual(contract.validate_release_lag(source, REGISTRY[source]["release_lag"]), [])
 
 
 def switched_on():
@@ -373,7 +390,7 @@ class AsOfTests(unittest.TestCase):
     market holiday).
 
     Recorded mutation (CLAUDE.md), 8 October 2026, in a disposable copy:
-    `metadata/sources.json`, `treasury_dts_tga.release_lag`, `"days": 1` mutated to `"days": 0`
+    `metadata/sources_measurement.json`, `treasury_dts_tga.release_lag`, `"days": 1` mutated to `"days": 0`
     (a balance public at 16:30 on its own date). `test_a_balance_published_after_the_decision_is_invisible`
     then fails with `AssertionError` (`datetime.date(2026, 1, 20) != datetime.date(2026, 1, 16)`):
     the forecast reads the balance of the day before its decision, public only afterwards.

@@ -33,6 +33,8 @@ from .ingest import (
     DEFAULT_SOURCE_REGISTRY,
     SEC_NMFP_ARCHIVE_MANIFEST,
     OFR_STFM_MNEMONICS,
+    OFR_STFM_SEGMENT_MNEMONICS,
+    OFR_STFM_SEGMENTS_SOURCE_ID,
     build_point_in_time_snapshot,
     check_scheduled_settlements,
     fetch_fred_macro,
@@ -112,6 +114,12 @@ def _fetch(args: argparse.Namespace) -> int:
         artifacts = fetch_ofr_stfm_repo(
             output_root=args.output_root,
             mnemonics=tuple(args.mnemonic) if args.mnemonic else OFR_STFM_MNEMONICS,
+        )
+    elif args.source == "ofr-stfm-segments":
+        artifacts = fetch_ofr_stfm_repo(
+            output_root=args.output_root,
+            mnemonics=tuple(args.mnemonic) if args.mnemonic else OFR_STFM_SEGMENT_MNEMONICS,
+            source_id=OFR_STFM_SEGMENTS_SOURCE_ID,
         )
     elif args.source == "treasury-dts-tga":
         artifacts = fetch_treasury_dts_tga(
@@ -383,7 +391,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     fetch.add_argument(
         "source",
         choices=NYFED_RATE_SOURCES
-        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8", "ofr-stfm", "treasury-dts-tga"),
+        + ("effr", "fred-macro", "treasury-bill-rates", "fr2004", "on-rrp", "srf", "h8", "ofr-stfm", "ofr-stfm-segments", "treasury-dts-tga"),
     )
     fetch.add_argument(
         "--start",
@@ -399,7 +407,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--mnemonic",
         action="append",
         default=None,
-        help="ofr-stfm only: one OFR series mnemonic, repeatable (default: every "
+        help="ofr-stfm and ofr-stfm-segments only: one OFR series mnemonic, repeatable (default: every "
         "series #187 reads); each is one request, and the full series is served",
     )
     fetch.add_argument("--output-root", type=Path, default=Path("data/raw"))

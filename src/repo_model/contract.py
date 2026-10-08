@@ -569,12 +569,6 @@ UNMODELLED_SOURCES = MappingProxyType(
             "'A question about publishing does not hold back the measurement'). "
             "Turning it on removes this entry."
         ),
-        "treasury_dts_tga": (
-            "#377: the daily TGA closing balance is read by the measurement "
-            "fields in measurement_fields.COLUMN_FIELDS and off in every "
-            "published declaration (the published TGA is FRED's weekly "
-            "WTREGEN). Turning it on removes this entry."
-        ),
         "frb_h8": (
             "#115: bank_total_assets and reserve_scarcity_state are declared in "
             "BANK_TOTAL_ASSETS_FIELDS and RESERVE_SCARCITY_STATE_FIELDS and off "

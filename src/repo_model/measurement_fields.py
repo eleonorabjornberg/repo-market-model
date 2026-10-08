@@ -13,8 +13,17 @@ published declaration and available to the tracks as measurement fields.
 * The daily Treasury General Account balance is the new `treasury_dts_tga`
   source (Daily Treasury Statement, Fiscal Data), `ingest.fetch_treasury_dts_tga`.
 * The OFR Short-term Funding Monitor's tri-party and GCF segments are the new
-  `REPO-TRI_*` and `REPO-GCF_*` series of the existing `ofr_stfm_repo` source,
-  `ingest.OFR_STFM_SEGMENT_MNEMONICS`.
+  `REPO-TRI_*` and `REPO-GCF_*` series, `ingest.OFR_STFM_SEGMENT_MNEMONICS`, a
+  source of their own, `ofr_stfm_repo_segments`.
+
+**Where they are declared.** `treasury_dts_tga` and `ofr_stfm_repo_segments` are
+declared in `metadata/sources_measurement.json`, not in `metadata/sources.json`:
+the final-test pre-registration freezes that file (and `contract.py`) by their
+bytes (`docs/decisions/final-test-preregistration.md`, amendment of 7 October
+2026), so an edit to either moves both pinned checksums. `load_registry()` is the
+two files together, which a track passes to the as-of rule. Moving the entries
+into `sources.json` is part of publishing the inputs, after her ruling, with the
+re-pin that needs.
 
 **The columns** (`COLUMN_FIELDS`, with the source fields each draws on, which is
 what the as-of rule reads their lag from)
@@ -54,16 +63,20 @@ from typing import Dict, List, Mapping, Optional, Sequence, Set, Tuple
 from .contract import FEATURE_FIELDS
 from .data import DailyObservation
 from .ingest import (
+    DEFAULT_SOURCE_REGISTRY,
     OFR_STFM_REAL_TIME_START,
-    OFR_STFM_SOURCE_ID,
+    OFR_STFM_SEGMENTS_SOURCE_ID,
     TREASURY_DTS_TGA_FIELD,
     TREASURY_DTS_TGA_SOURCE_ID,
     load_snapshot_manifest,
+    load_source_registry,
     parse_snapshots,
 )
 
 __all__ = [
     "COLUMN_FIELDS",
+    "MEASUREMENT_REGISTRY",
+    "load_registry",
     "DERIVED_COLUMNS",
     "ONE_ROW_HOLE_COLUMNS",
     "RAW_COLUMNS",
@@ -75,6 +88,8 @@ __all__ = [
     "series_from_snapshots",
 ]
 
+#: The registry of the sources this module adds (see the module docstring).
+MEASUREMENT_REGISTRY = Path(__file__).resolve().parents[2] / "metadata" / "sources_measurement.json"
 #: The rolling window of `sofr_p99_iorb_sd15_bps`, in panel rows.
 SD_ROWS = 15
 #: First day the OFR's values were public on their own date.
@@ -92,8 +107,8 @@ COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
     "sofr_p1": ((_SOFR, "SOFR_p1"),),
     "sofr_p99": _SOFR_P99,
     "tga_daily": _TGA,
-    "ofr_tri_rate": ((OFR_STFM_SOURCE_ID, "REPO-TRI_AR_OO-P"),),
-    "ofr_gcf_rate": ((OFR_STFM_SOURCE_ID, "REPO-GCF_AR_OO-P"),),
+    "ofr_tri_rate": ((OFR_STFM_SEGMENTS_SOURCE_ID, "REPO-TRI_AR_OO-P"),),
+    "ofr_gcf_rate": ((OFR_STFM_SEGMENTS_SOURCE_ID, "REPO-GCF_AR_OO-P"),),
     "sofr_p99_iorb_bps": _SOFR_P99 + _IORB_FIELDS,
     "sofr_p99_iorb_sd15_bps": _SOFR_P99 + _IORB_FIELDS,
     "tga_daily_change": _TGA,
@@ -117,6 +132,24 @@ DERIVED_COLUMNS = (
 )
 #: SOFR's percentiles have two one-day holes (2019-05-31, 2021-08-05).
 ONE_ROW_HOLE_COLUMNS = ("sofr_p1", "sofr_p99")
+
+
+def load_registry(
+    published: Path = DEFAULT_SOURCE_REGISTRY, measurement: Path = MEASUREMENT_REGISTRY
+) -> Dict[str, Mapping[str, object]]:
+    """The published registry with `measurement`'s sources added.
+
+    Raises `ValueError` if a source is declared in both: the second file adds
+    sources, it never overrides one.
+    """
+
+    merged = dict(load_source_registry(Path(published)))
+    added = load_source_registry(Path(measurement))
+    both = sorted(set(merged) & set(added))
+    if both:
+        raise ValueError(f"declared in both registries: {', '.join(both)}")
+    merged.update(added)
+    return merged
 
 
 def _get(row: DailyObservation, column: str) -> Optional[float]:
