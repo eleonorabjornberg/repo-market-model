@@ -9661,6 +9661,99 @@ class ProbitAndQuantileTests(unittest.TestCase):
         self.assertLess(curves[0][3], 0.02)
 
 
+class SettlementTimingConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the skew-t quantile regression of #379."""
+
+    IMPLEMENTATION = staticmethod(
+        lambda features, declaration, minimum_history=20: ml._settlement_timing_predictor(
+            "quantile_skewt", features, declaration, minimum_history
+        )
+    )
+    FACTORY = IMPLEMENTATION
+
+
+class SkewTSmootherTests(unittest.TestCase):
+    """The Adrian-Boyarchenko-Giannone smoother of the settlement-timing track (#379)."""
+
+    GRID = (0.01, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99)
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_it_recovers_a_student_t_law_from_its_quantiles(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        quantiles = stats.t.ppf(probabilities, 4) * 3.0 + 1.0
+        got = ml._skew_t_exceedance(quantiles, probabilities, [5.5, 10.5, 20.5])
+        want = 1.0 - stats.t.cdf((numpy_array([5.5, 10.5, 20.5]) - 1.0) / 3.0, 4)
+        for value, expected in zip(got, want):
+            self.assertAlmostEqual(value, float(expected), delta=0.005)
+
+    def test_it_carries_the_skew_the_quantiles_have(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        quantiles = stats.skewnorm.ppf(probabilities, 4.0) * 2.0
+        got = ml._skew_t_exceedance(quantiles, probabilities, [0.5, 2.5, 4.5])
+        want = stats.skewnorm.sf(numpy_array([0.5, 2.5, 4.5]) / 2.0, 4.0)
+        for value, expected in zip(got, want):
+            self.assertAlmostEqual(value, float(expected), delta=0.02)
+
+    def test_the_curve_does_not_rise_with_the_cut_and_stays_a_probability(self):
+        probabilities = list(self.GRID)
+        quantiles = [-3.0, -1.5, -1.0, -0.5, 0.0, 0.2, 0.4, 0.7, 1.2, 2.5, 5.0, 8.0, 30.0]
+        curve = ml._skew_t_exceedance(quantiles, probabilities, [0.5, 1.5, 5.5, 10.5, 20.5, 50.5])
+        self.assertEqual(list(curve), sorted(curve, reverse=True))
+        self.assertTrue(all(0.0 <= value <= 1.0 for value in curve))
+
+    def test_a_day_with_equal_quantiles_is_a_point_mass(self):
+        self.assertEqual(ml._skew_t_exceedance([2.0] * 13, list(self.GRID), [1.5, 2.5]), (1.0, 0.0))
+
+    def test_a_day_does_not_depend_on_the_days_fitted_before_it(self):
+        from scipy import stats
+
+        probabilities = list(self.GRID)
+        first = stats.t.ppf(probabilities, 5) * 2.0
+        second = stats.t.ppf(probabilities, 3) * 6.0 + 4.0
+        alone = ml._skew_t_exceedance(second, probabilities, [5.5, 10.5])
+        ml._skew_t_exceedance(first, probabilities, [5.5, 10.5])
+        self.assertEqual(ml._skew_t_exceedance(second, probabilities, [5.5, 10.5]), alone)
+
+    def test_it_refuses_quantiles_that_do_not_match_the_grid(self):
+        with self.assertRaises(ValueError):
+            ml._skew_t_exceedance([0.0, 1.0, 2.0], list(self.GRID), [0.5])
+
+    def test_the_quantile_reading_refuses_an_unknown_smoother(self):
+        with self.assertRaises(ValueError):
+            ml._quantile_exceedance([[0.0]] * 40, [0.0] * 40, [[0.0]], (5.0,), smoother="spline")
+
+    def test_the_skew_t_reading_of_a_regression_is_a_conditional_law(self):
+        import numpy
+
+        rng = numpy.random.default_rng(2)
+        x = rng.normal(size=(1500, 1))
+        spread = 2.5 + 4.0 * x[:, 0] + rng.normal(size=1500)
+        curves = ml._quantile_exceedance(
+            x.tolist(), spread.tolist(), [[0.0], [1.0]], (0.5, 2.5, 6.5, 20.0), smoother="skew_t"
+        )
+        for curve in curves:
+            self.assertEqual(list(curve), sorted(curve, reverse=True))
+        self.assertAlmostEqual(curves[0][1], 0.5, delta=0.1)
+        self.assertAlmostEqual(curves[1][2], 0.5, delta=0.1)
+        self.assertLess(curves[0][3], 0.02)
+
+    def test_a_settlement_timing_form_is_one_of_the_two_declared(self):
+        with self.assertRaises(ValueError):
+            ml._settlement_timing_predictor("logistic", _PRESSURE_CALENDAR, _pressure_splits())
+
+
+def numpy_array(values):
+    import numpy
+
+    return numpy.asarray(values, dtype=float)
+
+
 class DirectPressureModelTests(unittest.TestCase):
     """The direct pressure models' design, pairs and guards (#114)."""
 
@@ -11494,6 +11587,199 @@ class PairedBootstrapPValueTests(unittest.TestCase):
     def test_series_of_different_lengths_are_refused(self):
         with self.assertRaises(ValueError):
             ml.paired_bootstrap_p_values([[0.1, 0.2], [0.1]], block_length=1, seed=1, replications=10)
+
+
+def _rare_factory(kind, treatment):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_rare_event_exceedance(kind, treatment, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_{kind}_{treatment}"
+    return factory
+
+
+class PressureLogisticClassWeightConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted logistic (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("logistic", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierClassWeightConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the class-weighted gradient-boosted classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "class_weight"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierFocalConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the focal-loss classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "focal"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureLogisticBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the event-balanced bootstrap logistic (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("logistic", "balanced_bootstrap"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class PressureClassifierBootstrapConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the event-balanced bootstrap classifier (#381)."""
+
+    FACTORY = staticmethod(_rare_factory("gbm_classifier", "balanced_bootstrap"))
+    IMPLEMENTATION = staticmethod(ml.pressure_rare_event_exceedance)
+
+
+class RareEventTrainingTests(unittest.TestCase):
+    """Rare-event training (#381): reweighted fits learn from the spikes.
+
+    Recorded mutations (the resampling reads the training labels of one fit and
+    nothing else; the focal gradient is the loss's derivative):
+
+    * `_balanced_indices`: `rng.choice(events, ...)` replaced by
+      `rng.choice(numpy.arange(len(y)), ...)` (events drawn from every row):
+      `test_a_balanced_bootstrap_draws_half_its_rows_from_the_events` fails
+      with `AssertionError`.
+    * `_focal_gradient`: the `y == 1` branch's `- (1.0 - p) ** (gamma + 1.0)`
+      deleted: `test_the_focal_gradient_is_the_derivative_of_the_focal_loss`
+      fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def rare_data(self, n=1500, seed=0):
+        import numpy
+
+        rng = numpy.random.default_rng(seed)
+        x = rng.normal(size=(n, 2))
+        logit = -4.0 + 2.5 * x[:, 0]
+        y = (rng.uniform(size=n) < 1.0 / (1.0 + numpy.exp(-logit))).astype(int)
+        return x, y
+
+    def test_class_weights_equal_scikit_learn_balanced_weights(self):
+        import numpy
+        from sklearn.linear_model import LogisticRegression
+
+        x, y = self.rare_data()
+        got = ml._fit_rare_event("logistic", "class_weight", x, y, x[:5])
+        centre, scale = x.mean(axis=0), x.std(axis=0)
+        want = (
+            LogisticRegression(C=1.0, max_iter=5000, class_weight="balanced")
+            .fit((x - centre) / scale, y)
+            .predict_proba((x[:5] - centre) / scale)[:, 1]
+        )
+        self.assertTrue(numpy.allclose(got, want, atol=1e-12))
+
+    def test_every_treatment_raises_the_average_probability_above_the_plain_fit(self):
+        x, y = self.rare_data()
+        held_out, _ = self.rare_data(seed=1)
+        for kind, treatment in (
+            ("logistic", "class_weight"),
+            ("logistic", "balanced_bootstrap"),
+            ("gbm_classifier", "class_weight"),
+            ("gbm_classifier", "balanced_bootstrap"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment):
+                plain = ml._fit_classifier("logistic" if kind == "logistic" else "gbm", x, y, held_out)
+                treated = ml._fit_rare_event(kind, treatment, x, y, held_out)
+                self.assertGreater(sum(treated) / len(treated), 1.5 * sum(plain) / len(plain))
+
+    def test_every_treatment_ranks_the_events_above_chance(self):
+        from repo_model.pressure_judge import auroc
+
+        x, y = self.rare_data()
+        test_x, test_y = self.rare_data(seed=1)
+        for kind, treatment in (
+            ("logistic", "class_weight"),
+            ("logistic", "balanced_bootstrap"),
+            ("gbm_classifier", "class_weight"),
+            ("gbm_classifier", "balanced_bootstrap"),
+            ("gbm_classifier", "focal"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment):
+                got = ml._fit_rare_event(kind, treatment, x, y, test_x)
+                self.assertGreater(auroc(got, [int(v) for v in test_y]), 0.8)
+
+    def test_the_focal_gradient_is_the_derivative_of_the_focal_loss(self):
+        import numpy
+
+        def loss(z, y, gamma, alpha):
+            p = 1.0 / (1.0 + numpy.exp(-z))
+            return numpy.where(
+                y == 1, -alpha * (1 - p) ** gamma * numpy.log(p), -(1 - alpha) * p**gamma * numpy.log(1 - p)
+            )
+
+        z = numpy.linspace(-4.0, 4.0, 9)
+        for y in (1, 0):
+            labels = numpy.full(len(z), y)
+            for gamma, alpha in ((2.0, 0.75), (0.0, 0.5), (1.0, 0.3)):
+                step = 1e-6
+                want = (loss(z + step, labels, gamma, alpha) - loss(z - step, labels, gamma, alpha)) / (2 * step)
+                got = ml._focal_gradient(z, labels, gamma, alpha)
+                self.assertTrue(numpy.allclose(got, want, atol=1e-6), (y, gamma, alpha))
+
+    def test_the_focal_fit_is_deterministic(self):
+        x, y = self.rare_data(n=600)
+        first = ml._fit_rare_event("gbm_classifier", "focal", x, y, x[:20])
+        second = ml._fit_rare_event("gbm_classifier", "focal", x, y, x[:20])
+        self.assertEqual(first, second)
+
+    def test_a_balanced_bootstrap_draws_half_its_rows_from_the_events(self):
+        import numpy
+
+        _, y = self.rare_data()
+        rows = ml._balanced_indices(y, 7)
+        self.assertEqual(len(rows), len(y))
+        self.assertTrue(((rows >= 0) & (rows < len(y))).all())
+        self.assertEqual(int(y[rows].sum()), round(0.5 * len(y)))
+        self.assertTrue(numpy.array_equal(rows, ml._balanced_indices(y, 7)))
+        self.assertFalse(numpy.array_equal(rows, ml._balanced_indices(y, 8)))
+
+    def test_a_balanced_bootstrap_uses_the_training_labels_of_its_fit_only(self):
+        # Rows the fit is not given cannot appear: indices are positions in the labels passed in.
+        x, y = self.rare_data()
+        cut = 900
+        for seed in range(5):
+            self.assertLess(int(ml._balanced_indices(y[:cut], seed).max()), cut)
+
+    def test_a_balanced_bootstrap_of_one_class_is_refused(self):
+        import numpy
+
+        with self.assertRaises(ValueError):
+            ml._balanced_indices(numpy.zeros(50, dtype=int), 0)
+
+    def test_unsupported_treatments_are_refused_at_construction(self):
+        splits = _pressure_splits()
+        for kind, treatment in (
+            ("logistic", "focal"),
+            ("probit", "class_weight"),
+            ("gbm_classifier", "oversample"),
+        ):
+            with self.subTest(kind=kind, treatment=treatment), self.assertRaises(ValueError):
+                ml.pressure_rare_event_exceedance(kind, treatment, _PRESSURE_CALENDAR, splits)
+
+    def test_the_declaration_names_the_treatment(self):
+        import numpy
+
+        predictor = ml.pressure_rare_event_exceedance(
+            "gbm_classifier", "focal", _PRESSURE_CALENDAR, _pressure_splits()
+        )
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        from test_baseline import regressor_frame
+
+        rows = _with_calendar(regressor_frame())
+        info = rule.information_set([r.date for r in rows], len(rows) - 1)
+        curves = predictor(rows[:-1], (rule.observation(rows, info),), (5.0,), information=rule)
+        settings = curves.model_settings["rare_event"]
+        self.assertEqual(settings["treatment"], "focal")
+        self.assertEqual(settings["focal"]["gamma"], 2.0)
+        import json
+
+        json.dumps(dict(curves.model_settings))  # a record, so plain dicts all the way down
+        self.assertTrue(numpy.isfinite(curves.curves[0][0]))
 
 
 if __name__ == "__main__":
