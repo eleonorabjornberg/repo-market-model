@@ -3824,6 +3824,7 @@ def gbm_exceedance(
     volatility_feature: Optional[str] = None,
     arx_feature: Optional[str] = None,
     calibration_masking: Optional[str] = None,
+    training_pairs: Optional[str] = None,
 ) -> ExceedancePredictor:
     """Conditional exceedance from the gradient-boosted quantiles' own law.
 
@@ -3858,6 +3859,8 @@ def gbm_exceedance(
             model. Passed through, and refused below.
         random_state: the seed every fit uses.
         min_samples_leaf: passed through to the estimator.
+        training_pairs: passed straight to `fit_gradient_boosted_quantiles` by the same rule, defaulting to its own
+            `None` (#453): `"direct"` trains each target on the feature row it is served at prediction.
         calibration, calibration_share, calibration_folds, tail: the settings
             that change the law the curve is read off, passed straight to
             `fit_gradient_boosted_quantiles` and neither checked nor re-derived
@@ -3926,6 +3929,7 @@ def gbm_exceedance(
             volatility_feature=volatility_feature,
             arx_feature=arx_feature,
             calibration_masking=calibration_masking,
+            training_pairs=training_pairs,
         )
         # One model per feature row: the fit, reading history by position
         # from that row's own as-of history where the evaluator handed one.
@@ -5010,6 +5014,45 @@ def _fit_recency_logistic(x: Any, y: Any, z: Any, ages: Any, mode: str, paramete
     scale[scale == 0.0] = 1.0
     model = LogisticRegression(C=PRESSURE_LOGISTIC_SETTINGS["C"], max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"])
     model.fit((x[used] - centre) / scale, y[used], sample_weight=weight[used])
+    return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
+
+
+def standardised_logistic_probabilities(
+    train_x: Sequence[Sequence[float]],
+    train_y: Sequence[int],
+    test_x: Sequence[Sequence[float]],
+    *,
+    c: float = 1.0,
+    max_iter: int = 1000,
+) -> List[float]:
+    """P(y = 1) at each row of `test_x`, from a logistic regression on features standardised by the training rows (#453).
+
+    The turning-point switch of `scripts/turning_point_variant.py` fits this at each refit block. A column with no
+    variance in the training rows is left unscaled. Needs both classes in `train_y`.
+
+    Raises:
+        MissingMLExtraError: numpy or scikit-learn is not installed.
+        ValueError: `train_y` holds one class only.
+    """
+
+    try:
+        import numpy
+        from sklearn.linear_model import LogisticRegression
+    except ImportError as error:  # pragma: no cover - exercised without the extra
+        raise MissingMLExtraError(
+            "the standardised logistic needs the optional 'ml' extra (numpy and scikit-learn); install it with "
+            "`pip install -e \".[ml]\"`"
+        ) from error
+    x = numpy.asarray(train_x, dtype=float)
+    y = numpy.asarray(train_y, dtype=int)
+    if y.min() == y.max():
+        raise ValueError("a logistic fit needs both classes among its training rows")
+    centre = x.mean(axis=0)
+    scale = x.std(axis=0)
+    scale[scale == 0.0] = 1.0
+    model = LogisticRegression(C=c, max_iter=max_iter)
+    model.fit((x - centre) / scale, y)
+    z = numpy.asarray(test_x, dtype=float)
     return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
 
 
