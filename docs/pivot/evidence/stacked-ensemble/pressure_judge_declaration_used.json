@@ -1,5 +1,5 @@
 {
-  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored; the candidates of the risk-date severity model (#428) are added, declared in metadata/risk_date_severity.json before any was scored; the candidates of track F (#425), the hierarchical logistic with Fed repo operation and Standing Repo Facility inputs, are added, declared before any was scored; the candidates of the same-day reading of Fed repo operation availability (#442), the two track-F candidates with their inputs read at 16:00 on the operation date instead of the next business day, are added, declared before any was scored",
+  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored",
   "scoring": {
     "last_day": "2025-12-31"
   },
@@ -481,74 +481,6 @@
       ],
       "calibration": "class-weighted logistic (track W), then adaptive_offset (pressure.ONLINE_RECALIBRATION) on resolved earlier days; metadata/recency_adaptive_training.json"
     },
-    "recal_isotonic": {
-      "role": "candidate",
-      "track": "C (#380)",
-      "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
-        "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
-        "treasury_settlement"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "pressure model v1's raw distributional gbm (conformal PID with nested selection), recalibrated out of fold per threshold and horizon by the CORP isotonic fit (probability_calibration, 'isotonic')"
-    },
-    "recal_platt": {
-      "role": "candidate",
-      "track": "C (#380)",
-      "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
-        "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
-        "treasury_settlement"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "the same raw forecast, Platt out of fold per threshold and horizon (probability_calibration, 'platt'): the published recalibration, rerun as the track's pooled control"
-    },
-    "recal_platt_group": {
-      "role": "candidate",
-      "track": "C (#380)",
-      "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
-        "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
-        "treasury_settlement"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "the same raw forecast, Platt out of fold fitted per group (scarcity-state band x scheduled/ordinary day type, read as of the decision instant), pooled Platt when the group holds fewer than 60 earlier pairs or 3 events (group_calibration, 'group')"
-    },
-    "recal_platt_weighted": {
-      "role": "candidate",
-      "track": "C (#380)",
-      "features": [
-        "reserve_balances",
-        "sofr_p25",
-        "sofr_p75",
-        "sofr_volume",
-        "spread_bps",
-        "tbill_13w",
-        "tbill_4w",
-        "tga",
-        "treasury_settlement"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "the same raw forecast, one Platt curve out of fold with the target group's earlier pairs weighted 1 and all others 0.25 (group_calibration, 'weighted'; regime-weighted calibration after Barber et al.)"
-    },
     "onset_logistic+recalibrated": {
       "role": "candidate",
       "track": "O (#409)",
@@ -669,335 +601,6 @@
       "features_at_horizon_2_or_more": "without treasury_settlement",
       "calibration": "onset-label fit (class_weight), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json"
     },
-    "two_part_logistic": {
-      "role": "candidate",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "treasury_settlement_coupons",
-        "reserve_balances"
-      ],
-      "calibration": "none (P(spike) from a ridge logistic at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
-    },
-    "two_part_gbm": {
-      "role": "candidate",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "treasury_settlement_coupons",
-        "reserve_balances"
-      ],
-      "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
-    },
-    "rare_gbm_balanced_bootstrap_policy+recalibrated": {
-      "role": "candidate",
-      "track": "P (#412) on W (#381)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "treasury_settlement",
-        "reserve_balances",
-        "tga",
-        "policy_days_since_known",
-        "policy_days_until_effective",
-        "policy_pending_count",
-        "policy_iorb_offset_bp",
-        "policy_qt_in_force",
-        "policy_standing_repo_in_force",
-        "policy_slr_exclusion_in_force",
-        "policy_reserve_management_in_force",
-        "policy_debt_limit_reinstated"
-      ],
-      "features_note": "the control row's inputs plus the nine policy-register columns, at every horizon",
-      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json; policy columns from metadata/policy_events.json read at the decision instant (metadata/policy_features.json)"
-    },
-    "onset_logistic_policy+recalibrated": {
-      "role": "candidate",
-      "track": "P (#412) on O (#409)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "treasury_settlement",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "tga_daily",
-        "tga_daily_change",
-        "policy_days_since_known",
-        "policy_days_until_effective",
-        "policy_pending_count",
-        "policy_iorb_offset_bp",
-        "policy_qt_in_force",
-        "policy_standing_repo_in_force",
-        "policy_slr_exclusion_in_force",
-        "policy_reserve_management_in_force",
-        "policy_debt_limit_reinstated"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "onset-label fit (unweighted), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json; policy columns from metadata/policy_events.json read at the decision instant (metadata/policy_features.json)"
-    },
-    "balance_sheet_hierarchical_logistic": {
-      "role": "candidate",
-      "track": "B (#427)",
-      "features": [
-        "days_to_month_end",
-        "dealer_treasury_position",
-        "quarter_end",
-        "reserve_scarcity_state",
-        "spread_bps",
-        "tax_date",
-        "treasury_settlement"
-      ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
-    },
-    "balance_sheet_scarcity_gbm": {
-      "role": "candidate",
-      "track": "B (#427)",
-      "features": [
-        "days_to_month_end",
-        "dealer_treasury_position",
-        "quarter_end",
-        "reserve_scarcity_state",
-        "spread_bps",
-        "tax_date",
-        "treasury_settlement"
-      ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
-    },
-    "risk_logistic": {
-      "role": "candidate",
-      "track": "V (#428)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "treasury_settlement",
-        "treasury_settlement_coupons",
-        "on_rrp",
-        "tga_daily",
-        "tga_daily_change",
-        "sofr_p75_iorb_bps",
-        "sofr_p99_iorb_bps"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
-      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted logistic; metadata/risk_date_severity.json"
-    },
-    "risk_logistic_base": {
-      "role": "candidate",
-      "track": "V (#428)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "treasury_settlement",
-        "treasury_settlement_coupons"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
-      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted logistic; metadata/risk_date_severity.json"
-    },
-    "risk_gbm": {
-      "role": "candidate",
-      "track": "V (#428)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "treasury_settlement",
-        "treasury_settlement_coupons",
-        "on_rrp",
-        "tga_daily",
-        "tga_daily_change",
-        "sofr_p75_iorb_bps",
-        "sofr_p99_iorb_bps"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
-      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; metadata/risk_date_severity.json"
-    },
-    "risk_gbm_base": {
-      "role": "candidate",
-      "track": "V (#428)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "treasury_settlement",
-        "treasury_settlement_coupons"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
-      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; metadata/risk_date_severity.json"
-    },
-    "risk_quantile_skewt": {
-      "role": "candidate",
-      "track": "V (#428)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "treasury_settlement",
-        "treasury_settlement_coupons",
-        "on_rrp",
-        "tga_daily",
-        "tga_daily_change",
-        "sofr_p75_iorb_bps",
-        "sofr_p99_iorb_bps"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
-      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json"
-    },
-    "risk_quantile_skewt_base": {
-      "role": "candidate",
-      "track": "V (#428)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "treasury_settlement",
-        "treasury_settlement_coupons"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
-      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json"
-    },
-    "hierarchical_logistic_srf": {
-      "role": "candidate",
-      "track": "F (#425)",
-      "features": [
-        "days_to_month_end",
-        "fed_repo_days_since_positive",
-        "fed_repo_log_accepted",
-        "fed_repo_log_accepted_change",
-        "quarter_end",
-        "reserve_scarcity_state",
-        "spread_bps",
-        "tax_date",
-        "treasury_settlement"
-      ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
-    },
-    "hierarchical_logistic_fed_repo": {
-      "role": "candidate",
-      "track": "F (#425)",
-      "features": [
-        "days_to_month_end",
-        "fed_repo_days_since_positive",
-        "fed_repo_log_accepted",
-        "fed_repo_log_accepted_change",
-        "fed_repo_ops",
-        "fed_repo_rate_iorb_bps",
-        "fed_repo_submitted",
-        "quarter_end",
-        "reserve_scarcity_state",
-        "spread_bps",
-        "tax_date",
-        "treasury_settlement"
-      ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
-    },
-    "hierarchical_logistic_srf_sameday": {
-      "role": "candidate",
-      "track": "F (#425), same-day reading (#442)",
-      "features": [
-        "days_to_month_end",
-        "fed_repo_days_since_positive_sameday",
-        "fed_repo_log_accepted_change_sameday",
-        "fed_repo_log_accepted_sameday",
-        "quarter_end",
-        "reserve_scarcity_state",
-        "spread_bps",
-        "tax_date",
-        "treasury_settlement"
-      ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
-    },
-    "hierarchical_logistic_fed_repo_sameday": {
-      "role": "candidate",
-      "track": "F (#425), same-day reading (#442)",
-      "features": [
-        "days_to_month_end",
-        "fed_repo_days_since_positive_sameday",
-        "fed_repo_log_accepted_change_sameday",
-        "fed_repo_log_accepted_sameday",
-        "fed_repo_ops_sameday",
-        "fed_repo_rate_iorb_bps_sameday",
-        "fed_repo_submitted_sameday",
-        "quarter_end",
-        "reserve_scarcity_state",
-        "spread_bps",
-        "tax_date",
-        "treasury_settlement"
-      ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
-    },
-    "hierarchical_logistic_net": {
-      "role": "candidate",
-      "track": "N (#426)",
-      "features": [
-        "days_to_month_end",
-        "net_settlement",
-        "net_settlement_bills",
-        "net_settlement_due_5d",
-        "quarter_end",
-        "reserve_scarcity_state",
-        "spread_bps",
-        "tax_date",
-        "treasury_settlement"
-      ],
-      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
-      "inputs_note": "the control hierarchical_logistic with net_settlement, net_settlement_bills and net_settlement_due_5d as linear columns at every horizon; metadata/net_settlement.json"
-    },
-    "onset_logistic_net+recalibrated": {
-      "role": "candidate",
-      "track": "N (#426)",
-      "features": [
-        "spread_bps",
-        "days_to_month_end",
-        "quarter_end",
-        "tax_date",
-        "treasury_settlement",
-        "reserve_balances",
-        "reserve_scarcity_state",
-        "tga",
-        "tga_daily",
-        "tga_daily_change",
-        "net_settlement",
-        "net_settlement_bills",
-        "net_settlement_due_5d"
-      ],
-      "features_at_horizon_2_or_more": "without treasury_settlement",
-      "calibration": "onset-label fit (unweighted), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json",
-      "inputs_note": "the control onset_logistic+recalibrated with net_settlement, net_settlement_bills and net_settlement_due_5d at every horizon; metadata/net_settlement.json"
-    },
     "stacked_ensemble": {
       "role": "candidate",
       "track": "X (#410)",
@@ -1039,6 +642,58 @@
       ],
       "features_note": "the inputs the members read, as of the decision instant; the stack adds none",
       "calibration": "none (the arithmetic mean of the members' probabilities, no fit; the comparison row of metadata/pressure_stack.json)"
+    },
+    "gbm_reference": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
+    },
+    "ngboost_laplace": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
+    },
+    "ngboost_normal": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
+    },
+    "qrf": {
+      "role": "candidate",
+      "track": "Q (#385)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement_coupons",
+        "reserve_balances"
+      ],
+      "calibration": "none (the model's own distribution)"
     }
   }
 }
