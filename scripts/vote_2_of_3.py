@@ -100,6 +100,7 @@ def vote_forecast(declaration: pj.Declaration, voters, horizon: int, chosen) -> 
     return pj.Forecast(
         name=VOTE, horizon=horizon, dates=dates, probabilities=probabilities,
         cutoffs=cutoffs, cutoff_rule=declaration.sha256,
+        cutoff_weighting=parts[0].cutoff_weighting,
     )
 
 
