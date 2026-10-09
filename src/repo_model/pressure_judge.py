@@ -1714,8 +1714,13 @@ def _onset_tier(
     false_alarms: Dict[str, dict] = {}
     rule = declaration.weighted_miss
     weighted_alarms: Dict[str, dict] = {}
+    by_regime: Dict[str, Dict[str, dict]] = {}
     if rule is not None:
         place = {day: k for k, day in enumerate(calendar)}
+        regime_column = grids[first].groups.get("regime")
+        regimes = (
+            [regime_column[position[first][day]] for day in common] if regime_column is not None else ["all"] * len(common)
+        )
         missing = [day for day in common if day not in place]
         if missing:
             raise ValueError(f"scored day {missing[0]} is not a panel day; the weighted count needs the calendar")
@@ -1736,14 +1741,17 @@ def _onset_tier(
         }
         if rule is not None:
             places = [place[day] for day in common]
-            weights = false_alarm_weights(
-                rule, positions=places, pressure=pressure, known_through=places[-1]
-            )
-            weighted = sum(w for f, w in zip(flags, weights) if f)
+            miss = false_alarm_weights(rule, positions=places, pressure=pressure, known_through=places[-1])
+            weighted = sum(w for f, w in zip(flags, miss) if f)
             weighted_alarms[str(h)] = {
                 "false_alarms": weighted,
                 "per_onset": weighted / onsets if onsets else None,
             }
+            for index, label in enumerate(regimes):
+                if flags[index] and not pressure[index]:
+                    cell = by_regime.setdefault(label, {}).setdefault(str(h), {"flat": 0, "weighted": 0.0})
+                    cell["flat"] += 1
+                    cell["weighted"] += miss[index]
     reference_caught = [1.0 - m for m in reference_missed]
     out: Dict[str, Any] = {
         "lead_at_least": lead,
@@ -1757,6 +1765,16 @@ def _onset_tier(
     if rule is not None:
         out["weighted_miss_applied"] = rule.applied
         out["weighted_false_alarms_by_horizon"] = weighted_alarms
+        out["by_regime"] = {
+            label: {
+                "onsets": int(sum(o for o, r in zip(onset, regimes) if r == label)),
+                "onsets_flagged": _clean(sum(o * c for o, c, r in zip(onset, caught, regimes) if r == label)),
+                "false_alarms_by_horizon": {
+                    str(h): by_regime.get(label, {}).get(str(h), {"flat": 0, "weighted": 0.0}) for h in horizons
+                },
+            }
+            for label in sorted(set(regimes))
+        }
     if not onsets:
         out["unavailable"] = "no onset on the scored days"
         return out

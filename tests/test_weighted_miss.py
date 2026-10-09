@@ -262,6 +262,81 @@ class JudgeTests(unittest.TestCase):
         self.assertTrue(near["criteria"]["false_alarms"])
 
 
+class RegimeSplitTests(unittest.TestCase):
+    """The tier-1 evidence under the rule is split by regime: it sums to the whole."""
+
+    def test_the_regime_split_sums_to_the_totals(self):
+        judged = JudgeTests().judged(rule=_rule(applied=True))
+        near = judged["tiers"]["onset_warning"]["lead_at_least_1"]
+        split = near["by_regime"]
+        self.assertEqual(set(split), {"a", "b"})  # `Series`: regime "a" is 2019, "b" the rest
+        self.assertEqual(sum(r["onsets"] for r in split.values()), near["onsets"])
+        self.assertEqual(sum(r["onsets_flagged"] for r in split.values()), near["onsets_flagged"])
+        for h in ("1", "2"):
+            self.assertEqual(
+                sum(r["false_alarms_by_horizon"][h]["flat"] for r in split.values()),
+                near["false_alarms_by_horizon"][h]["false_alarms"],
+            )
+            self.assertAlmostEqual(
+                sum(r["false_alarms_by_horizon"][h]["weighted"] for r in split.values()),
+                near["weighted_false_alarms_by_horizon"][h]["false_alarms"],
+            )
+
+    def test_no_split_without_a_rule(self):
+        near = JudgeTests().judged()["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertNotIn("by_regime", near)
+
+
+def _script():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("weighted_miss_script", REPO / "scripts" / "weighted_miss.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TableTests(unittest.TestCase):
+    """`scripts/weighted_miss.py table`: one row per candidate, the two rules side by side."""
+
+    def runs(self):
+        series = Series()
+        near = {1, 2, 3, 4, 5, 6}
+        candidate = lambda h: series.forecast(
+            "sharp", h, [1.0 if k % 20 in near else 0.0 for k in range(len(series.dates))]
+        )
+
+        def run(applied):
+            grids, forecasts = series.everything(candidate)
+            declaration = replace(_load(), weighted_miss=_rule(applied=applied))
+            forecasts = pj.choose_cutoffs(declaration, grids, forecasts, series.dates)
+            result = pj.judge(declaration, grids, forecasts, calendar=series.dates)
+            return json.loads(json.dumps(result))
+
+        return run(False), run(True)
+
+    def test_the_table_reads_both_runs(self):
+        flat, weighted = self.runs()
+        text = _script().table(flat, weighted)
+        row = next(line for line in text.splitlines() if line.startswith("| sharp |"))
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        self.assertEqual(cells[1:4], ["20", "0", "19"])  # onsets; warned under the flat rule, under the weighted
+        self.assertEqual(cells[6:8], ["fail", "pass"])  # tier 1 under each rule
+        self.assertIn("| sharp | weighted | a |", text)  # the regime split
+
+    def test_the_runs_must_be_given_in_order(self):
+        flat, weighted = self.runs()
+        with self.assertRaises(SystemExit):
+            _script().table(weighted, flat)
+
+    def test_a_confirmation_result_is_refused(self):
+        flat, _ = self.runs()
+        flat["mode"] = "confirmation"
+        path = _write_rule(flat)
+        with self.assertRaises(SystemExit):
+            _script()._read(path)
+
+
 class GuardTests(unittest.TestCase):
     def test_refuses_cutoffs_chosen_under_another_weighting(self):
         series = Series(count=60)
