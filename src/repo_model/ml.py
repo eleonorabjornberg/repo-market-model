@@ -5710,6 +5710,200 @@ def pressure_onset_exceedance(
 
 
 # --------------------------------------------------------------------------
+# The five-day-window onset target (#460)
+# --------------------------------------------------------------------------
+#
+# Separate definitions again: the design, the pair builder and `_fit_classifier` are reused, not changed.
+
+#: The window of the target: a pressure onset on any of the next `WINDOW_ONSET_DAYS` panel days, the
+#: first of which is the day a one-day-ahead forecast scores. It is the judge's week-ahead width
+#: (`metadata/pressure_judge.json`, `tiers.week_ahead.days`).
+WINDOW_ONSET_DAYS = 5
+
+
+def _window_onset_labels(
+    onsets: Sequence[int], targets: Sequence[int], width: int = WINDOW_ONSET_DAYS
+) -> List[int]:
+    """1 where an onset falls on a row of `targets[k] .. targets[k] + width - 1`, else 0 (#460).
+
+    `onsets[r]` is 1 when row `r` of the training rows is an onset (`_onset_labels`' rule). A window
+    reads the `width - 1` rows after its first, and a training frame ends at the refit's last known
+    day, so a window that reaches past the last row would read a day whose outcome was not known
+    at the refit.
+
+    Raises:
+        LookAheadError: if a window reaches past the last training row.
+    """
+
+    labels = []
+    for target in targets:
+        if target + width > len(onsets):
+            raise LookAheadError(
+                f"the window of row {target} reads rows up to {target + width - 1}, but the training "
+                f"frame ends at row {len(onsets) - 1}; a window must end by the refit's last known day"
+            )
+        labels.append(1 if any(onsets[target : target + width]) else 0)
+    return labels
+
+
+def pressure_window_onset_exceedance(
+    kind: str,
+    treatment: Optional[str],
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    design: Optional[Any] = None,
+) -> ExceedancePredictor:
+    """The direct logistic or classifier fitted to "an onset in the next five panel days" (#460).
+
+    Called at horizon 1, so a forecast made at day d is trained on pairs (as-of design at d', label
+    of target row t = d' + 1) whose label is 1 when an onset (`pressure.onsets`' rule, as
+    `_onset_labels`) falls on any of rows t .. t + 4. A pair whose window reaches past the last
+    training row trains nothing (`_window_onset_labels` refuses it), as does a target with fewer than
+    `ONSET_QUIET_DAYS` rows before it. `design`, when given, is a prebuilt design
+    (`_ScarcityCalendarDesign`) used in place of `_PressureDesign`'s; its `monotone` and `pooling`
+    reach the fit as in `_direct_pressure_predictor`. The probability is of an onset in the window,
+    not of a pressure day; read it recalibrated out of fold against the window's outcome.
+    """
+
+    if kind not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"a window-onset classifier is the logistic or the classifier, not {kind!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if treatment is not None and treatment not in PRESSURE_RARE_EVENT_SETTINGS["treatments"]:
+        raise ValueError(
+            f"unknown rare-event treatment {treatment!r}; one of "
+            f"{list(PRESSURE_RARE_EVENT_SETTINGS['treatments'])}"
+        )
+    if treatment == "focal" and kind != "gbm_classifier":
+        raise ValueError("the focal loss is the gradient-boosted classifier's")
+    if design is None:
+        design = _PressureDesign(features, declaration)
+    monotone = getattr(design, "monotone", None)
+    cache: dict = {}
+    shrinkage: List[float] = []
+    effects: List[dict] = []
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a window-onset classifier pairs each training label with what was public at that "
+                "label's own decision instant, which only the as-of rule can say; it was called "
+                "without one"
+            )
+        if information.horizon != 1:
+            raise ValueError(
+                f"a window-onset classifier is called at horizon 1, the window's first day; got "
+                f"{information.horizon}"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a window-onset classifier needs at least {minimum_history} training rows, "
+                f"got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        positions: List[int] = []
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache, positions)
+        kept = [
+            k
+            for k, target in enumerate(positions)
+            if target >= ONSET_QUIET_DAYS and target + WINDOW_ONSET_DAYS <= len(train_rows)
+        ]
+        xs = [xs[k] for k in kept]
+        targets = [positions[k] for k in kept]
+        if not xs:
+            raise ValueError("no training label has a complete as-of read and a complete window")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        row_spreads = [float(row.spread_bps) for row in train_rows]
+        columns: List[List[float]] = []
+        fitted: dict = {}
+        shrinkage.clear()
+        effects.clear()
+        for tau in taus:
+            exceeds = [1 if exceeds_bp(value, float(tau)) else 0 for value in row_spreads]
+            onsets = _onset_labels(exceeds, list(range(len(train_rows))), train_rows, float(tau))
+            labels = _window_onset_labels(onsets, targets)
+            if len(set(labels)) < 2:
+                columns.append([float(labels[0])] * len(served))
+                continue
+            key = tuple(labels)
+            if key not in fitted:
+                fitted[key] = _fit_classifier(
+                    kind,
+                    xs,
+                    labels,
+                    served,
+                    monotone=monotone,
+                    pooling=getattr(design, "pooling", None),
+                    rare=treatment,
+                    shrinkage_trace=shrinkage,
+                    effects_trace=effects,
+                )
+            columns.append(fitted[key])
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(PRESSURE_LOGISTIC_SETTINGS if kind == "logistic" else PRESSURE_CLASSIFIER_SETTINGS)
+        settings["design"] = list(design.names)
+        settings["window_onset_label"] = (
+            f"an onset ({ONSET_QUIET_DAYS} quiet panel days before) on any of the next "
+            f"{WINDOW_ONSET_DAYS} panel days, the first being the scored day"
+        )
+        if treatment is not None:
+            settings["rare_event"] = {
+                "treatment": treatment,
+                **{
+                    key: _plain(value)
+                    for key, value in PRESSURE_RARE_EVENT_SETTINGS.items()
+                    if key in ("class_weight", treatment)
+                },
+            }
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        if isinstance(design, _ScarcityCalendarDesign):
+            settings["scarcity_calendar"] = design.settings()
+            if shrinkage:
+                settings["regime_shrinkage_chosen"] = list(shrinkage)
+            if effects:
+                settings["regime_effects"] = list(effects)
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
+
+
+# --------------------------------------------------------------------------
 # The risk-date severity model (#428, track V of #374)
 # --------------------------------------------------------------------------
 #
