@@ -1,0 +1,13 @@
+{
+  "role": "candidate",
+  "track": "W (#460)",
+  "features": [
+    "days_to_month_end",
+    "quarter_end",
+    "reserve_scarcity_state",
+    "spread_bps",
+    "tax_date",
+    "treasury_settlement"
+  ],
+  "calibration": "hierarchical logistic (empirical-Bayes pooling by scarcity regime), unweighted, fitted to 'an onset in the next five panel days', then Platt out of fold against 'a pressure day in the next five panel days' (pressure.RECALIBRATION); metadata/window_onset.json"
+}

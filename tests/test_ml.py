@@ -12365,6 +12365,63 @@ class OnsetLabelTests(unittest.TestCase):
             ml.pressure_onset_exceedance("logistic", "focal", _PRESSURE_CALENDAR, _pressure_splits())
 
 
+def _window_onset_factory(kind, treatment):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_window_onset_exceedance(kind, treatment, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_window_onset_{kind}_{treatment}"
+    return factory
+
+
+class PressureWindowOnsetLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the five-day-window onset logistic (#460)."""
+
+    FACTORY = staticmethod(_window_onset_factory("logistic", None))
+    IMPLEMENTATION = staticmethod(ml.pressure_window_onset_exceedance)
+
+
+class PressureWindowOnsetClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the five-day-window onset classifier (#460)."""
+
+    FACTORY = staticmethod(_window_onset_factory("gbm_classifier", None))
+    IMPLEMENTATION = staticmethod(ml.pressure_window_onset_exceedance)
+
+
+class WindowOnsetLabelTests(unittest.TestCase):
+    """The five-day-window onset label (#460) reads only rows the training frame holds.
+
+    Recorded mutation (the look-ahead guard):
+
+    * `_window_onset_labels`: the guard `if target + width > len(onsets)` changed to
+      `if target + width > len(onsets) + width` (a window may run past the last training
+      row, so a label reads days after the refit's last known day):
+      `test_a_window_past_the_training_frame_is_refused` fails with `AssertionError`
+      (`LookAheadError` not raised).
+    """
+
+    ONSETS = [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+
+    def test_a_label_is_one_when_an_onset_falls_in_its_five_rows(self):
+        targets = list(range(5, 16))
+        labels = ml._window_onset_labels(self.ONSETS, targets)
+        # The onset at row 6 is read by targets 2..6 (5 and 6 asked); the one at 16 by targets 12..16 (12..15 asked).
+        self.assertEqual([t for t, label in zip(targets, labels) if label], [5, 6, 12, 13, 14, 15])
+
+    def test_the_last_window_that_fits_is_allowed(self):
+        self.assertEqual(ml._window_onset_labels(self.ONSETS, [15]), [1])
+        self.assertEqual(ml._window_onset_labels(self.ONSETS, [15, 5]), [1, 1])
+
+    def test_a_window_past_the_training_frame_is_refused(self):
+        with self.assertRaises(LookAheadError):
+            ml._window_onset_labels(self.ONSETS, [16])
+        with self.assertRaises(LookAheadError):
+            ml._window_onset_labels(self.ONSETS, [len(self.ONSETS) - 1])
+
+    def test_a_quantile_kind_has_no_window_onset_label(self):
+        with self.assertRaises(ValueError):
+            ml.pressure_window_onset_exceedance("probit", None, _PRESSURE_CALENDAR, _pressure_splits())
+
+
 def _risk_factory(kind):
     def factory(features, declaration, minimum_history=20):
         return ml.pressure_risk_date_exceedance(kind, features, declaration, minimum_history)

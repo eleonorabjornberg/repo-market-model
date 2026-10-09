@@ -1,0 +1,25 @@
+{
+  "status": "declared by the pull request that closes #460 before any score was computed; nothing here is tuned on a scored day; the choices below are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "minimum_history": 61, "refit_every": 21, "decision_time": "16:00"},
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "target": {
+    "label": "an onset at the threshold (pressure.onsets: a day above it with no such day on the five panel days before it) on any of the next five panel days; the first of the five is the day a one-day-ahead forecast scores",
+    "window_days": 5,
+    "fit": "the direct pairs at horizon 1 (as-of design at the decision instant, target row t); the label of a pair is read off training rows t to t + 4; a pair whose window reaches past the last training row trains nothing (ml._window_onset_labels raises LookAheadError for it)",
+    "one_probability_per_decision_day": "the fit gives one probability per decision day d, P(an onset in d+1 .. d+5)",
+    "day_level_mapping": "the horizon-h file the judge reads holds, for target day D, the window probability made at the decision day h business days before D, so the five files give each decision day's probability to each of the five days it covers; the judge's maximum over h of the horizon-h forecast of day t+h is then exactly the window probability of day t (tiers.week_ahead.combine = max), and a day D is flagged at lead h when the window probability made h days earlier reached the cut-off"
+  },
+  "recalibration": "pressure.recalibrated with the outcome 'a pressure day (spread above the threshold) on any of the next five panel days' (the judge's tier 5 event), fitted out of fold on earlier windows that had ended by the refit's training end; the raw fits are kept as an ablation",
+  "judged_form": "+recalibrated",
+  "cutoffs": "chosen by the judge's cutoff_rule from each refit's training window alone (pressure_judge.json); none is declared here",
+  "features": {
+    "gbm": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date", "treasury_settlement_coupons", "reserve_balances"],
+    "hierarchical_logistic": ["days_to_month_end", "quarter_end", "reserve_scarcity_state", "spread_bps", "tax_date", "treasury_settlement"],
+    "note": "each learner reads the inputs it was published or judged with (scripts/pressure_two_part.py FEATURES; repo_model.hierarchical_logistic.features_at_horizon(1)); the settlement columns are public one business day ahead, so they describe the window's first day only"
+  },
+  "candidates": {
+    "window_onset_gbm": {"kind": "gbm_classifier", "treatment": null, "features": "gbm", "design": "pressure"},
+    "window_onset_hierarchical_logistic": {"kind": "logistic", "treatment": null, "features": "hierarchical_logistic", "design": "scarcity_calendar_four_level_hierarchical"}
+  }
+}
