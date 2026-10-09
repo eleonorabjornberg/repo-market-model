@@ -1,0 +1,1006 @@
+{
+ "checks_against_table_1": {
+  "hierarchical_logistic": {
+   "matches_table_1": true,
+   "onsets": 26,
+   "onsets_flagged": 15,
+   "recall_interval_here": [
+    0.391304347826087,
+    0.76
+   ],
+   "table_1_onsets_flagged": 15,
+   "table_1_worst": 3.65,
+   "worst_false_alarms_per_onset": 3.65
+  },
+  "ngboost_laplace": {
+   "matches_table_1": true,
+   "onsets": 26,
+   "onsets_flagged": 15,
+   "recall_interval_here": [
+    0.391304347826087,
+    0.7619047619047619
+   ],
+   "table_1_onsets_flagged": 15,
+   "table_1_worst": 2.54,
+   "worst_false_alarms_per_onset": 2.54
+  },
+  "scarcity_logistic_interactions": {
+   "matches_table_1": true,
+   "onsets": 26,
+   "onsets_flagged": 14,
+   "recall_interval_here": [
+    0.34615384615384615,
+    0.7272727272727273
+   ],
+   "table_1_onsets_flagged": 14,
+   "table_1_worst": 3.23,
+   "worst_false_alarms_per_onset": 3.23
+  },
+  "settlement_quantile_timing": {
+   "matches_table_1": true,
+   "onsets": 26,
+   "onsets_flagged": 15,
+   "recall_interval_here": [
+    0.3888888888888889,
+    0.7503378378378376
+   ],
+   "table_1_onsets_flagged": 15,
+   "table_1_worst": 3.65,
+   "worst_false_alarms_per_onset": 3.65
+  },
+  "two_part_gbm": {
+   "matches_table_1": true,
+   "onsets": 26,
+   "onsets_flagged": 15,
+   "recall_interval_here": [
+    0.38235294117647056,
+    0.7647058823529411
+   ],
+   "table_1_onsets_flagged": 15,
+   "table_1_worst": 2.46,
+   "worst_false_alarms_per_onset": 2.46
+  }
+ },
+ "declaration": {
+  "commit": "1ec7f160e91d8fffa6948a9877265c2dd0fee55f",
+  "path": "metadata/onset_diagnostics.json"
+ },
+ "forecast_panels": {
+  "bench_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "hierarchical_logistic_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "hierarchical_logistic_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "hierarchical_logistic_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "hierarchical_logistic_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "hierarchical_logistic_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "ngboost_laplace_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "ngboost_laplace_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "ngboost_laplace_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "ngboost_laplace_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "ngboost_laplace_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "scarcity_logistic_interactions_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "scarcity_logistic_interactions_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "scarcity_logistic_interactions_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "scarcity_logistic_interactions_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "scarcity_logistic_interactions_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+  "settlement_quantile_timing_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "settlement_quantile_timing_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "settlement_quantile_timing_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "settlement_quantile_timing_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "settlement_quantile_timing_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "two_part_gbm_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "two_part_gbm_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "two_part_gbm_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "two_part_gbm_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "two_part_gbm_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+ },
+ "judge_declaration_sha256": "00d54925784b3b37eebe4572db0b2280658eec0ce59702eb6e454c1cce2d1e52",
+ "non_pressure_days": {
+  "day_type": {
+   "month_end": 133,
+   "ordinary": 1500,
+   "quarter_end": 22,
+   "tax_date": 76
+  },
+  "days": 1731,
+  "distance_bucket": {
+   "1 day": 84,
+   "2 to 5 days": 171,
+   "21 days or more": 1311,
+   "6 to 20 days": 165
+  },
+  "regime": {
+   "2018-19": 271,
+   "2020": 247,
+   "2021-23": 748,
+   "2024": 245,
+   "2025-26": 220
+  },
+  "spread_bucket": {
+   "+1 to +3 bp": 117,
+   "+4 to +5 bp": 63,
+   "0 bp or below": 1551
+  }
+ },
+ "onsets": 26,
+ "rows": {
+  "hierarchical_logistic": {
+   "all_horizons": {
+    "day_type": {
+     "month_end": 25,
+     "ordinary": 321,
+     "quarter_end": 6,
+     "tax_date": 30
+    },
+    "distance_bucket": {
+     "1 day": 147,
+     "2 to 5 days": 216,
+     "21 days or more": 0,
+     "6 to 20 days": 19
+    },
+    "false_alarms": 382,
+    "per_onset": 14.692307692307692,
+    "regime": {
+     "2018-19": 352,
+     "2020": 4,
+     "2021-23": 0,
+     "2024": 0,
+     "2025-26": 26
+    },
+    "spread_bucket": {
+     "+1 to +3 bp": 158,
+     "+4 to +5 bp": 147,
+     "0 bp or below": 77
+    }
+   },
+   "horizons": {
+    "1": {
+     "day_type": {
+      "month_end": 5,
+      "ordinary": 67,
+      "quarter_end": 2,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 28,
+      "2 to 5 days": 46,
+      "21 days or more": 0,
+      "6 to 20 days": 6
+     },
+     "false_alarms": 80,
+     "per_onset": 3.076923076923077,
+     "regime": {
+      "2018-19": 67,
+      "2020": 2,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 11
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 38,
+      "+4 to +5 bp": 27,
+      "0 bp or below": 15
+     }
+    },
+    "2": {
+     "day_type": {
+      "month_end": 3,
+      "ordinary": 37,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 20,
+      "2 to 5 days": 26,
+      "21 days or more": 0,
+      "6 to 20 days": 1
+     },
+     "false_alarms": 47,
+     "per_onset": 1.8076923076923077,
+     "regime": {
+      "2018-19": 41,
+      "2020": 1,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 5
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 15,
+      "+4 to +5 bp": 22,
+      "0 bp or below": 10
+     }
+    },
+    "3": {
+     "day_type": {
+      "month_end": 5,
+      "ordinary": 70,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 33,
+      "2 to 5 days": 40,
+      "21 days or more": 0,
+      "6 to 20 days": 9
+     },
+     "false_alarms": 82,
+     "per_onset": 3.1538461538461537,
+     "regime": {
+      "2018-19": 80,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 2
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 33,
+      "+4 to +5 bp": 36,
+      "0 bp or below": 13
+     }
+    },
+    "4": {
+     "day_type": {
+      "month_end": 5,
+      "ordinary": 66,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 31,
+      "2 to 5 days": 46,
+      "21 days or more": 0,
+      "6 to 20 days": 1
+     },
+     "false_alarms": 78,
+     "per_onset": 3.0,
+     "regime": {
+      "2018-19": 73,
+      "2020": 1,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 4
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 33,
+      "+4 to +5 bp": 30,
+      "0 bp or below": 15
+     }
+    },
+    "5": {
+     "day_type": {
+      "month_end": 7,
+      "ordinary": 81,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 35,
+      "2 to 5 days": 58,
+      "21 days or more": 0,
+      "6 to 20 days": 2
+     },
+     "false_alarms": 95,
+     "per_onset": 3.6538461538461537,
+     "regime": {
+      "2018-19": 91,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 4
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 39,
+      "+4 to +5 bp": 32,
+      "0 bp or below": 24
+     }
+    }
+   },
+   "onsets_flagged": 15,
+   "recall": 0.5769230769230769
+  },
+  "ngboost_laplace": {
+   "all_horizons": {
+    "day_type": {
+     "month_end": 15,
+     "ordinary": 213,
+     "quarter_end": 0,
+     "tax_date": 5
+    },
+    "distance_bucket": {
+     "1 day": 81,
+     "2 to 5 days": 133,
+     "21 days or more": 1,
+     "6 to 20 days": 18
+    },
+    "false_alarms": 233,
+    "per_onset": 8.961538461538462,
+    "regime": {
+     "2018-19": 230,
+     "2020": 2,
+     "2021-23": 0,
+     "2024": 0,
+     "2025-26": 1
+    },
+    "spread_bucket": {
+     "+1 to +3 bp": 89,
+     "+4 to +5 bp": 75,
+     "0 bp or below": 69
+    }
+   },
+   "horizons": {
+    "1": {
+     "day_type": {
+      "month_end": 5,
+      "ordinary": 37,
+      "quarter_end": 0,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 20,
+      "2 to 5 days": 22,
+      "21 days or more": 1,
+      "6 to 20 days": 1
+     },
+     "false_alarms": 44,
+     "per_onset": 1.6923076923076923,
+     "regime": {
+      "2018-19": 41,
+      "2020": 2,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 1
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 17,
+      "+4 to +5 bp": 22,
+      "0 bp or below": 5
+     }
+    },
+    "2": {
+     "day_type": {
+      "month_end": 0,
+      "ordinary": 45,
+      "quarter_end": 0,
+      "tax_date": 0
+     },
+     "distance_bucket": {
+      "1 day": 14,
+      "2 to 5 days": 25,
+      "21 days or more": 0,
+      "6 to 20 days": 6
+     },
+     "false_alarms": 45,
+     "per_onset": 1.7307692307692308,
+     "regime": {
+      "2018-19": 45,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 0
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 14,
+      "+4 to +5 bp": 12,
+      "0 bp or below": 19
+     }
+    },
+    "3": {
+     "day_type": {
+      "month_end": 3,
+      "ordinary": 33,
+      "quarter_end": 0,
+      "tax_date": 1
+     },
+     "distance_bucket": {
+      "1 day": 15,
+      "2 to 5 days": 22,
+      "21 days or more": 0,
+      "6 to 20 days": 0
+     },
+     "false_alarms": 37,
+     "per_onset": 1.4230769230769231,
+     "regime": {
+      "2018-19": 37,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 0
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 13,
+      "+4 to +5 bp": 13,
+      "0 bp or below": 11
+     }
+    },
+    "4": {
+     "day_type": {
+      "month_end": 4,
+      "ordinary": 60,
+      "quarter_end": 0,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 19,
+      "2 to 5 days": 42,
+      "21 days or more": 0,
+      "6 to 20 days": 5
+     },
+     "false_alarms": 66,
+     "per_onset": 2.5384615384615383,
+     "regime": {
+      "2018-19": 66,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 0
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 34,
+      "+4 to +5 bp": 16,
+      "0 bp or below": 16
+     }
+    },
+    "5": {
+     "day_type": {
+      "month_end": 3,
+      "ordinary": 38,
+      "quarter_end": 0,
+      "tax_date": 0
+     },
+     "distance_bucket": {
+      "1 day": 13,
+      "2 to 5 days": 22,
+      "21 days or more": 0,
+      "6 to 20 days": 6
+     },
+     "false_alarms": 41,
+     "per_onset": 1.5769230769230769,
+     "regime": {
+      "2018-19": 41,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 0
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 11,
+      "+4 to +5 bp": 12,
+      "0 bp or below": 18
+     }
+    }
+   },
+   "onsets_flagged": 15,
+   "recall": 0.5769230769230769
+  },
+  "scarcity_logistic_interactions": {
+   "all_horizons": {
+    "day_type": {
+     "month_end": 25,
+     "ordinary": 318,
+     "quarter_end": 6,
+     "tax_date": 30
+    },
+    "distance_bucket": {
+     "1 day": 148,
+     "2 to 5 days": 208,
+     "21 days or more": 0,
+     "6 to 20 days": 23
+    },
+    "false_alarms": 379,
+    "per_onset": 14.576923076923077,
+    "regime": {
+     "2018-19": 349,
+     "2020": 4,
+     "2021-23": 0,
+     "2024": 0,
+     "2025-26": 26
+    },
+    "spread_bucket": {
+     "+1 to +3 bp": 159,
+     "+4 to +5 bp": 150,
+     "0 bp or below": 70
+    }
+   },
+   "horizons": {
+    "1": {
+     "day_type": {
+      "month_end": 4,
+      "ordinary": 72,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 27,
+      "2 to 5 days": 51,
+      "21 days or more": 0,
+      "6 to 20 days": 5
+     },
+     "false_alarms": 83,
+     "per_onset": 3.1923076923076925,
+     "regime": {
+      "2018-19": 70,
+      "2020": 1,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 12
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 40,
+      "+4 to +5 bp": 28,
+      "0 bp or below": 15
+     }
+    },
+    "2": {
+     "day_type": {
+      "month_end": 4,
+      "ordinary": 41,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 25,
+      "2 to 5 days": 26,
+      "21 days or more": 0,
+      "6 to 20 days": 1
+     },
+     "false_alarms": 52,
+     "per_onset": 2.0,
+     "regime": {
+      "2018-19": 47,
+      "2020": 1,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 4
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 16,
+      "+4 to +5 bp": 26,
+      "0 bp or below": 10
+     }
+    },
+    "3": {
+     "day_type": {
+      "month_end": 5,
+      "ordinary": 70,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 33,
+      "2 to 5 days": 40,
+      "21 days or more": 0,
+      "6 to 20 days": 9
+     },
+     "false_alarms": 82,
+     "per_onset": 3.1538461538461537,
+     "regime": {
+      "2018-19": 80,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 2
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 33,
+      "+4 to +5 bp": 36,
+      "0 bp or below": 13
+     }
+    },
+    "4": {
+     "day_type": {
+      "month_end": 5,
+      "ordinary": 65,
+      "quarter_end": 2,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 30,
+      "2 to 5 days": 46,
+      "21 days or more": 0,
+      "6 to 20 days": 2
+     },
+     "false_alarms": 78,
+     "per_onset": 3.0,
+     "regime": {
+      "2018-19": 72,
+      "2020": 2,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 4
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 33,
+      "+4 to +5 bp": 29,
+      "0 bp or below": 16
+     }
+    },
+    "5": {
+     "day_type": {
+      "month_end": 7,
+      "ordinary": 70,
+      "quarter_end": 1,
+      "tax_date": 6
+     },
+     "distance_bucket": {
+      "1 day": 33,
+      "2 to 5 days": 45,
+      "21 days or more": 0,
+      "6 to 20 days": 6
+     },
+     "false_alarms": 84,
+     "per_onset": 3.230769230769231,
+     "regime": {
+      "2018-19": 80,
+      "2020": 0,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 4
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 37,
+      "+4 to +5 bp": 31,
+      "0 bp or below": 16
+     }
+    }
+   },
+   "onsets_flagged": 14,
+   "recall": 0.5384615384615384
+  },
+  "settlement_quantile_timing": {
+   "all_horizons": {
+    "day_type": {
+     "month_end": 39,
+     "ordinary": 326,
+     "quarter_end": 49,
+     "tax_date": 10
+    },
+    "distance_bucket": {
+     "1 day": 141,
+     "2 to 5 days": 203,
+     "21 days or more": 61,
+     "6 to 20 days": 19
+    },
+    "false_alarms": 424,
+    "per_onset": 16.307692307692307,
+    "regime": {
+     "2018-19": 256,
+     "2020": 60,
+     "2021-23": 24,
+     "2024": 9,
+     "2025-26": 75
+    },
+    "spread_bucket": {
+     "+1 to +3 bp": 141,
+     "+4 to +5 bp": 129,
+     "0 bp or below": 154
+    }
+   },
+   "horizons": {
+    "1": {
+     "day_type": {
+      "month_end": 8,
+      "ordinary": 56,
+      "quarter_end": 10,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 26,
+      "2 to 5 days": 23,
+      "21 days or more": 21,
+      "6 to 20 days": 6
+     },
+     "false_alarms": 76,
+     "per_onset": 2.923076923076923,
+     "regime": {
+      "2018-19": 36,
+      "2020": 22,
+      "2021-23": 5,
+      "2024": 2,
+      "2025-26": 11
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 25,
+      "+4 to +5 bp": 20,
+      "0 bp or below": 31
+     }
+    },
+    "2": {
+     "day_type": {
+      "month_end": 8,
+      "ordinary": 53,
+      "quarter_end": 7,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 25,
+      "2 to 5 days": 35,
+      "21 days or more": 8,
+      "6 to 20 days": 2
+     },
+     "false_alarms": 70,
+     "per_onset": 2.6923076923076925,
+     "regime": {
+      "2018-19": 41,
+      "2020": 11,
+      "2021-23": 2,
+      "2024": 2,
+      "2025-26": 14
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 21,
+      "+4 to +5 bp": 22,
+      "0 bp or below": 27
+     }
+    },
+    "3": {
+     "day_type": {
+      "month_end": 6,
+      "ordinary": 73,
+      "quarter_end": 10,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 32,
+      "2 to 5 days": 48,
+      "21 days or more": 9,
+      "6 to 20 days": 2
+     },
+     "false_alarms": 91,
+     "per_onset": 3.5,
+     "regime": {
+      "2018-19": 58,
+      "2020": 9,
+      "2021-23": 5,
+      "2024": 2,
+      "2025-26": 17
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 30,
+      "+4 to +5 bp": 30,
+      "0 bp or below": 31
+     }
+    },
+    "4": {
+     "day_type": {
+      "month_end": 9,
+      "ordinary": 70,
+      "quarter_end": 11,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 28,
+      "2 to 5 days": 50,
+      "21 days or more": 11,
+      "6 to 20 days": 3
+     },
+     "false_alarms": 92,
+     "per_onset": 3.5384615384615383,
+     "regime": {
+      "2018-19": 58,
+      "2020": 9,
+      "2021-23": 6,
+      "2024": 2,
+      "2025-26": 17
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 30,
+      "+4 to +5 bp": 29,
+      "0 bp or below": 33
+     }
+    },
+    "5": {
+     "day_type": {
+      "month_end": 8,
+      "ordinary": 74,
+      "quarter_end": 11,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 30,
+      "2 to 5 days": 47,
+      "21 days or more": 12,
+      "6 to 20 days": 6
+     },
+     "false_alarms": 95,
+     "per_onset": 3.6538461538461537,
+     "regime": {
+      "2018-19": 63,
+      "2020": 9,
+      "2021-23": 6,
+      "2024": 1,
+      "2025-26": 16
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 35,
+      "+4 to +5 bp": 28,
+      "0 bp or below": 32
+     }
+    }
+   },
+   "onsets_flagged": 15,
+   "recall": 0.5769230769230769
+  },
+  "two_part_gbm": {
+   "all_horizons": {
+    "day_type": {
+     "month_end": 15,
+     "ordinary": 153,
+     "quarter_end": 0,
+     "tax_date": 8
+    },
+    "distance_bucket": {
+     "1 day": 62,
+     "2 to 5 days": 97,
+     "21 days or more": 4,
+     "6 to 20 days": 13
+    },
+    "false_alarms": 176,
+    "per_onset": 6.769230769230769,
+    "regime": {
+     "2018-19": 160,
+     "2020": 11,
+     "2021-23": 0,
+     "2024": 0,
+     "2025-26": 5
+    },
+    "spread_bucket": {
+     "+1 to +3 bp": 50,
+     "+4 to +5 bp": 48,
+     "0 bp or below": 78
+    }
+   },
+   "horizons": {
+    "1": {
+     "day_type": {
+      "month_end": 2,
+      "ordinary": 4,
+      "quarter_end": 0,
+      "tax_date": 0
+     },
+     "distance_bucket": {
+      "1 day": 2,
+      "2 to 5 days": 2,
+      "21 days or more": 1,
+      "6 to 20 days": 1
+     },
+     "false_alarms": 6,
+     "per_onset": 0.23076923076923078,
+     "regime": {
+      "2018-19": 2,
+      "2020": 1,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 3
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 4,
+      "+4 to +5 bp": 1,
+      "0 bp or below": 1
+     }
+    },
+    "2": {
+     "day_type": {
+      "month_end": 1,
+      "ordinary": 28,
+      "quarter_end": 0,
+      "tax_date": 1
+     },
+     "distance_bucket": {
+      "1 day": 9,
+      "2 to 5 days": 21,
+      "21 days or more": 0,
+      "6 to 20 days": 0
+     },
+     "false_alarms": 30,
+     "per_onset": 1.1538461538461537,
+     "regime": {
+      "2018-19": 29,
+      "2020": 1,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 0
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 9,
+      "+4 to +5 bp": 9,
+      "0 bp or below": 12
+     }
+    },
+    "3": {
+     "day_type": {
+      "month_end": 4,
+      "ordinary": 35,
+      "quarter_end": 0,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 14,
+      "2 to 5 days": 21,
+      "21 days or more": 0,
+      "6 to 20 days": 6
+     },
+     "false_alarms": 41,
+     "per_onset": 1.5769230769230769,
+     "regime": {
+      "2018-19": 38,
+      "2020": 2,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 1
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 11,
+      "+4 to +5 bp": 9,
+      "0 bp or below": 21
+     }
+    },
+    "4": {
+     "day_type": {
+      "month_end": 2,
+      "ordinary": 30,
+      "quarter_end": 0,
+      "tax_date": 3
+     },
+     "distance_bucket": {
+      "1 day": 17,
+      "2 to 5 days": 17,
+      "21 days or more": 0,
+      "6 to 20 days": 1
+     },
+     "false_alarms": 35,
+     "per_onset": 1.3461538461538463,
+     "regime": {
+      "2018-19": 31,
+      "2020": 3,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 1
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 9,
+      "+4 to +5 bp": 17,
+      "0 bp or below": 9
+     }
+    },
+    "5": {
+     "day_type": {
+      "month_end": 6,
+      "ordinary": 56,
+      "quarter_end": 0,
+      "tax_date": 2
+     },
+     "distance_bucket": {
+      "1 day": 20,
+      "2 to 5 days": 36,
+      "21 days or more": 3,
+      "6 to 20 days": 5
+     },
+     "false_alarms": 64,
+     "per_onset": 2.4615384615384617,
+     "regime": {
+      "2018-19": 60,
+      "2020": 4,
+      "2021-23": 0,
+      "2024": 0,
+      "2025-26": 0
+     },
+     "spread_bucket": {
+      "+1 to +3 bp": 17,
+      "+4 to +5 bp": 12,
+      "0 bp or below": 35
+     }
+    }
+   },
+   "onsets_flagged": 15,
+   "recall": 0.5769230769230769
+  }
+ },
+ "scored_window": {
+  "days": 1869,
+  "first": "2018-07-06",
+  "last": "2025-12-31"
+ }
+}
