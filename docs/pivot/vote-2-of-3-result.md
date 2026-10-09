@@ -18,10 +18,12 @@ The voters' declarations are not in `metadata/pressure_judge.json` on main; `scr
 the run only, from `docs/pivot/evidence/judge-amendment/pressure_judge_rejudge.json`. Their rows reproduce Table 1 of the
 re-judge (`judge-amendment-result.md`): 15 of 26 onsets flagged and worst false alarms per onset 2.46, 2.54 and 3.65.
 
-The weighted-miss rule (#454) has not merged, so only the unweighted rule is reported. The vote is a candidate file and the
-voters' flags do not depend on the rule, so a weighted row can be added by re-running the command below once it merges.
+The weighted-miss rule (#454) has merged as a draft: its switch in `metadata/weighted_miss.json` is off, so the judge on main counts
+every false alarm as 1. This run scores the vote under both rules, forced for the run (`--rule unweighted` and `--rule weighted`,
+as `pressure_judge.py judge` does). Under the weighted rule every voter's cut-off is chosen again on the weighted count, so the
+voters' rows differ from the unweighted ones; the vote is built from each voter's cut-offs under the same rule.
 
-## Result: the vote fails tier 1 on false alarms by 0.19 per onset
+## Result under the unweighted rule: the vote fails tier 1 on false alarms by 0.19 per onset
 
 Table 1 (the judge's row; the three voters and the two benchmarks beside it):
 
@@ -55,11 +57,11 @@ Table 2. Share of the pressure days flagged at h = 1 (+5 bp), by regime and pres
 | hierarchical_logistic | 0.68 (102) | 0.00 (4) | – | 0.00 (5) | 0.52 (29) | 0.71 (17) | 0.57 (101) | 0.56 (9) | 0.69 (13) |
 | vote_2_of_3 | 0.53 (102) | 0.25 (4) | – | 0.00 (5) | 0.31 (29) | 0.59 (17) | 0.42 (101) | 0.56 (9) | 0.54 (13) |
 
-The full row and the Brier-by-regime table are in `docs/pivot/evidence/vote-2-of-3/tables.md` and `judge.md`.
+The full row and the Brier-by-regime table are in `docs/pivot/evidence/vote-2-of-3/tables_unweighted.md` and `judge_unweighted.md`.
 
-## How much the voters overlap
+## How much the voters overlap (unweighted rule)
 
-At +5 bp, h = 1 to 5 together (`docs/pivot/evidence/vote-2-of-3/overlap.md`):
+At +5 bp, h = 1 to 5 together (`docs/pivot/evidence/vote-2-of-3/overlap_unweighted.md`):
 
 * **False alarms overlap little.** The voters raise 176, 233 and 382 false alarms (a day and horizon counted once); 545 distinct
   ones in all. Any two share about a fifth of their union (0.21, 0.21 and 0.23), 35 are raised by all three and 334 by one voter
@@ -71,6 +73,30 @@ At +5 bp, h = 1 to 5 together (`docs/pivot/evidence/vote-2-of-3/overlap.md`):
 So the voters' errors are mostly different and their successes mostly the same, which is why the vote cuts false alarms (545
 distinct to 211) without losing recall (15 of 26 for each voter and for the vote). The cut is not enough to bring h = 5 under
 two false alarms per onset.
+
+## Result under the weighted rule (the draft of #454, not in force)
+
+Weights: 0.25 within 2 trading days of a pressure day, 0.5 within 3 to 5, 1 beyond; limit 2 per onset. The flat count is the unweighted one.
+
+| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset, flat | worst false alarms per onset, weighted | tier 1 | tier 3 | tier 5 | pass |
+|---|---|---|---|---|---|---|---|---|---|
+| two_part_gbm | 15 of 26 | 0.577 [0.400, 0.762] | 0.269 | 4.81 | 2.55 | fail | fail | fail | fail |
+| ngboost_laplace | 17 of 26 | 0.654 [0.467, 0.826] | 0.231 | 4.08 | 1.73 | pass | fail | fail | fail |
+| hierarchical_logistic | 15 of 26 | 0.577 [0.400, 0.750] | 0.319 | 6.23 | 2.91 | fail | fail | fail | fail |
+| **vote_2_of_3** | **15 of 26** | **0.577 [0.389, 0.750]** | **0.235** | **4.27** | **1.80** | **pass** | **fail** | **pass** | **fail** |
+
+* **Tier 1 passes for the vote** under the weighted rule: recall 0.577, lower end 0.389 above the climatology recall 0.235, and weighted false
+  alarms per onset 0.77, 1.53, 1.36, 1.37 and 1.80 at h = 1 to 5 (limit 2). Flat, the same flags cost 2.15 to 4.27 per onset, so the pass depends on
+  the draft weights. Only `ngboost_laplace` (17 of 26, weighted 1.73) also passes tier 1 under the weighted rule.
+* **Tier 5 passes** (beats climatology on Brier, calibrated), read on the vote share.
+* **Tier 3 fails**: no flags in the abundant stretches, but the vote is uncalibrated in 2018-19 at h = 1, 2, 3 and 5 and in 2020 at h = 1 and 5, and in
+  2025-26 at h = 2 to 5. So the vote does not pass the pass rule.
+* **Scarce regime alone:** recall 0.652 [0.462, 0.840]; tiers 1 and 3 fail, tier 5 passes.
+* **Overlap under the weighted cut-offs** (`evidence/vote-2-of-3/overlap_weighted.md`): the voters raise 445, 460 and 634 false alarms; 844 distinct, 263 common to all three;
+  pairs share 0.49, 0.40 and 0.47 of their union. Hits: any two voters share 14 of 18, 13 of 17 and 14 of 18 of the onsets they flag between them; 13 onsets are flagged by all three. The vote has 432 false
+  alarms, fewer than any voter, and 15 onsets (one fewer than `ngboost_laplace`'s 17 at its weighted cut-off).
+
+The full weighted row and regime split are in `evidence/vote-2-of-3/tables_weighted.md` and `judge_weighted.md`.
 
 ## Reproduce
 
@@ -84,8 +110,9 @@ for h in 1 2 3 4 5:
   PYTHONPATH=src python3 scripts/hierarchical_logistic.py forecasts --panel AUG.csv --horizon $h --output OUT/hl_h$h.json
   PYTHONPATH=src python3 scripts/pressure_two_part.py horizon --panel PUB.csv --horizon $h --output OUT/tp_h$h.json
   PYTHONPATH=src python3 scripts/pressure_track_q.py forecasts --panel PUB.csv --horizon $h --output OUT/q_h$h.json --distribution OUT/qdist_h$h.json
-PYTHONPATH=src python3 scripts/vote_2_of_3.py judge --panel PUB.csv --output OUT/vote.json --markdown OUT/vote.md --overlap OUT/overlap.json OUT/bench_h?.json OUT/tp_h?.json OUT/q_h?.json OUT/hl_h?.json
-PYTHONPATH=src python3 scripts/pressure_judge.py table OUT/vote.json --output OUT/tables.md
+for r in unweighted weighted:
+  PYTHONPATH=src python3 scripts/vote_2_of_3.py judge --rule $r --panel PUB.csv --output OUT/vote_$r.json --markdown OUT/vote_$r.md --overlap OUT/overlap_$r.json OUT/bench_h?.json OUT/tp_h?.json OUT/q_h?.json OUT/hl_h?.json
+  PYTHONPATH=src python3 scripts/pressure_judge.py table OUT/vote_$r.json --output OUT/tables_$r.md
 ```
 
 The hierarchical logistic file carries the scratch panel's digest; `vote_2_of_3.py` accepts it because its days are the
@@ -93,5 +120,5 @@ benchmark's, and records the digest in the result's provenance.
 
 ## Publishing
 
-No candidate passes tier 1, so no "Publish?" question arises. Nothing is added to `confirmation.candidates` and no published
-declaration changes.
+The vote passes tier 1 under the draft weighted rule, so a "Publish?" question is open for Eleonora (linked from the pull request). Nothing is
+added to `confirmation.candidates` and no published declaration changes.
