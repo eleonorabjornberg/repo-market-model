@@ -252,6 +252,20 @@ class BuildColumnsTests(unittest.TestCase):
             self.assertEqual(ours.values["sofr_p99_iorb_bps"], theirs.values["sofr_p99_iorb_bps"])
         self.assertAlmostEqual(built[3].values["sofr_p99_iorb_bps"], 3.0)
 
+    def test_the_upper_body_spread_is_p75_above_iorb_in_basis_points(self):
+        """`sofr_p75_iorb_bps` (#428) is SOFR's 75th percentile minus IORB, in bp; a hole in either leaves it missing."""
+
+        days = weekdays(date(2024, 1, 1), 3)
+        rows = [
+            row(days[0], sofr_p75=1.62),
+            row(days[1], sofr_p75=None),
+            DailyObservation(days[2], {"sofr_p99": 2.0, "iorb": None, "sofr_p75": 1.6}),
+        ]
+        built = measurement_fields.build_columns(rows)
+        self.assertAlmostEqual(built[0].values["sofr_p75_iorb_bps"], 12.0)
+        self.assertIsNone(built[1].values["sofr_p75_iorb_bps"])
+        self.assertIsNone(built[2].values["sofr_p75_iorb_bps"])
+
     def test_the_rolling_sd_needs_fifteen_rows_and_is_the_sample_sd(self):
         days = weekdays(date(2024, 1, 1), 20)
         rows = [row(day, sofr_p99=1.5 + 0.01 * (i % 4)) for i, day in enumerate(days)]
@@ -440,6 +454,27 @@ class AsOfTests(unittest.TestCase):
             information = self.rule(["spread_bps", *measurement_fields.COLUMN_FIELDS])
             for scored in range(15, len(self.DATES)):
                 information.check(self.DATES, information.information_set(self.DATES, scored))
+
+    def test_the_p75_spread_waits_for_its_slower_component(self):
+        """`sofr_p75_iorb_bps` (#428) draws on every field of both components, so the as-of rule gates it on the slower.
+
+        Recorded mutation (CLAUDE.md), 8 October 2026, in a disposable copy:
+        `src/repo_model/measurement_fields.py`, `COLUMN_FIELDS["sofr_p75_iorb_bps"]`,
+        `_SOFR_P75 + _IORB_FIELDS` mutated to `_SOFR_P75` (the announced IORB no longer
+        gates the column). This test then fails with `AssertionError` (the column's fields are
+        not the union of the 75th percentile's and IORB's). The two components are read at the
+        same row on the panel's days today, so the row comparison below alone would not see it.
+        """
+
+        union = set(contract.FEATURE_FIELDS["sofr_p75"]) | set(contract.FEATURE_FIELDS["iorb"])
+        self.assertEqual(set(measurement_fields.COLUMN_FIELDS["sofr_p75_iorb_bps"]), union)
+        with switched_on():
+            information = self.rule(["spread_bps", "sofr_p75", "iorb", "sofr_p75_iorb_bps"])
+            for scored in range(15, len(self.DATES)):
+                info = information.information_set(self.DATES, scored)
+                rows = {r.feature: r.row for r in info.reads}
+                self.assertLessEqual(rows["sofr_p75_iorb_bps"], min(rows["sofr_p75"], rows["iorb"]))
+                information.check(self.DATES, info)
 
     def test_a_product_waits_for_its_slowest_field(self):
         with switched_on():

@@ -75,6 +75,43 @@
     "structural_zeros_reviewed": false,
     "url": "https://data.financialresearch.gov/v1/series/timeseries"
   },
+  "treasury_auction_net_settlement": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #426. The columns are computed per panel row by repo_model.net_settlement from Fiscal Data's auctions_query records (tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions, fetched 2026-10-08 with ingest.fetch_treasury_auctions), each auction counted from its announcemt_date. The dataset states no announcement clock time. Treasury's usual announcement time, 11:00 a.m. ET, is from general knowledge and was NOT verified from this environment; 12:00 ET is declared, an hour later, so a 16:00 ET decision of the announcement day reads the announcement and no decision before it does. The earliest closing of any auction in the snapshot is 10:00 a.m. (cash management bills announced and held on one day).",
+      "publication": "U.S. Treasury auction announcements (offering amount, and the estimate of the publicly held securities maturing on the settlement date), announced days before the auction and the settlement."
+    },
+    "coverage": [
+      "offering amounts and the publicly held maturing estimate of every Treasury auction settling 2018-01-02 to 2026-01-15 in the tracked snapshot"
+    ],
+    "field_frequencies": {
+      "net_settlement": "business_daily",
+      "net_settlement_bills": "business_daily",
+      "net_settlement_due_5d": "business_daily"
+    },
+    "fields": [
+      "net_settlement",
+      "net_settlement_bills",
+      "net_settlement_due_5d"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#426), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md): the published treasury_auctions source is dated from the settlement and its scheduled availability. These columns are read only by a track that switches them on (repo_model.net_settlement.COLUMN_FIELDS). The maturing figure is the announced estimate of the publicly held maturing amount by security type; a group of auctions announced with no figure (mostly cash management bills) reads zero maturing, so its net is its offering. A day partly announced reads low. SOMA add-ons are not in the net (they cancel against the SOMA's own maturing holdings).",
+    "provider": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+    "release_lag": {
+      "available_time": "12:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 8 October 2026 (#426). The value on the row of day t counts the auctions announced on or before t, at 12:00 ET on t (availability_provenance), so the 16:00 ET decision of t reads it. The announcement clock time is declared conservatively, not verified.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the Fiscal Data schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query"
+  },
   "policy_register": {
     "access": "public",
     "availability_provenance": {
@@ -123,5 +160,44 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": true,
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/policy_events.json"
+  },
+  "nyfed_repo_ops": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #425. The same operation-results endpoint as nyfed_srf and nyfed_on_rrp (markets.newyorkfed.org/api/rp/results/search.json), saved here a calendar year at a time for 2018-01-01 to 2025-12-31 and read for every repo operation, not only the facility's overnight ones. The Desk states no clock time at which results are published; the one timestamp in each record is lastUpdated, a write time. The adapter records it per operation date (the latest lastUpdated of the date's kept operations, New York time) and reads a date's values at the later of that and the declaration below, so a rewritten record can only make a value later. On the snapshots, lastUpdated is on the operation date for all but 2023-05-11 (09:29 the next day, before the declaration), and is later than the declaration for two dates, 2021-09-03 and 2021-09-10, both rewritten on 2021-09-16. The declaration is #45's and #127's conservative reading for the same endpoint: 16:00 ET on the next business day.",
+      "publication": "New York Fed repo operation results: the temporary open market operations of 2019 and 2020 and the Standing Repo Facility from 2021-07-29. Operations close between 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the next business day is the conservative availability instant declared here."
+    },
+    "coverage": [
+      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2018-05-09 to 2025-12-31 in the tracked snapshots"
+    ],
+    "field_frequencies": {
+      "repo_accepted": "business_daily",
+      "repo_ops_accepting": "business_daily",
+      "repo_rate": "business_daily",
+      "repo_submitted": "business_daily"
+    },
+    "fields": [
+      "repo_accepted",
+      "repo_ops_accepting",
+      "repo_rate",
+      "repo_submitted"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#425), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. repo_accepted and repo_submitted are totalAmtAccepted and totalAmtSubmitted summed over every operation of an operationDate whose operationType is 'Repo' (overnight or term), in USD billions (the API serves US dollars). repo_rate is the accepted-amount-weighted mean of the securities' percentWeightedAverageRate, in percent, and is absent on a date where nothing was accepted at a stated rate. repo_ops_accepting counts the date's operations that accepted anything. A date with no operation has no row; the measurement columns (repo_liquidity) read it as zero. Operations the Desk names small-value exercises in the note are left out. The Desk's operational tests of 2018 and 2019 (about 65 million dollars each, announced by operating-policy notices and not named so in the note) are kept: they are non-zero days. Each yearly snapshot is one unmodified search response; the year in progress changes when re-fetched.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Declared 8 October 2026 (#425), as nyfed_srf declares it (#127): a date's results are available at 16:00 ET on the next business day, not at the close, because the Desk states no publication time and lastUpdated is a write time that was rewritten days later on 2021-09-03 and 2021-09-10.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the New York Fed operation-results schema; the empty declaration is not a finding. A date with no row is read as zero take-up by repo_liquidity, a measurement choice declared there.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
   }
 }
