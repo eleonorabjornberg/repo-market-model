@@ -1,4 +1,4 @@
-# Same-day reading of SRF and Fed repo operation availability (#442, a sensitivity test of #425)
+# Same-day reading of SRF and Fed repo operation availability (#442): a sensitivity test of the inputs of #425
 
 A measurement only. The published declaration of `nyfed_srf` (`metadata/sources.json`: a day's take-up is available at 16:00 ET
 on the next business day) is **unchanged**, and so is `nyfed_repo_ops`; the same-day reading is a source of its own,
