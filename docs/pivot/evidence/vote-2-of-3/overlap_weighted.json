@@ -1,0 +1,73 @@
+{
+ "false_alarm_overlap": {
+  "all three": 263,
+  "at least one": 844,
+  "flagged by exactly k voters": {
+   "1": 412,
+   "2": 169,
+   "3": 263
+  },
+  "ngboost_laplace & hierarchical_logistic": {
+   "both": 348,
+   "either": 746,
+   "jaccard": 0.46648793565683644
+  },
+  "two_part_gbm & hierarchical_logistic": {
+   "both": 311,
+   "either": 768,
+   "jaccard": 0.4049479166666667
+  },
+  "two_part_gbm & ngboost_laplace": {
+   "both": 299,
+   "either": 606,
+   "jaccard": 0.4933993399339934
+  }
+ },
+ "hit_overlap": {
+  "all three": 13,
+  "at least one": 19,
+  "flagged by exactly k voters": {
+   "1": 4,
+   "2": 2,
+   "3": 13
+  },
+  "ngboost_laplace & hierarchical_logistic": {
+   "both": 14,
+   "either": 18,
+   "jaccard": 0.7777777777777778
+  },
+  "two_part_gbm & hierarchical_logistic": {
+   "both": 13,
+   "either": 17,
+   "jaccard": 0.7647058823529411
+  },
+  "two_part_gbm & ngboost_laplace": {
+   "both": 14,
+   "either": 18,
+   "jaccard": 0.7777777777777778
+  }
+ },
+ "onsets": 26,
+ "per_voter": {
+  "hierarchical_logistic": {
+   "false_alarms": 634,
+   "flag_days": 1041,
+   "onsets_flagged": 15
+  },
+  "ngboost_laplace": {
+   "false_alarms": 460,
+   "flag_days": 751,
+   "onsets_flagged": 17
+  },
+  "two_part_gbm": {
+   "false_alarms": 445,
+   "flag_days": 742,
+   "onsets_flagged": 15
+  },
+  "vote_2_of_3": {
+   "false_alarms": 432,
+   "flag_days": 737,
+   "onsets_flagged": 15
+  }
+ }
+}
