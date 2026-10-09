@@ -1,5 +1,5 @@
 {
-  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored; the candidates of track F (#425), the hierarchical logistic with Fed repo operation and Standing Repo Facility inputs, are added, declared before any was scored",
+  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored; the candidates of track F (#425), the hierarchical logistic with Fed repo operation and Standing Repo Facility inputs, are added, declared before any was scored; the candidates of the same-day reading of Fed repo operation availability (#442), the two track-F candidates with their inputs read at 16:00 on the operation date instead of the next business day, are added, declared before any was scored",
   "scoring": {
     "last_day": "2025-12-31"
   },
@@ -771,6 +771,41 @@
         "fed_repo_ops",
         "fed_repo_rate_iorb_bps",
         "fed_repo_submitted",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+    },
+    "hierarchical_logistic_srf_sameday": {
+      "role": "candidate",
+      "track": "F (#425), same-day reading (#442)",
+      "features": [
+        "days_to_month_end",
+        "fed_repo_days_since_positive_sameday",
+        "fed_repo_log_accepted_change_sameday",
+        "fed_repo_log_accepted_sameday",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+    },
+    "hierarchical_logistic_fed_repo_sameday": {
+      "role": "candidate",
+      "track": "F (#425), same-day reading (#442)",
+      "features": [
+        "days_to_month_end",
+        "fed_repo_days_since_positive_sameday",
+        "fed_repo_log_accepted_change_sameday",
+        "fed_repo_log_accepted_sameday",
+        "fed_repo_ops_sameday",
+        "fed_repo_rate_iorb_bps_sameday",
+        "fed_repo_submitted_sameday",
         "quarter_end",
         "reserve_scarcity_state",
         "spread_bps",

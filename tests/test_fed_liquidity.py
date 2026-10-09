@@ -17,6 +17,7 @@ from repo_model import pressure_judge as pj
 from repo_model.asof import InformationRule
 from repo_model.data import DailyObservation
 from repo_model.ingest import SnapshotArtifact, load_snapshot_manifest, parse_snapshots
+from repo_model.asof import StaleReadError
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -181,7 +182,7 @@ def weekdays(start, count):
 
 
 def switched_on():
-    fields = dict(fed_liquidity.COLUMN_FIELDS)
+    fields = dict(fed_liquidity.ALL_COLUMN_FIELDS)
     return mock.patch.multiple(
         contract,
         FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
@@ -296,15 +297,235 @@ class DeclarationTests(unittest.TestCase):
         pj.load_declaration(DECLARATION)
 
     def test_the_columns_are_off_in_every_published_declaration(self):
-        for column in fed_liquidity.COLUMN_FIELDS:
+        for column in fed_liquidity.ALL_COLUMN_FIELDS:
             self.assertNotIn(column, contract.FEATURE_FIELDS)
-        self.assertNotIn(ingest.NYFED_REPO_OPS_SOURCE_ID, json.loads((ROOT / "metadata" / "sources.json").read_text()))
+        published = json.loads((ROOT / "metadata" / "sources.json").read_text())
+        self.assertNotIn(ingest.NYFED_REPO_OPS_SOURCE_ID, published)
+        self.assertNotIn(fed_liquidity.SAME_DAY_SOURCE_ID, published)
 
     def test_the_control_is_the_same_classifier_without_the_inputs(self):
         control = fed_liquidity.features_at_horizon("hierarchical_logistic_srf", 1)
         base = set(json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"]["hierarchical_logistic"]["features"])
         self.assertEqual(set(control) - base, set(fed_liquidity.CANDIDATES["hierarchical_logistic_srf"]))
         self.assertTrue(base <= set(control))
+
+
+class SameDayAvailabilityTests(unittest.TestCase):
+    """The same-day reading of a repo operation date's availability (#442, criterion 1).
+
+    A date is available at 16:00 ET on its own date, unless its record was written later: then
+    at the write time rounded up to the next decision instant (16:00 ET on a business day). A
+    record written after the conservative declaration (16:00 on the next business day) stays on
+    the conservative reading, at its write time, because a rewrite cannot show when the first
+    publication was.
+
+    Recorded mutation (CLAUDE.md), 9 October 2026, in a disposable copy:
+    `src/repo_model/ingest.py`, `repo_operation_same_day_available_at`,
+    `if written is None or written <= decision:` mutated to
+    `if written is None or written <= decision + timedelta(minutes=30):` (a record written at
+    16:10 read at that day's 16:00). `test_a_row_written_at_ten_past_four_is_invisible_to_that_days_decision`
+    then fails with `AssertionError` (`datetime(2021, 12, 28, 16, 0) != datetime(2021, 12, 29, 16, 0)`),
+    and so does `AssemblyTests.test_a_row_written_after_the_decision_reads_as_zero_that_day`.
+    """
+
+    def at(self, day, clock, *, zone=NEW_YORK):
+        return datetime.combine(date.fromisoformat(day), datetime.strptime(clock, "%H:%M:%S").time(), tzinfo=zone)
+
+    def test_a_row_written_at_the_close_is_available_at_four_on_its_own_date(self):
+        got = ingest.repo_operation_same_day_available_at(date(2026, 1, 16), self.at("2026-01-16", "13:46:19"))
+        self.assertEqual(got, self.at("2026-01-16", "16:00:00"))
+        self.assertEqual(
+            ingest.repo_operation_same_day_available_at(date(2026, 1, 16), self.at("2026-01-16", "16:00:00")),
+            self.at("2026-01-16", "16:00:00"),
+        )
+        self.assertEqual(
+            ingest.repo_operation_same_day_available_at(date(2026, 1, 16), None), self.at("2026-01-16", "16:00:00")
+        )
+
+    def test_a_row_written_at_ten_past_four_is_invisible_to_that_days_decision(self):
+        got = ingest.repo_operation_same_day_available_at(date(2021, 12, 28), self.at("2021-12-28", "16:10:30"))
+        self.assertEqual(got, self.at("2021-12-29", "16:00:00"))
+        self.assertGreater(got, self.at("2021-12-28", "16:00:00"))
+
+    def test_a_late_row_is_rounded_up_to_the_next_business_days_decision(self):
+        evening = ingest.repo_operation_same_day_available_at(date(2023, 3, 22), self.at("2023-03-22", "17:22:00"))
+        self.assertEqual(evening, self.at("2023-03-23", "16:00:00"))
+        next_morning = ingest.repo_operation_same_day_available_at(date(2023, 5, 11), self.at("2023-05-12", "09:29:30"))
+        self.assertEqual(next_morning, self.at("2023-05-12", "16:00:00"))
+        friday = ingest.repo_operation_same_day_available_at(date(2026, 1, 16), self.at("2026-01-16", "17:00:00"))
+        self.assertEqual(friday, self.at("2026-01-20", "16:00:00"))  # the Monday between is a holiday
+
+    def test_a_rewrite_after_the_conservative_declaration_stays_conservative(self):
+        for day, written in (("2021-09-03", "2021-09-16 10:53:00"), ("2021-09-10", "2021-09-16 10:46:30")):
+            stamp = datetime.fromisoformat(written).replace(tzinfo=NEW_YORK)
+            self.assertEqual(ingest.repo_operation_same_day_available_at(date.fromisoformat(day), stamp), stamp)
+
+    def test_the_tracked_snapshots_have_exactly_the_five_late_dates_the_provenance_names(self):
+        late = {}
+        for path in sorted(SNAPSHOTS.rglob("*.manifest.json")):
+            artifact = load_snapshot_manifest(path)
+            for day, written in ingest.repo_operation_publication_times(artifact.path.read_bytes()).items():
+                if ingest.repo_operation_same_day_available_at(day, written) > self.at(day.isoformat(), "16:00:00"):
+                    late[day] = written
+        self.assertEqual(
+            sorted(late),
+            [date(2021, 9, 3), date(2021, 9, 10), date(2021, 12, 28), date(2023, 3, 22), date(2023, 5, 11)],
+        )
+
+
+class AssemblyTests(unittest.TestCase):
+    """The panel columns of the two readings, from a snapshot directory (#442)."""
+
+    def directory(self, *operations):
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        root = Path(holder.name)
+        (root / "nyfed_repo_ops").mkdir()
+        payload = json.dumps({"repo": {"operations": list(operations)}}).encode()
+        (root / "nyfed_repo_ops" / "ops.json").write_bytes(payload)
+        manifest = {
+            "byte_count": len(payload),
+            "path": "nyfed_repo_ops/ops.json",
+            "retrieved_at": "2026-10-08T20:51:05+00:00",
+            "sha256": hashlib.sha256(payload).hexdigest(),
+            "source_id": ingest.NYFED_REPO_OPS_SOURCE_ID,
+            "url": ingest.NYFED_RP_RESULTS_URL,
+        }
+        (root / "nyfed_repo_ops" / "ops.json.manifest.json").write_text(json.dumps(manifest))
+        return root
+
+    DAYS = weekdays(date(2026, 1, 5), 6)
+    CUTOFF = datetime(2026, 9, 8, 21, 31, 42, tzinfo=ZoneInfo("UTC"))
+
+    def panel(self):
+        return [DailyObservation(d, {"iorb": 3.65}) for d in self.DAYS]
+
+    def operations(self):
+        return (
+            operation("2026-01-05", 2 * BN, rate=3.70),
+            operation("2026-01-06", 3 * BN, rate=3.70, written="2026-01-06 16:10:30"),
+            operation("2026-01-07", 4 * BN, rate=3.70, written="2026-01-08 09:29:30"),
+            operation("2026-01-08", 5 * BN, rate=3.70, written="2026-01-16 10:53:00"),
+        )
+
+    def assemble(self, reading):
+        return fed_liquidity.assemble(
+            self.panel(), self.directory(*self.operations()), cutoff=self.CUTOFF, end=date(2026, 12, 31), reading=reading
+        )
+
+    def test_the_conservative_reading_is_unchanged_by_the_second_one(self):
+        rows, summary = self.assemble(fed_liquidity.CONSERVATIVE)
+        self.assertEqual([r.values["fed_repo_accepted"] for r in rows[:4]], [2.0, 3.0, 4.0, 5.0])
+        self.assertNotIn("fed_repo_accepted_sameday", rows[0].values)
+        self.assertNotIn("dates_withheld", summary)
+
+    def test_a_row_written_after_the_decision_reads_as_zero_that_day(self):
+        rows, summary = self.assemble(fed_liquidity.SAME_DAY)
+        sameday = [r.values["fed_repo_accepted_sameday"] for r in rows[:5]]
+        # 5 Jan written at the close: public at that day's 16:00. 6 Jan written at 16:10, 7 Jan the
+        # next morning and 8 Jan nine days later: none public at its own date's 16:00.
+        self.assertEqual(sameday, [2.0, 0.0, 0.0, 0.0, 0.0])
+        self.assertEqual(rows[1].values["fed_repo_log_accepted_sameday"], 0.0)
+        self.assertEqual(rows[1].values["fed_repo_ops_sameday"], 0.0)
+        self.assertEqual(rows[1].values["fed_repo_rate_iorb_bps_sameday"], 0.0)
+        self.assertEqual(summary["dates_with_an_operation"], 1)
+        self.assertEqual(summary["dates_withheld_from_the_same_day_reading"], 3)
+        self.assertAlmostEqual(rows[0].values["fed_repo_rate_iorb_bps_sameday"], (3.70 - 3.65) * 100.0)
+
+    def test_the_two_readings_share_a_panel(self):
+        rows, _ = self.assemble(fed_liquidity.CONSERVATIVE)
+        both, _ = fed_liquidity.assemble(
+            rows, self.directory(*self.operations()), cutoff=self.CUTOFF, end=date(2026, 12, 31),
+            reading=fed_liquidity.SAME_DAY,
+        )
+        self.assertEqual(both[0].values["fed_repo_accepted"], both[0].values["fed_repo_accepted_sameday"])
+        self.assertEqual(both[1].values["fed_repo_accepted"], 3.0)
+        self.assertEqual(both[1].values["fed_repo_accepted_sameday"], 0.0)
+
+
+class SameDayAsOfTests(unittest.TestCase):
+    """Both guards hold under the same-day reading (#442, criterion 1).
+
+    `nyfed_repo_ops_sameday` declares a date's results public at 16:00 on the date itself, so the
+    forecast of 23 January (decided at 16:00 on the 22nd) reads the 22nd's take-up, one row later
+    than the conservative reading, and never the 23rd's own.
+
+    Recorded mutation (CLAUDE.md), 9 October 2026, in a disposable copy:
+    `metadata/sources_measurement.json`, `nyfed_repo_ops_sameday.release_lag`, `"days": 0` mutated to
+    `"days": 1` (the conservative lag). `test_the_forecast_reads_the_decision_days_take_up` then fails
+    with `AssertionError` (`datetime.date(2026, 1, 21) != datetime.date(2026, 1, 22)`).
+    """
+
+    DATES = weekdays(date(2026, 1, 5), 40)
+    DECISION = datetime(2026, 1, 1, 16, 0).time()
+
+    def rule(self, features):
+        return InformationRule(REGISTRY, tuple(features), decision_time=self.DECISION)
+
+    def test_the_forecast_reads_the_decision_days_take_up(self):
+        with switched_on():
+            information = self.rule(["spread_bps", "fed_repo_accepted_sameday"])
+            info = information.information_set(self.DATES, self.DATES.index(date(2026, 1, 23)))
+            (read,) = [r for r in info.reads if r.feature == "fed_repo_accepted_sameday"]
+            self.assertEqual(self.DATES[read.row], date(2026, 1, 22))
+            self.assertEqual(read.available_at, datetime(2026, 1, 22, 16, 0))
+
+    def test_leakage_guard_a_read_of_the_scored_day_raises(self):
+        with switched_on():
+            information = self.rule(["spread_bps", "fed_repo_accepted_sameday"])
+            scored = self.DATES.index(date(2026, 1, 23))
+            info = information.information_set(self.DATES, scored)
+            forced = info._replace(
+                reads=tuple(
+                    r._replace(row=scored) if r.feature == "fed_repo_accepted_sameday" else r for r in info.reads
+                )
+            )
+            with self.assertRaises(LookAheadError):
+                information.check(self.DATES, forced)
+
+    def test_staleness_guard_an_older_read_raises(self):
+        with switched_on():
+            information = self.rule(["spread_bps", "fed_repo_accepted_sameday"])
+            scored = self.DATES.index(date(2026, 1, 23))
+            info = information.information_set(self.DATES, scored)
+            older = info._replace(
+                reads=tuple(
+                    r._replace(row=r.row - 1) if r.feature == "fed_repo_accepted_sameday" else r for r in info.reads
+                )
+            )
+            with self.assertRaises(StaleReadError):
+                information.check(self.DATES, older)
+
+    def test_every_same_day_column_passes_both_guards(self):
+        with switched_on():
+            information = self.rule(["spread_bps", *fed_liquidity.COLUMN_FIELDS_SAME_DAY])
+            for scored in range(15, len(self.DATES)):
+                information.check(self.DATES, information.information_set(self.DATES, scored))
+
+
+class SameDayDeclarationTests(unittest.TestCase):
+    def test_the_published_srf_declaration_is_not_changed(self):
+        published = json.loads((ROOT / "metadata" / "sources.json").read_text(encoding="utf-8"))["nyfed_srf"]["release_lag"]
+        self.assertEqual((published["days"], published["available_time"]), (1, "16:00"))
+        self.assertEqual(REGISTRY["nyfed_repo_ops"]["release_lag"]["days"], 1)
+        self.assertEqual(REGISTRY[fed_liquidity.SAME_DAY_SOURCE_ID]["release_lag"]["days"], 0)
+
+    def test_each_same_day_candidate_differs_from_its_counterpart_only_in_the_reading(self):
+        document = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"]
+        for name, counterpart in (
+            ("hierarchical_logistic_srf_sameday", "hierarchical_logistic_srf"),
+            ("hierarchical_logistic_fed_repo_sameday", "hierarchical_logistic_fed_repo"),
+        ):
+            self.assertIn(name, fed_liquidity.CANDIDATES)
+            for key, value in fed_liquidity.declaration_entry(name).items():
+                self.assertEqual(document[name][key], value, f"{name}.{key}")
+            renamed = {
+                f"{c}{fed_liquidity.SAME_DAY_SUFFIX}" if c in fed_liquidity.CANDIDATES[counterpart] else c
+                for c in document[counterpart]["features"]
+            }
+            self.assertEqual(set(document[name]["features"]), renamed)
+            self.assertEqual(document[name]["calibration"], document[counterpart]["calibration"])
+            self.assertNotIn("cutoffs", document[name])
 
 
 if __name__ == "__main__":
