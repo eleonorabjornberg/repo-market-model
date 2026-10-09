@@ -1,0 +1,59 @@
+{
+ "announced_share_of_next_five_days_gross": {
+  "decisions": 1935,
+  "mean": 0.9646016263212748,
+  "median": 1.0,
+  "share_of_decisions_fully_announced": 0.8506459948320414,
+  "share_of_decisions_under_half": 0.002583979328165375
+ },
+ "announced_share_of_own_day_gross": {
+  "min": 1.0,
+  "settlement_days": 970,
+  "share_fully_announced": 1.0
+ },
+ "gross_vs_panel": {
+  "treasury_settlement": {
+   "days_differing": 0,
+   "days_equal": 1935,
+   "first_differences": [],
+   "max_abs_difference_bn": 0.0,
+   "panel_days": 1935
+  },
+  "treasury_settlement_bills": {
+   "days_differing": 0,
+   "days_equal": 1935,
+   "first_differences": [],
+   "max_abs_difference_bn": 0.0,
+   "panel_days": 1935
+  },
+  "treasury_settlement_coupons": {
+   "days_differing": 0,
+   "days_equal": 1935,
+   "first_differences": [],
+   "max_abs_difference_bn": 0.0,
+   "panel_days": 1935
+  }
+ },
+ "groups_without_maturing_figure": {
+  "by_kind": {
+   "Bill": 20
+  },
+  "gross_bn": 1013.05,
+  "groups": 1241,
+  "share_of_gross": 0.006545846936187605,
+  "without_figure": 20
+ },
+ "maturing_vs_earlier_bill_auctions": {
+  "days": 718,
+  "median_ratio": 0.9999520206725555,
+  "note": "the announced publicly held maturing figure of a bill settlement day over the sum of (total_accepted - soma_accepted) of the bill auctions in the table that mature that day; settlement days from 2019-03-01 (a bill lives under a year)",
+  "share_within_1pct": 0.9206128133704735,
+  "share_within_5pct": 0.9735376044568245
+ },
+ "snapshot_sha256": "568c6934786712a3a071adef031221eee95377ffc4d04c825d266a83ffd72778",
+ "soma_vs_panel": {
+  "days_differing": 0,
+  "max_abs_difference_bn": 1.4210854715202004e-14,
+  "panel_days": 1935
+ }
+}

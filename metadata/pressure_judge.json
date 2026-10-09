@@ -888,6 +888,45 @@
       ],
       "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
       "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json"
+    },
+    "hierarchical_logistic_net": {
+      "role": "candidate",
+      "track": "N (#426)",
+      "features": [
+        "days_to_month_end",
+        "net_settlement",
+        "net_settlement_bills",
+        "net_settlement_due_5d",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+      "inputs_note": "the control hierarchical_logistic with net_settlement, net_settlement_bills and net_settlement_due_5d as linear columns at every horizon; metadata/net_settlement.json"
+    },
+    "onset_logistic_net+recalibrated": {
+      "role": "candidate",
+      "track": "N (#426)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "tga_daily",
+        "tga_daily_change",
+        "net_settlement",
+        "net_settlement_bills",
+        "net_settlement_due_5d"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
+      "calibration": "onset-label fit (unweighted), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json",
+      "inputs_note": "the control onset_logistic+recalibrated with net_settlement, net_settlement_bills and net_settlement_due_5d at every horizon; metadata/net_settlement.json"
     }
   }
 }
