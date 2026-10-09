@@ -110,7 +110,7 @@ def walk_command(args) -> int:
         "settings": settings, "panel_sha256": hashlib.sha256(args.panel.read_bytes()).hexdigest(),
         "first": days[0]["date"], "last": days[-1]["date"], "days": days,
     }
-    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=dict) + "\n", encoding="utf-8")
     print(json.dumps({"which": args.which, "days": len(days), "first": document["first"], "last": document["last"]}))
     return 0
 
