@@ -3824,6 +3824,7 @@ def gbm_exceedance(
     volatility_feature: Optional[str] = None,
     arx_feature: Optional[str] = None,
     calibration_masking: Optional[str] = None,
+    training_pairs: Optional[str] = None,
 ) -> ExceedancePredictor:
     """Conditional exceedance from the gradient-boosted quantiles' own law.
 
@@ -3858,6 +3859,8 @@ def gbm_exceedance(
             model. Passed through, and refused below.
         random_state: the seed every fit uses.
         min_samples_leaf: passed through to the estimator.
+        training_pairs: passed straight to `fit_gradient_boosted_quantiles` by the same rule, defaulting to its own
+            `None` (#453): `"direct"` trains each target on the feature row it is served at prediction.
         calibration, calibration_share, calibration_folds, tail: the settings
             that change the law the curve is read off, passed straight to
             `fit_gradient_boosted_quantiles` and neither checked nor re-derived
@@ -3926,6 +3929,7 @@ def gbm_exceedance(
             volatility_feature=volatility_feature,
             arx_feature=arx_feature,
             calibration_masking=calibration_masking,
+            training_pairs=training_pairs,
         )
         # One model per feature row: the fit, reading history by position
         # from that row's own as-of history where the evaluator handed one.

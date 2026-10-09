@@ -4661,6 +4661,21 @@ class GbmExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
         )
 
 
+    def test_training_pairs_reach_the_fit(self):
+        """`training_pairs="direct"` (#453) is handed to the fitter, which refuses it without the run's as-of rule."""
+
+        train, feature_rows = self.split()
+        predictor = ml.gbm_exceedance(
+            REGRESSORS,
+            minimum_history=self.MINIMUM_HISTORY,
+            min_samples_leaf=FIXTURE_MIN_SAMPLES_LEAF,
+            training_pairs="direct",
+        )
+        with self.assertRaisesRegex(SplitError, "training_pairs 'direct'"):
+            predictor(train, feature_rows, EXCEEDANCE_TAUS)
+        self.assertNotIn("training_pairs", dict(self.curves().model_settings))
+
+
 class LawKnotsTests(unittest.TestCase):
     """`law_knots`: the law `predict_stress` inverts, handed out and guarded.
 
