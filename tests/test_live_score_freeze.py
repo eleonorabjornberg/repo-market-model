@@ -82,7 +82,9 @@ REQUIRED = {
                                   "crps_trapezoid_from_quantiles"},
     "src/repo_model/evaluation_splits.py": {"SplitDeclaration", "MONTH_END_RULE"},
     "src/repo_model/baseline.py": {"_seed_from"},
-    "src/repo_model/onset.py": {"paired_difference", "day_groups", "leap_onset_group", "LeapTargets"},
+    "src/repo_model/onset.py": {"paired_difference", "day_groups", "leap_onset_group", "LeapTargets",
+                                "GROUP_ONSET", "GROUP_LEAP_ONSET"},
+    "scripts/live_record.py": {"next_decision_days", "previous_decision_day"},
 }
 
 
@@ -168,6 +170,38 @@ class EditTests(unittest.TestCase):
                         lines[last] = lines[last] + f"\n{indent}_edited = 1"
                         (root / path).write_text("\n".join(lines), encoding="utf-8")
                         self.assertNotEqual(ls.live_declaration_checksum(), pinned)
+
+    def test_an_edit_to_the_calendar_helpers_or_group_labels_moves_the_checksum(self):
+        """The decision-day calendar and the group labels are frozen too (#370).
+
+        Recorded mutation, confirmed applied: in `scripts/live_record.py`, `previous_decision_day`'s
+        `current = day - timedelta(days=1)` changed to `days=2` -> the checksum moves to `875a2a5a\u2026`
+        and `test_the_checksum_is_the_pinned_one` fails with `AssertionError`. Before the names were
+        added to `LIVE_SOURCE`, the same edit left the checksum alone (the red run: `KeyError` on
+        `scripts/live_record.py` and an `AssertionError` on the onset names).
+        """
+
+        pinned = _pinned("Live scorer checksum")
+        edits = (
+            ("scripts/live_record.py", "next_decision_days", "while len(out) < count:\n        current += timedelta(days=1)\n",
+             "while len(out) < count:\n        current += timedelta(days=2)\n"),
+            ("scripts/live_record.py", "previous_decision_day", "current = day - timedelta(days=1)",
+             "current = day - timedelta(days=2)"),
+            ("src/repo_model/onset.py", "GROUP_ONSET", 'GROUP_ONSET = "onset_days"\n',
+             'GROUP_ONSET = "onset_days_x"\n'),
+            ("src/repo_model/onset.py", "GROUP_LEAP_ONSET", 'GROUP_LEAP_ONSET = "leap_onset_days"',
+             'GROUP_LEAP_ONSET = "leap_onset_days_x"'),
+        )
+        for path, name, old, replacement in edits:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as scratch:
+                root = Path(scratch)
+                self._copy(root)
+                with mock.patch.object(ls.final_test, "REPO", root):
+                    self.assertEqual(ls.live_declaration_checksum(), pinned)
+                    text = (root / path).read_text(encoding="utf-8")
+                    self.assertEqual(text.count(old), 1, old)
+                    (root / path).write_text(text.replace(old, replacement), encoding="utf-8")
+                    self.assertNotEqual(ls.live_declaration_checksum(), pinned)
 
     def test_an_edit_outside_the_covered_definitions_leaves_the_checksum(self):
         pinned = _pinned("Live scorer checksum")
