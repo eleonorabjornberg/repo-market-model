@@ -1,0 +1,2035 @@
+{
+ "any_lead": {
+  "calendar_climatology": {
+   "flagged_at_some_lead_1_to_5": 10,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.37037037037037035
+  },
+  "persistence_logistic": {
+   "flagged_at_some_lead_1_to_5": 7,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.25925925925925924
+  },
+  "published_v1": {
+   "flagged_at_some_lead_1_to_5": 2,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.07407407407407407
+  },
+  "risk_gbm": {
+   "flagged_at_some_lead_1_to_5": 13,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.48148148148148145
+  },
+  "risk_gbm_base": {
+   "flagged_at_some_lead_1_to_5": 14,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.5185185185185185
+  },
+  "risk_logistic": {
+   "flagged_at_some_lead_1_to_5": 14,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.5185185185185185
+  },
+  "risk_logistic_base": {
+   "flagged_at_some_lead_1_to_5": 13,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.48148148148148145
+  },
+  "risk_quantile_skewt": {
+   "flagged_at_some_lead_1_to_5": 13,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.48148148148148145
+  },
+  "risk_quantile_skewt_base": {
+   "flagged_at_some_lead_1_to_5": 14,
+   "onsets_seen_at_some_lead": 27,
+   "recall_at_some_lead": 0.5185185185185185
+  }
+ },
+ "cutoff_rule": {
+  "false_alarms_per_onset_at_most": 2.0,
+  "no_onsets": "never_flag",
+  "none_meets_limit": "never_flag",
+  "refit_every": 21
+ },
+ "declaration": {
+  "candidates": {
+   "risk_gbm": {
+    "inputs": [
+     "base",
+     "new"
+    ],
+    "kind": "gbm_classifier"
+   },
+   "risk_gbm_base": {
+    "inputs": [
+     "base"
+    ],
+    "kind": "gbm_classifier"
+   },
+   "risk_logistic": {
+    "inputs": [
+     "base",
+     "new"
+    ],
+    "kind": "logistic"
+   },
+   "risk_logistic_base": {
+    "inputs": [
+     "base"
+    ],
+    "kind": "logistic"
+   },
+   "risk_quantile_skewt": {
+    "inputs": [
+     "base",
+     "new"
+    ],
+    "kind": "quantile_skewt"
+   },
+   "risk_quantile_skewt_base": {
+    "inputs": [
+     "base"
+    ],
+    "kind": "quantile_skewt"
+   }
+  },
+  "cutoffs": "chosen by the judge's cutoff_rule from each refit's training window alone (pressure_judge.json); none is declared here",
+  "features": {
+   "base": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+   ],
+   "design": "ml._PressureDesign: each scheduled term (the three day-type indicators and the settlements) is also crossed with the reserves state, as in the direct models of #114",
+   "new": [
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps"
+   ],
+   "note": "base: the latest public spread (the previous day's), the calendar, reserves, the reserve-scarcity state (#115), the weekly TGA change (with reserves, the design's expected-TGA term) and the gross Treasury settlement (net cash need is not built; gross is used until it is), the settlement size and the coupon part only at horizon 1; new: the ON RRP balance (the cushion, read from the Desk's operation results under scarcity.measurement_declaration), the daily TGA balance and its change (#377), and the previous day's SOFR 75th and 99th percentiles above IORB in basis points (sofr_p75_iorb_bps is added by this pull request to repo_model.measurement_fields, off in every published declaration); treasury_settlement and treasury_settlement_coupons leave the inputs at h >= 2"
+  },
+  "forecast": {
+   "calibration": "none: the fit is on the days it serves, so its probabilities are on the risk dates' own base rate; no reweighting and no recalibration step",
+   "on_a_risk_date": "the fit's probability of SOFR - IORB above the threshold, from a model fitted on risk-date label days only",
+   "on_any_other_day": "exactly 0 at every threshold, so the model never flags an ordinary day (the judge's cut-off rule never chooses a cut-off of 0)"
+  },
+  "horizons": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "reference_for_the_new_inputs": "each candidate with 'new' inputs has a '_base' twin with the same estimator and no new input, so the judge's report carries the same classifier without the new inputs",
+  "risk_dates": {
+   "definition": "a scored day whose pressure-day type, read from the calendar columns as EvaluationSplits.day_type reads them, is quarter_end, month_end or tax_date; at horizon 1 also a day with a coupon settlement (treasury_settlement_coupons > 0)",
+   "implementation": "ml._RiskDateDesign.member",
+   "judge_comparison": "the judge's own risky_dates tier (quarter-end, tax date or coupon settlement, in scarcity state >= 2, lead 5, reported only) is unchanged and is reported beside this set",
+   "why_the_coupon_clause_is_horizon_1_only": "a settlement is public one business day ahead and not earlier (docs/decisions/information-set.md); the calendar types are known in advance at every horizon. So the set at h >= 2 is the three calendar types, and a mid-month coupon settlement that is not also a month-end or tax date is a risk date only at h = 1"
+  },
+  "scoring": {
+   "decision_time": "16:00",
+   "last_day": "2025-12-31",
+   "minimum_history": 61,
+   "refit_every": 21
+  },
+  "status": "declared by the pull request that closes #428 before any score was computed; nothing here is tuned on a scored day; the choices below (the risk-date set, the zero forecast on other days, the inputs, the estimators) are the pull request's, listed there for Eleonora's review",
+  "target": {
+   "classifiers": "spread > tau, per threshold, on risk-date label days, each label paired with what was public at its own decision instant (the direct pairs of ml._pressure_pairs)",
+   "quantile_skewt": "the spread itself (the day's severity): quantile regressions on a declared grid smoothed to a skew-t law, read as P(spread > tau) (ml.PRESSURE_QUANTILE_SKEWT_SETTINGS)"
+  },
+  "thresholds_bp": [
+   5,
+   10
+  ]
+ },
+ "per_lead": {
+  "calendar_climatology": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 126,
+     "false_alarms_per_onset": 4.666666666666667,
+     "flags": 198,
+     "onsets": 27,
+     "onsets_flagged": 9,
+     "pressure_days": 140,
+     "recall": 0.3333333333333333
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_scores": {
+     "auroc": 0.5146751046442097,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.13202737378998058,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 55,
+     "false_alarms_per_onset": 2.619047619047619,
+     "flags": 82,
+     "onsets": 21,
+     "onsets_flagged": 7,
+     "pressure_days": 58,
+     "recall": 0.3333333333333333
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 127,
+     "false_alarms_per_onset": 4.884615384615385,
+     "flags": 196,
+     "onsets": 26,
+     "onsets_flagged": 10,
+     "pressure_days": 139,
+     "recall": 0.38461538461538464
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.5742117117117117,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.12681214404730262,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 49,
+     "false_alarms_per_onset": 3.769230769230769,
+     "flags": 69,
+     "onsets": 13,
+     "onsets_flagged": 6,
+     "pressure_days": 37,
+     "recall": 0.46153846153846156
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 128,
+     "false_alarms_per_onset": 4.923076923076923,
+     "flags": 196,
+     "onsets": 26,
+     "onsets_flagged": 10,
+     "pressure_days": 138,
+     "recall": 0.38461538461538464
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.5731418918918919,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.12692009808986904,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 49,
+     "false_alarms_per_onset": 3.769230769230769,
+     "flags": 69,
+     "onsets": 13,
+     "onsets_flagged": 6,
+     "pressure_days": 37,
+     "recall": 0.46153846153846156
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 129,
+     "false_alarms_per_onset": 4.961538461538462,
+     "flags": 196,
+     "onsets": 26,
+     "onsets_flagged": 10,
+     "pressure_days": 138,
+     "recall": 0.38461538461538464
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.5685810810810811,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.12714493384124723,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 49,
+     "false_alarms_per_onset": 3.769230769230769,
+     "flags": 69,
+     "onsets": 13,
+     "onsets_flagged": 6,
+     "pressure_days": 37,
+     "recall": 0.46153846153846156
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 130,
+     "false_alarms_per_onset": 5.0,
+     "flags": 196,
+     "onsets": 26,
+     "onsets_flagged": 10,
+     "pressure_days": 138,
+     "recall": 0.38461538461538464
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.5685810810810811,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.12714385780591564,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 49,
+     "false_alarms_per_onset": 3.769230769230769,
+     "flags": 69,
+     "onsets": 13,
+     "onsets_flagged": 6,
+     "pressure_days": 37,
+     "recall": 0.46153846153846156
+    }
+   }
+  },
+  "persistence_logistic": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 72,
+     "false_alarms_per_onset": 2.6666666666666665,
+     "flags": 133,
+     "onsets": 27,
+     "onsets_flagged": 4,
+     "pressure_days": 140,
+     "recall": 0.14814814814814814
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_scores": {
+     "auroc": 0.8594528602750647,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.10185472475757956,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 11,
+     "false_alarms_per_onset": 0.5238095238095238,
+     "flags": 33,
+     "onsets": 21,
+     "onsets_flagged": 2,
+     "pressure_days": 58,
+     "recall": 0.09523809523809523
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 89,
+     "false_alarms_per_onset": 3.423076923076923,
+     "flags": 170,
+     "onsets": 26,
+     "onsets_flagged": 6,
+     "pressure_days": 139,
+     "recall": 0.23076923076923078
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.8234797297297297,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.09669566887299749,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 8,
+     "false_alarms_per_onset": 0.6153846153846154,
+     "flags": 26,
+     "onsets": 13,
+     "onsets_flagged": 2,
+     "pressure_days": 37,
+     "recall": 0.15384615384615385
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 73,
+     "false_alarms_per_onset": 2.8076923076923075,
+     "flags": 120,
+     "onsets": 26,
+     "onsets_flagged": 6,
+     "pressure_days": 138,
+     "recall": 0.23076923076923078
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.7475225225225225,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.10703499684918685,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 7,
+     "false_alarms_per_onset": 0.5384615384615384,
+     "flags": 14,
+     "onsets": 13,
+     "onsets_flagged": 3,
+     "pressure_days": 37,
+     "recall": 0.23076923076923078
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 82,
+     "false_alarms_per_onset": 3.1538461538461537,
+     "flags": 141,
+     "onsets": 26,
+     "onsets_flagged": 6,
+     "pressure_days": 138,
+     "recall": 0.23076923076923078
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.7740990990990991,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.10661988718864927,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 6,
+     "false_alarms_per_onset": 0.46153846153846156,
+     "flags": 18,
+     "onsets": 13,
+     "onsets_flagged": 3,
+     "pressure_days": 37,
+     "recall": 0.23076923076923078
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 73,
+     "false_alarms_per_onset": 2.8076923076923075,
+     "flags": 127,
+     "onsets": 26,
+     "onsets_flagged": 5,
+     "pressure_days": 138,
+     "recall": 0.19230769230769232
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.722240990990991,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.1085715660246313,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 7,
+     "false_alarms_per_onset": 0.5384615384615384,
+     "flags": 15,
+     "onsets": 13,
+     "onsets_flagged": 2,
+     "pressure_days": 37,
+     "recall": 0.15384615384615385
+    }
+   }
+  },
+  "published_v1": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 61,
+     "false_alarms_per_onset": 2.259259259259259,
+     "flags": 123,
+     "onsets": 27,
+     "onsets_flagged": 2,
+     "pressure_days": 140,
+     "recall": 0.07407407407407407
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_scores": {
+     "auroc": 0.8811540761411202,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.08641489655410614,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 6,
+     "false_alarms_per_onset": 0.2857142857142857,
+     "flags": 25,
+     "onsets": 21,
+     "onsets_flagged": 2,
+     "pressure_days": 58,
+     "recall": 0.09523809523809523
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 40,
+     "false_alarms_per_onset": 1.5384615384615385,
+     "flags": 85,
+     "onsets": 26,
+     "onsets_flagged": 0,
+     "pressure_days": 139,
+     "recall": 0.0
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.9021396396396396,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.08118590554908697,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 3,
+     "false_alarms_per_onset": 0.23076923076923078,
+     "flags": 12,
+     "onsets": 13,
+     "onsets_flagged": 0,
+     "pressure_days": 37,
+     "recall": 0.0
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 31,
+     "false_alarms_per_onset": 1.1923076923076923,
+     "flags": 62,
+     "onsets": 26,
+     "onsets_flagged": 0,
+     "pressure_days": 138,
+     "recall": 0.0
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.8993243243243243,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.08737936471412962,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 2,
+     "false_alarms_per_onset": 0.15384615384615385,
+     "flags": 5,
+     "onsets": 13,
+     "onsets_flagged": 0,
+     "pressure_days": 37,
+     "recall": 0.0
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 33,
+     "false_alarms_per_onset": 1.2692307692307692,
+     "flags": 48,
+     "onsets": 26,
+     "onsets_flagged": 2,
+     "pressure_days": 138,
+     "recall": 0.07692307692307693
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.8742117117117117,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.08775018577267202,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 2,
+     "false_alarms_per_onset": 0.15384615384615385,
+     "flags": 7,
+     "onsets": 13,
+     "onsets_flagged": 1,
+     "pressure_days": 37,
+     "recall": 0.07692307692307693
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 38,
+     "false_alarms_per_onset": 1.4615384615384615,
+     "flags": 57,
+     "onsets": 26,
+     "onsets_flagged": 2,
+     "pressure_days": 138,
+     "recall": 0.07692307692307693
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_scores": {
+     "auroc": 0.8731418918918918,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.09157014451594957,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 5,
+     "false_alarms_per_onset": 0.38461538461538464,
+     "flags": 7,
+     "onsets": 13,
+     "onsets_flagged": 1,
+     "pressure_days": 37,
+     "recall": 0.07692307692307693
+    }
+   }
+  },
+  "risk_gbm": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 35,
+     "false_alarms_per_onset": 1.2962962962962963,
+     "flags": 77,
+     "onsets": 27,
+     "onsets_flagged": 13,
+     "pressure_days": 140,
+     "recall": 0.48148148148148145
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.06734907848004408,
+      "excludes_zero": true,
+      "high": -0.0402498723721529,
+      "low": -0.09852639535728415
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.03717642944764321,
+      "excludes_zero": true,
+      "high": -0.009242724838753677,
+      "low": -0.07169309920333443
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.00672340617202134,
+      "excludes_zero": false,
+      "high": 0.0026931870661389447,
+      "low": -0.016943543546722742
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.922064979071158,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.0646782953099364,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 35,
+     "false_alarms_per_onset": 1.6666666666666667,
+     "flags": 77,
+     "onsets": 21,
+     "onsets_flagged": 13,
+     "pressure_days": 58,
+     "recall": 0.6190476190476191
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 28,
+     "false_alarms_per_onset": 1.0769230769230769,
+     "flags": 53,
+     "onsets": 26,
+     "onsets_flagged": 8,
+     "pressure_days": 139,
+     "recall": 0.3076923076923077
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.031056102146814365,
+      "excludes_zero": true,
+      "high": -0.016142662614685395,
+      "low": -0.04626283554026792
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.0009396269725092828,
+      "excludes_zero": false,
+      "high": 0.018203246188201006,
+      "low": -0.021584204861485063
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.0027091750730715396,
+      "excludes_zero": false,
+      "high": 0.006081994665420878,
+      "low": -0.012801732769200436
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8832207207207208,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.0957560419004883,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 28,
+     "false_alarms_per_onset": 2.1538461538461537,
+     "flags": 53,
+     "onsets": 13,
+     "onsets_flagged": 8,
+     "pressure_days": 37,
+     "recall": 0.6153846153846154
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 27,
+     "false_alarms_per_onset": 1.0384615384615385,
+     "flags": 53,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.041287857102066096,
+      "excludes_zero": true,
+      "high": -0.023381303203421324,
+      "low": -0.062186552197107316
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.021402755861383984,
+      "excludes_zero": true,
+      "high": -0.004732337609430132,
+      "low": -0.039158967835331716
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.0073232212541102185,
+      "excludes_zero": false,
+      "high": 6.439090778284088e-06,
+      "low": -0.016801450563485077
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8953265765765765,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.08563224098780295,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 27,
+     "false_alarms_per_onset": 2.076923076923077,
+     "flags": 53,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 23,
+     "false_alarms_per_onset": 0.8846153846153846,
+     "flags": 46,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.04048511274266168,
+      "excludes_zero": true,
+      "high": -0.02284558996383917,
+      "low": -0.058817796688718726
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.019960066090063733,
+      "excludes_zero": true,
+      "high": -0.00497980620224282,
+      "low": -0.039177336174339494
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": 0.00020693901752913402,
+      "excludes_zero": false,
+      "high": 0.0056214228832787965,
+      "low": -0.0044576754754141095
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8908783783783784,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.08665982109858554,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 23,
+     "false_alarms_per_onset": 1.7692307692307692,
+     "flags": 46,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 27,
+     "false_alarms_per_onset": 1.0384615384615385,
+     "flags": 48,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.022057013034189554,
+      "excludes_zero": true,
+      "high": -0.0010447240099184718,
+      "low": -0.04255631743572908
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.003484721252905325,
+      "excludes_zero": false,
+      "high": 0.01979963027219029,
+      "low": -0.025713680656043944
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.00016096141355143677,
+      "excludes_zero": false,
+      "high": 0.004934863747509822,
+      "low": -0.00492104464220315
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8313063063063063,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.10508684477172603,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 27,
+     "false_alarms_per_onset": 2.076923076923077,
+     "flags": 48,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   }
+  },
+  "risk_gbm_base": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 39,
+     "false_alarms_per_onset": 1.4444444444444444,
+     "flags": 81,
+     "onsets": 27,
+     "onsets_flagged": 13,
+     "pressure_days": 140,
+     "recall": 0.48148148148148145
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.06062567230802274,
+      "excludes_zero": true,
+      "high": -0.03717141499505902,
+      "low": -0.08842799312616398
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.030453023275621875,
+      "excludes_zero": true,
+      "high": -0.004014251202318193,
+      "low": -0.06166763795001419
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.926674307354993,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.07140170148195775,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 39,
+     "false_alarms_per_onset": 1.8571428571428572,
+     "flags": 81,
+     "onsets": 21,
+     "onsets_flagged": 13,
+     "pressure_days": 58,
+     "recall": 0.6190476190476191
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 25,
+     "false_alarms_per_onset": 0.9615384615384616,
+     "flags": 49,
+     "onsets": 26,
+     "onsets_flagged": 8,
+     "pressure_days": 139,
+     "recall": 0.3076923076923077
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.02834692707374283,
+      "excludes_zero": true,
+      "high": -0.011382368105258266,
+      "low": -0.0451801401781173
+     },
+     "vs_persistence_logistic": {
+      "difference": 0.0017695481005622741,
+      "excludes_zero": false,
+      "high": 0.01892411752624718,
+      "low": -0.015416436360908585
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8743243243243243,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.09846521697355982,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 25,
+     "false_alarms_per_onset": 1.9230769230769231,
+     "flags": 49,
+     "onsets": 13,
+     "onsets_flagged": 8,
+     "pressure_days": 37,
+     "recall": 0.6153846153846154
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 33,
+     "false_alarms_per_onset": 1.2692307692307692,
+     "flags": 55,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.03396463584795591,
+      "excludes_zero": true,
+      "high": -0.0184083530120115,
+      "low": -0.05068769938141777
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.014079534607273732,
+      "excludes_zero": false,
+      "high": 0.0025233485176132035,
+      "low": -0.031035585472099152
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8912725225225225,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.09295546224191323,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 33,
+     "false_alarms_per_onset": 2.5384615384615383,
+     "flags": 55,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 29,
+     "false_alarms_per_onset": 1.1153846153846154,
+     "flags": 56,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.040692051760190785,
+      "excludes_zero": true,
+      "high": -0.02389657045376671,
+      "low": -0.05867212871245673
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.020167005107592856,
+      "excludes_zero": true,
+      "high": -0.003172557624581675,
+      "low": -0.04079590259839921
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.895045045045045,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.08645288208105653,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 29,
+     "false_alarms_per_onset": 2.230769230769231,
+     "flags": 56,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 28,
+     "false_alarms_per_onset": 1.0769230769230769,
+     "flags": 49,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.021896051620638127,
+      "excludes_zero": true,
+      "high": -0.001308107511949574,
+      "low": -0.04111879209100965
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.00332375983935386,
+      "excludes_zero": false,
+      "high": 0.02169948578084252,
+      "low": -0.02803139546729622
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.7983671171171172,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.10524780618527747,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 28,
+     "false_alarms_per_onset": 2.1538461538461537,
+     "flags": 49,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   }
+  },
+  "risk_logistic": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 48,
+     "false_alarms_per_onset": 1.7777777777777777,
+     "flags": 91,
+     "onsets": 27,
+     "onsets_flagged": 13,
+     "pressure_days": 140,
+     "recall": 0.48148148148148145
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.05396864999950433,
+      "excludes_zero": true,
+      "high": -0.029894631228779972,
+      "low": -0.08289383412809354
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.02379600096710346,
+      "excludes_zero": false,
+      "high": 0.005151940070903256,
+      "low": -0.058686973788726726
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": 0.004574602321935265,
+      "excludes_zero": false,
+      "high": 0.011680846419455427,
+      "low": -0.0013834879938394676
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.9146900538170222,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.0780587237904762,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 48,
+     "false_alarms_per_onset": 2.2857142857142856,
+     "flags": 91,
+     "onsets": 21,
+     "onsets_flagged": 13,
+     "pressure_days": 58,
+     "recall": 0.6190476190476191
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 26,
+     "false_alarms_per_onset": 1.0,
+     "flags": 54,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 139,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.03837892974310172,
+      "excludes_zero": true,
+      "high": -0.016204214861336615,
+      "low": -0.06110956646446383
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.008262454568796615,
+      "excludes_zero": false,
+      "high": 0.026654210578592085,
+      "low": -0.04432547527758659
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": 0.002678611211234582,
+      "excludes_zero": false,
+      "high": 0.014430642110492957,
+      "low": -0.009077576787206812
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.9007882882882883,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.08843321430420087,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 26,
+     "false_alarms_per_onset": 2.0,
+     "flags": 54,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 31,
+     "false_alarms_per_onset": 1.1923076923076923,
+     "flags": 59,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.02611884536129938,
+      "excludes_zero": false,
+      "high": 0.004882118039714705,
+      "low": -0.05512459225696248
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.006233744120617224,
+      "excludes_zero": false,
+      "high": 0.03592526053670934,
+      "low": -0.0459966569684919
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": 5.414252805066214e-05,
+      "excludes_zero": false,
+      "high": 0.008174811849949061,
+      "low": -0.008226499271030018
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8699324324324325,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.1008012527285696,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 31,
+     "false_alarms_per_onset": 2.3846153846153846,
+     "flags": 59,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 40,
+     "false_alarms_per_onset": 1.5384615384615385,
+     "flags": 66,
+     "onsets": 26,
+     "onsets_flagged": 9,
+     "pressure_days": 138,
+     "recall": 0.34615384615384615
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.027010846267270586,
+      "excludes_zero": true,
+      "high": -0.0019601680827936612,
+      "low": -0.04904633252680144
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.00648579961467267,
+      "excludes_zero": false,
+      "high": 0.03018580152099303,
+      "low": -0.045828775950082515
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.0004934601849683264,
+      "excludes_zero": false,
+      "high": 0.004840908556253545,
+      "low": -0.005634105797376675
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8646396396396396,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.10013408757397665,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 40,
+     "false_alarms_per_onset": 3.076923076923077,
+     "flags": 66,
+     "onsets": 13,
+     "onsets_flagged": 9,
+     "pressure_days": 37,
+     "recall": 0.6923076923076923
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 37,
+     "false_alarms_per_onset": 1.4230769230769231,
+     "flags": 59,
+     "onsets": 26,
+     "onsets_flagged": 8,
+     "pressure_days": 138,
+     "recall": 0.3076923076923077
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.02622896708040034,
+      "excludes_zero": true,
+      "high": -0.008417199016139446,
+      "low": -0.043959299801858434
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.007656675299116107,
+      "excludes_zero": false,
+      "high": 0.01964700340891674,
+      "low": -0.03665547014810853
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": 0.0022548774381141753,
+      "excludes_zero": false,
+      "high": 0.009233749539670228,
+      "low": -0.00411098222981
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.818018018018018,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.10091489072551536,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 37,
+     "false_alarms_per_onset": 2.8461538461538463,
+     "flags": 59,
+     "onsets": 13,
+     "onsets_flagged": 8,
+     "pressure_days": 37,
+     "recall": 0.6153846153846154
+    }
+   }
+  },
+  "risk_logistic_base": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 46,
+     "false_alarms_per_onset": 1.7037037037037037,
+     "flags": 90,
+     "onsets": 27,
+     "onsets_flagged": 13,
+     "pressure_days": 140,
+     "recall": 0.48148148148148145
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.05854325232143957,
+      "excludes_zero": true,
+      "high": -0.035210568482570606,
+      "low": -0.08725459995035775
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.028370603289038697,
+      "excludes_zero": true,
+      "high": -0.0015803944250432239,
+      "low": -0.06195882311538814
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.929439904325294,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.07348412146854089,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 46,
+     "false_alarms_per_onset": 2.1904761904761907,
+     "flags": 90,
+     "onsets": 21,
+     "onsets_flagged": 13,
+     "pressure_days": 58,
+     "recall": 0.6190476190476191
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 26,
+     "false_alarms_per_onset": 1.0,
+     "flags": 50,
+     "onsets": 26,
+     "onsets_flagged": 6,
+     "pressure_days": 139,
+     "recall": 0.23076923076923078
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.04105754095433627,
+      "excludes_zero": true,
+      "high": -0.021919768534917665,
+      "low": -0.06147840168400165
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.010941065780031182,
+      "excludes_zero": false,
+      "high": 0.014091833345651488,
+      "low": -0.04019511254278658
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.9054054054054054,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.08575460309296644,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 26,
+     "false_alarms_per_onset": 2.0,
+     "flags": 50,
+     "onsets": 13,
+     "onsets_flagged": 6,
+     "pressure_days": 37,
+     "recall": 0.46153846153846156
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 26,
+     "false_alarms_per_onset": 1.0,
+     "flags": 49,
+     "onsets": 26,
+     "onsets_flagged": 6,
+     "pressure_days": 138,
+     "recall": 0.23076923076923078
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.02617298788935003,
+      "excludes_zero": false,
+      "high": 0.0014168780502774915,
+      "low": -0.05199239921751917
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.006287886648667889,
+      "excludes_zero": false,
+      "high": 0.03106640573582543,
+      "low": -0.04119982222762334
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8916103603603603,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.10074711020051905,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 26,
+     "false_alarms_per_onset": 2.0,
+     "flags": 49,
+     "onsets": 13,
+     "onsets_flagged": 6,
+     "pressure_days": 37,
+     "recall": 0.46153846153846156
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 29,
+     "false_alarms_per_onset": 1.1153846153846154,
+     "flags": 56,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.02651738608230226,
+      "excludes_zero": true,
+      "high": -0.001347255032364496,
+      "low": -0.04809632491286373
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.005992339429704343,
+      "excludes_zero": false,
+      "high": 0.03221091081253859,
+      "low": -0.044554967332837245
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8689752252252252,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.10062754775894499,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 29,
+     "false_alarms_per_onset": 2.230769230769231,
+     "flags": 56,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 30,
+     "false_alarms_per_onset": 1.1538461538461537,
+     "flags": 57,
+     "onsets": 26,
+     "onsets_flagged": 8,
+     "pressure_days": 138,
+     "recall": 0.3076923076923077
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.02848384451851453,
+      "excludes_zero": true,
+      "high": -0.011366359282392258,
+      "low": -0.04580101176786179
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.009911552737230272,
+      "excludes_zero": false,
+      "high": 0.017902245244454475,
+      "low": -0.03979829676955521
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8386261261261261,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.09866001328740108,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 30,
+     "false_alarms_per_onset": 2.3076923076923075,
+     "flags": 57,
+     "onsets": 13,
+     "onsets_flagged": 8,
+     "pressure_days": 37,
+     "recall": 0.6153846153846154
+    }
+   }
+  },
+  "risk_quantile_skewt": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 63,
+     "false_alarms_per_onset": 2.3333333333333335,
+     "flags": 107,
+     "onsets": 27,
+     "onsets_flagged": 13,
+     "pressure_days": 140,
+     "recall": 0.48148148148148145
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.0420022245480418,
+      "excludes_zero": true,
+      "high": -0.011371789467701215,
+      "low": -0.07812282623668651
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.01182957551564094,
+      "excludes_zero": false,
+      "high": 0.023620628042735178,
+      "low": -0.05104155853128467
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": 0.0009554116723636962,
+      "excludes_zero": false,
+      "high": 0.01663846391812294,
+      "low": -0.015092277407204048
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8917181582619095,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.09002514924193869,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 63,
+     "false_alarms_per_onset": 3.0,
+     "flags": 107,
+     "onsets": 21,
+     "onsets_flagged": 13,
+     "pressure_days": 58,
+     "recall": 0.6190476190476191
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 40,
+     "false_alarms_per_onset": 1.5384615384615385,
+     "flags": 69,
+     "onsets": 26,
+     "onsets_flagged": 8,
+     "pressure_days": 139,
+     "recall": 0.3076923076923077
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.03795873607222166,
+      "excludes_zero": true,
+      "high": -0.010317069819877562,
+      "low": -0.0668665398873401
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.007842260897916573,
+      "excludes_zero": false,
+      "high": 0.02590849432689695,
+      "low": -0.04215558282454755
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.007043782229342911,
+      "excludes_zero": false,
+      "high": 0.014756029545655974,
+      "low": -0.03128924027182923
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8570945945945946,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.088853407975081,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 40,
+     "false_alarms_per_onset": 3.076923076923077,
+     "flags": 69,
+     "onsets": 13,
+     "onsets_flagged": 8,
+     "pressure_days": 37,
+     "recall": 0.6153846153846154
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 41,
+     "false_alarms_per_onset": 1.5769230769230769,
+     "flags": 67,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.0398494019423149,
+      "excludes_zero": true,
+      "high": -0.016137504741007856,
+      "low": -0.06818213401427924
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.01996430070163278,
+      "excludes_zero": false,
+      "high": 0.006114606294724067,
+      "low": -0.04972374789542786
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.0007162008583297965,
+      "excludes_zero": false,
+      "high": 0.011076539245635774,
+      "low": -0.013408475385840293
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8585022522522523,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.08707069614755412,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 41,
+     "false_alarms_per_onset": 3.1538461538461537,
+     "flags": 67,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 66,
+     "false_alarms_per_onset": 2.5384615384615383,
+     "flags": 95,
+     "onsets": 26,
+     "onsets_flagged": 9,
+     "pressure_days": 138,
+     "recall": 0.34615384615384615
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.03838259841519706,
+      "excludes_zero": true,
+      "high": -0.013192500581797998,
+      "low": -0.06808654477303092
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.017857551762599136,
+      "excludes_zero": false,
+      "high": 0.011213073366763714,
+      "low": -0.051452389810534356
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": 0.0017236157060122525,
+      "excludes_zero": false,
+      "high": 0.027968706672966116,
+      "low": -0.020808545995858175
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8288851351351352,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.0887623354260502,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 66,
+     "false_alarms_per_onset": 5.076923076923077,
+     "flags": 95,
+     "onsets": 13,
+     "onsets_flagged": 9,
+     "pressure_days": 37,
+     "recall": 0.6923076923076923
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 48,
+     "false_alarms_per_onset": 1.8461538461538463,
+     "flags": 74,
+     "onsets": 26,
+     "onsets_flagged": 7,
+     "pressure_days": 138,
+     "recall": 0.2692307692307692
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.040419753692335345,
+      "excludes_zero": true,
+      "high": -0.016436247206216864,
+      "low": -0.06777170360598554
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.021847461911051105,
+      "excludes_zero": false,
+      "high": 0.014940124912864276,
+      "low": -0.06123828225054796
+     },
+     "vs_twin_without_new_inputs": {
+      "difference": -0.0008552281598668158,
+      "excludes_zero": false,
+      "high": 0.014055005700263927,
+      "low": -0.018325433912583382
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8826576576576577,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.08672410411358052,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 48,
+     "false_alarms_per_onset": 3.6923076923076925,
+     "flags": 74,
+     "onsets": 13,
+     "onsets_flagged": 7,
+     "pressure_days": 37,
+     "recall": 0.5384615384615384
+    }
+   }
+  },
+  "risk_quantile_skewt_base": {
+   "1": {
+    "all_days": {
+     "days": 1873,
+     "false_alarms": 49,
+     "false_alarms_per_onset": 1.8148148148148149,
+     "flags": 93,
+     "onsets": 27,
+     "onsets_flagged": 13,
+     "pressure_days": 140,
+     "recall": 0.48148148148148145
+    },
+    "onsets_on_risk_dates_share": 0.7777777777777778,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.04295763622040554,
+      "excludes_zero": true,
+      "high": -0.015718929891687425,
+      "low": -0.07541234561431835
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.012784987188004632,
+      "excludes_zero": false,
+      "high": 0.02067035490027243,
+      "low": -0.04921049430584403
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.8645854096073351,
+     "auroc_calendar_climatology": 0.5146751046442097,
+     "brier": 0.08906973756957497,
+     "brier_calendar_climatology": 0.13202737378998058,
+     "brier_persistence_logistic": 0.10185472475757956
+    },
+    "risk_dates": {
+     "days": 404,
+     "false_alarms": 49,
+     "false_alarms_per_onset": 2.3333333333333335,
+     "flags": 93,
+     "onsets": 21,
+     "onsets_flagged": 13,
+     "pressure_days": 58,
+     "recall": 0.6190476190476191
+    }
+   },
+   "2": {
+    "all_days": {
+     "days": 1872,
+     "false_alarms": 43,
+     "false_alarms_per_onset": 1.6538461538461537,
+     "flags": 73,
+     "onsets": 26,
+     "onsets_flagged": 9,
+     "pressure_days": 139,
+     "recall": 0.34615384615384615
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.030914953842878762,
+      "excludes_zero": true,
+      "high": -0.0023982802409407505,
+      "low": -0.059981002374905744
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.0007984786685736611,
+      "excludes_zero": false,
+      "high": 0.023393812780377138,
+      "low": -0.025823322645769285
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.868018018018018,
+     "auroc_calendar_climatology": 0.5742117117117117,
+     "brier": 0.09589719020442387,
+     "brier_calendar_climatology": 0.12681214404730262,
+     "brier_persistence_logistic": 0.09669566887299749
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 43,
+     "false_alarms_per_onset": 3.3076923076923075,
+     "flags": 73,
+     "onsets": 13,
+     "onsets_flagged": 9,
+     "pressure_days": 37,
+     "recall": 0.6923076923076923
+    }
+   },
+   "3": {
+    "all_days": {
+     "days": 1871,
+     "false_alarms": 39,
+     "false_alarms_per_onset": 1.5,
+     "flags": 69,
+     "onsets": 26,
+     "onsets_flagged": 9,
+     "pressure_days": 138,
+     "recall": 0.34615384615384615
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.039133201083985145,
+      "excludes_zero": true,
+      "high": -0.010305078573066628,
+      "low": -0.07165391738634944
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.01924809984330298,
+      "excludes_zero": false,
+      "high": 0.013765102591220366,
+      "low": -0.054920534549441465
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.9307995495495496,
+     "auroc_calendar_climatology": 0.5731418918918919,
+     "brier": 0.08778689700588409,
+     "brier_calendar_climatology": 0.12692009808986904,
+     "brier_persistence_logistic": 0.10703499684918685
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 39,
+     "false_alarms_per_onset": 3.0,
+     "flags": 69,
+     "onsets": 13,
+     "onsets_flagged": 9,
+     "pressure_days": 37,
+     "recall": 0.6923076923076923
+    }
+   },
+   "4": {
+    "all_days": {
+     "days": 1870,
+     "false_alarms": 29,
+     "false_alarms_per_onset": 1.1153846153846154,
+     "flags": 58,
+     "onsets": 26,
+     "onsets_flagged": 9,
+     "pressure_days": 138,
+     "recall": 0.34615384615384615
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.04010621412120928,
+      "excludes_zero": true,
+      "high": -0.01301580858201572,
+      "low": -0.07026207519376812
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.01958116746861139,
+      "excludes_zero": false,
+      "high": 0.019407136447925275,
+      "low": -0.06143913377530714
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.9025900900900901,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.08703871972003793,
+     "brier_calendar_climatology": 0.12714493384124723,
+     "brier_persistence_logistic": 0.10661988718864927
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 29,
+     "false_alarms_per_onset": 2.230769230769231,
+     "flags": 58,
+     "onsets": 13,
+     "onsets_flagged": 9,
+     "pressure_days": 37,
+     "recall": 0.6923076923076923
+    }
+   },
+   "5": {
+    "all_days": {
+     "days": 1869,
+     "false_alarms": 27,
+     "false_alarms_per_onset": 1.0384615384615385,
+     "flags": 53,
+     "onsets": 26,
+     "onsets_flagged": 9,
+     "pressure_days": 138,
+     "recall": 0.34615384615384615
+    },
+    "onsets_on_risk_dates_share": 0.5,
+    "risk_date_paired_brier": {
+     "vs_calendar_climatology": {
+      "difference": -0.039564525532468524,
+      "excludes_zero": true,
+      "high": -0.015634117794465743,
+      "low": -0.0655121436011928
+     },
+     "vs_persistence_logistic": {
+      "difference": -0.020992233751184274,
+      "excludes_zero": false,
+      "high": 0.01373585042862245,
+      "low": -0.0608715612320926
+     }
+    },
+    "risk_date_scores": {
+     "auroc": 0.9169481981981982,
+     "auroc_calendar_climatology": 0.5685810810810811,
+     "brier": 0.08757933227344716,
+     "brier_calendar_climatology": 0.12714385780591564,
+     "brier_persistence_logistic": 0.1085715660246313
+    },
+    "risk_dates": {
+     "days": 277,
+     "false_alarms": 27,
+     "false_alarms_per_onset": 2.076923076923077,
+     "flags": 53,
+     "onsets": 13,
+     "onsets_flagged": 9,
+     "pressure_days": 37,
+     "recall": 0.6923076923076923
+    }
+   }
+  }
+ }
+}

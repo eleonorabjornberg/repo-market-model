@@ -1,0 +1,65 @@
+{
+  "directive": "#426",
+  "status": "declared by the pull request that closes #426 before any score was computed; nothing here is tuned on a scored day. The setting the pull request flags for Eleonora is announcement_time. Off in every published declaration: no published panel, declaration, record or figure reads it.",
+  "source": "treasury_auction_net_settlement",
+  "snapshot": "tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions",
+  "inputs": {
+    "offering": "offering_amt, the announced public offering, in USD billions, summed over the auctions of an (issue_date, security_type) group announced by the instant",
+    "maturing": "est_pub_held_mat_by_type_amt, the announced estimate of the publicly held securities of that security type maturing on the issue date, in USD billions; one figure per (issue_date, security_type), taken as the largest non-null figure among the group's auctions announced by the instant; 0.0 when none announced by the instant carries a figure (a cash management bill alone, mostly), counted and reported",
+    "soma": "soma_accepted, the Federal Reserve's rollover add-on, is an auction result. It is not in the net: the add-on is sized by the SOMA's own maturing holdings, which the publicly held maturing estimate excludes, so the SOMA leg cancels and the net is the cash the public leg drains. Reported beside the net and reconciled in scripts/net_settlement.py reconcile; dated at the result instant"
+  },
+  "columns": {
+    "net_settlement": "sum over the settlement groups of the row's own day of (offering - maturing), as announced by the instant, USD billions",
+    "net_settlement_bills": "the same over the groups whose security_type is a declared bill type (contract.TREASURY_BILL_SECURITY_TYPES)",
+    "net_settlement_due_5d": "the same net, all security types, summed over the five business days after the row's day (data.next_business_day, the holiday table of metadata/market_holidays.json), as announced by the instant"
+  },
+  "announcement_time": "12:00",
+  "result_time": "15:00",
+  "timezone": "America/New_York",
+  "announcement_date_field": "announcemt_date",
+  "result_date_field": "auction_date",
+  "rule": "The value on the panel row of day t is public at 12:00 New York time on t, the declared announcement instant: an auction enters it only when its announcemt_date is on or before t, and its offering and maturing figures are read together, as announced. The forecast made on day t at the 16:00 decision reads the row of day t. A day partly announced reads low: its net counts the announced offerings against a maturing estimate that covers the whole day. That is what was known, and the pull request reports how much of the next five days' gross settlement was announced at each decision.",
+  "evidence": "Treasury's auction announcements are dated by announcemt_date in the tracked Fiscal Data snapshot, with no clock time. The declared 12:00 rests on Treasury's usual 11:00 a.m. announcement time, which was NOT verified from this environment (the dataset page that would state it is not reachable), plus an hour. repo_model.net_settlement.auction_records refuses a record announced after its auction or after its settlement.",
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "scoring": {
+    "last_day": "2025-12-31"
+  },
+  "classifiers": {
+    "hierarchical_logistic": "track H (#406): the hierarchical logistic, with the three columns as linear columns",
+    "onset_logistic": "track O (#409, merged as #423): the onset logistic, with the three columns as linear columns",
+    "not_extended": "track Q (#413) is an open pull request, not on main; its models are not extended here",
+    "why_these_two": "They are the classifiers of #406 and #409 that are on main (the directive names #406 and #413; #413 is an open pull request, not main)."
+  },
+  "candidates": {
+    "hierarchical_logistic_net": {
+      "role": "candidate",
+      "track": "N (#426)",
+      "control": "hierarchical_logistic",
+      "base": "the hierarchical logistic of track H (#406), repo_model.hierarchical_logistic, features as it declares them at the horizon",
+      "adds": [
+        "net_settlement",
+        "net_settlement_bills",
+        "net_settlement_due_5d"
+      ],
+      "added_at_horizons": "every horizon: each is public at the declaration's announcement instant on the row's own day, so it is not dropped at h >= 2 as treasury_settlement is",
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as the control's"
+    },
+    "onset_logistic_net+recalibrated": {
+      "role": "candidate",
+      "track": "N (#426)",
+      "control": "onset_logistic+recalibrated",
+      "base": "the onset logistic of track O (#409): kind logistic, no treatment, inputs base and funding of metadata/onset_classifier.json",
+      "adds": [
+        "net_settlement",
+        "net_settlement_bills",
+        "net_settlement_due_5d"
+      ],
+      "added_at_horizons": "every horizon (treasury_settlement itself still leaves the inputs at h >= 2, as the control's does)",
+      "calibration": "onset-label fit, then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION), as the control's"
+    }
+  },
+  "pairing": "Each candidate is scored in the same run, on the same scratch panel, folds and horizons as its control (the same classifier without the three columns); the judge's report sets them side by side, and scripts/net_settlement.py pair reports the paired Brier difference with a stationary-bootstrap interval, split by regime and pressure-day type."
+}
