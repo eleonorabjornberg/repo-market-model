@@ -420,6 +420,31 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The five-day-window onset learners (#460): the direct fit to 'an onset in the next five panel days'.
+        "pressure_window_onset_logistic": _ModelChoice(
+            declared=_DeferredFactory("pressure_window_onset_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                None,
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_window_onset_classifier": _ModelChoice(
+            declared=_DeferredFactory("pressure_window_onset_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                None,
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         # The risk-date severity model (#428): fitted and served on the declared risk dates only.
         "pressure_risk_date_logistic": _ModelChoice(
             declared=_DeferredFactory("pressure_risk_date_exceedance"),
