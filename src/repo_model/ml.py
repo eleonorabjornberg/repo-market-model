@@ -4109,6 +4109,14 @@ _CALENDAR_INPUTS = ("days_to_month_end", "quarter_end", "tax_date")
 _PRESSURE_DAY_TYPES = ("quarter_end", "month_end", "tax_date")
 #: The day types the settlement x state interaction variant crosses with (#378).
 _INTERACTION_DAY_TYPES = ("quarter_end", "tax_date")
+#: The FR 2004 net Treasury position, the balance-sheet design's dealer input (#427).
+_DEALER_POSITION = "dealer_treasury_position"
+
+
+def _balance_sheet_rules():
+    from . import balance_sheet_days
+
+    return balance_sheet_days.RULES
 #: The regime-pooled variant's shrinkage (#378): a regime's deviation columns are
 #: scaled by this before the one L2 penalty, so its deviations carry
 #: `1 / scale ** 2` times the pooled columns' penalty. Declared, not tuned.
@@ -6026,6 +6034,7 @@ class _ScarcityCalendarDesign:
         interactions: bool = False,
         regime_pooled: bool = False,
         regime_hierarchical: bool = False,
+        balance_sheet: bool = False,
     ) -> None:
         from .scarcity import RESERVE_SCARCITY_STATE, STATE_LABELS
 
@@ -6075,6 +6084,25 @@ class _ScarcityCalendarDesign:
             _INTERACTION_DAY_TYPES if interactions and self.settlement else ()
         )
         names += [f"treasury_settlement_x_state_x_{kind}" for kind in self.interaction_types]
+        # Balance-sheet days (#427): the three calendar rules of
+        # `balance_sheet_days`, each times the state, and the FR 2004 net
+        # Treasury position (already a linear column) times the state, times
+        # the state on a balance-sheet day, and times the state and the
+        # scheduled settlement.
+        self.balance_sheet = balance_sheet
+        self.position_terms: Tuple[str, ...] = ()
+        if balance_sheet:
+            if _DEALER_POSITION not in declared:
+                raise ValueError(
+                    f"the balance-sheet design reads {_DEALER_POSITION!r}; declare it (the FR 2004 net Treasury position)"
+                )
+            from . import balance_sheet_days
+
+            names += [f"{rule}_x_state" for rule in balance_sheet_days.NAMES]
+            self.position_terms = ("dealer_position_x_state", "dealer_position_x_balance_sheet_day_x_state") + (
+                ("dealer_position_x_settlement_x_state",) if self.settlement else ()
+            )
+            names += list(self.position_terms)
         # The regime-pooled variant (#378): the scheduled terms and the spread
         # get a deviation per scarcity regime, shrunk toward the pooled fit.
         self.pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], Optional[float]]] = None
@@ -6093,7 +6121,10 @@ class _ScarcityCalendarDesign:
             )
         self.names = tuple(names)
         self.monotone: Optional[Tuple[int, ...]] = (
-            tuple([0, 1] + [0] * len(self.linear) + [1] * len(scheduled) + [1] * len(self.interaction_types))
+            tuple(
+                [0, 1] + [0] * len(self.linear) + [1] * len(scheduled) + [1] * len(self.interaction_types)
+                + ([1] * 3 + [0] * len(self.position_terms) if balance_sheet else [])
+            )
             if monotone
             else None
         )
@@ -6108,6 +6139,19 @@ class _ScarcityCalendarDesign:
             "state_levels": {f"{key:g}": value for key, value in sorted(self.state_levels.items())},
             "scheduled_terms": "each times the mapped state only, no main effect",
             "interaction_terms": [f"treasury_settlement x state x {kind}" for kind in self.interaction_types],
+            "balance_sheet": (
+                None
+                if not self.balance_sheet
+                else {
+                    "rules": {
+                        rule.name: {"description": rule.description, "public_from": rule.public_from.isoformat(),
+                                    "sources": list(rule.sources)}
+                        for rule in _balance_sheet_rules()
+                    },
+                    "position_terms": list(self.position_terms),
+                    "scored_day": "recovered from the row's calendar columns (balance_sheet_days.scored_day)",
+                }
+            ),
             "regime_partial_pooling": (
                 None
                 if self.pooling is None
@@ -6153,6 +6197,17 @@ class _ScarcityCalendarDesign:
         if self.interaction_types:
             size = self._value(observation, "treasury_settlement")
             values += [size * state * (1.0 if kind == name else 0.0) for name in self.interaction_types]
+        if self.balance_sheet:
+            from . import balance_sheet_days
+
+            day = balance_sheet_days.scored_day(observation.date, observation.values)
+            flagged = balance_sheet_days.flags(day, observation.date)
+            values += [flagged[name] * state for name in balance_sheet_days.NAMES]
+            position = self._value(observation, _DEALER_POSITION)
+            any_day = 1.0 if any(flagged.values()) else 0.0
+            values += [position * state, position * any_day * state]
+            if self.settlement:
+                values.append(position * self._value(observation, "treasury_settlement") * state)
         if self.pooling is not None:
             values += scheduled[:len(_PRESSURE_DAY_TYPES)]
             if self.settlement:
@@ -6174,6 +6229,7 @@ def _scarcity_calendar_predictor(
     interactions: bool = False,
     regime_pooled: bool = False,
     regime_hierarchical: bool = False,
+    balance_sheet: bool = False,
 ) -> Any:
     """The scarcity-conditioned calendar (#128), as a direct pressure model.
 
@@ -6202,6 +6258,7 @@ def _scarcity_calendar_predictor(
     design = _ScarcityCalendarDesign(
         features, declaration, state_levels, monotone=form == "gbm",
         interactions=interactions, regime_pooled=regime_pooled, regime_hierarchical=regime_hierarchical,
+        balance_sheet=balance_sheet,
     )
     return _direct_pressure_predictor(
         SCARCITY_CALENDAR_KINDS[form], features, declaration, minimum_history, design=design

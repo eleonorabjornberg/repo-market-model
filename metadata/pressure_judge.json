@@ -743,6 +743,34 @@
       ],
       "features_at_horizon_2_or_more": "without treasury_settlement",
       "calibration": "onset-label fit (unweighted), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json; policy columns from metadata/policy_events.json read at the decision instant (metadata/policy_features.json)"
+    },
+    "balance_sheet_hierarchical_logistic": {
+      "role": "candidate",
+      "track": "B (#427)",
+      "features": [
+        "days_to_month_end",
+        "dealer_treasury_position",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+    },
+    "balance_sheet_scarcity_gbm": {
+      "role": "candidate",
+      "track": "B (#427)",
+      "features": [
+        "days_to_month_end",
+        "dealer_treasury_position",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
     }
   }
 }
