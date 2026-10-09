@@ -46,6 +46,16 @@ CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
 NEVER = date.max
 
 
+def keyed(value):
+    """`value` with every dict key a string, so it can be written sorted."""
+
+    if isinstance(value, dict):
+        return {str(key): keyed(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [keyed(item) for item in value]
+    return value
+
+
 def committed(path: Path) -> None:
     """Refuse a file that is not committed and unchanged since `HEAD`: a declaration is made before any score."""
 
@@ -146,7 +156,7 @@ def run_command(args) -> int:
         raw_forecasts[name] = by_horizon(report, calendar, last, 1)
         settings[name] = {
             "features": list(report.features),
-            "model_settings": dict(report.model_settings),
+            "model_settings": keyed(dict(report.model_settings)),
             "ml_libraries": None if report.ml_libraries is None else dict(report.ml_libraries),
         }
         print(json.dumps({"candidate": name, "done": True}), flush=True)
