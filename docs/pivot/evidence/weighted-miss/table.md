@@ -26,8 +26,11 @@ Table 1. Each candidate under the unweighted rule (the current bar) and the weig
 | onset_logistic_policy+recalibrated | 26 | 15 | 17 | 3.23 / 1.53 | 6.12 / 3.21 | fail | fail | fail / fail | fail / fail |
 | persistence_logistic | 26 | 7 | 12 | 3.42 / 1.17 | 7.04 / 3.25 | fail | fail | fail / fail | fail / fail |
 | published_v1 | 26 | 2 | 14 | 2.35 / 0.79 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
+| published_v1_blend_equal | 26 | 3 | 13 | 2.27 / 0.89 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
+| published_v1_calendar_switch | 26 | 8 | 15 | 2.92 / 1.01 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
 | published_v1_nowcast | 26 | 4 | 13 | 2.38 / 0.83 | 5.46 / 2.28 | fail | fail | fail / fail | fail / fail |
 | published_v1_nowcast_substituted | 26 | 6 | 10 | 2.96 / 1.24 | 5.96 / 2.90 | fail | fail | fail / fail | fail / fail |
+| published_v1_predicted_turn_switch | 26 | 5 | 15 | 2.88 / 1.00 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
 | rare_gbm_balanced_bootstrap+recalibrated | 26 | 7 | 7 | 1.19 / 0.53 | 2.19 / 0.85 | fail | fail | fail / fail | pass / pass |
 | rare_gbm_balanced_bootstrap_policy+recalibrated | 26 | 6 | 12 | 1.65 / 0.72 | 2.92 / 1.37 | fail | fail | fail / fail | pass / pass |
 | rare_gbm_class_weight+recalibrated | 26 | 6 | 12 | 1.46 / 0.63 | 5.12 / 2.16 | fail | fail | fail / fail | pass / pass |
@@ -290,6 +293,26 @@ Table 2. The same split by regime: onsets, onsets warned, and the worst horizon'
 | published_v1 | weighted | 2021-23 | 0 | 0 | 0 / 0.00 |
 | published_v1 | weighted | 2024 | 2 | 0 | 3 / 1.00 |
 | published_v1 | weighted | 2025-26 | 5 | 2 | 22 / 7.00 |
+| published_v1_blend_equal | unweighted | 2018-19 | 17 | 3 | 55 / 22.00 |
+| published_v1_blend_equal | unweighted | 2020 | 2 | 0 | 0 / 0.00 |
+| published_v1_blend_equal | unweighted | 2021-23 | 0 | 0 | 0 / 0.00 |
+| published_v1_blend_equal | unweighted | 2024 | 2 | 0 | 1 / 0.50 |
+| published_v1_blend_equal | unweighted | 2025-26 | 5 | 0 | 13 / 4.25 |
+| published_v1_blend_equal | weighted | 2018-19 | 17 | 11 | 125 / 53.75 |
+| published_v1_blend_equal | weighted | 2020 | 2 | 0 | 3 / 2.00 |
+| published_v1_blend_equal | weighted | 2021-23 | 0 | 0 | 0 / 0.00 |
+| published_v1_blend_equal | weighted | 2024 | 2 | 0 | 1 / 1.00 |
+| published_v1_blend_equal | weighted | 2025-26 | 5 | 2 | 21 / 7.00 |
+| published_v1_calendar_switch | unweighted | 2018-19 | 17 | 7 | 63 / 22.50 |
+| published_v1_calendar_switch | unweighted | 2020 | 2 | 0 | 2 / 0.50 |
+| published_v1_calendar_switch | unweighted | 2021-23 | 0 | 0 | 0 / 0.00 |
+| published_v1_calendar_switch | unweighted | 2024 | 2 | 0 | 1 / 0.50 |
+| published_v1_calendar_switch | unweighted | 2025-26 | 5 | 1 | 13 / 4.25 |
+| published_v1_calendar_switch | weighted | 2018-19 | 17 | 13 | 125 / 53.75 |
+| published_v1_calendar_switch | weighted | 2020 | 2 | 0 | 4 / 2.50 |
+| published_v1_calendar_switch | weighted | 2021-23 | 0 | 0 | 0 / 0.00 |
+| published_v1_calendar_switch | weighted | 2024 | 2 | 0 | 2 / 1.00 |
+| published_v1_calendar_switch | weighted | 2025-26 | 5 | 2 | 21 / 7.00 |
 | published_v1_nowcast | unweighted | 2018-19 | 17 | 4 | 54 / 18.75 |
 | published_v1_nowcast | unweighted | 2020 | 2 | 0 | 0 / 0.00 |
 | published_v1_nowcast | unweighted | 2021-23 | 0 | 0 | 0 / 0.00 |
@@ -310,6 +333,16 @@ Table 2. The same split by regime: onsets, onsets warned, and the worst horizon'
 | published_v1_nowcast_substituted | weighted | 2021-23 | 0 | 0 | 0 / 0.00 |
 | published_v1_nowcast_substituted | weighted | 2024 | 2 | 0 | 0 / 0.00 |
 | published_v1_nowcast_substituted | weighted | 2025-26 | 5 | 0 | 11 / 4.00 |
+| published_v1_predicted_turn_switch | unweighted | 2018-19 | 17 | 5 | 63 / 22.50 |
+| published_v1_predicted_turn_switch | unweighted | 2020 | 2 | 0 | 2 / 0.50 |
+| published_v1_predicted_turn_switch | unweighted | 2021-23 | 0 | 0 | 0 / 0.00 |
+| published_v1_predicted_turn_switch | unweighted | 2024 | 2 | 0 | 1 / 0.50 |
+| published_v1_predicted_turn_switch | unweighted | 2025-26 | 5 | 0 | 13 / 4.25 |
+| published_v1_predicted_turn_switch | weighted | 2018-19 | 17 | 13 | 125 / 53.75 |
+| published_v1_predicted_turn_switch | weighted | 2020 | 2 | 0 | 4 / 2.00 |
+| published_v1_predicted_turn_switch | weighted | 2021-23 | 0 | 0 | 0 / 0.00 |
+| published_v1_predicted_turn_switch | weighted | 2024 | 2 | 0 | 3 / 1.00 |
+| published_v1_predicted_turn_switch | weighted | 2025-26 | 5 | 2 | 22 / 7.00 |
 | rare_gbm_balanced_bootstrap+recalibrated | unweighted | 2018-19 | 17 | 7 | 31 / 13.75 |
 | rare_gbm_balanced_bootstrap+recalibrated | unweighted | 2020 | 2 | 0 | 0 / 0.00 |
 | rare_gbm_balanced_bootstrap+recalibrated | unweighted | 2021-23 | 0 | 0 | 0 / 0.00 |

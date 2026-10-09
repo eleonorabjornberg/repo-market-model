@@ -51,8 +51,11 @@ rule is tiers 1, 3 and 5 together.
 | onset_logistic_policy+recalibrated | 26 | 15 | 17 | 3.23 / 1.53 | 6.12 / 3.21 | fail | fail | fail / fail | fail / fail |
 | persistence_logistic | 26 | 7 | 12 | 3.42 / 1.17 | 7.04 / 3.25 | fail | fail | fail / fail | fail / fail |
 | published_v1 | 26 | 2 | 14 | 2.35 / 0.79 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
+| published_v1_blend_equal | 26 | 3 | 13 | 2.27 / 0.89 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
+| published_v1_calendar_switch | 26 | 8 | 15 | 2.92 / 1.01 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
 | published_v1_nowcast | 26 | 4 | 13 | 2.38 / 0.83 | 5.46 / 2.28 | fail | fail | fail / fail | fail / fail |
 | published_v1_nowcast_substituted | 26 | 6 | 10 | 2.96 / 1.24 | 5.96 / 2.90 | fail | fail | fail / fail | fail / fail |
+| published_v1_predicted_turn_switch | 26 | 5 | 15 | 2.88 / 1.00 | 5.73 / 2.38 | fail | fail | fail / fail | fail / fail |
 | rare_gbm_balanced_bootstrap+recalibrated | 26 | 7 | 7 | 1.19 / 0.53 | 2.19 / 0.85 | fail | fail | fail / fail | pass / pass |
 | rare_gbm_balanced_bootstrap_policy+recalibrated | 26 | 6 | 12 | 1.65 / 0.72 | 2.92 / 1.37 | fail | fail | fail / fail | pass / pass |
 | rare_gbm_class_weight+recalibrated | 26 | 6 | 12 | 1.46 / 0.63 | 5.12 / 2.16 | fail | fail | fail / fail | pass / pass |
@@ -114,21 +117,36 @@ regime (flat count / weighted count). 2021-23 had no onset. The full split for e
 | rare_gbm_focal+recalibrated | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
 | rare_gbm_focal+recalibrated | 2024 | 2 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
 | rare_gbm_focal+recalibrated | 2025-26 | 5 | 0 | 0 | 0 / 0.00 | 2 / 0.75 |
-| two_part_logistic | 2018-19 | 17 | 10 | 13 | 49 / 16.75 | 96 / 39.00 |
-| two_part_logistic | 2020 | 2 | 0 | 0 | 3 / 2.25 | 6 / 4.50 |
-| two_part_logistic | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
-| two_part_logistic | 2024 | 2 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
-| two_part_logistic | 2025-26 | 5 | 0 | 1 | 0 / 0.00 | 1 / 0.25 |
 | risk_gbm | 2018-19 | 17 | 10 | 10 | 21 / 9.25 | 21 / 9.25 |
 | risk_gbm | 2020 | 2 | 0 | 0 | 11 / 10.00 | 13 / 12.00 |
 | risk_gbm | 2021-23 | 0 | 0 | 0 | 1 / 1.00 | 2 / 2.00 |
 | risk_gbm | 2024 | 2 | 0 | 0 | 1 / 1.00 | 1 / 1.00 |
 | risk_gbm | 2025-26 | 5 | 3 | 3 | 5 / 2.75 | 5 / 2.75 |
+| risk_gbm_base | 2018-19 | 17 | 10 | 10 | 21 / 10.00 | 21 / 10.00 |
+| risk_gbm_base | 2020 | 2 | 0 | 0 | 15 / 14.00 | 18 / 17.00 |
+| risk_gbm_base | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
+| risk_gbm_base | 2024 | 2 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
+| risk_gbm_base | 2025-26 | 5 | 4 | 4 | 3 / 1.50 | 3 / 1.50 |
 | risk_logistic | 2018-19 | 17 | 10 | 10 | 25 / 12.00 | 25 / 12.00 |
 | risk_logistic | 2020 | 2 | 0 | 0 | 19 / 18.00 | 30 / 29.00 |
 | risk_logistic | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 2 / 2.00 |
 | risk_logistic | 2024 | 2 | 0 | 1 | 3 / 2.50 | 4 / 3.25 |
 | risk_logistic | 2025-26 | 5 | 4 | 5 | 7 / 4.75 | 11 / 8.75 |
+| risk_logistic_base | 2018-19 | 17 | 10 | 10 | 25 / 12.00 | 25 / 12.00 |
+| risk_logistic_base | 2020 | 2 | 0 | 0 | 17 / 15.75 | 30 / 28.25 |
+| risk_logistic_base | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
+| risk_logistic_base | 2024 | 2 | 0 | 0 | 0 / 0.00 | 2 / 1.50 |
+| risk_logistic_base | 2025-26 | 5 | 3 | 5 | 4 / 2.50 | 6 / 3.50 |
+| risk_quantile_skewt_base | 2018-19 | 17 | 10 | 10 | 20 / 7.75 | 20 / 7.75 |
+| risk_quantile_skewt_base | 2020 | 2 | 0 | 0 | 24 / 22.75 | 32 / 30.75 |
+| risk_quantile_skewt_base | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 2 / 2.00 |
+| risk_quantile_skewt_base | 2024 | 2 | 0 | 0 | 1 / 0.25 | 1 / 0.25 |
+| risk_quantile_skewt_base | 2025-26 | 5 | 4 | 5 | 5 / 1.75 | 7 / 3.25 |
+| two_part_logistic | 2018-19 | 17 | 10 | 13 | 49 / 16.75 | 96 / 39.00 |
+| two_part_logistic | 2020 | 2 | 0 | 0 | 3 / 2.25 | 6 / 4.50 |
+| two_part_logistic | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
+| two_part_logistic | 2024 | 2 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
+| two_part_logistic | 2025-26 | 5 | 0 | 1 | 0 / 0.00 | 1 / 0.25 |
 | hierarchical_logistic | 2018-19 | 17 | 12 | 12 | 91 / 32.50 | 146 / 64.75 |
 | hierarchical_logistic | 2020 | 2 | 0 | 0 | 2 / 1.25 | 15 / 11.50 |
 | hierarchical_logistic | 2021-23 | 0 | 0 | 0 | 0 / 0.00 | 0 / 0.00 |
