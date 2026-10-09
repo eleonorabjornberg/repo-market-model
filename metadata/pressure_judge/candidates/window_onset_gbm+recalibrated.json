@@ -1,0 +1,13 @@
+{
+  "role": "candidate",
+  "track": "W (#460)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement_coupons",
+    "reserve_balances"
+  ],
+  "calibration": "gradient-boosted classifier (the classifier part of two_part_gbm's inputs), unweighted, fitted to 'an onset in the next five panel days', then Platt out of fold against 'a pressure day in the next five panel days' (pressure.RECALIBRATION); metadata/window_onset.json"
+}
