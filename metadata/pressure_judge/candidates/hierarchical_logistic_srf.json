@@ -1,0 +1,16 @@
+{
+  "role": "candidate",
+  "track": "F (#425)",
+  "features": [
+    "days_to_month_end",
+    "fed_repo_days_since_positive",
+    "fed_repo_log_accepted",
+    "fed_repo_log_accepted_change",
+    "quarter_end",
+    "reserve_scarcity_state",
+    "spread_bps",
+    "tax_date",
+    "treasury_settlement"
+  ],
+  "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+}
