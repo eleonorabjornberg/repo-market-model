@@ -2,13 +2,14 @@
 
 import importlib.util
 import json
+from repo_model import pressure_judge as pj
 import unittest
 from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DECLARED = json.loads((ROOT / "metadata" / "risk_date_severity.json").read_text())
-JUDGE = json.loads((ROOT / "metadata" / "pressure_judge.json").read_text())
+JUDGE = {**json.loads((ROOT / "metadata" / "pressure_judge.json").read_text()), "candidates": dict(pj.load_declaration().candidates)}
 
 
 def _script():

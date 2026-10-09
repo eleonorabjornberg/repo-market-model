@@ -1,0 +1,13 @@
+{
+  "role": "candidate",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement",
+    "reserve_balances",
+    "tga"
+  ],
+  "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json"
+}

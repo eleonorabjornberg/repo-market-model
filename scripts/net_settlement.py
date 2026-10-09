@@ -294,6 +294,7 @@ def hierarchical_features(horizon: int, net: bool):
 def run_command(args) -> int:
     commit = committed(DECLARATION)
     committed(REPO / "metadata" / "pressure_judge.json")
+    committed(REPO / "metadata" / "pressure_judge" / "candidates")
     require_unlocked([END], where="net_settlement")
     declared = json.loads(DECLARATION.read_text())
     h = args.horizon

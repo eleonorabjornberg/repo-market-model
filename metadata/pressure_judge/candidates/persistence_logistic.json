@@ -1,0 +1,7 @@
+{
+  "role": "benchmark",
+  "features": [
+    "spread_bps"
+  ],
+  "calibration": "none"
+}

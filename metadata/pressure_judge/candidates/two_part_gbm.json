@@ -1,0 +1,12 @@
+{
+  "role": "candidate",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement_coupons",
+    "reserve_balances"
+  ],
+  "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
+}

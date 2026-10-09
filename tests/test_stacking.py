@@ -45,6 +45,7 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
+from repo_model import pressure_judge as pj
 from repo_model import stacking as st
 from repo_model.splits import LookAheadError
 
@@ -209,7 +210,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(set(declaration.members) & {declaration.candidate, declaration.comparison}, set())
 
     def test_the_candidates_are_declared_to_the_judge(self):
-        judge = json.loads((REPO / "metadata" / "pressure_judge.json").read_text())["candidates"]
+        judge = dict(pj.load_declaration().candidates)
         declaration = st.load_declaration()
         self.assertIn(declaration.candidate, judge)
         self.assertIn(declaration.comparison, judge)

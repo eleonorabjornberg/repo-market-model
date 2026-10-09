@@ -23,6 +23,7 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 from repo_model import balance_sheet_days as bsd
+from repo_model import pressure_judge as pj
 from repo_model.asof import InformationRule
 from repo_model.data import DailyObservation, days_to_month_end, next_business_day, quarter_end, tax_date
 from repo_model.splits import LookAheadError
@@ -143,7 +144,7 @@ class CandidateDeclarationTests(unittest.TestCase):
     """What is pinned is what was declared before any score (`metadata/pressure_judge.json`)."""
 
     def declared(self):
-        return json.loads((ROOT / "metadata" / "pressure_judge.json").read_text(encoding="utf-8"))["candidates"]
+        return dict(pj.load_declaration().candidates)
 
     def test_the_declaration_carries_each_candidate_as_defined_here(self):
         from repo_model import balance_sheet_candidates as bc

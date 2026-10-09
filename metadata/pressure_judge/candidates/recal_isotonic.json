@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "C (#380)",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement",
+  "calibration": "pressure model v1's raw distributional gbm (conformal PID with nested selection), recalibrated out of fold per threshold and horizon by the CORP isotonic fit (probability_calibration, 'isotonic')"
+}

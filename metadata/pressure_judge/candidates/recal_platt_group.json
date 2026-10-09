@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "C (#380)",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement",
+  "calibration": "the same raw forecast, Platt out of fold fitted per group (scarcity-state band x scheduled/ordinary day type, read as of the decision instant), pooled Platt when the group holds fewer than 60 earlier pairs or 3 events (group_calibration, 'group')"
+}

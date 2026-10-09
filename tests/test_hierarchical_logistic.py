@@ -32,12 +32,12 @@ class CandidateTests(unittest.TestCase):
 
 class DeclarationTests(unittest.TestCase):
     def test_the_declaration_carries_the_candidate_as_defined_here(self):
-        got = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"][hl.NAME]
+        got = pj.load_declaration(DECLARATION).candidates[hl.NAME]
         for key, value in hl.declaration_entry().items():
             self.assertEqual(got[key], value, key)
 
     def test_the_candidate_declares_no_fixed_cutoff(self):
-        got = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"][hl.NAME]
+        got = pj.load_declaration(DECLARATION).candidates[hl.NAME]
         self.assertNotIn("cutoffs", got)
         pj.load_declaration(DECLARATION)
 

@@ -29,6 +29,7 @@ import unittest
 from datetime import date, datetime
 from pathlib import Path
 
+from repo_model import pressure_judge as pj
 from repo_model import net_settlement as ns
 from repo_model.asof import StaleReadError
 from repo_model.data import DailyObservation
@@ -266,7 +267,7 @@ def _script():
     return module
 
 
-JUDGE = json.loads((ROOT / "metadata" / "pressure_judge.json").read_text())
+JUDGE = {**json.loads((ROOT / "metadata" / "pressure_judge.json").read_text()), "candidates": dict(pj.load_declaration().candidates)}
 
 
 class CandidateDeclarationTests(unittest.TestCase):

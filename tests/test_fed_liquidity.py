@@ -289,7 +289,7 @@ class SnapshotTests(unittest.TestCase):
 
 class DeclarationTests(unittest.TestCase):
     def test_the_declaration_carries_each_candidate_as_defined_here(self):
-        document = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"]
+        document = dict(pj.load_declaration(DECLARATION).candidates)
         for name in fed_liquidity.CANDIDATES:
             for key, value in fed_liquidity.declaration_entry(name).items():
                 self.assertEqual(document[name][key], value, f"{name}.{key}")
@@ -305,7 +305,7 @@ class DeclarationTests(unittest.TestCase):
 
     def test_the_control_is_the_same_classifier_without_the_inputs(self):
         control = fed_liquidity.features_at_horizon("hierarchical_logistic_srf", 1)
-        base = set(json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"]["hierarchical_logistic"]["features"])
+        base = set(dict(pj.load_declaration(DECLARATION).candidates)["hierarchical_logistic"]["features"])
         self.assertEqual(set(control) - base, set(fed_liquidity.CANDIDATES["hierarchical_logistic_srf"]))
         self.assertTrue(base <= set(control))
 
@@ -511,7 +511,7 @@ class SameDayDeclarationTests(unittest.TestCase):
         self.assertEqual(REGISTRY[fed_liquidity.SAME_DAY_SOURCE_ID]["release_lag"]["days"], 0)
 
     def test_each_same_day_candidate_differs_from_its_counterpart_only_in_the_reading(self):
-        document = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"]
+        document = dict(pj.load_declaration(DECLARATION).candidates)
         for name, counterpart in (
             ("hierarchical_logistic_srf_sameday", "hierarchical_logistic_srf"),
             ("hierarchical_logistic_fed_repo_sameday", "hierarchical_logistic_fed_repo"),

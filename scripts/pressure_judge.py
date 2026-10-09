@@ -2,8 +2,8 @@
 
 A scratch measurement, not a record: it writes JSON and a Markdown summary to
 the paths it is given, and nothing into `docs/runs/`. The bar, the thresholds,
-the horizons and the rule that chooses every flagging cut-off are in `metadata/pressure_judge.json`,
-which this script refuses to read unless it is committed and unchanged: a
+the horizons and the rule that chooses every flagging cut-off are in `metadata/pressure_judge.json`, and each
+candidate in a file of its own under `metadata/pressure_judge/candidates/`, all of which this script refuses to read unless it is committed and unchanged: a
 declaration is made before scoring, not edited beside it.
 
     PYTHONPATH=src python3 scripts/pressure_judge.py forecasts --panel PANEL --horizon H \
@@ -71,24 +71,32 @@ def _load_script(name):
     return module
 
 
-def require_committed_declaration(path: Path) -> str:
+def require_committed_declaration(path: Path, repo: Path = REPO) -> str:
     """The commit that last changed the declaration, refusing one that is not committed.
 
+    The declaration is its own file and every candidate's file under `metadata/pressure_judge/candidates/`
+    (`pressure_judge.declaration_files`); a candidate file that is untracked, modified or staged-only is
+    refused, so no candidate is scored before it is committed.
+
     Raises:
-        SystemExit: if the file differs from `HEAD` or is untracked.
+        SystemExit: if any of them differs from `HEAD` or is untracked.
     """
 
-    relative = str(path.resolve().relative_to(REPO))
+    repo = Path(repo).resolve()
+    relatives = [str(Path(path).resolve().relative_to(repo))]
+    directory = pj.candidates_directory(path)
+    relatives.append(str(directory.resolve().relative_to(repo)))
     dirty = subprocess.run(
-        ["git", "status", "--porcelain", "--", relative], cwd=REPO, capture_output=True, text=True, check=True
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", *relatives],
+        cwd=repo, capture_output=True, text=True, check=True,
     ).stdout.strip()
     if dirty:
         raise SystemExit(
-            f"{relative} is not committed ({dirty}); the judge's declaration is committed before "
-            f"any score is computed"
+            f"{' and '.join(relatives)} is not committed ({dirty}); the judge's declaration, and each "
+            f"candidate's file, is committed before any score is computed"
         )
     return subprocess.run(
-        ["git", "log", "-1", "--format=%H", "--", relative], cwd=REPO, capture_output=True, text=True, check=True
+        ["git", "log", "-1", "--format=%H", "--", *relatives], cwd=repo, capture_output=True, text=True, check=True
     ).stdout.strip()
 
 
