@@ -2259,6 +2259,39 @@ def repo_operation_publication_times(payload: bytes) -> Dict[date, datetime]:
     return out
 
 
+#: The decision time the published records use (`metadata/pressure_judge.json`, 16:00 New York).
+REPO_OPERATION_DECISION_TIME = time(16, 0)
+
+
+def repo_operation_same_day_available_at(ref_date: date, written: Optional[datetime]) -> datetime:
+    """When a repo operation date's results are public under the same-day reading (#442).
+
+    The sensitivity test of `nyfed_repo_ops_sameday`, not the declaration (`nyfed_repo_ops` and
+    `nyfed_srf` read 16:00 on the next business day). `written` is the date's recorded write
+    time (`repo_operation_publication_times`), `None` where the record states none.
+
+    * Written at or before 16:00 New York time on `ref_date` (or no write time): public at that
+      16:00, the day's decision instant.
+    * Written later, but no later than 16:00 on the next business day: public at the next
+      decision instant at or after the write time, which is that 16:00. A value written at 16:10
+      is invisible to that day's 16:00 decision.
+    * Written after that (a rewrite, as the records of 2021-09-03 and 2021-09-10 were on
+      2021-09-16): its first publication cannot be established, so it stays on the conservative
+      reading, public at its write time.
+    """
+
+    from zoneinfo import ZoneInfo
+
+    new_york = ZoneInfo("America/New_York")
+    decision = datetime.combine(ref_date, REPO_OPERATION_DECISION_TIME, tzinfo=new_york)
+    if written is None or written <= decision:
+        return decision
+    conservative = datetime.combine(
+        _next_business_day(ref_date, 1), REPO_OPERATION_DECISION_TIME, tzinfo=new_york
+    )
+    return conservative if written <= conservative else written
+
+
 #: The table the H.8 field is read from, by what its page says about it: the
 #: title of tables 2 and 3 (pages 2-5 before the 2020s layout), which is not
 #: table 1's "Selected Assets and Liabilities ...", and not the domestically
