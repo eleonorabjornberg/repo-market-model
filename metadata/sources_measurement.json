@@ -1,80 +1,4 @@
 {
-  "treasury_dts_tga": {
-    "access": "public",
-    "availability_provenance": {
-      "note": "Recorded 8 October 2026 for #377. The API states no publication time and keeps no vintages (it serves the current table), so the instant is Treasury's published schedule, not a measured one, and it is NOT VERIFIED from this environment: fiscaldata.treasury.gov (the dataset page that states the schedule) is refused by the proxy, and only the api. host is reachable. The schedule used is that the Daily Treasury Statement for a business day is published at 4:00 PM ET on the next business day. 16:30 ET is declared, 30 minutes after it and the same margin the bill-rate declaration takes over its bulk file's time, so a decision at 16:00 ET on that next business day does not read it and the first decision that does is the one after. The series' meaning and units were checked against FRED's WTREGEN (the H.4.1's weekly average of the TGA): the 7-calendar-day average of the daily closing balances ending each Wednesday, carried across weekends and holidays, matches WTREGEN to within 0.0009 USD billions on every one of the 451 Wednesdays 2018-01-17 to 2026-09-02 (tests/fixtures/snapshots/dts_inputs against funding_inputs/fred-macro-latest-vintage), which also settles that the line named 'Federal Reserve Account', 'Treasury General Account (TGA)' and 'Treasury General Account (TGA) Closing Balance' are one series across the renames. Units: the statement reports USD millions; the adapter divides by 1000.",
-      "publication": "Daily Treasury Statement (Bureau of the Fiscal Service), Table I, Operating Cash Balance, served as Fiscal Data's accounting/dts/operating_cash_balance table; published at 4:00 PM ET on the business day after the date it describes."
-    },
-    "coverage": [
-      "Treasury General Account closing balance, daily, 2018-01-02 onwards in the tracked snapshots (the table runs from 2005-10-03)"
-    ],
-    "field_frequencies": {
-      "TGA_CLOSE": "business_daily"
-    },
-    "fields": [
-      "TGA_CLOSE"
-    ],
-    "frequency": "business daily",
-    "identities": [],
-    "limitation": "Off in every published declaration (#377), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md, amendment of 7 October 2026): the TGA the published declarations read is FRED's weekly WTREGEN (fred_macro_latest_vintage), and this daily series is read only by the measurement fields tga_daily, tga_daily_change and tga_change_x_reserves (repo_model.measurement_fields). The closing-balance line has had three names (the Federal Reserve Account, the Treasury General Account (TGA), and from the April 2022 redesign the Treasury General Account (TGA) Closing Balance, whose value sits in the open_today_bal column); the adapter reads each in its own column and refuses a date with two closing balances. Each snapshot is one unmodified, year-wide response; a re-fetch can differ.",
-    "provider": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
-    "release_lag": {
-      "available_time": "16:30",
-      "basis": "ref_date",
-      "days": 1,
-      "note": "Declared 8 October 2026 (#377). The statement for a business day is published at 4:00 PM ET on the next business day (availability_provenance); 16:30 ET that day is declared, so the 16:00 ET decision of that day does not read it. The API states no publication time and keeps no vintages.",
-      "timezone": "America/New_York",
-      "unit": "business_days",
-      "worst_case_calendar_days": 6
-    },
-    "reviewed_note": "Structural-zero semantics have not been reviewed against the Fiscal Data schema; the empty declaration is not a finding.",
-    "structural_zeros": [],
-    "structural_zeros_reviewed": false,
-    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance"
-  },
-  "ofr_stfm_repo_segments": {
-    "access": "public",
-    "availability_provenance": {
-      "note": "Recorded 8 October 2026 for #377. The same publication as ofr_stfm_repo (the OFR U.S. Repo Markets Data Release), whose declaration this entry copies: see that entry's availability_provenance for the evidence (API metadata, last_update as a last-write time, real-time publication from 2020-09-09). The metadata endpoint was not re-read for these series. The tri-party series is a full business-day series from 2014-08-22 in the snapshot; the GCF preliminary rate has a value on 255 of 2102 dates, the rest being null (the series' own note: no trading, or disclosure edits applied).",
-      "publication": "OFR U.S. Repo Markets Data Release (Short-term Funding Monitor), daily, at no stated clock time. Two business days after the reference date at 16:00 ET is the conservative availability instant declared here, as #187 directs when the publication time cannot be established; a one-business-day reading is reported as a sensitivity only."
-    },
-    "coverage": [
-      "Tri-party (TRI) and GCF overnight/open average rate, preliminary and final, and transaction volume, final; the tri-party series run from 2014-08-22, the GCF series from 2018-06-15 and are mostly empty (disclosure edits)"
-    ],
-    "field_frequencies": {
-      "REPO-TRI_AR_OO-P": "business_daily",
-      "REPO-TRI_AR_OO-F": "business_daily",
-      "REPO-TRI_TV_OO-F": "business_daily",
-      "REPO-GCF_AR_OO-P": "business_daily",
-      "REPO-GCF_AR_OO-F": "business_daily",
-      "REPO-GCF_TV_OO-F": "business_daily"
-    },
-    "fields": [
-      "REPO-TRI_AR_OO-P",
-      "REPO-TRI_AR_OO-F",
-      "REPO-TRI_TV_OO-F",
-      "REPO-GCF_AR_OO-P",
-      "REPO-GCF_AR_OO-F",
-      "REPO-GCF_TV_OO-F"
-    ],
-    "frequency": "business daily",
-    "identities": [],
-    "limitation": "Off in every published declaration (#377). A separate source from ofr_stfm_repo only so that metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md, amendment of 7 October 2026), is not edited. REPO-TRI_AR_OO-P (percent) and REPO-GCF_AR_OO-P (percent) are the two fields a column reads (ofr_tri_rate, ofr_gcf_rate in repo_model.measurement_fields; None before 2020-09-09, when the OFR began publishing in real time); the final series and the volumes are read by no column. Each snapshot is one unmodified timeseries response per series; a re-fetch can differ.",
-    "provider": "Office of Financial Research",
-    "release_lag": {
-      "available_time": "16:00",
-      "basis": "ref_date",
-      "days": 2,
-      "note": "Copied from ofr_stfm_repo.release_lag (#187), the same publication: Conservative, under docs/decisions/information-set.md (#187): the API states no publication time and keeps no vintages, and its one timestamp is a last-write time, so a day's value is declared available at 16:00 ET two business days after it. Values dated before 2020-09-09 were filled in after the OFR began publishing in real time, and are not read by the scored column.",
-      "timezone": "America/New_York",
-      "unit": "business_days",
-      "worst_case_calendar_days": 7
-    },
-    "reviewed_note": "Structural-zero semantics have not been reviewed against the OFR API's schema; the empty declaration is not a finding. A null value is the OFR's own missing day.",
-    "structural_zeros": [],
-    "structural_zeros_reviewed": false,
-    "url": "https://data.financialresearch.gov/v1/series/timeseries"
-  },
   "nyfed_repo_ops": {
     "access": "public",
     "availability_provenance": {
@@ -113,5 +37,130 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
+  },
+  "ofr_stfm_repo_segments": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #377. The same publication as ofr_stfm_repo (the OFR U.S. Repo Markets Data Release), whose declaration this entry copies: see that entry's availability_provenance for the evidence (API metadata, last_update as a last-write time, real-time publication from 2020-09-09). The metadata endpoint was not re-read for these series. The tri-party series is a full business-day series from 2014-08-22 in the snapshot; the GCF preliminary rate has a value on 255 of 2102 dates, the rest being null (the series' own note: no trading, or disclosure edits applied).",
+      "publication": "OFR U.S. Repo Markets Data Release (Short-term Funding Monitor), daily, at no stated clock time. Two business days after the reference date at 16:00 ET is the conservative availability instant declared here, as #187 directs when the publication time cannot be established; a one-business-day reading is reported as a sensitivity only."
+    },
+    "coverage": [
+      "Tri-party (TRI) and GCF overnight/open average rate, preliminary and final, and transaction volume, final; the tri-party series run from 2014-08-22, the GCF series from 2018-06-15 and are mostly empty (disclosure edits)"
+    ],
+    "field_frequencies": {
+      "REPO-GCF_AR_OO-F": "business_daily",
+      "REPO-GCF_AR_OO-P": "business_daily",
+      "REPO-GCF_TV_OO-F": "business_daily",
+      "REPO-TRI_AR_OO-F": "business_daily",
+      "REPO-TRI_AR_OO-P": "business_daily",
+      "REPO-TRI_TV_OO-F": "business_daily"
+    },
+    "fields": [
+      "REPO-TRI_AR_OO-P",
+      "REPO-TRI_AR_OO-F",
+      "REPO-TRI_TV_OO-F",
+      "REPO-GCF_AR_OO-P",
+      "REPO-GCF_AR_OO-F",
+      "REPO-GCF_TV_OO-F"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#377). A separate source from ofr_stfm_repo only so that metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md, amendment of 7 October 2026), is not edited. REPO-TRI_AR_OO-P (percent) and REPO-GCF_AR_OO-P (percent) are the two fields a column reads (ofr_tri_rate, ofr_gcf_rate in repo_model.measurement_fields; None before 2020-09-09, when the OFR began publishing in real time); the final series and the volumes are read by no column. Each snapshot is one unmodified timeseries response per series; a re-fetch can differ.",
+    "provider": "Office of Financial Research",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 2,
+      "note": "Copied from ofr_stfm_repo.release_lag (#187), the same publication: Conservative, under docs/decisions/information-set.md (#187): the API states no publication time and keeps no vintages, and its one timestamp is a last-write time, so a day's value is declared available at 16:00 ET two business days after it. Values dated before 2020-09-09 were filled in after the OFR began publishing in real time, and are not read by the scored column.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 7
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the OFR API's schema; the empty declaration is not a finding. A null value is the OFR's own missing day.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://data.financialresearch.gov/v1/series/timeseries"
+  },
+  "policy_register": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #412. Not a fetched series: repo_model.policy_features computes each column per panel row from the point-in-time register metadata/policy_events.json (#376), reading only entries whose announcement instant is at or before 16:00 America/New_York on the row's own date. A source that states no release time is public from 23:59:59 on its date, so a 16:00 decision that day never sees it (docs/decisions/policy-point-in-time.md). 16:00 is the published records' decision time; a run at an earlier decision time is refused by the availability guard rather than read late.",
+      "publication": "metadata/policy_events.json, one entry per policy or legislative change with its announcement date and time and a primary source URL (Board of Governors press releases and implementation notes, Federal Reserve Bank of New York statements, congress.gov); tests/test_policy_features.py perturbs every entry announced after a decision instant and requires the columns at that instant unchanged."
+    },
+    "coverage": [
+      "policy and legislation register, one value per panel day, 2018-04 onwards"
+    ],
+    "field_frequencies": {
+      "policy_days_since_known": "business_daily",
+      "policy_days_until_effective": "business_daily",
+      "policy_debt_limit_reinstated": "business_daily",
+      "policy_iorb_offset_bp": "business_daily",
+      "policy_pending_count": "business_daily",
+      "policy_qt_in_force": "business_daily",
+      "policy_reserve_management_in_force": "business_daily",
+      "policy_slr_exclusion_in_force": "business_daily",
+      "policy_standing_repo_in_force": "business_daily"
+    },
+    "fields": [
+      "policy_days_since_known",
+      "policy_days_until_effective",
+      "policy_pending_count",
+      "policy_iorb_offset_bp",
+      "policy_qt_in_force",
+      "policy_standing_repo_in_force",
+      "policy_slr_exclusion_in_force",
+      "policy_reserve_management_in_force",
+      "policy_debt_limit_reinstated"
+    ],
+    "frequency": "event",
+    "identities": [],
+    "limitation": "Off in every published declaration (#412), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md, amendment of 7 October 2026). Not a panel column and not fetched: repo_model.policy_features computes the columns from the register and a track adds them to a scratch panel (scripts/policy_features.py). Entries whose source was not read when the register was built are flagged read_at_source false in the register.",
+    "provider": "Board of Governors of the Federal Reserve System; Federal Reserve Bank of New York; U.S. Congress",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 8 October 2026 (#412). The value for a row is computed from entries announced at or before 16:00 ET on that row's own date, so it is public at that instant by construction and the 16:00 ET decision of that day reads it; the decision instant is the same row's, never a later one.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "No structural zeros: a 0.0 is a computed value (no such policy in force), not a missing one.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": true,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/policy_events.json"
+  },
+  "treasury_dts_tga": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #377. The API states no publication time and keeps no vintages (it serves the current table), so the instant is Treasury's published schedule, not a measured one, and it is NOT VERIFIED from this environment: fiscaldata.treasury.gov (the dataset page that states the schedule) is refused by the proxy, and only the api. host is reachable. The schedule used is that the Daily Treasury Statement for a business day is published at 4:00 PM ET on the next business day. 16:30 ET is declared, 30 minutes after it and the same margin the bill-rate declaration takes over its bulk file's time, so a decision at 16:00 ET on that next business day does not read it and the first decision that does is the one after. The series' meaning and units were checked against FRED's WTREGEN (the H.4.1's weekly average of the TGA): the 7-calendar-day average of the daily closing balances ending each Wednesday, carried across weekends and holidays, matches WTREGEN to within 0.0009 USD billions on every one of the 451 Wednesdays 2018-01-17 to 2026-09-02 (tests/fixtures/snapshots/dts_inputs against funding_inputs/fred-macro-latest-vintage), which also settles that the line named 'Federal Reserve Account', 'Treasury General Account (TGA)' and 'Treasury General Account (TGA) Closing Balance' are one series across the renames. Units: the statement reports USD millions; the adapter divides by 1000.",
+      "publication": "Daily Treasury Statement (Bureau of the Fiscal Service), Table I, Operating Cash Balance, served as Fiscal Data's accounting/dts/operating_cash_balance table; published at 4:00 PM ET on the business day after the date it describes."
+    },
+    "coverage": [
+      "Treasury General Account closing balance, daily, 2018-01-02 onwards in the tracked snapshots (the table runs from 2005-10-03)"
+    ],
+    "field_frequencies": {
+      "TGA_CLOSE": "business_daily"
+    },
+    "fields": [
+      "TGA_CLOSE"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#377), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md, amendment of 7 October 2026): the TGA the published declarations read is FRED's weekly WTREGEN (fred_macro_latest_vintage), and this daily series is read only by the measurement fields tga_daily, tga_daily_change and tga_change_x_reserves (repo_model.measurement_fields). The closing-balance line has had three names (the Federal Reserve Account, the Treasury General Account (TGA), and from the April 2022 redesign the Treasury General Account (TGA) Closing Balance, whose value sits in the open_today_bal column); the adapter reads each in its own column and refuses a date with two closing balances. Each snapshot is one unmodified, year-wide response; a re-fetch can differ.",
+    "provider": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+    "release_lag": {
+      "available_time": "16:30",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Declared 8 October 2026 (#377). The statement for a business day is published at 4:00 PM ET on the next business day (availability_provenance); 16:30 ET that day is declared, so the 16:00 ET decision of that day does not read it. The API states no publication time and keeps no vintages.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the Fiscal Data schema; the empty declaration is not a finding.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance"
   }
 }
