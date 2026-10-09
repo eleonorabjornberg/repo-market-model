@@ -428,6 +428,30 @@ class DeclarationTests(unittest.TestCase):
             self.assertFalse([name for name in spec.features if "tbill" in name or "bill" in name])
 
 
+class SubstitutionTests(unittest.TestCase):
+    def row(self, **extra):
+        return DailyObservation(date(2020, 3, 3), {"sofr": 1.55, "iorb": 1.60, "tga": 300.0, **extra})
+
+    def test_the_spread_of_the_row_becomes_the_nowcast(self):
+        row = self.row(**{nowcast.NOWCAST_COLUMN: 7.5})
+        self.assertAlmostEqual(nowcast.substitute_latest_spread(row).spread_bps, 7.5, places=9)
+
+    def test_nothing_else_in_the_row_changes(self):
+        row = self.row(**{nowcast.NOWCAST_COLUMN: -3.0})
+        out = nowcast.substitute_latest_spread(row)
+        self.assertEqual(out.date, row.date)
+        self.assertEqual({k: v for k, v in out.values.items() if k != "sofr"}, {k: v for k, v in row.values.items() if k != "sofr"})
+
+    def test_a_row_without_a_nowcast_is_returned_unchanged(self):
+        row = self.row(**{nowcast.NOWCAST_COLUMN: None})
+        self.assertIs(nowcast.substitute_latest_spread(row), row)
+        self.assertAlmostEqual(row.spread_bps, -5.0, places=9)
+
+    def test_the_naive_nowcast_gives_back_the_published_spread(self):
+        row = self.row(**{nowcast.NOWCAST_COLUMN: -5.0})
+        self.assertAlmostEqual(nowcast.substitute_latest_spread(row).spread_bps, row.spread_bps, places=9)
+
+
 class AnalysisTests(unittest.TestCase):
     def test_a_turning_point_is_a_peak_or_trough_of_at_least_the_move_on_both_sides(self):
         series = [0.0, 0.0, 3.0, 0.0, 0.5, 0.0, -3.0, 0.0, 5.0]

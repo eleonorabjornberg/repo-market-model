@@ -62,6 +62,7 @@ __all__ = [
     "load_operations",
     "parse_declaration",
     "sameday_on_rrp",
+    "substitute_latest_spread",
     "turning_points",
     "walk_forward",
     "with_nowcast",
@@ -435,6 +436,23 @@ def with_nowcast(
         values[NOWCAST_COLUMN] = walks[declaration.primary].values[position]
         out.append(DailyObservation(row.date, values))
     return out, walks
+
+
+def substitute_latest_spread(row: DailyObservation, column: str = NOWCAST_COLUMN) -> DailyObservation:
+    """`row` with its SOFR set so that its spread (SOFR - IORB) is the value of `column`.
+
+    The substituted variant of the amendment in `metadata/nowcast.json`: the unchanged published model reads
+    its latest spread from the feature row, and the row it is handed carries the nowcast of the day before
+    the target there instead of the published spread two rows before it. A row whose nowcast or IORB is
+    missing is returned unchanged, so the model reads the published spread.
+    """
+
+    value, iorb = row.values.get(column), row.values.get("iorb")
+    if value is None or iorb is None:
+        return row
+    values = dict(row.values)
+    values["sofr"] = float(iorb) + float(value) / 100.0
+    return DailyObservation(row.date, values)
 
 
 # -- measures -----------------------------------------------------------------

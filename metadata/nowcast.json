@@ -24,7 +24,10 @@
     "min_pairs": 40,
     "refit_every": 21,
     "fallback": "the naive nowcast (the spread of the row before) on any row where the model is not yet fitted or a feature of the model is missing on the row or in a pair; the fallback is used and counted, never filled",
-    "base_features": ["spread_prev_change_bp", "spread_prev_level_bp"],
+    "base_features": [
+      "spread_prev_change_bp",
+      "spread_prev_level_bp"
+    ],
     "feature_definitions": {
       "spread_prev_level_bp": "spread of row r - 1, bp",
       "spread_prev_change_bp": "spread of row r - 1 minus the spread of row r - 2, bp",
@@ -43,25 +46,52 @@
       },
       "published_only": {
         "role": "control",
-        "features": ["spread_prev_change_bp", "spread_prev_level_bp"],
+        "features": [
+          "spread_prev_change_bp",
+          "spread_prev_level_bp"
+        ],
         "note": "the ridge with the last published values alone: what mean reversion and momentum give without any same-day input"
       },
       "rrp": {
         "role": "candidate",
-        "features": ["spread_prev_change_bp", "spread_prev_level_bp", "rrp_level_tn", "rrp_change_tn"]
+        "features": [
+          "spread_prev_change_bp",
+          "spread_prev_level_bp",
+          "rrp_level_tn",
+          "rrp_change_tn"
+        ]
       },
       "settlement": {
         "role": "candidate",
-        "features": ["spread_prev_change_bp", "spread_prev_level_bp", "settlement_100bn"]
+        "features": [
+          "spread_prev_change_bp",
+          "spread_prev_level_bp",
+          "settlement_100bn"
+        ]
       },
       "rrp_settlement": {
         "role": "primary",
-        "features": ["spread_prev_change_bp", "spread_prev_level_bp", "rrp_level_tn", "rrp_change_tn", "settlement_100bn"],
+        "features": [
+          "spread_prev_change_bp",
+          "spread_prev_level_bp",
+          "rrp_level_tn",
+          "rrp_change_tn",
+          "settlement_100bn"
+        ],
         "note": "the nowcast that feeds the distribution model and the pressure classifier, fixed here and not chosen on any score"
       },
       "rrp_settlement_calendar": {
         "role": "extra",
-        "features": ["spread_prev_change_bp", "spread_prev_level_bp", "rrp_level_tn", "rrp_change_tn", "settlement_100bn", "quarter_end", "tax_date", "month_end_window"],
+        "features": [
+          "spread_prev_change_bp",
+          "spread_prev_level_bp",
+          "rrp_level_tn",
+          "rrp_change_tn",
+          "settlement_100bn",
+          "quarter_end",
+          "tax_date",
+          "month_end_window"
+        ],
         "note": "reported only: the calendar columns are always known, but the directive names the three inputs above, so this row says what the calendar adds"
       }
     },
@@ -72,14 +102,28 @@
     "variant": "the same fitter, calibration, minimum history and refit cadence with one more feature, spread_nowcast_bps (the primary nowcast), and nothing else changed",
     "baseline": "as-of persistence, final_test_opening.distribution_walk on the persistence side of live_record._compare_sides(1)",
     "horizon": 1,
-    "levels": [0.05, 0.25, 0.5, 0.75, 0.95],
+    "levels": [
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95
+    ],
     "score": "crps_from_quantiles over the five quantiles, in basis points, the score of the published record",
-    "interval": {"level": 0.9, "replications": 2000, "block_length": 2, "seed": 445}
+    "interval": {
+      "level": 0.9,
+      "replications": 2000,
+      "block_length": 2,
+      "seed": 445
+    }
   },
   "lag": {
     "statistic": "the integer k in -3..5 at which the Pearson correlation of the forecast median of day T with the actual spread of day T - k is highest, over the scored days; the correlation at every k is reported",
     "paired": "the interval is the 90% stationary-bootstrap interval of the difference in that k between a variant and the published model, resampling days jointly, and of the difference in correlation at k = 0 and k = 2",
-    "by": ["regime", "day_type"]
+    "by": [
+      "regime",
+      "day_type"
+    ]
   },
   "turning_points": {
     "definition": "a scored day T is a turning point when the actual spread moves by at least minimum_move_bp into T and by at least minimum_move_bp the other way out of T: |s(T) - s(T-1)| >= m, |s(T+1) - s(T)| >= m and the two moves have opposite signs (a peak or a trough). The label uses the outcome of T + 1 and is a way of picking days to score, never an input of a forecast; a scored day whose T + 1 is after 2025-12-31 is not classified",
@@ -88,16 +132,35 @@
   },
   "pressure": {
     "threshold_bp": 5,
-    "horizons": [1, 2, 3, 4, 5],
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
     "control": "published_v1",
     "variant": "published_v1_nowcast",
     "variant_features": "the nine features of published_v1 at the horizon plus spread_nowcast_bps, read at the row the as-of rule allows (row T - h)",
     "verdicts": "metadata/pressure_judge.json: tier 1 (onset warning), tier 3 (no crying wolf) and tier 5 (week ahead), at +5 bp, paired against the control with the judge's bootstrap"
   },
   "accuracy": {
-    "measures": ["mean absolute error", "root mean squared error"],
+    "measures": [
+      "mean absolute error",
+      "root mean squared error"
+    ],
     "against": "naive",
     "paired": "the per-day absolute error of a candidate minus the naive's, with the 90% stationary-bootstrap interval of the distribution block",
-    "by": ["regime", "day_type"]
+    "by": [
+      "regime",
+      "day_type"
+    ]
+  },
+  "amendment": {
+    "made": "9 October 2026, by the pull request that closes #445, after the declared variant (the nowcast as one more regressor) and its pressure classifier were scored and before any score of the substituted variants below. The nowcast, its candidates, its ridge setting and its fallback are unchanged.",
+    "why": "The published gbm is fitted on one-step pairs: the design row of a training target is the row before it, whatever lag the as-of rule gives each field when the model predicts (ml.fit_gradient_boosted_quantiles, training_pairs None). A regressor added to it is therefore learned at the same lag as the spread, and at prediction time is read one day fresher. An oracle column holding the nowcast row's own actual spread is, in every training pair, the spread regressor itself, so the fitted forecasts equal the published ones to the last digit; the declared variant cannot carry same-day information whatever the nowcast holds. The directive says the day-T forecast is built from the nowcast, so the substituted variant feeds the nowcast to the unchanged model as its latest spread.",
+    "substituted": "The published model, fitted exactly as published (the nine features, one-step pairs on the actual spreads), and at prediction its feature row's spread is the primary nowcast of the row before the target instead of the published spread two rows before it. The nowcast column is declared to the as-of rule (so its read passes the leakage and staleness guards) and is not a regressor of the fitter. Nothing else changes.",
+    "checks": "(1) The substituted variant fed the naive nowcast (nowcast_naive, the published spread itself) reproduces the published forecasts exactly. (2) An oracle ceiling, the substituted variant fed the nowcast row's own actual spread: inadmissible, reported only as the most that closing the lag could be worth, and never a candidate. (3) Under the declared variant the oracle reproduces the published forecasts exactly, which is the diagnosis above.",
+    "pressure_variant": "published_v1_nowcast_substituted in metadata/pressure_judge.json: the same classifier, fed as the substituted distribution is"
   }
 }
