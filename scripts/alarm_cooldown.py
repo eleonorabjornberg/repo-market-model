@@ -111,6 +111,8 @@ def report_document(result: dict, declared: dict) -> dict:
                 "onsets_flagged": near["onsets_flagged"],
                 "recall": near["recall"],
                 "worst_false_alarms_per_onset": near["worst_false_alarms_per_onset"],
+                "worst_weighted_false_alarms_per_onset": near.get("worst_weighted_false_alarms_per_onset"),
+                "weighted_miss_applied": near.get("weighted_miss_applied"),
                 "false_alarms_per_onset_by_horizon": {h: v["per_onset"] for h, v in by_horizon.items()},
                 "criteria": near["criteria"],
                 "tier_1": bool(near["passes"]),
@@ -123,17 +125,27 @@ def report_document(result: dict, declared: dict) -> dict:
                 "h1_by_day_type": {k: v["flags"] for k, v in h1["splits"]["day_type"].items()},
             }
         rows[row] = entry
-    return {"rows": rows, "declaration": result["declaration"]["sha256"]}
+    applied = {e["weighted_miss_applied"] for forms in rows.values() for e in forms.values()}
+    return {
+        "rows": rows,
+        "declaration": result["declaration"]["sha256"],
+        "weighted_miss_applied": applied == {True},
+    }
 
 
 def report_markdown(document: dict) -> str:
+    rule = (
+        "the weighted-miss rule of #454 forced on (a scratch run; the flag cut-offs are chosen on the weighted count, tier 1's limit is on it)"
+        if document["weighted_miss_applied"]
+        else "the unweighted rule (every false alarm counts 1; the weighted count is shown beside it)"
+    )
     lines = [
         "# Alarm cool-down (#459): base rows and their cooled forms",
         "",
-        "Tier 1 at lead >= 1, +5 bp, days to 2025-12-31. `with exception` keeps repeats when a pressure day starts in the window "
+        f"Tier 1 at lead >= 1, +5 bp, days to 2025-12-31, under {rule}. `with exception` keeps repeats when a pressure day starts in the window "
         "(reads the days after the flag); `strict` drops every repeat.",
         "",
-        "| row | form | onsets warned | recall [90%] | worst false alarms per onset (limit 2) | tier 1 | tier 3 | tier 5 | pass |",
+        "| row | form | onsets warned | recall [90%] | worst false alarms per onset, flat (weighted) | tier 1 | tier 3 | tier 5 | pass |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for row, forms in document["rows"].items():
@@ -142,7 +154,7 @@ def report_markdown(document: dict) -> str:
             lines.append(
                 f"| {row} | {label.replace('_', ' ')} | {e['onsets_flagged']:g} of {e['onsets']} | "
                 f"{_f(r['mean'])} [{_f((r.get('interval') or {}).get('lower'))}, {_f((r.get('interval') or {}).get('upper'))}] | "
-                f"{_f(e['worst_false_alarms_per_onset'], 2)} | "
+                f"{_f(e['worst_false_alarms_per_onset'], 2)} ({_f(e['worst_weighted_false_alarms_per_onset'], 2)}) | "
                 f"{'yes' if e['tier_1'] else 'no'} | {'yes' if e['tier_3'] else 'no'} | {'yes' if e['tier_5'] else 'no'} | "
                 f"{'yes' if e['passes'] else 'no'} |"
             )

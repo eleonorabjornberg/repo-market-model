@@ -1,27 +1,27 @@
 # Alarm cool-down (#459): base rows and their cooled forms
 
-Tier 1 at lead >= 1, +5 bp, days to 2025-12-31. `with exception` keeps repeats when a pressure day starts in the window (reads the days after the flag); `strict` drops every repeat.
+Tier 1 at lead >= 1, +5 bp, days to 2025-12-31, under the unweighted rule (every false alarm counts 1; the weighted count is shown beside it). `with exception` keeps repeats when a pressure day starts in the window (reads the days after the flag); `strict` drops every repeat.
 
-| row | form | onsets warned | recall [90%] | worst false alarms per onset (limit 2) | tier 1 | tier 3 | tier 5 | pass |
+| row | form | onsets warned | recall [90%] | worst false alarms per onset, flat (weighted) | tier 1 | tier 3 | tier 5 | pass |
 |---|---|---|---|---|---|---|---|---|
-| two_part_gbm | base | 15 of 26 | 0.577 [0.400, 0.762] | 2.46 | no | no | no | no |
-| two_part_gbm | with exception | 15 of 26 | 0.577 [0.387, 0.759] | 1.15 | yes | no | no | no |
-| two_part_gbm | strict | 12 of 26 | 0.462 [0.278, 0.640] | 0.62 | no | no | no | no |
-| ngboost_laplace | base | 15 of 26 | 0.577 [0.400, 0.759] | 2.54 | no | no | no | no |
-| ngboost_laplace | with exception | 15 of 26 | 0.577 [0.393, 0.750] | 1.27 | yes | no | no | no |
-| ngboost_laplace | strict | 10 of 26 | 0.385 [0.217, 0.565] | 0.58 | no | no | no | no |
-| hierarchical_logistic | base | 15 of 26 | 0.577 [0.400, 0.750] | 3.65 | no | no | no | no |
-| hierarchical_logistic | with exception | 15 of 26 | 0.577 [0.400, 0.750] | 1.81 | yes | no | no | no |
-| hierarchical_logistic | strict | 12 of 26 | 0.462 [0.290, 0.647] | 0.96 | no | no | no | no |
-| settlement_quantile_timing | base | 15 of 26 | 0.577 [0.391, 0.750] | 3.65 | no | no | yes | no |
-| settlement_quantile_timing | with exception | 15 of 26 | 0.577 [0.400, 0.750] | 1.73 | yes | no | yes | no |
-| settlement_quantile_timing | strict | 13 of 26 | 0.500 [0.333, 0.667] | 1.38 | yes | no | yes | no |
-| scarcity_logistic_interactions | base | 14 of 26 | 0.538 [0.346, 0.731] | 3.23 | no | no | no | no |
-| scarcity_logistic_interactions | with exception | 14 of 26 | 0.538 [0.353, 0.722] | 1.54 | yes | no | no | no |
-| scarcity_logistic_interactions | strict | 12 of 26 | 0.462 [0.280, 0.652] | 0.88 | no | no | no | no |
-| scarcity_logistic | base | 13 of 26 | 0.500 [0.320, 0.696] | 3.23 | no | no | no | no |
-| scarcity_logistic | with exception | 13 of 26 | 0.500 [0.316, 0.692] | 1.42 | yes | no | no | no |
-| scarcity_logistic | strict | 12 of 26 | 0.462 [0.281, 0.640] | 0.81 | no | no | no | no |
+| two_part_gbm | base | 15 of 26 | 0.577 [0.400, 0.762] | 2.46 (1.07) | no | no | no | no |
+| two_part_gbm | with exception | 15 of 26 | 0.577 [0.387, 0.759] | 1.15 (0.42) | yes | no | no | no |
+| two_part_gbm | strict | 12 of 26 | 0.462 [0.278, 0.640] | 0.62 (0.26) | no | no | no | no |
+| ngboost_laplace | base | 15 of 26 | 0.577 [0.400, 0.759] | 2.54 (1.03) | no | no | no | no |
+| ngboost_laplace | with exception | 15 of 26 | 0.577 [0.393, 0.750] | 1.27 (0.44) | yes | no | no | no |
+| ngboost_laplace | strict | 10 of 26 | 0.385 [0.217, 0.565] | 0.58 (0.21) | no | no | no | no |
+| hierarchical_logistic | base | 15 of 26 | 0.577 [0.400, 0.750] | 3.65 (1.31) | no | no | no | no |
+| hierarchical_logistic | with exception | 15 of 26 | 0.577 [0.400, 0.750] | 1.81 (0.65) | yes | no | no | no |
+| hierarchical_logistic | strict | 12 of 26 | 0.462 [0.290, 0.647] | 0.96 (0.38) | no | no | no | no |
+| settlement_quantile_timing | base | 15 of 26 | 0.577 [0.391, 0.750] | 3.65 (1.68) | no | no | yes | no |
+| settlement_quantile_timing | with exception | 15 of 26 | 0.577 [0.400, 0.750] | 1.73 (1.13) | yes | no | yes | no |
+| settlement_quantile_timing | strict | 13 of 26 | 0.500 [0.333, 0.667] | 1.38 (1.12) | yes | no | yes | no |
+| scarcity_logistic_interactions | base | 14 of 26 | 0.538 [0.346, 0.731] | 3.23 (1.23) | no | no | no | no |
+| scarcity_logistic_interactions | with exception | 14 of 26 | 0.538 [0.353, 0.722] | 1.54 (0.54) | yes | no | no | no |
+| scarcity_logistic_interactions | strict | 12 of 26 | 0.462 [0.280, 0.652] | 0.88 (0.33) | no | no | no | no |
+| scarcity_logistic | base | 13 of 26 | 0.500 [0.320, 0.696] | 3.23 (1.23) | no | no | no | no |
+| scarcity_logistic | with exception | 13 of 26 | 0.500 [0.316, 0.692] | 1.42 (0.54) | yes | no | no | no |
+| scarcity_logistic | strict | 12 of 26 | 0.462 [0.281, 0.640] | 0.81 (0.33) | no | no | no | no |
 
 False alarms per onset by horizon:
 
