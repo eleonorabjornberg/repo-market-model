@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "turning-point variant (#453)",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement"
+  ],
+  "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION), as published_v1, in each of the inputs combined",
+  "inputs_note": "the direct-pairs twin's calibrated probability on a day flagged by the scorecaster calendar (month end, quarter end, tax date, coupon settlement), published_v1's on every other day. At h = 1 only: the variants are h = 1 objects, so at h = 2 to 5 the probability is published_v1's exactly. Declared in the amendment of metadata/turning_point_variant.json, before any pressure score"
+}
