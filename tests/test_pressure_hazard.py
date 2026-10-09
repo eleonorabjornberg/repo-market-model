@@ -52,6 +52,7 @@ import unittest
 from datetime import date, time, timedelta
 from pathlib import Path
 
+from repo_model import pressure_judge as pj
 from repo_model import pressure_hazard as hz
 from repo_model.asof import InformationRule
 from repo_model.data import (
@@ -199,7 +200,7 @@ class CalendarTests(unittest.TestCase):
 class DeclarationTests(unittest.TestCase):
     def test_the_declaration_loads_and_agrees_with_the_judges(self):
         declaration = hz.load_declaration()
-        judge = json.loads((REPO / "metadata" / "pressure_judge.json").read_text())
+        judge = {**json.loads((REPO / "metadata" / "pressure_judge.json").read_text()), "candidates": dict(pj.load_declaration().candidates)}
         entry = judge["candidates"][declaration.candidate]
         self.assertEqual(entry["role"], "candidate")
         self.assertEqual(tuple(entry["features"]), declaration.features)

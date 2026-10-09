@@ -63,7 +63,7 @@ class DeclarationTests(unittest.TestCase):
     """`metadata/pressure_judge.json` carries each candidate as this module defines it."""
 
     def test_the_declaration_carries_every_candidate_as_defined_here(self):
-        declared = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"]
+        declared = dict(pj.load_declaration(DECLARATION).candidates)
         for entry in eb.CANDIDATES:
             with self.subTest(entry.name):
                 want = eb.declaration_entry(entry.name)
