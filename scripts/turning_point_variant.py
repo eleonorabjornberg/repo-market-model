@@ -219,8 +219,7 @@ def turn_probabilities(series, calendar_flags, scored, anchors, *, refit_every=R
     label (the next day's spread) is public by then: `d + 1 <= anchor(t0)`.
     """
 
-    import numpy as np
-    from sklearn.linear_model import LogisticRegression
+    from repo_model import ml
 
     labels = twin_script.turning_points(series, MINIMUM_MOVE_BP)
     probabilities = {}
@@ -233,22 +232,16 @@ def turn_probabilities(series, calendar_flags, scored, anchors, *, refit_every=R
                 f"the turning-point label of row {max(train)} reads the spread of row {max(train) + 1}, which is "
                 f"after the block's first as-of row {first_anchor}: it was not public at the refit"
             )
-        x = np.array([turn_features(series, calendar_flags, d - 2, d) for d in train])
-        y = np.array([1 if labels[d] else 0 for d in train])
-        if y.sum() < 10 or y.sum() == len(y):
-            model = None
-            base_rate = float(y.mean()) if len(y) else 0.0
+        x = [turn_features(series, calendar_flags, d - 2, d) for d in train]
+        y = [1 if labels[d] else 0 for d in train]
+        positives = sum(y)
+        if positives < 10 or positives == len(y):
+            predicted = [positives / len(y) if y else 0.0] * len(block)
         else:
-            mean, std = x.mean(axis=0), x.std(axis=0)
-            std[std == 0] = 1.0
-            model = LogisticRegression(C=1.0, solver="lbfgs", max_iter=1000)
-            model.fit((x - mean) / std, y)
-        for i in block:
-            if model is None:
-                probabilities[i] = base_rate
-                continue
-            row = np.array([turn_features(series, calendar_flags, anchors[i], scored[i])])
-            probabilities[i] = float(model.predict_proba((row - mean) / std)[0][1])
+            rows = [turn_features(series, calendar_flags, anchors[i], scored[i]) for i in block]
+            predicted = ml.standardised_logistic_probabilities(x, y, rows, c=1.0, max_iter=1000)
+        for i, p in zip(block, predicted):
+            probabilities[i] = p
     return [probabilities[i] for i in range(len(scored))]
 
 

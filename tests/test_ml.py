@@ -4676,6 +4676,24 @@ class GbmExceedanceTests(ExceedancePredictorConformance, unittest.TestCase):
         self.assertNotIn("training_pairs", dict(self.curves().model_settings))
 
 
+class StandardisedLogisticTests(unittest.TestCase):
+    """`standardised_logistic_probabilities` (#453): a plain logistic on standardised columns."""
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_probabilities_follow_the_label(self):
+        x = [[float(i), 5.0] for i in range(40)]
+        y = [0] * 20 + [1] * 20
+        low, high = ml.standardised_logistic_probabilities(x, y, [[2.0, 5.0], [37.0, 5.0]])
+        self.assertLess(low, 0.2)
+        self.assertGreater(high, 0.8)
+
+    def test_one_class_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "both classes"):
+            ml.standardised_logistic_probabilities([[0.0], [1.0]], [1, 1], [[0.5]])
+
+
 class LawKnotsTests(unittest.TestCase):
     """`law_knots`: the law `predict_stress` inverts, handed out and guarded.
 

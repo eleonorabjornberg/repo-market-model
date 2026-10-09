@@ -5017,6 +5017,45 @@ def _fit_recency_logistic(x: Any, y: Any, z: Any, ages: Any, mode: str, paramete
     return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
 
 
+def standardised_logistic_probabilities(
+    train_x: Sequence[Sequence[float]],
+    train_y: Sequence[int],
+    test_x: Sequence[Sequence[float]],
+    *,
+    c: float = 1.0,
+    max_iter: int = 1000,
+) -> List[float]:
+    """P(y = 1) at each row of `test_x`, from a logistic regression on features standardised by the training rows (#453).
+
+    The turning-point switch of `scripts/turning_point_variant.py` fits this at each refit block. A column with no
+    variance in the training rows is left unscaled. Needs both classes in `train_y`.
+
+    Raises:
+        MissingMLExtraError: numpy or scikit-learn is not installed.
+        ValueError: `train_y` holds one class only.
+    """
+
+    try:
+        import numpy
+        from sklearn.linear_model import LogisticRegression
+    except ImportError as error:  # pragma: no cover - exercised without the extra
+        raise MissingMLExtraError(
+            "the standardised logistic needs the optional 'ml' extra (numpy and scikit-learn); install it with "
+            "`pip install -e \".[ml]\"`"
+        ) from error
+    x = numpy.asarray(train_x, dtype=float)
+    y = numpy.asarray(train_y, dtype=int)
+    if y.min() == y.max():
+        raise ValueError("a logistic fit needs both classes among its training rows")
+    centre = x.mean(axis=0)
+    scale = x.std(axis=0)
+    scale[scale == 0.0] = 1.0
+    model = LogisticRegression(C=c, max_iter=max_iter)
+    model.fit((x - centre) / scale, y)
+    z = numpy.asarray(test_x, dtype=float)
+    return [float(p) for p in model.predict_proba((z - centre) / scale)[:, 1]]
+
+
 def _fit_rare_event(kind: str, treatment: str, x: Any, y: Any, z: Any) -> List[float]:
     """One threshold's fit with a rare-event treatment (#381); P(label = 1) at `z`.
 
