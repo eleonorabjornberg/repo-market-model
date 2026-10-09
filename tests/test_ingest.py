@@ -7151,6 +7151,7 @@ class NyFedRateSourceChoiceTests(unittest.TestCase):
             "fetch_nyfed_on_rrp",
             "fetch_nyfed_effr",
             "fetch_nyfed_srf",
+            "fetch_nyfed_repo_operations",
             "fetch_frb_h8_archive",
             "fetch_ofr_stfm_repo",
             "fetch_treasury_dts_tga",
