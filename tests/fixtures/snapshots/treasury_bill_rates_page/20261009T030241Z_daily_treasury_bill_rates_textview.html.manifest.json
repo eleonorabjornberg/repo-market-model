@@ -1,0 +1,9 @@
+{
+  "byte_count": 165401,
+  "note": "The page as served, unmodified. It is evidence for #445, not a data input: its notes state that the quotes are obtained 'at or near 3:30 PM each trading day' and state no publication time; the response's date header is Fri, 09 Oct 2026 03:02:41 GMT.",
+  "path": "tests/fixtures/snapshots/treasury_bill_rates_page/20261009T030241Z_daily_treasury_bill_rates_textview.html",
+  "retrieved_at": "2026-10-09T03:02:41+00:00",
+  "sha256": "949a994009d912d7d13e7260817773ac7e35a4b1f742d06216c7fa80d9e64928",
+  "source_id": "treasury_bill_rates",
+  "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_bill_rates&field_tdr_date_value_month=202610"
+}
