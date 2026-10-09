@@ -655,6 +655,99 @@ class CutoffTests(unittest.TestCase):
             )
 
 
+class ScarceCutoffTests(unittest.TestCase):
+    """`choose_cutoffs(scarce_at_least=2)` (#461): a separate cut-off on days whose as-of scarcity state is at least 2.
+
+    That cut-off is chosen by `select_cutoff`, the same rule and limit, on the refit's training days in that
+    state only. Days in a lower state keep the cut-off chosen on all training days.
+
+    **Recorded mutation** (CLAUDE.md): in `pressure_judge.choose_cutoffs`, replace
+    `scarce_window = [k for k in window if _state_at_least(states[k], scarce_at_least)]` with
+    `scarce_window = [k for k in range(start) if _state_at_least(states[k], scarce_at_least)]` (the
+    state's window then reaches days whose outcome was not yet known at the refit); four tests failed,
+    among them `test_the_scarce_window_ends_where_the_pooled_window_ends`, which raised `LookAheadError`
+    (`cut-off chosen from 1 day(s) from ... on, after the refit's training end`).
+    """
+
+    def series_and_forecast(self):
+        # Onsets every 20th day. Days 0-199 are state 0, from 200 state 2. The model scores an onset 0.5
+        # in state 0 and 0.9 in state 2, and nothing else: one pooled cut-off (0.5) is not the scarce one.
+        series = Series()
+        p = [(0.5 if k < 200 else 0.9) if y else 0.0 for k, y in enumerate(series.y5)]
+        return series, series.forecast("stronger_when_scarce", 1, p)
+
+    def chosen(self, series, forecast, **options):
+        (out,) = pj.choose_cutoffs(_load(), {1: series.grid(1)}, [forecast], series.dates, **options)
+        return out.cutoffs[5.0]
+
+    def test_days_below_the_state_keep_the_pooled_cutoff(self):
+        series, forecast = self.series_and_forecast()
+        self.assertEqual(self.chosen(series, forecast, scarce_at_least=2)[:200], self.chosen(series, forecast)[:200])
+
+    def test_scarce_days_take_the_cutoff_chosen_on_scarce_training_days_alone(self):
+        series, forecast = self.series_and_forecast()
+        pooled = self.chosen(series, forecast)
+        scarce = self.chosen(series, forecast, scarce_at_least=2)
+        # Block at day 300: training days 0..298 (h = 1). The state-2 days among them are 200..298.
+        window = list(range(200, 299))
+        declaration = _load()
+        expected = pj.select_cutoff(
+            declaration,
+            days=[series.dates[k] for k in window],
+            probabilities=[forecast.probabilities[5.0][k] for k in window],
+            pressure=[series.y5[k] for k in window],
+            onset=[series.y5[k] for k in window],
+            training_end=series.dates[298],
+        )
+        self.assertEqual(scarce[300], expected)
+        self.assertEqual(expected, 0.9)
+        # The pooled cut-off, chosen with the state-0 onsets in the window, is lower.
+        self.assertEqual(pooled[300], 0.5)
+
+    def test_the_scarce_window_ends_where_the_pooled_window_ends(self):
+        # An onset on day 199 is the last state-0 day; a state-2 onset on day 299 is the day before the
+        # block at day 300 starts and is not yet published. The block must not read it.
+        series = Series()
+        y = [1 if k in (210, 299) else 0 for k in range(400)]
+        series.y5 = tuple(y)
+        series.y10 = tuple(0 for _ in y)
+        forecast = series.forecast("sharp", 1, [0.9 if v else 0.0 for v in y])
+        scarce = self.chosen(series, forecast, scarce_at_least=2)
+        # Block at 220 reads state-2 day 210 only: cut-off 0.9. Block at 300: day 299 is not read, but 210 is.
+        self.assertEqual(scarce[220], 0.9)
+        series2 = Series()
+        y2 = [1 if k == 299 else 0 for k in range(400)]
+        series2.y5 = tuple(y2)
+        series2.y10 = tuple(0 for _ in y2)
+        forecast2 = series2.forecast("sharp", 1, [0.9 if v else 0.0 for v in y2])
+        self.assertTrue(math.isinf(self.chosen(series2, forecast2, scarce_at_least=2)[300]))
+
+    def test_a_scarce_state_with_no_onset_flags_nothing(self):
+        series = Series()
+        y = [1 if k == 10 else 0 for k in range(400)]  # the only onset is in state 0
+        series.y5 = tuple(y)
+        series.y10 = tuple(0 for _ in y)
+        forecast = series.forecast("sharp", 1, [0.9 if v else 0.0 for v in y])
+        scarce = self.chosen(series, forecast, scarce_at_least=2)
+        self.assertEqual(scarce[100], 0.9)
+        self.assertTrue(all(math.isinf(c) for c in scarce[220:]))
+
+    def test_an_unknown_state_is_not_scarce(self):
+        series, forecast = self.series_and_forecast()
+        series.groups = dict(series.groups, scarcity_state=tuple("unknown" for _ in range(400)))
+        self.assertEqual(self.chosen(series, forecast, scarce_at_least=2), self.chosen(series, forecast))
+
+    def test_a_grid_without_the_state_is_refused(self):
+        series, forecast = self.series_and_forecast()
+        grid = series.grid(1)
+        grid = pj.Grid(
+            horizon=1, dates=grid.dates, outcomes=grid.outcomes, onset=grid.onset, onsets=grid.onsets,
+            groups={k: v for k, v in grid.groups.items() if k != "scarcity_state"},
+        )
+        with self.assertRaises(ValueError):
+            pj.choose_cutoffs(_load(), {1: grid}, [forecast], series.dates, scarce_at_least=2)
+
+
 class ChooseCutoffsTests(unittest.TestCase):
     """`choose_cutoffs`: one cut-off per refit block, from the days known at the block's first decision."""
 
