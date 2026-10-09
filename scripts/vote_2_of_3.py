@@ -31,6 +31,7 @@ import json
 import shutil
 import sys
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -201,6 +202,10 @@ def judge_command(args) -> int:
     script.require_committed_declaration(pj.DEFAULT_DECLARATION)
     voters = voters_of()
     declaration = composed_declaration(voters)
+    # The weighted miss rule (#454), as `pressure_judge.py judge --rule` applies it: forced on or off for this run.
+    script.require_committed_file(pj.DEFAULT_WEIGHTED_MISS)
+    applied = {"declared": None, "weighted": True, "unweighted": False}[args.rule]
+    declaration = replace(declaration, weighted_miss=pj.load_weighted_miss(applied=applied))
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = script.load_split_declaration(SPLITS)
@@ -248,6 +253,7 @@ def judge_command(args) -> int:
         "forecast_files": [str(p) for p in args.inputs],
         "voters": voters,
         "scratch_panel_files": scratch,
+        "rule": args.rule,
     }
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     if args.markdown:
@@ -269,6 +275,8 @@ def main(argv=None) -> int:
     judge.add_argument("--output", type=Path, required=True)
     judge.add_argument("--markdown", type=Path)
     judge.add_argument("--overlap", type=Path)
+    judge.add_argument("--rule", choices=("declared", "weighted", "unweighted"), default="declared",
+                       help="how false alarms count (#454): as metadata/weighted_miss.json says, or forced")
     judge.add_argument("inputs", nargs="+", type=Path)
     judge.set_defaults(run=judge_command)
     args = parser.parse_args(argv)
