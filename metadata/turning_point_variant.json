@@ -1,0 +1,72 @@
+{
+  "status": "declared by the pull request that closes #453, before any score: the three candidates, the primary test, the multiple-comparison rule, the calendar, the turning-point probability model and its threshold are fixed here and nothing is tuned on a scored day",
+  "directive": "#453",
+  "decides": "nothing: no published declaration, record or live pin changes; adopting a variant is Eleonora's decision under docs/decisions/publish-rule.md and, for the live pin, her own attested approval (docs/decisions/live-pin.md)",
+  "references": {
+    "published": "the published distribution model: the 'published' side of final_test_preregistration.CRPS_COMMAND (gbm, the CRPS_FEATURES, conformal_pid_nested calibration, minimum history 61, refit every 21 scored days, the five quantile levels)",
+    "twin": "published_gbm_direct of metadata/direct_pairs_twin.json (#450): the same, trained on direct pairs",
+    "persistence": "as-of persistence, the 'persistence' side of the same command"
+  },
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "horizon": 1,
+    "note": "scored days are before 2026-01-01 (docs/decisions/lockbox.md); the 2026 window and the blind tier are not looked at; the panel is cut at 2025-12-31 before any fit",
+    "levels": [
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95
+    ]
+  },
+  "candidates": {
+    "blend_equal": {
+      "rule": "at each scored day, the equal-weight average of the published model's and the twin's UNCALIBRATED quantile vectors at each of the five levels, then the published online calibration (conformal_pid_nested, the same factory, its constants and its scorecaster unchanged) applied to the averaged vector",
+      "weights": [
+        0.5,
+        0.5
+      ],
+      "fitted": "both gradient-boosted fits are made at the published refit blocks, from the same training frame; nothing else is fitted",
+      "note": "an average of two non-crossing vectors does not cross; the calibration sees one vector, as it does for the published model"
+    },
+    "calendar_switch": {
+      "rule": "the twin's calibrated forecast on a flagged day and the published model's calibrated forecast on every other day",
+      "flag": "a scored day is flagged when any of the four indicators of recalibration.scorecaster_calendar (the calendar the published calibration already uses, at horizon 1) is 1 for it: month_end (days_to_month_end within the month-end window of metadata/evaluation_splits.json), quarter_end, tax_date (corporate tax dates), coupon_settlement (treasury_settlement_coupons > 0, the mid-month and month-end Treasury coupon settlement dates, public at the decision instant)",
+      "ex_ante": "every indicator is read at the scored day's decision instant by the scorecaster's own rule and refused (LookAheadError) when not yet public"
+    },
+    "predicted_turn_switch": {
+      "rule": "the twin's calibrated forecast when the predicted turning-point probability of the scored day is at least 0.5, the published model's otherwise",
+      "threshold": 0.5,
+      "label": "a day D is a turning point under the definition of #445 (metadata/nowcast.json): SOFR - IORB moved by at least 2 bp into it from the day before and at least 2 bp the other way out of it to the day after. The label of D is known only from the spread of D+1",
+      "features": [
+        "spread_bps of the as-of row (the row the published model reads for the scored day, two rows before it)",
+        "that spread minus the spread one row earlier",
+        "the absolute value of that change",
+        "the standard deviation of the five spreads up to and including the as-of row",
+        "the four scorecaster calendar indicators of the scored day, read at its decision instant"
+      ],
+      "model": "sklearn LogisticRegression (l2, C = 1.0, lbfgs, max_iter 1000) on features standardised by the training window's mean and standard deviation; nothing else is set",
+      "fit": "walk-forward, refitted at the first scored day of each block of 21 scored days (the published refit blocks), on the days D whose label was public at that day's decision instant, that is whose next day's spread is at or before the block's first as-of row, from the first day with five earlier spreads; labels of later days are never used",
+      "degenerate": "when the training window has fewer than 10 turning points or only one class, the probability is the training base rate",
+      "never_tuned": "the threshold, the C, the feature list and the window are not changed after any score"
+    }
+  },
+  "test": {
+    "primary": "the paired per-day gain CRPS(published) - CRPS(candidate) over every scored day, for each candidate: mean and 90% stationary-bootstrap interval (block length 2, 2000 replications, level 0.90, seed 453, the published CRPS cell's rule); all three candidates are read off the same resamples",
+    "multiple_comparison": "Holm across the three candidates at one-sided alpha 0.05 (the lower end of the 90% interval). One-sided p of a candidate = (1 + the number of resamples whose mean gain is <= 0) / (1 + 2000). Candidates are ranked by p, ties in the order blend_equal, calendar_switch, predicted_turn_switch. The candidate of rank r has Holm-adjusted lower bound = the alpha/(3 - r + 1) quantile of its resampled mean gains. A candidate is better than the published model when its own and every earlier-ranked candidate's Holm-adjusted lower bound is above 0; worse when its 90% upper bound is below 0; otherwise there is no difference",
+    "locked": "the 2026 tier is not opened (docs/decisions/lockbox.md)"
+  },
+  "secondary": [
+    "each candidate's gain over the published model, with a 90% interval, split by the declared regimes, by the pressure-day types of metadata/evaluation_splits.json, on turning-point days (the #445 definition) and the other days, and on month-end days (the month_end indicator) and the other days",
+    "the gain over as-of persistence: CRPS(persistence) - CRPS(model) for each candidate, the published model and the twin, and each candidate's minus the published model's",
+    "the best cross-correlation lag of the forecast median with the actual spread, the integer k in -3..5 at which the Pearson correlation of the median of day T with the actual spread of day T-k is highest (the smaller k in a tie), for each candidate, all days and by regime",
+    "the share of scored days whose actual spread lies inside the 50% band [q25, q75] and the 90% band [q05, q95], by regime, for each candidate",
+    "for predicted_turn_switch: the number of days the switch fires, its hit rate on actual turning-point days (fired and a turning point, over turning-point days), and its precision (fired and a turning point, over fired days)"
+  ],
+  "pressure": {
+    "rule": "published_v1 is a judge candidate (metadata/pressure_judge/candidates/published_v1.json), so each variant's implied P(spread > threshold) is added as a judge candidate in its own file under metadata/pressure_judge/candidates/ (#446) and its tier-1 row is reported: episodes warned at lead >= 1 and false alarms per episode",
+    "implementation": "the pressure candidates' construction is declared in an amendment of this file, committed before any pressure score and after the CRPS scores of this directive; it changes no CRPS candidate"
+  },
+  "if_better": "a needs-eleonora issue titled \"Publish? Turning-point variant (#453)\" carries the evidence table; no published figure moves in the pull request"
+}
