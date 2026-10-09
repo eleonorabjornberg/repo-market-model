@@ -9627,6 +9627,171 @@ class PressureQuantileConformanceTests(_PressureConformance, unittest.TestCase):
     FACTORY = staticmethod(ml.pressure_quantile_exceedance)
 
 
+class PressureQrfConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_qrf_exceedance` (#385)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_qrf_exceedance)
+    FACTORY = staticmethod(ml.pressure_qrf_exceedance)
+
+
+class PressureNaturalGradientConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_natural_gradient_exceedance` (#385)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_natural_gradient_exceedance)
+    FACTORY = staticmethod(ml.pressure_natural_gradient_exceedance)
+
+
+class PressureNaturalGradientNormalConformanceTests(_PressureConformance, unittest.TestCase):
+    """The same suite with the normal family (#385)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_natural_gradient_exceedance)
+    FACTORY = staticmethod(
+        lambda features, declaration, minimum_history=20: ml.pressure_natural_gradient_exceedance(
+            features, declaration, minimum_history=minimum_history, family="normal"
+        )
+    )
+
+
+class DistributionModelTests(unittest.TestCase):
+    """The full-distribution models of #385: the forest, the natural-gradient boosting, and the choice
+    of their one hyperparameter on the pressure-day labels."""
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_the_forest_reads_the_conditional_law_and_a_heavy_tail(self):
+        import numpy
+
+        rng = numpy.random.default_rng(3)
+        n = 3000
+        x = rng.integers(0, 2, size=(n, 1)).astype(float)
+        spread = numpy.round(2.0 + 3.0 * x[:, 0] + rng.normal(size=n))
+        # a rare far tail where x = 1: 10% of those days at +30 bp
+        far = (x[:, 0] == 1) & (rng.random(n) < 0.1)
+        spread[far] = 30.0
+        forest = ml._forest(x, spread, 20)
+        curves = ml._forest_exceedance(forest, x, spread, numpy.array([[0.0], [1.0]]), (5.0, 10.0, 20.0))
+        self.assertLess(curves[0][2], 0.01)  # nothing near +20 where x = 0
+        self.assertAlmostEqual(curves[1][2], 0.1, delta=0.03)  # the tail is kept
+        for curve in curves:
+            self.assertEqual(list(curve), sorted(curve, reverse=True))
+        # x = 0: spread ~ round(N(2, 1)); P(> 5) is the mass at 6 bp and above: P(N > 5.5) = 0.0002
+        self.assertLess(curves[0][0], 0.02)
+
+    def test_the_natural_gradient_is_the_gradient_over_the_fisher_information(self):
+        """A finite-difference check of both families' natural gradients."""
+
+        import numpy
+        from scipy.stats import laplace, norm
+
+        y = numpy.array([-1.0, 0.5, 3.0, 8.0])
+        location = numpy.array([0.0, 1.0, 2.0, -1.0])
+        log_scale = numpy.array([0.2, -0.3, 0.5, 1.0])
+        for family, law in (("normal", norm), ("laplace", laplace)):
+            with self.subTest(family=family):
+
+                def nll(m, ls):
+                    return -law.logpdf(y, loc=m, scale=numpy.exp(ls))
+
+                h = 1e-6
+                d_location = (nll(location + h, log_scale) - nll(location - h, log_scale)) / (2 * h)
+                d_scale = (nll(location, log_scale + h) - nll(location, log_scale - h)) / (2 * h)
+                scale = numpy.exp(log_scale)
+                fisher_location = 1.0 / scale**2
+                fisher_scale = 2.0 if family == "normal" else 1.0
+                got_location, got_scale = ml._natural_gradient(family, y, location, log_scale)
+                numpy.testing.assert_allclose(got_location, d_location / fisher_location, atol=1e-4)
+                numpy.testing.assert_allclose(got_scale, d_scale / fisher_scale, atol=1e-4)
+
+    def test_the_boosting_recovers_a_scale_that_moves_with_the_features(self):
+        import numpy
+        from scipy.stats import laplace
+
+        rng = numpy.random.default_rng(5)
+        n = 4000
+        x = rng.integers(0, 2, size=(n, 1)).astype(float)
+        spread = rng.laplace(loc=1.0 + x[:, 0], scale=0.5 + 2.0 * x[:, 0])
+        fitted = ml._fit_natural_gradient("laplace", x, spread, 200)
+        location, log_scale = ml._natural_gradient_parameters(fitted, numpy.array([[0.0], [1.0]]), [200])[200]
+        numpy.testing.assert_allclose(location, [1.0, 2.0], atol=0.2)
+        numpy.testing.assert_allclose(numpy.exp(log_scale), [0.5, 2.5], rtol=0.2)
+        curve = ml._parametric_exceedance("laplace", location, log_scale, (6.0,))
+        self.assertAlmostEqual(curve[1][0], float(laplace.sf(6.5, loc=2.0, scale=2.5)), delta=0.02)
+
+    def test_the_hyperparameter_is_chosen_on_the_labels_after_an_embargo(self):
+        """The validation block follows the fit block by the horizon, and the choice is the label-Brier argmin."""
+
+        blocks = ml._selection_blocks(400, 3)
+        fit_block, valid_block = blocks
+        self.assertEqual(valid_block, slice(300, 400))
+        self.assertEqual(fit_block, slice(0, 297))
+        self.assertIsNone(ml._selection_blocks(50, 1))  # too few pairs: the default stands
+
+        import numpy
+
+        rng = numpy.random.default_rng(7)
+        n = 600
+        x = rng.normal(size=(n, 2))
+        spread = numpy.round(3.0 + 3.0 * x[:, 0] + rng.normal(size=n))
+        for kind, key, grid in (
+            ("qrf", "min_samples_leaf", ml.PRESSURE_QRF_SETTINGS["min_samples_leaf_grid"]),
+            ("ng_laplace", "stages", ml.PRESSURE_NATURAL_GRADIENT_SETTINGS["stage_grid"]),
+        ):
+            with self.subTest(kind=kind):
+                curves, record = ml._distribution_exceedance(
+                    kind, x.tolist(), spread.tolist(), x[:5].tolist(), [5.0, 10.0], 1
+                )
+                scores = record["validation_brier"]
+                self.assertEqual(sorted(scores), sorted(grid))
+                self.assertEqual(record[key], min(grid, key=lambda g: (scores[g], g)))
+                self.assertEqual(len(curves), 5)
+
+    def test_a_short_frame_uses_the_declared_default(self):
+        import numpy
+
+        rng = numpy.random.default_rng(9)
+        x = rng.normal(size=(50, 2))
+        spread = numpy.round(3.0 + x[:, 0])
+        _, record = ml._distribution_exceedance("qrf", x.tolist(), spread.tolist(), x[:2].tolist(), [5.0], 1)
+        self.assertEqual(record["min_samples_leaf"], ml.PRESSURE_QRF_SETTINGS["default_min_samples_leaf"])
+        self.assertEqual(record["validation_brier"], {})
+
+    def test_the_track_declaration_names_the_models_it_is_pinned_to(self):
+        """`metadata/pressure_track_q.json` is declared before any score; its model names and families are the code's."""
+
+        import json
+        from pathlib import Path
+
+        declaration = json.loads(
+            (Path(__file__).resolve().parents[1] / "metadata" / "pressure_track_q.json").read_text()
+        )
+        self.assertEqual(declaration["scoring"]["last_day"] < "2026-01-01", True)
+        for name, entry in declaration["candidates"].items():
+            with self.subTest(candidate=name):
+                self.assertTrue(callable(getattr(ml, entry["model"])))
+                if "family" in entry:
+                    self.assertIn(entry["family"], ml.PRESSURE_NATURAL_GRADIENT_SETTINGS["families"])
+        self.assertEqual(
+            declaration["settings"],
+            {
+                "qrf": "ml.PRESSURE_QRF_SETTINGS",
+                "natural_gradient": "ml.PRESSURE_NATURAL_GRADIENT_SETTINGS",
+                "selection": "ml.PRESSURE_DISTRIBUTION_SELECTION",
+            },
+        )
+        self.assertEqual(declaration["thresholds_bp"], list(ml.PRESSURE_DISTRIBUTION_SELECTION["taus"]))
+        design = ml._PressureDesign(tuple(declaration["features"]), _pressure_splits())
+        self.assertEqual(design.features, tuple(declaration["features"]))
+
+    def test_an_unknown_family_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "family"):
+            ml.pressure_natural_gradient_exceedance(_PRESSURE_CALENDAR, _pressure_splits(), family="gamma")
+
+    def test_a_fit_records_what_it_chose(self):
+        predictor = ml.pressure_qrf_exceedance(_PRESSURE_CALENDAR, _pressure_splits(), minimum_history=20)
+        self.assertEqual(predictor.selections, [])
+
+
 _TWO_PART_FEATURES = tuple(name for name in _PRESSURE_FULL if name != "tga")
 
 

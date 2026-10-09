@@ -597,6 +597,11 @@ from .splits import (
 
 __all__ = [
     "paired_bootstrap_p_values",
+    "PRESSURE_QRF_SETTINGS",
+    "PRESSURE_NATURAL_GRADIENT_SETTINGS",
+    "PRESSURE_DISTRIBUTION_SELECTION",
+    "pressure_qrf_exceedance",
+    "pressure_natural_gradient_exceedance",
     "MARKOV_SWITCHING_SETTINGS",
     "FittedMarkovSwitching",
     "fit_markov_switching",
@@ -4096,6 +4101,53 @@ PRESSURE_RECENCY_SETTINGS = MappingProxyType(
     }
 )
 
+#: What the two full-distribution models (#385) are built with, declared in
+#: `metadata/pressure_track_q.json` before any score; a test pins the two together.
+#: Both pick one hyperparameter on the pressure-day labels (`PRESSURE_DISTRIBUTION_SELECTION`).
+PRESSURE_QRF_SETTINGS = MappingProxyType(
+    {
+        "estimator": "RandomForestRegressor",
+        "reading": "Meinshausen quantile regression forest: the weight of training pair i at a served "
+        "row is the mean over trees of 1/|leaf| where i shares the served row's leaf; "
+        "P(spread > tau) = sum of weights of the pairs whose spread is above tau on whole basis points",
+        "n_estimators": 200,
+        "max_features": 0.5,
+        "bootstrap": False,
+        "min_samples_leaf_grid": (5, 10, 20, 40),
+        "default_min_samples_leaf": 20,
+        "random_state": DEFAULT_RANDOM_STATE,
+    }
+)
+PRESSURE_NATURAL_GRADIENT_SETTINGS = MappingProxyType(
+    {
+        "estimator": "natural-gradient boosting of a two-parameter law, numpy and scikit-learn trees",
+        "families": ("normal", "laplace"),
+        "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5) under the boosted location and log-scale, "
+        "and 0 for a tau more than support_above_training_max_bp above the largest training spread",
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "min_samples_leaf": 20,
+        "stage_grid": (25, 50, 100, 200, 400),
+        "default_stages": 100,
+        "scale_floor_bp": 0.25,
+        "scale_ceiling_bp": 100.0,
+        "support_above_training_max_bp": 100.0,
+        "random_state": DEFAULT_RANDOM_STATE,
+    }
+)
+#: How the one hyperparameter of each distribution model is chosen: on the
+#: last `share` of the training pairs (after an embargo of one horizon), by the
+#: Brier score of the pressure label at each of `taus`, never on the spread's own loss.
+PRESSURE_DISTRIBUTION_SELECTION = MappingProxyType(
+    {
+        "share": 0.25,
+        "taus": (5.0, 10.0),
+        "criterion": "mean Brier score of the pressure label over taus",
+        "minimum_fit_pairs": 40,
+        "minimum_validation_pairs": 10,
+    }
+)
+
 #: The panel days over which the TGA change is measured: one week of panel
 #: rows, the H.4.1 print's cadence.
 TGA_CHANGE_ROWS = 5
@@ -4448,6 +4500,7 @@ def _direct_pressure_predictor(
     monotone = getattr(design, "monotone", None)
     cache: dict = {}
     pooled: dict = {}
+    selections: List[Mapping[str, Any]] = []
     shrinkage: List[float] = []
     effects: List[dict] = []
 
@@ -4515,11 +4568,23 @@ def _direct_pressure_predictor(
                 xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t" if kind == "quantile_skewt" else "linear"
             )
             columns = [[curve[k] for curve in law] for k in range(len(taus))]
+        elif kind in _DISTRIBUTION_KINDS:
+            law, chosen = _distribution_exceedance(
+                kind, xs, spreads, served, [float(tau) for tau in taus], information.horizon
+            )
+            selections.append(chosen)
+            columns = [[curve[k] for curve in law] for k in range(len(taus))]
         if kind.startswith("two_part_"):
             columns = _two_part_columns(
                 kind[len("two_part_"):], xs, spreads, served, [float(tau) for tau in taus], monotone
             )
-        for tau in taus if kind not in ("quantile", "quantile_skewt") and not kind.startswith("two_part_") else ():
+        for tau in (
+            taus
+            if kind not in ("quantile", "quantile_skewt")
+            and kind not in _DISTRIBUTION_KINDS
+            and not kind.startswith("two_part_")
+            else ()
+        ):
             labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
@@ -4554,8 +4619,15 @@ def _direct_pressure_predictor(
                 "two_part_logistic": {**PRESSURE_LOGISTIC_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
                 "two_part_gbm_classifier": {**PRESSURE_CLASSIFIER_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
                 "quantile_skewt": PRESSURE_QUANTILE_SKEWT_SETTINGS,
+                "qrf": PRESSURE_QRF_SETTINGS,
+                "ng_normal": PRESSURE_NATURAL_GRADIENT_SETTINGS,
+                "ng_laplace": PRESSURE_NATURAL_GRADIENT_SETTINGS,
             }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
         )
+        if kind in _DISTRIBUTION_KINDS:
+            settings["selection"] = dict(PRESSURE_DISTRIBUTION_SELECTION)
+            if kind != "qrf":
+                settings["family"] = kind[len("ng_"):]
         settings["design"] = list(design.names)
         if rare is not None:
             settings["rare_event"] = {
@@ -4607,6 +4679,8 @@ def _direct_pressure_predictor(
             ),
         )
 
+    #: What each distribution fit chose on the pressure-day labels, one entry per fit.
+    fit_predict.selections = selections  # type: ignore[attr-defined]
     return fit_predict
 
 
@@ -5986,6 +6060,292 @@ def pressure_tail_exceedance(
         )
 
     return fit_predict
+
+
+# --------------------------------------------------------------------------
+# Full predictive distributions with better tails (#385; track Q of #374)
+# --------------------------------------------------------------------------
+#
+# Two models of the whole conditional distribution of the spread, on the same
+# direct design and pairs as the probit and the quantile regressions of #372:
+# a quantile regression forest, which keeps each leaf's outcomes and so can put
+# mass wherever the training spreads went, and a natural-gradient boosting of a
+# parametric law (normal or Laplace), numpy plus scikit-learn trees. Both are
+# read as `P(spread > tau)` on whole basis points, so a curve can be taken at
+# every whole basis point and scored by CRPS as well as at +5 and +10 bp.
+# Each has one hyperparameter, chosen on the pressure-day labels at +5 and +10
+# bp over the last quarter of the training pairs, never on the spread's own loss.
+
+_DISTRIBUTION_KINDS = ("qrf", "ng_normal", "ng_laplace")
+
+
+def _selection_blocks(count: int, horizon: int) -> Optional[Tuple[slice, slice]]:
+    """The training pairs' fit block and the later validation block, `None` if too few.
+
+    The pairs run in target-date order. The validation block is the last
+    `share` of them; the `horizon` pairs before it are dropped, so no fit pair's
+    label window overlaps a validation pair's. Too few pairs for either block
+    gives `None`: the declared default is used and nothing is selected.
+    """
+
+    rule = PRESSURE_DISTRIBUTION_SELECTION
+    valid = max(int(count * float(rule["share"])), 0)
+    fit_end = count - valid - horizon
+    if fit_end < int(rule["minimum_fit_pairs"]) or valid < int(rule["minimum_validation_pairs"]):
+        return None
+    return slice(0, fit_end), slice(count - valid, count)
+
+
+def _label_brier(probabilities: Any, spreads: Any, taus: Sequence[float]) -> float:
+    """Mean over `taus` of the Brier score of `P(spread > tau)` against the whole-bp label."""
+
+    import numpy
+
+    total = 0.0
+    for column, tau in enumerate(taus):
+        labels = numpy.array([1.0 if exceeds_bp(v, tau) else 0.0 for v in spreads])
+        total += float(numpy.mean((probabilities[:, column] - labels) ** 2))
+    return total / len(taus)
+
+
+def _forest(x: Any, y: Any, min_samples_leaf: int) -> Any:
+    from sklearn.ensemble import RandomForestRegressor
+
+    settings = PRESSURE_QRF_SETTINGS
+    return RandomForestRegressor(
+        n_estimators=settings["n_estimators"],
+        max_features=settings["max_features"],
+        bootstrap=settings["bootstrap"],
+        min_samples_leaf=int(min_samples_leaf),
+        random_state=settings["random_state"],
+        n_jobs=1,
+    ).fit(x, y)
+
+
+def _forest_exceedance(forest: Any, x: Any, y: Any, z: Any, taus: Sequence[float]) -> Any:
+    """Meinshausen's weights at the rows of `z`, read as `P(spread > tau)`: (rows, taus)."""
+
+    import numpy
+
+    leaves_train = forest.apply(x)
+    leaves_given = forest.apply(z)
+    weight = numpy.zeros((len(z), len(x)))
+    for tree in range(leaves_train.shape[1]):
+        sizes = numpy.bincount(leaves_train[:, tree])
+        same = leaves_given[:, tree][:, None] == leaves_train[:, tree][None, :]
+        weight += same / sizes[leaves_given[:, tree]][:, None]
+    weight /= leaves_train.shape[1]
+    above = numpy.array([[1.0 if exceeds_bp(v, tau) else 0.0 for tau in taus] for v in y])
+    return weight @ above
+
+
+def _family_survival(family: str, cut: float, location: Any, log_scale: Any) -> Any:
+    import numpy
+
+    scale = numpy.exp(log_scale)
+    if family == "normal":
+        from scipy.stats import norm
+
+        return norm.sf(cut, loc=location, scale=scale)
+    from scipy.stats import laplace
+
+    return laplace.sf(cut, loc=location, scale=scale)
+
+
+def _natural_gradient(family: str, y: Any, location: Any, log_scale: Any) -> Tuple[Any, Any]:
+    """The natural gradient of the negative log-likelihood in (location, log-scale).
+
+    The ordinary gradient times the inverse Fisher information, which for
+    both families is diagonal: normal, `(-(y - m), (1 - z^2) / 2)` with
+    `z = (y - m) / s`; Laplace, `(-b * sign(y - m), 1 - |y - m| / b)`.
+    """
+
+    import numpy
+
+    scale = numpy.exp(log_scale)
+    residual = y - location
+    if family == "normal":
+        return -residual, 0.5 * (1.0 - (residual / scale) ** 2)
+    return -scale * numpy.sign(residual), 1.0 - numpy.abs(residual) / scale
+
+
+class _NaturalGradientFit(NamedTuple):
+    family: str
+    location: float
+    log_scale: float
+    trees: Tuple[Tuple[Any, Any], ...]
+
+
+def _fit_natural_gradient(family: str, x: Any, y: Any, stages: int) -> _NaturalGradientFit:
+    """Boost the two parameters with regression trees on the natural gradient, deterministic."""
+
+    import numpy
+    from sklearn.tree import DecisionTreeRegressor
+
+    settings = PRESSURE_NATURAL_GRADIENT_SETTINGS
+    floor = math.log(float(settings["scale_floor_bp"]))
+    ceiling = math.log(float(settings["scale_ceiling_bp"]))
+    location0 = float(numpy.median(y))
+    spread0 = float(numpy.mean(numpy.abs(y - location0))) if family == "laplace" else float(numpy.std(y))
+    log_scale0 = min(max(math.log(max(spread0, 1e-9)), floor), ceiling)
+    location = numpy.full(len(y), location0)
+    log_scale = numpy.full(len(y), log_scale0)
+    rate = float(settings["learning_rate"])
+    trees = []
+    for _ in range(int(stages)):
+        grad_location, grad_scale = _natural_gradient(family, y, location, log_scale)
+        pair = []
+        for target in (grad_location, grad_scale):
+            tree = DecisionTreeRegressor(
+                max_depth=settings["max_depth"],
+                min_samples_leaf=settings["min_samples_leaf"],
+                random_state=settings["random_state"],
+            ).fit(x, target)
+            pair.append(tree)
+        location = location - rate * pair[0].predict(x)
+        log_scale = numpy.clip(log_scale - rate * pair[1].predict(x), floor, ceiling)
+        trees.append(tuple(pair))
+    return _NaturalGradientFit(family, location0, log_scale0, tuple(trees))
+
+
+def _natural_gradient_parameters(fit: _NaturalGradientFit, z: Any, stage_grid: Sequence[int]) -> dict:
+    """{stages: (location, log_scale)} at the rows of `z`, for each stage count in the grid."""
+
+    import numpy
+
+    settings = PRESSURE_NATURAL_GRADIENT_SETTINGS
+    floor = math.log(float(settings["scale_floor_bp"]))
+    ceiling = math.log(float(settings["scale_ceiling_bp"]))
+    rate = float(settings["learning_rate"])
+    location = numpy.full(len(z), fit.location)
+    log_scale = numpy.full(len(z), fit.log_scale)
+    wanted = set(int(n) for n in stage_grid)
+    out = {}
+    if 0 in wanted:
+        out[0] = (location.copy(), log_scale.copy())
+    for count, (tree_location, tree_scale) in enumerate(fit.trees, start=1):
+        location = location - rate * tree_location.predict(z)
+        log_scale = numpy.clip(log_scale - rate * tree_scale.predict(z), floor, ceiling)
+        if count in wanted:
+            out[count] = (location.copy(), log_scale.copy())
+    return out
+
+
+def _parametric_exceedance(
+    family: str, location: Any, log_scale: Any, taus: Sequence[float]
+) -> Any:
+    import numpy
+
+    return numpy.column_stack(
+        [_family_survival(family, math.floor(float(tau)) + 0.5, location, log_scale) for tau in taus]
+    )
+
+
+def _distribution_exceedance(
+    kind: str,
+    xs: Sequence[Sequence[float]],
+    spreads: Sequence[float],
+    served: Sequence[Sequence[float]],
+    taus: Sequence[float],
+    horizon: int,
+) -> Tuple[List[Tuple[float, ...]], Mapping[str, Any]]:
+    """`P(spread > tau)` per served row from a full conditional distribution, and what was chosen.
+
+    The hyperparameter (the forest's leaf size, the boosting's stage count) is
+    chosen on the validation block of `_selection_blocks` by the label Brier
+    score at `PRESSURE_DISTRIBUTION_SELECTION["taus"]`; the model is then
+    refitted on every pair. With too few pairs for a validation block the
+    declared default is used.
+    """
+
+    _estimator_class()
+    import numpy
+
+    x = numpy.asarray(xs, dtype=float)
+    y = numpy.asarray(spreads, dtype=float)
+    z = numpy.asarray(served, dtype=float)
+    selection_taus = [float(t) for t in PRESSURE_DISTRIBUTION_SELECTION["taus"]]
+    blocks = _selection_blocks(len(y), horizon)
+    if kind == "qrf":
+        grid = [int(v) for v in PRESSURE_QRF_SETTINGS["min_samples_leaf_grid"]]
+        chosen = int(PRESSURE_QRF_SETTINGS["default_min_samples_leaf"])
+        scores = {}
+        if blocks is not None:
+            fit_block, valid_block = blocks
+            for leaf in grid:
+                forest = _forest(x[fit_block], y[fit_block], leaf)
+                given = _forest_exceedance(forest, x[fit_block], y[fit_block], x[valid_block], selection_taus)
+                scores[leaf] = _label_brier(given, y[valid_block], selection_taus)
+            chosen = min(grid, key=lambda leaf: (scores[leaf], leaf))
+        forest = _forest(x, y, chosen)
+        curves = _forest_exceedance(forest, x, y, z, taus)
+        record = {"kind": kind, "min_samples_leaf": chosen, "validation_brier": scores}
+    else:
+        family = kind[len("ng_"):]
+        grid = [int(v) for v in PRESSURE_NATURAL_GRADIENT_SETTINGS["stage_grid"]]
+        chosen = int(PRESSURE_NATURAL_GRADIENT_SETTINGS["default_stages"])
+        scores = {}
+        if blocks is not None:
+            fit_block, valid_block = blocks
+            fitted = _fit_natural_gradient(family, x[fit_block], y[fit_block], max(grid))
+            staged = _natural_gradient_parameters(fitted, x[valid_block], grid)
+            for stages in grid:
+                location, log_scale = staged[stages]
+                given = _parametric_exceedance(family, location, log_scale, selection_taus)
+                scores[stages] = _label_brier(given, y[valid_block], selection_taus)
+            chosen = min(grid, key=lambda stages: (scores[stages], stages))
+        fitted = _fit_natural_gradient(family, x, y, chosen)
+        location, log_scale = _natural_gradient_parameters(fitted, z, [chosen])[chosen]
+        curves = _parametric_exceedance(family, location, log_scale, taus)
+        # The law has no mass beyond the declared support: a threshold that far above
+        # anything fitted gets a hard zero, as every other implementer's does.
+        limit = float(y.max()) + float(PRESSURE_NATURAL_GRADIENT_SETTINGS["support_above_training_max_bp"])
+        for column, tau in enumerate(taus):
+            if tau > limit:
+                curves[:, column] = 0.0
+        record = {"kind": kind, "stages": chosen, "validation_brier": scores}
+    out = [tuple(float(min(1.0, max(0.0, v))) for v in row) for row in curves]
+    return out, record
+
+
+def pressure_qrf_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A quantile regression forest of the spread, read as an exceedance curve (#385).
+
+    Meinshausen's forest on the direct design and pairs of #114: each served
+    row's conditional distribution is the training spreads weighted by how often
+    they share its leaves, `PRESSURE_QRF_SETTINGS`. The leaf size is chosen on
+    the pressure-day labels (`PRESSURE_DISTRIBUTION_SELECTION`). The curve is
+    non-increasing in tau by construction and by the running minimum.
+    """
+
+    return _direct_pressure_predictor("qrf", features, declaration, minimum_history)
+
+
+def pressure_natural_gradient_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    family: str = "laplace",
+) -> ExceedancePredictor:
+    """Natural-gradient boosting of a normal or Laplace law of the spread (#385).
+
+    Trees boosted on the natural gradient of the negative log-likelihood in the
+    law's location and log-scale (Duan et al., NGBoost, in numpy and
+    scikit-learn), `PRESSURE_NATURAL_GRADIENT_SETTINGS`, on the same design and
+    pairs. The stage count is chosen on the pressure-day labels.
+
+    Raises:
+        ValueError: on a family other than the two declared, as on the other
+            direct models for a short frame or a call without the as-of rule.
+    """
+
+    if family not in PRESSURE_NATURAL_GRADIENT_SETTINGS["families"]:
+        raise ValueError(
+            f"family must be one of {list(PRESSURE_NATURAL_GRADIENT_SETTINGS['families'])}, got {family!r}"
+        )
+    return _direct_pressure_predictor(f"ng_{family}", features, declaration, minimum_history)
 
 
 # --------------------------------------------------------------------------
