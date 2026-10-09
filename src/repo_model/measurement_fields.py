@@ -34,6 +34,8 @@ what the as-of rule reads their lag from)
   after the fact);
 * `sofr_p99_iorb_bps`: SOFR's 99th percentile minus IORB, in bp (the definition
   `early_warning` uses);
+* `sofr_p75_iorb_bps`: SOFR's 75th percentile minus IORB, in bp (#428; the upper
+  body of the day's dispersion above the policy rate, beside the 99th percentile's);
 * `sofr_p99_iorb_sd15_bps`: the sample standard deviation (n − 1) of that spread
   over the 15 panel rows ending at the row, `None` unless all 15 are present;
 * `tga_daily_change`: `tga_daily` minus the previous panel row's, USD billions;
@@ -99,6 +101,7 @@ _SOFR = "nyfed_sofr"
 _IORB_FIELDS = tuple(FEATURE_FIELDS["iorb"])
 _RESERVE_FIELDS = tuple(FEATURE_FIELDS["reserve_balances"])
 _SOFR_P99 = ((_SOFR, "SOFR_p99"),)
+_SOFR_P75 = ((_SOFR, "SOFR_p75"),)
 _TGA = ((TREASURY_DTS_TGA_SOURCE_ID, TREASURY_DTS_TGA_FIELD),)
 
 #: Every column's source fields, for the as-of rule. **Off**: switched on only
@@ -110,6 +113,7 @@ COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
     "ofr_tri_rate": ((OFR_STFM_SEGMENTS_SOURCE_ID, "REPO-TRI_AR_OO-P"),),
     "ofr_gcf_rate": ((OFR_STFM_SEGMENTS_SOURCE_ID, "REPO-GCF_AR_OO-P"),),
     "sofr_p99_iorb_bps": _SOFR_P99 + _IORB_FIELDS,
+    "sofr_p75_iorb_bps": _SOFR_P75 + _IORB_FIELDS,
     "sofr_p99_iorb_sd15_bps": _SOFR_P99 + _IORB_FIELDS,
     "tga_daily_change": _TGA,
     "tga_change_x_reserves": _TGA + _RESERVE_FIELDS,
@@ -126,6 +130,7 @@ RAW_SERIES: Mapping[str, Tuple[str, str]] = {
 RAW_COLUMNS = tuple(RAW_SERIES)
 DERIVED_COLUMNS = (
     "sofr_p99_iorb_bps",
+    "sofr_p75_iorb_bps",
     "sofr_p99_iorb_sd15_bps",
     "tga_daily_change",
     "tga_change_x_reserves",
@@ -165,7 +170,7 @@ def _sample_sd(values: Sequence[float]) -> float:
 def build_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
     """`rows` with the derived columns added, each from its own and earlier rows.
 
-    Reads, where present, `sofr_p99`, `iorb`, `tga_daily` and `reserve_balances`.
+    Reads, where present, `sofr_p99`, `sofr_p75`, `iorb`, `tga_daily` and `reserve_balances`.
     A column whose inputs are missing on a row it needs is `None` there.
     """
 
@@ -177,6 +182,8 @@ def build_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
         spread = None if p99 is None or iorb is None else (p99 - iorb) * 100.0
         spreads.append(spread)
         values["sofr_p99_iorb_bps"] = spread
+        p75 = _get(row, "sofr_p75")
+        values["sofr_p75_iorb_bps"] = None if p75 is None or iorb is None else (p75 - iorb) * 100.0
         window = spreads[position - SD_ROWS + 1 : position + 1] if position >= SD_ROWS - 1 else []
         values["sofr_p99_iorb_sd15_bps"] = (
             None if len(window) < SD_ROWS or any(v is None for v in window) else _sample_sd(window)
