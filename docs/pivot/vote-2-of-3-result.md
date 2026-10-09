@@ -38,9 +38,9 @@ Table 1 (the judge's row; the three voters and the two benchmarks beside it):
 
 * **Tier 1 (onsets warned at lead >= 1).** Recall 0.577 meets the 0.5 bar and its lower end (0.389) is above the climatology
   recall at the same false alarms (0.192). The false-alarm limit is missed: 2.19 per onset at h = 5 (1.38, 1.31, 1.42, 1.81 and
-  2.19 at h = 1 to 5). The vote keeps all 15 onsets the voters flag and has fewer false alarms than any single voter
-  (176, 233 and 382 across the five horizons; 211 for the vote), but the best voter's own count is lower than the vote's, so the
-  vote improves on the average voter, not on `two_part_gbm`.
+  2.19 at h = 1 to 5). The vote keeps all 15 onsets the voters flag and has fewer false alarms than two of the three
+  voters (`ngboost_laplace` and `hierarchical_logistic`: 233 and 382 across the five horizons; 211 for the vote) but more than
+  `two_part_gbm` (176), so the vote improves on the average voter, not on `two_part_gbm`.
 * **Tier 3 (no crying wolf).** No flags in the abundant stretches (state 0, 2021-23), so the flag-rate condition holds; the
   calibration condition fails at every lead, in 2025-26 at every lead and in 2018-19 at h = 2. Calibrated regimes with a pressure
   day at h = 1: 3 of 4.
@@ -94,7 +94,7 @@ Weights: 0.25 within 2 trading days of a pressure day, 0.5 within 3 to 5, 1 beyo
 * **Scarce regime alone:** recall 0.652 [0.462, 0.840]; tiers 1 and 3 fail, tier 5 is met.
 * **Overlap under the weighted cut-offs** (`evidence/vote-2-of-3/overlap_weighted.md`): the voters raise 445, 460 and 634 false alarms; 844 distinct, 263 common to all three;
   pairs share 0.49, 0.40 and 0.47 of their union. Hits: any two voters share 14 of 18, 13 of 17 and 14 of 18 of the onsets they flag between them; 13 onsets are flagged by all three. The vote has 432 false
-  alarms, fewer than any voter, and 15 onsets (one fewer than `ngboost_laplace`'s 17 at its weighted cut-off).
+  alarms, fewer than any voter (unlike the unweighted case above, where `two_part_gbm` alone has fewer), and 15 onsets (one fewer than `ngboost_laplace`'s 17 at its weighted cut-off).
 
 The full weighted row and regime split are in `evidence/vote-2-of-3/tables_weighted.md` and `judge_weighted.md`.
 
