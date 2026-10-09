@@ -44,6 +44,7 @@ import json
 import subprocess
 import sys
 import tempfile
+from dataclasses import replace
 from datetime import date, time
 from pathlib import Path
 
@@ -98,6 +99,18 @@ def require_committed_declaration(path: Path, repo: Path = REPO) -> str:
     return subprocess.run(
         ["git", "log", "-1", "--format=%H", "--", *relatives], cwd=repo, capture_output=True, text=True, check=True
     ).stdout.strip()
+
+
+def require_committed_file(path: Path, repo: Path = REPO) -> None:
+    """Refuse a file that is untracked or differs from `HEAD`: a rule is committed before it scores anything."""
+
+    relative = str(Path(path).resolve().relative_to(Path(repo).resolve()))
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", relative],
+        cwd=repo, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    if dirty:
+        raise SystemExit(f"{relative} is not committed ({dirty}); a rule is committed before any score is computed")
 
 
 def _document(horizon, digest, forecasts):
@@ -209,6 +222,17 @@ def _holdouts():
 def judge_command(args) -> int:
     declaration = pj.load_declaration()
     commit = require_committed_declaration(pj.DEFAULT_DECLARATION)
+    # The weighted miss rule (#454): `declared` follows the switch in metadata/weighted_miss.json (off: every
+    # false alarm counts 1, and the weighted count is reported beside it); `weighted` and `unweighted` force it
+    # for one scratch run, which is how a candidate is scored under both rules.
+    require_committed_file(pj.DEFAULT_WEIGHTED_MISS)
+    applied = {"declared": None, "weighted": True, "unweighted": False}[args.rule]
+    declaration = replace(declaration, weighted_miss=pj.load_weighted_miss(applied=applied))
+    if args.confirmation and declaration.weighting_applied and applied is not None:
+        raise SystemExit(
+            "the weighted rule is forced on for a scratch run and is not scored on the 2026 confirmation tier: "
+            "adopting it there changes a pre-registered test and needs Eleonora's own attested approval (#256)"
+        )
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
@@ -543,6 +567,10 @@ def main(argv=None) -> int:
     judge.add_argument(
         "--confirmation", action="store_true",
         help="the single look at the declared confirmation window, for the declared candidates only",
+    )
+    judge.add_argument(
+        "--rule", choices=("declared", "weighted", "unweighted"), default="declared",
+        help="how false alarms count (#454): as the switch in metadata/weighted_miss.json says (default), or forced",
     )
     judge.add_argument("inputs", nargs="+", type=Path)
     judge.set_defaults(run=judge_command)
