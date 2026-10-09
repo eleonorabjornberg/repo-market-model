@@ -1,0 +1,38 @@
+{
+  "status": "declared before any score (#410, track X of #374); a scratch measurement, nothing published moves",
+  "form": "logistic stacking on the logits of the members' probabilities",
+  "candidate": "stacked_ensemble",
+  "comparison_candidate": "stack_equal_average",
+  "comparison_note": "the arithmetic mean of the members' probabilities, no fit; it separates what the weights add from what averaging adds",
+  "members": [
+    "ngboost_laplace",
+    "hierarchical_logistic",
+    "qrf",
+    "time_to_pressure_hazard",
+    "extreme_value_tail"
+  ],
+  "members_note": "ngboost_laplace, hierarchical_logistic and qrf are the members with the best onset recall at the judge's amended cut-offs (#416); the hazard and tail are merged tracks of other families. Not stacked: the rare-event and policy tracks (no merged forecast file), the hurdle and Markov-switching tracks (their pull requests were still open).",
+  "thresholds_bp": [5.0, 10.0],
+  "design": "for each threshold and horizon: log-odds of P(spread > tau) = intercept + sum_m w_m * logit(clip(p_m)), p_m member m's probability for the day",
+  "clip": 0.0001,
+  "fit": {
+    "method": "Newton's method on the penalised log loss; the intercept is not penalised",
+    "penalty": "(ridge / 2) * sum_m (w_m - 1/M)^2, the pull being towards the equal-weight logit pool",
+    "ridge": 1.0,
+    "iterations_at_most": 50,
+    "tolerance": 1e-8
+  },
+  "refit": {
+    "every": 21,
+    "blocks": "the judge's blocks: scored days 0..20, 21..41, ... of the shared fold grid",
+    "training_window": "the scored days of earlier blocks whose outcome was public at the block's first decision instant, as pressure_judge.choose_cutoffs reads it: up to the business day h + 1 business days before the block's first scored day",
+    "members_read": "each member's own walk-forward probabilities, made before the refit, out of sample when made"
+  },
+  "fallback": {
+    "rule": "the equal-weight logit pool (intercept 0, every weight 1/M)",
+    "when": "the training window has fewer than 126 scored days, or fewer than 5 pressure days at the threshold, or fewer than 5 days without",
+    "minimum_days": 126,
+    "minimum_each_class": 5
+  },
+  "scoring": "pressure_judge.py judge, the declaration of metadata/pressure_judge.json, scored days 2018-06-29 to 2025-12-31 only; the stack and its comparison row are candidates there, each member alone is a row beside them"
+}

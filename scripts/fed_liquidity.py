@@ -22,6 +22,13 @@ columns does so inside `switched_on()`.
     PYTHONPATH=src python3 scripts/fed_liquidity.py paired --panel PUB.csv --output OUT/paired.json \\
         --markdown OUT/paired.md OUT/h_h?.json OUT/f_h?.json
 
+The same-day reading (#442) adds `*_sameday` columns to the same panel and two candidates to `forecasts`.
+Its comparisons are the candidate's Brier score minus the control's, for each of the two readings' pairs:
+
+    PYTHONPATH=src python3 scripts/fed_liquidity.py paired --panel PUB.csv --candidate-minus-control \
+        --control hierarchical_logistic_srf --only hierarchical_logistic_srf_sameday \
+        --output OUT/paired_sameday_srf.json --markdown OUT/paired_sameday_srf.md OUT/f_h?.json
+
 `forecasts` scores each candidate declared by track F in `metadata/pressure_judge.json`
 (`fed_liquidity.CANDIDATES`: the hierarchical logistic of #406 with the inputs added),
 walk-forward on the shared fold grid (minimum history 61, refit every 21 days, scored days
@@ -80,9 +87,9 @@ END = date(2025, 12, 31)
 
 @contextlib.contextmanager
 def switched_on():
-    """`fed_liquidity.COLUMN_FIELDS` in the feature map, for this run only."""
+    """`fed_liquidity.ALL_COLUMN_FIELDS` (both availability readings) in the feature map, for this run only."""
 
-    fields = dict(fed_liquidity.COLUMN_FIELDS)
+    fields = dict(fed_liquidity.ALL_COLUMN_FIELDS)
     with mock.patch.multiple(
         contract,
         FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
@@ -106,9 +113,15 @@ def _cell(value):
 def panel_command(args) -> int:
     published = load_daily_panel(args.panel)
     rows, summary = fed_liquidity.assemble(published, SNAPSHOTS, cutoff=BUILD_CUTOFF, end=END)
+    rows, same_day = fed_liquidity.assemble(
+        rows, SNAPSHOTS, cutoff=BUILD_CUTOFF, end=END, reading=fed_liquidity.SAME_DAY
+    )
+    summary["same_day"] = same_day
     with args.panel.open(newline="", encoding="utf-8") as handle:
         base = next(csv.reader(handle))
-    header = list(dict.fromkeys(base + list(fed_liquidity.RAW_COLUMNS) + list(fed_liquidity.DERIVED_COLUMNS)))
+    columns = list(fed_liquidity.RAW_COLUMNS) + list(fed_liquidity.DERIVED_COLUMNS)
+    columns += [name + fed_liquidity.SAME_DAY_SUFFIX for name in columns]
+    header = list(dict.fromkeys(base + columns))
     with args.output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(header)
@@ -162,11 +175,14 @@ def forecasts_command(args) -> int:
     return 0
 
 
-def _brier_cells(grid, tau, control, candidate):
-    """Per-day vectors of the Brier loss the control loses to the candidate, by cell."""
+def _brier_cells(grid, tau, control, candidate, sign=1.0):
+    """Per-day vectors of the Brier loss the control loses to the candidate, by cell.
+
+    `sign` -1 gives the candidate's loss minus the control's instead.
+    """
 
     outcomes = grid.outcomes[tau]
-    loss = [(c - o) ** 2 - (p - o) ** 2 for c, p, o in zip(control, candidate, outcomes)]
+    loss = [sign * ((c - o) ** 2 - (p - o) ** 2) for c, p, o in zip(control, candidate, outcomes)]
     cells = {"all": list(range(len(outcomes)))}
     for dimension in ("regime", "day_type"):
         for label, members in pj._group_cells(grid, dimension).items():
@@ -193,14 +209,26 @@ def paired_command(args) -> int:
         for forecast in pj.forecasts_from_horizon_document(json.loads(Path(path).read_text())):
             forecasts[(forecast.name, forecast.horizon)] = forecast
     statistic = {"difference": pj._ratio(1, 0)}
-    result = {"control": args.control, "positive": "the candidate's Brier score is lower than the control's", "cells": {}}
+    if args.candidate_minus_control:
+        sign = -1.0
+        meaning = "the candidate's Brier score is higher than the control's"
+        heading = f"Brier score of the candidate minus `{args.control}`'s (negative: the candidate is better)"
+    else:
+        sign = 1.0
+        meaning = "the candidate's Brier score is lower than the control's"
+        heading = f"Brier score of `{args.control}` minus the candidate's (positive: the candidate is better)"
+    result = {"control": args.control, "positive": meaning, "cells": {}}
     lines = [
-        f"Brier score of `{args.control}` minus the candidate's, paired on the same days "
-        f"(positive: the candidate is better), {declaration.level:.0%} stationary-bootstrap interval, "
+        f"{heading}, paired on the same days, {declaration.level:.0%} stationary-bootstrap interval, "
         f"block length {declaration.block_length}.",
         "",
     ]
     names = sorted({name for name, _h in forecasts if name != args.control})
+    if args.only:
+        unknown = sorted(set(args.only) - set(names))
+        if unknown:
+            raise SystemExit(f"not among the inputs: {', '.join(unknown)}")
+        names = sorted(args.only)
     for name in names:
         lines += [f"### {name}", "", "| threshold, horizon | all days | " + " | ".join(
             f"{d}: {lab}" for d, lab in _LABELS) + " |", "|---|---|" + "---|" * len(_LABELS)]
@@ -211,7 +239,7 @@ def paired_command(args) -> int:
                 if control.dates != candidate.dates:
                     raise SystemExit(f"{name} h={horizon}: not on the control's days")
                 grid = pj.build_grid(declaration, horizon, rows, control.dates, splits, scarcity_state={})
-                cells = _brier_cells(grid, tau, control.probabilities[tau], candidate.probabilities[tau])
+                cells = _brier_cells(grid, tau, control.probabilities[tau], candidate.probabilities[tau], sign)
                 seed = pj._seed(declaration.seed, "fed_liquidity", name, tau, horizon)
                 booted = pj._bootstrap(declaration, cells, statistic, len(control.dates), seed=seed)
                 result["cells"][f"{name}|{tau:g}|{horizon}"] = {
@@ -263,6 +291,12 @@ def main(argv=None) -> int:
     paired.add_argument("--control", default=hl.NAME)
     paired.add_argument("--output", type=Path, required=True)
     paired.add_argument("--markdown", type=Path)
+    paired.add_argument("--only", action="append", metavar="CANDIDATE", help="compare only these candidates with the control")
+    paired.add_argument(
+        "--candidate-minus-control",
+        action="store_true",
+        help="report the candidate's Brier score minus the control's (negative: the candidate is better)",
+    )
     paired.add_argument("inputs", type=Path, nargs="+")
     paired.set_defaults(handler=paired_command)
     args = parser.parse_args(argv)

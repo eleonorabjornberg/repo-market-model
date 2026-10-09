@@ -300,5 +300,44 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
+  },
+  "nyfed_repo_ops_sameday": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 9 October 2026 for #442. A sensitivity test of nyfed_repo_ops, not a replacement: the same endpoint, the same yearly snapshots (nyfed_repo_ops/), read at a less conservative instant. Operations close at 13:45 ET (and 08:30 ET from 26 June 2025). The Desk states no clock time at which results are published; the one timestamp, lastUpdated, is a write time. On the facility's 1,617 overnight operations (2021-07-29 to 2026-09-30) it falls a median 0.7 minutes after the close and 3.3 minutes at the 99th percentile (nyfed_srf.availability_provenance, #127). On the tracked snapshots (2018-05-09 to 2025-12-31) only five operation dates were written after 16:00 ET on their own date: 2021-12-28 at 16:10 and 2023-03-22 at 17:22 the same day, 2023-05-11 at 09:29 on the next day, and 2021-09-03 and 2021-09-10, both rewritten on 2021-09-16. A date is therefore read as public at 16:00 ET on its own date, and a date written later is read at the next decision instant at or after its write time (ingest.repo_operation_same_day_available_at); the two rewritten dates stay on the conservative reading because a rewrite cannot establish a first publication. The panel columns (fed_liquidity, suffix _sameday) read a withheld date as zero, as a date with no operation. The published nyfed_srf declaration (16:00 ET on the next business day) is not changed by this source; changing it is Eleonora's decision.",
+      "publication": "New York Fed repo operation results: the temporary open market operations of 2019 and 2020 and the Standing Repo Facility from 2021-07-29. Operations close between 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the operation date is the less conservative availability instant tested here."
+    },
+    "coverage": [
+      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2018-05-09 to 2025-12-31 in the tracked snapshots"
+    ],
+    "field_frequencies": {
+      "repo_accepted": "business_daily",
+      "repo_ops_accepting": "business_daily",
+      "repo_rate": "business_daily",
+      "repo_submitted": "business_daily"
+    },
+    "fields": [
+      "repo_accepted",
+      "repo_ops_accepting",
+      "repo_rate",
+      "repo_submitted"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#442), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. A second reading of nyfed_repo_ops: its fields, units and snapshots are those of nyfed_repo_ops (see its limitation); only the availability instant differs, and the dates written after their own 16:00 are withheld by the column assembly, not by this lag (fed_liquidity.assemble, reading same_day).",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 9 October 2026 (#442) as a sensitivity test: a date's results are available at 16:00 ET on the operation date itself, because lastUpdated falls a median 0.7 minutes after the close. Unlike the lag, the column assembly withholds the five dates written after 16:00 (ingest.repo_operation_same_day_available_at). The conservative declaration, nyfed_repo_ops.release_lag, is unchanged.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the New York Fed operation-results schema; the empty declaration is not a finding. A date with no row, or withheld, is read as zero take-up by the _sameday columns, a measurement choice declared in fed_liquidity.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
   }
 }
