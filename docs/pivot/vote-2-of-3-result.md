@@ -85,13 +85,13 @@ Weights: 0.25 within 2 trading days of a pressure day, 0.5 within 3 to 5, 1 beyo
 | hierarchical_logistic | 15 of 26 | 0.577 [0.400, 0.750] | 0.319 | 6.23 | 2.91 | fail | fail | fail | fail |
 | **vote_2_of_3** | **15 of 26** | **0.577 [0.389, 0.750]** | **0.235** | **4.27** | **1.80** | **pass** | **fail** | **pass** | **fail** |
 
-* **Tier 1 passes for the vote** under the weighted rule: recall 0.577, lower end 0.389 above the climatology recall 0.235, and weighted false
+* **Tier 1 is met by the vote** under the weighted rule: recall 0.577, lower end 0.389 above the climatology recall 0.235, and weighted false
   alarms per onset 0.77, 1.53, 1.36, 1.37 and 1.80 at h = 1 to 5 (limit 2). Flat, the same flags cost 2.15 to 4.27 per onset, so the pass depends on
   the draft weights. Only `ngboost_laplace` (17 of 26, weighted 1.73) also passes tier 1 under the weighted rule.
-* **Tier 5 passes** (beats climatology on Brier, calibrated), read on the vote share.
+* **Tier 5 is met** (beats climatology on Brier, calibrated), read on the vote share.
 * **Tier 3 fails**: no flags in the abundant stretches, but the vote is uncalibrated in 2018-19 at h = 1, 2, 3 and 5 and in 2020 at h = 1 and 5, and in
   2025-26 at h = 2 to 5. So the vote does not pass the pass rule.
-* **Scarce regime alone:** recall 0.652 [0.462, 0.840]; tiers 1 and 3 fail, tier 5 passes.
+* **Scarce regime alone:** recall 0.652 [0.462, 0.840]; tiers 1 and 3 fail, tier 5 is met.
 * **Overlap under the weighted cut-offs** (`evidence/vote-2-of-3/overlap_weighted.md`): the voters raise 445, 460 and 634 false alarms; 844 distinct, 263 common to all three;
   pairs share 0.49, 0.40 and 0.47 of their union. Hits: any two voters share 14 of 18, 13 of 17 and 14 of 18 of the onsets they flag between them; 13 onsets are flagged by all three. The vote has 432 false
   alarms, fewer than any voter, and 15 onsets (one fewer than `ngboost_laplace`'s 17 at its weighted cut-off).
