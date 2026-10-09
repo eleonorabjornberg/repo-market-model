@@ -1,0 +1,1854 @@
+{
+ "published_v1_nowcast": {
+  "+10": {
+   "1": {
+    "all": {
+     "brier_gain_vs_control": -6.999240971739086e-05,
+     "days": 1873,
+     "interval": [
+      -0.00027857613692172195,
+      0.00014840327247349366
+     ],
+     "pressure_days": 61
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.00038776731165579114,
+     "days": 150,
+     "interval": [
+      -0.0017951825767661676,
+      0.0008160611890970851
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -7.735210598852319e-05,
+     "days": 1603,
+     "interval": [
+      -0.0002738070348275068,
+      0.00011099906384853979
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": 0.0019334961103802887,
+     "days": 31,
+     "interval": [
+      -0.00019635921428779392,
+      0.004451704994304828
+     ],
+     "pressure_days": 6
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -9.97038221852891e-05,
+     "days": 89,
+     "interval": [
+      -0.0009892697100699452,
+      0.0008479990154418864
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -6.437251627275869e-05,
+     "days": 375,
+     "interval": [
+      -0.0009350197812197131,
+      0.0007849921630141433
+     ],
+     "pressure_days": 39
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -7.762190044212159e-05,
+     "days": 251,
+     "interval": [
+      -0.0002853315362401158,
+      0.00024022478891732235
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -4.7791366096518915e-05,
+     "days": 748,
+     "interval": [
+      -5.141141329379716e-05,
+      -4.426729841330217e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": -6.445849552267241e-05,
+     "days": 250,
+     "interval": [
+      -0.0001939062654795029,
+      2.107504200689904e-05
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.000143013763319486,
+     "days": 249,
+     "interval": [
+      -0.001016101340286833,
+      0.0006773297578061141
+     ],
+     "pressure_days": 17
+    }
+   },
+   "2": {
+    "all": {
+     "brier_gain_vs_control": 0.00012330694350440468,
+     "days": 1872,
+     "interval": [
+      -0.00031333098190975577,
+      0.00053941563059322
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.00013637145032642278,
+     "days": 150,
+     "interval": [
+      -0.0014354096318801538,
+      0.0011538436435333808
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.0001722632084955864,
+     "days": 1603,
+     "interval": [
+      -0.00028012140773725334,
+      0.0006250193479932784
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": 0.00485615860240635,
+     "days": 30,
+     "interval": [
+      -0.00028054340747493185,
+      0.013109727384377911
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0019161389382180505,
+     "days": 89,
+     "interval": [
+      -0.004715103857536748,
+      2.2872267766071503e-05
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": 0.0011063770477379676,
+     "days": 374,
+     "interval": [
+      -0.0004506881727750391,
+      0.002743013986698828
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.0006972285057970666,
+     "days": 251,
+     "interval": [
+      -0.0016677596536239145,
+      -7.285353860971275e-05
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -8.929553791669937e-05,
+     "days": 748,
+     "interval": [
+      -9.427890517135078e-05,
+      -8.434492241472048e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": -1.064682403169372e-05,
+     "days": 250,
+     "interval": [
+      -6.041200096549888e-05,
+      4.403889883966381e-05
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.00024700685024467417,
+     "days": 249,
+     "interval": [
+      -0.0015884259952898597,
+      0.0020986559452605027
+     ],
+     "pressure_days": 17
+    }
+   },
+   "3": {
+    "all": {
+     "brier_gain_vs_control": -4.534097954674429e-05,
+     "days": 1871,
+     "interval": [
+      -0.0003920022456568124,
+      0.00033080699662746925
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.00014733882754543905,
+     "days": 150,
+     "interval": [
+      -0.0009873297357252942,
+      0.0006629599672423739
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 1.8900089205091656e-05,
+     "days": 1602,
+     "interval": [
+      -0.00036435251805815087,
+      0.00043406217879364225
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -3.458277796973467e-05,
+     "days": 30,
+     "interval": [
+      -0.003938074422134735,
+      0.0039102698922070895
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0010334000917708646,
+     "days": 89,
+     "interval": [
+      -0.0027291840900080864,
+      0.00013266114472137414
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.0007749197101899355,
+     "days": 373,
+     "interval": [
+      -0.00206704355743296,
+      0.0005371883533465156
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": 1.9662489407239316e-05,
+     "days": 251,
+     "interval": [
+      -0.000139288692596168,
+      0.000192228830400988
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -6.054391592610734e-05,
+     "days": 748,
+     "interval": [
+      -6.375821998669635e-05,
+      -5.746893004220503e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 7.867982849876785e-06,
+     "days": 250,
+     "interval": [
+      -2.2855247460802924e-05,
+      5.127192222834224e-05
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.0009742837258149797,
+     "days": 249,
+     "interval": [
+      -0.0006981444507221324,
+      0.0029932932982454827
+     ],
+     "pressure_days": 17
+    }
+   },
+   "4": {
+    "all": {
+     "brier_gain_vs_control": -0.0001924786643037344,
+     "days": 1870,
+     "interval": [
+      -0.0007671659483254295,
+      0.00047142823070686147
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.0007879160535175111,
+     "days": 150,
+     "interval": [
+      -0.0019725789543519217,
+      0.0002884677176686342
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 4.420535108823354e-05,
+     "days": 1601,
+     "interval": [
+      -0.0006075894516676243,
+      0.0007500258842913391
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.00011911925227544861,
+     "days": 30,
+     "interval": [
+      -0.0060961028050405845,
+      0.006204419422020536
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.003471313300498427,
+     "days": 89,
+     "interval": [
+      -0.00702504712027083,
+      -0.00048509635763012215
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.001653867631902752,
+     "days": 372,
+     "interval": [
+      -0.0038792735119572495,
+      0.0004508173296955445
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.001297317522251651,
+     "days": 251,
+     "interval": [
+      -0.0016877072544117494,
+      -0.0008122897276355722
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -0.00029616288579842093,
+     "days": 748,
+     "interval": [
+      -0.00031525609301949806,
+      -0.00027758792585942313
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": -3.6505610787857453e-06,
+     "days": 250,
+     "interval": [
+      -6.801485892940169e-05,
+      8.403017713717454e-05
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.0032263969226984613,
+     "days": 249,
+     "interval": [
+      0.0002813176120193997,
+      0.0071191008147327905
+     ],
+     "pressure_days": 17
+    }
+   },
+   "5": {
+    "all": {
+     "brier_gain_vs_control": -0.0002792460841604818,
+     "days": 1869,
+     "interval": [
+      -0.0009001316660862846,
+      0.0003228153825679229
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.0018755432600980166,
+     "days": 150,
+     "interval": [
+      -0.0035851475398170646,
+      -0.000500935185248359
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.00011304732593953308,
+     "days": 1600,
+     "interval": [
+      -0.0005417416538981879,
+      0.0008169598373835711
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.007817914494608098,
+     "days": 30,
+     "interval": [
+      -0.015241815147226351,
+      -0.0014737821605434558
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0021001992016432052,
+     "days": 89,
+     "interval": [
+      -0.004725553431131559,
+      -5.6795718200592606e-05
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.001688980827357633,
+     "days": 371,
+     "interval": [
+      -0.003968047459939663,
+      0.00038229646695625444
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.000960729045881911,
+     "days": 251,
+     "interval": [
+      -0.0015465968442956895,
+      -0.00041283664696678297
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -0.0004315932355514413,
+     "days": 748,
+     "interval": [
+      -0.00045775519599619227,
+      -0.000406406031457315
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": -2.9269059488334344e-05,
+     "days": 250,
+     "interval": [
+      -0.00012715563866488947,
+      7.963534244485374e-05
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.0027148311294564855,
+     "days": 249,
+     "interval": [
+      -0.00010359274902159057,
+      0.006261229003425143
+     ],
+     "pressure_days": 17
+    }
+   }
+  },
+  "+5": {
+   "1": {
+    "all": {
+     "brier_gain_vs_control": 0.00024050088940756937,
+     "days": 1873,
+     "interval": [
+      -0.0004185780078322659,
+      0.0009492453210428979
+     ],
+     "pressure_days": 140
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": 0.0022431320487357243,
+     "days": 150,
+     "interval": [
+      2.3826447045307885e-05,
+      0.004887467137075148
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.0001909552840999749,
+     "days": 1603,
+     "interval": [
+      -0.0005487540022618485,
+      0.0009338263962839296
+     ],
+     "pressure_days": 101
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.002740713976935708,
+     "days": 31,
+     "interval": [
+      -0.00702530708924286,
+      0.000823145807427956
+     ],
+     "pressure_days": 9
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.001203941894126223,
+     "days": 89,
+     "interval": [
+      -0.003212255576894571,
+      0.0006193876532928389
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.0010725787934206408,
+     "days": 375,
+     "interval": [
+      -0.003803205217641701,
+      0.0017884817260586175
+     ],
+     "pressure_days": 102
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.0010962697113491135,
+     "days": 251,
+     "interval": [
+      -0.002014795169303551,
+      -0.00015569270705189818
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -6.678073867988185e-05,
+     "days": 748,
+     "interval": [
+      -8.908672983278834e-05,
+      -3.8771250152367853e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.00021512231239479318,
+     "days": 250,
+     "interval": [
+      -0.00026420118537372493,
+      0.0008528778762207787
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.004514097692271484,
+     "days": 249,
+     "interval": [
+      0.0018481970078893242,
+      0.007453427468856432
+     ],
+     "pressure_days": 29
+    }
+   },
+   "2": {
+    "all": {
+     "brier_gain_vs_control": 0.0012394742282803423,
+     "days": 1872,
+     "interval": [
+      0.0004023337499732395,
+      0.0020770719525002473
+     ],
+     "pressure_days": 139
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": 0.00013127012109609543,
+     "days": 150,
+     "interval": [
+      -0.001150475198295128,
+      0.0013352264421198443
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.001371520814743431,
+     "days": 1603,
+     "interval": [
+      0.00043509543528137646,
+      0.0023098978679366544
+     ],
+     "pressure_days": 101
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": 0.007463841774651996,
+     "days": 30,
+     "interval": [
+      0.0027386451505316298,
+      0.012352429857016572
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0013691896864819377,
+     "days": 89,
+     "interval": [
+      -0.004955350376748641,
+      0.002101990604159074
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": 0.005147687416363222,
+     "days": 374,
+     "interval": [
+      0.0015319048104499278,
+      0.008823660163902609
+     ],
+     "pressure_days": 101
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -5.502020618888121e-05,
+     "days": 251,
+     "interval": [
+      -0.002228433005636478,
+      0.0018701940487960821
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": 6.356969556633115e-05,
+     "days": 748,
+     "interval": [
+      4.826246553721015e-05,
+      8.163181616182975e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.0005740396428754493,
+     "days": 250,
+     "interval": [
+      9.692464748140296e-06,
+      0.0014098436391188675
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.0008747417284011702,
+     "days": 249,
+     "interval": [
+      -0.0010660376683338294,
+      0.00258063326412633
+     ],
+     "pressure_days": 29
+    }
+   },
+   "3": {
+    "all": {
+     "brier_gain_vs_control": 0.000684233522126854,
+     "days": 1871,
+     "interval": [
+      -0.00022926697730794532,
+      0.0015502700643567464
+     ],
+     "pressure_days": 138
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": 0.0028058369328369083,
+     "days": 150,
+     "interval": [
+      -6.657362801967976e-05,
+      0.005990840743890337
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.0008015873430754031,
+     "days": 1602,
+     "interval": [
+      -0.00014812190451234697,
+      0.0017663475673654581
+     ],
+     "pressure_days": 100
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.004237970056163231,
+     "days": 30,
+     "interval": [
+      -0.008120239804407497,
+      -0.0005543560439618477
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.003344701594922394,
+     "days": 89,
+     "interval": [
+      -0.006895469584424916,
+      -0.0005166577315245638
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": 0.00270473446392999,
+     "days": 373,
+     "interval": [
+      -0.0009720127895342472,
+      0.006564418546206157
+     ],
+     "pressure_days": 100
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": 0.0010801512626950932,
+     "days": 251,
+     "interval": [
+      -0.0009414267639083898,
+      0.0030062250149520335
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": 0.00010556727127717545,
+     "days": 748,
+     "interval": [
+      9.044431160890596e-05,
+      0.00012370642163894632
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.00032355264624365034,
+     "days": 250,
+     "interval": [
+      -0.0003930404761337053,
+      0.001346548682045341
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.0006411063556596329,
+     "days": 249,
+     "interval": [
+      -0.0034548492804637116,
+      0.001928107155847374
+     ],
+     "pressure_days": 29
+    }
+   },
+   "4": {
+    "all": {
+     "brier_gain_vs_control": 0.0009089859326793441,
+     "days": 1870,
+     "interval": [
+      -9.104405995300394e-05,
+      0.0019127530495545086
+     ],
+     "pressure_days": 138
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.0003769726095773442,
+     "days": 150,
+     "interval": [
+      -0.004069821156959558,
+      0.00398633108543354
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.001214811618143945,
+     "days": 1601,
+     "interval": [
+      0.00022255931954628472,
+      0.0021928967105869354
+     ],
+     "pressure_days": 100
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.0016443289858995033,
+     "days": 30,
+     "interval": [
+      -0.005642341069572141,
+      0.0016586008270913248
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.001564426354207826,
+     "days": 89,
+     "interval": [
+      -0.0065545226507608195,
+      0.004063761422895606
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": 0.003330559697964646,
+     "days": 372,
+     "interval": [
+      -0.0014536249177631176,
+      0.008201484976549015
+     ],
+     "pressure_days": 100
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": 0.0022972517753321055,
+     "days": 251,
+     "interval": [
+      0.0009582119213164061,
+      0.0038843741120998324
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": 0.0002037348301017259,
+     "days": 748,
+     "interval": [
+      0.00018661207631551525,
+      0.0002223631313138919
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.00042316959431047945,
+     "days": 250,
+     "interval": [
+      -2.777906742312438e-05,
+      0.0012321565615830666
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.0015018504443154452,
+     "days": 249,
+     "interval": [
+      -0.0038566336235131876,
+      0.0006396306813289014
+     ],
+     "pressure_days": 29
+    }
+   },
+   "5": {
+    "all": {
+     "brier_gain_vs_control": 0.0012076324075969314,
+     "days": 1869,
+     "interval": [
+      0.00017040315053570506,
+      0.002220737992326237
+     ],
+     "pressure_days": 138
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": 6.216277287007576e-05,
+     "days": 150,
+     "interval": [
+      -0.0036217208000956453,
+      0.003713213126178467
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.0015079863723366366,
+     "days": 1600,
+     "interval": [
+      0.0004573518740541247,
+      0.002548270365393709
+     ],
+     "pressure_days": 100
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.005165791475412254,
+     "days": 30,
+     "interval": [
+      -0.017928250336228052,
+      0.005514005623727611
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0001130775012145536,
+     "days": 89,
+     "interval": [
+      -0.003706132308689046,
+      0.003460755832387601
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": 0.0007372045188916429,
+     "days": 371,
+     "interval": [
+      -0.0035142837921543157,
+      0.004960603531637604
+     ],
+     "pressure_days": 100
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": 0.007761075357022209,
+     "days": 251,
+     "interval": [
+      0.004431946835820284,
+      0.010854646386071462
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -0.0004158143059151405,
+     "days": 748,
+     "interval": [
+      -0.0004448309138529536,
+      -0.00038765488353564577
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.0003844481038623394,
+     "days": 250,
+     "interval": [
+      -8.956991486594163e-05,
+      0.0011445056134765461
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.0010058202953262393,
+     "days": 249,
+     "interval": [
+      -0.0013572336296167442,
+      0.003427029912045193
+     ],
+     "pressure_days": 29
+    }
+   }
+  }
+ },
+ "published_v1_nowcast_substituted": {
+  "+10": {
+   "1": {
+    "all": {
+     "brier_gain_vs_control": -0.0013955348467116692,
+     "days": 1873,
+     "interval": [
+      -0.0025643509364454515,
+      -0.0004355176397365811
+     ],
+     "pressure_days": 61
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.006379812268735152,
+     "days": 150,
+     "interval": [
+      -0.014319346280321771,
+      -0.0003857820079415984
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -0.0006850463927493948,
+     "days": 1603,
+     "interval": [
+      -0.0015988487550865516,
+      1.2317376422373934e-05
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.01594768570897217,
+     "days": 31,
+     "interval": [
+      -0.04514870214339261,
+      5.745530677484482e-05
+     ],
+     "pressure_days": 6
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0007231157643288209,
+     "days": 89,
+     "interval": [
+      -0.002319134749182569,
+      0.0009465673455083339
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -9.887954097303647e-06,
+     "days": 375,
+     "interval": [
+      -0.0008360074689593046,
+      0.0008493724656521343
+     ],
+     "pressure_days": 39
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.001796563104385651,
+     "days": 251,
+     "interval": [
+      -0.002767703942491676,
+      -0.0009444214995583623
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -1.2015197795852867e-05,
+     "days": 748,
+     "interval": [
+      -2.0818304829411522e-05,
+      -4.283027080770663e-06
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.00011605813096657727,
+     "days": 250,
+     "interval": [
+      4.19311745524191e-06,
+      0.0002665730455463088
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.008751881970658694,
+     "days": 249,
+     "interval": [
+      -0.01753896511548492,
+      -0.0016181821948523082
+     ],
+     "pressure_days": 17
+    }
+   },
+   "2": {
+    "all": {
+     "brier_gain_vs_control": -0.0004636908506553256,
+     "days": 1872,
+     "interval": [
+      -0.0014759371458710898,
+      0.00045487144152201874
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.005155096972112367,
+     "days": 150,
+     "interval": [
+      -0.012228880596618611,
+      -5.660929110393307e-07
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 0.00020893791335417636,
+     "days": 1603,
+     "interval": [
+      -0.0006392345919656588,
+      0.0009619976282657585
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.012927595548787918,
+     "days": 30,
+     "interval": [
+      -0.03724273096673609,
+      0.0016958416054148346
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0004703857893597773,
+     "days": 89,
+     "interval": [
+      -0.0019545701701918976,
+      0.0006634297585874618
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": 0.001980269510343329,
+     "days": 374,
+     "interval": [
+      0.00046602287837913843,
+      0.0035281148436590907
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.0014571559536965973,
+     "days": 251,
+     "interval": [
+      -0.0026892738851377784,
+      -0.00044847338930608234
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": 0.00012420058240373937,
+     "days": 748,
+     "interval": [
+      0.0001175510297340244,
+      0.0001310097584843191
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.00014392959650861602,
+     "days": 250,
+     "interval": [
+      1.7931521500551708e-05,
+      0.0003005168304445421
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.005509190199528027,
+     "days": 249,
+     "interval": [
+      -0.012902754916264355,
+      0.00036174669062156886
+     ],
+     "pressure_days": 17
+    }
+   },
+   "3": {
+    "all": {
+     "brier_gain_vs_control": -0.0005873918957860442,
+     "days": 1871,
+     "interval": [
+      -0.0014605439367594588,
+      0.0002894982927337414
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.0019176738122532826,
+     "days": 150,
+     "interval": [
+      -0.004094670572940658,
+      -0.0001752175093094698
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -0.0005501530155984336,
+     "days": 1602,
+     "interval": [
+      -0.0015293214152069243,
+      0.0004298646469070432
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": 0.004182465597341299,
+     "days": 30,
+     "interval": [
+      -0.0005868364159198976,
+      0.010276507308110725
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0006234606978566863,
+     "days": 89,
+     "interval": [
+      -0.00210968711171939,
+      0.0007872956058780525
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.0004924824078702832,
+     "days": 373,
+     "interval": [
+      -0.0027002969985918204,
+      0.0014921500939665622
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.001991725312523833,
+     "days": 251,
+     "interval": [
+      -0.002911211847884782,
+      -0.0011017996107856448
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -8.412604045866832e-05,
+     "days": 748,
+     "interval": [
+      -9.321315456079155e-05,
+      -7.548174983144717e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 6.295996535855909e-05,
+     "days": 250,
+     "interval": [
+      -1.2696374625697307e-05,
+      0.00018962842949063585
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.001478734773145166,
+     "days": 249,
+     "interval": [
+      -0.007398514281844141,
+      0.003842307122573527
+     ],
+     "pressure_days": 17
+    }
+   },
+   "4": {
+    "all": {
+     "brier_gain_vs_control": -7.933571094601785e-05,
+     "days": 1870,
+     "interval": [
+      -0.0008219229574958599,
+      0.0007537321570807809
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.0007974216068322304,
+     "days": 150,
+     "interval": [
+      -0.002628484861888353,
+      0.0008649179694777322
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 7.975917457435662e-05,
+     "days": 1601,
+     "interval": [
+      -0.0007436035431963422,
+      0.0010126890905013902
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.0014944456425309376,
+     "days": 30,
+     "interval": [
+      -0.007694936393466759,
+      0.0054033044380390515
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0012539955917060183,
+     "days": 89,
+     "interval": [
+      -0.0034655639231913264,
+      0.0004560552432404153
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.0006136476067545309,
+     "days": 372,
+     "interval": [
+      -0.0026801908792357283,
+      0.0012377102670959514
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.0026405984052084047,
+     "days": 251,
+     "interval": [
+      -0.003870582101025317,
+      -0.001313542053386753
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -5.2654127360262284e-05,
+     "days": 748,
+     "interval": [
+      -6.327443307450097e-05,
+      -4.31762496077591e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 7.706602640400784e-05,
+     "days": 250,
+     "interval": [
+      -1.3976362080909656e-06,
+      0.0002040516409342817
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.0030635667092988633,
+     "days": 249,
+     "interval": [
+      -0.0013994636487812944,
+      0.008517109562937879
+     ],
+     "pressure_days": 17
+    }
+   },
+   "5": {
+    "all": {
+     "brier_gain_vs_control": -0.00037966546186558707,
+     "days": 1869,
+     "interval": [
+      -0.001157034184896707,
+      0.0004679590491448974
+     ],
+     "pressure_days": 60
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.0026120872132993937,
+     "days": 150,
+     "interval": [
+      -0.00470177764833557,
+      -0.0009625594088021554
+     ],
+     "pressure_days": 10
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": 7.280419693615645e-05,
+     "days": 1600,
+     "interval": [
+      -0.0007983500167885455,
+      0.0010463495817594605
+     ],
+     "pressure_days": 39
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.012754695536340057,
+     "days": 30,
+     "interval": [
+      -0.02399362607168296,
+      -0.0026851768578852633
+     ],
+     "pressure_days": 5
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0005800844408935191,
+     "days": 89,
+     "interval": [
+      -0.001853908639129438,
+      0.0006246329898191799
+     ],
+     "pressure_days": 6
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.001672469403724239,
+     "days": 371,
+     "interval": [
+      -0.0037899336770941664,
+      0.00021357076207642072
+     ],
+     "pressure_days": 38
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.0023693069881864323,
+     "days": 251,
+     "interval": [
+      -0.003245706356539492,
+      -0.0015591353520812473
+     ],
+     "pressure_days": 3
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -0.00036704615669812214,
+     "days": 748,
+     "interval": [
+      -0.0003943676747658826,
+      -0.00034113699107284545
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 3.016066123069863e-05,
+     "days": 250,
+     "interval": [
+      -7.277189924067565e-05,
+      0.0001753005860391922
+     ],
+     "pressure_days": 2
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": 0.0031028024678402583,
+     "days": 249,
+     "interval": [
+      -0.0017154985112957837,
+      0.008715800400586768
+     ],
+     "pressure_days": 17
+    }
+   }
+  },
+  "+5": {
+   "1": {
+    "all": {
+     "brier_gain_vs_control": -0.0044146763847028245,
+     "days": 1873,
+     "interval": [
+      -0.0068192330650182886,
+      -0.0020085413901974863
+     ],
+     "pressure_days": 140
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.016048027413491303,
+     "days": 150,
+     "interval": [
+      -0.030929341020753634,
+      -0.004469762748619762
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -0.0029504168693375438,
+     "days": 1603,
+     "interval": [
+      -0.005370237956364014,
+      -0.0005511582036094128
+     ],
+     "pressure_days": 101
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.022434818053206657,
+     "days": 31,
+     "interval": [
+      -0.04098382774771107,
+      -0.006011770985299776
+     ],
+     "pressure_days": 9
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.004904350059856229,
+     "days": 89,
+     "interval": [
+      -0.015857638596311126,
+      0.005856420352177942
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.005509234515760793,
+     "days": 375,
+     "interval": [
+      -0.013160243172912403,
+      0.0022680719994864606
+     ],
+     "pressure_days": 102
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.020173952846295355,
+     "days": 251,
+     "interval": [
+      -0.02714134120822105,
+      -0.014142553177412582
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": 0.0003112387775852335,
+     "days": 748,
+     "interval": [
+      0.00026512361986035036,
+      0.0003510110898613427
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.0009298727778669034,
+     "days": 250,
+     "interval": [
+      -0.0010884041203153066,
+      0.0034041585114205123
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.006443126750274932,
+     "days": 249,
+     "interval": [
+      -0.017429017780133702,
+      0.004691033590691381
+     ],
+     "pressure_days": 29
+    }
+   },
+   "2": {
+    "all": {
+     "brier_gain_vs_control": -0.003223615206677531,
+     "days": 1872,
+     "interval": [
+      -0.005545562573848168,
+      -0.0009558389248125423
+     ],
+     "pressure_days": 139
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.009548331791863535,
+     "days": 150,
+     "interval": [
+      -0.02051395417918407,
+      -0.0016361521482705838
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -0.002089678699248254,
+     "days": 1603,
+     "interval": [
+      -0.004456520176117829,
+      0.0002844281656064705
+     ],
+     "pressure_days": 101
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.033850848494352506,
+     "days": 30,
+     "interval": [
+      -0.07444458364015684,
+      -0.00211353274771245
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0026637920044412953,
+     "days": 89,
+     "interval": [
+      -0.008334211143666235,
+      0.0023444979096271974
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.0012015707898421991,
+     "days": 374,
+     "interval": [
+      -0.008934846241303068,
+      0.006286164148545553
+     ],
+     "pressure_days": 101
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.016724130036002954,
+     "days": 251,
+     "interval": [
+      -0.022039776664897388,
+      -0.012219987507790464
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": 0.0004320389245342346,
+     "days": 748,
+     "interval": [
+      0.00034822435710616745,
+      0.0004974349131932664
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 5.433941268555365e-05,
+     "days": 250,
+     "interval": [
+      -0.0019415087578053335,
+      0.002029598328943456
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.006924552293918113,
+     "days": 249,
+     "interval": [
+      -0.018109608489335405,
+      0.002811111263056122
+     ],
+     "pressure_days": 29
+    }
+   },
+   "3": {
+    "all": {
+     "brier_gain_vs_control": -0.004719769633608275,
+     "days": 1871,
+     "interval": [
+      -0.0069972980482961075,
+      -0.002515363993612181
+     ],
+     "pressure_days": 138
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.008559068372690281,
+     "days": 150,
+     "interval": [
+      -0.016085854510127607,
+      -0.002076620625239549
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -0.004203641144536254,
+     "days": 1602,
+     "interval": [
+      -0.006721451447775492,
+      -0.001700412115747875
+     ],
+     "pressure_days": 100
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.005277635803732522,
+     "days": 30,
+     "interval": [
+      -0.013214605533757324,
+      0.002004314090266793
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.007351309448522267,
+     "days": 89,
+     "interval": [
+      -0.015631547769698623,
+      -0.0005427308704768914
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.005755471457104514,
+     "days": 373,
+     "interval": [
+      -0.013683162444297176,
+      0.001551776359565348
+     ],
+     "pressure_days": 100
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.020384217771904533,
+     "days": 251,
+     "interval": [
+      -0.02539472529605325,
+      -0.01600124008240077
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -7.726631964128047e-05,
+     "days": 748,
+     "interval": [
+      -0.00018776387941852547,
+      1.0703894638449237e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.0009085533511340059,
+     "days": 250,
+     "interval": [
+      -0.0003747556354331423,
+      0.0028978860045809213
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.006975110847087887,
+     "days": 249,
+     "interval": [
+      -0.019107094277162458,
+      0.0042162220490838094
+     ],
+     "pressure_days": 29
+    }
+   },
+   "4": {
+    "all": {
+     "brier_gain_vs_control": -0.0034279708508455626,
+     "days": 1870,
+     "interval": [
+      -0.005462076896982058,
+      -0.001476228196080622
+     ],
+     "pressure_days": 138
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.008902639401432027,
+     "days": 150,
+     "interval": [
+      -0.016873916568777274,
+      -0.0018637021163955072
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -0.0024701717725903374,
+     "days": 1601,
+     "interval": [
+      -0.00462851790207134,
+      -0.00023559104896770072
+     ],
+     "pressure_days": 100
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.00745197391221418,
+     "days": 30,
+     "interval": [
+      -0.013197214575505123,
+      -0.002096794184812427
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.010074217478458854,
+     "days": 89,
+     "interval": [
+      -0.022883412871332134,
+      0.00025191033166008746
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.0010787088175750548,
+     "days": 372,
+     "interval": [
+      -0.007965264386014371,
+      0.005811570503495549
+     ],
+     "pressure_days": 100
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.01788840840135103,
+     "days": 251,
+     "interval": [
+      -0.021926512199524857,
+      -0.014056913318352222
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -0.00013769978204692063,
+     "days": 748,
+     "interval": [
+      -0.0002506513272225402,
+      -4.5541400855207145e-05
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.0009248487119345502,
+     "days": 250,
+     "interval": [
+      -1.3060313359658023e-05,
+      0.00257446014919161
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.0066154539888221,
+     "days": 249,
+     "interval": [
+      -0.01669950022797664,
+      0.0028101023112697913
+     ],
+     "pressure_days": 29
+    }
+   },
+   "5": {
+    "all": {
+     "brier_gain_vs_control": -0.0022325233684894865,
+     "days": 1869,
+     "interval": [
+      -0.004316803848679013,
+      -0.0001821119430456937
+     ],
+     "pressure_days": 138
+    },
+    "day_type: month_end": {
+     "brier_gain_vs_control": -0.006996549148090934,
+     "days": 150,
+     "interval": [
+      -0.015308771143826018,
+      -0.00010844233184411834
+     ],
+     "pressure_days": 17
+    },
+    "day_type: ordinary": {
+     "brier_gain_vs_control": -0.0012597788349941888,
+     "days": 1600,
+     "interval": [
+      -0.00343668657614222,
+      0.0008073087216392586
+     ],
+     "pressure_days": 100
+    },
+    "day_type: quarter_end": {
+     "brier_gain_vs_control": -0.019881449727212196,
+     "days": 30,
+     "interval": [
+      -0.03866816847971855,
+      -0.003314118456493122
+     ],
+     "pressure_days": 8
+    },
+    "day_type: tax_date": {
+     "brier_gain_vs_control": -0.0057417323110802625,
+     "days": 89,
+     "interval": [
+      -0.016146142348581406,
+      0.0042439015514184
+     ],
+     "pressure_days": 13
+    },
+    "regime: 2018-19": {
+     "brier_gain_vs_control": -0.0006498480090905782,
+     "days": 371,
+     "interval": [
+      -0.008755927892257436,
+      0.006824137430498055
+     ],
+     "pressure_days": 100
+    },
+    "regime: 2020": {
+     "brier_gain_vs_control": -0.013274300012291266,
+     "days": 251,
+     "interval": [
+      -0.017617675951228758,
+      -0.009293932478932381
+     ],
+     "pressure_days": 4
+    },
+    "regime: 2021-23": {
+     "brier_gain_vs_control": -0.00035477981353577374,
+     "days": 748,
+     "interval": [
+      -0.0004732768230139092,
+      -0.0002630098725934655
+     ],
+     "pressure_days": 0
+    },
+    "regime: 2024": {
+     "brier_gain_vs_control": 0.0008821803251325145,
+     "days": 250,
+     "interval": [
+      -1.2448657389064009e-05,
+      0.0024838571806158967
+     ],
+     "pressure_days": 5
+    },
+    "regime: 2025-26": {
+     "brier_gain_vs_control": -0.0022281648273393775,
+     "days": 249,
+     "interval": [
+      -0.011275245279595803,
+      0.007386987514716599
+     ],
+     "pressure_days": 29
+    }
+   }
+  }
+ }
+}
