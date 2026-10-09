@@ -1,5 +1,5 @@
 {
-  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored; the two candidates of track N (#426) are added, declared in metadata/net_settlement.json before any was scored",
+  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored",
   "scoring": {
     "last_day": "2025-12-31"
   },
@@ -692,6 +692,57 @@
         "reserve_balances"
       ],
       "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
+    },
+    "rare_gbm_balanced_bootstrap_policy+recalibrated": {
+      "role": "candidate",
+      "track": "P (#412) on W (#381)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga",
+        "policy_days_since_known",
+        "policy_days_until_effective",
+        "policy_pending_count",
+        "policy_iorb_offset_bp",
+        "policy_qt_in_force",
+        "policy_standing_repo_in_force",
+        "policy_slr_exclusion_in_force",
+        "policy_reserve_management_in_force",
+        "policy_debt_limit_reinstated"
+      ],
+      "features_note": "the control row's inputs plus the nine policy-register columns, at every horizon",
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json; policy columns from metadata/policy_events.json read at the decision instant (metadata/policy_features.json)"
+    },
+    "onset_logistic_policy+recalibrated": {
+      "role": "candidate",
+      "track": "P (#412) on O (#409)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "tga_daily",
+        "tga_daily_change",
+        "policy_days_since_known",
+        "policy_days_until_effective",
+        "policy_pending_count",
+        "policy_iorb_offset_bp",
+        "policy_qt_in_force",
+        "policy_standing_repo_in_force",
+        "policy_slr_exclusion_in_force",
+        "policy_reserve_management_in_force",
+        "policy_debt_limit_reinstated"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
+      "calibration": "onset-label fit (unweighted), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json; policy columns from metadata/policy_events.json read at the decision instant (metadata/policy_features.json)"
     },
     "hierarchical_logistic_net": {
       "role": "candidate",

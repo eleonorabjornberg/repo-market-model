@@ -111,5 +111,54 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query"
+  },
+  "policy_register": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 8 October 2026 for #412. Not a fetched series: repo_model.policy_features computes each column per panel row from the point-in-time register metadata/policy_events.json (#376), reading only entries whose announcement instant is at or before 16:00 America/New_York on the row's own date. A source that states no release time is public from 23:59:59 on its date, so a 16:00 decision that day never sees it (docs/decisions/policy-point-in-time.md). 16:00 is the published records' decision time; a run at an earlier decision time is refused by the availability guard rather than read late.",
+      "publication": "metadata/policy_events.json, one entry per policy or legislative change with its announcement date and time and a primary source URL (Board of Governors press releases and implementation notes, Federal Reserve Bank of New York statements, congress.gov); tests/test_policy_features.py perturbs every entry announced after a decision instant and requires the columns at that instant unchanged."
+    },
+    "coverage": [
+      "policy and legislation register, one value per panel day, 2018-04 onwards"
+    ],
+    "field_frequencies": {
+      "policy_days_since_known": "business_daily",
+      "policy_days_until_effective": "business_daily",
+      "policy_debt_limit_reinstated": "business_daily",
+      "policy_iorb_offset_bp": "business_daily",
+      "policy_pending_count": "business_daily",
+      "policy_qt_in_force": "business_daily",
+      "policy_reserve_management_in_force": "business_daily",
+      "policy_slr_exclusion_in_force": "business_daily",
+      "policy_standing_repo_in_force": "business_daily"
+    },
+    "fields": [
+      "policy_days_since_known",
+      "policy_days_until_effective",
+      "policy_pending_count",
+      "policy_iorb_offset_bp",
+      "policy_qt_in_force",
+      "policy_standing_repo_in_force",
+      "policy_slr_exclusion_in_force",
+      "policy_reserve_management_in_force",
+      "policy_debt_limit_reinstated"
+    ],
+    "frequency": "event",
+    "identities": [],
+    "limitation": "Off in every published declaration (#412), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes (docs/decisions/final-test-preregistration.md, amendment of 7 October 2026). Not a panel column and not fetched: repo_model.policy_features computes the columns from the register and a track adds them to a scratch panel (scripts/policy_features.py). Entries whose source was not read when the register was built are flagged read_at_source false in the register.",
+    "provider": "Board of Governors of the Federal Reserve System; Federal Reserve Bank of New York; U.S. Congress",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 8 October 2026 (#412). The value for a row is computed from entries announced at or before 16:00 ET on that row's own date, so it is public at that instant by construction and the 16:00 ET decision of that day reads it; the decision instant is the same row's, never a later one.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "No structural zeros: a 0.0 is a computed value (no such policy in force), not a missing one.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": true,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/policy_events.json"
   }
 }
