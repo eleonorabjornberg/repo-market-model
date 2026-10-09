@@ -1,0 +1,73 @@
+{
+ "false_alarm_overlap": {
+  "all three": 35,
+  "at least one": 545,
+  "flagged by exactly k voters": {
+   "1": 334,
+   "2": 176,
+   "3": 35
+  },
+  "ngboost_laplace & hierarchical_logistic": {
+   "both": 113,
+   "either": 502,
+   "jaccard": 0.2250996015936255
+  },
+  "two_part_gbm & hierarchical_logistic": {
+   "both": 96,
+   "either": 462,
+   "jaccard": 0.2077922077922078
+  },
+  "two_part_gbm & ngboost_laplace": {
+   "both": 72,
+   "either": 337,
+   "jaccard": 0.21364985163204747
+  }
+ },
+ "hit_overlap": {
+  "all three": 12,
+  "at least one": 18,
+  "flagged by exactly k voters": {
+   "1": 3,
+   "2": 3,
+   "3": 12
+  },
+  "ngboost_laplace & hierarchical_logistic": {
+   "both": 13,
+   "either": 17,
+   "jaccard": 0.7647058823529411
+  },
+  "two_part_gbm & hierarchical_logistic": {
+   "both": 13,
+   "either": 17,
+   "jaccard": 0.7647058823529411
+  },
+  "two_part_gbm & ngboost_laplace": {
+   "both": 13,
+   "either": 17,
+   "jaccard": 0.7647058823529411
+  }
+ },
+ "onsets": 26,
+ "per_voter": {
+  "hierarchical_logistic": {
+   "false_alarms": 382,
+   "flag_days": 707,
+   "onsets_flagged": 15
+  },
+  "ngboost_laplace": {
+   "false_alarms": 233,
+   "flag_days": 395,
+   "onsets_flagged": 15
+  },
+  "two_part_gbm": {
+   "false_alarms": 176,
+   "flag_days": 304,
+   "onsets_flagged": 15
+  },
+  "vote_2_of_3": {
+   "false_alarms": 211,
+   "flag_days": 385,
+   "onsets_flagged": 15
+  }
+ }
+}

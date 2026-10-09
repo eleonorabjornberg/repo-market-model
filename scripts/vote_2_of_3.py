@@ -207,12 +207,23 @@ def judge_command(args) -> int:
     digest = panel_sha256(args.panel)
     wanted = {declaration.climatology, declaration.persistence, *voters}
 
-    forecasts = []
+    forecasts, scratch = [], {}
     for path in args.inputs:
         document = json.loads(Path(path).read_text())
         if document["panel_sha256"] != digest:
-            raise SystemExit(f"{path} was scored on another panel ({document['panel_sha256'][:8]})")
+            scratch[str(path)] = document["panel_sha256"]
         forecasts.extend(f for f in pj.forecasts_from_horizon_document(document) if f.name in wanted)
+    # A forecast file scored on a scratch panel (the hierarchical logistic's `pressure_v1_1.py panel`) is accepted
+    # only when its days are the published panel's benchmark days; its digest is recorded.
+    for path in scratch:
+        document = json.loads(Path(path).read_text())
+        for f in pj.forecasts_from_horizon_document(document):
+            if f.name not in wanted:
+                continue
+            reference = next(
+                (g for g in forecasts if g.horizon == f.horizon and g.name == declaration.climatology), None)
+            if reference is None or tuple(reference.dates) != tuple(f.dates):
+                raise SystemExit(f"{path} was scored on another panel ({scratch[path][:8]}) and its days are not the grid's")
     states = {h: script._scarcity_states(h, declaration.last_day) for h in declaration.horizons}
 
     def grids_of(forecasts):
@@ -236,6 +247,7 @@ def judge_command(args) -> int:
         "declaration_commit": script.require_committed_declaration(pj.DEFAULT_DECLARATION),
         "forecast_files": [str(p) for p in args.inputs],
         "voters": voters,
+        "scratch_panel_files": scratch,
     }
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     if args.markdown:
