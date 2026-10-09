@@ -201,5 +201,39 @@ class DeclaredRowsTests(unittest.TestCase):
             self.assertTrue((CANDIDATES / f"{row}.json").exists(), row)
 
 
+class ReportTests(unittest.TestCase):
+    def test_the_report_sets_each_form_beside_its_base_row(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("alarm_cooldown", ROOT / "scripts" / "alarm_cooldown.py")
+        script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(script)
+        series = Series()
+        probabilities = [1.0 if (y or k % 20 in {10, 11}) else 0.0 for k, y in enumerate(series.y5)]
+        document = _declaration()
+        for name, keep in (("sharp_cooldown5", True), ("sharp_cooldown5_strict", False)):
+            document["candidates"][name] = {
+                "role": "candidate", "features": ["x"], "calibration": "none",
+                "alarm_rule": {**RULE, "keep_when_pressure_starts": keep},
+            }
+        declaration = pj.load_declaration(_write(document))
+        forecasts = []
+        for h in (1, 2):
+            forecasts.append(series.flat("calendar_climatology", h, 0.1))
+            forecasts.append(series.flat("persistence_logistic", h, 0.1))
+            for name in ("sharp", "sharp_cooldown5", "sharp_cooldown5_strict"):
+                forecasts.append(series.forecast(name, h, probabilities))
+        result = pj.judge(declaration, {h: series.grid(h) for h in (1, 2)}, forecasts, calendar=series.dates)
+        report = script.report_document(result, {"rows": {"chosen": ["sharp"]}})
+        forms = report["rows"]["sharp"]
+        self.assertEqual(set(forms), {"base", "with_exception", "strict"})
+        self.assertLess(
+            forms["with_exception"]["worst_false_alarms_per_onset"], forms["base"]["worst_false_alarms_per_onset"]
+        )
+        self.assertEqual(forms["with_exception"]["onsets_flagged"], forms["base"]["onsets_flagged"])
+        text = script.report_markdown(report)
+        self.assertIn("| sharp | with exception |", text)
+
+
 if __name__ == "__main__":
     unittest.main()
