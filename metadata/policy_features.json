@@ -1,0 +1,66 @@
+{
+  "status": "declared by the pull request that closes #412 before any score was computed; nothing here is tuned on a scored day; the choices below are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "minimum_history": 61, "refit_every": 21, "decision_time": "16:00"},
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "register": "metadata/policy_events.json (#376), read by repo_model.policy_features: only entries announced at or before 16:00 on the row's own date, never from the effective date (docs/decisions/policy-point-in-time.md)",
+  "policy_columns": [
+    "policy_days_since_known",
+    "policy_days_until_effective",
+    "policy_pending_count",
+    "policy_iorb_offset_bp",
+    "policy_qt_in_force",
+    "policy_standing_repo_in_force",
+    "policy_slr_exclusion_in_force",
+    "policy_reserve_management_in_force",
+    "policy_debt_limit_reinstated"
+  ],
+  "policy_columns_note": "every column is declared here, in full, and added to the control's inputs at every horizon (the register is public at the decision instant, so nothing leaves at h >= 2); no column is selected, dropped or tuned after a score",
+  "best_rule": "the track's row with the most onsets flagged at lead >= 1 in the track's own table on main under the amended judge (tier 1, +5 bp); a tie goes to the lower worst false alarms per onset in that table",
+  "best_rule_reading": {
+    "rare_event_381": "docs/pivot/judge-amendment-result.md, Table 1: rare_gbm_balanced_bootstrap and rare_gbm_focal both flag 7 of 26; the balanced bootstrap has the lower worst false alarms per onset (1.19 against 1.58)",
+    "onset_409": "docs/pivot/onset-classifier-result.md, Table 1: onset_logistic flags 11 of 26, the most of the six"
+  },
+  "controls": "the same classifier without the register, re-fitted by this script on the same panel and fold grid under its own track's declaration (metadata/rare_event_training.json, metadata/onset_classifier.json); it keeps its judged name",
+  "recalibration": "pressure.RECALIBRATION: Platt on the candidate's own earlier forecasts against the pressure-day outcome, out of fold, per threshold",
+  "judged_form": "+recalibrated",
+  "cutoffs": "chosen by the judge's cutoff_rule from each refit's training window alone (metadata/pressure_judge.json); none is declared here",
+  "candidates": {
+    "rare_gbm_balanced_bootstrap": {
+      "role": "control",
+      "track": "W (#381)",
+      "estimator": "rare_event",
+      "kind": "gbm_classifier",
+      "treatment": "balanced_bootstrap",
+      "declaration": "metadata/rare_event_training.json",
+      "policy": false
+    },
+    "rare_gbm_balanced_bootstrap_policy": {
+      "role": "candidate",
+      "track": "P (#412) on W (#381)",
+      "estimator": "rare_event",
+      "kind": "gbm_classifier",
+      "treatment": "balanced_bootstrap",
+      "declaration": "metadata/rare_event_training.json",
+      "policy": true
+    },
+    "onset_logistic": {
+      "role": "control",
+      "track": "O (#409)",
+      "estimator": "onset",
+      "kind": "logistic",
+      "treatment": null,
+      "declaration": "metadata/onset_classifier.json",
+      "policy": false
+    },
+    "onset_logistic_policy": {
+      "role": "candidate",
+      "track": "P (#412) on O (#409)",
+      "estimator": "onset",
+      "kind": "logistic",
+      "treatment": null,
+      "declaration": "metadata/onset_classifier.json",
+      "policy": true
+    }
+  }
+}

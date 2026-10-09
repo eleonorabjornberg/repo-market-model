@@ -305,7 +305,7 @@ jobs:
                 echo
                 jq -r '"- Rekor log index: \(.log_index)\n- Rekor entry: \(.uuid)"' "live/$day.rekor"
                 echo "- run: $RUN_URL"
-              } > late.md
+              } > ../late.md
               gh api "repos/$REPO/issues/$n/comments" -F body=@../late.md > /dev/null || true
             fi
           }

@@ -693,6 +693,85 @@
       ],
       "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)"
     },
+    "rare_gbm_balanced_bootstrap_policy+recalibrated": {
+      "role": "candidate",
+      "track": "P (#412) on W (#381)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "tga",
+        "policy_days_since_known",
+        "policy_days_until_effective",
+        "policy_pending_count",
+        "policy_iorb_offset_bp",
+        "policy_qt_in_force",
+        "policy_standing_repo_in_force",
+        "policy_slr_exclusion_in_force",
+        "policy_reserve_management_in_force",
+        "policy_debt_limit_reinstated"
+      ],
+      "features_note": "the control row's inputs plus the nine policy-register columns, at every horizon",
+      "calibration": "rare-event fit (balanced_bootstrap), then Platt out of fold (pressure.RECALIBRATION); track W of #374, metadata/rare_event_training.json; policy columns from metadata/policy_events.json read at the decision instant (metadata/policy_features.json)"
+    },
+    "onset_logistic_policy+recalibrated": {
+      "role": "candidate",
+      "track": "P (#412) on O (#409)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "treasury_settlement",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "tga_daily",
+        "tga_daily_change",
+        "policy_days_since_known",
+        "policy_days_until_effective",
+        "policy_pending_count",
+        "policy_iorb_offset_bp",
+        "policy_qt_in_force",
+        "policy_standing_repo_in_force",
+        "policy_slr_exclusion_in_force",
+        "policy_reserve_management_in_force",
+        "policy_debt_limit_reinstated"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement",
+      "calibration": "onset-label fit (unweighted), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json; policy columns from metadata/policy_events.json read at the decision instant (metadata/policy_features.json)"
+    },
+    "balance_sheet_hierarchical_logistic": {
+      "role": "candidate",
+      "track": "B (#427)",
+      "features": [
+        "days_to_month_end",
+        "dealer_treasury_position",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+    },
+    "balance_sheet_scarcity_gbm": {
+      "role": "candidate",
+      "track": "B (#427)",
+      "features": [
+        "days_to_month_end",
+        "dealer_treasury_position",
+        "quarter_end",
+        "reserve_scarcity_state",
+        "spread_bps",
+        "tax_date",
+        "treasury_settlement"
+      ],
+      "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+    },
     "risk_logistic": {
       "role": "candidate",
       "track": "V (#428)",
