@@ -891,6 +891,7 @@ CRPS_SCORERS = {
     "scripts/pid_constant_selection.per_day": ("delegates", "a per-day loss of the walk `select` runs; " + _FOLDS),
     "scripts/final_test_opening.crps_horizon_command": ("delegates", _WALK + ", and `_window_positions` guards the window"),
     "scripts/direct_pairs_twin.score_command": ("guard", "scores the twin walks' CRPS after `require_unlocked` on the last scored day (2025-12-31), and refuses a walk that is not on the published record's days, which stop there (#450)"),
+    "scripts/turning_point_variant.score_command": ("guard", "scores the variants' CRPS after `require_unlocked` on the last scored day (2025-12-31), and refuses a walk that is not on the published record's days, which stop there (#453)"),
     "scripts/settlement_flag_candidate.crps_side": ("delegates", _WALK),
     "scripts/forecast_daily.reproduction_check": ("delegates", "compares the published series with " + _WALK),
     "scripts/forecast_daily.reproduction_check_horizon": ("delegates", "compares the final test's cell with " + _WALK),
