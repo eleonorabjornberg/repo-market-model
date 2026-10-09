@@ -315,6 +315,39 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The full-distribution models of #385: a quantile regression forest and a
+        # natural-gradient boosting of a Laplace (or normal) law, on the same design.
+        "pressure_qrf": _ModelChoice(
+            declared=_DeferredFactory("pressure_qrf_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_natural_gradient": _ModelChoice(
+            declared=_DeferredFactory("pressure_natural_gradient_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_natural_gradient_normal": _ModelChoice(
+            declared=_DeferredFactory("pressure_natural_gradient_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+                family="normal",
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         # The Markov-switching spread model (#384): three latent states, filtered
         # forward through each forecast's as-of history. No regressor and no splits.
         "markov_switching": _ModelChoice(
@@ -404,6 +437,18 @@ MODEL_FACTORIES = MappingProxyType(
             build=lambda factory, regressors, regime, minimum_history, settings: factory(
                 "gbm_classifier",
                 "balanced_bootstrap",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        # The two-part (hurdle) pressure model (#382): P(spike) from a classifier times a
+        # conditional size law, on the same direct design; the logistic spike part.
+        "pressure_two_part": _ModelChoice(
+            declared=_DeferredFactory("pressure_two_part_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
                 (_AUTOREGRESSIVE_TERM, *regressors),
                 settings["splits"],
                 minimum_history=minimum_history,

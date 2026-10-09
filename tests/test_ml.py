@@ -9627,6 +9627,289 @@ class PressureQuantileConformanceTests(_PressureConformance, unittest.TestCase):
     FACTORY = staticmethod(ml.pressure_quantile_exceedance)
 
 
+class PressureQrfConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_qrf_exceedance` (#385)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_qrf_exceedance)
+    FACTORY = staticmethod(ml.pressure_qrf_exceedance)
+
+
+class PressureNaturalGradientConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_natural_gradient_exceedance` (#385)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_natural_gradient_exceedance)
+    FACTORY = staticmethod(ml.pressure_natural_gradient_exceedance)
+
+
+class PressureNaturalGradientNormalConformanceTests(_PressureConformance, unittest.TestCase):
+    """The same suite with the normal family (#385)."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_natural_gradient_exceedance)
+    FACTORY = staticmethod(
+        lambda features, declaration, minimum_history=20: ml.pressure_natural_gradient_exceedance(
+            features, declaration, minimum_history=minimum_history, family="normal"
+        )
+    )
+
+
+class DistributionModelTests(unittest.TestCase):
+    """The full-distribution models of #385: the forest, the natural-gradient boosting, and the choice
+    of their one hyperparameter on the pressure-day labels."""
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_the_forest_reads_the_conditional_law_and_a_heavy_tail(self):
+        import numpy
+
+        rng = numpy.random.default_rng(3)
+        n = 3000
+        x = rng.integers(0, 2, size=(n, 1)).astype(float)
+        spread = numpy.round(2.0 + 3.0 * x[:, 0] + rng.normal(size=n))
+        # a rare far tail where x = 1: 10% of those days at +30 bp
+        far = (x[:, 0] == 1) & (rng.random(n) < 0.1)
+        spread[far] = 30.0
+        forest = ml._forest(x, spread, 20)
+        curves = ml._forest_exceedance(forest, x, spread, numpy.array([[0.0], [1.0]]), (5.0, 10.0, 20.0))
+        self.assertLess(curves[0][2], 0.01)  # nothing near +20 where x = 0
+        self.assertAlmostEqual(curves[1][2], 0.1, delta=0.03)  # the tail is kept
+        for curve in curves:
+            self.assertEqual(list(curve), sorted(curve, reverse=True))
+        # x = 0: spread ~ round(N(2, 1)); P(> 5) is the mass at 6 bp and above: P(N > 5.5) = 0.0002
+        self.assertLess(curves[0][0], 0.02)
+
+    def test_the_natural_gradient_is_the_gradient_over_the_fisher_information(self):
+        """A finite-difference check of both families' natural gradients."""
+
+        import numpy
+        from scipy.stats import laplace, norm
+
+        y = numpy.array([-1.0, 0.5, 3.0, 8.0])
+        location = numpy.array([0.0, 1.0, 2.0, -1.0])
+        log_scale = numpy.array([0.2, -0.3, 0.5, 1.0])
+        for family, law in (("normal", norm), ("laplace", laplace)):
+            with self.subTest(family=family):
+
+                def nll(m, ls):
+                    return -law.logpdf(y, loc=m, scale=numpy.exp(ls))
+
+                h = 1e-6
+                d_location = (nll(location + h, log_scale) - nll(location - h, log_scale)) / (2 * h)
+                d_scale = (nll(location, log_scale + h) - nll(location, log_scale - h)) / (2 * h)
+                scale = numpy.exp(log_scale)
+                fisher_location = 1.0 / scale**2
+                fisher_scale = 2.0 if family == "normal" else 1.0
+                got_location, got_scale = ml._natural_gradient(family, y, location, log_scale)
+                numpy.testing.assert_allclose(got_location, d_location / fisher_location, atol=1e-4)
+                numpy.testing.assert_allclose(got_scale, d_scale / fisher_scale, atol=1e-4)
+
+    def test_the_boosting_recovers_a_scale_that_moves_with_the_features(self):
+        import numpy
+        from scipy.stats import laplace
+
+        rng = numpy.random.default_rng(5)
+        n = 4000
+        x = rng.integers(0, 2, size=(n, 1)).astype(float)
+        spread = rng.laplace(loc=1.0 + x[:, 0], scale=0.5 + 2.0 * x[:, 0])
+        fitted = ml._fit_natural_gradient("laplace", x, spread, 200)
+        location, log_scale = ml._natural_gradient_parameters(fitted, numpy.array([[0.0], [1.0]]), [200])[200]
+        numpy.testing.assert_allclose(location, [1.0, 2.0], atol=0.2)
+        numpy.testing.assert_allclose(numpy.exp(log_scale), [0.5, 2.5], rtol=0.2)
+        curve = ml._parametric_exceedance("laplace", location, log_scale, (6.0,))
+        self.assertAlmostEqual(curve[1][0], float(laplace.sf(6.5, loc=2.0, scale=2.5)), delta=0.02)
+
+    def test_the_hyperparameter_is_chosen_on_the_labels_after_an_embargo(self):
+        """The validation block follows the fit block by the horizon, and the choice is the label-Brier argmin."""
+
+        blocks = ml._selection_blocks(400, 3)
+        fit_block, valid_block = blocks
+        self.assertEqual(valid_block, slice(300, 400))
+        self.assertEqual(fit_block, slice(0, 297))
+        self.assertIsNone(ml._selection_blocks(50, 1))  # too few pairs: the default stands
+
+        import numpy
+
+        rng = numpy.random.default_rng(7)
+        n = 600
+        x = rng.normal(size=(n, 2))
+        spread = numpy.round(3.0 + 3.0 * x[:, 0] + rng.normal(size=n))
+        for kind, key, grid in (
+            ("qrf", "min_samples_leaf", ml.PRESSURE_QRF_SETTINGS["min_samples_leaf_grid"]),
+            ("ng_laplace", "stages", ml.PRESSURE_NATURAL_GRADIENT_SETTINGS["stage_grid"]),
+        ):
+            with self.subTest(kind=kind):
+                curves, record = ml._distribution_exceedance(
+                    kind, x.tolist(), spread.tolist(), x[:5].tolist(), [5.0, 10.0], 1
+                )
+                scores = record["validation_brier"]
+                self.assertEqual(sorted(scores), sorted(grid))
+                self.assertEqual(record[key], min(grid, key=lambda g: (scores[g], g)))
+                self.assertEqual(len(curves), 5)
+
+    def test_a_short_frame_uses_the_declared_default(self):
+        import numpy
+
+        rng = numpy.random.default_rng(9)
+        x = rng.normal(size=(50, 2))
+        spread = numpy.round(3.0 + x[:, 0])
+        _, record = ml._distribution_exceedance("qrf", x.tolist(), spread.tolist(), x[:2].tolist(), [5.0], 1)
+        self.assertEqual(record["min_samples_leaf"], ml.PRESSURE_QRF_SETTINGS["default_min_samples_leaf"])
+        self.assertEqual(record["validation_brier"], {})
+
+    def test_the_track_declaration_names_the_models_it_is_pinned_to(self):
+        """`metadata/pressure_track_q.json` is declared before any score; its model names and families are the code's."""
+
+        import json
+        from pathlib import Path
+
+        declaration = json.loads(
+            (Path(__file__).resolve().parents[1] / "metadata" / "pressure_track_q.json").read_text()
+        )
+        self.assertEqual(declaration["scoring"]["last_day"] < "2026-01-01", True)
+        for name, entry in declaration["candidates"].items():
+            with self.subTest(candidate=name):
+                self.assertTrue(callable(getattr(ml, entry["model"])))
+                if "family" in entry:
+                    self.assertIn(entry["family"], ml.PRESSURE_NATURAL_GRADIENT_SETTINGS["families"])
+        self.assertEqual(
+            declaration["settings"],
+            {
+                "qrf": "ml.PRESSURE_QRF_SETTINGS",
+                "natural_gradient": "ml.PRESSURE_NATURAL_GRADIENT_SETTINGS",
+                "selection": "ml.PRESSURE_DISTRIBUTION_SELECTION",
+            },
+        )
+        self.assertEqual(declaration["thresholds_bp"], list(ml.PRESSURE_DISTRIBUTION_SELECTION["taus"]))
+        design = ml._PressureDesign(tuple(declaration["features"]), _pressure_splits())
+        self.assertEqual(design.features, tuple(declaration["features"]))
+
+    def test_an_unknown_family_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "family"):
+            ml.pressure_natural_gradient_exceedance(_PRESSURE_CALENDAR, _pressure_splits(), family="gamma")
+
+    def test_a_fit_records_what_it_chose(self):
+        predictor = ml.pressure_qrf_exceedance(_PRESSURE_CALENDAR, _pressure_splits(), minimum_history=20)
+        self.assertEqual(predictor.selections, [])
+
+
+_TWO_PART_FEATURES = tuple(name for name in _PRESSURE_FULL if name != "tga")
+
+
+class PressureTwoPartLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_two_part_exceedance` (#382), logistic spike part."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_two_part_exceedance)
+    FACTORY = staticmethod(ml.pressure_two_part_exceedance)
+
+
+class PressureTwoPartClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The same suite with the gradient-boosted classifier as the spike part (#382)."""
+
+    IMPLEMENTATION = staticmethod(
+        lambda *a, **k: ml.pressure_two_part_exceedance(*a, classifier="gbm_classifier", **k)
+    )
+    FACTORY = staticmethod(
+        lambda *a, **k: ml.pressure_two_part_exceedance(*a, classifier="gbm_classifier", **k)
+    )
+
+
+class TwoPartPressureTests(unittest.TestCase):
+    """The two-part model: P(spike) times a conditional size law (#382)."""
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_the_geometric_size_law_recovers_a_known_tail(self):
+        import numpy
+
+        rng = numpy.random.default_rng(3)
+        x = rng.normal(size=(6000, 1))
+        mean = 1.0 + numpy.exp(0.5 + 0.5 * x[:, 0])
+        # excess over the spike is geometric on 1, 2, ... with mean `mean`
+        excess = rng.geometric(1.0 / mean)
+        survival = ml._geometric_size_survival(
+            x.tolist(), excess.tolist(), [[-1.0], [0.0], [1.0]], (1.0, 5.0)
+        )
+        for served, row in zip((-1.0, 0.0, 1.0), survival):
+            m = 1.0 + float(numpy.exp(0.5 + 0.5 * served))
+            for tau_excess, got in zip((1.0, 5.0), row):
+                self.assertAlmostEqual(got, (1.0 - 1.0 / m) ** tau_excess, delta=0.07)  # ridge shrinks the slope a little
+
+    def test_the_survival_is_one_at_no_excess_and_falls_with_the_excess(self):
+        x = [[float(i % 7)] for i in range(80)]
+        excess = [1 + i % 9 for i in range(80)]
+        row = ml._geometric_size_survival(x, excess, [[3.0]], (0.0, 1.0, 5.0, 45.0))[0]
+        self.assertEqual(row[0], 1.0)
+        self.assertEqual(list(row), sorted(row, reverse=True))
+        self.assertGreater(row[1], row[3])
+
+    def test_too_few_spike_days_fall_back_to_the_pooled_size_law(self):
+        # fewer than TWO_PART_SETTINGS["min_spike_days"] spikes: the slope is not fitted
+        x = [[float(i)] for i in range(30)]
+        excess = [4, 8, 2]
+        low = ml._geometric_size_survival(x[:3], excess, [[0.0], [29.0]], (5.0,))
+        self.assertEqual(low[0], low[1])
+
+    def test_the_spike_part_at_the_spike_threshold_is_the_plain_classifier(self):
+        """At the spike threshold the two-part curve is the direct classifier's, unchanged."""
+
+        rows = _pressure_panel()
+        splits = _pressure_splits()
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _TWO_PART_FEATURES, decision_time=time(16, 0))
+        train, served = rows[:150], rows[150:160]
+        plain = ml.pressure_logistic_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (5.0,), information=rule
+        )
+        two = ml.pressure_two_part_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (5.0, 10.0, 20.0, 50.0), information=rule
+        )
+        for want, got in zip(plain.curves, two.curves):
+            self.assertAlmostEqual(want[0], got[0], places=12)
+            self.assertEqual(list(got), sorted(got, reverse=True))
+
+    def test_both_parts_are_fitted_on_the_training_pairs_only(self):
+        """Both parts learn from `_pressure_pairs(train_rows)`, the as-of-paired labels, and nothing else.
+
+        Mutation recorded (#382): in `_direct_pressure_predictor`'s `fit_predict`, changing
+        `_pressure_pairs(design, information, train_rows, cache, positions)` to pass
+        `list(train_rows) + list(feature_rows)` as the rows made this fail with AssertionError (the
+        pairs were built from rows that included the served days).
+        """
+
+        from unittest import mock
+
+        rows = _pressure_panel()
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _TWO_PART_FEATURES, decision_time=time(16, 0))
+        train, served = rows[:150], rows[150:155]
+        predictor = ml.pressure_two_part_exceedance(_TWO_PART_FEATURES, _pressure_splits(), minimum_history=20)
+        seen = []
+        real = ml._pressure_pairs
+
+        def spy(design, information, frame, cache, *rest):
+            seen.append([row.date for row in frame])
+            return real(design, information, frame, cache, *rest)
+
+        with mock.patch.object(ml, "_pressure_pairs", spy):
+            predictor(train, served, (5.0, 10.0), information=rule)
+        self.assertEqual(seen, [[row.date for row in train]])
+        self.assertTrue(all(day < served[0].date for day in seen[0]))
+
+    def test_a_threshold_below_the_spike_is_the_classifier_on_its_own_label(self):
+        rows = _pressure_panel()
+        splits = _pressure_splits()
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _TWO_PART_FEATURES, decision_time=time(16, 0))
+        train, served = rows[:150], rows[150:158]
+        two = ml.pressure_two_part_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (2.0, 5.0, 10.0), information=rule
+        )
+        plain = ml.pressure_logistic_exceedance(_TWO_PART_FEATURES, splits, minimum_history=20)(
+            train, served, (2.0, 5.0), information=rule
+        )
+        for want, got in zip(plain.curves, two.curves):
+            self.assertAlmostEqual(want[0], got[0], places=12)
+            self.assertEqual(list(got), sorted(got, reverse=True))
+
+
 class ProbitAndQuantileTests(unittest.TestCase):
     def setUp(self):
         require_extra(self)
@@ -10265,6 +10548,100 @@ class ScarcityEventBarVariantTests(unittest.TestCase):
             settings = report.model_settings["scarcity_calendar"]
             self.assertEqual(bool(settings["interaction_terms"]), "interactions" in kwargs)
             self.assertEqual(settings["regime_partial_pooling"] is not None, "regime_pooled" in kwargs)
+
+
+class BalanceSheetDesignTests(unittest.TestCase):
+    """Balance-sheet days and the FR 2004 position in the scarcity-conditioned design (#427).
+
+    Written first, and watched failing: before the option existed every test
+    here raised `TypeError: _ScarcityCalendarDesign.__init__() got an
+    unexpected keyword argument 'balance_sheet'`.
+
+    Recorded mutation (applied in a scratch copy, run, reverted): in
+    `_ScarcityCalendarDesign.row`, `scored_day(observation.date, observation.values)`
+    replaced by `observation.date` (the flags read at the anchor row, not the
+    scored day): killed by `test_the_flags_are_the_scored_days_not_the_anchors`
+    (`AssertionError`).
+    """
+
+    FEATURES = _SCARCITY_CALENDAR + ("dealer_treasury_position",)
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self, features=FEATURES, **kwargs):
+        return ml._ScarcityCalendarDesign(features, _pressure_splits(), _FOUR_LEVEL, balance_sheet=True, **kwargs)
+
+    def _observation(self, anchor, target, state=2.0, position=500.0, settlement=0.0):
+        from repo_model.data import days_to_month_end, quarter_end, tax_date
+
+        values = {
+            "sofr": 4.07, "iorb": 4.0, "reserve_scarcity_state": state,
+            "days_to_month_end": days_to_month_end(target), "quarter_end": quarter_end(target),
+            "tax_date": tax_date(target), "treasury_settlement": settlement,
+            "dealer_treasury_position": position,
+        }
+        return DailyObservation(anchor, values)
+
+    def test_the_balance_sheet_terms_enter_only_times_the_state(self):
+        base = ml._ScarcityCalendarDesign(self.FEATURES, _pressure_splits(), _FOUR_LEVEL).names
+        names = self.design().names
+        self.assertEqual(names[: len(base)], base)
+        self.assertEqual(
+            names[len(base):],
+            (
+                "foreign_bank_quarter_end_x_state", "foreign_bank_month_end_x_state", "gsib_year_end_x_state",
+                "dealer_position_x_state", "dealer_position_x_balance_sheet_day_x_state",
+                "dealer_position_x_settlement_x_state",
+            ),
+        )
+
+    def test_the_position_must_be_declared(self):
+        with self.assertRaises(ValueError):
+            self.design(_SCARCITY_CALENDAR)
+
+    def test_the_settlement_term_leaves_with_the_settlement(self):
+        features = tuple(name for name in self.FEATURES if name != "treasury_settlement")
+        self.assertNotIn("dealer_position_x_settlement_x_state", self.design(features).names)
+
+    def test_the_flags_are_the_scored_days_not_the_anchors(self):
+        design = self.design()
+        # Anchor Monday 2019-03-25, scored Wednesday 2019-03-27: in the run-up to the quarter-end.
+        got = dict(zip(design.names, design.row(self._observation(date(2019, 3, 25), date(2019, 3, 27)), None)))
+        self.assertEqual(got["foreign_bank_quarter_end_x_state"], 2.0)
+        self.assertEqual(got["dealer_position_x_balance_sheet_day_x_state"], 1000.0)
+        # Anchor in the run-up, scored day outside it.
+        got = dict(zip(design.names, design.row(self._observation(date(2019, 3, 29), date(2019, 4, 2)), None)))
+        self.assertEqual(got["foreign_bank_quarter_end_x_state"], 0.0)
+        self.assertEqual(got["dealer_position_x_balance_sheet_day_x_state"], 0.0)
+
+    def test_the_position_and_settlement_terms_are_in_dollar_billions_times_the_state(self):
+        design = self.design()
+        got = dict(zip(design.names, design.row(
+            self._observation(date(2019, 6, 3), date(2019, 6, 4), state=3.0, position=-40.0, settlement=70.0), None)))
+        self.assertEqual(got["dealer_treasury_position"], -40.0)
+        self.assertEqual(got["dealer_position_x_state"], -120.0)
+        self.assertEqual(got["dealer_position_x_settlement_x_state"], -8400.0)
+
+    def test_the_gbm_constraint_covers_the_flags_only(self):
+        design = self.design(monotone=True)
+        constrained = dict(zip(design.names, design.monotone))
+        for name in ("foreign_bank_quarter_end_x_state", "foreign_bank_month_end_x_state", "gsib_year_end_x_state"):
+            self.assertEqual(constrained[name], 1)
+        for name in ("dealer_treasury_position", "dealer_position_x_state",
+                     "dealer_position_x_balance_sheet_day_x_state", "dealer_position_x_settlement_x_state"):
+            self.assertEqual(constrained[name], 0)
+
+    def test_the_hierarchical_variant_carries_the_terms_in_its_pooled_columns(self):
+        design = self.design(regime_hierarchical=True)
+        self.assertIn("gsib_year_end_x_state", design.names)
+        self.assertIsNone(design.pooling[3])
+        row = design.row(self._observation(date(2019, 6, 3), date(2019, 6, 4)), None)
+        self.assertEqual(len(row), len(design.names))
+
+    def test_the_settings_declare_the_rules_and_their_sources(self):
+        settings = self.design().settings()["balance_sheet"]
+        self.assertEqual(sorted(settings["rules"]), sorted(r.name for r in __import__("repo_model.balance_sheet_days", fromlist=["x"]).RULES))
 
 
 class HierarchicalLogisticTests(unittest.TestCase):
