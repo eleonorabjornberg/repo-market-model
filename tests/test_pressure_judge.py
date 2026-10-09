@@ -52,12 +52,24 @@ tests build small synthetic series so each rule has a known answer.
   `and False`. The failing test was
   `test_the_look_refuses_a_candidate_not_named_for_it`, which raised
   `AssertionError` (`ValueError not raised`).
+* The judge scores only a committed declaration, candidate files included (#446).
+  Mutation: in `scripts/pressure_judge.require_committed_declaration`, delete the line
+  `relatives.append(str(directory.resolve().relative_to(repo)))` (the candidates'
+  directory is then never checked). The failing tests, five in `CommittedDeclarationTests`
+  (`test_an_uncommitted_new_candidate_file_is_refused`,
+  `test_a_staged_but_uncommitted_candidate_file_is_refused`,
+  `test_a_candidate_file_edited_after_its_commit_is_refused`,
+  `test_a_candidate_file_deleted_without_a_commit_is_refused` and
+  `test_the_commit_named_is_the_latest_to_touch_any_of_the_files`), raised
+  `AssertionError` (`SystemExit not raised`; the last, `... == ...`).
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
+import subprocess
 import tempfile
 import unittest
 from datetime import date, timedelta
@@ -124,10 +136,18 @@ def _declaration(**overrides):
 
 
 def _write(document):
-    handle = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-    handle.write(json.dumps(document))
-    handle.close()
-    return Path(handle.name)
+    """The declaration as the judge reads it: the file, and each candidate in a file of its own."""
+
+    document = dict(document)
+    candidates = document.pop("candidates", {})
+    root = Path(tempfile.mkdtemp())
+    directory = root / "pressure_judge" / "candidates"
+    directory.mkdir(parents=True)
+    for name, entry in candidates.items():
+        (directory / f"{name}.json").write_text(json.dumps(entry))
+    path = root / "pressure_judge.json"
+    path.write_text(json.dumps(document))
+    return path
 
 
 def _load(**overrides):
@@ -271,6 +291,138 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(declaration.flags_per_year_at_most, 21)
         self.assertEqual(declaration.week_days, 5)
         self.assertIn(declaration.climatology, declaration.candidates)
+
+
+class CandidateFileTests(unittest.TestCase):
+    """Each candidate is a file of its own (#446): the judge loads the union."""
+
+    def test_the_candidates_are_the_files_in_the_directory(self):
+        declaration = _load()
+        self.assertEqual(
+            sorted(declaration.candidates),
+            ["calendar_climatology", "persistence_logistic", "published", "sharp"],
+        )
+        self.assertEqual(declaration.candidates["sharp"]["role"], "candidate")
+
+    def test_a_candidate_added_as_a_file_joins_the_declaration_and_its_digest(self):
+        path = _write(_declaration())
+        before = pj.load_declaration(path)
+        (pj.candidates_directory(path) / "newcomer.json").write_text(
+            json.dumps({"role": "candidate", "features": ["x"], "calibration": "none"})
+        )
+        after = pj.load_declaration(path)
+        self.assertIn("newcomer", after.candidates)
+        self.assertNotEqual(before.sha256, after.sha256)
+
+    def test_a_candidate_file_changes_the_digest(self):
+        path = _write(_declaration())
+        before = pj.load_declaration(path).sha256
+        (pj.candidates_directory(path) / "sharp.json").write_text(
+            json.dumps({"role": "candidate", "features": ["y"], "calibration": "none"})
+        )
+        self.assertNotEqual(before, pj.load_declaration(path).sha256)
+
+    def test_the_declaration_may_not_also_list_candidates(self):
+        path = _write(_declaration())
+        document = json.loads(path.read_text())
+        document["candidates"] = {"sharp": {"role": "candidate", "features": [], "calibration": "none"}}
+        path.write_text(json.dumps(document))
+        with self.assertRaises(ValueError):
+            pj.load_declaration(path)
+
+    def test_a_declaration_without_candidate_files_does_not_load(self):
+        path = _write(_declaration(candidates={}))
+        with self.assertRaises(ValueError):
+            pj.load_declaration(path)
+
+    def test_a_candidate_file_must_be_an_object_with_its_fields(self):
+        path = _write(_declaration())
+        directory = pj.candidates_directory(path)
+        (directory / "sharp.json").write_text("[1]")
+        with self.assertRaises(ValueError):
+            pj.load_declaration(path)
+        (directory / "sharp.json").write_text("{not json")
+        with self.assertRaises(ValueError):
+            pj.load_declaration(path)
+        (directory / "sharp.json").write_text(json.dumps({"role": "candidate", "features": []}))
+        with self.assertRaises(ValueError):
+            pj.load_declaration(path)
+
+    def test_the_tracked_candidates_are_the_files_of_the_tracked_directory(self):
+        names = sorted(f.stem for f in pj.candidates_directory().glob("*.json"))
+        self.assertEqual(sorted(pj.load_declaration().candidates), names)
+        self.assertIn(pj.load_declaration().persistence, names)
+
+
+def _git(repo, *args):
+    subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", *args],
+        cwd=repo, check=True, capture_output=True,
+    )
+
+
+class CommittedDeclarationTests(unittest.TestCase):
+    """The judge scores only a declaration that is committed, candidate files included (#446)."""
+
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "pressure_judge_script", Path(__file__).parents[1] / "scripts" / "pressure_judge.py"
+        )
+        cls.script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.script)
+
+    def setUp(self):
+        self.repo = Path(tempfile.mkdtemp())
+        _git(self.repo, "init", "-q")
+        metadata = self.repo / "metadata"
+        metadata.mkdir()
+        self.path = metadata / "pressure_judge.json"
+        self.path.write_text("{}")
+        self.directory = pj.candidates_directory(self.path)
+        self.directory.mkdir(parents=True)
+        (self.directory / "sharp.json").write_text("{}")
+        _git(self.repo, "add", "-A")
+        _git(self.repo, "commit", "-q", "-m", "declare")
+
+    def guard(self):
+        return self.script.require_committed_declaration(self.path, repo=self.repo)
+
+    def test_a_committed_declaration_is_accepted_and_names_its_commit(self):
+        self.assertEqual(len(self.guard()), 40)
+
+    def test_an_uncommitted_new_candidate_file_is_refused(self):
+        (self.directory / "newcomer.json").write_text("{}")
+        with self.assertRaises(SystemExit):
+            self.guard()
+
+    def test_a_staged_but_uncommitted_candidate_file_is_refused(self):
+        (self.directory / "newcomer.json").write_text("{}")
+        _git(self.repo, "add", "-A")
+        with self.assertRaises(SystemExit):
+            self.guard()
+
+    def test_a_candidate_file_edited_after_its_commit_is_refused(self):
+        (self.directory / "sharp.json").write_text('{"role": "candidate"}')
+        with self.assertRaises(SystemExit):
+            self.guard()
+
+    def test_a_candidate_file_deleted_without_a_commit_is_refused(self):
+        (self.directory / "sharp.json").unlink()
+        with self.assertRaises(SystemExit):
+            self.guard()
+
+    def test_an_edited_declaration_is_refused(self):
+        self.path.write_text('{"status": "edited"}')
+        with self.assertRaises(SystemExit):
+            self.guard()
+
+    def test_the_commit_named_is_the_latest_to_touch_any_of_the_files(self):
+        first = self.guard()
+        (self.directory / "newcomer.json").write_text("{}")
+        _git(self.repo, "add", "-A")
+        _git(self.repo, "commit", "-q", "-m", "add newcomer")
+        self.assertNotEqual(first, self.guard())
 
 
 class GuardTests(unittest.TestCase):

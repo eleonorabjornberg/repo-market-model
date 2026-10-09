@@ -1,0 +1,10 @@
+{
+  "role": "benchmark",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date"
+  ],
+  "calibration": "none"
+}

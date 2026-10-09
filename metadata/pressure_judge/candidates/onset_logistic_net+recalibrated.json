@@ -1,0 +1,22 @@
+{
+  "role": "candidate",
+  "track": "N (#426)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "tga_daily",
+    "tga_daily_change",
+    "net_settlement",
+    "net_settlement_bills",
+    "net_settlement_due_5d"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement",
+  "calibration": "onset-label fit (unweighted), then Platt out of fold against the pressure-day outcome (pressure.RECALIBRATION); metadata/onset_classifier.json",
+  "inputs_note": "the control onset_logistic+recalibrated with net_settlement, net_settlement_bills and net_settlement_due_5d at every horizon; metadata/net_settlement.json"
+}

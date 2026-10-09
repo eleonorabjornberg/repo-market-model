@@ -1,0 +1,15 @@
+{
+  "role": "baseline",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement"
+  ],
+  "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION)"
+}

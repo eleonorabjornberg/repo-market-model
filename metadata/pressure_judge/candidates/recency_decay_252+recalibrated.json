@@ -1,0 +1,14 @@
+{
+  "role": "candidate",
+  "track": "R (#411)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement",
+    "reserve_balances",
+    "tga"
+  ],
+  "calibration": "class-weighted logistic with a decay of 252 panel rows over its training pairs, then Platt out of fold (pressure.RECALIBRATION); metadata/recency_adaptive_training.json"
+}

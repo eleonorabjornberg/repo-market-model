@@ -1,0 +1,22 @@
+{
+  "role": "candidate",
+  "track": "V (#428)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json"
+}

@@ -1,0 +1,12 @@
+{
+  "role": "candidate",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "tga"
+  ],
+  "calibration": "none (discrete-time first-passage hazard, declared in metadata/pressure_hazard.json)"
+}

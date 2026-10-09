@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "C (#380)",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement",
+  "calibration": "the same raw forecast, one Platt curve out of fold with the target group's earlier pairs weighted 1 and all others 0.25 (group_calibration, 'weighted'; regime-weighted calibration after Barber et al.)"
+}

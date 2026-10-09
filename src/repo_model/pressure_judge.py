@@ -38,11 +38,12 @@ candidate is a `Forecast` (its probability for each scored day, at each
 threshold and horizon) produced elsewhere, and `benchmark_forecasts` produces
 the two benchmarks the same way every candidate is produced.
 
-**The declaration is a file the judge reads** (`metadata/pressure_judge.json`):
-every candidate, its features and calibration step, the rule that chooses its
-flag cut-off, the thresholds, the horizons, the tier limits and the pass rule,
-committed before any score is computed. Every result carries the declaration's
-digest.
+**The declaration is files the judge reads** (`metadata/pressure_judge.json` and
+`metadata/pressure_judge/candidates/<name>.json`): the thresholds, the horizons, the
+rule that chooses the flag cut-off, the tier limits and the pass rule in the first;
+each candidate, its role, features and calibration step, in a file of its own, so
+that two pull requests that each add a candidate touch different files. All are
+committed before any score is computed. Every result carries the digest of them all.
 
 **The flag cut-off** (ruling of 8 October 2026, #407, replacing the fixed 0.2
 placeholder). It is not declared per candidate: the declared `cutoff_rule` chooses it,
@@ -134,6 +135,21 @@ __all__ = [
 ]
 
 DEFAULT_DECLARATION = Path(__file__).parents[2] / "metadata" / "pressure_judge.json"
+
+
+def candidates_directory(path: Path = DEFAULT_DECLARATION) -> Path:
+    """Where the declaration at `path` keeps its candidates: one `<name>.json` file each, in `<stem>/candidates/`."""
+
+    path = Path(path)
+    return path.with_suffix("") / "candidates"
+
+
+def declaration_files(path: Path = DEFAULT_DECLARATION) -> List[Path]:
+    """Every file the declaration is read from: the declaration itself, then each candidate's file by name."""
+
+    directory = candidates_directory(path)
+    files = sorted(directory.glob("*.json")) if directory.is_dir() else []
+    return [Path(path), *files]
 
 _ROLES = ("benchmark", "baseline", "candidate")
 _COMBINERS = ("independence", "max")
@@ -313,10 +329,14 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
     for key in (
         "status", "scoring", "confirmation", "thresholds_bp", "primary_threshold_bp",
         "horizons", "bootstrap", "cutoff_rule", "tiers", "early_warning", "groupings", "benchmarks",
-        "candidates",
     ):
         if key not in document:
             raise ValueError(f"{path} declares no {key!r}")
+    if "candidates" in document:
+        raise ValueError(
+            f"{path} declares 'candidates'; each candidate is a file of its own in "
+            f"{candidates_directory(path)}, never an entry in this file"
+        )
     last_day = _day(document["scoring"].get("last_day"), "scoring.last_day")
     confirmation = document["confirmation"]
     confirmation_first = _day(confirmation.get("first"), "confirmation.first")
@@ -368,8 +388,19 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
     if not groupings or any(not isinstance(g, str) or not g for g in groupings):
         raise ValueError(f"{path}: groupings must be non-empty names")
 
+    files = declaration_files(path)[1:]
+    if not files:
+        raise ValueError(f"{path}: no candidate files in {candidates_directory(path)}")
+    digest = hashlib.sha256(raw)
     candidates: Dict[str, Dict[str, Any]] = {}
-    for name, entry in document["candidates"].items():
+    for file in files:
+        name = file.stem
+        candidate_raw = file.read_bytes()
+        digest.update(name.encode("utf-8") + b"\0" + candidate_raw)
+        try:
+            entry = json.loads(candidate_raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"{file} is not JSON: {exc}") from exc
         if not isinstance(entry, dict):
             raise ValueError(f"{path}: candidate {name!r} must be an object")
         if entry.get("role") not in _ROLES:
@@ -397,7 +428,7 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
 
     return Declaration(
         path=_display(path),
-        sha256=hashlib.sha256(raw).hexdigest(),
+        sha256=digest.hexdigest(),
         status=str(document["status"]),
         last_day=last_day,
         confirmation_first=confirmation_first,
