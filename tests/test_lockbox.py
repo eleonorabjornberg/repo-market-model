@@ -877,6 +877,7 @@ CRPS_SCORERS = {
     "scripts/live_score.score": ("guard", "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "baseline.rolling_persistence_backtest": ("guard", "the CRPS fold loop: `_as_of_folds` refuses a locked scored day"),
     "scripts/live_score.score_v2": ("guard", "v2's live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#245)"),
+    "scripts/nowcast.score_command": ("guard", "scores the nowcast walks' CRPS after `require_unlocked` on the last scored day (2025-12-31), and refuses a walk or panel that runs past it (#445)"),
     "scripts/live_score.v2_crps": ("delegates", "one v2 record's loss at an outcome `score_v2` supplies, after its guard"),
     "scripts/live_score.crps_from_record": ("delegates", "one record's loss at an outcome `score_crps` supplies, after its guard"),
     "scripts/live_score.integral_crps_from_record": ("delegates", "one record's integral loss at an outcome `score_crps` supplies, after its guard"),
