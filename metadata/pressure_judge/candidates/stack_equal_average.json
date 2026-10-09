@@ -1,0 +1,21 @@
+{
+  "role": "candidate",
+  "track": "X (#410)",
+  "members": [
+    "ngboost_laplace",
+    "hierarchical_logistic",
+    "qrf",
+    "time_to_pressure_hazard",
+    "extreme_value_tail"
+  ],
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "tga"
+  ],
+  "features_note": "the inputs the members read, as of the decision instant; the stack adds none",
+  "calibration": "none (the arithmetic mean of the members' probabilities, no fit; the comparison row of metadata/pressure_stack.json)"
+}

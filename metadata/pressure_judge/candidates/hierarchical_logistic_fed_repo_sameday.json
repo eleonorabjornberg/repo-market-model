@@ -1,0 +1,19 @@
+{
+  "role": "candidate",
+  "track": "F (#425), same-day reading (#442)",
+  "features": [
+    "days_to_month_end",
+    "fed_repo_days_since_positive_sameday",
+    "fed_repo_log_accepted_change_sameday",
+    "fed_repo_log_accepted_sameday",
+    "fed_repo_ops_sameday",
+    "fed_repo_rate_iorb_bps_sameday",
+    "fed_repo_submitted_sameday",
+    "quarter_end",
+    "reserve_scarcity_state",
+    "spread_bps",
+    "tax_date",
+    "treasury_settlement"
+  ],
+  "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+}

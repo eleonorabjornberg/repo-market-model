@@ -1,0 +1,39 @@
+{
+  "status": "declared by the pull request that closes #450, before any score: the twin, the test, the splits and the lag statistic below are fixed here and nothing is tuned on a scored day",
+  "directive": "#450",
+  "decides": "nothing: no published declaration, record or live pin changes; adopting the twin is Eleonora's decision under docs/decisions/publish-rule.md and, for the live pin, her own attested approval (docs/decisions/live-pin.md)",
+  "twin": {
+    "name": "published_gbm_direct",
+    "of": "the published distribution model: the 'published' side of final_test_preregistration.CRPS_COMMAND (gbm, the CRPS_FEATURES, conformal_pid_nested calibration, minimum history 61, refit every 21 scored days, the five quantile levels)",
+    "only_difference": "ml.fit_gradient_boosted_quantiles(training_pairs=\"direct\"): each training target is paired with the feature row it is served at prediction time (its as-of read) instead of the row before it",
+    "tuned": "nothing: no other setting is touched and the choice of 'direct' is the one the fitter already offers"
+  },
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "horizon": 1,
+    "note": "scored days are before 2026-01-01 (docs/decisions/lockbox.md); the 2026 window and the blind tier are not looked at; the panel is cut at 2025-12-31 before any fit",
+    "levels": [0.05, 0.25, 0.5, 0.75, 0.95]
+  },
+  "test": {
+    "primary": "the paired per-day difference CRPS(published) - CRPS(published_gbm_direct) over every scored day, mean and 90% stationary-bootstrap interval (block length 2, 2000 replications, level 0.90, the published CRPS cell's rule); the twin is better under this test when the lower bound is above 0, and worse when the upper bound is below 0; otherwise there is no difference",
+    "also": [
+      "the same difference against as-of persistence: CRPS(persistence) - CRPS(model) for each model, and the twin's gain over persistence minus the published model's",
+      "the same difference split by the declared regimes and by the pressure-day types of metadata/evaluation_splits.json, and on the days whose spread exceeds +5 bp and the other days"
+    ]
+  },
+  "lag": {
+    "statistic": "the integer k in -3..5 at which the Pearson correlation of the forecast median of day T with the actual spread of day T-k is highest (the smaller k in a tie); reported for the published model, the twin and as-of persistence, all days and by regime",
+    "paired": "the 90% stationary-bootstrap interval of the difference in best lag, twin minus published, and of the correlation difference at k = 0 and k = 2"
+  },
+  "turning_point_days": {
+    "definition": "the definition declared in #445 (PR #447, metadata/nowcast.json), restated here: a scored day whose SOFR - IORB moved by at least 2 bp into it from the day before and at least 2 bp the other way out of it to the day after (a peak or a trough). The label uses the next day's outcome to choose days to score and is never an input of a forecast",
+    "minimum_move_bp": 2.0,
+    "statistic": "the mean absolute error of the forecast median against the actual spread on those days, each model, and the paired twin-minus-published difference with its 90% interval"
+  },
+  "calibration": {
+    "bands": {"50%": "[q25, q75]", "90%": "[q05, q95]"},
+    "statistic": "the share of scored days whose actual spread lies inside the band, by regime, each model; the nominal level is 0.50 and 0.90"
+  },
+  "if_better": "a needs-eleonora issue titled \"Publish? Direct-pairs training for the published model (#450)\" carries the evidence; no published figure moves in the pull request"
+}
