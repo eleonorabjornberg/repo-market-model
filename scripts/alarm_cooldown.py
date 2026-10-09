@@ -141,7 +141,8 @@ def report_markdown(document: dict) -> str:
             r = e["recall"]
             lines.append(
                 f"| {row} | {label.replace('_', ' ')} | {e['onsets_flagged']:g} of {e['onsets']} | "
-                f"{_f(r['mean'])} [{_f(r.get('lower'))}, {_f(r.get('upper'))}] | {_f(e['worst_false_alarms_per_onset'], 2)} | "
+                f"{_f(r['mean'])} [{_f((r.get('interval') or {}).get('lower'))}, {_f((r.get('interval') or {}).get('upper'))}] | "
+                f"{_f(e['worst_false_alarms_per_onset'], 2)} | "
                 f"{'yes' if e['tier_1'] else 'no'} | {'yes' if e['tier_3'] else 'no'} | {'yes' if e['tier_5'] else 'no'} | "
                 f"{'yes' if e['passes'] else 'no'} |"
             )
