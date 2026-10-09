@@ -65,8 +65,12 @@
     "for predicted_turn_switch: the number of days the switch fires, its hit rate on actual turning-point days (fired and a turning point, over turning-point days), and its precision (fired and a turning point, over fired days)"
   ],
   "pressure": {
-    "rule": "published_v1 is a judge candidate (metadata/pressure_judge/candidates/published_v1.json), so each variant's implied P(spread > threshold) is added as a judge candidate in its own file under metadata/pressure_judge/candidates/ (#446) and its tier-1 row is reported: episodes warned at lead >= 1 and false alarms per episode",
-    "implementation": "the pressure candidates' construction is declared in an amendment of this file, committed before any pressure score and after the CRPS scores of this directive; it changes no CRPS candidate"
+    "amended_by": "the pull request that closes #453, after the CRPS scores and before any pressure score; it changes no CRPS candidate",
+    "rule": "published_v1 is a judge candidate's baseline (metadata/pressure_judge/candidates/published_v1.json), so each variant's implied P(spread > threshold) is added as a judge candidate in its own file (#446): published_v1_blend_equal, published_v1_calendar_switch, published_v1_predicted_turn_switch. Each candidate's tier-1 row is reported: episodes warned at lead >= 1 and false alarms per episode",
+    "twin_probability": "published_v1_direct: the published pressure classifier (pressure_judge._published: ml.gbm_exceedance on the nine features at the horizon, conformal PID with nested selection, Platt out of fold) with ml.gbm_exceedance(training_pairs=\"direct\") and nothing else changed",
+    "variants": "at h = 1 and each threshold: blend_equal is the equal-weight average of the calibrated probabilities of published_v1 and published_v1_direct (the quantile-vector blend of the CRPS candidate has no counterpart after the law and the Platt step, so the average is taken of the final probabilities); calendar_switch takes published_v1_direct's probability on a day flagged by the calendar of the CRPS candidate and published_v1's otherwise; predicted_turn_switch takes published_v1_direct's when the walk-forward turning-point probability of the CRPS candidate is at least 0.5, published_v1's otherwise. At h = 2 to 5 every variant is published_v1's probability exactly",
+    "scored": "the judge as declared in metadata/pressure_judge.json, unchanged: days to 2025-12-31 only, no confirmation look",
+    "implementation": "scripts/turning_point_variant.py pressure (the twin's probability) and pressure-variants (the three candidates' probabilities)"
   },
   "if_better": "a needs-eleonora issue titled \"Publish? Turning-point variant (#453)\" carries the evidence table; no published figure moves in the pull request"
 }
