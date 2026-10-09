@@ -1,5 +1,5 @@
 {
-  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored",
+  "status": "declared by the pull request that closes #375; the bar is Eleonora's replacement ruling of 7 October 2026 on #375 (the success bar is replaced); the cut-offs and tier limits were fixed before any candidate was scored, but the week-ahead combiner was changed from independence to the maximum after the benchmark rows' calibration was seen under the first (see the pull request); the other choices that ruling leaves open (what a false alarm is, how the lead-at-least readings combine horizons, the scheduled risk dates, how calibration by regime is tested, the baseline rows' cut-offs, the bootstrap block length, the usefulness preference) are listed in that pull request for her review; amended by the pull request that closes #407: the flag cut-off is no longer declared per candidate (the fixed 0.2 placeholder) but chosen at each refit and horizon from that refit's training window alone by cutoff_rule, calibration by regime in tier 3 is tested only in regimes with a pressure day, and a pass within the scarce regime is reported beside the pass rule; the tiers' limits, the pass rule and the confirmation look are unchanged; the candidates of the onset classifier (#409) are added, declared in metadata/onset_classifier.json before any was scored; the candidates of the risk-date severity model (#428) are added, declared in metadata/risk_date_severity.json before any was scored",
   "scoring": {
     "last_day": "2025-12-31"
   },
@@ -771,6 +771,123 @@
         "treasury_settlement"
       ],
       "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were"
+    },
+    "risk_logistic": {
+      "role": "candidate",
+      "track": "V (#428)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "on_rrp",
+        "tga_daily",
+        "tga_daily_change",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted logistic; metadata/risk_date_severity.json"
+    },
+    "risk_logistic_base": {
+      "role": "candidate",
+      "track": "V (#428)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_coupons"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted logistic; metadata/risk_date_severity.json"
+    },
+    "risk_gbm": {
+      "role": "candidate",
+      "track": "V (#428)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "on_rrp",
+        "tga_daily",
+        "tga_daily_change",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; metadata/risk_date_severity.json"
+    },
+    "risk_gbm_base": {
+      "role": "candidate",
+      "track": "V (#428)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_coupons"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; metadata/risk_date_severity.json"
+    },
+    "risk_quantile_skewt": {
+      "role": "candidate",
+      "track": "V (#428)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_coupons",
+        "on_rrp",
+        "tga_daily",
+        "tga_daily_change",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json"
+    },
+    "risk_quantile_skewt_base": {
+      "role": "candidate",
+      "track": "V (#428)",
+      "features": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_coupons"
+      ],
+      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+      "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json"
     }
   }
 }
