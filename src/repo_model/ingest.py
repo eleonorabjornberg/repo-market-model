@@ -118,6 +118,25 @@ NYFED_SRF_FIELD = "srf_total_accepted"
 #: the next day was its first. The Desk's repo operations before it were
 #: temporary open market operations, not the facility.
 SRF_INCEPTION = date(2021, 7, 29)
+#: The Desk's repo operations in full (#425): the same operation results, saved
+#: under their own source a calendar year at a time by `fetch_nyfed_repo_operations`
+#: and read by `_nyfed_repo_ops_rows` for the amounts, the rate and the count of
+#: every repo operation, the 2019-2020 temporary operations and the facility
+#: alike. Off in every published declaration.
+NYFED_REPO_OPS_SOURCE_ID = "nyfed_repo_ops"
+#: Its series: the day's amount accepted and submitted over its repo operations
+#: (USD billions), the amount-weighted rate accepted (percent), and the number
+#: of its operations that accepted anything.
+NYFED_REPO_OPS_ACCEPTED = "repo_accepted"
+NYFED_REPO_OPS_SUBMITTED = "repo_submitted"
+NYFED_REPO_OPS_RATE = "repo_rate"
+NYFED_REPO_OPS_COUNT = "repo_ops_accepting"
+NYFED_REPO_OPS_FIELDS = (
+    NYFED_REPO_OPS_ACCEPTED,
+    NYFED_REPO_OPS_SUBMITTED,
+    NYFED_REPO_OPS_RATE,
+    NYFED_REPO_OPS_COUNT,
+)
 #: The OFR's Short-term Funding Monitor, repo collection (#187): one
 #: unmodified `timeseries` response per series mnemonic, saved by
 #: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
@@ -467,6 +486,23 @@ def fetch_nyfed_srf(
 
     return _fetch_nyfed_operation_results(
         NYFED_SRF_SOURCE_ID, output_root, start, end, downloader
+    )
+
+
+def fetch_nyfed_repo_operations(
+    output_root: Path,
+    start: str,
+    end: str,
+    downloader: Callable[[str], bytes] = _download,
+) -> List[SnapshotArtifact]:
+    """`fetch_nyfed_srf`, saved under the repo-operations source (#425).
+
+    The same search, one snapshot per calendar year; `_nyfed_repo_ops_rows` keeps every
+    repo operation, overnight or term.
+    """
+
+    return _fetch_nyfed_operation_results(
+        NYFED_REPO_OPS_SOURCE_ID, output_root, start, end, downloader
     )
 
 
@@ -2092,6 +2128,135 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
             )
         )
     return rows
+
+
+def _nyfed_repo_ops_rows(artifact: SnapshotArtifact, payload: bytes):
+    """Per operation date: the repo operations' amounts, rate and count (#425).
+
+    Keeps every operation whose `operationType` is `Repo`, overnight or term, that is not a
+    small-value exercise (`_is_small_value_exercise`). Per `operationDate` it emits
+
+    * `repo_accepted` and `repo_submitted`: `totalAmtAccepted` and `totalAmtSubmitted` summed
+      over the day's operations, in USD billions;
+    * `repo_rate`: the accepted-amount-weighted mean of the securities' weighted-average rate
+      accepted (`percentWeightedAverageRate`, percent), only on a day something was accepted
+      at a stated rate;
+    * `repo_ops_accepting`: the number of the day's operations that accepted anything.
+
+    `available_at` is the later of two instants, both recorded: the Desk's publication time
+    (the latest `lastUpdated` of the day's kept operations, New York time, the only timestamp
+    the Desk gives) and the registry's conservative declaration (`nyfed_repo_ops.release_lag`:
+    16:00 New York time on the next business day, as `nyfed_srf` declares). `lastUpdated` is a
+    write time and can be rewritten days later, so it is never read earlier than the
+    declaration, and never earlier than it says.
+
+    Raises `ValueError` on a kept operation with no `operationDate` or no numeric
+    `totalAmtAccepted` or `totalAmtSubmitted`.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    new_york = ZoneInfo("America/New_York")
+    operations = _nyfed_operations(json.loads(payload))
+    accepted: Dict[date, int] = {}
+    submitted: Dict[date, int] = {}
+    weighted: Dict[date, float] = {}
+    rated: Dict[date, int] = {}
+    counts: Dict[date, int] = {}
+    published: Dict[date, datetime] = {}
+    for number, operation in enumerate(operations, start=1):
+        if not isinstance(operation, dict):
+            raise ValueError(f"New York Fed operation {number} is not an object")
+        if operation.get("operationType") != "Repo" or _is_small_value_exercise(operation):
+            continue
+        try:
+            ref_date = date.fromisoformat(str(operation["operationDate"]))
+        except (KeyError, ValueError) as exc:
+            raise ValueError(
+                f"New York Fed repo operation {number} has no valid operationDate"
+            ) from exc
+        amounts = []
+        for key in ("totalAmtAccepted", "totalAmtSubmitted"):
+            value = operation.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(
+                    f"New York Fed repo operation {operation.get('operationId', number)!r} "
+                    f"on {ref_date} has no numeric {key} ({value!r}); a day summed without "
+                    f"one of its operations is not that day's total"
+                )
+            amounts.append(value)
+        accepted[ref_date] = accepted.get(ref_date, 0) + amounts[0]
+        submitted[ref_date] = submitted.get(ref_date, 0) + amounts[1]
+        counts[ref_date] = counts.get(ref_date, 0) + (1 if amounts[0] > 0 else 0)
+        for detail in operation.get("details") or ():
+            rate, amount = detail.get("percentWeightedAverageRate"), detail.get("amtAccepted")
+            if (
+                isinstance(rate, (int, float)) and not isinstance(rate, bool)
+                and isinstance(amount, (int, float)) and not isinstance(amount, bool)
+                and amount > 0
+            ):
+                weighted[ref_date] = weighted.get(ref_date, 0.0) + rate * amount
+                rated[ref_date] = rated.get(ref_date, 0) + amount
+        stamp = operation.get("lastUpdated")
+        if isinstance(stamp, str):
+            try:
+                written = datetime.fromisoformat(stamp).replace(tzinfo=new_york)
+            except ValueError:
+                written = None
+            if written is not None and (ref_date not in published or written > published[ref_date]):
+                published[ref_date] = written
+    retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+    vintage = f"{artifact.retrieved_at}:operations"
+    rows = []
+    for ref_date in sorted(accepted):
+        declared = datetime.combine(
+            _next_business_day(ref_date, 1), time(16, 0), tzinfo=new_york
+        )
+        available_at = min(max(declared, published.get(ref_date, declared)), retrieved)
+        values = {
+            NYFED_REPO_OPS_ACCEPTED: accepted[ref_date] / 1e9,
+            NYFED_REPO_OPS_SUBMITTED: submitted[ref_date] / 1e9,
+            NYFED_REPO_OPS_COUNT: float(counts[ref_date]),
+        }
+        if rated.get(ref_date):
+            values[NYFED_REPO_OPS_RATE] = weighted[ref_date] / rated[ref_date]
+        for series, value in values.items():
+            rows.append(
+                PointInTimeObservation(
+                    series_id=series,
+                    ref_date=ref_date,
+                    available_at=available_at,
+                    value=value,
+                    vintage_id=vintage,
+                    source_sha=artifact.sha256,
+                )
+            )
+    return rows
+
+
+def repo_operation_publication_times(payload: bytes) -> Dict[date, datetime]:
+    """Per operation date, the latest `lastUpdated` of its kept repo operations (#425), New York time.
+
+    The Desk's publication time as recorded in the snapshot: what `_nyfed_repo_ops_rows` reads
+    as the day's own instant before it takes the later of that and the declaration.
+    """
+
+    from zoneinfo import ZoneInfo
+
+    new_york = ZoneInfo("America/New_York")
+    out: Dict[date, datetime] = {}
+    for operation in _nyfed_operations(json.loads(payload)):
+        if operation.get("operationType") != "Repo" or _is_small_value_exercise(operation):
+            continue
+        stamp = operation.get("lastUpdated")
+        if not isinstance(stamp, str):
+            continue
+        ref_date = date.fromisoformat(str(operation["operationDate"]))
+        written = datetime.fromisoformat(stamp).replace(tzinfo=new_york)
+        if ref_date not in out or written > out[ref_date]:
+            out[ref_date] = written
+    return out
 
 
 #: The table the H.8 field is read from, by what its page says about it: the
@@ -4688,6 +4853,8 @@ def parse_snapshots(
         elif artifact.source_id == NYFED_SRF_SOURCE_ID:
             # Also before the prefix test: operation results, not a refRates list.
             parsed_rows = _nyfed_srf_rows(artifact, payload)
+        elif artifact.source_id == NYFED_REPO_OPS_SOURCE_ID:
+            parsed_rows = _nyfed_repo_ops_rows(artifact, payload)
         elif artifact.source_id in (OFR_STFM_SOURCE_ID, OFR_STFM_SEGMENTS_SOURCE_ID):
             parsed_rows = _ofr_stfm_rows(artifact, payload)
         elif artifact.source_id == TREASURY_DTS_TGA_SOURCE_ID:

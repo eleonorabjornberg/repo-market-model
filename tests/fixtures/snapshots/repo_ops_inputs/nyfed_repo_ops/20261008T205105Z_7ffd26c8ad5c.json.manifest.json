@@ -1,0 +1,8 @@
+{
+  "byte_count": 393053,
+  "path": "nyfed_repo_ops/20261008T205105Z_7ffd26c8ad5c.json",
+  "retrieved_at": "2026-10-08T20:51:05.701805+00:00",
+  "sha256": "7ffd26c8ad5c0147a738247bc180912bffae8229a289b462b9da18882aaba9a4",
+  "source_id": "nyfed_repo_ops",
+  "url": "https://markets.newyorkfed.org/api/rp/results/search.json?startDate=2021-01-01&endDate=2021-12-31"
+}
