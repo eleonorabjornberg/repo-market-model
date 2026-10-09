@@ -511,7 +511,7 @@ class SameDayDeclarationTests(unittest.TestCase):
         self.assertEqual(REGISTRY[fed_liquidity.SAME_DAY_SOURCE_ID]["release_lag"]["days"], 0)
 
     def test_each_same_day_candidate_differs_from_its_counterpart_only_in_the_reading(self):
-        document = json.loads(DECLARATION.read_text(encoding="utf-8"))["candidates"]
+        document = dict(pj.load_declaration(DECLARATION).candidates)
         for name, counterpart in (
             ("hierarchical_logistic_srf_sameday", "hierarchical_logistic_srf"),
             ("hierarchical_logistic_fed_repo_sameday", "hierarchical_logistic_fed_repo"),
