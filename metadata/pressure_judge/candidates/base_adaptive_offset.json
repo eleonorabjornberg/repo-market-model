@@ -1,0 +1,14 @@
+{
+  "role": "candidate",
+  "track": "R (#411)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement",
+    "reserve_balances",
+    "tga"
+  ],
+  "calibration": "class-weighted logistic (track W), then adaptive_offset (pressure.ONLINE_RECALIBRATION) on resolved earlier days; metadata/recency_adaptive_training.json"
+}

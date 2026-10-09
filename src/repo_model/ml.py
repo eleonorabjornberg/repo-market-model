@@ -597,6 +597,11 @@ from .splits import (
 
 __all__ = [
     "paired_bootstrap_p_values",
+    "PRESSURE_QRF_SETTINGS",
+    "PRESSURE_NATURAL_GRADIENT_SETTINGS",
+    "PRESSURE_DISTRIBUTION_SELECTION",
+    "pressure_qrf_exceedance",
+    "pressure_natural_gradient_exceedance",
     "MARKOV_SWITCHING_SETTINGS",
     "FittedMarkovSwitching",
     "fit_markov_switching",
@@ -4096,6 +4101,53 @@ PRESSURE_RECENCY_SETTINGS = MappingProxyType(
     }
 )
 
+#: What the two full-distribution models (#385) are built with, declared in
+#: `metadata/pressure_track_q.json` before any score; a test pins the two together.
+#: Both pick one hyperparameter on the pressure-day labels (`PRESSURE_DISTRIBUTION_SELECTION`).
+PRESSURE_QRF_SETTINGS = MappingProxyType(
+    {
+        "estimator": "RandomForestRegressor",
+        "reading": "Meinshausen quantile regression forest: the weight of training pair i at a served "
+        "row is the mean over trees of 1/|leaf| where i shares the served row's leaf; "
+        "P(spread > tau) = sum of weights of the pairs whose spread is above tau on whole basis points",
+        "n_estimators": 200,
+        "max_features": 0.5,
+        "bootstrap": False,
+        "min_samples_leaf_grid": (5, 10, 20, 40),
+        "default_min_samples_leaf": 20,
+        "random_state": DEFAULT_RANDOM_STATE,
+    }
+)
+PRESSURE_NATURAL_GRADIENT_SETTINGS = MappingProxyType(
+    {
+        "estimator": "natural-gradient boosting of a two-parameter law, numpy and scikit-learn trees",
+        "families": ("normal", "laplace"),
+        "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5) under the boosted location and log-scale, "
+        "and 0 for a tau more than support_above_training_max_bp above the largest training spread",
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "min_samples_leaf": 20,
+        "stage_grid": (25, 50, 100, 200, 400),
+        "default_stages": 100,
+        "scale_floor_bp": 0.25,
+        "scale_ceiling_bp": 100.0,
+        "support_above_training_max_bp": 100.0,
+        "random_state": DEFAULT_RANDOM_STATE,
+    }
+)
+#: How the one hyperparameter of each distribution model is chosen: on the
+#: last `share` of the training pairs (after an embargo of one horizon), by the
+#: Brier score of the pressure label at each of `taus`, never on the spread's own loss.
+PRESSURE_DISTRIBUTION_SELECTION = MappingProxyType(
+    {
+        "share": 0.25,
+        "taus": (5.0, 10.0),
+        "criterion": "mean Brier score of the pressure label over taus",
+        "minimum_fit_pairs": 40,
+        "minimum_validation_pairs": 10,
+    }
+)
+
 #: The panel days over which the TGA change is measured: one week of panel
 #: rows, the H.4.1 print's cadence.
 TGA_CHANGE_ROWS = 5
@@ -4109,6 +4161,14 @@ _CALENDAR_INPUTS = ("days_to_month_end", "quarter_end", "tax_date")
 _PRESSURE_DAY_TYPES = ("quarter_end", "month_end", "tax_date")
 #: The day types the settlement x state interaction variant crosses with (#378).
 _INTERACTION_DAY_TYPES = ("quarter_end", "tax_date")
+#: The FR 2004 net Treasury position, the balance-sheet design's dealer input (#427).
+_DEALER_POSITION = "dealer_treasury_position"
+
+
+def _balance_sheet_rules():
+    from . import balance_sheet_days
+
+    return balance_sheet_days.RULES
 #: The regime-pooled variant's shrinkage (#378): a regime's deviation columns are
 #: scaled by this before the one L2 penalty, so its deviations carry
 #: `1 / scale ** 2` times the pooled columns' penalty. Declared, not tuned.
@@ -4440,6 +4500,7 @@ def _direct_pressure_predictor(
     monotone = getattr(design, "monotone", None)
     cache: dict = {}
     pooled: dict = {}
+    selections: List[Mapping[str, Any]] = []
     shrinkage: List[float] = []
     effects: List[dict] = []
 
@@ -4507,11 +4568,23 @@ def _direct_pressure_predictor(
                 xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t" if kind == "quantile_skewt" else "linear"
             )
             columns = [[curve[k] for curve in law] for k in range(len(taus))]
+        elif kind in _DISTRIBUTION_KINDS:
+            law, chosen = _distribution_exceedance(
+                kind, xs, spreads, served, [float(tau) for tau in taus], information.horizon
+            )
+            selections.append(chosen)
+            columns = [[curve[k] for curve in law] for k in range(len(taus))]
         if kind.startswith("two_part_"):
             columns = _two_part_columns(
                 kind[len("two_part_"):], xs, spreads, served, [float(tau) for tau in taus], monotone
             )
-        for tau in taus if kind not in ("quantile", "quantile_skewt") and not kind.startswith("two_part_") else ():
+        for tau in (
+            taus
+            if kind not in ("quantile", "quantile_skewt")
+            and kind not in _DISTRIBUTION_KINDS
+            and not kind.startswith("two_part_")
+            else ()
+        ):
             labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             if len(set(labels)) < 2:
                 columns.append([float(labels[0])] * len(served))
@@ -4546,8 +4619,15 @@ def _direct_pressure_predictor(
                 "two_part_logistic": {**PRESSURE_LOGISTIC_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
                 "two_part_gbm_classifier": {**PRESSURE_CLASSIFIER_SETTINGS, "two_part": dict(TWO_PART_SETTINGS)},
                 "quantile_skewt": PRESSURE_QUANTILE_SKEWT_SETTINGS,
+                "qrf": PRESSURE_QRF_SETTINGS,
+                "ng_normal": PRESSURE_NATURAL_GRADIENT_SETTINGS,
+                "ng_laplace": PRESSURE_NATURAL_GRADIENT_SETTINGS,
             }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
         )
+        if kind in _DISTRIBUTION_KINDS:
+            settings["selection"] = dict(PRESSURE_DISTRIBUTION_SELECTION)
+            if kind != "qrf":
+                settings["family"] = kind[len("ng_"):]
         settings["design"] = list(design.names)
         if rare is not None:
             settings["rare_event"] = {
@@ -4599,6 +4679,8 @@ def _direct_pressure_predictor(
             ),
         )
 
+    #: What each distribution fit chose on the pressure-day labels, one entry per fit.
+    fit_predict.selections = selections  # type: ignore[attr-defined]
     return fit_predict
 
 
@@ -5584,6 +5666,174 @@ def pressure_onset_exceedance(
     return fit_predict
 
 
+# --------------------------------------------------------------------------
+# The risk-date severity model (#428, track V of #374)
+# --------------------------------------------------------------------------
+#
+# About 22 of the 26 scored onsets fall on dates the calendar names in advance. This model is fitted
+# on those dates alone and forecasts nothing on any other day: its probability on an ordinary day is
+# exactly 0 at every threshold, so it never flags one. Separate definitions, as the onset
+# classifier's are: the design and the pair builder are reused, not changed (the final test's
+# pinned checksums hash `_direct_pressure_predictor` and its helpers).
+
+#: The estimators of the risk-date model: a logistic and a gradient-boosted classifier of the pressure
+#: label, and a skew-t quantile regression of the spread itself (the severity of the day).
+#: Declared in `metadata/risk_date_severity.json`, not tuned.
+RISK_DATE_KINDS = ("logistic", "gbm_classifier", "quantile_skewt")
+
+
+class _RiskDateDesign(_PressureDesign):
+    """`_PressureDesign`'s row with the risk-date membership appended as its last element (#428).
+
+    A day is a *risk date* when its pressure-day type, read from the calendar columns as
+    `EvaluationSplits.day_type` reads them, is not `ordinary` (a quarter-end, a month-end or a tax
+    date), or when `treasury_settlement_coupons` is a declared input and the day settles a coupon.
+    Both are facts about the scored day known in advance; the coupon column is declared only at
+    horizon 1, where a settlement is public (`docs/decisions/information-set.md`). A day outside the
+    set returns a row of zeros: it is neither trained nor served, so none of its inputs is read.
+    """
+
+    def __init__(self, features: Sequence[str], declaration: Any, products: Sequence[Tuple[str, str]] = ()) -> None:
+        super().__init__(features, declaration, products)
+        if not self.calendar:
+            raise ValueError(
+                f"a risk date is named by the calendar columns {list(_CALENDAR_INPUTS)}; declare all three"
+            )
+
+    def member(self, observation: DailyObservation) -> bool:
+        if self.declaration.day_type(observation.values) != "ordinary":
+            return True
+        if "treasury_settlement_coupons" in self.settlements:
+            return self._value(observation, "treasury_settlement_coupons") > 0.0
+        return False
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        if not self.member(observation):
+            return [0.0] * (len(self.names) + 1)
+        return super().row(observation, tga_change) + [1.0]
+
+
+def pressure_risk_date_exceedance(
+    kind: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+) -> ExceedancePredictor:
+    """A model fitted and served on the declared risk dates only (#428).
+
+    `kind` is one of `RISK_DATE_KINDS`. Training pairs are the direct pairs of
+    `pressure_logistic_exceedance` (each label paired with what a forecast of it read at its own
+    decision instant) kept where the label day is a risk date (`_RiskDateDesign`); the logistic
+    and the classifier are fitted to `spread > tau` on those pairs, the quantile regression to the
+    spread of those days, read as a skew-t law (`_quantile_exceedance`). A forecast of a risk date
+    is the fit's probability; a forecast of any other day is exactly 0 at every threshold. The
+    curve across thresholds is made non-increasing. A risk date in the served rows needs a fit: a
+    frame with no risk-date pair raises `ValueError`.
+    """
+
+    if kind not in RISK_DATE_KINDS:
+        raise ValueError(f"a risk-date model is one of {list(RISK_DATE_KINDS)}, got {kind!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _RiskDateDesign(features, declaration)
+    cache: dict = {}
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a risk-date model pairs each training label with what was public at that label's "
+                "own decision instant, which only the as-of rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a risk-date model needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        pairs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        flags = [pair[-1] for pair in pairs]
+        xs = [pair[:-1] for pair, flag in zip(pairs, flags) if flag]
+        spreads = [spread for spread, flag in zip(spreads, flags) if flag]
+        served_all = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        members = [day for day, served in enumerate(served_all) if served[-1]]
+        served = [served_all[day][:-1] for day in members]
+        columns: List[List[float]] = [[0.0] * len(feature_rows) for _ in taus]
+        if members:
+            if not xs:
+                raise ValueError("no risk-date training label has a complete as-of read")
+            fitted: dict = {}
+            if kind == "quantile_skewt":
+                law = _quantile_exceedance(
+                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t"
+                )
+                fits = [[curve[k] for curve in law] for k in range(len(taus))]
+            else:
+                fits = []
+                for tau in taus:
+                    labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+                    if len(set(labels)) < 2:
+                        fits.append([float(labels[0])] * len(served))
+                        continue
+                    key = tuple(labels)
+                    if key not in fitted:
+                        fitted[key] = _fit_classifier(kind, xs, labels, served)
+                    fits.append(fitted[key])
+            for position, fit in enumerate(fits):
+                for day, value in zip(members, fit):
+                    columns[position][day] = value
+        curves = []
+        for day in range(len(feature_rows)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(
+            {
+                "logistic": PRESSURE_LOGISTIC_SETTINGS,
+                "quantile_skewt": PRESSURE_QUANTILE_SKEWT_SETTINGS,
+            }.get(kind, PRESSURE_CLASSIFIER_SETTINGS)
+        )
+        settings["design"] = list(design.names)
+        settings["risk_dates"] = (
+            "quarter-end, month-end or tax date (day_type != ordinary)"
+            + (", or a coupon settlement" if "treasury_settlement_coupons" in design.settlements else "")
+        )
+        settings["risk_date_training_pairs"] = len(xs)
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
+
+
 def pressure_probit_exceedance(
     features: Sequence[str], declaration: Any, minimum_history: int = 20
 ) -> ExceedancePredictor:
@@ -5981,6 +6231,292 @@ def pressure_tail_exceedance(
 
 
 # --------------------------------------------------------------------------
+# Full predictive distributions with better tails (#385; track Q of #374)
+# --------------------------------------------------------------------------
+#
+# Two models of the whole conditional distribution of the spread, on the same
+# direct design and pairs as the probit and the quantile regressions of #372:
+# a quantile regression forest, which keeps each leaf's outcomes and so can put
+# mass wherever the training spreads went, and a natural-gradient boosting of a
+# parametric law (normal or Laplace), numpy plus scikit-learn trees. Both are
+# read as `P(spread > tau)` on whole basis points, so a curve can be taken at
+# every whole basis point and scored by CRPS as well as at +5 and +10 bp.
+# Each has one hyperparameter, chosen on the pressure-day labels at +5 and +10
+# bp over the last quarter of the training pairs, never on the spread's own loss.
+
+_DISTRIBUTION_KINDS = ("qrf", "ng_normal", "ng_laplace")
+
+
+def _selection_blocks(count: int, horizon: int) -> Optional[Tuple[slice, slice]]:
+    """The training pairs' fit block and the later validation block, `None` if too few.
+
+    The pairs run in target-date order. The validation block is the last
+    `share` of them; the `horizon` pairs before it are dropped, so no fit pair's
+    label window overlaps a validation pair's. Too few pairs for either block
+    gives `None`: the declared default is used and nothing is selected.
+    """
+
+    rule = PRESSURE_DISTRIBUTION_SELECTION
+    valid = max(int(count * float(rule["share"])), 0)
+    fit_end = count - valid - horizon
+    if fit_end < int(rule["minimum_fit_pairs"]) or valid < int(rule["minimum_validation_pairs"]):
+        return None
+    return slice(0, fit_end), slice(count - valid, count)
+
+
+def _label_brier(probabilities: Any, spreads: Any, taus: Sequence[float]) -> float:
+    """Mean over `taus` of the Brier score of `P(spread > tau)` against the whole-bp label."""
+
+    import numpy
+
+    total = 0.0
+    for column, tau in enumerate(taus):
+        labels = numpy.array([1.0 if exceeds_bp(v, tau) else 0.0 for v in spreads])
+        total += float(numpy.mean((probabilities[:, column] - labels) ** 2))
+    return total / len(taus)
+
+
+def _forest(x: Any, y: Any, min_samples_leaf: int) -> Any:
+    from sklearn.ensemble import RandomForestRegressor
+
+    settings = PRESSURE_QRF_SETTINGS
+    return RandomForestRegressor(
+        n_estimators=settings["n_estimators"],
+        max_features=settings["max_features"],
+        bootstrap=settings["bootstrap"],
+        min_samples_leaf=int(min_samples_leaf),
+        random_state=settings["random_state"],
+        n_jobs=1,
+    ).fit(x, y)
+
+
+def _forest_exceedance(forest: Any, x: Any, y: Any, z: Any, taus: Sequence[float]) -> Any:
+    """Meinshausen's weights at the rows of `z`, read as `P(spread > tau)`: (rows, taus)."""
+
+    import numpy
+
+    leaves_train = forest.apply(x)
+    leaves_given = forest.apply(z)
+    weight = numpy.zeros((len(z), len(x)))
+    for tree in range(leaves_train.shape[1]):
+        sizes = numpy.bincount(leaves_train[:, tree])
+        same = leaves_given[:, tree][:, None] == leaves_train[:, tree][None, :]
+        weight += same / sizes[leaves_given[:, tree]][:, None]
+    weight /= leaves_train.shape[1]
+    above = numpy.array([[1.0 if exceeds_bp(v, tau) else 0.0 for tau in taus] for v in y])
+    return weight @ above
+
+
+def _family_survival(family: str, cut: float, location: Any, log_scale: Any) -> Any:
+    import numpy
+
+    scale = numpy.exp(log_scale)
+    if family == "normal":
+        from scipy.stats import norm
+
+        return norm.sf(cut, loc=location, scale=scale)
+    from scipy.stats import laplace
+
+    return laplace.sf(cut, loc=location, scale=scale)
+
+
+def _natural_gradient(family: str, y: Any, location: Any, log_scale: Any) -> Tuple[Any, Any]:
+    """The natural gradient of the negative log-likelihood in (location, log-scale).
+
+    The ordinary gradient times the inverse Fisher information, which for
+    both families is diagonal: normal, `(-(y - m), (1 - z^2) / 2)` with
+    `z = (y - m) / s`; Laplace, `(-b * sign(y - m), 1 - |y - m| / b)`.
+    """
+
+    import numpy
+
+    scale = numpy.exp(log_scale)
+    residual = y - location
+    if family == "normal":
+        return -residual, 0.5 * (1.0 - (residual / scale) ** 2)
+    return -scale * numpy.sign(residual), 1.0 - numpy.abs(residual) / scale
+
+
+class _NaturalGradientFit(NamedTuple):
+    family: str
+    location: float
+    log_scale: float
+    trees: Tuple[Tuple[Any, Any], ...]
+
+
+def _fit_natural_gradient(family: str, x: Any, y: Any, stages: int) -> _NaturalGradientFit:
+    """Boost the two parameters with regression trees on the natural gradient, deterministic."""
+
+    import numpy
+    from sklearn.tree import DecisionTreeRegressor
+
+    settings = PRESSURE_NATURAL_GRADIENT_SETTINGS
+    floor = math.log(float(settings["scale_floor_bp"]))
+    ceiling = math.log(float(settings["scale_ceiling_bp"]))
+    location0 = float(numpy.median(y))
+    spread0 = float(numpy.mean(numpy.abs(y - location0))) if family == "laplace" else float(numpy.std(y))
+    log_scale0 = min(max(math.log(max(spread0, 1e-9)), floor), ceiling)
+    location = numpy.full(len(y), location0)
+    log_scale = numpy.full(len(y), log_scale0)
+    rate = float(settings["learning_rate"])
+    trees = []
+    for _ in range(int(stages)):
+        grad_location, grad_scale = _natural_gradient(family, y, location, log_scale)
+        pair = []
+        for target in (grad_location, grad_scale):
+            tree = DecisionTreeRegressor(
+                max_depth=settings["max_depth"],
+                min_samples_leaf=settings["min_samples_leaf"],
+                random_state=settings["random_state"],
+            ).fit(x, target)
+            pair.append(tree)
+        location = location - rate * pair[0].predict(x)
+        log_scale = numpy.clip(log_scale - rate * pair[1].predict(x), floor, ceiling)
+        trees.append(tuple(pair))
+    return _NaturalGradientFit(family, location0, log_scale0, tuple(trees))
+
+
+def _natural_gradient_parameters(fit: _NaturalGradientFit, z: Any, stage_grid: Sequence[int]) -> dict:
+    """{stages: (location, log_scale)} at the rows of `z`, for each stage count in the grid."""
+
+    import numpy
+
+    settings = PRESSURE_NATURAL_GRADIENT_SETTINGS
+    floor = math.log(float(settings["scale_floor_bp"]))
+    ceiling = math.log(float(settings["scale_ceiling_bp"]))
+    rate = float(settings["learning_rate"])
+    location = numpy.full(len(z), fit.location)
+    log_scale = numpy.full(len(z), fit.log_scale)
+    wanted = set(int(n) for n in stage_grid)
+    out = {}
+    if 0 in wanted:
+        out[0] = (location.copy(), log_scale.copy())
+    for count, (tree_location, tree_scale) in enumerate(fit.trees, start=1):
+        location = location - rate * tree_location.predict(z)
+        log_scale = numpy.clip(log_scale - rate * tree_scale.predict(z), floor, ceiling)
+        if count in wanted:
+            out[count] = (location.copy(), log_scale.copy())
+    return out
+
+
+def _parametric_exceedance(
+    family: str, location: Any, log_scale: Any, taus: Sequence[float]
+) -> Any:
+    import numpy
+
+    return numpy.column_stack(
+        [_family_survival(family, math.floor(float(tau)) + 0.5, location, log_scale) for tau in taus]
+    )
+
+
+def _distribution_exceedance(
+    kind: str,
+    xs: Sequence[Sequence[float]],
+    spreads: Sequence[float],
+    served: Sequence[Sequence[float]],
+    taus: Sequence[float],
+    horizon: int,
+) -> Tuple[List[Tuple[float, ...]], Mapping[str, Any]]:
+    """`P(spread > tau)` per served row from a full conditional distribution, and what was chosen.
+
+    The hyperparameter (the forest's leaf size, the boosting's stage count) is
+    chosen on the validation block of `_selection_blocks` by the label Brier
+    score at `PRESSURE_DISTRIBUTION_SELECTION["taus"]`; the model is then
+    refitted on every pair. With too few pairs for a validation block the
+    declared default is used.
+    """
+
+    _estimator_class()
+    import numpy
+
+    x = numpy.asarray(xs, dtype=float)
+    y = numpy.asarray(spreads, dtype=float)
+    z = numpy.asarray(served, dtype=float)
+    selection_taus = [float(t) for t in PRESSURE_DISTRIBUTION_SELECTION["taus"]]
+    blocks = _selection_blocks(len(y), horizon)
+    if kind == "qrf":
+        grid = [int(v) for v in PRESSURE_QRF_SETTINGS["min_samples_leaf_grid"]]
+        chosen = int(PRESSURE_QRF_SETTINGS["default_min_samples_leaf"])
+        scores = {}
+        if blocks is not None:
+            fit_block, valid_block = blocks
+            for leaf in grid:
+                forest = _forest(x[fit_block], y[fit_block], leaf)
+                given = _forest_exceedance(forest, x[fit_block], y[fit_block], x[valid_block], selection_taus)
+                scores[leaf] = _label_brier(given, y[valid_block], selection_taus)
+            chosen = min(grid, key=lambda leaf: (scores[leaf], leaf))
+        forest = _forest(x, y, chosen)
+        curves = _forest_exceedance(forest, x, y, z, taus)
+        record = {"kind": kind, "min_samples_leaf": chosen, "validation_brier": scores}
+    else:
+        family = kind[len("ng_"):]
+        grid = [int(v) for v in PRESSURE_NATURAL_GRADIENT_SETTINGS["stage_grid"]]
+        chosen = int(PRESSURE_NATURAL_GRADIENT_SETTINGS["default_stages"])
+        scores = {}
+        if blocks is not None:
+            fit_block, valid_block = blocks
+            fitted = _fit_natural_gradient(family, x[fit_block], y[fit_block], max(grid))
+            staged = _natural_gradient_parameters(fitted, x[valid_block], grid)
+            for stages in grid:
+                location, log_scale = staged[stages]
+                given = _parametric_exceedance(family, location, log_scale, selection_taus)
+                scores[stages] = _label_brier(given, y[valid_block], selection_taus)
+            chosen = min(grid, key=lambda stages: (scores[stages], stages))
+        fitted = _fit_natural_gradient(family, x, y, chosen)
+        location, log_scale = _natural_gradient_parameters(fitted, z, [chosen])[chosen]
+        curves = _parametric_exceedance(family, location, log_scale, taus)
+        # The law has no mass beyond the declared support: a threshold that far above
+        # anything fitted gets a hard zero, as every other implementer's does.
+        limit = float(y.max()) + float(PRESSURE_NATURAL_GRADIENT_SETTINGS["support_above_training_max_bp"])
+        for column, tau in enumerate(taus):
+            if tau > limit:
+                curves[:, column] = 0.0
+        record = {"kind": kind, "stages": chosen, "validation_brier": scores}
+    out = [tuple(float(min(1.0, max(0.0, v))) for v in row) for row in curves]
+    return out, record
+
+
+def pressure_qrf_exceedance(
+    features: Sequence[str], declaration: Any, minimum_history: int = 20
+) -> ExceedancePredictor:
+    """A quantile regression forest of the spread, read as an exceedance curve (#385).
+
+    Meinshausen's forest on the direct design and pairs of #114: each served
+    row's conditional distribution is the training spreads weighted by how often
+    they share its leaves, `PRESSURE_QRF_SETTINGS`. The leaf size is chosen on
+    the pressure-day labels (`PRESSURE_DISTRIBUTION_SELECTION`). The curve is
+    non-increasing in tau by construction and by the running minimum.
+    """
+
+    return _direct_pressure_predictor("qrf", features, declaration, minimum_history)
+
+
+def pressure_natural_gradient_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    family: str = "laplace",
+) -> ExceedancePredictor:
+    """Natural-gradient boosting of a normal or Laplace law of the spread (#385).
+
+    Trees boosted on the natural gradient of the negative log-likelihood in the
+    law's location and log-scale (Duan et al., NGBoost, in numpy and
+    scikit-learn), `PRESSURE_NATURAL_GRADIENT_SETTINGS`, on the same design and
+    pairs. The stage count is chosen on the pressure-day labels.
+
+    Raises:
+        ValueError: on a family other than the two declared, as on the other
+            direct models for a short frame or a call without the as-of rule.
+    """
+
+    if family not in PRESSURE_NATURAL_GRADIENT_SETTINGS["families"]:
+        raise ValueError(
+            f"family must be one of {list(PRESSURE_NATURAL_GRADIENT_SETTINGS['families'])}, got {family!r}"
+        )
+    return _direct_pressure_predictor(f"ng_{family}", features, declaration, minimum_history)
+
+
+# --------------------------------------------------------------------------
 # The scarcity-conditioned calendar (#128)
 # --------------------------------------------------------------------------
 #
@@ -6026,6 +6562,7 @@ class _ScarcityCalendarDesign:
         interactions: bool = False,
         regime_pooled: bool = False,
         regime_hierarchical: bool = False,
+        balance_sheet: bool = False,
     ) -> None:
         from .scarcity import RESERVE_SCARCITY_STATE, STATE_LABELS
 
@@ -6075,6 +6612,25 @@ class _ScarcityCalendarDesign:
             _INTERACTION_DAY_TYPES if interactions and self.settlement else ()
         )
         names += [f"treasury_settlement_x_state_x_{kind}" for kind in self.interaction_types]
+        # Balance-sheet days (#427): the three calendar rules of
+        # `balance_sheet_days`, each times the state, and the FR 2004 net
+        # Treasury position (already a linear column) times the state, times
+        # the state on a balance-sheet day, and times the state and the
+        # scheduled settlement.
+        self.balance_sheet = balance_sheet
+        self.position_terms: Tuple[str, ...] = ()
+        if balance_sheet:
+            if _DEALER_POSITION not in declared:
+                raise ValueError(
+                    f"the balance-sheet design reads {_DEALER_POSITION!r}; declare it (the FR 2004 net Treasury position)"
+                )
+            from . import balance_sheet_days
+
+            names += [f"{rule}_x_state" for rule in balance_sheet_days.NAMES]
+            self.position_terms = ("dealer_position_x_state", "dealer_position_x_balance_sheet_day_x_state") + (
+                ("dealer_position_x_settlement_x_state",) if self.settlement else ()
+            )
+            names += list(self.position_terms)
         # The regime-pooled variant (#378): the scheduled terms and the spread
         # get a deviation per scarcity regime, shrunk toward the pooled fit.
         self.pooling: Optional[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[float, ...], Optional[float]]] = None
@@ -6093,7 +6649,10 @@ class _ScarcityCalendarDesign:
             )
         self.names = tuple(names)
         self.monotone: Optional[Tuple[int, ...]] = (
-            tuple([0, 1] + [0] * len(self.linear) + [1] * len(scheduled) + [1] * len(self.interaction_types))
+            tuple(
+                [0, 1] + [0] * len(self.linear) + [1] * len(scheduled) + [1] * len(self.interaction_types)
+                + ([1] * 3 + [0] * len(self.position_terms) if balance_sheet else [])
+            )
             if monotone
             else None
         )
@@ -6108,6 +6667,19 @@ class _ScarcityCalendarDesign:
             "state_levels": {f"{key:g}": value for key, value in sorted(self.state_levels.items())},
             "scheduled_terms": "each times the mapped state only, no main effect",
             "interaction_terms": [f"treasury_settlement x state x {kind}" for kind in self.interaction_types],
+            "balance_sheet": (
+                None
+                if not self.balance_sheet
+                else {
+                    "rules": {
+                        rule.name: {"description": rule.description, "public_from": rule.public_from.isoformat(),
+                                    "sources": list(rule.sources)}
+                        for rule in _balance_sheet_rules()
+                    },
+                    "position_terms": list(self.position_terms),
+                    "scored_day": "recovered from the row's calendar columns (balance_sheet_days.scored_day)",
+                }
+            ),
             "regime_partial_pooling": (
                 None
                 if self.pooling is None
@@ -6153,6 +6725,17 @@ class _ScarcityCalendarDesign:
         if self.interaction_types:
             size = self._value(observation, "treasury_settlement")
             values += [size * state * (1.0 if kind == name else 0.0) for name in self.interaction_types]
+        if self.balance_sheet:
+            from . import balance_sheet_days
+
+            day = balance_sheet_days.scored_day(observation.date, observation.values)
+            flagged = balance_sheet_days.flags(day, observation.date)
+            values += [flagged[name] * state for name in balance_sheet_days.NAMES]
+            position = self._value(observation, _DEALER_POSITION)
+            any_day = 1.0 if any(flagged.values()) else 0.0
+            values += [position * state, position * any_day * state]
+            if self.settlement:
+                values.append(position * self._value(observation, "treasury_settlement") * state)
         if self.pooling is not None:
             values += scheduled[:len(_PRESSURE_DAY_TYPES)]
             if self.settlement:
@@ -6174,6 +6757,7 @@ def _scarcity_calendar_predictor(
     interactions: bool = False,
     regime_pooled: bool = False,
     regime_hierarchical: bool = False,
+    balance_sheet: bool = False,
 ) -> Any:
     """The scarcity-conditioned calendar (#128), as a direct pressure model.
 
@@ -6202,6 +6786,7 @@ def _scarcity_calendar_predictor(
     design = _ScarcityCalendarDesign(
         features, declaration, state_levels, monotone=form == "gbm",
         interactions=interactions, regime_pooled=regime_pooled, regime_hierarchical=regime_hierarchical,
+        balance_sheet=balance_sheet,
     )
     return _direct_pressure_predictor(
         SCARCITY_CALENDAR_KINDS[form], features, declaration, minimum_history, design=design

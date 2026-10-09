@@ -1,0 +1,118 @@
+{
+ "candidates": {
+  "naive": {
+   "first_fitted": null,
+   "refits": 0,
+   "rows_by_status": {
+    "naive": 1934,
+    "none": 1
+   },
+   "scored_rows_by_status": {
+    "naive": 1873,
+    "none": 0
+   }
+  },
+  "published_only": {
+   "first_fitted": "2018-06-01",
+   "refits": 91,
+   "rows_by_status": {
+    "model": 1893,
+    "naive: not fitted": 41,
+    "none": 1
+   },
+   "scored_rows_by_status": {
+    "model": 1873,
+    "naive: not fitted": 0,
+    "none": 0
+   }
+  },
+  "rrp": {
+   "first_fitted": "2018-06-01",
+   "refits": 91,
+   "rows_by_status": {
+    "model": 1873,
+    "naive: input missing": 20,
+    "naive: not fitted": 41,
+    "none": 1
+   },
+   "scored_rows_by_status": {
+    "model": 1853,
+    "naive: input missing": 20,
+    "naive: not fitted": 0,
+    "none": 0
+   }
+  },
+  "rrp_settlement": {
+   "first_fitted": "2018-06-01",
+   "refits": 91,
+   "rows_by_status": {
+    "model": 1873,
+    "naive: input missing": 20,
+    "naive: not fitted": 41,
+    "none": 1
+   },
+   "scored_rows_by_status": {
+    "model": 1853,
+    "naive: input missing": 20,
+    "naive: not fitted": 0,
+    "none": 0
+   }
+  },
+  "rrp_settlement_calendar": {
+   "first_fitted": "2018-06-01",
+   "refits": 91,
+   "rows_by_status": {
+    "model": 1873,
+    "naive: input missing": 20,
+    "naive: not fitted": 41,
+    "none": 1
+   },
+   "scored_rows_by_status": {
+    "model": 1853,
+    "naive: input missing": 20,
+    "naive: not fitted": 0,
+    "none": 0
+   }
+  },
+  "settlement": {
+   "first_fitted": "2018-06-01",
+   "refits": 91,
+   "rows_by_status": {
+    "model": 1893,
+    "naive: not fitted": 41,
+    "none": 1
+   },
+   "scored_rows_by_status": {
+    "model": 1873,
+    "naive: not fitted": 0,
+    "none": 0
+   }
+  }
+ },
+ "first": "2018-04-03",
+ "last": "2025-12-31",
+ "output": "/tmp/claude-0/-home-user-repo-market-model/f0c8f6b4-613b-5740-85f4-b1e9ab5d4ce3/scratchpad/nc.csv",
+ "reverse_repo": {
+  "excluded_panel_days_by_reason": {
+   "written after the declared time": [
+    "2024-10-16"
+   ],
+   "written again on a later date": [
+    "2018-12-04",
+    "2019-04-18",
+    "2020-04-09",
+    "2020-07-02",
+    "2021-04-01",
+    "2021-09-03",
+    "2021-09-10",
+    "2022-11-17",
+    "2023-01-05"
+   ]
+  },
+  "panel_days_admitted": 1925,
+  "panel_days_without_a_value": 10,
+  "scored_days_without_a_value": 10
+ },
+ "rows": 1935,
+ "sha256": "123c9efba53c1e2db27c6b456c1d78cbafbb1d3181722b5fcf5405f3fcf1c93b"
+}

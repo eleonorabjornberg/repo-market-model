@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "N (#426)",
+  "features": [
+    "days_to_month_end",
+    "net_settlement",
+    "net_settlement_bills",
+    "net_settlement_due_5d",
+    "quarter_end",
+    "reserve_scarcity_state",
+    "spread_bps",
+    "tax_date",
+    "treasury_settlement"
+  ],
+  "calibration": "recalibrated out of fold (pressure.recalibrated), as #128's forms were",
+  "inputs_note": "the control hierarchical_logistic with net_settlement, net_settlement_bills and net_settlement_due_5d as linear columns at every horizon; metadata/net_settlement.json"
+}

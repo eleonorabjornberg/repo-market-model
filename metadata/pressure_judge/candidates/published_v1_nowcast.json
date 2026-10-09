@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "nowcast (#445)",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement",
+    "spread_nowcast_bps"
+  ],
+  "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION), as published_v1",
+  "inputs_note": "the baseline published_v1 with spread_nowcast_bps, the primary nowcast of metadata/nowcast.json (rrp_settlement), as one more feature at every horizon and nothing else changed; the column is off in every published declaration"
+}

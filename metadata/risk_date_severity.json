@@ -1,0 +1,37 @@
+{
+  "status": "declared by the pull request that closes #428 before any score was computed; nothing here is tuned on a scored day; the choices below (the risk-date set, the zero forecast on other days, the inputs, the estimators) are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "minimum_history": 61, "refit_every": 21, "decision_time": "16:00"},
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "risk_dates": {
+    "definition": "a scored day whose pressure-day type, read from the calendar columns as EvaluationSplits.day_type reads them, is quarter_end, month_end or tax_date; at horizon 1 also a day with a coupon settlement (treasury_settlement_coupons > 0)",
+    "why_the_coupon_clause_is_horizon_1_only": "a settlement is public one business day ahead and not earlier (docs/decisions/information-set.md); the calendar types are known in advance at every horizon. So the set at h >= 2 is the three calendar types, and a mid-month coupon settlement that is not also a month-end or tax date is a risk date only at h = 1",
+    "implementation": "ml._RiskDateDesign.member",
+    "judge_comparison": "the judge's own risky_dates tier (quarter-end, tax date or coupon settlement, in scarcity state >= 2, lead 5, reported only) is unchanged and is reported beside this set"
+  },
+  "forecast": {
+    "on_a_risk_date": "the fit's probability of SOFR - IORB above the threshold, from a model fitted on risk-date label days only",
+    "on_any_other_day": "exactly 0 at every threshold, so the model never flags an ordinary day (the judge's cut-off rule never chooses a cut-off of 0)",
+    "calibration": "none: the fit is on the days it serves, so its probabilities are on the risk dates' own base rate; no reweighting and no recalibration step"
+  },
+  "target": {
+    "classifiers": "spread > tau, per threshold, on risk-date label days, each label paired with what was public at its own decision instant (the direct pairs of ml._pressure_pairs)",
+    "quantile_skewt": "the spread itself (the day's severity): quantile regressions on a declared grid smoothed to a skew-t law, read as P(spread > tau) (ml.PRESSURE_QUANTILE_SKEWT_SETTINGS)"
+  },
+  "features": {
+    "base": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date", "reserve_balances", "reserve_scarcity_state", "tga", "treasury_settlement", "treasury_settlement_coupons"],
+    "new": ["on_rrp", "tga_daily", "tga_daily_change", "sofr_p75_iorb_bps", "sofr_p99_iorb_bps"],
+    "note": "base: the latest public spread (the previous day's), the calendar, reserves, the reserve-scarcity state (#115), the weekly TGA change (with reserves, the design's expected-TGA term) and the gross Treasury settlement (net cash need is not built; gross is used until it is), the settlement size and the coupon part only at horizon 1; new: the ON RRP balance (the cushion, read from the Desk's operation results under scarcity.measurement_declaration), the daily TGA balance and its change (#377), and the previous day's SOFR 75th and 99th percentiles above IORB in basis points (sofr_p75_iorb_bps is added by this pull request to repo_model.measurement_fields, off in every published declaration); treasury_settlement and treasury_settlement_coupons leave the inputs at h >= 2",
+    "design": "ml._PressureDesign: each scheduled term (the three day-type indicators and the settlements) is also crossed with the reserves state, as in the direct models of #114"
+  },
+  "cutoffs": "chosen by the judge's cutoff_rule from each refit's training window alone (pressure_judge.json); none is declared here",
+  "candidates": {
+    "risk_logistic": {"kind": "logistic", "inputs": ["base", "new"]},
+    "risk_logistic_base": {"kind": "logistic", "inputs": ["base"]},
+    "risk_gbm": {"kind": "gbm_classifier", "inputs": ["base", "new"]},
+    "risk_gbm_base": {"kind": "gbm_classifier", "inputs": ["base"]},
+    "risk_quantile_skewt": {"kind": "quantile_skewt", "inputs": ["base", "new"]},
+    "risk_quantile_skewt_base": {"kind": "quantile_skewt", "inputs": ["base"]}
+  },
+  "reference_for_the_new_inputs": "each candidate with 'new' inputs has a '_base' twin with the same estimator and no new input, so the judge's report carries the same classifier without the new inputs"
+}

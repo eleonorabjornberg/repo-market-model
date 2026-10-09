@@ -34,6 +34,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from repo_model import pressure_judge as pj  # noqa: E402
 from repo_model import measurement_fields, policy_events, policy_features  # noqa: E402
 from repo_model.data import DailyObservation  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
@@ -196,7 +197,7 @@ class SourceTests(unittest.TestCase):
         self.assertEqual((lag["days"], lag["available_time"], lag["timezone"]), (0, "16:00", "America/New_York"))
 
 
-JUDGE = json.loads((ROOT / "metadata" / "pressure_judge.json").read_text())
+JUDGE = {**json.loads((ROOT / "metadata" / "pressure_judge.json").read_text()), "candidates": dict(pj.load_declaration().candidates)}
 DECLARED = json.loads(DECLARATION.read_text())
 
 

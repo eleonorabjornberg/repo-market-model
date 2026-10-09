@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "C (#380)",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement",
+  "calibration": "the same raw forecast, Platt out of fold per threshold and horizon (probability_calibration, 'platt'): the published recalibration, rerun as the track's pooled control"
+}

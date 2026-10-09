@@ -60,6 +60,17 @@ state below comes with the command that checks it, and the command's output wins
   gh pr list --repo eleonorabjornberg/repo-market-model
   ```
 
+## Where a new pressure-day candidate goes
+
+A candidate for the pressure-day judge (#374) is declared in a file of its own,
+`metadata/pressure_judge/candidates/<name>.json` (its `role`, `features` and `calibration`), and nowhere else:
+`metadata/pressure_judge.json` holds the bar, tiers, thresholds, horizons and status, and the judge loads the union
+(#446). Two pull requests that each add a candidate then touch different files and do not conflict. Add the name to
+`confirmation.candidates` in `metadata/pressure_judge.json` only if the candidate is to be looked at in the single
+confirmation look. Commit the file before the candidate is scored: `scripts/pressure_judge.py` refuses an uncommitted or
+edited declaration or candidate file. A pull request that still lists candidates in `pressure_judge.json` moves them into
+files when it next merges main; that is a mechanical change.
+
 ## The directives, in order
 
 1. [`01`](directives/01-as-of-information-set.md): implement the as-of information set.

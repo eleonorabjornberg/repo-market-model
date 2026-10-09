@@ -1,0 +1,16 @@
+{
+  "role": "candidate",
+  "track": "T (#379)",
+  "form": "quantile",
+  "inputs": "timing",
+  "features": [
+    "spread_bps",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date"
+  ],
+  "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+  "calibration": "none (the skew-t's exceedance as fitted)"
+}

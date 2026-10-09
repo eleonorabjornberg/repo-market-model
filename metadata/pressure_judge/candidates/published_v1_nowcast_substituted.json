@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "nowcast (#445), amendment",
+  "features": [
+    "reserve_balances",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_volume",
+    "spread_bps",
+    "tbill_13w",
+    "tbill_4w",
+    "tga",
+    "treasury_settlement",
+    "spread_nowcast_bps"
+  ],
+  "calibration": "conformal PID with nested selection, then Platt out of fold (pressure.RECALIBRATION), as published_v1",
+  "inputs_note": "published_v1 fitted exactly as published; at prediction its latest spread is the primary nowcast (metadata/nowcast.json, rrp_settlement) of the day before the target instead of the published spread; spread_nowcast_bps is read through the as-of rule and is not a regressor of the fit; the column is off in every published declaration"
+}
