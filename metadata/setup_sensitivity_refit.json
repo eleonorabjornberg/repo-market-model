@@ -1,0 +1,19 @@
+{
+  "status": "declared by the pull request that closes #524 (criterion 3, finding #518) before any refit was computed; reported only, nothing here changes the judge's declaration, a tier, a cut-off rule, a model or any published figure",
+  "scoring": {"last_day": "2025-12-31", "primary_threshold_bp": 5},
+  "rows": {
+    "reading": "the five risk-date models that meet tier 1 (docs/pivot/risk-date-severity-result.md), each as metadata/risk_date_severity.json declares it",
+    "chosen": ["risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"]
+  },
+  "period": {"first": "2018-01-01", "last": "2019-12-31"},
+  "share": "the period's scored days over all scored days on the h = 1 grid, as metadata/setup_sensitivity.json (#482) computed it (an after-the-fact quantity: this is a sensitivity reading, not a rule)",
+  "weights": "setup_sensitivity.downweights over the label days of a fit's risk-date training pairs: every pair in the period weighs the same, the period's pairs together weigh the period's share of the fit's total weight, pairs outside weigh 1; a fit whose pairs are all on one side weighs every pair 1",
+  "readings": {
+    "declared": "the model as declared, the judge's cut-off rule as declared",
+    "cutoff_only": "the model as declared, the flag cut-off chosen with the period's days down-weighted (#482's reading)",
+    "refit": "the model refitted with the weights, the judge's cut-off rule as declared",
+    "refit_and_cutoff": "the model refitted with the weights and the cut-off chosen with the same weights"
+  },
+  "weights_by_window": "the weight on a 2018-19 day in each refit's training window, by the calendar year in which the refit window ends, so that where the weighting is the identity is shown rather than assumed",
+  "what_it_cannot_say": "a training window that holds only 2018-19 days (every refit that ends before 2020) has nothing to rebalance against; the rule weighs every pair 1 there, and no re-weighting of those windows can change a warning in 2018 or 2019. The reading is reported for the years in which the weights are not 1."
+}
