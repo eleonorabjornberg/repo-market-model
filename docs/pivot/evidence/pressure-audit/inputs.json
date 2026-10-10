@@ -1,0 +1,1268 @@
+{
+ "horizons": {
+  "1": {
+   "inputs": {
+    "days_to_month_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1873
+     }
+    },
+    "dealer_treasury_position": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "8": 1873
+     }
+    },
+    "effr": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "iorb_announced_change_bps": {
+     "median_hours_between_availability_and_decision": 0.0,
+     "panel_days_before_scored_day": {
+      "0": 1873
+     }
+    },
+    "on_rrp": {
+     "median_hours_between_availability_and_decision": 0.0,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "quarter_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1873
+     }
+    },
+    "reserve_balances": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "4": 233,
+      "5": 1334,
+      "6": 306
+     }
+    },
+    "sofr_p25": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "sofr_p75": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "sofr_p75_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "sofr_p99_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "spread_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "tax_date": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1873
+     }
+    },
+    "tbill_13w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "tbill_4w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "2": 1873
+     }
+    },
+    "tga": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "4": 233,
+      "5": 1334,
+      "6": 306
+     }
+    },
+    "tga_daily": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "3": 1873
+     }
+    },
+    "treasury_settlement": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "0": 1873
+     }
+    },
+    "treasury_settlement_bills": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "0": 1873
+     }
+    },
+    "treasury_settlement_coupons": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "0": 1873
+     }
+    }
+   },
+   "scored_days": 1873,
+   "target_row_read_panel_days_before_scored_day": {
+    "2": 1873
+   }
+  },
+  "2": {
+   "inputs": {
+    "days_to_month_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1872
+     }
+    },
+    "dealer_treasury_position": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "9": 1872
+     }
+    },
+    "effr": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "iorb_announced_change_bps": {
+     "median_hours_between_availability_and_decision": -24.0,
+     "panel_days_before_scored_day": {
+      "0": 1872
+     }
+    },
+    "on_rrp": {
+     "median_hours_between_availability_and_decision": 0.0,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "quarter_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1872
+     }
+    },
+    "reserve_balances": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "5": 232,
+      "6": 1334,
+      "7": 306
+     }
+    },
+    "sofr_p25": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "sofr_p75": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "sofr_p75_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "sofr_p99_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "spread_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "tax_date": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1872
+     }
+    },
+    "tbill_13w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "tbill_4w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "3": 1872
+     }
+    },
+    "tga": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "5": 232,
+      "6": 1334,
+      "7": 306
+     }
+    },
+    "tga_daily": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "4": 1872
+     }
+    },
+    "treasury_settlement": {
+     "median_hours_between_availability_and_decision": -23.0,
+     "panel_days_before_scored_day": {
+      "0": 1872
+     }
+    },
+    "treasury_settlement_bills": {
+     "median_hours_between_availability_and_decision": -23.0,
+     "panel_days_before_scored_day": {
+      "0": 1872
+     }
+    },
+    "treasury_settlement_coupons": {
+     "median_hours_between_availability_and_decision": -23.0,
+     "panel_days_before_scored_day": {
+      "0": 1872
+     }
+    }
+   },
+   "scored_days": 1872,
+   "target_row_read_panel_days_before_scored_day": {
+    "3": 1872
+   }
+  },
+  "3": {
+   "inputs": {
+    "days_to_month_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1871
+     }
+    },
+    "dealer_treasury_position": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "10": 1871
+     }
+    },
+    "effr": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "iorb_announced_change_bps": {
+     "median_hours_between_availability_and_decision": -48.0,
+     "panel_days_before_scored_day": {
+      "0": 1871
+     }
+    },
+    "on_rrp": {
+     "median_hours_between_availability_and_decision": 0.0,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "quarter_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1871
+     }
+    },
+    "reserve_balances": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "6": 231,
+      "7": 1334,
+      "8": 306
+     }
+    },
+    "sofr_p25": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "sofr_p75": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "sofr_p75_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "sofr_p99_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "spread_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "tax_date": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1871
+     }
+    },
+    "tbill_13w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "tbill_4w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "4": 1871
+     }
+    },
+    "tga": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "6": 231,
+      "7": 1334,
+      "8": 306
+     }
+    },
+    "tga_daily": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "5": 1871
+     }
+    },
+    "treasury_settlement": {
+     "median_hours_between_availability_and_decision": -47.0,
+     "panel_days_before_scored_day": {
+      "0": 1871
+     }
+    },
+    "treasury_settlement_bills": {
+     "median_hours_between_availability_and_decision": -47.0,
+     "panel_days_before_scored_day": {
+      "0": 1871
+     }
+    },
+    "treasury_settlement_coupons": {
+     "median_hours_between_availability_and_decision": -47.0,
+     "panel_days_before_scored_day": {
+      "0": 1871
+     }
+    }
+   },
+   "scored_days": 1871,
+   "target_row_read_panel_days_before_scored_day": {
+    "4": 1871
+   }
+  },
+  "4": {
+   "inputs": {
+    "days_to_month_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1870
+     }
+    },
+    "dealer_treasury_position": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "11": 1870
+     }
+    },
+    "effr": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "iorb_announced_change_bps": {
+     "median_hours_between_availability_and_decision": -120.0,
+     "panel_days_before_scored_day": {
+      "0": 1870
+     }
+    },
+    "on_rrp": {
+     "median_hours_between_availability_and_decision": 0.0,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "quarter_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1870
+     }
+    },
+    "reserve_balances": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "7": 231,
+      "8": 1333,
+      "9": 306
+     }
+    },
+    "sofr_p25": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "sofr_p75": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "sofr_p75_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "sofr_p99_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "spread_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "tax_date": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1870
+     }
+    },
+    "tbill_13w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "tbill_4w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "5": 1870
+     }
+    },
+    "tga": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "7": 231,
+      "8": 1333,
+      "9": 306
+     }
+    },
+    "tga_daily": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "6": 1870
+     }
+    },
+    "treasury_settlement": {
+     "median_hours_between_availability_and_decision": -119.0,
+     "panel_days_before_scored_day": {
+      "0": 1870
+     }
+    },
+    "treasury_settlement_bills": {
+     "median_hours_between_availability_and_decision": -119.0,
+     "panel_days_before_scored_day": {
+      "0": 1870
+     }
+    },
+    "treasury_settlement_coupons": {
+     "median_hours_between_availability_and_decision": -119.0,
+     "panel_days_before_scored_day": {
+      "0": 1870
+     }
+    }
+   },
+   "scored_days": 1870,
+   "target_row_read_panel_days_before_scored_day": {
+    "5": 1870
+   }
+  },
+  "5": {
+   "inputs": {
+    "days_to_month_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1869
+     }
+    },
+    "dealer_treasury_position": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "12": 1869
+     }
+    },
+    "effr": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "iorb_announced_change_bps": {
+     "median_hours_between_availability_and_decision": -144.0,
+     "panel_days_before_scored_day": {
+      "0": 1869
+     }
+    },
+    "on_rrp": {
+     "median_hours_between_availability_and_decision": 0.0,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "quarter_end": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1869
+     }
+    },
+    "reserve_balances": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "10": 306,
+      "8": 231,
+      "9": 1332
+     }
+    },
+    "sofr_p25": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "sofr_p75": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "sofr_p75_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "sofr_p99_iorb_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "spread_bps": {
+     "median_hours_between_availability_and_decision": 1.0,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "tax_date": {
+     "median_hours_between_availability_and_decision": null,
+     "panel_days_before_scored_day": {
+      "0": 1869
+     }
+    },
+    "tbill_13w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "tbill_4w": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "6": 1869
+     }
+    },
+    "tga": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "10": 306,
+      "8": 231,
+      "9": 1332
+     }
+    },
+    "tga_daily": {
+     "median_hours_between_availability_and_decision": 23.5,
+     "panel_days_before_scored_day": {
+      "7": 1869
+     }
+    },
+    "treasury_settlement": {
+     "median_hours_between_availability_and_decision": -143.0,
+     "panel_days_before_scored_day": {
+      "0": 1869
+     }
+    },
+    "treasury_settlement_bills": {
+     "median_hours_between_availability_and_decision": -143.0,
+     "panel_days_before_scored_day": {
+      "0": 1869
+     }
+    },
+    "treasury_settlement_coupons": {
+     "median_hours_between_availability_and_decision": -143.0,
+     "panel_days_before_scored_day": {
+      "0": 1869
+     }
+    }
+   },
+   "scored_days": 1869,
+   "target_row_read_panel_days_before_scored_day": {
+    "6": 1869
+   }
+  }
+ },
+ "panel_sha256": "5821868c174b44877348a7f34fdbafad25a4aead66ec84372b92ab734283547b",
+ "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "rank_at_horizon_1": {
+  "days_to_month_end": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.2863636363636364,
+    "auroc_pressure_day": 0.471900826446281,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.7753036437246964,
+    "auroc_pressure_day": 0.6366396761133604,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.08775510204081632,
+    "auroc_pressure_day": 0.26285714285714284,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.31769097453672845,
+    "auroc_pressure_day": 0.4671757131255285,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "dealer_treasury_position": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.8909090909090909,
+    "auroc_pressure_day": 0.8954545454545455,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.15587044534412955,
+    "auroc_pressure_day": 0.23684210526315788,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.8795918367346939,
+    "auroc_pressure_day": 0.9036734693877551,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.6115295738345998,
+    "auroc_pressure_day": 0.6265478612513501,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "effr": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.8522727272727273,
+    "auroc_pressure_day": 0.8400826446280992,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.8967611336032388,
+    "auroc_pressure_day": 0.861336032388664,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.09795918367346938,
+    "auroc_pressure_day": 0.07959183673469387,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.5081655779229436,
+    "auroc_pressure_day": 0.5165879654049348,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "iorb_announced_change_bps": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.4909090909090909,
+    "auroc_pressure_day": 0.4909090909090909,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.24898785425101214,
+    "auroc_pressure_day": 0.3734817813765182,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.5061224489795918,
+    "auroc_pressure_day": 0.5061224489795918,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.47800293294227436,
+    "auroc_pressure_day": 0.4755628396085031,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "on_rrp": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.24545454545454545,
+    "auroc_pressure_day": 0.33264462809917356,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.6862348178137652,
+    "auroc_pressure_day": 0.8097165991902834,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.2795918367346939,
+    "auroc_pressure_day": 0.28653061224489795,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.2394347420343954,
+    "auroc_pressure_day": 0.24313666390375002,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "quarter_end": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.4954545454545455,
+    "auroc_pressure_day": 0.5409090909090909,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.49190283400809715,
+    "auroc_pressure_day": 0.49190283400809715,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.7459183673469387,
+    "auroc_pressure_day": 0.6959183673469388,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.551337599431187,
+    "auroc_pressure_day": 0.5226307989852561,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "reserve_balances": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.11477272727272728,
+    "auroc_pressure_day": 0.1,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.12753036437246965,
+    "auroc_pressure_day": 0.15890688259109312,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.336734693877551,
+    "auroc_pressure_day": 0.32857142857142857,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.15928987246144957,
+    "auroc_pressure_day": 0.11647577424459347,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "sofr_p25": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.8125,
+    "auroc_pressure_day": 0.8520661157024794,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.888663967611336,
+    "auroc_pressure_day": 0.8522267206477733,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.09591836734693877,
+    "auroc_pressure_day": 0.08448979591836735,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.507807981492192,
+    "auroc_pressure_day": 0.5242914979757085,
+    "days": 1867,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "sofr_p75": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.8113636363636364,
+    "auroc_pressure_day": 0.8582644628099173,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.8896761133603239,
+    "auroc_pressure_day": 0.8532388663967612,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.1,
+    "auroc_pressure_day": 0.08857142857142856,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.507496552030965,
+    "auroc_pressure_day": 0.5276359795810597,
+    "days": 1867,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "sofr_p75_iorb_bps": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.7136363636363636,
+    "auroc_pressure_day": 0.806198347107438,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.902834008097166,
+    "auroc_pressure_day": 0.9261133603238867,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.5336734693877551,
+    "auroc_pressure_day": 0.7387755102040816,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.84983538728478,
+    "auroc_pressure_day": 0.9379636381924712,
+    "days": 1867,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "sofr_p99_iorb_bps": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.7193181818181819,
+    "auroc_pressure_day": 0.8148760330578513,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.9615384615384616,
+    "auroc_pressure_day": 0.9610323886639676,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.6183673469387755,
+    "auroc_pressure_day": 0.7779591836734694,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.8483868817491002,
+    "auroc_pressure_day": 0.9336020897696732,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "spread_bps": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.7147727272727272,
+    "auroc_pressure_day": 0.8140495867768595,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.7854251012145749,
+    "auroc_pressure_day": 0.8481781376518218,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.4091836734693878,
+    "auroc_pressure_day": 0.7077551020408164,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.8354330533706616,
+    "auroc_pressure_day": 0.9350191311045806,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "tax_date": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.6113636363636363,
+    "auroc_pressure_day": 0.6227272727272727,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.4757085020242915,
+    "auroc_pressure_day": 0.4757085020242915,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.47551020408163264,
+    "auroc_pressure_day": 0.47551020408163264,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.5742012176154291,
+    "auroc_pressure_day": 0.5251488207369452,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "tbill_13w": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.9386363636363636,
+    "auroc_pressure_day": 0.9223140495867769,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.8218623481781376,
+    "auroc_pressure_day": 0.8147773279352226,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.09693877551020408,
+    "auroc_pressure_day": 0.08081632653061224,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.4867573212460561,
+    "auroc_pressure_day": 0.47984954663049756,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "tbill_4w": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.9363636363636364,
+    "auroc_pressure_day": 0.9388429752066115,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.8208502024291497,
+    "auroc_pressure_day": 0.8132591093117408,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.11122448979591837,
+    "auroc_pressure_day": 0.09551020408163265,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.5088765942318801,
+    "auroc_pressure_day": 0.5044164803791057,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "tga": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.4056818181818182,
+    "auroc_pressure_day": 0.4256198347107438,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.1720647773279352,
+    "auroc_pressure_day": 0.12651821862348178,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.42857142857142855,
+    "auroc_pressure_day": 0.4216326530612245,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.3234902013064925,
+    "auroc_pressure_day": 0.3021521446093822,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "tga_daily": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.5568181818181818,
+    "auroc_pressure_day": 0.4652892561983471,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.05465587044534413,
+    "auroc_pressure_day": 0.0354251012145749,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.42857142857142855,
+    "auroc_pressure_day": 0.34448979591836737,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.3106252499666711,
+    "auroc_pressure_day": 0.31101650214753973,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "treasury_settlement": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.8306818181818182,
+    "auroc_pressure_day": 0.6549586776859504,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.38360323886639675,
+    "auroc_pressure_day": 0.46710526315789475,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.7908163265306123,
+    "auroc_pressure_day": 0.7832653061224489,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.6914966893303115,
+    "auroc_pressure_day": 0.5624251710077948,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "treasury_settlement_bills": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.5284090909090909,
+    "auroc_pressure_day": 0.528099173553719,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.4342105263157895,
+    "auroc_pressure_day": 0.4407894736842105,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.6244897959183674,
+    "auroc_pressure_day": 0.6146938775510205,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.5133204461627339,
+    "auroc_pressure_day": 0.496278435017038,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  },
+  "treasury_settlement_coupons": {
+   "2018": {
+    "auroc_onset_vs_non_pressure": 0.9602272727272727,
+    "auroc_pressure_day": 0.6880165289256198,
+    "days": 121,
+    "onsets": 4,
+    "pressure_days": 11
+   },
+   "2020": {
+    "auroc_onset_vs_non_pressure": 0.4331983805668016,
+    "auroc_pressure_day": 0.5521255060728745,
+    "days": 251,
+    "onsets": 2,
+    "pressure_days": 4
+   },
+   "2024": {
+    "auroc_onset_vs_non_pressure": 0.7081632653061225,
+    "auroc_pressure_day": 0.7453061224489796,
+    "days": 250,
+    "onsets": 2,
+    "pressure_days": 5
+   },
+   "all_years": {
+    "auroc_onset_vs_non_pressure": 0.819646269386304,
+    "auroc_pressure_day": 0.6046350019675315,
+    "days": 1869,
+    "onsets": 26,
+    "pressure_days": 138
+   }
+  }
+ }
+}
