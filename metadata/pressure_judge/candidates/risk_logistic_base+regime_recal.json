@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "R (#471)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "the raw risk_logistic_base forecast (metadata/risk_date_severity.json), then Platt fitted per declared regime on that regime's earlier observable pairs, pooled Platt while the regime holds fewer than 60 pairs or 3 events (group_calibration.regime_walk_forward); metadata/regime_recalibration.json"
+}

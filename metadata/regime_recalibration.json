@@ -1,0 +1,37 @@
+{
+ "status": "declared by the pull request that closes #471 before any recalibrated score was computed; the remedy, its groups and its gate are listed in the pull request for Eleonora's review; nothing here is tuned on a scored day",
+ "scoring": {
+  "last_day": "2025-12-31"
+ },
+ "thresholds_bp": [
+  5,
+  10
+ ],
+ "horizons": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "bases": [
+  "risk_gbm",
+  "risk_gbm_base",
+  "risk_logistic",
+  "risk_logistic_base",
+  "risk_quantile_skewt_base"
+ ],
+ "bases_declared_in": "metadata/risk_date_severity.json (#428); each base is fitted exactly as declared there, unchanged",
+ "remedy": {
+  "name": "regime_recal",
+  "judged_form": "+regime_recal",
+  "what": "Platt recalibration fitted per declared regime (metadata/evaluation_splits.json: 2018-19, 2020, 2021-23, 2024, 2025-26), per threshold and horizon, applied to the base's raw exceedance probability on every scored day, then made non-increasing in tau",
+  "regime": "read off the calendar date, known at the decision instant (group_calibration.require_regimes_asof refuses any other label)",
+  "fitted_on": "the regime's own pairs whose scored day is at or before the refit block's last training label, and no other (group_calibration.regime_walk_forward = walk_forward('group') with the regime as the group)",
+  "fallback": "the pooled Platt curve on every observable earlier pair while the regime holds fewer than 60 earlier pairs or 3 events (group_calibration.GROUP_MINIMUM_PAIRS, GROUP_MINIMUM_EVENTS); identity before the pooled gate of 250 pairs and 5 events (probability_calibration.MINIMUM_PAIRS, MINIMUM_EVENTS)",
+  "non_risk_days": "the raw forecast is exactly 0 on a day that is not a risk date; the curve is fitted on all scored days, so a regime's curve gives such a day the regime's own base rate for it; this is part of the declared remedy, not a choice made after a score",
+  "constants_searched": "none: every constant is the one #380 declared"
+ },
+ "cutoffs": "chosen by the judge's cutoff_rule from each refit's training window alone (pressure_judge.json); none is declared here",
+ "diagnosis": "the tier 3 table by regime (mean predicted, realised frequency, realised minus predicted with the judge's 90% stationary-bootstrap interval, direction) for each base at h = 1 to 5, +5 bp, read from the judge's own result"
+}
