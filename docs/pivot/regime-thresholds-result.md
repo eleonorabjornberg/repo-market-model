@@ -22,7 +22,7 @@ variant is a candidate file of its own (`metadata/pressure_judge/candidates/<row
   refit's training window only; a window with no onset in that state flags nothing (`never_flag`, the rule's own default).
   A guard in `select_cutoff` refuses a window that reaches past the refit's training end; the recorded mutation is in
   `tests/test_pressure_judge.py` (`ScarceCutoffTests`).
-* **The weighted-miss rule of #454** has not merged, so only the unweighted rule is reported.
+* **The weighted-miss rule of #454** is reported beside the unweighted rule, forced on for a scratch run (the section "Under the weighted-miss rule" below).
 
 ## Reproduce
 
@@ -97,11 +97,73 @@ days under each cut-off.
 
 (Table B's onset count is the h = 1 grid's own; Table A counts onsets on the days every horizon scores.)
 
+## Under the weighted-miss rule of #454 (draft, not in force)
+
+#454 has merged, so the criterion's second half is answered here. The draft rule (`metadata/weighted_miss.json`, `in_force: false`)
+counts a false alarm 0.25 within 2 trading days of a pressure day, 0.5 within 5 and 1 beyond; the judge's cut-off rule and tier 1
+then count the weighted false alarms against the same limit of 2 per onset. It is forced on for this scratch run only
+(`regime_thresholds.py score --rule weighted`, the way `docs/pivot/alarm-cooldown-result.md` forced it); the pooled and the
+scarce-state cut-offs are both chosen on the weighted count of the training window. No published figure moves, the 2026 tiers are
+not read, and `--rule unweighted` reproduces `tables.md` exactly (the same run as above). The judge's full weighted tables are in
+`docs/pivot/evidence/regime-thresholds/tables_weighted.md`, the figures below in `summary_weighted.json`.
+
+Table C. Each row under both rules and both cut-offs, h = 1 to 5, tier 1 at lead >= 1. "Flat" counts every false alarm as 1,
+"weighted" by the draft weights; the weighted-rule rows are the ones the cut-off was chosen on. Tiers are yes/no; the last
+column is the number of onsets warned in 2018, 2020 and 2024.
+
+| row | cut-off | onsets warned | worst FA/onset, flat | worst FA/onset, weighted | tier 1 | tier 3 | tier 5 | 2018 / 2020 / 2024 warned |
+|---|---|---|---|---|---|---|---|---|
+| two_part_gbm | unweighted, pooled | 15 of 26 | 2.46 | 1.07 | no | no | no | 0 / 1 / 0 |
+| two_part_gbm | unweighted, scarce-state | 15 of 26 | 2.46 | 1.07 | no | no | no | 0 / 1 / 0 |
+| two_part_gbm | weighted, pooled | 15 of 26 | 4.81 | 2.55 | no | no | no | 0 / 1 / 0 |
+| two_part_gbm | weighted, scarce-state | 15 of 26 | 4.81 | 2.55 | no | no | no | 0 / 1 / 0 |
+| ngboost_laplace | unweighted, pooled | 15 of 26 | 2.54 | 1.03 | no | no | no | 0 / 0 / 0 |
+| ngboost_laplace | unweighted, scarce-state | 15 of 26 | 2.54 | 1.03 | no | no | no | 0 / 0 / 0 |
+| ngboost_laplace | weighted, pooled | 17 of 26 | 4.08 | 1.73 | yes | no | no | 0 / 0 / 0 |
+| ngboost_laplace | weighted, scarce-state | 17 of 26 | 4.08 | 1.73 | yes | no | no | 0 / 0 / 0 |
+| hierarchical_logistic | unweighted, pooled | 15 of 26 | 3.65 | 1.31 | no | no | no | 0 / 0 / 0 |
+| hierarchical_logistic | unweighted, scarce-state | 15 of 26 | 3.65 | 1.31 | no | no | no | 0 / 0 / 0 |
+| hierarchical_logistic | weighted, pooled | 15 of 26 | 6.23 | 2.91 | no | no | no | 0 / 0 / 0 |
+| hierarchical_logistic | weighted, scarce-state | 15 of 26 | 6.08 | 2.86 | no | no | no | 0 / 0 / 0 |
+| settlement_quantile_timing | unweighted, pooled | 15 of 26 | 3.65 | 1.68 | no | no | yes | 1 / 0 / 0 |
+| settlement_quantile_timing | unweighted, scarce-state | 15 of 26 | 3.65 | 1.68 | no | no | yes | 1 / 0 / 0 |
+| settlement_quantile_timing | weighted, pooled | 16 of 26 | 6.38 | 3.41 | no | no | yes | 1 / 1 / 0 |
+| settlement_quantile_timing | weighted, scarce-state | 19 of 26 | 6.81 | 3.49 | no | no | yes | 1 / 1 / 0 |
+| scarcity_logistic_interactions | unweighted, pooled | 14 of 26 | 3.23 | 1.23 | no | no | no | 0 / 0 / 0 |
+| scarcity_logistic_interactions | unweighted, scarce-state | 14 of 26 | 3.23 | 1.23 | no | no | no | 0 / 0 / 0 |
+| scarcity_logistic_interactions | weighted, pooled | 14 of 26 | 5.50 | 2.39 | no | no | no | 0 / 0 / 0 |
+| scarcity_logistic_interactions | weighted, scarce-state | 14 of 26 | 5.50 | 2.39 | no | no | no | 0 / 0 / 0 |
+| scarcity_logistic | unweighted, pooled | 13 of 26 | 3.23 | 1.23 | no | no | no | 0 / 0 / 0 |
+| scarcity_logistic | unweighted, scarce-state | 13 of 26 | 3.23 | 1.23 | no | no | no | 0 / 0 / 0 |
+| scarcity_logistic | weighted, pooled | 13 of 26 | 4.73 | 2.09 | no | no | no | 0 / 0 / 0 |
+| scarcity_logistic | weighted, scarce-state | 13 of 26 | 4.73 | 2.09 | no | no | no | 0 / 0 / 0 |
+
+Table D. Onsets flagged at lead of at least 1 by calendar year under the weighted rule, pooled / scarce-state cut-off.
+
+| model | 2018 (4) | 2019 (13) | 2020 (2) | 2024 (2) | 2025 (5) | all (26) |
+|---|---|---|---|---|---|---|
+| two_part_gbm | 0 / 0 | 12 / 12 | 1 / 1 | 0 / 0 | 2 / 2 | 15 / 15 |
+| ngboost_laplace | 0 / 0 | 12 / 12 | 0 / 0 | 0 / 0 | 5 / 5 | 17 / 17 |
+| hierarchical_logistic | 0 / 0 | 12 / 12 | 0 / 0 | 0 / 0 | 3 / 3 | 15 / 15 |
+| settlement_quantile_timing | 1 / 1 | 13 / 13 | 1 / 1 | 0 / 0 | 1 / 4 | 16 / 19 |
+| scarcity_logistic_interactions | 0 / 0 | 12 / 12 | 0 / 0 | 0 / 0 | 2 / 2 | 14 / 14 |
+| scarcity_logistic | 0 / 0 | 10 / 10 | 0 / 0 | 0 / 0 | 3 / 3 | 13 / 13 |
+
+* **No row passes.** Under the weighted rule the cut-offs loosen: every row warns the same number of onsets or more (up to 17 of 26 for
+  `ngboost_laplace`) and its flat false alarms per onset rise to 4.08 to 6.81, so the weighted count is what stays near the limit.
+  `ngboost_laplace` passes tier 1 (weighted worst 1.73), under both cut-offs; it fails tiers 3 and 5, as before. No variant or
+  baseline passes the pass rule, under either rule.
+* **The scarce-state cut-off still changes little.** Only `settlement_quantile_timing` moves (16 to 19 onsets warned, 2025 from 1 to 4), at
+  a worst weighted 3.49 against 3.41, still over the limit of 2; `hierarchical_logistic` gains nothing on warnings. The other four rows are identical to
+  the pooled cut-off in every column.
+* **2018, 2020 and 2024.** Under the weighted rule `settlement_quantile_timing` warns one of four 2018 onsets and one of two 2020 onsets
+  and `two_part_gbm` one of two 2020 onsets; no row warns either 2024 onset. The weighted rule does not help 2024.
+
 ## What was checked, and what was not
 
 * Checked: the pooled rows equal Table 1 of the re-judge for all six rows; the scarce cut-off reads training days only (unit
   tests and a recorded mutation, `tests/test_pressure_judge.py`); no scored day is after 2025-12-31 and no confirmation day is read
   (the confirmation list `confirmation.candidates` is unchanged and empty).
-* Not checked: the weighted-miss rule (#454 has not merged); a fallback to the pooled cut-off where the scarce window gives none;
+* Not checked: a fallback to the pooled cut-off where the scarce window gives none;
   state thresholds other than 2 (a choice made after seeing a score would be tuning on the scored days).
-* No variant passes tier 1, so no "Publish?" issue is opened.
+* No variant passes the pass rule, under either rule, so no "Publish?" issue is opened.

@@ -116,7 +116,7 @@ def score_command(args) -> int:
     renamed = [
         pj.Forecast(
             name=f.name + suffix, horizon=f.horizon, dates=f.dates, probabilities=f.probabilities,
-            cutoffs=f.cutoffs, cutoff_rule=f.cutoff_rule,
+            cutoffs=f.cutoffs, cutoff_rule=f.cutoff_rule, cutoff_weighting=f.cutoff_weighting,
         )
         for f in variants
     ]
