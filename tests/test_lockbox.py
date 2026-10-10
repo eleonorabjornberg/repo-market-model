@@ -324,6 +324,12 @@ NOT_ENTRY_POINTS = {
         "_as_of_folds, which calls require_unlocked, and pressure_judge.judge guards the "
         "scored days itself"
     ),
+    "scripts/pressure_audit.inputs_command": (
+        "tabulates what each input reads at the 16:00 decision and how the value read ranks the +5 bp "
+        "onsets, on the judge's scored days (#473); scores no forecast, it ends at the declared last "
+        "scored day, calls require_unlocked on it before the first read, and refuses a scratch panel "
+        "whose spread is not the published panel's"
+    ),
     "scripts/pressure_track_m.states_command": (
         "tabulates the filtered state against #115's state on the fold grid (#384); scores "
         "nothing, it ends at the declared last scored day through _as_of_folds, which calls "
