@@ -1,0 +1,20 @@
+{
+  "role": "candidate",
+  "track": "alarm cool-down (#459)",
+  "features": [
+    "spread_bps",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date"
+  ],
+  "calibration": "none (the skew-t's exceedance as fitted)",
+  "alarm_rule": {
+    "kind": "cooldown",
+    "base": "settlement_quantile_timing",
+    "trading_days": 5,
+    "keep_when_pressure_starts": true
+  },
+  "inputs_note": "the forecasts of settlement_quantile_timing unchanged (the same probabilities and the same cut-offs, chosen by the judge's cutoff_rule); only the flags are cooled: after a flag, flags in the next 5 trading days count as one alarm, unless a pressure day starts in that window (the form declared by the directive; it reads the days after the flag)"
+}

@@ -1,0 +1,13 @@
+{
+  "role": "candidate",
+  "track": "Q (#385)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement_coupons",
+    "reserve_balances"
+  ],
+  "calibration": "none (the model's own distribution)"
+}

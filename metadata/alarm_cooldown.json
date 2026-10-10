@@ -1,0 +1,31 @@
+{
+  "status": "declared by the pull request that closes #459, before any cool-down was scored; the rows, the cool-down length, the two forms and the reporting are fixed here and nothing is tuned on a scored day. A scratch measurement: it changes no bar, no published declaration, no record and no live pin",
+  "directive": "#459",
+  "scoring": {"last_day": "2025-12-31", "primary_threshold_bp": 5, "horizons": [1, 2, 3, 4, 5], "confirmation": "not looked at (docs/decisions/lockbox.md)"},
+  "rows": {
+    "source": "docs/pivot/judge-amendment-result.md, Table 1 (the re-judge of #416 under the amended judge)",
+    "rule": "the six candidate rows with the most onsets flagged at lead >= 1; ties broken by the smaller worst false alarms per onset, then by name (the rule of metadata/onset_diagnostics.json with six rows instead of five); the three reference rows (calendar_climatology, persistence_logistic, published_v1) are left out. Table 1 prints false alarms per onset to two decimals, and the sixth place is a tie at that precision between scarcity_logistic and scarcity_logistic_regime_pooled (13 onsets, 3.23): the name breaks it",
+    "excluded": ["calendar_climatology", "persistence_logistic", "published_v1"],
+    "chosen": ["two_part_gbm", "ngboost_laplace", "hierarchical_logistic", "settlement_quantile_timing", "scarcity_logistic_interactions", "scarcity_logistic"]
+  },
+  "rule": {
+    "name": "cooldown",
+    "trading_days": 5,
+    "trading_days_note": "fixed at 5, not tuned. The window is the five days after a flag, counted as days of the horizon's own scored series (panel business days)",
+    "reading": "a flag outside every earlier alarm's window raises an alarm; a flag inside the window is a repeat and counts as one alarm with it (is dropped), unless a pressure day starts (the judge's onset: a pressure day after a day that was not) inside the window, in which case the repeats stay. A repeat never opens a window of its own",
+    "applied_to": "the flags of the base row, at +5 bp, at each horizon, before every use the judge makes of flags (tier 1's false alarms and onsets caught, tier 3's flags per year, the flag counts and splits). The probabilities, the cut-offs, the Brier decomposition, tier 2 and tier 5 are those of the base row, unchanged: no refit, no new cut-off",
+    "code": "pressure_judge.cooldown_flags and the candidate's alarm_rule, declared in its file under metadata/pressure_judge/candidates/ (one file per candidate, #446)"
+  },
+  "forms": {
+    "with_exception": "the rule as the directive states it (candidates <row>_cooldown5). Its exception reads the days after the flag, so it counts alarms on a scored record and is not a rule a forecaster could apply as the days arrive. It never drops a flag on an onset day, so it cannot lower recall",
+    "strict": "the same rule without the exception (candidates <row>_cooldown5_strict): every repeat inside five days is dropped, an onset's flag included when it falls in the window. The form a live forecaster could apply. It can lower recall",
+    "why_both": "the exception is part of the directive's rule; the strict form is added so the reported false-alarm reduction can be read against what a live user could have had"
+  },
+  "report": [
+    "for each row and form: the judge's full tier-1 line at lead >= 1 (episodes warned of 26, recall with its 90% interval, worst false alarms per onset), tier 3 and tier 5 as the judge gives them, beside the base row",
+    "each row's false alarms per onset at each horizon, base and cooled",
+    "the flags by regime and by pressure-day type at h = 1, base and cooled",
+    "whether any candidate passes tier 1; the weighted-miss rule of #454 is not reported because #454 has not merged"
+  ],
+  "if_passes": "a candidate that passes tier 1 gets a needs-eleonora issue titled \"Publish? Alarm cool-down (#459)\" carrying the evidence; no published figure moves in the pull request"
+}
