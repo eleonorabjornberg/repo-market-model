@@ -42,6 +42,12 @@ PYTHONPATH=src python3 scripts/episode_post_mortem.py run --panel PUBLISHED.csv 
   end, `risk_quantile_skewt_base`); signal too late for the lead rule, 5 (2019-05-28, 2019-06-25, 2019-08-13, 2020-03-12, and 2024-12-26 for
   `risk_quantile_skewt_base`); no signal in the panel, 5 (2018-11-15, 2018-12-17, 2018-12-28, 2020-03-04, 2024-09-30). Per model the split
   is in Table 1 of `summary.md`; one episode, 2025-10-15, is warned by one model and missed with the signal under the cut-off by three.
+
+  *Correction, 10 October 2026 (#503).* "No signal in the panel" is reading 1 below applied to the five models' own probabilities (under half the
+  cut-off at every horizon), not a statement about the panel. For 2024-09-30 it is too strong: the quarter-end is a calendar risk date, and
+  the walk-forward calendar rule of `pressure-audit-result.md` §4 warns it at every horizon; the five models' h = 1 probabilities on the day
+  (0.00 to 0.13) sit under cut-offs of 0.12 to 0.27, a regime and calibration effect on a calendar day. Read the label as "the five models'
+  probabilities stayed under half their cut-offs". The other four episodes under this label are not warned by that calendar rule. See `docs/pivot/diagnostics-reconciliation.md`, point 9.
 * **Inputs.** In the 10 scored days before a miss the inputs that moved (at least 2 trailing sd of 10-day changes) are few: none for
   4 of the 13 episodes missed by at least one model; `tbill_4w`, `sofr_volume` and `tgcr` account for most of the rest, and they moved before the 2020-03
   and 2024 episodes with no flag. Against the false alarms of the same regime (67 flagged non-pressure days across regimes), the
