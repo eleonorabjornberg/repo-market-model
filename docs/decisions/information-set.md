@@ -67,7 +67,9 @@ when the feature set was fixed; re-scoring them belongs with next-version resear
 
 ## Amendment: back-filled repo-rate history is training history only (#374, #430)
 
-**Proposed, for Eleonora to review.** Eleonora ruled on 8 October 2026 (#374) that the New York Fed's
+**Proposed, for Eleonora to review. Not in force until the workbook's first posting date is established.** The
+snapshot and the guard are merged; this amendment takes effect only once she has established when the Bank
+first posted the workbook, and no back-filled value is used as training history before then. Eleonora ruled on 8 October 2026 (#374) that the New York Fed's
 back-filled history of SOFR, TGCR and BGCR may be used as training history. The Bank's reference-rate
 API begins on 2018-04-02. For the months before it, the Bank published a workbook of indicative values
 of the same three rates and their volumes, computed after the fact on the same method, from 2014-08-22
