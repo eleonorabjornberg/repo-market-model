@@ -1,0 +1,33 @@
+{
+  "status": "declared by the pull request that closes #523 before any score; the rows, the readings and everything reported are fixed here and are not tuned on a scored day; the judge, its bar, its cut-off rule, the weighted miss rule and every published declaration are unchanged. A scratch measurement: it chooses nothing and decides nothing.",
+  "issue": 523,
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "primary_threshold_bp": 5,
+    "horizons": [1, 2, 3, 4, 5],
+    "lead_at_least": 1
+  },
+  "rows": {
+    "risk_date_passers": ["risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"],
+    "best_recall_rows": ["two_part_gbm", "ngboost_laplace", "hierarchical_logistic", "settlement_quantile_timing", "scarcity_logistic_interactions", "scarcity_logistic"],
+    "references": ["calendar_climatology", "persistence_logistic"],
+    "reading": "the five risk-date passers are the rows of reconciliation convention 5; the six best-recall rows are the rows of #461 (metadata/regime_thresholds.json); the two benchmarks are shown for scale"
+  },
+  "rules": {
+    "unweighted": "the cut-offs are chosen on the flat count of false alarms and tier 1's limit reads the flat count (judge --rule unweighted)",
+    "weighted": "the cut-offs are chosen on the weighted count and tier 1's limit reads the weighted count (judge --rule weighted, the rule in force)"
+  },
+  "readings": {
+    "a": "as declared: an onset is warned if any horizon 1 to 5 flags it; false alarms are counted at each horizon and the worst horizon's count per onset is the tier's",
+    "b": "(b1) each horizon alone: onsets warned and false alarms at that one horizon, the verdict taken at the best single horizon; (b2) pooled: onsets warned at any horizon, false alarms counted over the days flagged at any horizon (a day flagged at two horizons is one false alarm), the climatology reference matched to the pooled count",
+    "c": "the realised walk-forward false alarms per onset beside the training-window check the cut-off rule uses: for each refit, the cut-off in force applied to the training window's earlier forecasts, counted as the rule counts it; reported as the check at the last refit and the largest and median check over the refits, at the worst horizon; the verdict is the realised count's, as in (a)",
+    "d": "the weighted rule with its discount applied only to alarms before an episode: a false alarm weighs by its distance to the next pressure day alone (the miss_weight bands unchanged), and an alarm with no later pressure day known weighs 1; the cut-offs are chosen on that count; weighted rule only",
+    "e": "outside 2018-19: the cut-offs of (a), scored on the days of calendar years other than 2018 and 2019 (and, beside it, on 2018 and 2019 alone); onsets warned, recall with its interval, false alarms per onset and the tier's three criteria applied to that subset (reported, not a tier)"
+  },
+  "also": {
+    "scarcity_of_2020_false_alarm_days": "for the five passers, the as-of scarcity state (the grid's scarcity_state label) of each false-alarm day of 2020, at the worst horizon and over the days flagged at any horizon",
+    "h_ge_2_ceiling": "the judge's own onset-warning rows at lead of at least 1 to 5 for the eleven rows, and the onsets that fall on a scheduled risk date (the grid's risk_date label)"
+  },
+  "unchanged": "the bar (recall at least 0.5 with the interval above climatology, false alarms per onset at most 2), the cut-off rule, the bootstrap (90%, stationary, the judge's seed), the weights and bands of metadata/weighted_miss.json. No day after 2025-12-31 is read (docs/decisions/lockbox.md). The climatology reference of every reading is matched, as the judge matches it, to the flat count of false alarms raised."
+}
