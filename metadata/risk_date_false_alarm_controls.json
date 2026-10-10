@@ -1,0 +1,92 @@
+{
+  "status": "declared by the pull request that closes #532 before any score was computed; nothing here is tuned on a scored day; the controls and their parameters are the pull request's, stated and not chosen on a score",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parents": {
+    "risk_gbm": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_gbm_base": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_logistic": {
+      "kind": "logistic",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_logistic_base": {
+      "kind": "logistic",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_quantile_skewt_base": {
+      "kind": "quantile_skewt",
+      "inputs": [
+        "base"
+      ]
+    }
+  },
+  "parents_declaration": "metadata/risk_date_severity.json (unchanged: the risk dates, the features, the estimators)",
+  "base": {
+    "variant": "+every_day",
+    "reading": "the every-day component of #506 (metadata/risk_date_every_day.json), fitted as there: ml.pressure_risk_date_variant_exceedance with every_day=True and early_prior=False; on a risk date the forecast is the parent's, on any other day the component's",
+    "inputs": [
+      "spread_bps",
+      "sofr_p75_iorb_bps",
+      "sofr_p99_iorb_bps"
+    ]
+  },
+  "controls": {
+    "shrunk": {
+      "weight": 0.5,
+      "rule": "on a day that is not a risk date the component's probability is multiplied by weight, a shrinkage toward the parent's 0; a risk date keeps the parent's forecast. With one cut-off per threshold for all days this is a higher cut-off for the days the component serves, relative to risk dates",
+      "reads": "the component's own forecast of the day"
+    },
+    "scarce": {
+      "minimum_state": 1,
+      "rule": "on a day that is not a risk date the component's probability is kept only if the as-of reserve scarcity state (reserve_scarcity_state, 0 abundant, 1 ample, 2 tight, 3 scarce) is at least minimum_state; below it, or when it is not public, the forecast is 0",
+      "reads": "the reserve scarcity state, read as of the forecast's decision instant at its horizon, as the judge's grid reads it"
+    },
+    "persist": {
+      "days": 2,
+      "rule": "on a day that is not a risk date the forecast is the smaller of the component's probability today and the variant's forecast on the previous scored day (the parent's, if that was a risk date); the first scored day has no earlier day and is 0",
+      "reads": "the day's own forecast and the previous scored day's, each issued at its own decision instant"
+    },
+    "gate": {
+      "quantile": 0.9,
+      "window": 250,
+      "minimum_earlier": 60,
+      "rule": "on a day that is not a risk date the component's probability is kept only if it is strictly above the quantile (nearest rank) of the component's forecasts on the days that were not risk dates among the previous window scored days; with fewer than minimum_earlier such forecasts it is 0. A walk-forward cut-off for the days the component serves, from forecasts already issued",
+      "reads": "forecasts issued on earlier scored days, and nothing else"
+    }
+  },
+  "combination": "every control leaves a risk-date forecast as the parent's; the curve across thresholds is made non-increasing afterwards, as the parent's is",
+  "cutoffs": "the judge's cutoff_rule, from each variant's own training window, unchanged: one cut-off per threshold and horizon",
+  "judging": "the judge as declared (metadata/pressure_judge.json): tiers 1, 3 and 5, h = 1 to 5, +5 and +10 bp, under the flat and the weighted rule; tier 1 also under readings (b) and (e) of docs/pivot/judge-readings-result.md",
+  "published": "nothing: the controls are off in every published declaration; no rule, threshold, definition or availability time changes"
+}
