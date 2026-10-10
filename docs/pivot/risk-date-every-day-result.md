@@ -96,7 +96,7 @@ No variant passes under either rule. The decision turns on the false alarms.
   a third and a half of them fall on a pressure day (the rest are false alarms by the judge's definition), and at any one horizon they
   catch at most 3 of the 13 onsets that fall on days that are not risk dates (6 at h = 1). **The recall gain from the component is not worth the false alarms it adds
   under the declared limit; it does not lift recall without raising them.**
-* **Tier 5 now passes, tier 3 still fails.** The (a) and (c) variants are calibrated and ahead of climatology over the week-ahead window
+* **The week-ahead tier is now met, the regime-calibration tier still fails.** The (a) and (c) variants are calibrated and ahead of climatology over the week-ahead window
   (tier 5 yes), which no parent is; calibration by regime (tier 3) fails for every row, parents included.
 * **Paired against the parent** (Brier score on the +5 bp outcome, all days, positive favours the variant; 90% interval): h = 1,
   +0.0099 [+0.0018, +0.0194] for `risk_gbm+every_day`, and +0.0097 to +0.0122 with intervals above zero for the other (a) and (c)
