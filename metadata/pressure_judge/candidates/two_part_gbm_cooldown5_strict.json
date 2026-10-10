@@ -1,0 +1,20 @@
+{
+  "role": "candidate",
+  "track": "alarm cool-down (#459)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement_coupons",
+    "reserve_balances"
+  ],
+  "calibration": "none (P(spike) from a gradient-boosted classifier at +5 bp times a geometric excess law, ml.pressure_two_part_exceedance; #382)",
+  "alarm_rule": {
+    "kind": "cooldown",
+    "base": "two_part_gbm",
+    "trading_days": 5,
+    "keep_when_pressure_starts": false
+  },
+  "inputs_note": "the forecasts of two_part_gbm unchanged (the same probabilities and the same cut-offs, chosen by the judge's cutoff_rule); only the flags are cooled: after a flag, flags in the next 5 trading days count as one alarm; strict form: repeats are dropped whether or not a pressure day starts in the window, the form a live forecaster could apply as the days arrive"
+}
