@@ -148,7 +148,8 @@ def _read(path):
 def _interval(cell):
     if cell is None:
         return "–"
-    low, high = cell.get("lower"), cell.get("upper")
+    interval = cell.get("interval") or {}
+    low, high = interval.get("lower"), interval.get("upper")
     mean = cell.get("mean")
     if mean is None or low is None or high is None:
         return "–"
@@ -156,7 +157,7 @@ def _interval(cell):
 
 
 def _direction(cell):
-    low, high = cell["lower"], cell["upper"]
+    low, high = cell["interval"]["lower"], cell["interval"]["upper"]
     if low > 0:
         return "under-forecast"
     if high < 0:
@@ -207,8 +208,8 @@ def judge_rows(flat, weighted, names):
     """Full judge row, tiers 1, 3, 5 and the pass, under both rules for each name."""
 
     lines = [
-        "| model | onsets flagged (flat rule) | worst FA per onset (flat) | tier 1 / 3 / 5, flat rule | pass, flat rule "
-        "| onsets flagged (weighted rule) | worst FA per onset (weighted, weighted count) | tier 1 / 3 / 5, weighted rule | pass, weighted rule |",
+        "| model | onsets flagged (flat rule) | worst FA per onset (flat count) | tier 1 / 3 / 5, flat rule | pass, flat rule "
+        "| onsets flagged (weighted rule) | worst FA per onset (weighted count) | tier 1 / 3 / 5, weighted rule | pass, weighted rule |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for name in names:
@@ -220,15 +221,16 @@ def judge_rows(flat, weighted, names):
                 continue
             near = candidate["tiers"]["onset_warning"]["lead_at_least_1"]
             onsets, flagged = near.get("onsets"), near.get("onsets_flagged")
-            horizons = near.get("false_alarms_by_horizon", {})
-            worst = None
-            if horizons:
-                key = "flat" if label == "flat" else "weighted"
-                worst = max(h[key] for h in horizons.values())
+            worst = near.get("worst_false_alarms_per_onset")
             fa = "–" if worst is None else f"{worst:.2f}"
+            recall = near.get("recall", {}).get("interval", {})
+            if recall:
+                flagged = f"{flagged} of {onsets} (recall {near['recall']['mean']:.2f} [{recall['lower']:.2f}, {recall['upper']:.2f}])"
+            else:
+                flagged = f"{flagged} of {onsets}"
             tiers = " / ".join(_yn(_tier(candidate, k)) for k in ("1", "3", "5"))
             passes = _yn(candidate["verdict"]["passes"])
-            cells.extend([f"{flagged} of {onsets}" if onsets is not None else "–", fa, tiers, passes])
+            cells.extend([flagged, fa, tiers, passes])
         lines.append(f"| {name} | {cells[0]} | {cells[1]} | {cells[2]} | {cells[3]} | {cells[4]} | {cells[5]} | {cells[6]} | {cells[7]} |")
     return "\n".join(lines)
 
