@@ -56,3 +56,16 @@ class DeclarationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RuleSwitchTests(unittest.TestCase):
+    def test_score_takes_the_weighted_miss_switch_and_refuses_another_value(self):
+        script = _script()
+        base = ["score", "--panel", "p.csv", "--bench", "b{h}", "--row", "x=y{h}", "--output", "o.json"]
+        with self.assertRaises(SystemExit) as raised:
+            script.main(base + ["--rule", "sometimes"])
+        self.assertEqual(raised.exception.code, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

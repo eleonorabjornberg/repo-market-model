@@ -26,6 +26,7 @@ import importlib.util
 import json
 import sys
 from collections import defaultdict
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
@@ -85,6 +86,10 @@ def score_command(args) -> int:
         raise SystemExit(f"--row must name exactly the declared rows {wanted}; got {sorted(templates)}")
     at_least = int(document["scarce_cutoff"]["scarcity_state_at_least"])
     declaration = pj.load_declaration()
+    # The weighted miss rule (#454), as `pressure_judge.py judge --rule` has it: forced on or off for one scratch run.
+    judge_script.require_committed_file(pj.DEFAULT_WEIGHTED_MISS)
+    applied = {"declared": None, "weighted": True, "unweighted": False}[args.rule]
+    declaration = replace(declaration, weighted_miss=pj.load_weighted_miss(applied=applied))
     primary = float(document["scoring"]["primary_threshold_bp"])
     horizons = declaration.horizons
     rows = load_daily_panel(args.panel)
@@ -239,6 +244,10 @@ def main(argv=None) -> int:
     score.add_argument("--panel", type=Path, required=True)
     score.add_argument("--bench", required=True, help="benchmark forecast file template, with {h}")
     score.add_argument("--row", action="append", required=True, help="NAME=template with {h}, once per declared row")
+    score.add_argument(
+        "--rule", choices=("declared", "weighted", "unweighted"), default="declared",
+        help="how false alarms count (#454): as the switch in metadata/weighted_miss.json says (default), or forced",
+    )
     score.add_argument("--output", type=Path, required=True)
     score.add_argument("--markdown", type=Path)
     score.set_defaults(func=score_command)
