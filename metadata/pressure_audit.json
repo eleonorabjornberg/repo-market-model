@@ -1,0 +1,39 @@
+{
+  "status": "declared by the pull request that closes #473, before any rule was scored. A measurement, not a candidate: nothing here joins the pressure-day judge's candidate list or the published declaration. The rule below is a calendar and settlement upper bound, and the audit reads the judge's own bar (metadata/pressure_judge.json) unchanged.",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "note": "the judge's scored days (2018-06-29 to 2025-12-31); no 2026 day is read (docs/decisions/lockbox.md)"
+  },
+  "rule": {
+    "description": "Warn on scored day T when any enabled clause holds. Every clause is a fact about T that is public at the decision instant: the calendar columns are always known, and a settlement is public at 15:00 on the panel day before it (docs/decisions/information-set.md, rule 2), so the settlement clause is available at horizon 1 only.",
+    "clauses": {
+      "quarter_end": {"column": "quarter_end", "enabled": [false, true]},
+      "tax_date": {"column": "tax_date", "enabled": [false, true]},
+      "month_end_window": {
+        "column": "days_to_month_end",
+        "within_calendar_days": [null, 0, 1, 2, 3, 5, 7],
+        "note": "null switches the clause off; N warns when days_to_month_end <= N"
+      },
+      "settlement": {
+        "column": "treasury_settlement",
+        "at_least_bn": [null, 300, 250, 200, 150, 100, 75],
+        "horizons": [1],
+        "note": "null switches the clause off; USD billions of gross Treasury settlement on T"
+      }
+    },
+    "variants": {
+      "calendar": "the settlement clause is off at every horizon",
+      "calendar_settlement": "the settlement clause is on at horizon 1 and off at horizons 2 to 5"
+    },
+    "choice": "at each refit and horizon the combination of clauses with the highest onset recall whose false alarms per onset on the refit's training window are at most the judge's limit (metadata/pressure_judge.json, cutoff_rule); of combinations with the same recall, the one that flags the fewest days of the window, then the first in the declared order of the clauses (quarter_end, tax_date, month_end_window, settlement, each from the switched-off value to the loosest)",
+    "refit_every": "the judge's cutoff_rule.refit_every",
+    "training_window": "the judge's: the scored days up to the business day before the block's first decision instant, from the first scored day (pressure_judge.choose_cutoffs)",
+    "no_onsets": "never_flag",
+    "none_meets_limit": "never_flag"
+  },
+  "scored": {
+    "tier_1": "pressure_judge._onset_tier on the rule's flags, at lead >= 1 to 5 and at each horizon alone, against calendar climatology at the same false alarms; by calendar year",
+    "reference_rows": ["risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"],
+    "benchmarks": ["calendar_climatology", "persistence_logistic"]
+  }
+}
