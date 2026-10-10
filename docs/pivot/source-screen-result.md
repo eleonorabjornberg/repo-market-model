@@ -17,6 +17,10 @@ that #473 and #477 would run, not evidence that it carries signal.
 
 * **Days.** The 1,873 scored days of the published fold grid, 2018-06-29 to 2025-12-31, of which 140 are above +5 bp (strictly,
   on whole basis points) and 27 open an episode (`repo_model.pressure.onsets`). The same days at every lead.
+
+> *Note, 10 October 2026 (#503).* The 1,873 days, the 140 pressure days and the 27 onsets are the **h = 1 grid** (2018-06-29 onward);
+> 2018-06-29 is scored at h = 1 only. On the grid every horizon scores (from 2018-07-06) the same definition gives 26 onsets and 138
+> pressure days, which is the count the judge's tier 1 uses. See `docs/pivot/diagnostics-reconciliation.md`, points 1 and 2.
 * **Leads.** 1, 2, 3, 5 and 10 panel days: the as-of rule's `horizon`, the decision being made that many panel days before the scored
   day. A lead of 1 is the rule every published record was scored under (decision on the last panel day before the scored day, the
   NY Fed's daily rates then read two panel days back). Series announced for the scored day itself (the Treasury settlements, the
