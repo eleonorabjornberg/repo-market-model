@@ -1,0 +1,11 @@
+{
+ "url": "https://www.federalreserve.gov/releases/h41/20201228/",
+ "sha256": "f73fb546654a42956975117d84826a5cda5b21f2f091dfd1e95ae44048def4a4",
+ "fetched": "one plain GET of the named host, by curl, in the run that closes #485; the file here is the response, unmodified",
+ "columns_of_table_1": "Averages of daily figures, week ended Dec 23, 2020 | change from week ended Dec 16, 2020 | change from Dec 25, 2019 | Wednesday Dec 23, 2020",
+ "lines": {
+  "Reserve balances with Federal Reserve Banks": "3,143,041 - 25,199 +1,491,114 3,177,306",
+  "U.S. Treasury, General Account": "1,602,407 + 72,709 +1,234,587 1,583,308"
+ },
+ "reading": "for each line the first figure is the week average (3,143,041 and 1,602,407, the values of WRESBAL and WTREGEN dated 2020-12-23 in the registry's notes), the last is the Wednesday level (3,177,306 and 1,583,308)"
+}
