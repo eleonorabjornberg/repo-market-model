@@ -167,14 +167,17 @@ def window_integrity(
     *,
     stale_calendar_days: int = 7,
     critical: Sequence[str] = ("sofr", "iorb"),
+    copy_columns: Sequence[str] = (),
 ) -> Dict[str, Any]:
     """The panel in the `window` panel days before `episode`: gaps, blanks, repeats, stale weekly values.
 
     A gap is a weekday between the window's first and last panel day that is neither a panel day nor a
     holiday. A repeat is a daily column equal to the previous panel day's (how a forward fill reads). A weekly
     column is stale when its value has not changed for more than `stale_calendar_days`, counted to the
-    decision-day row (the last row before the episode). The window blinds a model when the decision-day row
-    has a blank in a `critical` column, a gap lies in the window, or a weekly column is stale.
+    decision-day row (the last row before the episode). A copied row has every `copy_columns` value equal to
+    the previous panel day's, which is how a forward fill of a missing publication reads. The window blinds a
+    model when the decision-day row has a blank in a `critical` column or is a copied row, a gap lies in the
+    window, or a weekly column is stale.
     """
 
     before = [k for k, day in enumerate(days) if day < episode]
@@ -201,6 +204,13 @@ def window_integrity(
                 continue
             if rows[k][column] == rows[k - 1][column]:
                 repeats.setdefault(column, []).append(days[k].isoformat())
+    copied: List[str] = []
+    if copy_columns:
+        for k in inside:
+            if k and all(
+                rows[k].get(c) is not None and rows[k].get(c) == rows[k - 1].get(c) for c in copy_columns
+            ):
+                copied.append(days[k].isoformat())
     stale: Dict[str, int] = {}
     for column in weekly_columns:
         k = decision
@@ -217,9 +227,29 @@ def window_integrity(
         "gaps": gaps,
         "blanks": blanks,
         "repeats": repeats,
+        "copied_rows": copied,
         "stale_weekly": stale,
-        "blinds_a_model": bool(critical_blank or gaps or stale),
+        "blinds_a_model": bool(critical_blank or gaps or stale or days[decision].isoformat() in copied),
     }
+
+
+def same_unit(reference: Mapping[date, float], other: Mapping[date, float]) -> Dict[date, float]:
+    """`other` rescaled to `reference`'s unit when the two differ by a power of 1000 (a change of unit, not a revision).
+
+    The ratio of the two series' medians over the days they share picks the factor: 1, 1000 or 1/1000.
+    """
+
+    shared = sorted(set(reference) & set(other))
+    if not shared:
+        return dict(other)
+    ratios = sorted(other[d] / reference[d] for d in shared if reference[d])
+    if not ratios:
+        return dict(other)
+    ratio = ratios[len(ratios) // 2]
+    for factor in (1000.0, 1.0 / 1000.0):
+        if abs(ratio / factor - 1.0) < 0.5:
+            return {d: v / factor for d, v in other.items()}
+    return dict(other)
 
 
 def revisions(

@@ -143,6 +143,15 @@ class Integrity(unittest.TestCase):
         found = sd.window_integrity(self.days, self.rows, self.days[9], 8, [], ["sofr"], ["tga"])
         self.assertEqual(found["repeats"], {"sofr": [self.days[6].isoformat()]})
 
+    def test_a_row_copied_from_the_day_before_is_a_forward_fill(self):
+        rows = [dict(r, volume=500.0 + k) for k, r in enumerate(self.rows)]
+        rows[6] = dict(rows[5])
+        found = sd.window_integrity(self.days, rows, self.days[9], 8, [], ["sofr"], ["tga"], copy_columns=["sofr", "volume"])
+        self.assertEqual(found["copied_rows"], [self.days[6].isoformat()])
+        self.assertFalse(found["blinds_a_model"])
+        copied_decision_day = sd.window_integrity(self.days, rows, self.days[7], 8, [], ["sofr"], ["tga"], copy_columns=["sofr", "volume"])
+        self.assertTrue(copied_decision_day["blinds_a_model"])
+
     def test_a_blank_cell_is_reported(self):
         self.rows[8]["sofr"] = None
         found = sd.window_integrity(self.days, self.rows, self.days[9], 8, [], ["sofr"], ["tga"])
@@ -166,6 +175,18 @@ class Revisions(unittest.TestCase):
         latest = {date(2020, 1, 8): 100.0, date(2020, 1, 15): 103.5}
         found = sd.revisions([date(2020, 1, 8), date(2020, 1, 15)], first, latest)
         self.assertEqual(found, [{"date": "2020-01-15", "first": 101.0, "latest": 103.5}])
+
+
+class Units(unittest.TestCase):
+    def test_a_series_in_millions_is_rescaled_to_billions(self):
+        reference = {date(2020, 1, 1): 1.5, date(2020, 1, 8): 2.5}
+        later = {date(2020, 1, 1): 1500.0, date(2020, 1, 8): 2500.0, date(2020, 1, 15): 3000.0}
+        self.assertEqual(sd.same_unit(reference, later), {date(2020, 1, 1): 1.5, date(2020, 1, 8): 2.5, date(2020, 1, 15): 3.0})
+
+    def test_a_revision_inside_one_unit_is_kept(self):
+        reference = {date(2020, 1, 1): 100.0, date(2020, 1, 8): 200.0}
+        later = {date(2020, 1, 1): 100.0, date(2020, 1, 8): 203.0}
+        self.assertEqual(sd.same_unit(reference, later), later)
 
 
 class Declaration(unittest.TestCase):

@@ -247,7 +247,8 @@ def run_command(args) -> int:
     integrity = []
     for t in mine:
         w = sd.window_integrity(
-            days, raw, t, integ_cfg["window_panel_days"], holidays, integ_cfg["daily_columns"], integ_cfg["weekly_columns"]
+            days, raw, t, integ_cfg["window_panel_days"], holidays, integ_cfg["daily_columns"], integ_cfg["weekly_columns"],
+            copy_columns=integ_cfg["copy_columns"],
         )
         start = date.fromisoformat(w["first"])
         revised = {}
@@ -255,15 +256,21 @@ def run_command(args) -> int:
             order = sorted(series)
             if not order:
                 continue
-            latest = series[order[-1]]
+            latest = sd.same_unit(series[order[0]], series[order[-1]])
             observed = sorted(o for o in latest if start.toordinal() - 14 <= o.toordinal() <= t.toordinal())
-            first_values = {}
+            first_values, comparable = {}, []
             for o in observed:
                 for v in order:
                     if o in series[v]:
                         first_values[o] = series[v][o]
+                        if v != order[-1]:
+                            comparable.append(o)
                         break
-            revised[column] = {"observations": len(observed), "differing": sd.revisions(observed, first_values, latest)}
+            revised[column] = {
+                "observations": len(observed),
+                "with_an_earlier_tracked_vintage": len(comparable),
+                "differing": sd.revisions(comparable, first_values, latest),
+            }
         w["episode"] = t
         w["revisions_against_earliest_tracked_vintage"] = revised
         integrity.append(w)
