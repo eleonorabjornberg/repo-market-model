@@ -230,6 +230,237 @@ def run_command(args) -> int:
     return 0
 
 
+def _f(value, places=3):
+    return "-" if value is None else f"{value:.{places}f}"
+
+
+def _interval(cell):
+    """`mean [lower, upper]` of a bootstrap cell, or the reason there is no interval."""
+
+    if cell is None or cell.get("mean") is None:
+        return "-"
+    if "interval" not in cell:
+        return f"{cell['mean']:+.4f} (no interval)"
+    low, high = cell["interval"]["lower"], cell["interval"]["upper"]
+    return f"{cell['mean']:+.4f} [{low:+.4f}, {high:+.4f}]"
+
+
+def compare_command(args) -> int:
+    """The candidates beside `risk_gbm`, climatology and persistence-logistic, under the judge's own cut-offs."""
+
+    from repo_model import pressure_judge as pj
+
+    pj_script = _load("pressure_judge")
+    declared = committed_declaration(DECLARATION)
+    declaration = pj.load_declaration()
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(SPLITS)
+    digest = panel_sha256(args.panel)
+    forecasts = []
+    selections = {}
+    for path in args.inputs:
+        document = json.loads(Path(path).read_text())
+        if document["panel_sha256"] != digest:
+            raise SystemExit(f"{path} was scored on another panel ({document['panel_sha256'][:8]})")
+        forecasts.extend(pj.forecasts_from_horizon_document(document))
+        for name, record in document.get("declarations", {}).items():
+            if "selections" in record:
+                selections.setdefault(name, {})[document["horizon"]] = record["selections"]
+    states = {h: pj_script._scarcity_states(h, declaration.last_day) for h in declaration.horizons}
+
+    def grids_of(items):
+        out = {}
+        for h in declaration.horizons:
+            reference = next(f for f in items if f.horizon == h and f.name == declaration.climatology)
+            out[h] = pj.build_grid(declaration, h, rows, reference.dates, splits, scarcity_state=states[h])
+        return out
+
+    calendar = [row.date for row in rows]
+    chosen = pj.choose_cutoffs(declaration, grids_of(forecasts), forecasts, calendar)
+    grids = grids_of(chosen)
+    tau = declaration.primary
+    by_name = {}
+    for forecast in chosen:
+        by_name.setdefault(forecast.name, {})[forecast.horizon] = forecast
+    candidates = [name + declared["judged_form"] for name in declared["candidates"]]
+    reference = "risk_gbm"
+    for name in candidates + [reference, declaration.climatology, declaration.persistence]:
+        if name not in by_name:
+            raise SystemExit(f"no forecasts for {name!r} in the inputs")
+    horizons = list(declaration.horizons)
+    seed = declaration.document()["bootstrap"]["seed"]
+
+    # -- onsets flagged at some lead 1 to 5 (the judge's tier 1 at lead >= 1) ----------------------------
+    common = sorted(set.intersection(*(set(grids[h].dates) for h in horizons)))
+    place = {h: {day: k for k, day in enumerate(grids[h].dates)} for h in horizons}
+    onset = [float(grids[1].onset[place[1][day]]) for day in common]
+    count = len(common)
+
+    def caught(name):
+        out = []
+        for i, day in enumerate(common):
+            hit = 0.0
+            for h in horizons:
+                f = by_name[name][h]
+                k = place[h][day]
+                if f.probabilities[tau][k] >= f.cutoffs[tau][k]:
+                    hit = 1.0
+            out.append(hit * onset[i])
+        return out
+
+    caught_by = {name: caught(name) for name in candidates + [reference]}
+    years = sorted({day.year for day in common})
+    regimes = [grids[1].groups["regime"][place[1][day]] for day in common]
+    kinds = [grids[1].groups["day_type"][place[1][day]] for day in common]
+    cells_for = {
+        "all": [1.0] * count,
+        **{f"year {y}": [1.0 if day.year == y else 0.0 for day in common] for y in years},
+        **{f"regime {r}": [1.0 if x == r else 0.0 for x in regimes] for r in sorted(set(regimes))},
+        **{f"day type {t}": [1.0 if x == t else 0.0 for x in kinds] for t in sorted(set(kinds))},
+    }
+    recall_stats = {
+        "recall": pj._ratio(1, 0),
+        "reference_recall": pj._ratio(2, 0),
+        "recall_difference": lambda t: (t[1] - t[2]) / t[0] if t[0] else None,
+    }
+    recall = {}
+    for name in candidates:
+        cells = {
+            label: [
+                [m * o for m, o in zip(inside, onset)],
+                [m * c for m, c in zip(inside, caught_by[name])],
+                [m * c for m, c in zip(inside, caught_by[reference])],
+            ]
+            for label, inside in cells_for.items()
+        }
+        recall[name] = pj._bootstrap(declaration, cells, recall_stats, count, seed=pj._seed(seed, "recall", name))
+    reference_recall = {
+        label: {
+            "onsets": int(sum(m * o for m, o in zip(inside, onset))),
+            "caught": int(sum(m * c for m, c in zip(inside, caught_by[reference]))),
+        }
+        for label, inside in cells_for.items()
+    }
+
+    # -- Brier score on the +5 bp outcome, paired --------------------------------------------------------
+    brier = {}
+    for name in candidates:
+        brier[name] = {}
+        for h in horizons:
+            grid = grids[h]
+            outcomes = grid.outcomes[tau]
+            n = len(outcomes)
+            groups = {"all": list(range(n))}
+            for dimension in ("regime", "day_type"):
+                for label in sorted(set(grid.groups[dimension])):
+                    groups[f"{dimension} {label}"] = [k for k, x in enumerate(grid.groups[dimension]) if x == label]
+            p = by_name[name][h].probabilities[tau]
+            clim = by_name[declaration.climatology][h].probabilities[tau]
+            pers = by_name[declaration.persistence][h].probabilities[tau]
+            ref = by_name[reference][h].probabilities[tau]
+            cells_ref, cells_std = {}, {}
+            for label, members in groups.items():
+                cells_std[label] = pj._paired_vectors(p, clim, pers, outcomes, members)
+                cells_ref[label] = pj._paired_vectors(p, ref, pers, outcomes, members)
+            std = pj._bootstrap(declaration, cells_std, pj._PAIRED_STATS, n, seed=pj._seed(seed, "brier", name, h))
+            vs_ref = pj._bootstrap(declaration, cells_ref, pj._PAIRED_STATS, n, seed=pj._seed(seed, "brier", name, h))
+            brier[name][str(h)] = {
+                label: {
+                    "days": std[label]["days"],
+                    "vs_climatology": std[label]["brier_difference_vs_climatology"],
+                    "vs_persistence_logistic": std[label]["brier_difference_vs_persistence"],
+                    "vs_risk_gbm": vs_ref[label]["brier_difference_vs_climatology"],
+                }
+                for label in groups
+            }
+
+    # -- the post-mortem's episodes ------------------------------------------------------------------------
+    episodes_path = REPO / "docs" / "pivot" / "evidence" / "episode-post-mortem" / "episodes.json"
+    post_mortem = json.loads(episodes_path.read_text(encoding="utf-8"))["episodes"]
+    index = {day.isoformat(): i for i, day in enumerate(common)}
+    episodes = []
+    for episode in post_mortem:
+        i = index.get(episode["start"])
+        if i is None or not onset[i]:
+            raise SystemExit(f"episode {episode['start']} is not an onset of the judge's grid")
+        episodes.append(
+            {
+                "start": episode["start"],
+                "regime": episode["regime"],
+                "day_type": episode["day_type"],
+                "missed_by_all_five": bool(episode.get("missed_by_all")),
+                "cause_best_of_five": episode.get("cause_best_of_five"),
+                "risk_gbm_warns": bool(caught_by[reference][i]),
+                **{name: bool(caught_by[name][i]) for name in candidates},
+            }
+        )
+    document = {
+        "declaration": declared,
+        "reference": reference,
+        "onsets": int(sum(onset)),
+        "recall_at_some_lead": recall,
+        "reference_recall_at_some_lead": reference_recall,
+        "brier": brier,
+        "episodes": episodes,
+        "selections": {
+            name: {
+                str(h): {
+                    "fits": len(records),
+                    "settings": {json.dumps(r["setting"]): sum(1 for q in records if q["setting"] == r["setting"]) for r in records},
+                    "default_used": sum(1 for r in records if not r["selected"]),
+                }
+                for h, records in sorted(per.items())
+            }
+            for name, per in selections.items()
+        },
+    }
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(markdown(document, candidates))
+    return 0
+
+
+def markdown(document: dict, candidates) -> str:
+    out = []
+    ref = document["reference"]
+    out.append(f"Table 1. +5 bp onsets flagged at some lead 1 to 5 / onsets, recall, and the recall difference against {ref} (90% interval).\n")
+    out.append("| cell | onsets | " + f"{ref} | " + " | ".join(f"{c} | difference vs {ref}" for c in candidates) + " |")
+    out.append("|---|---|---|" + "---|---|" * len(candidates))
+    for label, reference_cell in document["reference_recall_at_some_lead"].items():
+        row = [label, str(reference_cell["onsets"]), f"{reference_cell['caught']}/{reference_cell['onsets']}"]
+        for name in candidates:
+            cell = document["recall_at_some_lead"][name][label]
+            n = int(cell["days"])
+            row.append(f"{_f(cell['recall']['mean'])}")
+            row.append(_interval(cell["recall_difference"]))
+        out.append("| " + " | ".join(row) + " |")
+    for h in ("1", "5"):
+        out.append(f"\nTable 2 (h = {h}). Brier score the comparison loses to the candidate (positive favours the candidate), +5 bp, 90% interval.\n")
+        out.append("| model | cell | days | vs climatology | vs persistence-logistic | vs " + ref + " |")
+        out.append("|---|---|---|---|---|---|")
+        for name in candidates:
+            for label, cell in document["brier"][name][h].items():
+                out.append(
+                    f"| {name} | {label} | {int(cell['days'])} | {_interval(cell['vs_climatology'])} | "
+                    f"{_interval(cell['vs_persistence_logistic'])} | {_interval(cell['vs_risk_gbm'])} |"
+                )
+    out.append("\nTable 3. The 26 episodes of the post-mortem (#474): who warns at some lead 1 to 5.\n")
+    out.append("| start | type | regime | post-mortem | " + ref + " | " + " | ".join(candidates) + " |")
+    out.append("|---|---|---|---|---|" + "---|" * len(candidates))
+    for e in document["episodes"]:
+        cause = e["cause_best_of_five"] or ("missed by all five" if e["missed_by_all_five"] else "warned by at least one")
+        out.append(
+            f"| {e['start']} | {e['day_type']} | {e['regime']} | {cause} | {'yes' if e['risk_gbm_warns'] else 'no'} | "
+            + " | ".join("yes" if e[name] else "no" for name in candidates)
+            + " |"
+        )
+    out.append("\nTable 4. What each refit chose (fits per setting, per horizon).\n")
+    for name, per in document["selections"].items():
+        for h, record in per.items():
+            out.append(f"* {name}, h = {h}: {record['fits']} fits, {record['settings']}, default used {record['default_used']}")
+    return "\n".join(out)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -243,6 +474,12 @@ def main(argv=None) -> int:
     run.add_argument("--candidate")
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(handler=run_command)
+    compare = commands.add_parser("compare", help="the candidates beside risk_gbm, climatology and persistence-logistic")
+    compare.add_argument("--panel", type=Path, required=True)
+    compare.add_argument("--output", type=Path, required=True)
+    compare.add_argument("--markdown", type=Path)
+    compare.add_argument("inputs", nargs="+", type=Path)
+    compare.set_defaults(handler=compare_command)
     args = parser.parse_args(argv)
     return args.handler(args)
 
