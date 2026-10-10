@@ -240,6 +240,11 @@ def run_command(args) -> int:
                 "appear_distance_to_nearest_primary_episode_panel_days": near,
             }
 
+    others = [k for k in grid_of_rules if k != f"tau{tau:g}_calm{calm}"]
+    sensitivity["primary_episode_kept_under_other_rules"] = {
+        d.isoformat(): {"of": len(others), "kept": sum(1 for k in others if d in grid_of_rules[k])} for d in primary
+    }
+
     # ---- 4. data integrity around episodes -------------------------------------------------------------------
     integ_cfg = declared["data_integrity"]
     holidays = [date.fromisoformat(x["date"]) for x in json.loads(HOLIDAYS.read_text())["closed"]]
@@ -308,8 +313,132 @@ def run_command(args) -> int:
         "forecast_panels": digests,
     }
     args.output.write_text(json.dumps(_jsonable(document), indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    if args.markdown:
+        args.markdown.write_text(markdown(_jsonable(document), declared), encoding="utf-8")
     print(json.dumps({"output": str(args.output), "episodes": len(mine)}))
     return 0
+
+
+def _pct(x):
+    return f"{100 * x:.1f}%"
+
+
+def markdown(doc: dict, declared: dict) -> str:
+    """The five tables of `docs/pivot/setup-diagnostic-result.md`, from the JSON alone."""
+
+    names = declared["benchmarks_by_year"]["rows"]
+    window = doc["scored_window"]
+    lines = [
+        "# Does the evaluation setup explain the misses? (#480)",
+        "",
+        f"Declaration `metadata/setup_diagnostic.json`; judge declaration sha256 `{doc['judge_declaration_sha256'][:12]}`; "
+        f"scored days {window['first']} to {window['last']} ({window['days']} days every horizon scores, {len(doc['episodes'])} episodes). "
+        "Reported only.",
+        "",
+        "## Table 1. What each episode's refit had seen",
+        "",
+        "Refit in force at h = 1 (the block of 21 scored days that holds the episode). The model is fitted on the panel from its "
+        "first day (2018-04-03) to the training end. 'Onsets seen' counts episodes (the same rule) inside that panel; 'in cut-off window' "
+        "counts those on scored days, which is what the flag cut-off is chosen on (no onset there: the model never flags). "
+        "h = 5 is the same at its own, earlier training end. 'Cut-off finite' is how many of the seven rows could flag at h = 1; "
+        "'warned' how many of the seven warned the episode at some horizon.",
+        "",
+        "| episode | regime | refit starts | training end | pressure days seen | onsets seen | onsets in cut-off window | onsets in cut-off window, h = 5 | cut-off finite (of 7) | warned (of 7) |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for e in doc["training_history"]:
+        h1, h5 = e["h1"], e["h5"]
+        lines.append(
+            f"| {e['episode']} | {e['regime']} | {h1['refit_first_day']} | {h1['last']} | {h1['pressure_days']} | {h1['onsets']} | "
+            f"{h1['onsets_in_cutoff_window']} | {h5['onsets_in_cutoff_window']} | {sum(e['cutoff_finite_h1'].values())} | "
+            f"{sum(doc['warned_per_episode'][e['episode']].values())} |"
+        )
+    lines += [
+        "",
+        "## Table 2. The target by year and regime",
+        "",
+        "SOFR less IORB (IOER before 2021-07-29) in basis points, every panel day of the year up to 2025-12-31 (2018 starts on 2018-04-03; "
+        "scored days start on 2018-06-29). Pressure day: strictly above the threshold on whole basis points. Onsets: the +5 bp, 5 calm-day episodes.",
+        "",
+        "| group | panel days | scored days | days > +3 | days > +5 | days > +10 | base rate > +5 | onsets | p5 | p25 | median | p75 | p95 | max |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for kind in ("by_year", "by_regime"):
+        for label, b in doc["target"][kind].items():
+            q = list(b["spread_bp_quantiles"].values())
+            lines.append(
+                f"| {label} | {b['days']} | {b['scored_days']} | {b['pressure_days_3']} | {b['pressure_days_5']} | {b['pressure_days_10']} | "
+                f"{_pct(b['base_rate_5'])} | {b['onsets_5']} | " + " | ".join(f"{v:.1f}" for v in q) + f" | {b['spread_bp_max']:.1f} |"
+            )
+    lines += [
+        "",
+        "Table 3. Every day the administered rate moved in the panel. 'Technical' is the declared rule (a move that is not a multiple of 25 bp); "
+        "the mechanical shift is what the move does to SOFR - IORB if SOFR does not follow it; the last two columns count the +5 bp pressure days "
+        "and episodes in the move's day and the 15 panel days after.",
+        "",
+        "| date | from | to | change (bp) | SOFR move the same day (bp) | mechanical shift (bp) | net change in the spread (bp) | technical | pressure days in next 15 | episodes in next 15 |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for c in doc["target"]["iorb_changes"]:
+        lines.append(
+            f"| {c['date']} | {c['from']:.2f} | {c['to']:.2f} | {c['change_bps']:+d} | {c['sofr_move_bps']:+d} | {c['mechanical_spread_shift_bps']:+d} | "
+            f"{c['sofr_move_bps'] - c['change_bps']:+d} | {'yes' if c['technical'] else ''} | {c['pressure_days_in_next_15_panel_days']} | {c['episodes_in_next_15_panel_days']} |"
+        )
+    sens = doc["episode_sensitivity"]
+    taus = sorted({int(k.split("_")[0][3:]) for k in sens["counts"]})
+    calms = sorted({int(k.split("calm")[1]) for k in sens["counts"]})
+    lines += [
+        "",
+        "## Table 4. Episodes against the onset rule and the threshold",
+        "",
+        "Episodes on the scored days: a day above the threshold with no day above it in the calm panel days before it. The primary is +5 bp, 5 calm days.",
+        "",
+        "| threshold | " + " | ".join(f"{c} calm days" for c in calms) + " |",
+        "|---|" + "---|" * len(calms),
+    ]
+    for t in taus:
+        lines.append(f"| +{t} bp | " + " | ".join(str(sens["counts"][f"tau{t}_calm{c}"]["episodes"]) for c in calms) + " |")
+    lines += ["", "Table 5. Episodes by year under each rule.", "", "| rule | " + " | ".join(sorted(sens['counts']['tau5_calm5']['by_year'])) + " |", "|---|" + "---|" * len(sens['counts']['tau5_calm5']['by_year'])]
+    for key in sorted(sens["counts"]):
+        lines.append(f"| {key.replace('tau', '+').replace('_calm', ' bp, calm ')} | " + " | ".join(str(v) for v in sens["counts"][key]["by_year"].values()) + " |")
+    lines += ["", "Table 6. Episodes that appear or disappear against the primary, by date.", ""]
+    for key, v in sens["changes_against_primary"].items():
+        lines.append(f"* **{key}**: {v['kept']} kept; appear ({len(v['appear'])}): " + (", ".join(v["appear"]) or "none") + "; disappear (" + str(len(v["disappear"])) + "): " + (", ".join(v["disappear"]) or "none") + ".")
+    lines += ["", "Table 6b. In how many of the other rules the same day is also an episode.", "", "| episode | kept under other rules (of 11) |", "|---|---|"]
+    for day, v in sens["primary_episode_kept_under_other_rules"].items():
+        lines.append(f"| {day} | {v['kept']} |")
+    lines += [
+        "",
+        "## Table 7. The panel in the 10 panel days before each episode",
+        "",
+        "Gaps: weekdays that are neither panel days nor market holidays. Blanks: empty cells in the window. Copied rows: all six of "
+        "SOFR, its volume, p25, p75, TGCR and BGCR equal the previous day's. Stale weekly: reserve balances, TGA or dealer position unchanged for more than 7 calendar days at the decision day. "
+        "Revisions: of the observations in the window (and the 14 days before it) that an earlier tracked ALFRED vintage holds, how many differ from the latest tracked vintage "
+        "(reserve balances, TGA, IOER; the first tracked vintage is 2019-09-16, so these are not first prints).",
+        "",
+        "| episode | window starts | gaps | blanks | copied rows | stale weekly | reserves: compared / differing | TGA: compared / differing | IOER: compared / differing | would blind a model |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for w in doc["data_integrity"]:
+        r = w["revisions_against_earliest_tracked_vintage"]
+        cell = lambda c: f"{r[c]['with_an_earlier_tracked_vintage']} / {len(r[c]['differing'])}"
+        lines.append(
+            f"| {w['episode']} | {w['first']} | {len(w['gaps'])} | {sum(len(v) for v in w['blanks'].values())} | "
+            f"{', '.join(w['copied_rows']) or 'none'} | {', '.join(f'{k} {v} d' for k, v in w['stale_weekly'].items()) or 'none'} | "
+            f"{cell('reserve_balances')} | {cell('tga')} | {cell('iorb')} | {'flagged' if w['blinds_a_model'] else 'no'} |"
+        )
+    years = [y for y in doc["benchmarks_by_year"][names[0]] if y != "all"]
+    lines += [
+        "",
+        "## Table 8. Episodes warned by year (tier 1: some horizon h = 1 to 5 flags it, +5 bp, the judge's cut-offs)",
+        "",
+        "| row | " + " | ".join(years) + " | all |",
+        "|---|" + "---|" * (len(years) + 1),
+    ]
+    for n in names:
+        row = doc["benchmarks_by_year"][n]
+        lines.append(f"| {n} | " + " | ".join(f"{row[y]['warned']} of {row[y]['episodes']}" for y in years) + f" | {row['all']['warned']} of {row['all']['episodes']} |")
+    return "\n".join(lines) + "\n"
 
 
 def main(argv=None) -> int:
@@ -320,6 +449,7 @@ def main(argv=None) -> int:
     run.add_argument("--bench", required=True)
     run.add_argument("--risk", required=True)
     run.add_argument("--output", type=Path, required=True)
+    run.add_argument("--markdown", type=Path)
     run.set_defaults(run=run_command)
     args = parser.parse_args(argv)
     return args.run(args)
