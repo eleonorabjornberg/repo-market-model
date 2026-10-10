@@ -1,0 +1,4389 @@
+{
+ "benchmarks_by_year": {
+  "calendar_climatology": {
+   "2018": {
+    "episodes": 4,
+    "warned": 0
+   },
+   "2019": {
+    "episodes": 13,
+    "warned": 10
+   },
+   "2020": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2024": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2025": {
+    "episodes": 5,
+    "warned": 0
+   },
+   "all": {
+    "episodes": 26,
+    "warned": 10
+   }
+  },
+  "persistence_logistic": {
+   "2018": {
+    "episodes": 4,
+    "warned": 0
+   },
+   "2019": {
+    "episodes": 13,
+    "warned": 7
+   },
+   "2020": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2024": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2025": {
+    "episodes": 5,
+    "warned": 0
+   },
+   "all": {
+    "episodes": 26,
+    "warned": 7
+   }
+  },
+  "risk_gbm": {
+   "2018": {
+    "episodes": 4,
+    "warned": 0
+   },
+   "2019": {
+    "episodes": 13,
+    "warned": 10
+   },
+   "2020": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2024": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2025": {
+    "episodes": 5,
+    "warned": 3
+   },
+   "all": {
+    "episodes": 26,
+    "warned": 13
+   }
+  },
+  "risk_gbm_base": {
+   "2018": {
+    "episodes": 4,
+    "warned": 0
+   },
+   "2019": {
+    "episodes": 13,
+    "warned": 10
+   },
+   "2020": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2024": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2025": {
+    "episodes": 5,
+    "warned": 4
+   },
+   "all": {
+    "episodes": 26,
+    "warned": 14
+   }
+  },
+  "risk_logistic": {
+   "2018": {
+    "episodes": 4,
+    "warned": 0
+   },
+   "2019": {
+    "episodes": 13,
+    "warned": 10
+   },
+   "2020": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2024": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2025": {
+    "episodes": 5,
+    "warned": 4
+   },
+   "all": {
+    "episodes": 26,
+    "warned": 14
+   }
+  },
+  "risk_logistic_base": {
+   "2018": {
+    "episodes": 4,
+    "warned": 0
+   },
+   "2019": {
+    "episodes": 13,
+    "warned": 10
+   },
+   "2020": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2024": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2025": {
+    "episodes": 5,
+    "warned": 3
+   },
+   "all": {
+    "episodes": 26,
+    "warned": 13
+   }
+  },
+  "risk_quantile_skewt_base": {
+   "2018": {
+    "episodes": 4,
+    "warned": 0
+   },
+   "2019": {
+    "episodes": 13,
+    "warned": 10
+   },
+   "2020": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2024": {
+    "episodes": 2,
+    "warned": 0
+   },
+   "2025": {
+    "episodes": 5,
+    "warned": 4
+   },
+   "all": {
+    "episodes": 26,
+    "warned": 14
+   }
+  }
+ },
+ "data_integrity": [
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2018-11-14",
+   "episode": "2018-11-15",
+   "first": "2018-10-31",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2018-11-14"
+    ],
+    "iorb": [
+     "2018-10-31",
+     "2018-11-01",
+     "2018-11-02",
+     "2018-11-05",
+     "2018-11-06",
+     "2018-11-07",
+     "2018-11-08",
+     "2018-11-09",
+     "2018-11-13",
+     "2018-11-14"
+    ],
+    "sofr": [
+     "2018-11-01",
+     "2018-11-13",
+     "2018-11-14"
+    ],
+    "sofr_p25": [
+     "2018-11-14"
+    ],
+    "sofr_p75": [
+     "2018-11-14"
+    ],
+    "tbill_13w": [
+     "2018-10-31"
+    ],
+    "tbill_4w": [
+     "2018-11-05"
+    ],
+    "tgcr": [
+     "2018-11-14"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    },
+    "tga": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2018-11-29",
+   "episode": "2018-11-30",
+   "first": "2018-11-15",
+   "gaps": [],
+   "repeats": {
+    "iorb": [
+     "2018-11-15",
+     "2018-11-16",
+     "2018-11-19",
+     "2018-11-20",
+     "2018-11-21",
+     "2018-11-23",
+     "2018-11-26",
+     "2018-11-27",
+     "2018-11-28",
+     "2018-11-29"
+    ],
+    "sofr": [
+     "2018-11-28"
+    ],
+    "sofr_volume": [
+     "2018-11-29"
+    ],
+    "tbill_13w": [
+     "2018-11-20",
+     "2018-11-23"
+    ],
+    "tbill_4w": [
+     "2018-11-28",
+     "2018-11-29"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2018-12-14",
+   "episode": "2018-12-17",
+   "first": "2018-11-30",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2018-12-12"
+    ],
+    "iorb": [
+     "2018-11-30",
+     "2018-12-03",
+     "2018-12-04",
+     "2018-12-06",
+     "2018-12-07",
+     "2018-12-10",
+     "2018-12-11",
+     "2018-12-12",
+     "2018-12-13",
+     "2018-12-14"
+    ],
+    "sofr": [
+     "2018-12-14"
+    ],
+    "sofr_p25": [
+     "2018-12-12"
+    ],
+    "tbill_13w": [
+     "2018-11-30",
+     "2018-12-11"
+    ],
+    "tbill_4w": [
+     "2018-12-10",
+     "2018-12-14"
+    ],
+    "tgcr": [
+     "2018-12-12"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 32,
+     "with_an_earlier_tracked_vintage": 32
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2018-12-27",
+   "episode": "2018-12-28",
+   "first": "2018-12-13",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2018-12-27"
+    ],
+    "iorb": [
+     "2018-12-13",
+     "2018-12-14",
+     "2018-12-17",
+     "2018-12-18",
+     "2018-12-19",
+     "2018-12-21",
+     "2018-12-24",
+     "2018-12-26",
+     "2018-12-27"
+    ],
+    "sofr": [
+     "2018-12-14",
+     "2018-12-27"
+    ],
+    "sofr_p25": [
+     "2018-12-27"
+    ],
+    "sofr_p75": [
+     "2018-12-27"
+    ],
+    "tbill_13w": [
+     "2018-12-21"
+    ],
+    "tbill_4w": [
+     "2018-12-14",
+     "2018-12-17",
+     "2018-12-19"
+    ],
+    "tgcr": [
+     "2018-12-27"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-01-14",
+   "episode": "2019-01-15",
+   "first": "2018-12-31",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-01-14"
+    ],
+    "iorb": [
+     "2018-12-31",
+     "2019-01-02",
+     "2019-01-03",
+     "2019-01-04",
+     "2019-01-07",
+     "2019-01-08",
+     "2019-01-09",
+     "2019-01-10",
+     "2019-01-11",
+     "2019-01-14"
+    ],
+    "sofr_p25": [
+     "2019-01-14"
+    ],
+    "sofr_p75": [
+     "2019-01-14"
+    ],
+    "tbill_13w": [
+     "2019-01-08",
+     "2019-01-11"
+    ],
+    "tbill_4w": [
+     "2019-01-09"
+    ],
+    "tgcr": [
+     "2019-01-14"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-01-30",
+   "episode": "2019-01-31",
+   "first": "2019-01-16",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-01-17",
+     "2019-01-18",
+     "2019-01-22",
+     "2019-01-29"
+    ],
+    "iorb": [
+     "2019-01-16",
+     "2019-01-17",
+     "2019-01-18",
+     "2019-01-22",
+     "2019-01-23",
+     "2019-01-24",
+     "2019-01-25",
+     "2019-01-28",
+     "2019-01-29",
+     "2019-01-30"
+    ],
+    "sofr_p25": [
+     "2019-01-17",
+     "2019-01-18",
+     "2019-01-22",
+     "2019-01-29"
+    ],
+    "sofr_p75": [
+     "2019-01-17",
+     "2019-01-18",
+     "2019-01-22",
+     "2019-01-23",
+     "2019-01-29",
+     "2019-01-30"
+    ],
+    "tbill_13w": [
+     "2019-01-29",
+     "2019-01-30"
+    ],
+    "tbill_4w": [
+     "2019-01-16",
+     "2019-01-17",
+     "2019-01-29"
+    ],
+    "tgcr": [
+     "2019-01-17",
+     "2019-01-18",
+     "2019-01-22",
+     "2019-01-29"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    },
+    "tga": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-02-27",
+   "episode": "2019-02-28",
+   "first": "2019-02-13",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-02-13",
+     "2019-02-14",
+     "2019-02-20",
+     "2019-02-21",
+     "2019-02-22",
+     "2019-02-25",
+     "2019-02-26",
+     "2019-02-27"
+    ],
+    "iorb": [
+     "2019-02-13",
+     "2019-02-14",
+     "2019-02-15",
+     "2019-02-19",
+     "2019-02-20",
+     "2019-02-21",
+     "2019-02-22",
+     "2019-02-25",
+     "2019-02-26",
+     "2019-02-27"
+    ],
+    "sofr": [
+     "2019-02-21",
+     "2019-02-26"
+    ],
+    "sofr_p25": [
+     "2019-02-13",
+     "2019-02-14",
+     "2019-02-20",
+     "2019-02-21",
+     "2019-02-22",
+     "2019-02-25",
+     "2019-02-26",
+     "2019-02-27"
+    ],
+    "sofr_p75": [
+     "2019-02-13",
+     "2019-02-20",
+     "2019-02-22",
+     "2019-02-25",
+     "2019-02-26"
+    ],
+    "tbill_13w": [
+     "2019-02-15",
+     "2019-02-21",
+     "2019-02-27"
+    ],
+    "tbill_4w": [
+     "2019-02-13",
+     "2019-02-22",
+     "2019-02-27"
+    ],
+    "tgcr": [
+     "2019-02-13",
+     "2019-02-14",
+     "2019-02-20",
+     "2019-02-21",
+     "2019-02-22",
+     "2019-02-25",
+     "2019-02-26",
+     "2019-02-27"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    },
+    "tga": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-03-14",
+   "episode": "2019-03-15",
+   "first": "2019-03-01",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-03-04",
+     "2019-03-05",
+     "2019-03-06",
+     "2019-03-11"
+    ],
+    "iorb": [
+     "2019-03-01",
+     "2019-03-04",
+     "2019-03-05",
+     "2019-03-06",
+     "2019-03-07",
+     "2019-03-08",
+     "2019-03-11",
+     "2019-03-12",
+     "2019-03-13",
+     "2019-03-14"
+    ],
+    "sofr": [
+     "2019-03-04",
+     "2019-03-05",
+     "2019-03-06",
+     "2019-03-07"
+    ],
+    "sofr_p25": [
+     "2019-03-04",
+     "2019-03-05",
+     "2019-03-06",
+     "2019-03-11"
+    ],
+    "sofr_p75": [
+     "2019-03-04",
+     "2019-03-06",
+     "2019-03-13"
+    ],
+    "tbill_13w": [
+     "2019-03-05",
+     "2019-03-06",
+     "2019-03-12",
+     "2019-03-14"
+    ],
+    "tbill_4w": [
+     "2019-03-01",
+     "2019-03-04",
+     "2019-03-08",
+     "2019-03-13"
+    ],
+    "tgcr": [
+     "2019-03-04",
+     "2019-03-05",
+     "2019-03-06",
+     "2019-03-11"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-03-28",
+   "episode": "2019-03-29",
+   "first": "2019-03-15",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-03-26"
+    ],
+    "iorb": [
+     "2019-03-15",
+     "2019-03-18",
+     "2019-03-19",
+     "2019-03-20",
+     "2019-03-21",
+     "2019-03-22",
+     "2019-03-25",
+     "2019-03-26",
+     "2019-03-27",
+     "2019-03-28"
+    ],
+    "sofr": [
+     "2019-03-25",
+     "2019-03-26",
+     "2019-03-27"
+    ],
+    "sofr_p25": [
+     "2019-03-26"
+    ],
+    "sofr_p75": [
+     "2019-03-27"
+    ],
+    "tbill_13w": [
+     "2019-03-15",
+     "2019-03-26"
+    ],
+    "tbill_4w": [
+     "2019-03-20",
+     "2019-03-26"
+    ],
+    "tgcr": [
+     "2019-03-26"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-05-24",
+   "episode": "2019-05-28",
+   "first": "2019-05-13",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-05-21",
+     "2019-05-23",
+     "2019-05-24"
+    ],
+    "iorb": [
+     "2019-05-13",
+     "2019-05-14",
+     "2019-05-15",
+     "2019-05-16",
+     "2019-05-17",
+     "2019-05-20",
+     "2019-05-21",
+     "2019-05-22",
+     "2019-05-23",
+     "2019-05-24"
+    ],
+    "sofr": [
+     "2019-05-23",
+     "2019-05-24"
+    ],
+    "sofr_p25": [
+     "2019-05-21",
+     "2019-05-23",
+     "2019-05-24"
+    ],
+    "sofr_p75": [
+     "2019-05-21",
+     "2019-05-23",
+     "2019-05-24"
+    ],
+    "tbill_13w": [
+     "2019-05-14",
+     "2019-05-20",
+     "2019-05-21"
+    ],
+    "tbill_4w": [
+     "2019-05-14",
+     "2019-05-16",
+     "2019-05-20"
+    ],
+    "tgcr": [
+     "2019-05-21",
+     "2019-05-23",
+     "2019-05-24"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-06-14",
+   "episode": "2019-06-17",
+   "first": "2019-06-03",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-06-05",
+     "2019-06-07",
+     "2019-06-10",
+     "2019-06-12"
+    ],
+    "iorb": [
+     "2019-06-03",
+     "2019-06-04",
+     "2019-06-05",
+     "2019-06-06",
+     "2019-06-07",
+     "2019-06-10",
+     "2019-06-11",
+     "2019-06-12",
+     "2019-06-13",
+     "2019-06-14"
+    ],
+    "sofr": [
+     "2019-06-06",
+     "2019-06-10",
+     "2019-06-14"
+    ],
+    "sofr_p25": [
+     "2019-06-05",
+     "2019-06-07",
+     "2019-06-10",
+     "2019-06-12"
+    ],
+    "sofr_p75": [
+     "2019-06-04",
+     "2019-06-05",
+     "2019-06-10"
+    ],
+    "tbill_13w": [
+     "2019-06-03",
+     "2019-06-04",
+     "2019-06-05"
+    ],
+    "tbill_4w": [
+     "2019-06-10"
+    ],
+    "tgcr": [
+     "2019-06-05",
+     "2019-06-07",
+     "2019-06-10",
+     "2019-06-12"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-06-24",
+   "episode": "2019-06-25",
+   "first": "2019-06-11",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-06-12"
+    ],
+    "iorb": [
+     "2019-06-11",
+     "2019-06-12",
+     "2019-06-13",
+     "2019-06-14",
+     "2019-06-17",
+     "2019-06-18",
+     "2019-06-19",
+     "2019-06-20",
+     "2019-06-21",
+     "2019-06-24"
+    ],
+    "sofr": [
+     "2019-06-14",
+     "2019-06-20"
+    ],
+    "sofr_p25": [
+     "2019-06-12"
+    ],
+    "sofr_volume": [
+     "2019-06-19"
+    ],
+    "tgcr": [
+     "2019-06-12"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-08-12",
+   "episode": "2019-08-13",
+   "first": "2019-07-30",
+   "gaps": [],
+   "repeats": {
+    "iorb": [
+     "2019-07-30",
+     "2019-07-31",
+     "2019-08-02",
+     "2019-08-05",
+     "2019-08-06",
+     "2019-08-07",
+     "2019-08-08",
+     "2019-08-09",
+     "2019-08-12"
+    ],
+    "sofr": [
+     "2019-08-02"
+    ],
+    "tbill_13w": [
+     "2019-07-31",
+     "2019-08-08",
+     "2019-08-12"
+    ],
+    "tbill_4w": [
+     "2019-08-02"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": true,
+   "copied_rows": [
+    "2019-08-29"
+   ],
+   "decision_day": "2019-08-29",
+   "episode": "2019-08-30",
+   "first": "2019-08-16",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-08-23",
+     "2019-08-29"
+    ],
+    "iorb": [
+     "2019-08-16",
+     "2019-08-19",
+     "2019-08-20",
+     "2019-08-21",
+     "2019-08-22",
+     "2019-08-23",
+     "2019-08-26",
+     "2019-08-27",
+     "2019-08-28",
+     "2019-08-29"
+    ],
+    "sofr": [
+     "2019-08-26",
+     "2019-08-29"
+    ],
+    "sofr_p25": [
+     "2019-08-23",
+     "2019-08-29"
+    ],
+    "sofr_p75": [
+     "2019-08-22",
+     "2019-08-23",
+     "2019-08-29"
+    ],
+    "sofr_volume": [
+     "2019-08-29"
+    ],
+    "tbill_13w": [
+     "2019-08-20",
+     "2019-08-29"
+    ],
+    "tbill_4w": [
+     "2019-08-20"
+    ],
+    "tgcr": [
+     "2019-08-23",
+     "2019-08-29"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-10-11",
+   "episode": "2019-10-15",
+   "first": "2019-09-30",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-10-09",
+     "2019-10-10",
+     "2019-10-11"
+    ],
+    "iorb": [
+     "2019-09-30",
+     "2019-10-01",
+     "2019-10-02",
+     "2019-10-03",
+     "2019-10-04",
+     "2019-10-07",
+     "2019-10-08",
+     "2019-10-09",
+     "2019-10-10",
+     "2019-10-11"
+    ],
+    "sofr": [
+     "2019-10-09",
+     "2019-10-10",
+     "2019-10-11"
+    ],
+    "sofr_p25": [
+     "2019-10-09",
+     "2019-10-10",
+     "2019-10-11"
+    ],
+    "sofr_volume": [
+     "2019-10-08"
+    ],
+    "tbill_13w": [
+     "2019-10-11"
+    ],
+    "tgcr": [
+     "2019-10-09",
+     "2019-10-10",
+     "2019-10-11"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2019-11-27",
+   "episode": "2019-11-29",
+   "first": "2019-11-14",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-11-15"
+    ],
+    "iorb": [
+     "2019-11-14",
+     "2019-11-15",
+     "2019-11-18",
+     "2019-11-19",
+     "2019-11-20",
+     "2019-11-21",
+     "2019-11-22",
+     "2019-11-25",
+     "2019-11-26",
+     "2019-11-27"
+    ],
+    "sofr": [
+     "2019-11-20",
+     "2019-11-22"
+    ],
+    "sofr_p25": [
+     "2019-11-15"
+    ],
+    "sofr_p75": [
+     "2019-11-20",
+     "2019-11-22",
+     "2019-11-27"
+    ],
+    "tbill_13w": [
+     "2019-11-14",
+     "2019-11-15",
+     "2019-11-18",
+     "2019-11-19",
+     "2019-11-20",
+     "2019-11-22"
+    ],
+    "tbill_4w": [
+     "2019-11-15",
+     "2019-11-18",
+     "2019-11-21"
+    ],
+    "tgcr": [
+     "2019-11-15"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 30,
+     "with_an_earlier_tracked_vintage": 30
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [
+    "2019-12-06"
+   ],
+   "decision_day": "2019-12-13",
+   "episode": "2019-12-16",
+   "first": "2019-12-02",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2019-12-06"
+    ],
+    "iorb": [
+     "2019-12-02",
+     "2019-12-03",
+     "2019-12-04",
+     "2019-12-05",
+     "2019-12-06",
+     "2019-12-09",
+     "2019-12-10",
+     "2019-12-11",
+     "2019-12-12",
+     "2019-12-13"
+    ],
+    "sofr": [
+     "2019-12-06"
+    ],
+    "sofr_p25": [
+     "2019-12-06",
+     "2019-12-12",
+     "2019-12-13"
+    ],
+    "sofr_p75": [
+     "2019-12-04",
+     "2019-12-06"
+    ],
+    "sofr_volume": [
+     "2019-12-06"
+    ],
+    "tbill_4w": [
+     "2019-12-06"
+    ],
+    "tgcr": [
+     "2019-12-06"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2020-03-03",
+   "episode": "2020-03-04",
+   "first": "2020-02-19",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2020-02-24",
+     "2020-02-26",
+     "2020-02-27"
+    ],
+    "iorb": [
+     "2020-02-19",
+     "2020-02-20",
+     "2020-02-21",
+     "2020-02-24",
+     "2020-02-25",
+     "2020-02-26",
+     "2020-02-27",
+     "2020-02-28",
+     "2020-03-02",
+     "2020-03-03"
+    ],
+    "sofr": [
+     "2020-02-24",
+     "2020-02-27"
+    ],
+    "sofr_p25": [
+     "2020-02-24",
+     "2020-02-26",
+     "2020-02-27"
+    ],
+    "sofr_p75": [
+     "2020-02-24",
+     "2020-02-26",
+     "2020-02-27"
+    ],
+    "tbill_13w": [
+     "2020-02-19",
+     "2020-02-20",
+     "2020-02-25",
+     "2020-02-26"
+    ],
+    "tbill_4w": [
+     "2020-02-19",
+     "2020-02-20",
+     "2020-02-24",
+     "2020-02-26"
+    ],
+    "tgcr": [
+     "2020-02-24",
+     "2020-02-26",
+     "2020-02-27"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    },
+    "tga": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 5
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2020-03-11",
+   "episode": "2020-03-12",
+   "first": "2020-02-27",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2020-02-27",
+     "2020-03-09"
+    ],
+    "iorb": [
+     "2020-02-27",
+     "2020-02-28",
+     "2020-03-02",
+     "2020-03-03",
+     "2020-03-05",
+     "2020-03-06",
+     "2020-03-09",
+     "2020-03-10",
+     "2020-03-11"
+    ],
+    "sofr": [
+     "2020-02-27"
+    ],
+    "sofr_p25": [
+     "2020-02-27",
+     "2020-03-09"
+    ],
+    "sofr_p75": [
+     "2020-02-27"
+    ],
+    "tbill_4w": [
+     "2020-03-10"
+    ],
+    "tgcr": [
+     "2020-02-27",
+     "2020-03-09"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 29,
+     "with_an_earlier_tracked_vintage": 29
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 4
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2024-09-27",
+   "episode": "2024-09-30",
+   "first": "2024-09-16",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2024-09-17",
+     "2024-09-20",
+     "2024-09-25",
+     "2024-09-26",
+     "2024-09-27"
+    ],
+    "iorb": [
+     "2024-09-16",
+     "2024-09-17",
+     "2024-09-18",
+     "2024-09-20",
+     "2024-09-23",
+     "2024-09-24",
+     "2024-09-25",
+     "2024-09-26",
+     "2024-09-27"
+    ],
+    "sofr": [
+     "2024-09-17",
+     "2024-09-23",
+     "2024-09-25"
+    ],
+    "sofr_p25": [
+     "2024-09-17",
+     "2024-09-23",
+     "2024-09-25"
+    ],
+    "sofr_p75": [
+     "2024-09-25"
+    ],
+    "tbill_13w": [
+     "2024-09-17",
+     "2024-09-27"
+    ],
+    "tgcr": [
+     "2024-09-17",
+     "2024-09-20",
+     "2024-09-25",
+     "2024-09-26",
+     "2024-09-27"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 0,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 3
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 3
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2024-12-24",
+   "episode": "2024-12-26",
+   "first": "2024-12-11",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2024-12-12"
+    ],
+    "iorb": [
+     "2024-12-11",
+     "2024-12-12",
+     "2024-12-13",
+     "2024-12-16",
+     "2024-12-17",
+     "2024-12-18",
+     "2024-12-20",
+     "2024-12-23",
+     "2024-12-24"
+    ],
+    "sofr": [
+     "2024-12-12",
+     "2024-12-20"
+    ],
+    "sofr_p25": [
+     "2024-12-12"
+    ],
+    "sofr_p75": [
+     "2024-12-12"
+    ],
+    "tbill_13w": [
+     "2024-12-13",
+     "2024-12-20"
+    ],
+    "tbill_4w": [
+     "2024-12-13",
+     "2024-12-16",
+     "2024-12-24"
+    ],
+    "tgcr": [
+     "2024-12-12"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 0,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "tga": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 0
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2025-09-12",
+   "episode": "2025-09-15",
+   "first": "2025-08-29",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2025-08-29",
+     "2025-09-03"
+    ],
+    "iorb": [
+     "2025-08-29",
+     "2025-09-02",
+     "2025-09-03",
+     "2025-09-04",
+     "2025-09-05",
+     "2025-09-08",
+     "2025-09-09",
+     "2025-09-10",
+     "2025-09-11",
+     "2025-09-12"
+    ],
+    "sofr": [
+     "2025-08-29",
+     "2025-09-03",
+     "2025-09-09"
+    ],
+    "sofr_p25": [
+     "2025-08-29",
+     "2025-09-03"
+    ],
+    "sofr_p75": [
+     "2025-08-29"
+    ],
+    "tbill_13w": [
+     "2025-09-02",
+     "2025-09-09",
+     "2025-09-11",
+     "2025-09-12"
+    ],
+    "tbill_4w": [
+     "2025-08-29"
+    ],
+    "tgcr": [
+     "2025-08-29",
+     "2025-09-03"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 0,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2025-09-29",
+   "episode": "2025-09-30",
+   "first": "2025-09-16",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2025-09-19",
+     "2025-09-22"
+    ],
+    "iorb": [
+     "2025-09-16",
+     "2025-09-17",
+     "2025-09-19",
+     "2025-09-22",
+     "2025-09-23",
+     "2025-09-24",
+     "2025-09-25",
+     "2025-09-26",
+     "2025-09-29"
+    ],
+    "sofr": [
+     "2025-09-19",
+     "2025-09-22"
+    ],
+    "sofr_p25": [
+     "2025-09-22"
+    ],
+    "tbill_13w": [
+     "2025-09-19",
+     "2025-09-23"
+    ],
+    "tbill_4w": [
+     "2025-09-19"
+    ],
+    "tgcr": [
+     "2025-09-19",
+     "2025-09-22"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 0,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2025-10-14",
+   "episode": "2025-10-15",
+   "first": "2025-09-30",
+   "gaps": [],
+   "repeats": {
+    "iorb": [
+     "2025-09-30",
+     "2025-10-01",
+     "2025-10-02",
+     "2025-10-03",
+     "2025-10-06",
+     "2025-10-07",
+     "2025-10-08",
+     "2025-10-09",
+     "2025-10-10",
+     "2025-10-14"
+    ],
+    "sofr": [
+     "2025-10-02"
+    ],
+    "tbill_13w": [
+     "2025-09-30",
+     "2025-10-08"
+    ],
+    "tbill_4w": [
+     "2025-10-06",
+     "2025-10-08",
+     "2025-10-09",
+     "2025-10-14"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 0,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "tga": {
+     "differing": [],
+     "observations": 5,
+     "with_an_earlier_tracked_vintage": 0
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2025-12-12",
+   "episode": "2025-12-15",
+   "first": "2025-12-01",
+   "gaps": [],
+   "repeats": {
+    "iorb": [
+     "2025-12-01",
+     "2025-12-02",
+     "2025-12-03",
+     "2025-12-04",
+     "2025-12-05",
+     "2025-12-08",
+     "2025-12-09",
+     "2025-12-10",
+     "2025-12-12"
+    ],
+    "sofr": [
+     "2025-12-01"
+    ],
+    "tbill_13w": [
+     "2025-12-09"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 0,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    }
+   },
+   "stale_weekly": {}
+  },
+  {
+   "blanks": {},
+   "blinds_a_model": false,
+   "copied_rows": [],
+   "decision_day": "2025-12-24",
+   "episode": "2025-12-26",
+   "first": "2025-12-11",
+   "gaps": [],
+   "repeats": {
+    "bgcr": [
+     "2025-12-19",
+     "2025-12-24"
+    ],
+    "iorb": [
+     "2025-12-12",
+     "2025-12-15",
+     "2025-12-16",
+     "2025-12-17",
+     "2025-12-18",
+     "2025-12-19",
+     "2025-12-22",
+     "2025-12-23",
+     "2025-12-24"
+    ],
+    "sofr": [
+     "2025-12-17",
+     "2025-12-19",
+     "2025-12-24"
+    ],
+    "sofr_p25": [
+     "2025-12-19",
+     "2025-12-24"
+    ],
+    "sofr_p75": [
+     "2025-12-19",
+     "2025-12-24"
+    ],
+    "tbill_13w": [
+     "2025-12-16",
+     "2025-12-23"
+    ],
+    "tbill_4w": [
+     "2025-12-22"
+    ],
+    "tgcr": [
+     "2025-12-19",
+     "2025-12-24"
+    ]
+   },
+   "revisions_against_earliest_tracked_vintage": {
+    "iorb": {
+     "differing": [],
+     "observations": 0,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "reserve_balances": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    },
+    "tga": {
+     "differing": [],
+     "observations": 4,
+     "with_an_earlier_tracked_vintage": 0
+    }
+   },
+   "stale_weekly": {}
+  }
+ ],
+ "declaration": {
+  "path": "metadata/setup_diagnostic.json"
+ },
+ "episode_sensitivity": {
+  "changes_against_primary": {
+   "tau10_calm1": {
+    "appear": [
+     "2018-12-06",
+     "2018-12-31",
+     "2019-04-30",
+     "2019-05-15",
+     "2019-05-31",
+     "2019-06-28",
+     "2019-07-02",
+     "2019-07-10",
+     "2019-07-15",
+     "2019-07-31",
+     "2019-09-04",
+     "2019-09-16",
+     "2019-09-24",
+     "2019-09-30",
+     "2019-10-31",
+     "2020-03-16",
+     "2024-10-01",
+     "2025-10-27",
+     "2025-11-25",
+     "2025-12-31"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-12-06": 3,
+     "2018-12-31": 1,
+     "2019-04-30": 19,
+     "2019-05-15": 8,
+     "2019-05-31": 3,
+     "2019-06-28": 3,
+     "2019-07-02": 5,
+     "2019-07-10": 10,
+     "2019-07-15": 13,
+     "2019-07-31": 9,
+     "2019-09-04": 2,
+     "2019-09-16": 10,
+     "2019-09-24": 14,
+     "2019-09-30": 10,
+     "2019-10-31": 12,
+     "2020-03-16": 2,
+     "2024-10-01": 1,
+     "2025-10-27": 8,
+     "2025-11-25": 13,
+     "2025-12-31": 3
+    },
+    "disappear": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-17",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-08-30",
+     "2019-11-29",
+     "2019-12-16",
+     "2020-03-12",
+     "2024-09-30",
+     "2025-09-30",
+     "2025-12-15"
+    ],
+    "kept": 10
+   },
+   "tau10_calm10": {
+    "appear": [
+     "2018-12-06",
+     "2019-04-30",
+     "2019-05-31",
+     "2019-06-28",
+     "2019-09-04",
+     "2024-10-01",
+     "2025-11-25"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-12-06": 3,
+     "2019-04-30": 19,
+     "2019-05-31": 3,
+     "2019-06-28": 3,
+     "2019-09-04": 2,
+     "2024-10-01": 1,
+     "2025-11-25": 13
+    },
+    "disappear": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-17",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-17",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-08-30",
+     "2019-10-15",
+     "2019-11-29",
+     "2019-12-16",
+     "2020-03-12",
+     "2024-09-30",
+     "2025-09-30",
+     "2025-12-15"
+    ],
+    "kept": 8
+   },
+   "tau10_calm3": {
+    "appear": [
+     "2018-12-06",
+     "2018-12-31",
+     "2019-04-30",
+     "2019-05-15",
+     "2019-05-31",
+     "2019-06-28",
+     "2019-07-31",
+     "2019-09-04",
+     "2019-09-16",
+     "2019-10-31",
+     "2020-03-16",
+     "2024-10-01",
+     "2025-10-27",
+     "2025-11-25"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-12-06": 3,
+     "2018-12-31": 1,
+     "2019-04-30": 19,
+     "2019-05-15": 8,
+     "2019-05-31": 3,
+     "2019-06-28": 3,
+     "2019-07-31": 9,
+     "2019-09-04": 2,
+     "2019-09-16": 10,
+     "2019-10-31": 12,
+     "2020-03-16": 2,
+     "2024-10-01": 1,
+     "2025-10-27": 8,
+     "2025-11-25": 13
+    },
+    "disappear": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-17",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-08-30",
+     "2019-11-29",
+     "2019-12-16",
+     "2020-03-12",
+     "2024-09-30",
+     "2025-09-30",
+     "2025-12-15"
+    ],
+    "kept": 10
+   },
+   "tau10_calm5": {
+    "appear": [
+     "2018-12-06",
+     "2018-12-31",
+     "2019-04-30",
+     "2019-05-15",
+     "2019-05-31",
+     "2019-06-28",
+     "2019-07-31",
+     "2019-09-04",
+     "2019-09-16",
+     "2019-10-31",
+     "2020-03-16",
+     "2024-10-01",
+     "2025-10-27",
+     "2025-11-25"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-12-06": 3,
+     "2018-12-31": 1,
+     "2019-04-30": 19,
+     "2019-05-15": 8,
+     "2019-05-31": 3,
+     "2019-06-28": 3,
+     "2019-07-31": 9,
+     "2019-09-04": 2,
+     "2019-09-16": 10,
+     "2019-10-31": 12,
+     "2020-03-16": 2,
+     "2024-10-01": 1,
+     "2025-10-27": 8,
+     "2025-11-25": 13
+    },
+    "disappear": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-17",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-08-30",
+     "2019-11-29",
+     "2019-12-16",
+     "2020-03-12",
+     "2024-09-30",
+     "2025-09-30",
+     "2025-12-15"
+    ],
+    "kept": 10
+   },
+   "tau3_calm1": {
+    "appear": [
+     "2018-08-16",
+     "2018-09-17",
+     "2018-09-28",
+     "2018-11-02",
+     "2018-11-29",
+     "2018-12-04",
+     "2018-12-26",
+     "2019-01-09",
+     "2019-03-20",
+     "2019-05-14",
+     "2019-06-24",
+     "2019-07-15",
+     "2019-08-15",
+     "2019-08-27",
+     "2019-09-10",
+     "2019-09-30",
+     "2019-10-08",
+     "2019-10-31",
+     "2019-11-15",
+     "2020-03-03",
+     "2020-03-11",
+     "2020-03-16",
+     "2024-12-31",
+     "2025-06-30",
+     "2025-10-14",
+     "2025-10-21",
+     "2025-11-10",
+     "2025-11-24",
+     "2025-12-08"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-08-16": 62,
+     "2018-09-17": 41,
+     "2018-09-28": 32,
+     "2018-11-02": 8,
+     "2018-11-29": 1,
+     "2018-12-04": 2,
+     "2018-12-26": 2,
+     "2019-01-09": 4,
+     "2019-03-20": 3,
+     "2019-05-14": 9,
+     "2019-06-24": 1,
+     "2019-07-15": 13,
+     "2019-08-15": 2,
+     "2019-08-27": 3,
+     "2019-09-10": 6,
+     "2019-09-30": 10,
+     "2019-10-08": 4,
+     "2019-10-31": 12,
+     "2019-11-15": 9,
+     "2020-03-03": 1,
+     "2020-03-11": 1,
+     "2020-03-16": 2,
+     "2024-12-31": 3,
+     "2025-06-30": 53,
+     "2025-10-14": 1,
+     "2025-10-21": 4,
+     "2025-11-10": 18,
+     "2025-11-24": 14,
+     "2025-12-08": 5
+    },
+    "disappear": [
+     "2018-11-30",
+     "2018-12-28",
+     "2019-06-25",
+     "2019-10-15",
+     "2020-03-04",
+     "2020-03-12",
+     "2025-10-15"
+    ],
+    "kept": 19
+   },
+   "tau3_calm10": {
+    "appear": [
+     "2018-08-16",
+     "2018-09-17",
+     "2018-11-02",
+     "2020-03-03",
+     "2025-06-30"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-08-16": 62,
+     "2018-09-17": 41,
+     "2018-11-02": 8,
+     "2020-03-03": 1,
+     "2025-06-30": 53
+    },
+    "disappear": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-17",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-29",
+     "2019-05-28",
+     "2019-06-17",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-08-30",
+     "2019-10-15",
+     "2019-11-29",
+     "2019-12-16",
+     "2020-03-04",
+     "2020-03-12",
+     "2025-10-15",
+     "2025-12-15",
+     "2025-12-26"
+    ],
+    "kept": 7
+   },
+   "tau3_calm3": {
+    "appear": [
+     "2018-08-16",
+     "2018-09-17",
+     "2018-09-28",
+     "2018-11-02",
+     "2018-11-29",
+     "2018-12-26",
+     "2019-06-24",
+     "2019-08-27",
+     "2019-10-31",
+     "2019-11-15",
+     "2020-03-03",
+     "2020-03-11",
+     "2025-06-30",
+     "2025-10-14",
+     "2025-11-10",
+     "2025-11-24"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-08-16": 62,
+     "2018-09-17": 41,
+     "2018-09-28": 32,
+     "2018-11-02": 8,
+     "2018-11-29": 1,
+     "2018-12-26": 2,
+     "2019-06-24": 1,
+     "2019-08-27": 3,
+     "2019-10-31": 12,
+     "2019-11-15": 9,
+     "2020-03-03": 1,
+     "2020-03-11": 1,
+     "2025-06-30": 53,
+     "2025-10-14": 1,
+     "2025-11-10": 18,
+     "2025-11-24": 14
+    },
+    "disappear": [
+     "2018-11-30",
+     "2018-12-28",
+     "2019-06-25",
+     "2019-08-30",
+     "2019-10-15",
+     "2020-03-04",
+     "2020-03-12",
+     "2025-10-15"
+    ],
+    "kept": 18
+   },
+   "tau3_calm5": {
+    "appear": [
+     "2018-08-16",
+     "2018-09-17",
+     "2018-09-28",
+     "2018-11-02",
+     "2018-11-29",
+     "2019-08-27",
+     "2019-11-15",
+     "2020-03-03",
+     "2025-06-30",
+     "2025-10-14"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-08-16": 62,
+     "2018-09-17": 41,
+     "2018-09-28": 32,
+     "2018-11-02": 8,
+     "2018-11-29": 1,
+     "2019-08-27": 3,
+     "2019-11-15": 9,
+     "2020-03-03": 1,
+     "2025-06-30": 53,
+     "2025-10-14": 1
+    },
+    "disappear": [
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-05-28",
+     "2019-06-17",
+     "2019-06-25",
+     "2019-08-30",
+     "2019-10-15",
+     "2020-03-04",
+     "2020-03-12",
+     "2025-10-15",
+     "2025-12-15"
+    ],
+    "kept": 14
+   },
+   "tau5_calm1": {
+    "appear": [
+     "2018-12-04",
+     "2019-03-20",
+     "2019-04-15",
+     "2019-04-26",
+     "2019-05-15",
+     "2019-05-31",
+     "2019-07-15",
+     "2019-07-24",
+     "2019-07-31",
+     "2019-08-15",
+     "2019-09-12",
+     "2019-09-24",
+     "2019-09-30",
+     "2019-10-31",
+     "2020-03-16",
+     "2024-12-31",
+     "2025-10-21",
+     "2025-11-12",
+     "2025-11-17",
+     "2025-11-24"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2018-12-04": 2,
+     "2019-03-20": 3,
+     "2019-04-15": 11,
+     "2019-04-26": 19,
+     "2019-05-15": 8,
+     "2019-05-31": 3,
+     "2019-07-15": 13,
+     "2019-07-24": 14,
+     "2019-07-31": 9,
+     "2019-08-15": 2,
+     "2019-09-12": 8,
+     "2019-09-24": 14,
+     "2019-09-30": 10,
+     "2019-10-31": 12,
+     "2020-03-16": 2,
+     "2024-12-31": 3,
+     "2025-10-21": 4,
+     "2025-11-12": 19,
+     "2025-11-17": 19,
+     "2025-11-24": 14
+    },
+    "disappear": [],
+    "kept": 26
+   },
+   "tau5_calm10": {
+    "appear": [],
+    "appear_distance_to_nearest_primary_episode_panel_days": {},
+    "disappear": [
+     "2018-11-30",
+     "2018-12-17",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-29",
+     "2019-05-28",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-10-15",
+     "2019-12-16",
+     "2020-03-12",
+     "2025-10-15",
+     "2025-12-15",
+     "2025-12-26"
+    ],
+    "kept": 12
+   },
+   "tau5_calm3": {
+    "appear": [
+     "2019-04-15",
+     "2019-05-15",
+     "2019-09-12",
+     "2019-10-31",
+     "2025-11-12",
+     "2025-11-24"
+    ],
+    "appear_distance_to_nearest_primary_episode_panel_days": {
+     "2019-04-15": 11,
+     "2019-05-15": 8,
+     "2019-09-12": 8,
+     "2019-10-31": 12,
+     "2025-11-12": 19,
+     "2025-11-24": 14
+    },
+    "disappear": [],
+    "kept": 26
+   }
+  },
+  "counts": {
+   "tau10_calm1": {
+    "by_year": {
+     "2018": 3,
+     "2019": 17,
+     "2020": 2,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 6
+    },
+    "episodes": 30
+   },
+   "tau10_calm10": {
+    "by_year": {
+     "2018": 1,
+     "2019": 7,
+     "2020": 1,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 4
+    },
+    "episodes": 15
+   },
+   "tau10_calm3": {
+    "by_year": {
+     "2018": 3,
+     "2019": 12,
+     "2020": 2,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 5
+    },
+    "episodes": 24
+   },
+   "tau10_calm5": {
+    "by_year": {
+     "2018": 3,
+     "2019": 12,
+     "2020": 2,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 5
+    },
+    "episodes": 24
+   },
+   "tau3_calm1": {
+    "by_year": {
+     "2018": 9,
+     "2019": 23,
+     "2020": 3,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 3,
+     "2025": 10
+    },
+    "episodes": 48
+   },
+   "tau3_calm10": {
+    "by_year": {
+     "2018": 3,
+     "2019": 3,
+     "2020": 1,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 3
+    },
+    "episodes": 12
+   },
+   "tau3_calm3": {
+    "by_year": {
+     "2018": 8,
+     "2019": 14,
+     "2020": 2,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 8
+    },
+    "episodes": 34
+   },
+   "tau3_calm5": {
+    "by_year": {
+     "2018": 7,
+     "2019": 9,
+     "2020": 1,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 5
+    },
+    "episodes": 24
+   },
+   "tau5_calm1": {
+    "by_year": {
+     "2018": 5,
+     "2019": 26,
+     "2020": 3,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 3,
+     "2025": 9
+    },
+    "episodes": 46
+   },
+   "tau5_calm10": {
+    "by_year": {
+     "2018": 1,
+     "2019": 6,
+     "2020": 1,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 2
+    },
+    "episodes": 12
+   },
+   "tau5_calm3": {
+    "by_year": {
+     "2018": 4,
+     "2019": 17,
+     "2020": 2,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 7
+    },
+    "episodes": 32
+   },
+   "tau5_calm5": {
+    "by_year": {
+     "2018": 4,
+     "2019": 13,
+     "2020": 2,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 2,
+     "2025": 5
+    },
+    "episodes": 26
+   }
+  },
+  "primary_episode_kept_under_other_rules": {
+   "2018-11-15": {
+    "kept": 6,
+    "of": 11
+   },
+   "2018-11-30": {
+    "kept": 2,
+    "of": 11
+   },
+   "2018-12-17": {
+    "kept": 8,
+    "of": 11
+   },
+   "2018-12-28": {
+    "kept": 2,
+    "of": 11
+   },
+   "2019-01-15": {
+    "kept": 4,
+    "of": 11
+   },
+   "2019-01-31": {
+    "kept": 11,
+    "of": 11
+   },
+   "2019-02-28": {
+    "kept": 11,
+    "of": 11
+   },
+   "2019-03-15": {
+    "kept": 7,
+    "of": 11
+   },
+   "2019-03-29": {
+    "kept": 9,
+    "of": 11
+   },
+   "2019-05-28": {
+    "kept": 4,
+    "of": 11
+   },
+   "2019-06-17": {
+    "kept": 5,
+    "of": 11
+   },
+   "2019-06-25": {
+    "kept": 2,
+    "of": 11
+   },
+   "2019-08-13": {
+    "kept": 5,
+    "of": 11
+   },
+   "2019-08-30": {
+    "kept": 4,
+    "of": 11
+   },
+   "2019-10-15": {
+    "kept": 5,
+    "of": 11
+   },
+   "2019-11-29": {
+    "kept": 6,
+    "of": 11
+   },
+   "2019-12-16": {
+    "kept": 5,
+    "of": 11
+   },
+   "2020-03-04": {
+    "kept": 7,
+    "of": 11
+   },
+   "2020-03-12": {
+    "kept": 2,
+    "of": 11
+   },
+   "2024-09-30": {
+    "kept": 7,
+    "of": 11
+   },
+   "2024-12-26": {
+    "kept": 11,
+    "of": 11
+   },
+   "2025-09-15": {
+    "kept": 11,
+    "of": 11
+   },
+   "2025-09-30": {
+    "kept": 7,
+    "of": 11
+   },
+   "2025-10-15": {
+    "kept": 6,
+    "of": 11
+   },
+   "2025-12-15": {
+    "kept": 4,
+    "of": 11
+   },
+   "2025-12-26": {
+    "kept": 9,
+    "of": 11
+   }
+  }
+ },
+ "episodes": [
+  "2018-11-15",
+  "2018-11-30",
+  "2018-12-17",
+  "2018-12-28",
+  "2019-01-15",
+  "2019-01-31",
+  "2019-02-28",
+  "2019-03-15",
+  "2019-03-29",
+  "2019-05-28",
+  "2019-06-17",
+  "2019-06-25",
+  "2019-08-13",
+  "2019-08-30",
+  "2019-10-15",
+  "2019-11-29",
+  "2019-12-16",
+  "2020-03-04",
+  "2020-03-12",
+  "2024-09-30",
+  "2024-12-26",
+  "2025-09-15",
+  "2025-09-30",
+  "2025-10-15",
+  "2025-12-15",
+  "2025-12-26"
+ ],
+ "forecast_panels": {
+  "bench_h1.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h2.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h3.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h4.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "bench_h5.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "risk_h1.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "risk_h2.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "risk_h3.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "risk_h4.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "risk_h5.json": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+ },
+ "judge_declaration_commit": "3113d6e576eed9eff4d1004d982128811770e204",
+ "judge_declaration_sha256": "021d74f77c50bf2e48eda74f8fb723bcdc14a9609da7b6a7d7e83190c43ea3a2",
+ "scored_window": {
+  "days": 1869,
+  "first": "2018-07-06",
+  "last": "2025-12-31"
+ },
+ "target": {
+  "by_regime": {
+   "2018-19": {
+    "base_rate_10": 0.08924485125858124,
+    "base_rate_3": 0.35926773455377575,
+    "base_rate_5": 0.2402745995423341,
+    "days": 437,
+    "onsets_5": 17,
+    "pressure_days_10": 39,
+    "pressure_days_3": 157,
+    "pressure_days_5": 105,
+    "scored_days": 371,
+    "spread_bp_max": 315.0,
+    "spread_bp_mean": 3.491990846681923,
+    "spread_bp_quantiles": {
+     "0.05": -5.2000000000000215,
+     "0.25": -2.0000000000000018,
+     "0.5": 1.0000000000000009,
+     "0.75": 5.000000000000027,
+     "0.95": 14.999999999999991
+    }
+   },
+   "2020": {
+    "base_rate_10": 0.01195219123505976,
+    "base_rate_3": 0.02390438247011952,
+    "base_rate_5": 0.01593625498007968,
+    "days": 251,
+    "onsets_5": 2,
+    "pressure_days_10": 3,
+    "pressure_days_3": 6,
+    "pressure_days_5": 4,
+    "scored_days": 251,
+    "spread_bp_max": 44.00000000000001,
+    "spread_bp_mean": -1.928286852589642,
+    "spread_bp_quantiles": {
+     "0.05": -9.000000000000002,
+     "0.25": -3.0,
+     "0.5": -1.0000000000000009,
+     "0.75": 0.0,
+     "0.95": 1.0000000000000009
+    }
+   },
+   "2021-23": {
+    "base_rate_10": 0.0,
+    "base_rate_3": 0.0,
+    "base_rate_5": 0.0,
+    "days": 748,
+    "onsets_5": 0,
+    "pressure_days_10": 0,
+    "pressure_days_3": 0,
+    "pressure_days_5": 0,
+    "scored_days": 748,
+    "spread_bp_max": 0.9999999999999996,
+    "spread_bp_mean": -9.806149732620321,
+    "spread_bp_quantiles": {
+     "0.05": -12.99999999999999,
+     "0.25": -10.000000000000053,
+     "0.5": -10.0,
+     "0.75": -9.000000000000075,
+     "0.95": -6.00000000000005
+    }
+   },
+   "2024": {
+    "base_rate_10": 0.008,
+    "base_rate_3": 0.02,
+    "base_rate_5": 0.02,
+    "days": 250,
+    "onsets_5": 2,
+    "pressure_days_10": 2,
+    "pressure_days_3": 5,
+    "pressure_days_5": 5,
+    "scored_days": 250,
+    "spread_bp_max": 14.999999999999947,
+    "spread_bp_mean": -6.856000000000029,
+    "spread_bp_quantiles": {
+     "0.05": -9.000000000000075,
+     "0.25": -9.000000000000075,
+     "0.5": -8.000000000000007,
+     "0.75": -6.00000000000005,
+     "0.95": -1.0000000000000675
+    }
+   },
+   "2025-26": {
+    "base_rate_10": 0.06827309236947791,
+    "base_rate_3": 0.1646586345381526,
+    "base_rate_5": 0.11646586345381527,
+    "days": 249,
+    "onsets_5": 5,
+    "pressure_days_10": 17,
+    "pressure_days_3": 41,
+    "pressure_days_5": 29,
+    "scored_days": 249,
+    "spread_bp_max": 31.999999999999986,
+    "spread_bp_mean": -2.8995983935743137,
+    "spread_bp_quantiles": {
+     "0.05": -12.00000000000001,
+     "0.25": -8.000000000000007,
+     "0.5": -5.000000000000071,
+     "0.75": 1.000000000000023,
+     "0.95": 11.599999999999943
+    }
+   }
+  },
+  "by_year": {
+   "2018": {
+    "base_rate_10": 0.026737967914438502,
+    "base_rate_3": 0.1497326203208556,
+    "base_rate_5": 0.0855614973262032,
+    "days": 187,
+    "onsets_5": 4,
+    "pressure_days_10": 5,
+    "pressure_days_3": 28,
+    "pressure_days_5": 16,
+    "scored_days": 121,
+    "spread_bp_max": 60.00000000000001,
+    "spread_bp_mean": -0.7005347593582901,
+    "spread_bp_quantiles": {
+     "0.05": -7.69999999999999,
+     "0.25": -4.0000000000000036,
+     "0.5": -1.000000000000023,
+     "0.75": 0.9999999999999787,
+     "0.95": 7.999999999999963
+    }
+   },
+   "2019": {
+    "base_rate_10": 0.136,
+    "base_rate_3": 0.516,
+    "base_rate_5": 0.356,
+    "days": 250,
+    "onsets_5": 13,
+    "pressure_days_10": 34,
+    "pressure_days_3": 129,
+    "pressure_days_5": 89,
+    "scored_days": 250,
+    "spread_bp_max": 315.0,
+    "spread_bp_mean": 6.628000000000004,
+    "spread_bp_quantiles": {
+     "0.05": -2.0000000000000018,
+     "0.25": 0.24999999999999467,
+     "0.5": 4.0000000000000036,
+     "0.75": 6.999999999999984,
+     "0.95": 20.54999999999997
+    }
+   },
+   "2020": {
+    "base_rate_10": 0.01195219123505976,
+    "base_rate_3": 0.02390438247011952,
+    "base_rate_5": 0.01593625498007968,
+    "days": 251,
+    "onsets_5": 2,
+    "pressure_days_10": 3,
+    "pressure_days_3": 6,
+    "pressure_days_5": 4,
+    "scored_days": 251,
+    "spread_bp_max": 44.00000000000001,
+    "spread_bp_mean": -1.928286852589642,
+    "spread_bp_quantiles": {
+     "0.05": -9.000000000000002,
+     "0.25": -3.0,
+     "0.5": -1.0000000000000009,
+     "0.75": 0.0,
+     "0.95": 1.0000000000000009
+    }
+   },
+   "2021": {
+    "base_rate_10": 0.0,
+    "base_rate_3": 0.0,
+    "base_rate_5": 0.0,
+    "days": 250,
+    "onsets_5": 0,
+    "pressure_days_10": 0,
+    "pressure_days_3": 0,
+    "pressure_days_5": 0,
+    "scored_days": 250,
+    "spread_bp_max": 0.9999999999999996,
+    "spread_bp_mean": -8.824,
+    "spread_bp_quantiles": {
+     "0.05": -10.0,
+     "0.25": -10.0,
+     "0.5": -10.0,
+     "0.75": -9.000000000000002,
+     "0.95": -3.0
+    }
+   },
+   "2022": {
+    "base_rate_10": 0.0,
+    "base_rate_3": 0.0,
+    "base_rate_5": 0.0,
+    "days": 249,
+    "onsets_5": 0,
+    "pressure_days_10": 0,
+    "pressure_days_3": 0,
+    "pressure_days_5": 0,
+    "scored_days": 249,
+    "spread_bp_max": -8.000000000000007,
+    "spread_bp_mean": -11.546184738955823,
+    "spread_bp_quantiles": {
+     "0.05": -16.599999999999984,
+     "0.25": -12.00000000000001,
+     "0.5": -10.999999999999988,
+     "0.75": -10.000000000000004,
+     "0.95": -10.0
+    }
+   },
+   "2023": {
+    "base_rate_10": 0.0,
+    "base_rate_3": 0.0,
+    "base_rate_5": 0.0,
+    "days": 249,
+    "onsets_5": 0,
+    "pressure_days_10": 0,
+    "pressure_days_3": 0,
+    "pressure_days_5": 0,
+    "scored_days": 249,
+    "spread_bp_max": 0.0,
+    "spread_bp_mean": -9.052208835341387,
+    "spread_bp_quantiles": {
+     "0.05": -10.000000000000053,
+     "0.25": -10.000000000000053,
+     "0.5": -9.000000000000075,
+     "0.75": -9.000000000000075,
+     "0.95": -7.000000000000028
+    }
+   },
+   "2024": {
+    "base_rate_10": 0.008,
+    "base_rate_3": 0.02,
+    "base_rate_5": 0.02,
+    "days": 250,
+    "onsets_5": 2,
+    "pressure_days_10": 2,
+    "pressure_days_3": 5,
+    "pressure_days_5": 5,
+    "scored_days": 250,
+    "spread_bp_max": 14.999999999999947,
+    "spread_bp_mean": -6.856000000000029,
+    "spread_bp_quantiles": {
+     "0.05": -9.000000000000075,
+     "0.25": -9.000000000000075,
+     "0.5": -8.000000000000007,
+     "0.75": -6.00000000000005,
+     "0.95": -1.0000000000000675
+    }
+   },
+   "2025": {
+    "base_rate_10": 0.06827309236947791,
+    "base_rate_3": 0.1646586345381526,
+    "base_rate_5": 0.11646586345381527,
+    "days": 249,
+    "onsets_5": 5,
+    "pressure_days_10": 17,
+    "pressure_days_3": 41,
+    "pressure_days_5": 29,
+    "scored_days": 249,
+    "spread_bp_max": 31.999999999999986,
+    "spread_bp_mean": -2.8995983935743137,
+    "spread_bp_quantiles": {
+     "0.05": -12.00000000000001,
+     "0.25": -8.000000000000007,
+     "0.5": -5.000000000000071,
+     "0.75": 1.000000000000023,
+     "0.95": 11.599999999999943
+    }
+   }
+  },
+  "iorb_changes": [
+   {
+    "change_bps": 20,
+    "date": "2018-06-14",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 1.75,
+    "mechanical_spread_shift_bps": -20,
+    "pressure_days_in_next_15_panel_days": 2,
+    "sofr_move_bps": 19,
+    "technical": true,
+    "to": 1.95
+   },
+   {
+    "change_bps": 25,
+    "date": "2018-09-27",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 1.95,
+    "mechanical_spread_shift_bps": -25,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 24,
+    "technical": false,
+    "to": 2.2
+   },
+   {
+    "change_bps": 20,
+    "date": "2018-12-20",
+    "episodes_in_next_15_panel_days": 1,
+    "from": 2.2,
+    "mechanical_spread_shift_bps": -20,
+    "pressure_days_in_next_15_panel_days": 4,
+    "sofr_move_bps": 11,
+    "technical": true,
+    "to": 2.4
+   },
+   {
+    "change_bps": -5,
+    "date": "2019-05-02",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 2.4,
+    "mechanical_spread_shift_bps": 5,
+    "pressure_days_in_next_15_panel_days": 9,
+    "sofr_move_bps": -4,
+    "technical": true,
+    "to": 2.35
+   },
+   {
+    "change_bps": -25,
+    "date": "2019-08-01",
+    "episodes_in_next_15_panel_days": 1,
+    "from": 2.35,
+    "mechanical_spread_shift_bps": 25,
+    "pressure_days_in_next_15_panel_days": 4,
+    "sofr_move_bps": -36,
+    "technical": false,
+    "to": 2.1
+   },
+   {
+    "change_bps": -30,
+    "date": "2019-09-19",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 2.1,
+    "mechanical_spread_shift_bps": 30,
+    "pressure_days_in_next_15_panel_days": 6,
+    "sofr_move_bps": -60,
+    "technical": true,
+    "to": 1.8
+   },
+   {
+    "change_bps": -25,
+    "date": "2019-10-31",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 1.8,
+    "mechanical_spread_shift_bps": 25,
+    "pressure_days_in_next_15_panel_days": 1,
+    "sofr_move_bps": -6,
+    "technical": false,
+    "to": 1.55
+   },
+   {
+    "change_bps": 5,
+    "date": "2020-01-30",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 1.55,
+    "mechanical_spread_shift_bps": -5,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 5,
+    "technical": true,
+    "to": 1.6
+   },
+   {
+    "change_bps": -50,
+    "date": "2020-03-04",
+    "episodes_in_next_15_panel_days": 2,
+    "from": 1.6,
+    "mechanical_spread_shift_bps": 50,
+    "pressure_days_in_next_15_panel_days": 4,
+    "sofr_move_bps": -41,
+    "technical": false,
+    "to": 1.1
+   },
+   {
+    "change_bps": -100,
+    "date": "2020-03-16",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 1.1,
+    "mechanical_spread_shift_bps": 100,
+    "pressure_days_in_next_15_panel_days": 2,
+    "sofr_move_bps": -84,
+    "technical": false,
+    "to": 0.1
+   },
+   {
+    "change_bps": 5,
+    "date": "2021-06-17",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 0.1,
+    "mechanical_spread_shift_bps": -5,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 4,
+    "technical": true,
+    "to": 0.15
+   },
+   {
+    "change_bps": 25,
+    "date": "2022-03-17",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 0.15,
+    "mechanical_spread_shift_bps": -25,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 25,
+    "technical": false,
+    "to": 0.4
+   },
+   {
+    "change_bps": 50,
+    "date": "2022-05-05",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 0.4,
+    "mechanical_spread_shift_bps": -50,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 49,
+    "technical": false,
+    "to": 0.9
+   },
+   {
+    "change_bps": 75,
+    "date": "2022-06-16",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 0.9,
+    "mechanical_spread_shift_bps": -75,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 75,
+    "technical": false,
+    "to": 1.65
+   },
+   {
+    "change_bps": 75,
+    "date": "2022-07-28",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 1.65,
+    "mechanical_spread_shift_bps": -75,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 75,
+    "technical": false,
+    "to": 2.4
+   },
+   {
+    "change_bps": 75,
+    "date": "2022-09-22",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 2.4,
+    "mechanical_spread_shift_bps": -75,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 74,
+    "technical": false,
+    "to": 3.15
+   },
+   {
+    "change_bps": 75,
+    "date": "2022-11-03",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 3.15,
+    "mechanical_spread_shift_bps": -75,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 75,
+    "technical": false,
+    "to": 3.9
+   },
+   {
+    "change_bps": 50,
+    "date": "2022-12-15",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 3.9,
+    "mechanical_spread_shift_bps": -50,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 52,
+    "technical": false,
+    "to": 4.4
+   },
+   {
+    "change_bps": 25,
+    "date": "2023-02-02",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 4.4,
+    "mechanical_spread_shift_bps": -25,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 25,
+    "technical": false,
+    "to": 4.65
+   },
+   {
+    "change_bps": 25,
+    "date": "2023-03-23",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 4.65,
+    "mechanical_spread_shift_bps": -25,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 25,
+    "technical": false,
+    "to": 4.9
+   },
+   {
+    "change_bps": 25,
+    "date": "2023-05-04",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 4.9,
+    "mechanical_spread_shift_bps": -25,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 25,
+    "technical": false,
+    "to": 5.15
+   },
+   {
+    "change_bps": 25,
+    "date": "2023-07-27",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 5.15,
+    "mechanical_spread_shift_bps": -25,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": 25,
+    "technical": false,
+    "to": 5.4
+   },
+   {
+    "change_bps": -50,
+    "date": "2024-09-19",
+    "episodes_in_next_15_panel_days": 1,
+    "from": 5.4,
+    "mechanical_spread_shift_bps": 50,
+    "pressure_days_in_next_15_panel_days": 2,
+    "sofr_move_bps": -51,
+    "technical": false,
+    "to": 4.9
+   },
+   {
+    "change_bps": -25,
+    "date": "2024-11-08",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 4.9,
+    "mechanical_spread_shift_bps": 25,
+    "pressure_days_in_next_15_panel_days": 0,
+    "sofr_move_bps": -22,
+    "technical": false,
+    "to": 4.65
+   },
+   {
+    "change_bps": -25,
+    "date": "2024-12-19",
+    "episodes_in_next_15_panel_days": 1,
+    "from": 4.65,
+    "mechanical_spread_shift_bps": 25,
+    "pressure_days_in_next_15_panel_days": 3,
+    "sofr_move_bps": -27,
+    "technical": false,
+    "to": 4.4
+   },
+   {
+    "change_bps": -25,
+    "date": "2025-09-18",
+    "episodes_in_next_15_panel_days": 1,
+    "from": 4.4,
+    "mechanical_spread_shift_bps": 25,
+    "pressure_days_in_next_15_panel_days": 1,
+    "sofr_move_bps": -24,
+    "technical": false,
+    "to": 4.15
+   },
+   {
+    "change_bps": -25,
+    "date": "2025-10-30",
+    "episodes_in_next_15_panel_days": 0,
+    "from": 4.15,
+    "mechanical_spread_shift_bps": 25,
+    "pressure_days_in_next_15_panel_days": 7,
+    "sofr_move_bps": -23,
+    "technical": false,
+    "to": 3.9
+   },
+   {
+    "change_bps": -25,
+    "date": "2025-12-11",
+    "episodes_in_next_15_panel_days": 2,
+    "from": 3.9,
+    "mechanical_spread_shift_bps": 25,
+    "pressure_days_in_next_15_panel_days": 5,
+    "sofr_move_bps": -24,
+    "technical": false,
+    "to": 3.65
+   }
+  ]
+ },
+ "training_history": [
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": false,
+    "persistence_logistic": false,
+    "risk_gbm": false,
+    "risk_gbm_base": false,
+    "risk_logistic": false,
+    "risk_logistic_base": false,
+    "risk_quantile_skewt_base": false
+   },
+   "episode": "2018-11-15",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2018-10-26",
+    "onsets": 2,
+    "onsets_in_cutoff_window": 1,
+    "pressure_days": 5,
+    "refit_first_day": "2018-10-30",
+    "scored_days_in_cutoff_window": 83
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2018-10-26",
+    "onsets": 2,
+    "onsets_in_cutoff_window": 0,
+    "pressure_days": 5,
+    "refit_first_day": "2018-11-05",
+    "scored_days_in_cutoff_window": 79
+   },
+   "regime": "2018-19",
+   "year": 2018
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": false,
+    "persistence_logistic": false,
+    "risk_gbm": false,
+    "risk_gbm_base": false,
+    "risk_logistic": false,
+    "risk_logistic_base": false,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2018-11-30",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2018-11-28",
+    "onsets": 3,
+    "onsets_in_cutoff_window": 2,
+    "pressure_days": 7,
+    "refit_first_day": "2018-11-30",
+    "scored_days_in_cutoff_window": 104
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2018-10-26",
+    "onsets": 2,
+    "onsets_in_cutoff_window": 0,
+    "pressure_days": 5,
+    "refit_first_day": "2018-11-05",
+    "scored_days_in_cutoff_window": 79
+   },
+   "regime": "2018-19",
+   "year": 2018
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": false,
+    "persistence_logistic": false,
+    "risk_gbm": false,
+    "risk_gbm_base": false,
+    "risk_logistic": false,
+    "risk_logistic_base": false,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2018-12-17",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2018-11-28",
+    "onsets": 3,
+    "onsets_in_cutoff_window": 2,
+    "pressure_days": 7,
+    "refit_first_day": "2018-11-30",
+    "scored_days_in_cutoff_window": 104
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2018-11-28",
+    "onsets": 3,
+    "onsets_in_cutoff_window": 1,
+    "pressure_days": 7,
+    "refit_first_day": "2018-12-07",
+    "scored_days_in_cutoff_window": 100
+   },
+   "regime": "2018-19",
+   "year": 2018
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": false,
+    "persistence_logistic": false,
+    "risk_gbm": false,
+    "risk_gbm_base": false,
+    "risk_logistic": false,
+    "risk_logistic_base": false,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2018-12-28",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2018-11-28",
+    "onsets": 3,
+    "onsets_in_cutoff_window": 2,
+    "pressure_days": 7,
+    "refit_first_day": "2018-11-30",
+    "scored_days_in_cutoff_window": 104
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2018-11-28",
+    "onsets": 3,
+    "onsets_in_cutoff_window": 1,
+    "pressure_days": 7,
+    "refit_first_day": "2018-12-07",
+    "scored_days_in_cutoff_window": 100
+   },
+   "regime": "2018-19",
+   "year": 2018
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": false,
+    "persistence_logistic": false,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-01-15",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2018-12-31",
+    "onsets": 6,
+    "onsets_in_cutoff_window": 5,
+    "pressure_days": 16,
+    "refit_first_day": "2019-01-03",
+    "scored_days_in_cutoff_window": 125
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2018-12-31",
+    "onsets": 6,
+    "onsets_in_cutoff_window": 4,
+    "pressure_days": 16,
+    "refit_first_day": "2019-01-09",
+    "scored_days_in_cutoff_window": 121
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": false,
+    "persistence_logistic": false,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-01-31",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2018-12-31",
+    "onsets": 6,
+    "onsets_in_cutoff_window": 5,
+    "pressure_days": 16,
+    "refit_first_day": "2019-01-03",
+    "scored_days_in_cutoff_window": 125
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2018-12-31",
+    "onsets": 6,
+    "onsets_in_cutoff_window": 4,
+    "pressure_days": 16,
+    "refit_first_day": "2019-01-09",
+    "scored_days_in_cutoff_window": 121
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-02-28",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-01-31",
+    "onsets": 8,
+    "onsets_in_cutoff_window": 7,
+    "pressure_days": 20,
+    "refit_first_day": "2019-02-04",
+    "scored_days_in_cutoff_window": 146
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-01-31",
+    "onsets": 8,
+    "onsets_in_cutoff_window": 6,
+    "pressure_days": 20,
+    "refit_first_day": "2019-02-08",
+    "scored_days_in_cutoff_window": 142
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": false,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-03-15",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-03-04",
+    "onsets": 9,
+    "onsets_in_cutoff_window": 8,
+    "pressure_days": 22,
+    "refit_first_day": "2019-03-06",
+    "scored_days_in_cutoff_window": 167
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-03-04",
+    "onsets": 9,
+    "onsets_in_cutoff_window": 7,
+    "pressure_days": 22,
+    "refit_first_day": "2019-03-12",
+    "scored_days_in_cutoff_window": 163
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": false,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-03-29",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-03-04",
+    "onsets": 9,
+    "onsets_in_cutoff_window": 8,
+    "pressure_days": 22,
+    "refit_first_day": "2019-03-06",
+    "scored_days_in_cutoff_window": 167
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-03-04",
+    "onsets": 9,
+    "onsets_in_cutoff_window": 7,
+    "pressure_days": 22,
+    "refit_first_day": "2019-03-12",
+    "scored_days_in_cutoff_window": 163
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": false,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-05-28",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-05-02",
+    "onsets": 11,
+    "onsets_in_cutoff_window": 10,
+    "pressure_days": 42,
+    "refit_first_day": "2019-05-06",
+    "scored_days_in_cutoff_window": 209
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-05-02",
+    "onsets": 11,
+    "onsets_in_cutoff_window": 9,
+    "pressure_days": 42,
+    "refit_first_day": "2019-05-10",
+    "scored_days_in_cutoff_window": 205
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-06-17",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-06-03",
+    "onsets": 12,
+    "onsets_in_cutoff_window": 11,
+    "pressure_days": 52,
+    "refit_first_day": "2019-06-05",
+    "scored_days_in_cutoff_window": 230
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-06-03",
+    "onsets": 12,
+    "onsets_in_cutoff_window": 10,
+    "pressure_days": 52,
+    "refit_first_day": "2019-06-11",
+    "scored_days_in_cutoff_window": 226
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-06-25",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-06-03",
+    "onsets": 12,
+    "onsets_in_cutoff_window": 11,
+    "pressure_days": 52,
+    "refit_first_day": "2019-06-05",
+    "scored_days_in_cutoff_window": 230
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-06-03",
+    "onsets": 12,
+    "onsets_in_cutoff_window": 10,
+    "pressure_days": 52,
+    "refit_first_day": "2019-06-11",
+    "scored_days_in_cutoff_window": 226
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-08-13",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-08-01",
+    "onsets": 14,
+    "onsets_in_cutoff_window": 13,
+    "pressure_days": 75,
+    "refit_first_day": "2019-08-05",
+    "scored_days_in_cutoff_window": 272
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-08-01",
+    "onsets": 14,
+    "onsets_in_cutoff_window": 12,
+    "pressure_days": 75,
+    "refit_first_day": "2019-08-09",
+    "scored_days_in_cutoff_window": 268
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-08-30",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-08-01",
+    "onsets": 14,
+    "onsets_in_cutoff_window": 13,
+    "pressure_days": 75,
+    "refit_first_day": "2019-08-05",
+    "scored_days_in_cutoff_window": 272
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-08-01",
+    "onsets": 14,
+    "onsets_in_cutoff_window": 12,
+    "pressure_days": 75,
+    "refit_first_day": "2019-08-09",
+    "scored_days_in_cutoff_window": 268
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-10-15",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-10-01",
+    "onsets": 16,
+    "onsets_in_cutoff_window": 15,
+    "pressure_days": 93,
+    "refit_first_day": "2019-10-03",
+    "scored_days_in_cutoff_window": 314
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-10-01",
+    "onsets": 16,
+    "onsets_in_cutoff_window": 14,
+    "pressure_days": 93,
+    "refit_first_day": "2019-10-09",
+    "scored_days_in_cutoff_window": 310
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-11-29",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-10-31",
+    "onsets": 17,
+    "onsets_in_cutoff_window": 16,
+    "pressure_days": 102,
+    "refit_first_day": "2019-11-04",
+    "scored_days_in_cutoff_window": 335
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-10-31",
+    "onsets": 17,
+    "onsets_in_cutoff_window": 15,
+    "pressure_days": 102,
+    "refit_first_day": "2019-11-08",
+    "scored_days_in_cutoff_window": 331
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2019-12-16",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2019-12-03",
+    "onsets": 18,
+    "onsets_in_cutoff_window": 17,
+    "pressure_days": 104,
+    "refit_first_day": "2019-12-05",
+    "scored_days_in_cutoff_window": 356
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2019-12-03",
+    "onsets": 18,
+    "onsets_in_cutoff_window": 16,
+    "pressure_days": 104,
+    "refit_first_day": "2019-12-11",
+    "scored_days_in_cutoff_window": 352
+   },
+   "regime": "2018-19",
+   "year": 2019
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2020-03-04",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2020-02-04",
+    "onsets": 19,
+    "onsets_in_cutoff_window": 18,
+    "pressure_days": 105,
+    "refit_first_day": "2020-02-06",
+    "scored_days_in_cutoff_window": 398
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2020-02-04",
+    "onsets": 19,
+    "onsets_in_cutoff_window": 17,
+    "pressure_days": 105,
+    "refit_first_day": "2020-02-12",
+    "scored_days_in_cutoff_window": 394
+   },
+   "regime": "2020",
+   "year": 2020
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2020-03-12",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2020-03-05",
+    "onsets": 20,
+    "onsets_in_cutoff_window": 19,
+    "pressure_days": 106,
+    "refit_first_day": "2020-03-09",
+    "scored_days_in_cutoff_window": 419
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2020-02-04",
+    "onsets": 19,
+    "onsets_in_cutoff_window": 17,
+    "pressure_days": 105,
+    "refit_first_day": "2020-02-12",
+    "scored_days_in_cutoff_window": 394
+   },
+   "regime": "2020",
+   "year": 2020
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2024-09-30",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2024-09-17",
+    "onsets": 21,
+    "onsets_in_cutoff_window": 20,
+    "pressure_days": 109,
+    "refit_first_day": "2024-09-19",
+    "scored_days_in_cutoff_window": 1553
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2024-09-17",
+    "onsets": 21,
+    "onsets_in_cutoff_window": 19,
+    "pressure_days": 109,
+    "refit_first_day": "2024-09-25",
+    "scored_days_in_cutoff_window": 1549
+   },
+   "regime": "2024",
+   "year": 2024
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2024-12-26",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2024-12-18",
+    "onsets": 22,
+    "onsets_in_cutoff_window": 21,
+    "pressure_days": 111,
+    "refit_first_day": "2024-12-20",
+    "scored_days_in_cutoff_window": 1616
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2024-11-18",
+    "onsets": 22,
+    "onsets_in_cutoff_window": 20,
+    "pressure_days": 111,
+    "refit_first_day": "2024-11-26",
+    "scored_days_in_cutoff_window": 1591
+   },
+   "regime": "2024",
+   "year": 2024
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2025-09-15",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2025-08-21",
+    "onsets": 23,
+    "onsets_in_cutoff_window": 22,
+    "pressure_days": 114,
+    "refit_first_day": "2025-08-25",
+    "scored_days_in_cutoff_window": 1784
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2025-08-21",
+    "onsets": 23,
+    "onsets_in_cutoff_window": 21,
+    "pressure_days": 114,
+    "refit_first_day": "2025-08-29",
+    "scored_days_in_cutoff_window": 1780
+   },
+   "regime": "2025-26",
+   "year": 2025
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2025-09-30",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2025-09-22",
+    "onsets": 24,
+    "onsets_in_cutoff_window": 23,
+    "pressure_days": 115,
+    "refit_first_day": "2025-09-24",
+    "scored_days_in_cutoff_window": 1805
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2025-09-22",
+    "onsets": 24,
+    "onsets_in_cutoff_window": 22,
+    "pressure_days": 115,
+    "refit_first_day": "2025-09-30",
+    "scored_days_in_cutoff_window": 1801
+   },
+   "regime": "2025-26",
+   "year": 2025
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2025-10-15",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2025-09-22",
+    "onsets": 24,
+    "onsets_in_cutoff_window": 23,
+    "pressure_days": 115,
+    "refit_first_day": "2025-09-24",
+    "scored_days_in_cutoff_window": 1805
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2025-09-22",
+    "onsets": 24,
+    "onsets_in_cutoff_window": 22,
+    "pressure_days": 115,
+    "refit_first_day": "2025-09-30",
+    "scored_days_in_cutoff_window": 1801
+   },
+   "regime": "2025-26",
+   "year": 2025
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2025-12-15",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2025-11-21",
+    "onsets": 26,
+    "onsets_in_cutoff_window": 25,
+    "pressure_days": 132,
+    "refit_first_day": "2025-11-25",
+    "scored_days_in_cutoff_window": 1847
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2025-11-21",
+    "onsets": 26,
+    "onsets_in_cutoff_window": 24,
+    "pressure_days": 132,
+    "refit_first_day": "2025-12-02",
+    "scored_days_in_cutoff_window": 1843
+   },
+   "regime": "2025-26",
+   "year": 2025
+  },
+  {
+   "cutoff_finite_h1": {
+    "calendar_climatology": true,
+    "persistence_logistic": true,
+    "risk_gbm": true,
+    "risk_gbm_base": true,
+    "risk_logistic": true,
+    "risk_logistic_base": true,
+    "risk_quantile_skewt_base": true
+   },
+   "episode": "2025-12-26",
+   "h1": {
+    "first": "2018-04-03",
+    "last": "2025-12-23",
+    "onsets": 27,
+    "onsets_in_cutoff_window": 26,
+    "pressure_days": 139,
+    "refit_first_day": "2025-12-26",
+    "scored_days_in_cutoff_window": 1868
+   },
+   "h5": {
+    "first": "2018-04-03",
+    "last": "2025-11-21",
+    "onsets": 26,
+    "onsets_in_cutoff_window": 24,
+    "pressure_days": 132,
+    "refit_first_day": "2025-12-02",
+    "scored_days_in_cutoff_window": 1843
+   },
+   "regime": "2025-26",
+   "year": 2025
+  }
+ ],
+ "warned_per_episode": {
+  "2018-11-15": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2018-11-30": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2018-12-17": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2018-12-28": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2019-01-15": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-01-31": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-02-28": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-03-15": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-03-29": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-05-28": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 1,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2019-06-17": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 1,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-06-25": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 1,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2019-08-13": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 1,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2019-08-30": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 1,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-10-15": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 1,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-11-29": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 1,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2019-12-16": {
+   "calendar_climatology": 1,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2020-03-04": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2020-03-12": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2024-09-30": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2024-12-26": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2025-09-15": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 0,
+   "risk_logistic": 1,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 1
+  },
+  "2025-09-30": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2025-10-15": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 0,
+   "risk_gbm_base": 1,
+   "risk_logistic": 0,
+   "risk_logistic_base": 0,
+   "risk_quantile_skewt_base": 0
+  },
+  "2025-12-15": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  },
+  "2025-12-26": {
+   "calendar_climatology": 0,
+   "persistence_logistic": 0,
+   "risk_gbm": 1,
+   "risk_gbm_base": 1,
+   "risk_logistic": 1,
+   "risk_logistic_base": 1,
+   "risk_quantile_skewt_base": 1
+  }
+ }
+}
