@@ -1,7 +1,7 @@
 # How much four features of the evaluation setup shape the results (#482)
 
 Four sensitivity readings on the pressure-day judge (#375, as amended under #407): 2018-19 dominance, the cut-off refit
-cadence, the week-ahead combiner, and the regimes tier 3 tests. They change no rule, no declaration, no record and no
+cadence, the week-ahead combiner, and the regimes tier 3 checks. They change no rule, no declaration, no record and no
 published figure, and they write nothing into `docs/runs/`. Scored days are 2018-06-29 to 2025-12-31 only; no day of the
 2026 window is read (`docs/decisions/lockbox.md`). The rows, the down-weighting rule, the cadences and the combiners are in
 `metadata/setup_sensitivity.json`, committed before anything was computed; `scripts/setup_sensitivity.py` refuses an
@@ -35,7 +35,7 @@ passes tier 5.
 * **By year.** Tier 1 is carried by 2019: 11 to 13 of its 13 onsets are flagged by each of the five rows. In 2018 the
   rows flag none or one of four (the first training window has no onset), in 2020 at most one of two, in 2024 none of two,
   in 2025 one to four of five (Table 2a). Tier 3's alarm rate is high only in 2019 (89 to 153 flags per 252 days, over
-  the 21 limit, but 2019 is in scarcity state 3, which tier 3 does not test) and, in 2025, for `hierarchical_logistic`,
+  the 21 limit, but 2019 is in scarcity state 3, which the tier 3 calibration check does not cover) and, in 2025, for `hierarchical_logistic`,
   `scarcity_logistic_interactions` (26 each) and `settlement_quantile_timing` (29), where scarcity states 2 and 3 hold 27% of days.
 * **2024 behaves differently from 2018-19** (Table 5; its "scored days" are the days every horizon scores, its pressure shares are over the h = 1 days). 2018-19 is 99% scarcity state 3, with 102 pressure days (27% of
   scored days) in 32 episodes up to 12 days long, a spread whose 90th percentile is +11 bp and whose maximum is +315 bp.
@@ -93,7 +93,7 @@ rows pass tier 5.
 ## 4. Tier 3 coverage
 
 Table 10 gives realised minus predicted frequency in every regime at h = 1 to 5, with a star where the 90% interval misses
-zero (intervals in the JSON). The regimes with a pressure day, which the amended tier 3 tests, are 2018-19 (102 pressure
+zero (intervals in the JSON). The regimes with a pressure day, which the amended tier 3 checks, are 2018-19 (102 pressure
 days), 2020 (4), 2024 (5) and 2025-26 (29); 2021-23 has none.
 
 * **No row fails the alarm-rate limit**: in scarcity state 0 and in 2021-23 the highest rate of any row is about 2 flags per 252
