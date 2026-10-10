@@ -1,0 +1,81 @@
+{
+  "status": "declared by the pull request that closes #506 before any score was computed; nothing here is tuned on a scored day; the choices below (the component's inputs and estimator, the combination rule, the early-fit minimum and prior) are the pull request's, listed there for Eleonora's review",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parents": {
+    "risk_gbm": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_gbm_base": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_logistic": {
+      "kind": "logistic",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_logistic_base": {
+      "kind": "logistic",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_quantile_skewt_base": {
+      "kind": "quantile_skewt",
+      "inputs": [
+        "base"
+      ]
+    }
+  },
+  "parents_declaration": "metadata/risk_date_severity.json (unchanged: the risk dates, the features, the estimators)",
+  "variants": {
+    "+every_day": "(a) the parent plus the every-day component",
+    "+early_prior": "(b) the parent with the day-type prior on a refit whose risk-date window is too small",
+    "+every_day+early_prior": "(c) (a) and (b) together"
+  },
+  "every_day_component": {
+    "inputs": [
+      "spread_bps",
+      "sofr_p75_iorb_bps",
+      "sofr_p99_iorb_bps"
+    ],
+    "inputs_note": "the previous day's SOFR 75th and 99th percentiles above IORB in basis points (derived by repo_model.measurement_fields, off in every published declaration) and the latest public spread, the spread's own state; each read at its declared availability through the information rule and both of its guards (docs/decisions/information-set.md)",
+    "estimator": "a ridge logistic of spread > tau (ml.PRESSURE_LOGISTIC_SETTINGS: L2, C = 1, standardised), one per threshold",
+    "training": "the direct pairs of every training day, risk date or not (ml._pressure_pairs), each label paired with what was public at its own decision instant",
+    "combination": "one rule: on a risk date the forecast is the parent's, unchanged; on any other day it is the component's. The component serves exactly the days the parent leaves at 0. A served day whose component inputs are not all public is left at 0. The curve across thresholds is made non-increasing, as the parent's is",
+    "cutoffs": "the judge's cutoff_rule, from each variant's own training window; one cut-off per threshold and horizon for risk dates and other days alike"
+  },
+  "early_fit": {
+    "minimum_pairs": 40,
+    "why_this_minimum": "2 * min_samples_leaf of the gradient-boosted classifier (ml.PRESSURE_CLASSIFIER_SETTINGS): below it the classifier cannot split and is a constant (docs/pivot/construction-gaps-result.md, gap 4)",
+    "rule": "on a refit whose risk-date training window holds fewer pairs than the minimum, the risk-date forecast is the day-type prior instead of the parent's estimator, for every estimator: the window's rate of spread > tau among the pairs of the scored day's type (quarter-end, month-end, tax date, or none of them, the coupon-settlement risk dates), shrunk toward the window's pooled rate by prior_weight pairs at that rate. At or above the minimum the parent's estimator is used, unchanged",
+    "prior_weight": 2.0,
+    "reads": "the refit's own training pairs and nothing else"
+  },
+  "judging": "the judge as declared (metadata/pressure_judge.json): tiers 1, 3 and 5, h = 1 to 5, +5 and +10 bp, under the flat and the weighted rule; the cut-off rule unchanged",
+  "published": "nothing: the variants and the new inputs are off in every published declaration"
+}
