@@ -12633,6 +12633,160 @@ class RiskDateModelTests(unittest.TestCase):
             ml.pressure_risk_date_exceedance("logistic", ("spread_bps",), _pressure_splits())
 
 
+def _every_day_frame(count=160):
+    """`_pressure_panel` with the two SOFR percentile-over-IORB columns the every-day component reads."""
+
+    return [
+        DailyObservation(
+            row.date,
+            {
+                **row.values,
+                "sofr_p75_iorb_bps": 0.5 * row.spread_bps + 0.1 * (index % 3),
+                "sofr_p99_iorb_bps": 1.5 * row.spread_bps + 0.3 * (index % 5),
+            },
+        )
+        for index, row in enumerate(_pressure_panel(count))
+    ]
+
+
+class RiskDateVariantTests(unittest.TestCase):
+    """The two changes of #506 to the risk-date model: an every-day component and the early-fit prior.
+
+    Each is off by default, and with both off the model is the declared risk-date model, forecast for
+    forecast. The component serves exactly the days the risk-date model leaves at 0; the prior replaces
+    the estimator only on a refit with fewer than `EARLY_FIT_MINIMUM_PAIRS` risk-date pairs.
+
+    Recorded mutations:
+
+    * `pressure_risk_date_variant_exceedance`, in the component branch, `if day in member_set: continue`
+      removed (the component overwrites the risk-date model on a risk date):
+      `test_a_risk_date_keeps_the_risk_date_models_forecast` fails with `AssertionError`.
+    * `pressure_risk_date_variant_exceedance`, `len(xs) < EARLY_FIT_MINIMUM_PAIRS` changed to
+      `len(xs) <= EARLY_FIT_MINIMUM_PAIRS` (a window of exactly the minimum is treated as too small):
+      `test_the_prior_applies_below_the_minimum_pairs_and_not_at_it` fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _every_day_frame()
+        self.features = _PRESSURE_CALENDAR + ml.EVERY_DAY_COMPONENT_INPUTS[1:]
+        self.splits = _pressure_splits()
+
+    def predict(self, scored, kind="logistic", **options):
+        from types import MappingProxyType
+        from unittest import mock
+
+        from repo_model import contract, measurement_fields
+
+        fields = dict(measurement_fields.COLUMN_FIELDS)
+        patched = mock.patch.multiple(
+            contract,
+            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+            FEATURE_SOURCES=MappingProxyType(
+                {
+                    **contract.FEATURE_SOURCES,
+                    **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()},
+                }
+            ),
+        )
+        with patched:
+            rule = ml.InformationRule(_PRESSURE_REGISTRY, self.features, decision_time=time(16, 0))
+            info = rule.information_set([r.date for r in self.rows], scored)
+            observation = rule.observation(self.rows, info)
+            if options:
+                predictor = ml.pressure_risk_date_variant_exceedance(
+                    kind, _PRESSURE_CALENDAR, self.splits, 20, **options
+                )
+            else:
+                predictor = ml.pressure_risk_date_exceedance(kind, _PRESSURE_CALENDAR, self.splits, 20)
+            return predictor(self.rows[:scored], (observation,), (5.0, 10.0), information=rule)
+
+    def days(self, risk, start=90):
+        return [k for k in range(start, len(self.rows) - 1) if _is_risk(self.rows[k]) is risk]
+
+    def test_with_both_changes_off_it_is_the_declared_model(self):
+        for kind in ml.RISK_DATE_KINDS:
+            for scored in (self.days(True)[0], self.days(False)[0]):
+                declared = self.predict(scored, kind)
+                same = self.predict(scored, kind, every_day=False, early_prior=False)
+                self.assertEqual(declared.curves, same.curves)
+
+    def test_an_ordinary_day_is_positive_with_the_component_and_zero_without(self):
+        scored = self.days(False)[0]
+        self.assertEqual(tuple(self.predict(scored).curves[0]), (0.0, 0.0))
+        curve = self.predict(scored, every_day=True).curves[0]
+        self.assertGreater(curve[0], 0.0)
+        self.assertGreaterEqual(curve[0], curve[1])
+
+    def test_a_risk_date_keeps_the_risk_date_models_forecast(self):
+        for scored in self.days(True)[:3]:
+            self.assertEqual(self.predict(scored).curves, self.predict(scored, every_day=True).curves)
+
+    def test_the_component_is_fitted_on_every_training_day(self):
+        scored = self.days(False)[0]
+        settings = self.predict(scored, every_day=True).model_settings
+        self.assertGreater(settings["every_day_training_pairs"], 3 * settings["risk_date_training_pairs"])
+
+    def test_the_component_reads_the_every_day_inputs_through_the_information_rule(self):
+        scored = self.days(False)[0]
+        read = self.predict(scored, every_day=True).features_read
+        self.assertTrue({"sofr_p75_iorb_bps", "sofr_p99_iorb_bps"} <= set(read))
+
+    def test_a_day_whose_component_inputs_are_not_public_is_left_at_zero(self):
+        scored = self.days(False)[0]
+        for k in range(scored - 4, scored + 1):  # whichever of these rows the as-of read lands on
+            self.rows[k] = DailyObservation(self.rows[k].date, {**self.rows[k].values, "sofr_p99_iorb_bps": None})
+        self.assertEqual(tuple(self.predict(scored, every_day=True).curves[0]), (0.0, 0.0))
+
+    def test_the_prior_applies_below_the_minimum_pairs_and_not_at_it(self):
+        from unittest import mock
+
+        scored = self.days(True)[0]
+        pairs = self.predict(scored).model_settings["risk_date_training_pairs"]
+        self.assertGreater(pairs, 3)
+        with mock.patch.object(ml, "EARLY_FIT_MINIMUM_PAIRS", pairs):
+            at = self.predict(scored, early_prior=True)
+        with mock.patch.object(ml, "EARLY_FIT_MINIMUM_PAIRS", pairs + 1):
+            below = self.predict(scored, early_prior=True)
+        self.assertFalse(at.model_settings["early_fit"])
+        self.assertEqual(at.curves, self.predict(scored).curves)
+        self.assertTrue(below.model_settings["early_fit"])
+
+    def test_the_prior_is_the_shrunk_training_rate_of_the_days_type(self):
+        from unittest import mock
+
+        scored = self.days(True)[0]
+        design = ml._RiskDateDesign(_PRESSURE_CALENDAR, self.splits)
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        pairs, spreads = ml._pressure_pairs(design, rule, self.rows[:scored], {})
+        kept = [(pair[:-1], spread) for pair, spread in zip(pairs, spreads) if pair[-1]]
+        info = rule.information_set([r.date for r in self.rows], scored)
+        served = design.row(rule.observation(self.rows, info), None)[:-1]
+        columns = [design.names.index(name) for name in ("quarter_end", "month_end", "tax_date")]
+        kind = tuple(served[c] for c in columns)
+        labels = [(tuple(x[c] for c in columns), 1 if spread > 5.0 else 0) for x, spread in kept]
+        pooled = sum(label for _k, label in labels) / len(labels)
+        same = [label for k, label in labels if k == kind]
+        expected = (sum(same) + ml.EARLY_FIT_PRIOR_WEIGHT * pooled) / (len(same) + ml.EARLY_FIT_PRIOR_WEIGHT)
+        with mock.patch.object(ml, "EARLY_FIT_MINIMUM_PAIRS", 10 ** 6):
+            curve = self.predict(scored, early_prior=True).curves[0]
+        self.assertAlmostEqual(curve[0], expected, places=12)
+
+    def test_the_prior_is_not_a_constant_across_day_types(self):
+        from unittest import mock
+
+        with mock.patch.object(ml, "EARLY_FIT_MINIMUM_PAIRS", 10 ** 6):
+            values = {
+                round(self.predict(k, "gbm_classifier", early_prior=True).curves[0][0], 12)
+                for k in self.days(True)[:12]
+            }
+        self.assertGreater(len(values), 1)
+
+    def test_a_kind_without_a_risk_date_form_is_refused(self):
+        with self.assertRaises(ValueError):
+            ml.pressure_risk_date_variant_exceedance("probit", _PRESSURE_CALENDAR, self.splits)
+
+
 def _is_risk(row):
     values = row.values
     return (

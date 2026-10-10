@@ -1,0 +1,20 @@
+{
+  "role": "candidate",
+  "track": "E (#506)",
+  "parent": "risk_logistic_base",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: the parent's risk-date forecast (none: fitted on risk-date label days only and exactly 0 on every other day), changed by one thing: a ridge logistic on spread_bps, sofr_p75_iorb_bps and sofr_p99_iorb_bps serves every day that is not a risk date; on a refit with fewer than 40 risk-date pairs the day-type prior replaces the estimator; metadata/risk_date_every_day.json"
+}
