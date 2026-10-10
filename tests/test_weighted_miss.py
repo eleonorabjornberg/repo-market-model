@@ -39,7 +39,7 @@ WEIGHTED = REPO / "metadata" / "weighted_miss.json"
 
 
 def _rule(applied=True):
-    """The drafted weights: 0.25 within 2 trading days, 0.5 within 5, else 1."""
+    """The adopted weights: 0.25 within 2 trading days, 0.5 within 5, else 1."""
 
     return pj.WeightedMiss(
         path="test", sha256="rule", in_force=False, applied=applied,
@@ -48,7 +48,7 @@ def _rule(applied=True):
 
 
 class RuleTests(unittest.TestCase):
-    def test_the_drafted_weights_by_distance(self):
+    def test_the_adopted_weights_by_distance(self):
         rule = _rule()
         got = {d: pj.miss_weight(rule, d) for d in (1, 2, 3, 4, 5, 6, 20)}
         self.assertEqual(got, {1: 0.25, 2: 0.25, 3: 0.5, 4: 0.5, 5: 0.5, 6: 1.0, 20: 1.0})

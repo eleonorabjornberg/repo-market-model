@@ -9,7 +9,7 @@
 
 Both runs score 2018-06-29 to 2025-12-31 and nothing later (`docs/decisions/lockbox.md`); the file refuses a judge
 result in the single-look mode. Under the unweighted rule the flag cut-offs are chosen on the flat count of false
-alarms, under the weighted rule on the weighted count (`docs/decisions/weighted-miss.md`, a draft). The table reads,
+alarms, under the weighted rule on the weighted count (`docs/decisions/weighted-miss.md`, adopted). The table reads,
 for each candidate, the onset-warning tier (lead at least 1) of each run, tiers 3 and 5, and the same flags' cost
 under the other count.
 """
@@ -76,7 +76,7 @@ def table(flat, weighted):
         f"Scored days {flat['scored_window']['first']} to {flat['scored_window']['last']}; tier 1 at lead >= 1, +5 bp, "
         "limit 2 per onset; h = 1 to 5.",
         "",
-        "Table 1. Each candidate under the unweighted rule (the current bar) and the weighted rule (the draft). "
+        "Table 1. Each candidate under the unweighted rule (the bar before #472) and the weighted rule (the bar in force). "
         "False alarms per onset are the worst horizon's. 'flat' counts every false alarm as 1, 'weighted' by its "
         "distance to a pressure day. Each rule chooses its own flag cut-offs.",
         "",
