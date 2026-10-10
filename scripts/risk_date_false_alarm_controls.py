@@ -314,7 +314,7 @@ def compare_command(args) -> int:
 
     pj_script = _load("pressure_judge")
     declared = rds.committed_declaration(DECLARATION)
-    declaration = pj.load_declaration()
+    declaration = replace(pj.load_declaration(), weighted_miss=pj.load_weighted_miss(applied=(args.rule == "weighted")))
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(rds.SPLITS)
@@ -476,6 +476,7 @@ def compare_command(args) -> int:
         )
     document = {
         "declaration": declared,
+        "rule": args.rule,
         "onsets": int(sum(onset)),
         "onsets_in_cell": onsets_in,
         "caught_at_some_lead": caught_count,
@@ -632,6 +633,44 @@ def readings_markdown(result: dict, names, jr) -> str:
     return "\n".join(lines) + "\n"
 
 
+def summary_command(args) -> int:
+    """The judge's tier 1 row at +5 bp for every parent, `+every_day` and control, under each rule."""
+
+    declared = rds.committed_declaration(DECLARATION)
+    judged = {rule: json.loads(Path(path).read_text())["candidates"] for rule, path in (("flat", args.flat), ("weighted", args.weighted))}
+    lines = [
+        "| model | onsets flagged, flat / weighted rule | recall, flat [90%] | recall, weighted [90%] | worst false alarms per onset, flat | worst weighted false alarms per onset, weighted rule | tiers 1 / 3 / 5, flat | tiers 1 / 3 / 5, weighted | passes the full rule, flat / weighted |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    yes = lambda x: "yes" if x else "no"
+    for parent in declared["parents"]:
+        for name in [parent, parent + BASE] + [f"{parent}{BASE}+{c}" for c in declared["controls"]]:
+            cells = {}
+            for rule, candidates in judged.items():
+                entry = candidates[name]
+                tier = entry["tiers"]["onset_warning"]["lead_at_least_1"]
+                verdict = entry["verdict"]
+                cells[rule] = {
+                    "flagged": tier["onsets_flagged"],
+                    "onsets": tier["onsets"],
+                    "recall": tier["recall"],
+                    "flat": tier["worst_false_alarms_per_onset"],
+                    "weighted": tier.get("worst_weighted_false_alarms_per_onset"),
+                    "tiers": " / ".join(yes(verdict[k]) for k in ("tier_1_onset_warning", "tier_3_no_crying_wolf", "tier_5_week_ahead")),
+                    "passes": verdict["passes"],
+                }
+            f, w = cells["flat"], cells["weighted"]
+            ci = lambda c: f"{c['recall']['mean']:.3f} [{c['recall']['interval']['lower']:.3f}, {c['recall']['interval']['upper']:.3f}]"
+            lines.append(
+                f"| {name} | {f['flagged']:g}/{f['onsets']} / {w['flagged']:g}/{w['onsets']} | {ci(f)} | {ci(w)} | {f['flat']:.2f} | "
+                f"{w['weighted']:.2f} | {f['tiers']} | {w['tiers']} | {yes(f['passes'])} / {yes(w['passes'])} |"
+            )
+    text = "\n".join(lines) + "\n"
+    args.output.write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -645,11 +684,21 @@ def main(argv=None) -> int:
     run.set_defaults(handler=run_command)
     for name, handler in (("compare", compare_command), ("readings", readings_command)):
         sub = commands.add_parser(name)
+        if name == "compare":
+            sub.add_argument(
+                "--rule", choices=("unweighted", "weighted"), default="unweighted",
+                help="the miss rule that chooses the cut-offs, as the judge's --rule does",
+            )
         sub.add_argument("--panel", type=Path, required=True)
         sub.add_argument("--output", type=Path, required=True)
         sub.add_argument("--markdown", type=Path)
         sub.add_argument("inputs", nargs="+", type=Path)
         sub.set_defaults(handler=handler)
+    summary = commands.add_parser("summary", help="the judge's tier 1 row for every row, under both rules")
+    summary.add_argument("--flat", type=Path, required=True, help="the judge's report under --rule unweighted")
+    summary.add_argument("--weighted", type=Path, required=True, help="the judge's report under --rule weighted")
+    summary.add_argument("--output", type=Path, required=True)
+    summary.set_defaults(handler=summary_command)
     args = parser.parse_args(argv)
     return args.handler(args)
 
