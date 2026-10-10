@@ -1,0 +1,29 @@
+{
+ "min_samples_leaf": 20,
+ "rows": [
+  {
+   "training_pairs": 37,
+   "distinct_probabilities_on_50_new_rows": 1
+  },
+  {
+   "training_pairs": 38,
+   "distinct_probabilities_on_50_new_rows": 1
+  },
+  {
+   "training_pairs": 39,
+   "distinct_probabilities_on_50_new_rows": 1
+  },
+  {
+   "training_pairs": 40,
+   "distinct_probabilities_on_50_new_rows": 8
+  },
+  {
+   "training_pairs": 41,
+   "distinct_probabilities_on_50_new_rows": 9
+  },
+  {
+   "training_pairs": 42,
+   "distinct_probabilities_on_50_new_rows": 11
+  }
+ ]
+}
