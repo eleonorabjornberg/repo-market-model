@@ -1,0 +1,559 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 690 1232" role="img" aria-label="Spearman correlation of each series with the +5 bp pressure indicator, by lead">
+<style>text{font:11px sans-serif;fill:#222}.h{font-weight:bold}rect.c{stroke:#fff;stroke-width:.5}@media (prefers-color-scheme:dark){text{fill:#ddd}rect.c{stroke:#111}}</style>
+<text class="h" x="4" y="14">Spearman correlation with the +5 bp pressure indicator, 2018-06-29 to 2025-12-31</text>
+<text x="4" y="30">exploratory screen; ranked by the strongest absolute value over the leads; blank = not formed</text>
+<text class="h" x="362.0" y="56" text-anchor="middle">lead 1</text>
+<text class="h" x="426.0" y="56" text-anchor="middle">lead 2</text>
+<text class="h" x="490.0" y="56" text-anchor="middle">lead 3</text>
+<text class="h" x="554.0" y="56" text-anchor="middle">lead 5</text>
+<text class="h" x="618.0" y="56" text-anchor="middle">lead 10</text>
+<text x="324" y="73" text-anchor="end">sofr_p75_iorb_bps</text>
+<rect class="c" x="330" y="62" width="64" height="15" fill="#c0392b" fill-opacity="0.79"><title>sofr_p75_iorb_bps, lead 1: +0.395</title></rect>
+<text x="362.0" y="73" text-anchor="middle">+0.40</text>
+<rect class="c" x="394" y="62" width="64" height="15" fill="#c0392b" fill-opacity="0.77"><title>sofr_p75_iorb_bps, lead 2: +0.385</title></rect>
+<text x="426.0" y="73" text-anchor="middle">+0.38</text>
+<rect class="c" x="458" y="62" width="64" height="15" fill="#c0392b" fill-opacity="0.76"><title>sofr_p75_iorb_bps, lead 3: +0.379</title></rect>
+<text x="490.0" y="73" text-anchor="middle">+0.38</text>
+<rect class="c" x="522" y="62" width="64" height="15" fill="#c0392b" fill-opacity="0.75"><title>sofr_p75_iorb_bps, lead 5: +0.374</title></rect>
+<text x="554.0" y="73" text-anchor="middle">+0.37</text>
+<rect class="c" x="586" y="62" width="64" height="15" fill="#c0392b" fill-opacity="0.76"><title>sofr_p75_iorb_bps, lead 10: +0.381</title></rect>
+<text x="618.0" y="73" text-anchor="middle">+0.38</text>
+<text x="324" y="88" text-anchor="end">spread_bps</text>
+<rect class="c" x="330" y="77" width="64" height="15" fill="#c0392b" fill-opacity="0.79"><title>spread_bps, lead 1: +0.393</title></rect>
+<text x="362.0" y="88" text-anchor="middle">+0.39</text>
+<rect class="c" x="394" y="77" width="64" height="15" fill="#c0392b" fill-opacity="0.76"><title>spread_bps, lead 2: +0.379</title></rect>
+<text x="426.0" y="88" text-anchor="middle">+0.38</text>
+<rect class="c" x="458" y="77" width="64" height="15" fill="#c0392b" fill-opacity="0.74"><title>spread_bps, lead 3: +0.370</title></rect>
+<text x="490.0" y="88" text-anchor="middle">+0.37</text>
+<rect class="c" x="522" y="77" width="64" height="15" fill="#c0392b" fill-opacity="0.74"><title>spread_bps, lead 5: +0.368</title></rect>
+<text x="554.0" y="88" text-anchor="middle">+0.37</text>
+<rect class="c" x="586" y="77" width="64" height="15" fill="#c0392b" fill-opacity="0.76"><title>spread_bps, lead 10: +0.380</title></rect>
+<text x="618.0" y="88" text-anchor="middle">+0.38</text>
+<text x="324" y="103" text-anchor="end">sofr_p99_iorb_bps</text>
+<rect class="c" x="330" y="92" width="64" height="15" fill="#c0392b" fill-opacity="0.78"><title>sofr_p99_iorb_bps, lead 1: +0.392</title></rect>
+<text x="362.0" y="103" text-anchor="middle">+0.39</text>
+<rect class="c" x="394" y="92" width="64" height="15" fill="#c0392b" fill-opacity="0.74"><title>sofr_p99_iorb_bps, lead 2: +0.371</title></rect>
+<text x="426.0" y="103" text-anchor="middle">+0.37</text>
+<rect class="c" x="458" y="92" width="64" height="15" fill="#c0392b" fill-opacity="0.73"><title>sofr_p99_iorb_bps, lead 3: +0.367</title></rect>
+<text x="490.0" y="103" text-anchor="middle">+0.37</text>
+<rect class="c" x="522" y="92" width="64" height="15" fill="#c0392b" fill-opacity="0.72"><title>sofr_p99_iorb_bps, lead 5: +0.360</title></rect>
+<text x="554.0" y="103" text-anchor="middle">+0.36</text>
+<rect class="c" x="586" y="92" width="64" height="15" fill="#c0392b" fill-opacity="0.74"><title>sofr_p99_iorb_bps, lead 10: +0.370</title></rect>
+<text x="618.0" y="103" text-anchor="middle">+0.37</text>
+<text x="324" y="118" text-anchor="end">policy_reserve_management_in_force</text>
+<rect class="c" x="330" y="107" width="64" height="15" fill="#1f6fb2" fill-opacity="0.72"><title>policy_reserve_management_in_force, lead 1: -0.359</title></rect>
+<text x="362.0" y="118" text-anchor="middle">-0.36</text>
+<rect class="c" x="394" y="107" width="64" height="15" fill="#1f6fb2" fill-opacity="0.73"><title>policy_reserve_management_in_force, lead 2: -0.364</title></rect>
+<text x="426.0" y="118" text-anchor="middle">-0.36</text>
+<rect class="c" x="458" y="107" width="64" height="15" fill="#1f6fb2" fill-opacity="0.74"><title>policy_reserve_management_in_force, lead 3: -0.368</title></rect>
+<text x="490.0" y="118" text-anchor="middle">-0.37</text>
+<rect class="c" x="522" y="107" width="64" height="15" fill="#1f6fb2" fill-opacity="0.75"><title>policy_reserve_management_in_force, lead 5: -0.377</title></rect>
+<text x="554.0" y="118" text-anchor="middle">-0.38</text>
+<rect class="c" x="586" y="107" width="64" height="15" fill="#1f6fb2" fill-opacity="0.78"><title>policy_reserve_management_in_force, lead 10: -0.389</title></rect>
+<text x="618.0" y="118" text-anchor="middle">-0.39</text>
+<text x="324" y="133" text-anchor="end">ofr_gcf_rate</text>
+<rect class="c" x="330" y="122" width="64" height="15" fill="#1f6fb2" fill-opacity="0.58"><title>ofr_gcf_rate, lead 1: -0.291</title></rect>
+<text x="362.0" y="133" text-anchor="middle">-0.29</text>
+<rect class="c" x="394" y="122" width="64" height="15" fill="#1f6fb2" fill-opacity="0.63"><title>ofr_gcf_rate, lead 2: -0.315</title></rect>
+<text x="426.0" y="133" text-anchor="middle">-0.32</text>
+<rect class="c" x="458" y="122" width="64" height="15" fill="#1f6fb2" fill-opacity="0.65"><title>ofr_gcf_rate, lead 3: -0.326</title></rect>
+<text x="490.0" y="133" text-anchor="middle">-0.33</text>
+<rect class="c" x="522" y="122" width="64" height="15" fill="#1f6fb2" fill-opacity="0.77"><title>ofr_gcf_rate, lead 5: -0.386</title></rect>
+<text x="554.0" y="133" text-anchor="middle">-0.39</text>
+<rect class="c" x="586" y="122" width="64" height="15" fill="#1f6fb2" fill-opacity="0.61"><title>ofr_gcf_rate, lead 10: -0.305</title></rect>
+<text x="618.0" y="133" text-anchor="middle">-0.31</text>
+<text x="324" y="148" text-anchor="end">reserve_scarcity_state</text>
+<rect class="c" x="330" y="137" width="64" height="15" fill="#c0392b" fill-opacity="0.73"><title>reserve_scarcity_state, lead 1: +0.365</title></rect>
+<text x="362.0" y="148" text-anchor="middle">+0.37</text>
+<rect class="c" x="394" y="137" width="64" height="15" fill="#c0392b" fill-opacity="0.73"><title>reserve_scarcity_state, lead 2: +0.365</title></rect>
+<text x="426.0" y="148" text-anchor="middle">+0.36</text>
+<rect class="c" x="458" y="137" width="64" height="15" fill="#c0392b" fill-opacity="0.73"><title>reserve_scarcity_state, lead 3: +0.365</title></rect>
+<text x="490.0" y="148" text-anchor="middle">+0.36</text>
+<rect class="c" x="522" y="137" width="64" height="15" fill="#c0392b" fill-opacity="0.73"><title>reserve_scarcity_state, lead 5: +0.364</title></rect>
+<text x="554.0" y="148" text-anchor="middle">+0.36</text>
+<rect class="c" x="586" y="137" width="64" height="15" fill="#c0392b" fill-opacity="0.73"><title>reserve_scarcity_state, lead 10: +0.363</title></rect>
+<text x="618.0" y="148" text-anchor="middle">+0.36</text>
+<text x="324" y="163" text-anchor="end">sofr_above_effr_share_20</text>
+<rect class="c" x="330" y="152" width="64" height="15" fill="#c0392b" fill-opacity="0.71"><title>sofr_above_effr_share_20, lead 1: +0.355</title></rect>
+<text x="362.0" y="163" text-anchor="middle">+0.36</text>
+<rect class="c" x="394" y="152" width="64" height="15" fill="#c0392b" fill-opacity="0.70"><title>sofr_above_effr_share_20, lead 2: +0.351</title></rect>
+<text x="426.0" y="163" text-anchor="middle">+0.35</text>
+<rect class="c" x="458" y="152" width="64" height="15" fill="#c0392b" fill-opacity="0.70"><title>sofr_above_effr_share_20, lead 3: +0.348</title></rect>
+<text x="490.0" y="163" text-anchor="middle">+0.35</text>
+<rect class="c" x="522" y="152" width="64" height="15" fill="#c0392b" fill-opacity="0.68"><title>sofr_above_effr_share_20, lead 5: +0.340</title></rect>
+<text x="554.0" y="163" text-anchor="middle">+0.34</text>
+<rect class="c" x="586" y="152" width="64" height="15" fill="#c0392b" fill-opacity="0.64"><title>sofr_above_effr_share_20, lead 10: +0.320</title></rect>
+<text x="618.0" y="163" text-anchor="middle">+0.32</text>
+<text x="324" y="178" text-anchor="end">spread_nowcast_bps</text>
+<rect class="c" x="330" y="167" width="64" height="15" fill="#c0392b" fill-opacity="0.70"><title>spread_nowcast_bps, lead 1: +0.351</title></rect>
+<text x="362.0" y="178" text-anchor="middle">+0.35</text>
+<rect class="c" x="394" y="167" width="64" height="15" fill="#c0392b" fill-opacity="0.68"><title>spread_nowcast_bps, lead 2: +0.340</title></rect>
+<text x="426.0" y="178" text-anchor="middle">+0.34</text>
+<rect class="c" x="458" y="167" width="64" height="15" fill="#c0392b" fill-opacity="0.64"><title>spread_nowcast_bps, lead 3: +0.319</title></rect>
+<text x="490.0" y="178" text-anchor="middle">+0.32</text>
+<rect class="c" x="522" y="167" width="64" height="15" fill="#c0392b" fill-opacity="0.64"><title>spread_nowcast_bps, lead 5: +0.320</title></rect>
+<text x="554.0" y="178" text-anchor="middle">+0.32</text>
+<rect class="c" x="586" y="167" width="64" height="15" fill="#c0392b" fill-opacity="0.68"><title>spread_nowcast_bps, lead 10: +0.341</title></rect>
+<text x="618.0" y="178" text-anchor="middle">+0.34</text>
+<text x="324" y="193" text-anchor="end">reserve_balances</text>
+<rect class="c" x="330" y="182" width="64" height="15" fill="#1f6fb2" fill-opacity="0.70"><title>reserve_balances, lead 1: -0.348</title></rect>
+<text x="362.0" y="193" text-anchor="middle">-0.35</text>
+<rect class="c" x="394" y="182" width="64" height="15" fill="#1f6fb2" fill-opacity="0.69"><title>reserve_balances, lead 2: -0.347</title></rect>
+<text x="426.0" y="193" text-anchor="middle">-0.35</text>
+<rect class="c" x="458" y="182" width="64" height="15" fill="#1f6fb2" fill-opacity="0.69"><title>reserve_balances, lead 3: -0.347</title></rect>
+<text x="490.0" y="193" text-anchor="middle">-0.35</text>
+<rect class="c" x="522" y="182" width="64" height="15" fill="#1f6fb2" fill-opacity="0.69"><title>reserve_balances, lead 5: -0.345</title></rect>
+<text x="554.0" y="193" text-anchor="middle">-0.34</text>
+<rect class="c" x="586" y="182" width="64" height="15" fill="#1f6fb2" fill-opacity="0.68"><title>reserve_balances, lead 10: -0.340</title></rect>
+<text x="618.0" y="193" text-anchor="middle">-0.34</text>
+<text x="324" y="208" text-anchor="end">sofr_p99_iorb_sd15_bps</text>
+<rect class="c" x="330" y="197" width="64" height="15" fill="#c0392b" fill-opacity="0.63"><title>sofr_p99_iorb_sd15_bps, lead 1: +0.316</title></rect>
+<text x="362.0" y="208" text-anchor="middle">+0.32</text>
+<rect class="c" x="394" y="197" width="64" height="15" fill="#c0392b" fill-opacity="0.60"><title>sofr_p99_iorb_sd15_bps, lead 2: +0.301</title></rect>
+<text x="426.0" y="208" text-anchor="middle">+0.30</text>
+<rect class="c" x="458" y="197" width="64" height="15" fill="#c0392b" fill-opacity="0.59"><title>sofr_p99_iorb_sd15_bps, lead 3: +0.296</title></rect>
+<text x="490.0" y="208" text-anchor="middle">+0.30</text>
+<rect class="c" x="522" y="197" width="64" height="15" fill="#c0392b" fill-opacity="0.62"><title>sofr_p99_iorb_sd15_bps, lead 5: +0.311</title></rect>
+<text x="554.0" y="208" text-anchor="middle">+0.31</text>
+<rect class="c" x="586" y="197" width="64" height="15" fill="#c0392b" fill-opacity="0.57"><title>sofr_p99_iorb_sd15_bps, lead 10: +0.283</title></rect>
+<text x="618.0" y="208" text-anchor="middle">+0.28</text>
+<text x="324" y="223" text-anchor="end">on_rrp_below_100bn</text>
+<rect class="c" x="330" y="212" width="64" height="15" fill="#c0392b" fill-opacity="0.60"><title>on_rrp_below_100bn, lead 1: +0.301</title></rect>
+<text x="362.0" y="223" text-anchor="middle">+0.30</text>
+<rect class="c" x="394" y="212" width="64" height="15" fill="#c0392b" fill-opacity="0.61"><title>on_rrp_below_100bn, lead 2: +0.305</title></rect>
+<text x="426.0" y="223" text-anchor="middle">+0.31</text>
+<rect class="c" x="458" y="212" width="64" height="15" fill="#c0392b" fill-opacity="0.61"><title>on_rrp_below_100bn, lead 3: +0.305</title></rect>
+<text x="490.0" y="223" text-anchor="middle">+0.31</text>
+<rect class="c" x="522" y="212" width="64" height="15" fill="#c0392b" fill-opacity="0.61"><title>on_rrp_below_100bn, lead 5: +0.305</title></rect>
+<text x="554.0" y="223" text-anchor="middle">+0.31</text>
+<rect class="c" x="586" y="212" width="64" height="15" fill="#c0392b" fill-opacity="0.60"><title>on_rrp_below_100bn, lead 10: +0.301</title></rect>
+<text x="618.0" y="223" text-anchor="middle">+0.30</text>
+<text x="324" y="238" text-anchor="end">on_rrp</text>
+<rect class="c" x="330" y="227" width="64" height="15" fill="#1f6fb2" fill-opacity="0.47"><title>on_rrp, lead 1: -0.233</title></rect>
+<text x="362.0" y="238" text-anchor="middle">-0.23</text>
+<rect class="c" x="394" y="227" width="64" height="15" fill="#1f6fb2" fill-opacity="0.48"><title>on_rrp, lead 2: -0.241</title></rect>
+<text x="426.0" y="238" text-anchor="middle">-0.24</text>
+<rect class="c" x="458" y="227" width="64" height="15" fill="#1f6fb2" fill-opacity="0.49"><title>on_rrp, lead 3: -0.247</title></rect>
+<text x="490.0" y="238" text-anchor="middle">-0.25</text>
+<rect class="c" x="522" y="227" width="64" height="15" fill="#1f6fb2" fill-opacity="0.45"><title>on_rrp, lead 5: -0.227</title></rect>
+<text x="554.0" y="238" text-anchor="middle">-0.23</text>
+<rect class="c" x="586" y="227" width="64" height="15" fill="#1f6fb2" fill-opacity="0.46"><title>on_rrp, lead 10: -0.231</title></rect>
+<text x="618.0" y="238" text-anchor="middle">-0.23</text>
+<text x="324" y="253" text-anchor="end">on_rrp_sameday</text>
+<rect class="c" x="330" y="242" width="64" height="15" fill="#1f6fb2" fill-opacity="0.47"><title>on_rrp_sameday, lead 1: -0.233</title></rect>
+<text x="362.0" y="253" text-anchor="middle">-0.23</text>
+<rect class="c" x="394" y="242" width="64" height="15" fill="#1f6fb2" fill-opacity="0.46"><title>on_rrp_sameday, lead 2: -0.231</title></rect>
+<text x="426.0" y="253" text-anchor="middle">-0.23</text>
+<rect class="c" x="458" y="242" width="64" height="15" fill="#1f6fb2" fill-opacity="0.48"><title>on_rrp_sameday, lead 3: -0.242</title></rect>
+<text x="490.0" y="253" text-anchor="middle">-0.24</text>
+<rect class="c" x="522" y="242" width="64" height="15" fill="#1f6fb2" fill-opacity="0.47"><title>on_rrp_sameday, lead 5: -0.237</title></rect>
+<text x="554.0" y="253" text-anchor="middle">-0.24</text>
+<rect class="c" x="586" y="242" width="64" height="15" fill="#1f6fb2" fill-opacity="0.47"><title>on_rrp_sameday, lead 10: -0.234</title></rect>
+<text x="618.0" y="253" text-anchor="middle">-0.23</text>
+<text x="324" y="268" text-anchor="end">srf_take_up</text>
+<rect class="c" x="330" y="257" width="64" height="15" fill="#c0392b" fill-opacity="0.36"><title>srf_take_up, lead 1: +0.182</title></rect>
+<text x="362.0" y="268" text-anchor="middle">+0.18</text>
+<rect class="c" x="394" y="257" width="64" height="15" fill="#c0392b" fill-opacity="0.42"><title>srf_take_up, lead 2: +0.209</title></rect>
+<text x="426.0" y="268" text-anchor="middle">+0.21</text>
+<rect class="c" x="458" y="257" width="64" height="15" fill="#c0392b" fill-opacity="0.39"><title>srf_take_up, lead 3: +0.195</title></rect>
+<text x="490.0" y="268" text-anchor="middle">+0.20</text>
+<rect class="c" x="522" y="257" width="64" height="15" fill="#c0392b" fill-opacity="0.28"><title>srf_take_up, lead 5: +0.138</title></rect>
+<rect class="c" x="586" y="257" width="64" height="15" fill="#c0392b" fill-opacity="0.45"><title>srf_take_up, lead 10: +0.223</title></rect>
+<text x="618.0" y="268" text-anchor="middle">+0.22</text>
+<text x="324" y="283" text-anchor="end">dvp_volume_share</text>
+<rect class="c" x="330" y="272" width="64" height="15" fill="#1f6fb2" fill-opacity="0.41"><title>dvp_volume_share, lead 1: -0.205</title></rect>
+<text x="362.0" y="283" text-anchor="middle">-0.20</text>
+<rect class="c" x="394" y="272" width="64" height="15" fill="#1f6fb2" fill-opacity="0.43"><title>dvp_volume_share, lead 2: -0.215</title></rect>
+<text x="426.0" y="283" text-anchor="middle">-0.21</text>
+<rect class="c" x="458" y="272" width="64" height="15" fill="#1f6fb2" fill-opacity="0.44"><title>dvp_volume_share, lead 3: -0.221</title></rect>
+<text x="490.0" y="283" text-anchor="middle">-0.22</text>
+<rect class="c" x="522" y="272" width="64" height="15" fill="#1f6fb2" fill-opacity="0.44"><title>dvp_volume_share, lead 5: -0.222</title></rect>
+<text x="554.0" y="283" text-anchor="middle">-0.22</text>
+<rect class="c" x="586" y="272" width="64" height="15" fill="#1f6fb2" fill-opacity="0.42"><title>dvp_volume_share, lead 10: -0.210</title></rect>
+<text x="618.0" y="283" text-anchor="middle">-0.21</text>
+<text x="324" y="298" text-anchor="end">ofr_dvp_minus_bgcr_bp</text>
+<rect class="c" x="330" y="287" width="64" height="15" fill="#c0392b" fill-opacity="0.37"><title>ofr_dvp_minus_bgcr_bp, lead 1: +0.185</title></rect>
+<text x="362.0" y="298" text-anchor="middle">+0.19</text>
+<rect class="c" x="394" y="287" width="64" height="15" fill="#c0392b" fill-opacity="0.37"><title>ofr_dvp_minus_bgcr_bp, lead 2: +0.185</title></rect>
+<text x="426.0" y="298" text-anchor="middle">+0.19</text>
+<rect class="c" x="458" y="287" width="64" height="15" fill="#c0392b" fill-opacity="0.37"><title>ofr_dvp_minus_bgcr_bp, lead 3: +0.187</title></rect>
+<text x="490.0" y="298" text-anchor="middle">+0.19</text>
+<rect class="c" x="522" y="287" width="64" height="15" fill="#c0392b" fill-opacity="0.43"><title>ofr_dvp_minus_bgcr_bp, lead 5: +0.216</title></rect>
+<text x="554.0" y="298" text-anchor="middle">+0.22</text>
+<rect class="c" x="586" y="287" width="64" height="15" fill="#c0392b" fill-opacity="0.36"><title>ofr_dvp_minus_bgcr_bp, lead 10: +0.181</title></rect>
+<text x="618.0" y="298" text-anchor="middle">+0.18</text>
+<text x="324" y="313" text-anchor="end">policy_standing_repo_in_force</text>
+<rect class="c" x="330" y="302" width="64" height="15" fill="#1f6fb2" fill-opacity="0.40"><title>policy_standing_repo_in_force, lead 1: -0.200</title></rect>
+<text x="362.0" y="313" text-anchor="middle">-0.20</text>
+<rect class="c" x="394" y="302" width="64" height="15" fill="#1f6fb2" fill-opacity="0.40"><title>policy_standing_repo_in_force, lead 2: -0.200</title></rect>
+<text x="426.0" y="313" text-anchor="middle">-0.20</text>
+<rect class="c" x="458" y="302" width="64" height="15" fill="#1f6fb2" fill-opacity="0.40"><title>policy_standing_repo_in_force, lead 3: -0.199</title></rect>
+<text x="490.0" y="313" text-anchor="middle">-0.20</text>
+<rect class="c" x="522" y="302" width="64" height="15" fill="#1f6fb2" fill-opacity="0.40"><title>policy_standing_repo_in_force, lead 5: -0.199</title></rect>
+<text x="554.0" y="313" text-anchor="middle">-0.20</text>
+<rect class="c" x="586" y="302" width="64" height="15" fill="#1f6fb2" fill-opacity="0.39"><title>policy_standing_repo_in_force, lead 10: -0.197</title></rect>
+<text x="618.0" y="313" text-anchor="middle">-0.20</text>
+<text x="324" y="328" text-anchor="end">effr_iorb_change_20_bps</text>
+<rect class="c" x="330" y="317" width="64" height="15" fill="#c0392b" fill-opacity="0.39"><title>effr_iorb_change_20_bps, lead 1: +0.197</title></rect>
+<text x="362.0" y="328" text-anchor="middle">+0.20</text>
+<rect class="c" x="394" y="317" width="64" height="15" fill="#c0392b" fill-opacity="0.35"><title>effr_iorb_change_20_bps, lead 2: +0.177</title></rect>
+<text x="426.0" y="328" text-anchor="middle">+0.18</text>
+<rect class="c" x="458" y="317" width="64" height="15" fill="#c0392b" fill-opacity="0.34"><title>effr_iorb_change_20_bps, lead 3: +0.169</title></rect>
+<text x="490.0" y="328" text-anchor="middle">+0.17</text>
+<rect class="c" x="522" y="317" width="64" height="15" fill="#c0392b" fill-opacity="0.33"><title>effr_iorb_change_20_bps, lead 5: +0.165</title></rect>
+<text x="554.0" y="328" text-anchor="middle">+0.16</text>
+<rect class="c" x="586" y="317" width="64" height="15" fill="#c0392b" fill-opacity="0.24"><title>effr_iorb_change_20_bps, lead 10: +0.118</title></rect>
+<text x="324" y="343" text-anchor="end">tga</text>
+<rect class="c" x="330" y="332" width="64" height="15" fill="#1f6fb2" fill-opacity="0.36"><title>tga, lead 1: -0.181</title></rect>
+<text x="362.0" y="343" text-anchor="middle">-0.18</text>
+<rect class="c" x="394" y="332" width="64" height="15" fill="#1f6fb2" fill-opacity="0.37"><title>tga, lead 2: -0.183</title></rect>
+<text x="426.0" y="343" text-anchor="middle">-0.18</text>
+<rect class="c" x="458" y="332" width="64" height="15" fill="#1f6fb2" fill-opacity="0.37"><title>tga, lead 3: -0.183</title></rect>
+<text x="490.0" y="343" text-anchor="middle">-0.18</text>
+<rect class="c" x="522" y="332" width="64" height="15" fill="#1f6fb2" fill-opacity="0.37"><title>tga, lead 5: -0.185</title></rect>
+<text x="554.0" y="343" text-anchor="middle">-0.19</text>
+<rect class="c" x="586" y="332" width="64" height="15" fill="#1f6fb2" fill-opacity="0.38"><title>tga, lead 10: -0.192</title></rect>
+<text x="618.0" y="343" text-anchor="middle">-0.19</text>
+<text x="324" y="358" text-anchor="end">policy_debt_limit_reinstated</text>
+<rect class="c" x="330" y="347" width="64" height="15" fill="#c0392b" fill-opacity="0.37"><title>policy_debt_limit_reinstated, lead 1: +0.185</title></rect>
+<text x="362.0" y="358" text-anchor="middle">+0.18</text>
+<rect class="c" x="394" y="347" width="64" height="15" fill="#c0392b" fill-opacity="0.37"><title>policy_debt_limit_reinstated, lead 2: +0.185</title></rect>
+<text x="426.0" y="358" text-anchor="middle">+0.18</text>
+<rect class="c" x="458" y="347" width="64" height="15" fill="#c0392b" fill-opacity="0.37"><title>policy_debt_limit_reinstated, lead 3: +0.185</title></rect>
+<text x="490.0" y="358" text-anchor="middle">+0.18</text>
+<rect class="c" x="522" y="347" width="64" height="15" fill="#c0392b" fill-opacity="0.37"><title>policy_debt_limit_reinstated, lead 5: +0.185</title></rect>
+<text x="554.0" y="358" text-anchor="middle">+0.18</text>
+<rect class="c" x="586" y="347" width="64" height="15" fill="#c0392b" fill-opacity="0.38"><title>policy_debt_limit_reinstated, lead 10: +0.190</title></rect>
+<text x="618.0" y="358" text-anchor="middle">+0.19</text>
+<text x="324" y="373" text-anchor="end">tga_daily</text>
+<rect class="c" x="330" y="362" width="64" height="15" fill="#1f6fb2" fill-opacity="0.35"><title>tga_daily, lead 1: -0.173</title></rect>
+<text x="362.0" y="373" text-anchor="middle">-0.17</text>
+<rect class="c" x="394" y="362" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>tga_daily, lead 2: -0.172</title></rect>
+<text x="426.0" y="373" text-anchor="middle">-0.17</text>
+<rect class="c" x="458" y="362" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>tga_daily, lead 3: -0.170</title></rect>
+<text x="490.0" y="373" text-anchor="middle">-0.17</text>
+<rect class="c" x="522" y="362" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>tga_daily, lead 5: -0.170</title></rect>
+<text x="554.0" y="373" text-anchor="middle">-0.17</text>
+<rect class="c" x="586" y="362" width="64" height="15" fill="#1f6fb2" fill-opacity="0.38"><title>tga_daily, lead 10: -0.189</title></rect>
+<text x="618.0" y="373" text-anchor="middle">-0.19</text>
+<text x="324" y="388" text-anchor="end">bank_total_assets</text>
+<rect class="c" x="330" y="377" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>bank_total_assets, lead 1: -0.168</title></rect>
+<text x="362.0" y="388" text-anchor="middle">-0.17</text>
+<rect class="c" x="394" y="377" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>bank_total_assets, lead 2: -0.168</title></rect>
+<text x="426.0" y="388" text-anchor="middle">-0.17</text>
+<rect class="c" x="458" y="377" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>bank_total_assets, lead 3: -0.168</title></rect>
+<text x="490.0" y="388" text-anchor="middle">-0.17</text>
+<rect class="c" x="522" y="377" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>bank_total_assets, lead 5: -0.170</title></rect>
+<text x="554.0" y="388" text-anchor="middle">-0.17</text>
+<rect class="c" x="586" y="377" width="64" height="15" fill="#1f6fb2" fill-opacity="0.34"><title>bank_total_assets, lead 10: -0.171</title></rect>
+<text x="618.0" y="388" text-anchor="middle">-0.17</text>
+<text x="324" y="403" text-anchor="end">treasury_settlement_coupons</text>
+<rect class="c" x="330" y="392" width="64" height="15" fill="#c0392b" fill-opacity="0.34"><title>treasury_settlement_coupons, lead 1: +0.170</title></rect>
+<text x="362.0" y="403" text-anchor="middle">+0.17</text>
+<text x="324" y="418" text-anchor="end">policy_days_until_effective</text>
+<rect class="c" x="330" y="407" width="64" height="15" fill="#1f6fb2" fill-opacity="0.32"><title>policy_days_until_effective, lead 1: -0.161</title></rect>
+<text x="362.0" y="418" text-anchor="middle">-0.16</text>
+<rect class="c" x="394" y="407" width="64" height="15" fill="#1f6fb2" fill-opacity="0.30"><title>policy_days_until_effective, lead 2: -0.149</title></rect>
+<rect class="c" x="458" y="407" width="64" height="15" fill="#1f6fb2" fill-opacity="0.28"><title>policy_days_until_effective, lead 3: -0.138</title></rect>
+<rect class="c" x="522" y="407" width="64" height="15" fill="#1f6fb2" fill-opacity="0.26"><title>policy_days_until_effective, lead 5: -0.131</title></rect>
+<rect class="c" x="586" y="407" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>policy_days_until_effective, lead 10: -0.111</title></rect>
+<text x="324" y="433" text-anchor="end">sofr_tgcr_bps</text>
+<rect class="c" x="330" y="422" width="64" height="15" fill="#c0392b" fill-opacity="0.31"><title>sofr_tgcr_bps, lead 1: +0.156</title></rect>
+<text x="362.0" y="433" text-anchor="middle">+0.16</text>
+<rect class="c" x="394" y="422" width="64" height="15" fill="#c0392b" fill-opacity="0.26"><title>sofr_tgcr_bps, lead 2: +0.132</title></rect>
+<rect class="c" x="458" y="422" width="64" height="15" fill="#c0392b" fill-opacity="0.26"><title>sofr_tgcr_bps, lead 3: +0.132</title></rect>
+<rect class="c" x="522" y="422" width="64" height="15" fill="#c0392b" fill-opacity="0.29"><title>sofr_tgcr_bps, lead 5: +0.145</title></rect>
+<rect class="c" x="586" y="422" width="64" height="15" fill="#c0392b" fill-opacity="0.32"><title>sofr_tgcr_bps, lead 10: +0.158</title></rect>
+<text x="618.0" y="433" text-anchor="middle">+0.16</text>
+<text x="324" y="448" text-anchor="end">ofr_dvp_minus_bgcr_bp_backfill</text>
+<rect class="c" x="330" y="437" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>ofr_dvp_minus_bgcr_bp_backfill, lead 1: +0.105</title></rect>
+<rect class="c" x="394" y="437" width="64" height="15" fill="#c0392b" fill-opacity="0.20"><title>ofr_dvp_minus_bgcr_bp_backfill, lead 2: +0.100</title></rect>
+<rect class="c" x="458" y="437" width="64" height="15" fill="#c0392b" fill-opacity="0.20"><title>ofr_dvp_minus_bgcr_bp_backfill, lead 3: +0.100</title></rect>
+<rect class="c" x="522" y="437" width="64" height="15" fill="#c0392b" fill-opacity="0.28"><title>ofr_dvp_minus_bgcr_bp_backfill, lead 5: +0.139</title></rect>
+<rect class="c" x="586" y="437" width="64" height="15" fill="#c0392b" fill-opacity="0.19"><title>ofr_dvp_minus_bgcr_bp_backfill, lead 10: +0.095</title></rect>
+<text x="324" y="463" text-anchor="end">policy_days_since_known</text>
+<rect class="c" x="330" y="452" width="64" height="15" fill="#1f6fb2" fill-opacity="0.26"><title>policy_days_since_known, lead 1: -0.130</title></rect>
+<rect class="c" x="394" y="452" width="64" height="15" fill="#1f6fb2" fill-opacity="0.24"><title>policy_days_since_known, lead 2: -0.119</title></rect>
+<rect class="c" x="458" y="452" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>policy_days_since_known, lead 3: -0.112</title></rect>
+<rect class="c" x="522" y="452" width="64" height="15" fill="#1f6fb2" fill-opacity="0.23"><title>policy_days_since_known, lead 5: -0.114</title></rect>
+<rect class="c" x="586" y="452" width="64" height="15" fill="#1f6fb2" fill-opacity="0.15"><title>policy_days_since_known, lead 10: -0.077</title></rect>
+<text x="324" y="478" text-anchor="end">bgcr_volume</text>
+<rect class="c" x="330" y="467" width="64" height="15" fill="#c0392b" fill-opacity="0.24"><title>bgcr_volume, lead 1: +0.120</title></rect>
+<rect class="c" x="394" y="467" width="64" height="15" fill="#c0392b" fill-opacity="0.24"><title>bgcr_volume, lead 2: +0.118</title></rect>
+<rect class="c" x="458" y="467" width="64" height="15" fill="#c0392b" fill-opacity="0.24"><title>bgcr_volume, lead 3: +0.120</title></rect>
+<rect class="c" x="522" y="467" width="64" height="15" fill="#c0392b" fill-opacity="0.24"><title>bgcr_volume, lead 5: +0.121</title></rect>
+<rect class="c" x="586" y="467" width="64" height="15" fill="#c0392b" fill-opacity="0.25"><title>bgcr_volume, lead 10: +0.125</title></rect>
+<text x="324" y="493" text-anchor="end">dealer_treasury_position</text>
+<rect class="c" x="330" y="482" width="64" height="15" fill="#c0392b" fill-opacity="0.22"><title>dealer_treasury_position, lead 1: +0.110</title></rect>
+<rect class="c" x="394" y="482" width="64" height="15" fill="#c0392b" fill-opacity="0.22"><title>dealer_treasury_position, lead 2: +0.111</title></rect>
+<rect class="c" x="458" y="482" width="64" height="15" fill="#c0392b" fill-opacity="0.23"><title>dealer_treasury_position, lead 3: +0.113</title></rect>
+<rect class="c" x="522" y="482" width="64" height="15" fill="#c0392b" fill-opacity="0.23"><title>dealer_treasury_position, lead 5: +0.117</title></rect>
+<rect class="c" x="586" y="482" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>dealer_treasury_position, lead 10: +0.104</title></rect>
+<text x="324" y="508" text-anchor="end">policy_slr_exclusion_in_force</text>
+<rect class="c" x="330" y="497" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>policy_slr_exclusion_in_force, lead 1: -0.111</title></rect>
+<rect class="c" x="394" y="497" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>policy_slr_exclusion_in_force, lead 2: -0.111</title></rect>
+<rect class="c" x="458" y="497" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>policy_slr_exclusion_in_force, lead 3: -0.111</title></rect>
+<rect class="c" x="522" y="497" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>policy_slr_exclusion_in_force, lead 5: -0.111</title></rect>
+<rect class="c" x="586" y="497" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>policy_slr_exclusion_in_force, lead 10: -0.111</title></rect>
+<text x="324" y="523" text-anchor="end">iorb_announced_change_bps</text>
+<rect class="c" x="330" y="512" width="64" height="15" fill="#1f6fb2" fill-opacity="0.22"><title>iorb_announced_change_bps, lead 1: -0.108</title></rect>
+<text x="324" y="538" text-anchor="end">policy_iorb_offset_bp</text>
+<rect class="c" x="330" y="527" width="64" height="15" fill="#1f6fb2" fill-opacity="0.21"><title>policy_iorb_offset_bp, lead 1: -0.107</title></rect>
+<rect class="c" x="394" y="527" width="64" height="15" fill="#1f6fb2" fill-opacity="0.20"><title>policy_iorb_offset_bp, lead 2: -0.102</title></rect>
+<rect class="c" x="458" y="527" width="64" height="15" fill="#1f6fb2" fill-opacity="0.20"><title>policy_iorb_offset_bp, lead 3: -0.099</title></rect>
+<rect class="c" x="522" y="527" width="64" height="15" fill="#1f6fb2" fill-opacity="0.18"><title>policy_iorb_offset_bp, lead 5: -0.089</title></rect>
+<rect class="c" x="586" y="527" width="64" height="15" fill="#1f6fb2" fill-opacity="0.14"><title>policy_iorb_offset_bp, lead 10: -0.068</title></rect>
+<text x="324" y="553" text-anchor="end">quarter_end</text>
+<rect class="c" x="330" y="542" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>quarter_end, lead 1: +0.106</title></rect>
+<rect class="c" x="394" y="542" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>quarter_end, lead 2: +0.106</title></rect>
+<rect class="c" x="458" y="542" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>quarter_end, lead 3: +0.106</title></rect>
+<rect class="c" x="522" y="542" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>quarter_end, lead 5: +0.106</title></rect>
+<rect class="c" x="586" y="542" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>quarter_end, lead 10: +0.106</title></rect>
+<text x="324" y="568" text-anchor="end">dvp_volume_share_chg20</text>
+<rect class="c" x="330" y="557" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>dvp_volume_share_chg20, lead 1: +0.062</title></rect>
+<rect class="c" x="394" y="557" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>dvp_volume_share_chg20, lead 2: +0.061</title></rect>
+<rect class="c" x="458" y="557" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>dvp_volume_share_chg20, lead 3: +0.070</title></rect>
+<rect class="c" x="522" y="557" width="64" height="15" fill="#c0392b" fill-opacity="0.15"><title>dvp_volume_share_chg20, lead 5: +0.075</title></rect>
+<rect class="c" x="586" y="557" width="64" height="15" fill="#c0392b" fill-opacity="0.21"><title>dvp_volume_share_chg20, lead 10: +0.106</title></rect>
+<text x="324" y="583" text-anchor="end">fed_repo_days_since_positive</text>
+<rect class="c" x="330" y="572" width="64" height="15" fill="#c0392b" fill-opacity="0.13"><title>fed_repo_days_since_positive, lead 1: +0.065</title></rect>
+<rect class="c" x="394" y="572" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>fed_repo_days_since_positive, lead 2: +0.068</title></rect>
+<rect class="c" x="458" y="572" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>fed_repo_days_since_positive, lead 3: +0.071</title></rect>
+<rect class="c" x="522" y="572" width="64" height="15" fill="#c0392b" fill-opacity="0.17"><title>fed_repo_days_since_positive, lead 5: +0.084</title></rect>
+<rect class="c" x="586" y="572" width="64" height="15" fill="#c0392b" fill-opacity="0.18"><title>fed_repo_days_since_positive, lead 10: +0.089</title></rect>
+<text x="324" y="598" text-anchor="end">policy_pending_count</text>
+<rect class="c" x="330" y="587" width="64" height="15" fill="#c0392b" fill-opacity="0.17"><title>policy_pending_count, lead 1: +0.086</title></rect>
+<rect class="c" x="394" y="587" width="64" height="15" fill="#c0392b" fill-opacity="0.16"><title>policy_pending_count, lead 2: +0.082</title></rect>
+<rect class="c" x="458" y="587" width="64" height="15" fill="#c0392b" fill-opacity="0.15"><title>policy_pending_count, lead 3: +0.074</title></rect>
+<rect class="c" x="522" y="587" width="64" height="15" fill="#c0392b" fill-opacity="0.16"><title>policy_pending_count, lead 5: +0.082</title></rect>
+<rect class="c" x="586" y="587" width="64" height="15" fill="#c0392b" fill-opacity="0.13"><title>policy_pending_count, lead 10: +0.067</title></rect>
+<text x="324" y="613" text-anchor="end">fed_repo_days_since_positive_sameday</text>
+<rect class="c" x="330" y="602" width="64" height="15" fill="#c0392b" fill-opacity="0.10"><title>fed_repo_days_since_positive_sameday, lead 1: +0.049</title></rect>
+<rect class="c" x="394" y="602" width="64" height="15" fill="#c0392b" fill-opacity="0.13"><title>fed_repo_days_since_positive_sameday, lead 2: +0.065</title></rect>
+<rect class="c" x="458" y="602" width="64" height="15" fill="#c0392b" fill-opacity="0.13"><title>fed_repo_days_since_positive_sameday, lead 3: +0.067</title></rect>
+<rect class="c" x="522" y="602" width="64" height="15" fill="#c0392b" fill-opacity="0.15"><title>fed_repo_days_since_positive_sameday, lead 5: +0.074</title></rect>
+<rect class="c" x="586" y="602" width="64" height="15" fill="#c0392b" fill-opacity="0.15"><title>fed_repo_days_since_positive_sameday, lead 10: +0.076</title></rect>
+<text x="324" y="628" text-anchor="end">net_settlement_due_5d</text>
+<rect class="c" x="330" y="617" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>net_settlement_due_5d, lead 1: +0.006</title></rect>
+<rect class="c" x="394" y="617" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>net_settlement_due_5d, lead 2: +0.036</title></rect>
+<rect class="c" x="458" y="617" width="64" height="15" fill="#c0392b" fill-opacity="0.11"><title>net_settlement_due_5d, lead 3: +0.053</title></rect>
+<rect class="c" x="522" y="617" width="64" height="15" fill="#c0392b" fill-opacity="0.15"><title>net_settlement_due_5d, lead 5: +0.074</title></rect>
+<rect class="c" x="586" y="617" width="64" height="15" fill="#1f6fb2" fill-opacity="0.03"><title>net_settlement_due_5d, lead 10: -0.015</title></rect>
+<text x="324" y="643" text-anchor="end">policy_qt_in_force</text>
+<rect class="c" x="330" y="632" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>policy_qt_in_force, lead 1: +0.060</title></rect>
+<rect class="c" x="394" y="632" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>policy_qt_in_force, lead 2: +0.068</title></rect>
+<rect class="c" x="458" y="632" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>policy_qt_in_force, lead 3: +0.068</title></rect>
+<rect class="c" x="522" y="632" width="64" height="15" fill="#c0392b" fill-opacity="0.13"><title>policy_qt_in_force, lead 5: +0.067</title></rect>
+<rect class="c" x="586" y="632" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>policy_qt_in_force, lead 10: +0.070</title></rect>
+<text x="324" y="658" text-anchor="end">fed_repo_accepted_sameday</text>
+<rect class="c" x="330" y="647" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>fed_repo_accepted_sameday, lead 1: +0.068</title></rect>
+<rect class="c" x="394" y="647" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_accepted_sameday, lead 2: +0.046</title></rect>
+<rect class="c" x="458" y="647" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_accepted_sameday, lead 3: +0.045</title></rect>
+<rect class="c" x="522" y="647" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>fed_repo_accepted_sameday, lead 5: +0.023</title></rect>
+<rect class="c" x="586" y="647" width="64" height="15" fill="#c0392b" fill-opacity="0.08"><title>fed_repo_accepted_sameday, lead 10: +0.040</title></rect>
+<text x="324" y="673" text-anchor="end">fed_repo_log_accepted_sameday</text>
+<rect class="c" x="330" y="662" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>fed_repo_log_accepted_sameday, lead 1: +0.068</title></rect>
+<rect class="c" x="394" y="662" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_log_accepted_sameday, lead 2: +0.046</title></rect>
+<rect class="c" x="458" y="662" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_log_accepted_sameday, lead 3: +0.045</title></rect>
+<rect class="c" x="522" y="662" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>fed_repo_log_accepted_sameday, lead 5: +0.023</title></rect>
+<rect class="c" x="586" y="662" width="64" height="15" fill="#c0392b" fill-opacity="0.08"><title>fed_repo_log_accepted_sameday, lead 10: +0.040</title></rect>
+<text x="324" y="688" text-anchor="end">fed_repo_submitted_sameday</text>
+<rect class="c" x="330" y="677" width="64" height="15" fill="#c0392b" fill-opacity="0.14"><title>fed_repo_submitted_sameday, lead 1: +0.068</title></rect>
+<rect class="c" x="394" y="677" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_submitted_sameday, lead 2: +0.046</title></rect>
+<rect class="c" x="458" y="677" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_submitted_sameday, lead 3: +0.045</title></rect>
+<rect class="c" x="522" y="677" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>fed_repo_submitted_sameday, lead 5: +0.023</title></rect>
+<rect class="c" x="586" y="677" width="64" height="15" fill="#c0392b" fill-opacity="0.08"><title>fed_repo_submitted_sameday, lead 10: +0.040</title></rect>
+<text x="324" y="703" text-anchor="end">tga_change_5d</text>
+<rect class="c" x="330" y="692" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>tga_change_5d, lead 1: +0.061</title></rect>
+<rect class="c" x="394" y="692" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>tga_change_5d, lead 2: +0.059</title></rect>
+<rect class="c" x="458" y="692" width="64" height="15" fill="#c0392b" fill-opacity="0.13"><title>tga_change_5d, lead 3: +0.066</title></rect>
+<rect class="c" x="522" y="692" width="64" height="15" fill="#c0392b" fill-opacity="0.13"><title>tga_change_5d, lead 5: +0.063</title></rect>
+<rect class="c" x="586" y="692" width="64" height="15" fill="#c0392b" fill-opacity="0.10"><title>tga_change_5d, lead 10: +0.051</title></rect>
+<text x="324" y="718" text-anchor="end">treasury_settlement</text>
+<rect class="c" x="330" y="707" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>treasury_settlement, lead 1: +0.061</title></rect>
+<text x="324" y="733" text-anchor="end">tax_date</text>
+<rect class="c" x="330" y="722" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>tax_date, lead 1: +0.061</title></rect>
+<rect class="c" x="394" y="722" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>tax_date, lead 2: +0.061</title></rect>
+<rect class="c" x="458" y="722" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>tax_date, lead 3: +0.061</title></rect>
+<rect class="c" x="522" y="722" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>tax_date, lead 5: +0.061</title></rect>
+<rect class="c" x="586" y="722" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>tax_date, lead 10: +0.061</title></rect>
+<text x="324" y="748" text-anchor="end">sofr_volume</text>
+<rect class="c" x="330" y="737" width="64" height="15" fill="#c0392b" fill-opacity="0.12"><title>sofr_volume, lead 1: +0.060</title></rect>
+<rect class="c" x="394" y="737" width="64" height="15" fill="#c0392b" fill-opacity="0.11"><title>sofr_volume, lead 2: +0.054</title></rect>
+<rect class="c" x="458" y="737" width="64" height="15" fill="#c0392b" fill-opacity="0.10"><title>sofr_volume, lead 3: +0.049</title></rect>
+<rect class="c" x="522" y="737" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>sofr_volume, lead 5: +0.046</title></rect>
+<rect class="c" x="586" y="737" width="64" height="15" fill="#c0392b" fill-opacity="0.10"><title>sofr_volume, lead 10: +0.049</title></rect>
+<text x="324" y="763" text-anchor="end">tga_change_x_reserves</text>
+<rect class="c" x="330" y="752" width="64" height="15" fill="#c0392b" fill-opacity="0.10"><title>tga_change_x_reserves, lead 1: +0.051</title></rect>
+<rect class="c" x="394" y="752" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>tga_change_x_reserves, lead 2: +0.045</title></rect>
+<rect class="c" x="458" y="752" width="64" height="15" fill="#c0392b" fill-opacity="0.10"><title>tga_change_x_reserves, lead 3: +0.052</title></rect>
+<rect class="c" x="522" y="752" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>tga_change_x_reserves, lead 5: +0.044</title></rect>
+<rect class="c" x="586" y="752" width="64" height="15" fill="#c0392b" fill-opacity="0.10"><title>tga_change_x_reserves, lead 10: +0.048</title></rect>
+<text x="324" y="778" text-anchor="end">fed_repo_ops_sameday</text>
+<rect class="c" x="330" y="767" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_ops_sameday, lead 1: +0.047</title></rect>
+<rect class="c" x="394" y="767" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>fed_repo_ops_sameday, lead 2: +0.033</title></rect>
+<rect class="c" x="458" y="767" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_ops_sameday, lead 3: +0.029</title></rect>
+<rect class="c" x="522" y="767" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>fed_repo_ops_sameday, lead 5: +0.012</title></rect>
+<rect class="c" x="586" y="767" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>fed_repo_ops_sameday, lead 10: +0.024</title></rect>
+<text x="324" y="793" text-anchor="end">treasury_settlement_soma</text>
+<rect class="c" x="330" y="782" width="64" height="15" fill="#1f6fb2" fill-opacity="0.09"><title>treasury_settlement_soma, lead 1: -0.046</title></rect>
+<text x="324" y="808" text-anchor="end">sofr_p99_p75_bps</text>
+<rect class="c" x="330" y="797" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>sofr_p99_p75_bps, lead 1: +0.046</title></rect>
+<rect class="c" x="394" y="797" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>sofr_p99_p75_bps, lead 2: +0.007</title></rect>
+<rect class="c" x="458" y="797" width="64" height="15" fill="#1f6fb2" fill-opacity="0.01"><title>sofr_p99_p75_bps, lead 3: -0.003</title></rect>
+<rect class="c" x="522" y="797" width="64" height="15" fill="#1f6fb2" fill-opacity="0.03"><title>sofr_p99_p75_bps, lead 5: -0.015</title></rect>
+<rect class="c" x="586" y="797" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p99_p75_bps, lead 10: +0.018</title></rect>
+<text x="324" y="823" text-anchor="end">fed_repo_accepted</text>
+<rect class="c" x="330" y="812" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_accepted, lead 1: +0.045</title></rect>
+<rect class="c" x="394" y="812" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_accepted, lead 2: +0.044</title></rect>
+<rect class="c" x="458" y="812" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>fed_repo_accepted, lead 3: +0.037</title></rect>
+<rect class="c" x="522" y="812" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>fed_repo_accepted, lead 5: +0.008</title></rect>
+<rect class="c" x="586" y="812" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>fed_repo_accepted, lead 10: +0.016</title></rect>
+<text x="324" y="838" text-anchor="end">fed_repo_log_accepted</text>
+<rect class="c" x="330" y="827" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_log_accepted, lead 1: +0.045</title></rect>
+<rect class="c" x="394" y="827" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_log_accepted, lead 2: +0.044</title></rect>
+<rect class="c" x="458" y="827" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>fed_repo_log_accepted, lead 3: +0.037</title></rect>
+<rect class="c" x="522" y="827" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>fed_repo_log_accepted, lead 5: +0.008</title></rect>
+<rect class="c" x="586" y="827" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>fed_repo_log_accepted, lead 10: +0.016</title></rect>
+<text x="324" y="853" text-anchor="end">fed_repo_submitted</text>
+<rect class="c" x="330" y="842" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_submitted, lead 1: +0.045</title></rect>
+<rect class="c" x="394" y="842" width="64" height="15" fill="#c0392b" fill-opacity="0.09"><title>fed_repo_submitted, lead 2: +0.044</title></rect>
+<rect class="c" x="458" y="842" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>fed_repo_submitted, lead 3: +0.037</title></rect>
+<rect class="c" x="522" y="842" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>fed_repo_submitted, lead 5: +0.008</title></rect>
+<rect class="c" x="586" y="842" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>fed_repo_submitted, lead 10: +0.016</title></rect>
+<text x="324" y="868" text-anchor="end">srf_take_up_positive</text>
+<rect class="c" x="330" y="857" width="64" height="15" fill="#1f6fb2" fill-opacity="0.05"><title>srf_take_up_positive, lead 1: -0.023</title></rect>
+<rect class="c" x="394" y="857" width="64" height="15" fill="#1f6fb2" fill-opacity="0.01"><title>srf_take_up_positive, lead 2: -0.007</title></rect>
+<rect class="c" x="458" y="857" width="64" height="15" fill="#1f6fb2" fill-opacity="0.01"><title>srf_take_up_positive, lead 3: -0.007</title></rect>
+<rect class="c" x="522" y="857" width="64" height="15" fill="#1f6fb2" fill-opacity="0.07"><title>srf_take_up_positive, lead 5: -0.036</title></rect>
+<rect class="c" x="586" y="857" width="64" height="15" fill="#1f6fb2" fill-opacity="0.00"><title>srf_take_up_positive, lead 10: -0.000</title></rect>
+<text x="324" y="883" text-anchor="end">fed_repo_log_accepted_change</text>
+<rect class="c" x="330" y="872" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>fed_repo_log_accepted_change, lead 1: +0.035</title></rect>
+<rect class="c" x="394" y="872" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>fed_repo_log_accepted_change, lead 2: +0.008</title></rect>
+<rect class="c" x="458" y="872" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>fed_repo_log_accepted_change, lead 3: +0.004</title></rect>
+<rect class="c" x="522" y="872" width="64" height="15" fill="#1f6fb2" fill-opacity="0.06"><title>fed_repo_log_accepted_change, lead 5: -0.032</title></rect>
+<rect class="c" x="586" y="872" width="64" height="15" fill="#1f6fb2" fill-opacity="0.04"><title>fed_repo_log_accepted_change, lead 10: -0.020</title></rect>
+<text x="324" y="898" text-anchor="end">fed_repo_log_accepted_change_sameday</text>
+<rect class="c" x="330" y="887" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>fed_repo_log_accepted_change_sameday, lead 1: +0.023</title></rect>
+<rect class="c" x="394" y="887" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>fed_repo_log_accepted_change_sameday, lead 2: +0.035</title></rect>
+<rect class="c" x="458" y="887" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>fed_repo_log_accepted_change_sameday, lead 3: +0.008</title></rect>
+<rect class="c" x="522" y="887" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_log_accepted_change_sameday, lead 5: +0.028</title></rect>
+<rect class="c" x="586" y="887" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>fed_repo_log_accepted_change_sameday, lead 10: +0.024</title></rect>
+<text x="324" y="913" text-anchor="end">net_settlement</text>
+<rect class="c" x="330" y="902" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>net_settlement, lead 1: +0.027</title></rect>
+<rect class="c" x="394" y="902" width="64" height="15" fill="#c0392b" fill-opacity="0.07"><title>net_settlement, lead 2: +0.034</title></rect>
+<rect class="c" x="458" y="902" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>net_settlement, lead 3: +0.019</title></rect>
+<rect class="c" x="522" y="902" width="64" height="15" fill="#1f6fb2" fill-opacity="0.03"><title>net_settlement, lead 5: -0.014</title></rect>
+<rect class="c" x="586" y="902" width="64" height="15" fill="#1f6fb2" fill-opacity="0.01"><title>net_settlement, lead 10: -0.007</title></rect>
+<text x="324" y="928" text-anchor="end">fed_repo_ops</text>
+<rect class="c" x="330" y="917" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_ops, lead 1: +0.032</title></rect>
+<rect class="c" x="394" y="917" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_ops, lead 2: +0.028</title></rect>
+<rect class="c" x="458" y="917" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>fed_repo_ops, lead 3: +0.027</title></rect>
+<rect class="c" x="522" y="917" width="64" height="15" fill="#1f6fb2" fill-opacity="0.01"><title>fed_repo_ops, lead 5: -0.006</title></rect>
+<rect class="c" x="586" y="917" width="64" height="15" fill="#c0392b" fill-opacity="0.00"><title>fed_repo_ops, lead 10: +0.001</title></rect>
+<text x="324" y="943" text-anchor="end">fed_repo_rate_iorb_bps_sameday</text>
+<rect class="c" x="330" y="932" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>fed_repo_rate_iorb_bps_sameday, lead 1: -0.009</title></rect>
+<rect class="c" x="394" y="932" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_rate_iorb_bps_sameday, lead 2: +0.032</title></rect>
+<rect class="c" x="458" y="932" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_rate_iorb_bps_sameday, lead 3: +0.029</title></rect>
+<rect class="c" x="522" y="932" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>fed_repo_rate_iorb_bps_sameday, lead 5: +0.005</title></rect>
+<rect class="c" x="586" y="932" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>fed_repo_rate_iorb_bps_sameday, lead 10: +0.004</title></rect>
+<text x="324" y="958" text-anchor="end">sofr_p99</text>
+<rect class="c" x="330" y="947" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>sofr_p99, lead 1: +0.031</title></rect>
+<rect class="c" x="394" y="947" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>sofr_p99, lead 2: +0.023</title></rect>
+<rect class="c" x="458" y="947" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p99, lead 3: +0.022</title></rect>
+<rect class="c" x="522" y="947" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>sofr_p99, lead 5: +0.023</title></rect>
+<rect class="c" x="586" y="947" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>sofr_p99, lead 10: +0.029</title></rect>
+<text x="324" y="973" text-anchor="end">fed_repo_rate_iorb_bps</text>
+<rect class="c" x="330" y="962" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>fed_repo_rate_iorb_bps, lead 1: -0.009</title></rect>
+<rect class="c" x="394" y="962" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_rate_iorb_bps, lead 2: +0.031</title></rect>
+<rect class="c" x="458" y="962" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>fed_repo_rate_iorb_bps, lead 3: +0.028</title></rect>
+<rect class="c" x="522" y="962" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>fed_repo_rate_iorb_bps, lead 5: +0.004</title></rect>
+<rect class="c" x="586" y="962" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>fed_repo_rate_iorb_bps, lead 10: +0.004</title></rect>
+<text x="324" y="988" text-anchor="end">net_settlement_bills</text>
+<rect class="c" x="330" y="977" width="64" height="15" fill="#1f6fb2" fill-opacity="0.03"><title>net_settlement_bills, lead 1: -0.016</title></rect>
+<rect class="c" x="394" y="977" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>net_settlement_bills, lead 2: -0.010</title></rect>
+<rect class="c" x="458" y="977" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>net_settlement_bills, lead 3: -0.009</title></rect>
+<rect class="c" x="522" y="977" width="64" height="15" fill="#1f6fb2" fill-opacity="0.03"><title>net_settlement_bills, lead 5: -0.017</title></rect>
+<rect class="c" x="586" y="977" width="64" height="15" fill="#1f6fb2" fill-opacity="0.06"><title>net_settlement_bills, lead 10: -0.031</title></rect>
+<text x="324" y="1003" text-anchor="end">days_to_month_end</text>
+<rect class="c" x="330" y="992" width="64" height="15" fill="#1f6fb2" fill-opacity="0.06"><title>days_to_month_end, lead 1: -0.030</title></rect>
+<rect class="c" x="394" y="992" width="64" height="15" fill="#1f6fb2" fill-opacity="0.06"><title>days_to_month_end, lead 2: -0.030</title></rect>
+<rect class="c" x="458" y="992" width="64" height="15" fill="#1f6fb2" fill-opacity="0.06"><title>days_to_month_end, lead 3: -0.030</title></rect>
+<rect class="c" x="522" y="992" width="64" height="15" fill="#1f6fb2" fill-opacity="0.06"><title>days_to_month_end, lead 5: -0.030</title></rect>
+<rect class="c" x="586" y="992" width="64" height="15" fill="#1f6fb2" fill-opacity="0.06"><title>days_to_month_end, lead 10: -0.030</title></rect>
+<text x="324" y="1018" text-anchor="end">sofr_p75</text>
+<rect class="c" x="330" y="1007" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>sofr_p75, lead 1: +0.024</title></rect>
+<rect class="c" x="394" y="1007" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p75, lead 2: +0.022</title></rect>
+<rect class="c" x="458" y="1007" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p75, lead 3: +0.019</title></rect>
+<rect class="c" x="522" y="1007" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p75, lead 5: +0.022</title></rect>
+<rect class="c" x="586" y="1007" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>sofr_p75, lead 10: +0.029</title></rect>
+<text x="324" y="1033" text-anchor="end">tga_daily_change</text>
+<rect class="c" x="330" y="1022" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>tga_daily_change, lead 1: +0.018</title></rect>
+<rect class="c" x="394" y="1022" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>tga_daily_change, lead 2: +0.009</title></rect>
+<rect class="c" x="458" y="1022" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>tga_daily_change, lead 3: +0.016</title></rect>
+<rect class="c" x="522" y="1022" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>tga_daily_change, lead 5: +0.018</title></rect>
+<rect class="c" x="586" y="1022" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>tga_daily_change, lead 10: +0.029</title></rect>
+<text x="324" y="1048" text-anchor="end">sofr_p1</text>
+<rect class="c" x="330" y="1037" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p1, lead 1: +0.019</title></rect>
+<rect class="c" x="394" y="1037" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>sofr_p1, lead 2: +0.017</title></rect>
+<rect class="c" x="458" y="1037" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>sofr_p1, lead 3: +0.017</title></rect>
+<rect class="c" x="522" y="1037" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p1, lead 5: +0.019</title></rect>
+<rect class="c" x="586" y="1037" width="64" height="15" fill="#c0392b" fill-opacity="0.06"><title>sofr_p1, lead 10: +0.028</title></rect>
+<text x="324" y="1063" text-anchor="end">bgcr</text>
+<rect class="c" x="330" y="1052" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>bgcr, lead 1: +0.021</title></rect>
+<rect class="c" x="394" y="1052" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>bgcr, lead 2: +0.019</title></rect>
+<rect class="c" x="458" y="1052" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>bgcr, lead 3: +0.018</title></rect>
+<rect class="c" x="522" y="1052" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>bgcr, lead 5: +0.021</title></rect>
+<rect class="c" x="586" y="1052" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>bgcr, lead 10: +0.027</title></rect>
+<text x="324" y="1078" text-anchor="end">tgcr</text>
+<rect class="c" x="330" y="1067" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>tgcr, lead 1: +0.021</title></rect>
+<rect class="c" x="394" y="1067" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>tgcr, lead 2: +0.019</title></rect>
+<rect class="c" x="458" y="1067" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>tgcr, lead 3: +0.017</title></rect>
+<rect class="c" x="522" y="1067" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>tgcr, lead 5: +0.021</title></rect>
+<rect class="c" x="586" y="1067" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>tgcr, lead 10: +0.027</title></rect>
+<text x="324" y="1093" text-anchor="end">sofr_p25</text>
+<rect class="c" x="330" y="1082" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p25, lead 1: +0.021</title></rect>
+<rect class="c" x="394" y="1082" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p25, lead 2: +0.019</title></rect>
+<rect class="c" x="458" y="1082" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>sofr_p25, lead 3: +0.017</title></rect>
+<rect class="c" x="522" y="1082" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>sofr_p25, lead 5: +0.020</title></rect>
+<rect class="c" x="586" y="1082" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>sofr_p25, lead 10: +0.027</title></rect>
+<text x="324" y="1108" text-anchor="end">ofr_dvp_rate</text>
+<rect class="c" x="330" y="1097" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>ofr_dvp_rate, lead 1: +0.017</title></rect>
+<rect class="c" x="394" y="1097" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>ofr_dvp_rate, lead 2: +0.014</title></rect>
+<rect class="c" x="458" y="1097" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>ofr_dvp_rate, lead 3: +0.019</title></rect>
+<rect class="c" x="522" y="1097" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>ofr_dvp_rate, lead 5: +0.020</title></rect>
+<rect class="c" x="586" y="1097" width="64" height="15" fill="#c0392b" fill-opacity="0.05"><title>ofr_dvp_rate, lead 10: +0.025</title></rect>
+<text x="324" y="1123" text-anchor="end">bgcr_tgcr_bps</text>
+<rect class="c" x="330" y="1112" width="64" height="15" fill="#1f6fb2" fill-opacity="0.05"><title>bgcr_tgcr_bps, lead 1: -0.023</title></rect>
+<rect class="c" x="394" y="1112" width="64" height="15" fill="#c0392b" fill-opacity="0.00"><title>bgcr_tgcr_bps, lead 2: +0.002</title></rect>
+<rect class="c" x="458" y="1112" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>bgcr_tgcr_bps, lead 3: +0.015</title></rect>
+<rect class="c" x="522" y="1112" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>bgcr_tgcr_bps, lead 5: -0.010</title></rect>
+<rect class="c" x="586" y="1112" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>bgcr_tgcr_bps, lead 10: -0.010</title></rect>
+<text x="324" y="1138" text-anchor="end">effr</text>
+<rect class="c" x="330" y="1127" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>effr, lead 1: +0.014</title></rect>
+<rect class="c" x="394" y="1127" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>effr, lead 2: +0.014</title></rect>
+<rect class="c" x="458" y="1127" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>effr, lead 3: +0.015</title></rect>
+<rect class="c" x="522" y="1127" width="64" height="15" fill="#c0392b" fill-opacity="0.03"><title>effr, lead 5: +0.017</title></rect>
+<rect class="c" x="586" y="1127" width="64" height="15" fill="#c0392b" fill-opacity="0.04"><title>effr, lead 10: +0.022</title></rect>
+<text x="324" y="1153" text-anchor="end">tbill_13w</text>
+<rect class="c" x="330" y="1142" width="64" height="15" fill="#1f6fb2" fill-opacity="0.04"><title>tbill_13w, lead 1: -0.019</title></rect>
+<rect class="c" x="394" y="1142" width="64" height="15" fill="#1f6fb2" fill-opacity="0.04"><title>tbill_13w, lead 2: -0.018</title></rect>
+<rect class="c" x="458" y="1142" width="64" height="15" fill="#1f6fb2" fill-opacity="0.03"><title>tbill_13w, lead 3: -0.017</title></rect>
+<rect class="c" x="522" y="1142" width="64" height="15" fill="#1f6fb2" fill-opacity="0.03"><title>tbill_13w, lead 5: -0.015</title></rect>
+<rect class="c" x="586" y="1142" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>tbill_13w, lead 10: -0.009</title></rect>
+<text x="324" y="1168" text-anchor="end">tbill_4w</text>
+<rect class="c" x="330" y="1157" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>tbill_4w, lead 1: +0.003</title></rect>
+<rect class="c" x="394" y="1157" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>tbill_4w, lead 2: +0.003</title></rect>
+<rect class="c" x="458" y="1157" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>tbill_4w, lead 3: +0.003</title></rect>
+<rect class="c" x="522" y="1157" width="64" height="15" fill="#c0392b" fill-opacity="0.01"><title>tbill_4w, lead 5: +0.006</title></rect>
+<rect class="c" x="586" y="1157" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>tbill_4w, lead 10: +0.012</title></rect>
+<text x="324" y="1183" text-anchor="end">ofr_tri_rate</text>
+<rect class="c" x="330" y="1172" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>ofr_tri_rate, lead 1: -0.009</title></rect>
+<rect class="c" x="394" y="1172" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>ofr_tri_rate, lead 2: -0.010</title></rect>
+<rect class="c" x="458" y="1172" width="64" height="15" fill="#1f6fb2" fill-opacity="0.02"><title>ofr_tri_rate, lead 3: -0.009</title></rect>
+<rect class="c" x="522" y="1172" width="64" height="15" fill="#1f6fb2" fill-opacity="0.01"><title>ofr_tri_rate, lead 5: -0.007</title></rect>
+<rect class="c" x="586" y="1172" width="64" height="15" fill="#c0392b" fill-opacity="0.02"><title>ofr_tri_rate, lead 10: +0.008</title></rect>
+<text x="324" y="1198" text-anchor="end">treasury_settlement_bills</text>
+<rect class="c" x="330" y="1187" width="64" height="15" fill="#1f6fb2" fill-opacity="0.01"><title>treasury_settlement_bills, lead 1: -0.007</title></rect>
+<text x="4" y="1220">red: a higher series goes with more pressure; blue: the reverse; full colour at |rho| = 0.5; values shown from 0.15</text>
+</svg>
