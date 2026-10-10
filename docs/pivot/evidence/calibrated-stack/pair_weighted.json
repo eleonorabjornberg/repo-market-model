@@ -1,0 +1,274 @@
+{
+ "best_single_passer": "risk_logistic",
+ "onsets": 26,
+ "paired_vs_best_single_passer": {
+  "calibrated_stack_isotonic": {
+   "1": {
+    "brier_gain_over_best_passer": 0.001268339444143003,
+    "interval": [
+     -0.007443856784661991,
+     0.010449351937036475
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "2": {
+    "brier_gain_over_best_passer": 0.004039190231393795,
+    "interval": [
+     -0.005609996247624722,
+     0.01497261123583622
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "3": {
+    "brier_gain_over_best_passer": 0.008166315371282592,
+    "interval": [
+     -0.002273953154032702,
+     0.019868505835382362
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "4": {
+    "brier_gain_over_best_passer": 0.005848418464225295,
+    "interval": [
+     -0.003361539180062978,
+     0.016102641949986927
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "5": {
+    "brier_gain_over_best_passer": 0.006054314410200466,
+    "interval": [
+     -0.004718680478275288,
+     0.0186049206428576
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "onsets": 26,
+   "onsets_warned_minus_best": -4
+  },
+  "calibrated_stack_logistic": {
+   "1": {
+    "brier_gain_over_best_passer": 0.00550094668628419,
+    "interval": [
+     0.0005688613787599884,
+     0.011097780512586846
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "2": {
+    "brier_gain_over_best_passer": 0.0058652344244487075,
+    "interval": [
+     5.1627788208566957e-05,
+     0.012622211356434352
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "3": {
+    "brier_gain_over_best_passer": 0.008238212145987082,
+    "interval": [
+     0.001484342749030909,
+     0.01589707776539214
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "4": {
+    "brier_gain_over_best_passer": 0.008612775846509914,
+    "interval": [
+     0.002763158235392312,
+     0.015431235537514475
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "5": {
+    "brier_gain_over_best_passer": 0.009620149625688542,
+    "interval": [
+     0.00365132961148346,
+     0.01636648129624787
+    ],
+    "positive_means": "the stack's Brier score is lower than the best single passer's"
+   },
+   "onsets": 26,
+   "onsets_warned_minus_best": -1
+  }
+ },
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "per_row": {
+  "calibrated_stack_isotonic": {
+   "by_year": {
+    "2018": {
+     "onsets": 4,
+     "warned": 0
+    },
+    "2019": {
+     "onsets": 13,
+     "warned": 12
+    },
+    "2020": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2024": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2025": {
+     "onsets": 5,
+     "warned": 0
+    }
+   },
+   "warned": 12
+  },
+  "calibrated_stack_logistic": {
+   "by_year": {
+    "2018": {
+     "onsets": 4,
+     "warned": 0
+    },
+    "2019": {
+     "onsets": 13,
+     "warned": 13
+    },
+    "2020": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2024": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2025": {
+     "onsets": 5,
+     "warned": 2
+    }
+   },
+   "warned": 15
+  },
+  "risk_gbm": {
+   "by_year": {
+    "2018": {
+     "onsets": 4,
+     "warned": 0
+    },
+    "2019": {
+     "onsets": 13,
+     "warned": 10
+    },
+    "2020": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2024": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2025": {
+     "onsets": 5,
+     "warned": 3
+    }
+   },
+   "warned": 13
+  },
+  "risk_gbm_base": {
+   "by_year": {
+    "2018": {
+     "onsets": 4,
+     "warned": 0
+    },
+    "2019": {
+     "onsets": 13,
+     "warned": 10
+    },
+    "2020": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2024": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2025": {
+     "onsets": 5,
+     "warned": 4
+    }
+   },
+   "warned": 14
+  },
+  "risk_logistic": {
+   "by_year": {
+    "2018": {
+     "onsets": 4,
+     "warned": 0
+    },
+    "2019": {
+     "onsets": 13,
+     "warned": 10
+    },
+    "2020": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2024": {
+     "onsets": 2,
+     "warned": 1
+    },
+    "2025": {
+     "onsets": 5,
+     "warned": 5
+    }
+   },
+   "warned": 16
+  },
+  "risk_logistic_base": {
+   "by_year": {
+    "2018": {
+     "onsets": 4,
+     "warned": 0
+    },
+    "2019": {
+     "onsets": 13,
+     "warned": 10
+    },
+    "2020": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2024": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2025": {
+     "onsets": 5,
+     "warned": 5
+    }
+   },
+   "warned": 15
+  },
+  "risk_quantile_skewt_base": {
+   "by_year": {
+    "2018": {
+     "onsets": 4,
+     "warned": 0
+    },
+    "2019": {
+     "onsets": 13,
+     "warned": 10
+    },
+    "2020": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2024": {
+     "onsets": 2,
+     "warned": 0
+    },
+    "2025": {
+     "onsets": 5,
+     "warned": 5
+    }
+   },
+   "warned": 15
+  }
+ },
+ "primary_threshold_bp": 5.0,
+ "rule": "weighted"
+}

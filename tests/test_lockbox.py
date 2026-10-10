@@ -324,6 +324,12 @@ NOT_ENTRY_POINTS = {
         "_as_of_folds, which calls require_unlocked, and pressure_judge.judge guards the "
         "scored days itself"
     ),
+    "scripts/pressure_audit.inputs_command": (
+        "tabulates what each input reads at the 16:00 decision and how the value read ranks the +5 bp "
+        "onsets, on the judge's scored days (#473); scores no forecast, it ends at the declared last "
+        "scored day, calls require_unlocked on it before the first read, and refuses a scratch panel "
+        "whose spread is not the published panel's"
+    ),
     "scripts/pressure_track_m.states_command": (
         "tabulates the filtered state against #115's state on the fold grid (#384); scores "
         "nothing, it ends at the declared last scored day through _as_of_folds, which calls "
@@ -400,6 +406,11 @@ NOT_ENTRY_POINTS = {
         "reads each scored day's as-of state and calendar for the descriptive "
         "onset post-mortem (#214); compares nothing, and walks _as_of_folds, "
         "which refuses a locked day (tests/test_onset_post_mortem.py)"
+    ),
+    "scripts/episode_post_mortem.as_of_series": (
+        "reads each scored day's as-of inputs for the descriptive episode "
+        "post-mortem (#474); compares nothing, and walks _as_of_folds, which "
+        "refuses a locked day (tests/test_episode_post_mortem.py)"
     ),
     "scripts/final_test_opening.distribution_walk": (
         "the final test opening's walk of the published distribution and as-of "

@@ -155,6 +155,19 @@ def _best(table):
     return -max((c, -k) for k, c in table.items() if c is not None)[1]
 
 
+def cut_series(rows):
+    """The spreads the score may read: every panel day to `END`, none after it (`docs/decisions/lockbox.md`)."""
+
+    return [row.spread_bps for row in rows if row.date <= END]
+
+
+def lag_members(positions, series):
+    """The members whose lag at the largest negative `k` is still inside the cut series (the last days of 2025 have no
+    spread three days on, and 2026 is not read to supply one)."""
+
+    return [i for i, p in enumerate(positions) if p + max(-min(LAGS), 0) < len(series)]
+
+
 def _lag_table(medians, series, positions):
     return {k: _corr(medians, [series[p - k] for p in positions]) for k in LAGS}
 
@@ -190,7 +203,7 @@ def score_command(args) -> int:
         raise SystemExit(f"the published walk differs from the published record on {len(differing)} days")
     levels = tuple(walks["published"]["levels"])
     actual = [by_date[date.fromisoformat(d)].spread_bps for d in days]
-    series = [r.spread_bps for r in rows]
+    series = cut_series(rows)
     pos = [position[date.fromisoformat(d)] for d in days]
     losses = {w: [crps_from_quantiles(levels, by_walk[w][d]["quantiles_bps"], a) for d, a in zip(days, actual)]
               for w in WALKS}
@@ -233,8 +246,11 @@ def score_command(args) -> int:
     for label, members in cells.items():
         if len(members) < 30:
             continue
+        members = [members[j] for j in lag_members([pos[i] for i in members], series)]
         member_pos = [pos[i] for i in members]
         tables = {w: _lag_table([median[w][i] for i in members], series, member_pos) for w in WALKS}
+        if len(members) < 30:
+            continue
         entry = {"days": len(members),
                  "correlation_by_lag": {w: {str(k): c for k, c in t.items()} for w, t in tables.items()},
                  "best_lag": {w: _best(t) for w, t in tables.items()}}

@@ -47,7 +47,9 @@ __all__ = [
     "declaration",
     "fit",
     "group_label",
+    "regime_walk_forward",
     "require_observable",
+    "require_regimes_asof",
     "walk_forward",
 ]
 
@@ -181,3 +183,47 @@ def walk_forward(
                 curves[group] = fit(mode, pairs, end, target_group=group)
             column[index] = curves[group](forecasts[index])
     return tuple(column)
+
+
+def require_regimes_asof(scored_dates: Sequence[date], regimes: Sequence[str], splits) -> None:
+    """Refuse a regime label that is not the declared calendar's for its day.
+
+    A regime is as-of when it is read off the date (`metadata/evaluation_splits.json`), known at the
+    decision instant. A label assigned from realised outcomes would put the outcome in the curve's key.
+
+    Raises:
+        LookAheadError: a day's label differs from the declared calendar's regime for that day.
+        ValueError: the labels are not one per scored day.
+    """
+
+    if len(scored_dates) != len(regimes):
+        raise ValueError("regime labels must be one per scored day")
+    wrong = [(day, label) for day, label in zip(scored_dates, regimes) if splits.regime(day) != label]
+    if wrong:
+        raise LookAheadError(
+            f"regime label {wrong[0][1]!r} for {wrong[0][0]} is not the declared calendar's "
+            f"{splits.regime(wrong[0][0])!r}; a regime must be read as of the decision instant"
+        )
+
+
+def regime_walk_forward(
+    forecasts: Sequence[float],
+    outcomes: Sequence[int],
+    scored_dates: Sequence[date],
+    train_ends: Sequence[date],
+    regimes: Sequence[str],
+    splits,
+) -> Tuple[float, ...]:
+    """Platt per declared regime (#471): `walk_forward('group')` with the regime as the group.
+
+    Each refit block fits one curve per regime on that regime's earlier observable pairs, and the
+    pooled curve when the regime holds fewer than `GROUP_MINIMUM_PAIRS` pairs or `GROUP_MINIMUM_EVENTS`
+    events, so a regime's first days are pooled until it has its own record.
+
+    Raises:
+        LookAheadError: a regime label is not the declared calendar's for its day.
+        ValueError: as `walk_forward`.
+    """
+
+    require_regimes_asof(scored_dates, regimes, splits)
+    return walk_forward("group", forecasts, outcomes, scored_dates, train_ends, regimes)

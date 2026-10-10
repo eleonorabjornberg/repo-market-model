@@ -1,0 +1,77 @@
+{
+ "note": "Pages fetched on 2026-10-10 with one plain request each (curl, no cookies). The extract is the page text with scripts, styles and tags removed; the raw bytes are not tracked (raw_sha256 identifies what was read). Pages move, so a re-fetch need not reproduce these bytes.",
+ "pages": [
+  {
+   "name": "treasury_auction_schedule",
+   "url": "https://www.treasurydirect.gov/auctions/when-auctions-happen/",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "4162284d6ed25230dbb6e6b6ad40fdd16e6497e330358b278259fdb299a8d5e3",
+   "raw_bytes": 32966,
+   "extract": "treasury_auction_schedule.txt",
+   "extract_sha256": "579d9ac0e46a95c22de6c81c26e592cc3b6e89c0521f6438bd600c97e90a6bf0"
+  },
+  {
+   "name": "treasury_how_auctions_work",
+   "url": "https://www.treasurydirect.gov/auctions/how-auctions-work/",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "0d7fbbc2c20daf586476529eb3d3525d0c9078ce909a18f502e29d410b10aa0b",
+   "raw_bytes": 31620,
+   "extract": "treasury_how_auctions_work.txt",
+   "extract_sha256": "a32eeafbfd30befce6599aa816e32537ab3e46acf8b434346f12db70c90cbc43"
+  },
+  {
+   "name": "fed_h41_release_page",
+   "url": "https://www.federalreserve.gov/releases/h41/",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "6ab7c338814488c8337a929be96de32bea2b83fa7d753c86f82e3cc5b514c3a5",
+   "raw_bytes": 78178,
+   "extract": "fed_h41_release_page.txt",
+   "extract_sha256": "164bfc9f51d4bf8c5171c2309d0922c4ad3ae961f12b3a447d288b5ab03e5400"
+  },
+  {
+   "name": "nyfed_sofr_page",
+   "url": "https://www.newyorkfed.org/markets/reference-rates/sofr",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "c4a9e72419486e2b6fdfe01841434afe8c20c6dc8249b38dee4dc623166a1618",
+   "raw_bytes": 107223,
+   "extract": "nyfed_sofr_page.txt",
+   "extract_sha256": "7ee009faa78f414e9a13cbe8261d0d66f7fbe59228dec59b7c9c672ac1f486e3"
+  },
+  {
+   "name": "nyfed_reference_rates_info",
+   "url": "https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "19854b46377fd0ab5f538e5c7459e338876816035dac944fa9442993432306a3",
+   "raw_bytes": 148108,
+   "extract": "nyfed_reference_rates_info.txt",
+   "extract_sha256": "f012c70cb514e66107aed0bb41ead8294f2da52af4f0dd30b5f3ee8432713d36"
+  },
+  {
+   "name": "nyfed_primary_dealer_statistics",
+   "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "9f48be81f22d8e536d10889eefff07971e939904e87d40f10aef219a2b40d741",
+   "raw_bytes": 103053,
+   "extract": "nyfed_primary_dealer_statistics.txt",
+   "extract_sha256": "b871cb5e9cca396cb48976ad88de935846fc98fe70c919e1cf3389f53f2a47cf"
+  },
+  {
+   "name": "nyfed_repo_reverse_repo_operations",
+   "url": "https://www.newyorkfed.org/markets/desk-operations/reverse-repo",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "6180ea0b77c2d6fc10c53dbe24c482f156073a32d4e5fc9d3ffc48351a3defce",
+   "raw_bytes": 106574,
+   "extract": "nyfed_repo_reverse_repo_operations.txt",
+   "extract_sha256": "3373e481cd685652ec9af69f7d30069d9ad5b3c6e9b4f04127ede85df43dd77e"
+  },
+  {
+   "name": "ofr_short_term_funding_monitor",
+   "url": "https://www.financialresearch.gov/short-term-funding-monitor/",
+   "retrieved_at": "2026-10-10",
+   "raw_sha256": "e8ac7b5573261825076be822205eeb5258cd95010c1d2b49927ee1b4d0a6f182",
+   "raw_bytes": 38767,
+   "extract": "ofr_short_term_funding_monitor.txt",
+   "extract_sha256": "227b4edc67ad806841e56a11e9dac43cfdab842efa882e86e7a25dad44e91530"
+  }
+ ]
+}
