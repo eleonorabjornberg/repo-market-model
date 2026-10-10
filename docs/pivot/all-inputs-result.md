@@ -53,7 +53,7 @@ Table 1. The judge's row at +5 bp (tiers 1, 3 and 5; 90% stationary-bootstrap in
 
 * **Tier 1.** Both meet the recall criterion (recall at least 0.5 with the lower end above climatology's recall at the same false alarms)
   but not the false-alarm limit: 3.5 per onset against 2. `risk_gbm` meets tier 1 at 1.35. Tier 3 fails by calibration by regime for both
-  (the crying-wolf part, flags per year in the abundant regimes, is met: 0.2 and 0.5 at scarcity state 0). Tier 5 passes for both
+  (the crying-wolf part, flags per year in the abundant regimes, is met: 0.2 and 0.5 at scarcity state 0). Both pass tier 5
   (calibrated and ahead of climatology), which `risk_gbm` does not. The scarce regime alone fails for both.
 * **Paired against `risk_gbm`** (Brier score on the +5 bp outcome, positive favours the candidate; 90% interval, h = 1, all days):
   `all_inputs_logistic` -0.0103 [-0.0167, -0.0035], `all_inputs_gbm` -0.0073 [-0.0127, -0.0015]: both worse. Against persistence-logistic:
