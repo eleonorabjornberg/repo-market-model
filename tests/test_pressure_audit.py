@@ -14,11 +14,11 @@ answer.
   (`LookAheadError not raised`).
 * The training window of a block ends the business day before its first decision instant: the outcome of
   the decision day itself is published the next morning. Mutation 2: in `scripts/pressure_audit.py::training_end`,
-  replace `position[first_day] - horizon - 1` with `position[first_day] - horizon`; the failing test was
+  replace `last_known = position - horizon - 1` with `last_known = position - horizon`; the failing test was
   `test_training_ends_the_business_day_before_the_first_decision_instant`, which raised `AssertionError`
-  (`datetime.date(2024, 1, 4) != datetime.date(2024, 1, 3)`).
+  (`datetime.date(2024, 1, 12) != datetime.date(2024, 1, 11)`).
 * The settlement clause is a horizon-1 fact. Mutation 3: in `scripts/pressure_audit.py::clause_options`,
-  replace `horizon in declared["rule"]["clauses"]["settlement"]["horizons"]` with `True`; the failing test was
+  replace `horizon in settlement["horizons"]` with `True` (in the line `on = variant == "calendar_settlement" and ...`); the failing test was
   `test_settlement_is_a_clause_only_at_horizon_one`, which raised `AssertionError`
   (`[None, 300, 250, 200, 150, 100, 75] != [None]`).
 """
