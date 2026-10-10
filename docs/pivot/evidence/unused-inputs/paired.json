@@ -1,0 +1,8026 @@
+{
+ "declaration": {
+  "candidates": {
+   "risk_gbm_base_dealer": {
+    "group": "dealer",
+    "passer": "risk_gbm_base"
+   },
+   "risk_gbm_base_policy": {
+    "group": "policy",
+    "passer": "risk_gbm_base"
+   },
+   "risk_gbm_base_settle": {
+    "group": "settle",
+    "passer": "risk_gbm_base"
+   },
+   "risk_gbm_dealer": {
+    "group": "dealer",
+    "passer": "risk_gbm"
+   },
+   "risk_gbm_policy": {
+    "group": "policy",
+    "passer": "risk_gbm"
+   },
+   "risk_gbm_settle": {
+    "group": "settle",
+    "passer": "risk_gbm"
+   },
+   "risk_logistic_base_dealer": {
+    "group": "dealer",
+    "passer": "risk_logistic_base"
+   },
+   "risk_logistic_base_policy": {
+    "group": "policy",
+    "passer": "risk_logistic_base"
+   },
+   "risk_logistic_base_settle": {
+    "group": "settle",
+    "passer": "risk_logistic_base"
+   },
+   "risk_logistic_dealer": {
+    "group": "dealer",
+    "passer": "risk_logistic"
+   },
+   "risk_logistic_policy": {
+    "group": "policy",
+    "passer": "risk_logistic"
+   },
+   "risk_logistic_settle": {
+    "group": "settle",
+    "passer": "risk_logistic"
+   },
+   "risk_quantile_skewt_base_dealer": {
+    "group": "dealer",
+    "passer": "risk_quantile_skewt_base"
+   },
+   "risk_quantile_skewt_base_policy": {
+    "group": "policy",
+    "passer": "risk_quantile_skewt_base"
+   },
+   "risk_quantile_skewt_base_settle": {
+    "group": "settle",
+    "passer": "risk_quantile_skewt_base"
+   }
+  },
+  "columns_at_horizon": "every group column is read at every horizon; the passers' own rule that treasury_settlement and treasury_settlement_coupons leave the inputs at h >= 2 is unchanged",
+  "control": "each candidate's control is its own passer, scored by this script on the same scratch panel and fold grid, so a difference is the group's and nothing else",
+  "directive": "#477",
+  "groups": {
+   "dealer": {
+    "columns": [
+     "dealer_treasury_position",
+     "fed_repo_days_since_positive",
+     "fed_repo_log_accepted",
+     "fed_repo_log_accepted_change",
+     "fed_repo_ops",
+     "fed_repo_rate_iorb_bps",
+     "fed_repo_submitted"
+    ],
+    "label": "dealer and segment",
+    "left_out": {
+     "ofr_gcf_rate": "observed on 144 of 1935 rows, none before 2020-10-23",
+     "ofr_tri_rate": "observed on 1324 of 1935 scratch-panel rows, none before 2020-09-09 (OFR real-time start; earlier values were filled in after the fact and are not read)",
+     "why": "the direct pressure design refuses an unobserved input (ml._PressureDesign._value) and a missing-value indicator or zero-fill would be a new design choice. Leaving them in would drop every scored day before September 2020, which includes 2018 and 2020, the years this test is about. They stay unused, and the pull request flags the choice for Eleonora."
+    },
+    "source": "dealer_treasury_position: nyfed_fr2004, six business days after the as-of date (published panel column, weekly, staleness-guarded); fed_repo_*: nyfed_repo_ops, 16:00 ET on the next business day (#425), the conservative reading, not the same-day one"
+   },
+   "policy": {
+    "columns": [
+     "policy_days_since_known",
+     "policy_days_until_effective",
+     "policy_pending_count",
+     "policy_iorb_offset_bp",
+     "policy_qt_in_force",
+     "policy_standing_repo_in_force",
+     "policy_slr_exclusion_in_force",
+     "policy_reserve_management_in_force",
+     "policy_debt_limit_reinstated"
+    ],
+    "label": "policy",
+    "source": "policy_register (metadata/policy_features.json, #412): computed from entries announced at or before 16:00 ET on the row's own date, so read at every horizon"
+   },
+   "settle": {
+    "columns": [
+     "net_settlement",
+     "net_settlement_bills",
+     "net_settlement_due_5d"
+    ],
+    "label": "settlements-forward",
+    "source": "treasury_auction_net_settlement (metadata/net_settlement.json, #426): public at 12:00 ET on the row's own day (release_lag days 0), so read at every horizon"
+   }
+  },
+  "horizons": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "judge": "scripts/pressure_judge.py judge, tiers 1, 3 and 5 under the rule in force; flag cut-offs chosen by metadata/pressure_judge.json's cutoff_rule from each refit's training window alone; none is declared here",
+  "new_availability_guard": "none. No column is added to the panel or to the registries; each is read through the existing as-of rule at the lag its source declares, and the guards that govern those reads are already tested (tests/test_net_settlement.py, tests/test_policy_features.py, tests/test_fed_liquidity.py, tests/test_asof.py)",
+  "passers": "the five tier-1 passers of #428 (docs/pivot/risk-date-severity-result.md), as metadata/risk_date_severity.json declares them: risk_gbm, risk_gbm_base, risk_logistic, risk_logistic_base, risk_quantile_skewt_base. Their estimators, risk-date rule, inputs and the exact-zero forecast on other days are unchanged; only the declared group is added to the inputs.",
+  "published_declaration": "off. No candidate is named in confirmation.candidates; no figure on any published page moves.",
+  "scoring": {
+   "decision_time": "16:00",
+   "last_day": "2025-12-31",
+   "minimum_history": 61,
+   "refit_every": 21
+  },
+  "status": "declared by the pull request that closes #477 before any score was computed; nothing here is tuned on a scored day. Every input is already collected and already readable as-of; none is added to the panel, to metadata/sources.json or to contract.py, and none is on in any published declaration.",
+  "thresholds_bp": [
+   5,
+   10
+  ]
+ },
+ "not_scored": [
+  "risk_quantile_skewt_base_dealer"
+ ],
+ "onsets": {
+  "risk_gbm": {
+   "1": {
+    "false_alarms": 35,
+    "false_alarms_per_onset": 1.2962962962962963,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 28,
+    "false_alarms_per_onset": 1.0769230769230769,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 27,
+    "false_alarms_per_onset": 1.0384615384615385,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 23,
+    "false_alarms_per_onset": 0.8846153846153846,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 27,
+    "false_alarms_per_onset": 1.0384615384615385,
+    "flagged": 7,
+    "onsets": 26
+   }
+  },
+  "risk_gbm_base": {
+   "1": {
+    "false_alarms": 39,
+    "false_alarms_per_onset": 1.4444444444444444,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 25,
+    "false_alarms_per_onset": 0.9615384615384616,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 33,
+    "false_alarms_per_onset": 1.2692307692307692,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 28,
+    "false_alarms_per_onset": 1.0769230769230769,
+    "flagged": 7,
+    "onsets": 26
+   }
+  },
+  "risk_gbm_base_dealer": {
+   "1": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1481481481481481,
+    "flagged": 14,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 28,
+    "false_alarms_per_onset": 1.0769230769230769,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 27,
+    "false_alarms_per_onset": 1.0384615384615385,
+    "flagged": 9,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 28,
+    "false_alarms_per_onset": 1.0769230769230769,
+    "flagged": 6,
+    "onsets": 26
+   }
+  },
+  "risk_gbm_base_policy": {
+   "1": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1481481481481481,
+    "flagged": 14,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 21,
+    "false_alarms_per_onset": 0.8076923076923077,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 22,
+    "false_alarms_per_onset": 0.8461538461538461,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 27,
+    "false_alarms_per_onset": 1.0384615384615385,
+    "flagged": 7,
+    "onsets": 26
+   }
+  },
+  "risk_gbm_base_settle": {
+   "1": {
+    "false_alarms": 35,
+    "false_alarms_per_onset": 1.2962962962962963,
+    "flagged": 14,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 28,
+    "false_alarms_per_onset": 1.0769230769230769,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flagged": 8,
+    "onsets": 26
+   }
+  },
+  "risk_gbm_dealer": {
+   "1": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.0740740740740742,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 25,
+    "false_alarms_per_onset": 0.9615384615384616,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 22,
+    "false_alarms_per_onset": 0.8461538461538461,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 7,
+    "onsets": 26
+   }
+  },
+  "risk_gbm_policy": {
+   "1": {
+    "false_alarms": 28,
+    "false_alarms_per_onset": 1.037037037037037,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 24,
+    "false_alarms_per_onset": 0.9230769230769231,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 20,
+    "false_alarms_per_onset": 0.7692307692307693,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 7,
+    "onsets": 26
+   }
+  },
+  "risk_gbm_settle": {
+   "1": {
+    "false_alarms": 40,
+    "false_alarms_per_onset": 1.4814814814814814,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 25,
+    "false_alarms_per_onset": 0.9615384615384616,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 6,
+    "onsets": 26
+   }
+  },
+  "risk_logistic": {
+   "1": {
+    "false_alarms": 48,
+    "false_alarms_per_onset": 1.7777777777777777,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 40,
+    "false_alarms_per_onset": 1.5384615384615385,
+    "flagged": 9,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 37,
+    "false_alarms_per_onset": 1.4230769230769231,
+    "flagged": 8,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_base": {
+   "1": {
+    "false_alarms": 46,
+    "false_alarms_per_onset": 1.7037037037037037,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 6,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 6,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flagged": 8,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_base_dealer": {
+   "1": {
+    "false_alarms": 52,
+    "false_alarms_per_onset": 1.9259259259259258,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 39,
+    "false_alarms_per_onset": 1.5,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 43,
+    "false_alarms_per_onset": 1.6538461538461537,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 38,
+    "false_alarms_per_onset": 1.4615384615384615,
+    "flagged": 8,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_base_policy": {
+   "1": {
+    "false_alarms": 46,
+    "false_alarms_per_onset": 1.7037037037037037,
+    "flagged": 14,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 32,
+    "false_alarms_per_onset": 1.2307692307692308,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 34,
+    "false_alarms_per_onset": 1.3076923076923077,
+    "flagged": 8,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_base_settle": {
+   "1": {
+    "false_alarms": 50,
+    "false_alarms_per_onset": 1.8518518518518519,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 28,
+    "false_alarms_per_onset": 1.0769230769230769,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 33,
+    "false_alarms_per_onset": 1.2692307692307692,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 37,
+    "false_alarms_per_onset": 1.4230769230769231,
+    "flagged": 9,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_dealer": {
+   "1": {
+    "false_alarms": 52,
+    "false_alarms_per_onset": 1.9259259259259258,
+    "flagged": 12,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 37,
+    "false_alarms_per_onset": 1.4230769230769231,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 36,
+    "false_alarms_per_onset": 1.3846153846153846,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 35,
+    "false_alarms_per_onset": 1.3461538461538463,
+    "flagged": 6,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 46,
+    "false_alarms_per_onset": 1.7692307692307692,
+    "flagged": 9,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_policy": {
+   "1": {
+    "false_alarms": 47,
+    "false_alarms_per_onset": 1.7407407407407407,
+    "flagged": 12,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 36,
+    "false_alarms_per_onset": 1.3846153846153846,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 43,
+    "false_alarms_per_onset": 1.6538461538461537,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 36,
+    "false_alarms_per_onset": 1.3846153846153846,
+    "flagged": 8,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_settle": {
+   "1": {
+    "false_alarms": 47,
+    "false_alarms_per_onset": 1.7407407407407407,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 44,
+    "false_alarms_per_onset": 1.6923076923076923,
+    "flagged": 9,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 38,
+    "false_alarms_per_onset": 1.4615384615384615,
+    "flagged": 9,
+    "onsets": 26
+   }
+  },
+  "risk_quantile_skewt_base": {
+   "1": {
+    "false_alarms": 49,
+    "false_alarms_per_onset": 1.8148148148148149,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 43,
+    "false_alarms_per_onset": 1.6538461538461537,
+    "flagged": 9,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 39,
+    "false_alarms_per_onset": 1.5,
+    "flagged": 9,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 9,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 27,
+    "false_alarms_per_onset": 1.0384615384615385,
+    "flagged": 9,
+    "onsets": 26
+   }
+  },
+  "risk_quantile_skewt_base_policy": {
+   "1": {
+    "false_alarms": 51,
+    "false_alarms_per_onset": 1.8888888888888888,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flagged": 6,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 22,
+    "false_alarms_per_onset": 0.8461538461538461,
+    "flagged": 6,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 22,
+    "false_alarms_per_onset": 0.8461538461538461,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 27,
+    "false_alarms_per_onset": 1.0384615384615385,
+    "flagged": 6,
+    "onsets": 26
+   }
+  },
+  "risk_quantile_skewt_base_settle": {
+   "1": {
+    "false_alarms": 44,
+    "false_alarms_per_onset": 1.6296296296296295,
+    "flagged": 12,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 40,
+    "false_alarms_per_onset": 1.5384615384615385,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 27,
+    "false_alarms_per_onset": 1.0384615384615385,
+    "flagged": 8,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 43,
+    "false_alarms_per_onset": 1.6538461538461537,
+    "flagged": 9,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 35,
+    "false_alarms_per_onset": 1.3461538461538463,
+    "flagged": 8,
+    "onsets": 26
+   }
+  }
+ },
+ "paired": {
+  "risk_gbm_base_dealer": {
+   "control": "risk_gbm_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.00019126952100833369,
+      "high": 0.0022032882288570716,
+      "low": -0.0017347104398146784
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0024313384839235634,
+       "high": 0.012840313669758237,
+       "low": -0.007765958389874208
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0004233374904415338,
+       "high": 0.0018148939385007326,
+       "low": -0.0008033558227593843
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.017209806201490905,
+       "high": 0.03540110826230175,
+       "low": 0.000681580282302671
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.01369176347375193,
+       "high": 0.005218613664481054,
+       "low": -0.03582126236590839
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.003468674340407136,
+       "high": 0.009681412010380986,
+       "low": -0.0023324137501208567
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.002178812096512651,
+       "high": 0.0022354339929851327,
+       "low": -0.006365779225378277
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.3333877754593208e-06,
+       "high": 3.491562350818442e-06,
+       "low": -1.900538898766585e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0005242806775392824,
+       "high": 0.001572105758279495,
+       "low": -2.1916336806736834e-07
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.00211924004827412,
+       "high": 0.007571782786904003,
+       "low": -0.012457598053130686
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": -0.0007675106949988615,
+      "high": 0.00035132286218595544,
+      "low": -0.0021744397246368542
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0025988075906949095,
+       "high": 0.001789812360892102,
+       "low": -0.008809003241322845
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -9.768557670560372e-05,
+       "high": 0.00012259711507696378,
+       "low": -0.00039091905686496276
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.01839883368208303,
+       "high": -0.0002771919182699051,
+       "low": -0.03890157033642354
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.0038022909271017845,
+       "high": 0.012047699897506396,
+       "low": -0.021600248055347777
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0007646664668728369,
+       "high": 0.0016176300151506378,
+       "low": -4.267576011728657e-05
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0005312963797454559,
+       "high": 0.0004886678809797386,
+       "low": -0.001568475599936973
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.129855680477578e-06,
+       "high": 5.352680668201214e-06,
+       "low": -4.124989835151447e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.002032743391584267,
+       "high": 0.006346161292572174,
+       "low": -0.0004653287357506035
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.008430477382639615,
+       "high": -0.0017825069554607519,
+       "low": -0.016921379442263712
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": -0.0015653795430142514,
+      "high": -0.00010902594779421523,
+      "low": -0.003238187428128978
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.008161488785546534,
+       "high": 0.0007473365874867311,
+       "low": -0.01904000269498203
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": -0.0004970221828713947,
+       "high": 1.3574058930900784e-05,
+       "low": -0.0010813566864722487
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.05504747338244272,
+       "high": -0.003560621723835296,
+       "low": -0.10655433694604304
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.008348898104332265,
+       "high": 0.021768424341909155,
+       "low": -0.002386736666817177
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.00044118307320393255,
+       "high": 0.0016487050107889605,
+       "low": -0.0006605883112875355
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.003909182296993762,
+       "high": 0.001226955681024677,
+       "low": -0.011719926800939452
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 4.481780152425182e-06,
+       "high": 8.206415001607295e-06,
+       "low": 1.1939013273827286e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.002518969351764321,
+       "high": 5.243763131151331e-05,
+       "low": -0.0076170012445484275
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.005967034892980848,
+       "high": 0.0017980878466794796,
+       "low": -0.01508864522318474
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.0009980008737789543,
+      "high": 0.0018854064186005807,
+      "low": 0.0002659198581698216
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.009581529965287897,
+       "high": 0.019062663842423225,
+       "low": 0.0008786507948372314
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.00031907167550850106,
+       "high": 0.0006720725273754605,
+       "low": 3.3565750717710186e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.00826503983329031,
+       "high": 0.00991991601059916,
+       "low": -0.02781515151624252
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0018668492323939275,
+       "high": 0.005349932808746748,
+       "low": -0.0010216877595011571
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.0011243152610707812,
+       "high": 0.002487136127339045,
+       "low": 0.00010433136386141176
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0020971195285197333,
+       "high": 0.005042571346192958,
+       "low": -2.2456985533078025e-05
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.6138074268954312e-05,
+       "high": 3.988143866984458e-05,
+       "low": 1.0506574672196502e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.00023606110680770575,
+       "high": -8.423239617487526e-06,
+       "low": -0.0005890069046011317
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.003889892981279559,
+       "high": 0.009513577756518109,
+       "low": -0.0005172999865991716
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": -0.0008970481589502426,
+      "high": 1.6260073735828095e-05,
+      "low": -0.002311343771818116
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0038285953001425616,
+       "high": 6.764619293914536e-05,
+       "low": -0.009961498266031049
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": -0.0002839353759936881,
+       "high": 7.506713395049871e-05,
+       "low": -0.0009422656164330387
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.001267494136310023,
+       "high": 0.0028835914239629112,
+       "low": -0.005732981358171512
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.006853621217723795,
+       "high": -5.3549294945387624e-05,
+       "low": -0.01559574894445787
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": -2.1962302313108917e-05,
+       "high": 0.0003000875927331547,
+       "low": -0.0003231071607810603
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.00100679461049918,
+       "high": 0.0003690966215303216,
+       "low": -0.002397770229525856
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.0303568933501602e-05,
+       "high": 5.9433958466971784e-05,
+       "low": 8.489741191972394e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -3.4875038944472482e-06,
+       "high": 9.73668863261373e-05,
+       "low": -0.00010736679507732959
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0057731917320208576,
+       "high": 0.000854840470662325,
+       "low": -0.0159100893202072
+      }
+     }
+    }
+   }
+  },
+  "risk_gbm_base_policy": {
+   "control": "risk_gbm_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": -0.00043910436798109444,
+      "high": 0.0012517034186628417,
+      "low": -0.001987016962611658
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0052629883462256095,
+       "high": 0.0017000290970771582,
+       "low": -0.014514324091333254
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0001646296511644538,
+       "high": 0.000864765018642892,
+       "low": -0.00044932570437362636
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": -0.01927131435654685,
+       "high": -0.0010819498507031256,
+       "low": -0.03914473113215297
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0033765751117031976,
+       "high": 0.026072459908338914,
+       "low": -0.016099943222338296
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.002928711844177954,
+       "high": 0.010040608914663378,
+       "low": -0.0023950139362515738
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.003875176889013803,
+       "high": 0.0002586726033840502,
+       "low": -0.008427145164523451
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.626090906055642e-06,
+       "high": 3.145073407172743e-06,
+       "low": 4.397018630139425e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00029464613408527546,
+       "high": 0.0008818386669366829,
+       "low": -1.073995850080795e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.004108103908320907,
+       "high": 0.0006591642063555347,
+       "low": -0.009921528865841921
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": -0.0006602051549736437,
+      "high": 0.00013684568491747126,
+      "low": -0.001505288842349446
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.002686200251138626,
+       "high": -0.00013235747203323343,
+       "low": -0.00577128993517174
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -3.319891941092158e-05,
+       "high": 2.8312487358439887e-06,
+       "low": -8.6909090877215e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.0045973724464155085,
+       "high": 0.01511114885011297,
+       "low": -0.024508393669899677
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.00721162889024377,
+       "high": 5.10841354468882e-05,
+       "low": -0.015658483024664615
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.00024246122372581592,
+       "high": 0.0008597110196305622,
+       "low": -0.0003698166593735272
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0033021314882500344,
+       "high": -0.0008599150237886055,
+       "low": -0.006208550375034498
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.541421268876009e-07,
+       "high": 6.218594581318294e-07,
+       "low": -2.864525342195395e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.001789202968553622,
+       "high": 0.005352743912343588,
+       "low": 5.178538011403129e-08
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.003795845721617172,
+       "high": -0.00023779537691751213,
+       "low": -0.008383374818385683
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": -0.0005651200702663003,
+      "high": 0.0018194450948863887,
+      "low": -0.0026455718124243064
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.003959368229223958,
+       "high": 0.0006166260297072216,
+       "low": -0.010092112136358774
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 0.00030961436277166914,
+       "high": 0.001383266174013102,
+       "low": -0.0004954275332986488
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.062461651936398584,
+       "high": -0.0013029452394825245,
+       "low": -0.12372527864853754
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.010274302605023478,
+       "high": 0.03466203398791732,
+       "low": -0.007974328796853008
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.0005144730009793703,
+       "high": 0.0017260357921937473,
+       "low": -0.00044476012222925183
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.004254009021872309,
+       "high": -0.0007010415936787598,
+       "low": -0.010341833115297044
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.2476087998727952e-08,
+       "high": 4.920247898925522e-07,
+       "low": -4.679671776970948e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0031266039768329604,
+       "high": 0.00010523825624038846,
+       "low": -0.009479416013071309
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.002410250464862709,
+       "high": 0.018712982342169573,
+       "low": -0.011000694135931912
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.00019797772795158966,
+      "high": 0.0018993715580546515,
+      "low": -0.0011930621883656527
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.004492542165245982,
+       "high": 0.015114174470174681,
+       "low": -0.0025658636342931326
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.0005560816444789921,
+       "high": 0.0015934283883055165,
+       "low": -0.00013560437762639058
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.03496597332232034,
+       "high": 5.060640024113293e-05,
+       "low": -0.07084498013111178
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.00162888187256944,
+       "high": 0.003278595271208133,
+       "low": -0.006559045728118575
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": -0.0006330869547192594,
+       "high": 0.000146684532763961,
+       "low": -0.0016262800242546863
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0016597637912669186,
+       "high": -0.0003125325543214629,
+       "low": -0.0036479979468785986
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 7.294177262913934e-06,
+       "high": 1.736422609061152e-05,
+       "low": 8.266150798875154e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.000210593944917166,
+       "high": 2.440345966719542e-07,
+       "low": -0.0005235573839864349
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.004295260448472556,
+       "high": 0.0167325013558236,
+       "low": -0.0064086372912430046
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": -0.0012454127132015683,
+      "high": -0.000364977045969811,
+      "low": -0.0023257440053250436
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0010119608107912019,
+       "high": 0.0012820710551039532,
+       "low": -0.003733860395563132
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": -7.899006352674508e-05,
+       "high": 8.506723372865403e-05,
+       "low": -0.0003417036231804713
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.046222908244710564,
+       "high": -0.002797183922291328,
+       "low": -0.09115379711400864
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.00744731337495442,
+       "high": -4.354361242866066e-05,
+       "low": -0.016969823359738862
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": -0.002472432779752663,
+       "high": -0.0001804468375761181,
+       "low": -0.005021417512602069
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.00044968719369899157,
+       "high": 0.000522355901772465,
+       "low": -0.0015201556489070095
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.1807608663728279e-05,
+       "high": 2.757407090602269e-05,
+       "low": -1.1053204933670958e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.00027427299662272276,
+       "high": 0.00010490901763337148,
+       "low": -0.0009267018422676666
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.004971068900368816,
+       "high": -7.681548634365344e-05,
+       "low": -0.011527355135021086
+      }
+     }
+    }
+   }
+  },
+  "risk_gbm_base_settle": {
+   "control": "risk_gbm_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.00038984332335005985,
+      "high": 0.00184191460165433,
+      "low": -0.0010359945658438994
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.00038696775542906034,
+       "high": 0.004703890782355946,
+       "low": -0.00394794402321354
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0001796933923796074,
+       "high": 0.0010550880030943846,
+       "low": -0.000588605263210309
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.026703623314789045,
+       "high": 0.0565576960694475,
+       "low": 0.0017734110428965365
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.004985724150816501,
+       "high": 0.002523152285032489,
+       "low": -0.015280396991601306
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": -0.0005657286831966276,
+       "high": 0.001746057427739799,
+       "low": -0.0026715594845272412
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.001289821926426275,
+       "high": 0.005513062952746133,
+       "low": -0.0024041806390361683
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.163961380881489e-06,
+       "high": 3.390590561607714e-06,
+       "low": 1.123367826674217e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.002777052429690775,
+       "high": 0.008331469378424003,
+       "low": -7.484921490446996e-07
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0003104508162055874,
+       "high": 0.006716026395836694,
+       "low": -0.007954102463248288
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.0002842990042425201,
+      "high": 0.0012497027532763533,
+      "low": -0.0005621145715325835
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0010493839262173637,
+       "high": 0.005627427427423455,
+       "low": -0.00319950245172425
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -2.6453652007195537e-05,
+       "high": 0.00013510038451507113,
+       "low": -0.00020022077462836395
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.027637653797385944,
+       "high": 0.06453428834136563,
+       "low": -0.006147798836676933
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.004628362502748884,
+       "high": 0.0010816668215497785,
+       "low": -0.012166149265469139
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": -0.0003993851642012473,
+       "high": 0.0011256128667395259,
+       "low": -0.0018829923102348471
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0016535038885747036,
+       "high": 0.0031013043191801325,
+       "low": 0.0004550419571655024
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 4.2283467343878513e-07,
+       "high": 1.0208577389309104e-06,
+       "low": -1.2141355105663187e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0029017446062762162,
+       "high": 0.00870973068181918,
+       "low": -4.793614930156226e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.001844193255356518,
+       "high": 0.0016234896788270992,
+       "low": -0.005777656467505937
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0008144166294570498,
+      "high": 0.0025342407886619726,
+      "low": -0.000548525868293602
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.002009004357799951,
+       "high": 0.005898926615458076,
+       "low": -0.0008162900469498072
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 8.060608098551907e-05,
+       "high": 0.0004583518518830004,
+       "low": -0.00021951221476559604
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.006023476770547542,
+       "high": 0.012295096886550966,
+       "low": -0.027091418018659212
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.014314564285637887,
+       "high": 0.04263321177417754,
+       "low": -0.007743383809403673
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.0009277369506447606,
+       "high": 0.003960991356672381,
+       "low": -0.0015666718253162452
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.005535768133265483,
+       "high": 0.016686585545730066,
+       "low": -0.0020046627766570667
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.7000659007113127e-07,
+       "high": 6.842060693480106e-07,
+       "low": -1.012788739103502e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0006546295193817998,
+       "high": 0.0019160112787642964,
+       "low": 8.157985053988629e-07
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.001508471948196047,
+       "high": 0.0022822896951769666,
+       "low": -0.005824635906172008
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.0008204143407091129,
+      "high": 0.002154796419663357,
+      "low": -0.0003982603371322222
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0050730989266263215,
+       "high": 0.01074882661762226,
+       "low": -9.748666144889045e-06
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.00020928883439000386,
+       "high": 0.001090566751203405,
+       "low": -0.00047322808655575715
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.02491834967045199,
+       "high": 0.051606818448068734,
+       "low": 0.0005454510749527131
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.0034765386049422768,
+       "high": 0.004395968054258701,
+       "low": -0.012573112321287435
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": -2.8135676033480312e-05,
+       "high": 0.004156823627160556,
+       "low": -0.0034595166669940188
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0015963057012661724,
+       "high": 0.004497369928647074,
+       "low": -0.0010644003043620912
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 6.702387065187957e-07,
+       "high": 1.7235217111665571e-06,
+       "low": -1.3247912009431584e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.00019487727895334817,
+       "high": -4.653591733526723e-06,
+       "low": -0.0005516605741669484
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.004787897746098585,
+       "high": 0.012574225737834593,
+       "low": -0.0011538339316167177
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": -0.0018690938833134595,
+      "high": -0.0005061739910272745,
+      "low": -0.003622340485320495
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.008062672703948125,
+       "high": 4.9563407335513565e-05,
+       "low": -0.020687341101564106
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": -1.212873482972293e-05,
+       "high": 0.00020735348938033424,
+       "low": -0.000215350153760143
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.019318148618430325,
+       "high": 0.007587937563446192,
+       "low": -0.046886103134073036
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.018932417168990676,
+       "high": -0.0022380483658459697,
+       "low": -0.03848940241969798
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": -0.0016746407185622527,
+       "high": 0.0005106636716958761,
+       "low": -0.004090465519207222
+      },
+      "2020": {
+       "days": 251,
+       "difference": -4.649227682097153e-05,
+       "high": 0.001175338865780999,
+       "low": -0.001279005754389534
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -7.244035455123966e-07,
+       "high": 4.029334627473157e-06,
+       "low": -5.460676843904459e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 6.218381901592154e-05,
+       "high": 0.0001937069947843309,
+       "low": -6.822182426229692e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.011547708035125032,
+       "high": -0.0028703899476789714,
+       "low": -0.022778645929512387
+      }
+     }
+    }
+   }
+  },
+  "risk_gbm_dealer": {
+   "control": "risk_gbm",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.0007215711409520851,
+      "high": 0.0022059181474238542,
+      "low": -0.0006440501360607979
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.009751871059156193,
+       "high": 0.019759682157501495,
+       "low": 0.0016041531809193894
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0003192390046765464,
+       "high": 0.0015447598306320978,
+       "low": -0.0008591501862238674
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": -0.013081288663030743,
+       "high": 0.032942333059352215,
+       "low": -0.05896555231593651
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.002443798739468827,
+       "high": 0.0035658864872797308,
+       "low": -0.009002475249773004
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.003996238021916299,
+       "high": 0.009124226484260008,
+       "low": -0.0010233089345241685
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.00019418062520678057,
+       "high": 0.0009179607827177511,
+       "low": -0.001461562492369989
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -5.370701382037629e-06,
+       "high": 1.9176153445489348e-05,
+       "low": -3.7622202974769194e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0008141570851509294,
+       "high": 0.00018717534590222536,
+       "low": -0.0024421728355231917
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00043859189410859977,
+       "high": 0.007514896176711108,
+       "low": -0.00554157446060989
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": -0.0005849187045046332,
+      "high": 0.0001980442235014416,
+      "low": -0.0015077671148540667
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0007292332780875784,
+       "high": 0.002407150868943458,
+       "low": -0.0041221770741241325
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.00014695896647632902,
+       "high": 0.00029431562368454175,
+       "low": 2.3994709250860558e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.004887309970182838,
+       "high": 0.0034781075840637837,
+       "low": -0.013446574889168053
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.012073469070512433,
+       "high": 0.00018320509104849367,
+       "low": -0.0273221086154584
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0009073770077775651,
+       "high": 0.0019263284329795812,
+       "low": 0.00014954113305789757
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0031614928197778846,
+       "high": -0.0006791517023253816,
+       "low": -0.00626523938004487
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.5302520127402828e-05,
+       "high": 1.5796745293874946e-06,
+       "low": -4.7555765093292135e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.00019080158961738838,
+       "high": 0.00014744611212849724,
+       "low": -0.0007132681859186689
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0023359254438457384,
+       "high": 0.0023994278085971094,
+       "low": -0.008055383971717291
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0003343969328795765,
+      "high": 0.0008399274990339386,
+      "low": -0.00013177645687198255
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0005944789272437366,
+       "high": 0.0025633176927729205,
+       "low": -0.0009233989554095739
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 2.5519545723930483e-05,
+       "high": 0.00014070485653534443,
+       "low": -9.857146791237434e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.007966896947893314,
+       "high": 0.01970226013248615,
+       "low": -0.0036523610631581925
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.002883096647692033,
+       "high": 0.009554257307540472,
+       "low": -0.002945640606858452
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.00035466636164876005,
+       "high": 0.0011461776161076128,
+       "low": -0.000446871475125688
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0003081957984138532,
+       "high": 0.0016284622449448591,
+       "low": -0.0006860382423800928
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.527349234311699e-07,
+       "high": 5.682155591546284e-06,
+       "low": -4.9313295834929045e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0012634716374101494,
+       "high": 0.003779273881257191,
+       "low": 1.228702980759518e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0004011132853235301,
+       "high": 0.0029637493776571845,
+       "low": -0.001810025967510345
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.00031499638621695117,
+      "high": 0.0008022410010799155,
+      "low": -0.00011744878918977156
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0027128781723488615,
+       "high": 0.0067087722175168145,
+       "low": -0.00015911276226178051
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": -4.94963188791646e-05,
+       "high": 5.293090460056237e-05,
+       "low": -0.00018638408714063116
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.0012126146322526644,
+       "high": 0.011768971013142412,
+       "low": -0.008410864755357716
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.002527827909340802,
+       "high": 0.0068053010370134216,
+       "low": -0.0008311680159047562
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.001808790230929174,
+       "high": 0.003946046115715124,
+       "low": 0.00026457214153172284
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0009485965670949164,
+       "high": 0.0021397318907455183,
+       "low": -2.085904079648668e-05
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.2110665026549447e-06,
+       "high": 6.071002287344131e-07,
+       "low": -3.7941573122735177e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0003227933809614264,
+       "high": 1.2398693600258722e-06,
+       "low": -0.0009504831162127229
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0009651415222346835,
+       "high": 0.00010850841737248794,
+       "low": -0.0025796162525392255
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": -0.00015142537356020779,
+      "high": 0.00030025619013349374,
+      "low": -0.0006709623832599944
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0028754649770548987,
+       "high": 0.0019023740558453705,
+       "low": -0.009520031429690544
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": -1.8445775468183984e-05,
+       "high": 2.959103162951261e-05,
+       "low": -7.84703263812613e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.006631300256326117,
+       "high": 0.015204726700022023,
+       "low": -0.0017232798516563811
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.00023730386029755717,
+       "high": 0.00443694832973382,
+       "low": -0.005665836239612413
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.0003564503789825139,
+       "high": 0.0014064192057403864,
+       "low": -0.0003620041130144483
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0005361108437997005,
+       "high": 0.0011856979202350705,
+       "low": -0.0022776150234494765
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.2679222325121008e-05,
+       "high": 0.00011049456249591168,
+       "low": -5.679725830398255e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0003863751464654894,
+       "high": 0.001156474979691195,
+       "low": -6.638840878126772e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.001583337899230438,
+       "high": 0.00030961581892477674,
+       "low": -0.004731180949112586
+      }
+     }
+    }
+   }
+  },
+  "risk_gbm_policy": {
+   "control": "risk_gbm",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 3.6000108194128394e-05,
+      "high": 0.0013027216862893409,
+      "low": -0.0011274358435679874
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0033961708370736955,
+       "high": 0.011153031682286452,
+       "low": -0.0013089249863182377
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.00023730043670352636,
+       "high": 0.0010448155594163185,
+       "low": -0.00046707224108645464
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": -0.014912571136844258,
+       "high": 0.0051996455746731,
+       "low": -0.03595906086568127
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.004046070985472273,
+       "high": 0.0006702379217838954,
+       "low": -0.009930836897275348
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.0016988177590100324,
+       "high": 0.004351646267706581,
+       "low": -0.0005781033011492452
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0008812698335216455,
+       "high": -4.570895002674779e-05,
+       "low": -0.0021006636484667265
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.3697560927230868e-05,
+       "high": 4.559290916801543e-05,
+       "low": -7.120243869747667e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.00256596577640047,
+       "high": 9.928464137266145e-07,
+       "low": -0.007415729309389259
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0012181023731183112,
+       "high": 0.00901539335413289,
+       "low": -0.004419390422438666
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": -0.0003842943599516836,
+      "high": 0.0005598244900612722,
+      "low": -0.0012995571102250932
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.00016476552122888456,
+       "high": 0.003171023707391425,
+       "low": -0.003523316564942432
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 6.884616415418376e-05,
+       "high": 0.00025152143572303783,
+       "low": -4.498238744620483e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.029371028762961677,
+       "high": -0.0023352139781964176,
+       "low": -0.05679859970680092
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.000854901664095213,
+       "high": 0.008361690602894675,
+       "low": -0.006278467221638324
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0006869686737082954,
+       "high": 0.0015074091129044377,
+       "low": 0.0
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.00322652808979402,
+       "high": -0.0008321175407902324,
+       "low": -0.006212934813035668
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.0458470430420662e-06,
+       "high": 3.785085959632727e-05,
+       "low": -3.17508661614577e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0020806626626757732,
+       "high": 3.6849717092796886e-06,
+       "low": -0.0062454971013818725
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0014143317141469553,
+       "high": 0.006856285926715389,
+       "low": -0.003654436414068841
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0003492400489026574,
+      "high": 0.001341052428209943,
+      "low": -0.0004766795224735167
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0013650282862426107,
+       "high": 0.0068474962928267566,
+       "low": -0.0032909413332691843
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": -1.3604316336964177e-05,
+       "high": 0.00018912405245226368,
+       "low": -0.00020725949527709402
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.014647953369687945,
+       "high": 0.032662321280586465,
+       "low": -0.003135046370734727
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0003486449690074001,
+       "high": 0.003042036992400186,
+       "low": -0.0023322535236267373
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.0003672987347044305,
+       "high": 0.00156720459987569,
+       "low": -0.0006172236936670222
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0010990028532618216,
+       "high": -0.0002746982628168052,
+       "low": -0.002091017242058164
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -3.389471640475977e-06,
+       "high": -2.4153907533677856e-07,
+       "low": -7.86673517241141e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0027332213209529718,
+       "high": 0.006882507817303633,
+       "low": -1.4570694193054243e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00044781290831192715,
+       "high": 0.006194033252694217,
+       "low": -0.004133120532562342
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.00023150895206981335,
+      "high": 0.0009081342628244479,
+      "low": -0.0003364706789398388
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0020233988218475944,
+       "high": 0.004778258073697272,
+       "low": -0.00026206376664540036
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.0003247484546428818,
+       "high": 0.0008229833136043675,
+       "low": -4.20283599574928e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.012467546203093599,
+       "high": 0.000930305439669075,
+       "low": -0.026222062428506703
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.00018521317637116728,
+       "high": 0.0010621884239519588,
+       "low": -0.0014883124972289363
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.0005788642491043132,
+       "high": 0.0017379061549904883,
+       "low": -0.00035167056001346155
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.00043035694988945443,
+       "high": -0.00015774793984508117,
+       "low": -0.0007893993607543204
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.0734463420251168e-06,
+       "high": 1.2324616661230863e-06,
+       "low": -4.113247144344882e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.001480195463123106,
+       "high": 2.103386833189419e-05,
+       "low": -0.004461573886145385
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0027970105934562693,
+       "high": 0.0069589695023114136,
+       "low": 7.905413488065866e-05
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": -0.0003152529422938191,
+      "high": 0.00017209459681268502,
+      "low": -0.0008119754881940863
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0009062644585644549,
+       "high": 0.0039333684996449595,
+       "low": -0.0016203858851578429
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": -1.3483682232755057e-05,
+       "high": 9.09472520461735e-05,
+       "low": -0.00015505213617623447
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.0018213170451083594,
+       "high": 0.006387566611004506,
+       "low": -0.00272246174936386
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.008519247614748982,
+       "high": -0.0012484605654012892,
+       "low": -0.01746292955851276
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": -0.0017341849764711088,
+       "high": -0.0002794879225245767,
+       "low": -0.003467979828931936
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0005075061346253644,
+       "high": 0.0027426939281816943,
+       "low": -0.0014174592168164414
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.297156079463583e-05,
+       "high": 8.759727953271602e-05,
+       "low": -7.132122107564587e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00017930891878207637,
+       "high": 0.0005201315450219777,
+       "low": -3.6583546882652377e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0005730888346877126,
+       "high": 0.00011898526766740151,
+       "low": -0.001448040389175705
+      }
+     }
+    }
+   }
+  },
+  "risk_gbm_settle": {
+   "control": "risk_gbm",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.0007473506056379743,
+      "high": 0.0017885656473700777,
+      "low": -0.00024953835487974706
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.000173074323580346,
+       "high": 0.0021310046465910417,
+       "low": -0.0016628634125886615
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.00015731113927579197,
+       "high": 0.0006412965193588562,
+       "low": -0.00029396799968123223
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.028950198729712117,
+       "high": 0.056507463031989946,
+       "low": 0.0031053091785578396
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.002519108078007913,
+       "high": 0.009005713735001423,
+       "low": -0.003478478783439823
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": -8.771749798224556e-06,
+       "high": 0.0028949019335208445,
+       "low": -0.0025886299864331416
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0023368691050227913,
+       "high": 0.00447768461443461,
+       "low": 0.0005668473146802568
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.00018608058605564724,
+       "high": 0.0005147141578308976,
+       "low": 2.460847108310385e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.002465061461135741,
+       "high": 0.00733285321892228,
+       "low": -4.521189215148941e-07
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00024525823903606524,
+       "high": 0.0035477290505097933,
+       "low": -0.0035796205410923102
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 4.680243302727486e-05,
+      "high": 0.0010941576277983625,
+      "low": -0.0008988453686076575
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0035314546616888286,
+       "high": 0.009388160082117618,
+       "low": -0.0004883668724213667
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.00036813455023414833,
+       "high": 0.0009161855964386275,
+       "low": -8.613090838589879e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.003332413375846753,
+       "high": 0.0012367040854227016,
+       "low": -0.008267568848392913
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.010474734015462953,
+       "high": -1.7552870428626316e-05,
+       "low": -0.02386149273830319
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0024354681632302866,
+       "high": 0.006190354316669356,
+       "low": -5.0721612531153584e-05
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0018107762991390335,
+       "high": -0.0002805852036778298,
+       "low": -0.0038793926043435246
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -8.573446209083179e-06,
+       "high": 1.515590892865906e-05,
+       "low": -4.0670868043995484e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": 7.312535029054288e-07,
+       "high": 3.9139821023055805e-06,
+       "low": -2.6161401858701428e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0014558874013996114,
+       "high": 0.0032479196119494986,
+       "low": -0.006403035452714573
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 2.2832374687344107e-05,
+      "high": 0.0009667653255539705,
+      "low": -0.0008960415615626172
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.001172559174922269,
+       "high": 0.0025642884658179364,
+       "low": -0.005444193414659889
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": -0.00010277229536868354,
+       "high": 3.1202512945866104e-05,
+       "low": -0.000291253825500708
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.007552245115034221,
+       "high": 0.0282919018347406,
+       "low": -0.01264055986131978
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0017604170000894987,
+       "high": 0.009139780736054879,
+       "low": -0.005154045515093332
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.0008647514626099759,
+       "high": 0.0039318306486168025,
+       "low": -0.0016506294030424096
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.00022103365448703592,
+       "high": 0.001022019320867586,
+       "low": -0.0005046912637387199
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -3.267509743693299e-06,
+       "high": 2.0882041854809373e-07,
+       "low": -8.136173050987493e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0020999857780259175,
+       "high": 0.006350462524143949,
+       "low": -4.796301032433559e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.003445239827341138,
+       "high": -0.00032599835789385364,
+       "low": -0.007614741750215927
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.00029342108815951754,
+      "high": 0.0011915518375881847,
+      "low": -0.0005919398842242331
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.004842874949658786,
+       "high": 0.010093164391259155,
+       "low": 9.10815224688419e-05
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": -4.9307302824864875e-05,
+       "high": 0.00048190025772019203,
+       "low": -0.0005794376924113707
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.009351635614059557,
+       "high": 0.018687633660853666,
+       "low": 0.0013712152405919763
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.004262268361682003,
+       "high": 0.0009254686877211501,
+       "low": -0.011516925734772022
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": -0.0009318256234402597,
+       "high": 0.002956106261629976,
+       "low": -0.004611029250096615
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0004333900882896378,
+       "high": 0.00068557943241867,
+       "low": 0.00021606079724582775
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.988508847778018e-06,
+       "high": 4.467541560893352e-07,
+       "low": -5.696994654073573e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.000434753028207037,
+       "high": 0.0013187189900701988,
+       "low": -1.5080560247424419e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0027283325388905793,
+       "high": 0.006261825488008408,
+       "low": -0.0003205407278075265
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": -0.0004004369124426301,
+      "high": 0.0005261518721707039,
+      "low": -0.001387099300798006
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.00040516157266639853,
+       "high": 0.007031700664784063,
+       "low": -0.006254210612948128
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": -5.0575638203203456e-05,
+       "high": 0.00026841110837614647,
+       "low": -0.0003794203555198718
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.0006645043519527919,
+       "high": 0.012609025038075171,
+       "low": -0.014271736646301754
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.007958816556983439,
+       "high": -0.00010683063174372029,
+       "low": -0.017534729768766372
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": -0.002192927004539531,
+       "high": 0.00032946290412814826,
+       "low": -0.0047687605423649545
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0029087568687371427,
+       "high": 0.005959433451956476,
+       "low": 0.0002109771105053839
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.0003727830063160997,
+       "high": 0.0011104144486875252,
+       "low": -4.3914252579837005e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00047083476012386375,
+       "high": 0.001383702682908159,
+       "low": -4.269273105177284e-08
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.00426300812642386,
+       "high": -0.00020714405608296705,
+       "low": -0.009241212464456264
+      }
+     }
+    }
+   }
+  },
+  "risk_logistic_base_dealer": {
+   "control": "risk_logistic_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.002705709049680798,
+      "high": 0.00549676155740078,
+      "low": 9.566281821358756e-05
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.014245558521689159,
+       "high": 0.03482856904525728,
+       "low": -0.0016279879677910689
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.00013265083794985975,
+       "high": 0.0017962687567053587,
+       "low": -0.0015156288127876605
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.011965828820436515,
+       "high": 0.038733937292858206,
+       "low": -0.01474490108134642
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.02637504814754613,
+       "high": 0.06187916847338193,
+       "low": -1.7998602483515355e-06
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.004100063810038993,
+       "high": 0.014176429303279042,
+       "low": -0.004933783564391714
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.012778443360578672,
+       "high": 0.024917578140636984,
+       "low": 0.002856086927670219
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -3.863493617345591e-07,
+       "high": 1.004171725497518e-07,
+       "low": -1.00493051629061e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0006179671767953967,
+       "high": 4.1110173311933026e-05,
+       "low": -0.0018773913611995023
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0019183157482076092,
+       "high": 0.009445134017978078,
+       "low": -0.0056347695437043155
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.0027115340375849215,
+      "high": 0.00494054840760356,
+      "low": 0.0007388162028234772
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.02182518474375473,
+       "high": 0.04019881850259006,
+       "low": 0.005723600637348097
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 9.425084621194386e-05,
+       "high": 0.0006542719479759171,
+       "low": -0.0005113888766689128
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.048681841144413325,
+       "high": 0.09674509935749052,
+       "low": 0.0015730706152121171
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0021424119773665873,
+       "high": 0.015509988009703744,
+       "low": -0.009974027207240688
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.006087846006777926,
+       "high": 0.011491810937818146,
+       "low": 0.0012511588288158478
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.010429222675104564,
+       "high": 0.022309539703103107,
+       "low": -0.0002685351663549641
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.1685863343061056e-05,
+       "high": 6.616737731267528e-05,
+       "low": 4.963263568197919e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -9.20907509637141e-05,
+       "high": 0.00021034705248057704,
+       "low": -0.00044384887491301763
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0007257995274422016,
+       "high": 0.00762243614511948,
+       "low": -0.0055322650001246605
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.000806214951059674,
+      "high": 0.0019810362593278103,
+      "low": -0.0003450910683888947
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.007765863253181754,
+       "high": 0.01774340064905645,
+       "low": -0.00030068389110288006
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 0.00026160061438877923,
+       "high": 0.0006513875305307889,
+       "low": -8.370091719455724e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.02719084216567152,
+       "high": -0.005200331127649954,
+       "low": -0.05144249755284348
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.008316738945783221,
+       "high": 0.020905894588737376,
+       "low": -0.0016240310891066033
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.0038740666823675555,
+       "high": 0.008080945048346947,
+       "low": -0.00013416537332349018
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0013006808872006326,
+       "high": 0.004202566508904287,
+       "low": -0.0007859679809898389
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.2616999685931884e-06,
+       "high": 4.991539467840953e-06,
+       "low": 3.208592577130725e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0010711155572234899,
+       "high": 0.00035469027661256424,
+       "low": -0.003573328358613008
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 1.2118618279345276e-05,
+       "high": 0.005148546627432102,
+       "low": -0.0048724705136277266
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.0013016086950123973,
+      "high": 0.003165768751916409,
+      "low": -0.00038612589616908113
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.009324545411124175,
+       "high": 0.02441586029453957,
+       "low": -0.003073722378093809
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.00019063732744534784,
+       "high": 0.0007551776377329182,
+       "low": -0.0002446638957304665
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.009388008335628646,
+       "high": 0.03250484053937994,
+       "low": -0.01219170415820728
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.005039054344895445,
+       "high": 0.03252528638790923,
+       "low": -0.017319247209518284
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.005605593447642287,
+       "high": 0.012924129132092791,
+       "low": -0.0010876077021336914
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0017675629792769053,
+       "high": -0.00037075969444355807,
+       "low": -0.0037823682443096328
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.0005019871605282889,
+       "high": 0.0015026248133392871,
+       "low": 9.799062434100108e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.000397767327607769,
+       "high": 0.00025009772790481245,
+       "low": -0.0013813660696926616
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0020736596015081816,
+       "high": 0.010204090789768592,
+       "low": -0.004553259546862852
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 0.0013965681530332256,
+      "high": 0.00326769451192346,
+      "low": -0.00015441868205441726
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.006286477029592474,
+       "high": 0.017307825810504954,
+       "low": -0.0017338008724817177
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 0.00019397634641513673,
+       "high": 0.0007628271810968682,
+       "low": -0.0003277129213222396
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.012727792640134803,
+       "high": 0.026854327708025535,
+       "low": -0.000590306203575387
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.010955262810246773,
+       "high": 0.03587459758946335,
+       "low": -0.008916288449149727
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.008110683909411524,
+       "high": 0.016882607909510974,
+       "low": 0.0010457620041009524
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0013649981730501008,
+       "high": -0.00021057596202922628,
+       "low": -0.002621808797966357
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 4.628817927423511e-07,
+       "high": 1.548490787879929e-06,
+       "low": -3.655831886389421e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0004097760868562322,
+       "high": -1.0462255554279156e-06,
+       "low": -0.0011381255272784364
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00018407419757462924,
+       "high": 0.004185390746966789,
+       "low": -0.004223085743962472
+      }
+     }
+    }
+   }
+  },
+  "risk_logistic_base_policy": {
+   "control": "risk_logistic_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.000992972953106717,
+      "high": 0.003900788226544733,
+      "low": -0.0013912954834504026
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.007186738241024224,
+       "high": 0.020569098918858966,
+       "low": -0.004245798865654912
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.001051550360113079,
+       "high": 0.0030450734829325582,
+       "low": -0.0007361484970404808
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": -0.01435967569573531,
+       "high": 0.030559905364277475,
+       "low": -0.059193988230302766
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.005153457030092353,
+       "high": 5.197823220061061e-05,
+       "low": -0.011619140683899808
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.008563937970867502,
+       "high": 0.020860993191183088,
+       "low": -0.0008941430851133598
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.004966758473785133,
+       "high": 0.0003530435285338092,
+       "low": -0.010548332532301282
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 4.122298642955837e-06,
+       "high": 8.631203923561455e-06,
+       "low": 5.223145489377446e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0009608576013851982,
+       "high": 2.0914027589617382e-05,
+       "low": -0.002855598150562439
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0005307184737952071,
+       "high": 0.007957433042756763,
+       "low": -0.006626577560507292
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": -0.00095382697347319,
+      "high": 0.0007131185957115605,
+      "low": -0.0030539055188277013
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0007121116055454154,
+       "high": 0.010238508492389995,
+       "low": -0.007919726196937187
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -0.00010513780498260445,
+       "high": 0.0004690457660622357,
+       "low": -0.0007385775750747866
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.00825093201392863,
+       "high": 0.003858077773877967,
+       "low": -0.02124605095624475
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.016587831161445535,
+       "high": 0.005579226558435878,
+       "low": -0.046235229952135505
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.002246279014551252,
+       "high": 0.007099900998453892,
+       "low": -0.0024882570033566195
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.00851948238002478,
+       "high": -0.0007992636952133205,
+       "low": -0.02102752976300096
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.501096532292521e-06,
+       "high": 2.674764881433213e-06,
+       "low": 5.049273177644309e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -2.8010048396799854e-05,
+       "high": 9.306435931104526e-05,
+       "low": -0.00018659860257150084
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.001933344082348258,
+       "high": 0.0008556235005975071,
+       "low": -0.0052105652470033305
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": -0.0030208070451477405,
+      "high": -0.00030419359635064694,
+      "low": -0.006574184028998602
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.013671996842830835,
+       "high": 0.001862224186125169,
+       "low": -0.033714367577107725
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": -0.0007415568753886775,
+       "high": 0.0001299843577938328,
+       "low": -0.001770089511764432
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.029593092027552594,
+       "high": -0.005885206460358978,
+       "low": -0.05523853026219053
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.01713891662750064,
+       "high": 0.011585014827750458,
+       "low": -0.053021225315880875
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.0008592326264155289,
+       "high": 0.004958201431514361,
+       "low": -0.0032459879004356333
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.017846033404693463,
+       "high": -0.0013988509362791817,
+       "low": -0.04233865418981599
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 2.4344349583117425e-07,
+       "high": 6.188493526050701e-07,
+       "low": -8.758067884078746e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0018335782927101888,
+       "high": 0.00036435635258191953,
+       "low": -0.005782665427214452
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.004156051763468613,
+       "high": 0.0012508691296334734,
+       "low": -0.010884188923632824
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": -0.0004648025833514833,
+      "high": 0.001022647778255038,
+      "low": -0.001886091002965588
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.002254259038763799,
+       "high": 0.00954394260476586,
+       "low": -0.014613962808188476
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 3.823376445203091e-05,
+       "high": 0.0006610545988472703,
+       "low": -0.000488530001666345
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.02905697042102147,
+       "high": -0.00929288291762776,
+       "low": -0.0506294677210996
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0031399424796656047,
+       "high": 0.023438188263732482,
+       "low": -0.015001267074383312
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.002887811344675395,
+       "high": 0.007760192834004884,
+       "low": -0.001434178057692423
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0052077416629892495,
+       "high": -0.0013840175316627587,
+       "low": -0.009647555471325394
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.2146472782303978e-06,
+       "high": 3.063994204932605e-06,
+       "low": -9.567051479293508e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0005743716631884095,
+       "high": 0.0003709744548349484,
+       "low": -0.001980796090146017
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.001982406160816199,
+       "high": 0.00451920217081402,
+       "low": -0.007827830883479799
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 2.272104256894571e-05,
+      "high": 0.0016770727054157325,
+      "low": -0.001418236419482995
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0005881064564095769,
+       "high": 0.008910653695836894,
+       "low": -0.010254142121486261
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 0.0001755941941697545,
+       "high": 0.0011285482932618205,
+       "low": -0.0006594617582879
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.01409247375332684,
+       "high": -0.0034696259247752274,
+       "low": -0.025541528570968527
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.003061855044393188,
+       "high": 0.024301137259531362,
+       "low": -0.013627855541816426
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.0029827296370904172,
+       "high": 0.010012382958122646,
+       "low": -0.002431205914915787
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.002428476171435859,
+       "high": -0.0009300436963622848,
+       "low": -0.004290458406541391
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 7.154771479991707e-06,
+       "high": 1.5764290847156475e-05,
+       "low": 4.89979325051925e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0008102931036907815,
+       "high": 3.8821321100027894e-05,
+       "low": -0.002444929774386196
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0010335664293699702,
+       "high": 0.006165077151001375,
+       "low": -0.007722675345119
+      }
+     }
+    }
+   }
+  },
+  "risk_logistic_base_settle": {
+   "control": "risk_logistic_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 4.073919196435784e-05,
+      "high": 0.0007423033201931309,
+      "low": -0.000688189009236519
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0005312323653128282,
+       "high": 0.002514988281258636,
+       "low": -0.004493109747879411
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -0.00041589176970176564,
+       "high": 0.00011382872528500547,
+       "low": -0.0010877888558428817
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.016330765483714503,
+       "high": 0.029150343313023127,
+       "low": 0.00452972089595193
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0035551700919432285,
+       "high": 0.008966974382481589,
+       "low": -0.0004270523537767513
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": -0.0015579571553673557,
+       "high": 0.001327790594725314,
+       "low": -0.004664298508682025
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0014426873455403192,
+       "high": 0.0038821301304444926,
+       "low": -0.0005322591966211648
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.0934495973340189e-08,
+       "high": 1.3118596127134138e-07,
+       "low": -8.89748382653871e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00034506337188408223,
+       "high": 0.0010528232497568945,
+       "low": -2.613247654526741e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0008520076068569162,
+       "high": 0.0018355605664686853,
+       "low": -5.691835545250284e-06
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.0004895663130168383,
+      "high": 0.0011574968696606081,
+      "low": -0.0001613428732395274
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.002431323435848182,
+       "high": 0.006591093737665792,
+       "low": -0.0013509744515059422
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 6.590604870956178e-05,
+       "high": 0.00031063151415399316,
+       "low": -0.0001846960652394425
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.005419080500058473,
+       "high": 0.016287505880090394,
+       "low": -0.004587867932484595
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0031859529382821635,
+       "high": 0.013795495024723482,
+       "low": -0.004832121785234276
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0007811394891967596,
+       "high": 0.003578980514187565,
+       "low": -0.0021047329538388263
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.000806796698050837,
+       "high": 0.0029168558866463318,
+       "low": -0.0008311581422809205
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.869436559683903e-08,
+       "high": 1.9784890418606702e-07,
+       "low": -7.372041626881702e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00048402535576597914,
+       "high": 0.001486242313889425,
+       "low": -3.36378289178422e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0012079546806032613,
+       "high": 0.002789973547575489,
+       "low": -4.298010918843456e-05
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0006737018698266687,
+      "high": 0.0016196093319084555,
+      "low": -0.00010842945121085773
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0012017884266287775,
+       "high": 0.0017444445475103979,
+       "low": -0.004512925494907092
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 0.00010625346893716808,
+       "high": 0.0004167983354404855,
+       "low": -0.00018949598584610248
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.004319866927597901,
+       "high": 0.008606379858358916,
+       "low": 0.0002007403453453592
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.012819667386232959,
+       "high": 0.029894799103286556,
+       "low": 6.6317828338605885e-06
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.00032358021062146766,
+       "high": 0.0026329020682248007,
+       "low": -0.0019174478068045976
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.004449508631067237,
+       "high": 0.010929276003227075,
+       "low": 0.00042443504551694706
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.595854722517469e-07,
+       "high": -4.6868648665000784e-08,
+       "low": -2.9896169263604e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00023686509430913353,
+       "high": 0.0006844752969334955,
+       "low": -5.359730320104427e-07
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0001450714464177786,
+       "high": 0.0002725210687707523,
+       "low": -0.0007211271173419055
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.001429632669041409,
+      "high": 0.003110056021304237,
+      "low": 6.611607679601848e-05
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.002860688290402064,
+       "high": 0.0037228892593316647,
+       "low": -0.010987566111399937
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.00038135059262993685,
+       "high": 0.0012171053800724878,
+       "low": -0.0001552610781525979
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.003106338742623924,
+       "high": 0.003349970212163639,
+       "low": -0.010113172952817634
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.029046788743212742,
+       "high": 0.06283278741621573,
+       "low": 0.0004638399974823181
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.004242697962854405,
+       "high": 0.011645039300897097,
+       "low": -0.0012320587030867241
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.004071831964433871,
+       "high": 0.009765770791855526,
+       "low": 0.00019706925476563523
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.8387183040796467e-07,
+       "high": -4.251108937673916e-08,
+       "low": -3.602888355387881e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 7.508065768310827e-05,
+       "high": 0.00019559397358007792,
+       "low": -1.759149116012257e-07
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00021874296209262536,
+       "high": 0.0009808467944576065,
+       "low": -0.0004558018102207633
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 0.002326334496061317,
+      "high": 0.004844178465224888,
+      "low": 0.0002855546916362172
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.007728483917253017,
+       "high": 0.019283318373181046,
+       "low": -0.0007785828607462492
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 7.25118215650904e-05,
+       "high": 0.0005969679838567893,
+       "low": -0.00033770017811834605
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.003735521568855206,
+       "high": 0.011979871707531863,
+       "low": -0.019485672645014374
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.03578307099002423,
+       "high": 0.08293306871017891,
+       "low": 0.0016031661648427346
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.010438251631164555,
+       "high": 0.023552416445530844,
+       "low": 0.0008778195660949762
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0017019626920461543,
+       "high": 0.0036631998053152292,
+       "low": 0.00011861247525694572
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 4.804907509473099e-07,
+       "high": 9.744521631716702e-07,
+       "low": 6.226127464234768e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": 3.135822200924823e-05,
+       "high": 9.70685517018558e-05,
+       "low": -3.963633575887625e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00016038642445357954,
+       "high": 0.0017260309576650856,
+       "low": -0.0016508630161290946
+      }
+     }
+    }
+   }
+  },
+  "risk_logistic_dealer": {
+   "control": "risk_logistic",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.0035145794909449005,
+      "high": 0.007001856440884481,
+      "low": 0.00041534454394127744
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.015513211745176288,
+       "high": 0.0376176423385631,
+       "low": -0.0014969085587225074
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 1.4416684678321604e-05,
+       "high": 0.0018376962115546893,
+       "low": -0.0018712585381152154
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.03192597197049159,
+       "high": 0.059995432484750255,
+       "low": 0.004556322112216732
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.03643832076560408,
+       "high": 0.08335670750917279,
+       "low": 0.002252068240178457
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.003109606590754435,
+       "high": 0.013381182070448165,
+       "low": -0.0058304407539088296
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.016501753351308896,
+       "high": 0.036280988508800946,
+       "low": 0.0013826358297237631
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.358348989925359e-05,
+       "high": 9.01555522027173e-05,
+       "low": 1.24833561545667e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -5.601022968676144e-05,
+       "high": 0.00010165975969973618,
+       "low": -0.0003032368644225487
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00507488727231084,
+       "high": 0.012721680907088334,
+       "low": -0.002407682107810769
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.003227071163591056,
+      "high": 0.006053015254568704,
+      "low": 0.0006933270975502984
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.022245133183352236,
+       "high": 0.04390099588718743,
+       "low": 0.0047008146310413505
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0003179922997307704,
+       "high": 0.001184357009226334,
+       "low": -0.00047947972904706707
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.04260782186698881,
+       "high": 0.07563470273344172,
+       "low": 0.011119531774481167
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.010295853126534105,
+       "high": 0.03319097023723127,
+       "low": -0.010643912333550413
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0042615799291509425,
+       "high": 0.00918771026471616,
+       "low": -2.698373745818746e-06
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.017082229124533235,
+       "high": 0.03514994800904005,
+       "low": 0.0012358177525502718
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.0003203253322502745,
+       "high": 0.0007073199611176767,
+       "low": 3.098758000309059e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00017517344617007746,
+       "high": 0.0006796752115773517,
+       "low": -0.0002639800167501305
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0004971481750343684,
+       "high": 0.006329505639562159,
+       "low": -0.007430262879662446
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0010608760551719288,
+      "high": 0.0022073130423178235,
+      "low": 2.72687684375767e-05
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.007224183644829526,
+       "high": 0.01685864496437091,
+       "low": -5.100071798852357e-06
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 0.00027204390386540903,
+       "high": 0.0006136027051103242,
+       "low": -8.379949013284149e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.004572657611809342,
+       "high": 0.01872780893172237,
+       "low": -0.010216343093357876
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0036885111253436246,
+       "high": 0.015062137045687853,
+       "low": -0.005664665600414813
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.004088782127470479,
+       "high": 0.0083852823813089,
+       "low": 0.00011367237480364883
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0016800807260697378,
+       "high": 0.004057315376743433,
+       "low": -0.00016111796941915293
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.234127993151434e-05,
+       "high": 3.3172322290578096e-05,
+       "low": 6.792828975394382e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00032040218348613526,
+       "high": 0.0008929568462021483,
+       "low": -0.00014206969180382935
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0002058181519020975,
+       "high": 0.004337960085244414,
+       "low": -0.004386753981370861
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.0018531710550023263,
+      "high": 0.00367746959766179,
+      "low": 0.0003335287987913659
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.006078724524929436,
+       "high": 0.013607319743563329,
+       "low": 0.00016607344770458137
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.0004302433233138629,
+       "high": 0.0010589960741038153,
+       "low": -6.21212445504142e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.06165884507589756,
+       "high": 0.11136332894656369,
+       "low": 0.013175327140825688
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0001689469799158869,
+       "high": 0.015219317823099697,
+       "low": -0.015125424622618032
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.003249619077178989,
+       "high": 0.008767689076233839,
+       "low": -0.002249885608161416
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.00228071116740837,
+       "high": 0.006309991906959842,
+       "low": -0.00045160622578475755
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.001311741653996127,
+       "high": 0.003930196550518712,
+       "low": 6.339473092050474e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0002727080058236608,
+       "high": 0.000978606939418753,
+       "low": -0.0003254982749417703
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0025492100983102303,
+       "high": 0.008025036717756574,
+       "low": -0.0018406038171277915
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 0.0021362744522762205,
+      "high": 0.003964498015217129,
+      "low": 0.0005413184800337289
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.008298653168776735,
+       "high": 0.019678498498721286,
+       "low": 8.281030914589248e-05
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 0.0005105130109658302,
+       "high": 0.0012066007277110233,
+       "low": -4.537737348878892e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.03864950477627704,
+       "high": 0.0693769482743177,
+       "low": 0.009577766402900702
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.008669584439933738,
+       "high": 0.028435540219654602,
+       "low": -0.0073832137566353555
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.008351339812776038,
+       "high": 0.017144588854242936,
+       "low": 0.0012425010198108721
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0009435737792542656,
+       "high": 0.0037995573911058203,
+       "low": -0.0011304072367525832
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.5990346581524154e-06,
+       "high": 7.409317106695382e-06,
+       "low": 1.0537721331910578e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0007096089041687412,
+       "high": -4.599955642027802e-06,
+       "low": -0.0020413208079476425
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.003342261085499646,
+       "high": 0.007611208341435999,
+       "low": -0.00041443250238678653
+      }
+     }
+    }
+   }
+  },
+  "risk_logistic_policy": {
+   "control": "risk_logistic",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.0005112565984462671,
+      "high": 0.0030891214640262777,
+      "low": -0.0016026284227924526
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.00495331351343771,
+       "high": 0.0186039203789216,
+       "low": -0.0075553620362241065
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0003381504756252888,
+       "high": 0.0019530972021944092,
+       "low": -0.0011596596822529338
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.006753857769990145,
+       "high": 0.028849887285589498,
+       "low": -0.013226147356505954
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.006031890128346444,
+       "high": 0.00037015377548676434,
+       "low": -0.01529898865347762
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.006170393606921952,
+       "high": 0.017146030737503887,
+       "low": -0.0022272152092479985
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0034191568196531995,
+       "high": 0.0001560090931969392,
+       "low": -0.00718394321274733
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -2.557289913983223e-06,
+       "high": 1.8621211890028312e-06,
+       "low": -7.911660908334056e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 4.9241358903423415e-06,
+       "high": 0.00021374364242301774,
+       "low": -0.00021222150209104435
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.001997685996344767,
+       "high": 0.005717853680152061,
+       "low": -0.010048666953625824
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.00024338499294374966,
+      "high": 0.002025477156252998,
+      "low": -0.0014134008592999354
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0019169135971050743,
+       "high": 0.018256107060533003,
+       "low": -0.01167459876978585
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 8.113473890711903e-05,
+       "high": 0.0007319565279410155,
+       "low": -0.0005836082353079873
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.014620609051078539,
+       "high": -0.0026630865558222305,
+       "low": -0.0268852798226657
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.005355493845945874,
+       "high": 0.021326931089941426,
+       "low": -0.007982549677614761
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.006707759370093507,
+       "high": 0.013084410453255615,
+       "low": 0.000637723745075616
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.006958254565683141,
+       "high": -0.0013887120656692392,
+       "low": -0.014286777170712748
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.7147159189069413e-06,
+       "high": 2.4830338798694794e-07,
+       "low": -4.229498261405327e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0003225859858348507,
+       "high": 0.0007486064915330437,
+       "low": 1.2286953955241663e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.001549908797546884,
+       "high": 0.0016473129334376834,
+       "low": -0.005017179343224689
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": -0.0022330175334242435,
+      "high": 0.00021762642202665294,
+      "low": -0.005504528406726096
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.015971076815821706,
+       "high": 0.00015873447329009546,
+       "low": -0.03808813723800031
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": -0.000684160865633062,
+       "high": 0.00034582194709027324,
+       "low": -0.0018676753788448024
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.023942901415990956,
+       "high": -0.002819075658645739,
+       "low": -0.04522944055975383
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0003595333321392118,
+       "high": 0.019508695497801733,
+       "low": -0.01963245252436975
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.0013587538524595627,
+       "high": 0.0055376346753269945,
+       "low": -0.0026487058885105376
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0157665977562511,
+       "high": -0.00160658653644552,
+       "low": -0.035967080537435164
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -3.145264731901434e-06,
+       "high": -1.0303677608086755e-06,
+       "low": -5.751090950755939e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0008368494011737591,
+       "high": 0.0027367048071728463,
+       "low": -0.00031022630434701496
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0037519463753378644,
+       "high": 0.002032458839786714,
+       "low": -0.01008591542764151
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": -0.0012041339657711907,
+      "high": 0.0008294821648895825,
+      "low": -0.003491510344582566
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.014437060326893054,
+       "high": 0.0025504943399518734,
+       "low": -0.035211510008408296
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": -0.00029189067947175046,
+       "high": 0.0003977500833918843,
+       "low": -0.0009911121900236998
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.03238592559857574,
+       "high": -0.008338152165329788,
+       "low": -0.05888293644509791
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.015199137964419965,
+       "high": 0.04287584844294478,
+       "low": -0.005879876705146969
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.0005074393050500595,
+       "high": 0.00473529096137563,
+       "low": -0.003715779662509679
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.009442924887407405,
+       "high": -0.000612167216089567,
+       "low": -0.023458051778491903
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -2.067219514952802e-06,
+       "high": -6.666695402394061e-07,
+       "low": -3.5458842522531217e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.001465734592637963,
+       "high": 0.004729846082176369,
+       "low": -0.0008179553728139746
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0017478359786899415,
+       "high": 0.005876509555145917,
+       "low": -0.008968492450442109
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 7.27188571075395e-05,
+      "high": 0.0019223924039064374,
+      "low": -0.001535179142238204
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.004036790618451555,
+       "high": 0.00365212016874916,
+       "low": -0.012758375335565987
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 0.0003754235934652125,
+       "high": 0.0014602113745573006,
+       "low": -0.00040836958740306863
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.009001749325427022,
+       "high": 0.00201793992650247,
+       "low": -0.019922441552767452
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0046157850215752284,
+       "high": 0.025968881959461506,
+       "low": -0.011622227876337947
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.00046075257196944325,
+       "high": 0.00849635298714886,
+       "low": -0.006310962259848412
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0008896509760764564,
+       "high": 0.0032282654812201324,
+       "low": -0.0009994890038658474
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.1704065137552709e-05,
+       "high": 3.315357443458855e-05,
+       "low": -3.159942119144883e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0006047314061516142,
+       "high": 0.00046503668241018543,
+       "low": -0.0022322168065565433
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0004654692548066203,
+       "high": 0.0067302616928582425,
+       "low": -0.0068886164583934935
+      }
+     }
+    }
+   }
+  },
+  "risk_logistic_settle": {
+   "control": "risk_logistic",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.00028064413265774463,
+      "high": 0.00120457417834217,
+      "low": -0.0006369210754925155
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.00043789460823930157,
+       "high": 0.0034748845391005824,
+       "low": -0.0051214023706547636
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -0.00026931308714027154,
+       "high": 0.0003070597257845919,
+       "low": -0.000931214991546904
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": 0.013235195700931936,
+       "high": 0.02609677900039568,
+       "low": 0.0007719516402205578
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.006884814198436137,
+       "high": 0.01693837769886136,
+       "low": -0.0007332783260702248
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": -0.0028056335400586056,
+       "high": 0.00020940295829027322,
+       "low": -0.005970762415299424
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.004295165676355334,
+       "high": 0.009098339183723093,
+       "low": 0.0006817384060278663
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.197726527746482e-06,
+       "high": 1.639169782253408e-07,
+       "low": -2.8994790007167504e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 4.6717924598782906e-05,
+       "high": 0.0001931287216021876,
+       "low": -8.622684204622513e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.001963409122561457,
+       "high": 0.004044781502115702,
+       "low": 0.0002548206463473389
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.0008793383112147325,
+      "high": 0.0016103646134237675,
+      "low": 0.00017432139070626396
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.005264955094573428,
+       "high": 0.01003982036820785,
+       "low": 0.0009446096036947528
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0002278460284015005,
+       "high": 0.0005609539177046778,
+       "low": -5.120916720430135e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.0021887045552974774,
+       "high": 0.009803073594179796,
+       "low": -0.004688762618850007
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.00478067117102735,
+       "high": 0.01408865001816239,
+       "low": -0.0015006504039496303
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.002191210585263515,
+       "high": 0.0054062598329857455,
+       "low": -0.0008846316835999729
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0018099148411353915,
+       "high": 0.004575570442194096,
+       "low": -9.618322729358986e-05
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.034845302962747e-07,
+       "high": 1.4766232205635832e-06,
+       "low": -1.2268043919962499e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 2.8426718605881142e-05,
+       "high": 0.00011434757447895514,
+       "low": -2.918708862194287e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.001466409030121719,
+       "high": 0.003126654874621841,
+       "low": 0.00014996890187534155
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.00021159480289761727,
+      "high": 0.000949412120052728,
+      "low": -0.0005368779007969637
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.00037710867422562576,
+       "high": 0.004375680664436499,
+       "low": -0.005964201398960347
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 0.0001210796801184479,
+       "high": 0.0007728837372924268,
+       "low": -0.0004674265443125149
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.005112450049540712,
+       "high": 0.008599283219613603,
+       "low": 0.00173567599772183
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.001181090205834954,
+       "high": 0.0033844550087884753,
+       "low": -0.0004633852717944564
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": -0.00016287427263884615,
+       "high": 0.003472853618091695,
+       "low": -0.0037377759811446022
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.001472004226239156,
+       "high": 0.0027398357384717906,
+       "low": 0.00040305394381450653
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -5.206544254645662e-07,
+       "high": -3.352352103734147e-08,
+       "low": -1.2016147642260672e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0001155264176538589,
+       "high": 0.0003162506545113842,
+       "low": -6.9932066404519715e-06
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00023566571978508567,
+       "high": 0.0006560454120649639,
+       "low": -9.104856751850863e-05
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.0012859157153601306,
+      "high": 0.003031450328412587,
+      "low": 4.8123098942617384e-05
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.001125888144657216,
+       "high": 0.0051338012898642805,
+       "low": -0.003163903939926617
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.0003718379413051344,
+       "high": 0.0011080482296085639,
+       "low": -7.689067684698992e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.010543009578249394,
+       "high": 0.004898273663951026,
+       "low": -0.027205148068530218
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.021986032689245177,
+       "high": 0.05120844364172535,
+       "low": 0.00021937776285976143
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.005085838938511687,
+       "high": 0.01342249402927358,
+       "low": -0.0009541295064617869
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0007220704389039864,
+       "high": 0.0022111174056466953,
+       "low": -0.000552273333925679
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -5.633282342871227e-07,
+       "high": -3.7133433517489665e-08,
+       "low": -1.1379178472917046e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00035129900726332055,
+       "high": 0.0010155748933240473,
+       "low": -2.994703666005923e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0009802700407052609,
+       "high": 0.0016107486197533916,
+       "low": 0.00041274760803077404
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 0.002679866759852363,
+      "high": 0.005366645023855767,
+      "low": 0.0005443893419182836
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0084122838033566,
+       "high": 0.021223800807439488,
+       "low": -0.0007094640710022896
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 0.00019987813064240733,
+       "high": 0.0007326176228938817,
+       "low": -0.00018950548774647916
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.005048376357375966,
+       "high": 0.005025553680526998,
+       "low": -0.015285184031045987
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0402075807343147,
+       "high": 0.0901538172465242,
+       "low": 0.0008195055487142435
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.011643344867919911,
+       "high": 0.024983720132842106,
+       "low": 0.0016155613735255678
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0024157586279725377,
+       "high": 0.007252920601999601,
+       "low": -0.000200652394878027
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 7.97197716851587e-06,
+       "high": 2.1097348118432157e-05,
+       "low": -2.4335229305210693e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.00014017669666473192,
+       "high": 0.0004025016305901113,
+       "low": -4.81103142805062e-07
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.00016717831107005413,
+       "high": 0.0012847662080636517,
+       "low": -0.0010255551550754326
+      }
+     }
+    }
+   }
+  },
+  "risk_quantile_skewt_base_policy": {
+   "control": "risk_quantile_skewt_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.0017317682185119974,
+      "high": 0.004578926557598135,
+      "low": -0.0011777494375339757
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.01788473168430474,
+       "high": 0.037801269989744396,
+       "low": 0.0006068415639743203
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0007565010243708271,
+       "high": 0.002211728738969315,
+       "low": -0.0007091393314484958
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": -0.008138600330243195,
+       "high": 0.0067354001274416994,
+       "low": -0.023487881515640952
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.004488566417995911,
+       "high": 0.021683269478811495,
+       "low": -0.03584988894114253
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.006165117099444087,
+       "high": 0.018957512599729814,
+       "low": -0.006844766098166718
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0007405009352808366,
+       "high": 0.007605312205880261,
+       "low": -0.00503316912535693
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -0.00011006757724054077,
+       "high": -4.075732664007038e-05,
+       "low": -0.0001904154122895072
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0001739317491282897,
+       "high": 0.0007438451524791052,
+       "low": -0.0010983676489356197
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.003500524944915448,
+       "high": 0.007341413198165781,
+       "low": 0.0004415140413876833
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.004858218591978171,
+      "high": 0.010167561938775296,
+      "low": 0.00030299447101711204
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.01673744054727807,
+       "high": 0.0418357003673191,
+       "low": -0.0026586772766590424
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.001414105793530324,
+       "high": 0.003335013921300295,
+       "low": -0.00017691523937864517
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.013352152027865594,
+       "high": 0.00990110463572304,
+       "low": -0.037929521929198705
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.053008113437059426,
+       "high": 0.12240552208759804,
+       "low": -0.000725059949220704
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.023638703068689475,
+       "high": 0.047544377900618676,
+       "low": 0.00134242318712206
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0024720057907404802,
+       "high": 0.0007515522624202427,
+       "low": -0.006423734108310158
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -1.630599501496701e-05,
+       "high": 6.833765137368782e-05,
+       "low": -9.78322051296076e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -9.285904549569727e-05,
+       "high": 0.00018514358041557368,
+       "low": -0.00034078886040655635
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.003652993396041194,
+       "high": 0.006832861596045437,
+       "low": 0.0009465744212861535
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0016104068491910486,
+      "high": 0.005405264102037246,
+      "low": -0.0017008100051817514
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.001555591669743122,
+       "high": 0.01746155866639023,
+       "low": -0.013407885648778753
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": -6.357436524375978e-05,
+       "high": 0.0013837144227156779,
+       "low": -0.0013387293276129226
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.017944724917941326,
+       "high": 0.053712846928349,
+       "low": -0.017966052405220832
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.02632850393210386,
+       "high": 0.07523177193356824,
+       "low": -0.009303142392133727
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.007104350336996489,
+       "high": 0.024740619269175985,
+       "low": -0.008730613258169656
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.004945407329874163,
+       "high": -1.3397762383051318e-05,
+       "low": -0.010556096672377469
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.00035427713867277515,
+       "high": 0.0007794625623469218,
+       "low": 3.596270667947687e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0007211648107940157,
+       "high": 0.0019544692060926992,
+       "low": -0.00018699334992362826
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.004655242074335079,
+       "high": 0.009006412900776957,
+       "low": 0.0008386239570259865
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.005799094421596597,
+      "high": 0.011379805059588277,
+      "low": 0.0011318682168128574
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.022413698036335764,
+       "high": 0.053228161642031695,
+       "low": -0.003419729342429032
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.0010949229215161,
+       "high": 0.002477922178807565,
+       "low": -7.913365779437407e-05
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.03849970593115304,
+       "high": 0.10273731860823854,
+       "low": -0.017713293422425915
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.051396506602847274,
+       "high": 0.14317620956767368,
+       "low": -0.01755333633048225
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.02566417310958188,
+       "high": 0.048866842615797115,
+       "low": 0.00432615694872504
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.008385619873743833,
+       "high": -0.0023826232980221945,
+       "low": -0.01566012158338191
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.00029474856083770994,
+       "high": 0.0007189811530370348,
+       "low": -4.5425340313512504e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0002902038842920052,
+       "high": 0.0009671895391073857,
+       "low": -0.0002490180103488221
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.012485951266470972,
+       "high": 0.02329961017247956,
+       "low": 0.003628444121198479
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 0.003950046972709471,
+      "high": 0.009238345841706016,
+      "low": -0.0009239563819417507
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.04115236544817435,
+       "high": 0.08961144287961852,
+       "low": 0.0010420410907807285
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 0.0013178708839214725,
+       "high": 0.002814795017136112,
+       "low": 0.00010106113698796283
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.01777254010938141,
+       "high": 0.05321679263462321,
+       "low": -0.014737250277761195
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.016089737559415174,
+       "high": 0.025966967379783525,
+       "low": -0.06299265547709867
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.012886099804974543,
+       "high": 0.035766404397601655,
+       "low": -0.008037451973122098
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.005755003983721571,
+       "high": -0.0005495264236162121,
+       "low": -0.011314140817151227
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.00030676773470084535,
+       "high": 0.0008634543517654715,
+       "low": -8.145127323415645e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0003097753280293802,
+       "high": 0.0009952308607687006,
+       "low": -0.00022556891483663832
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.015018050870277029,
+       "high": 0.033271842962177174,
+       "low": 0.002502745404200823
+      }
+     }
+    }
+   }
+  },
+  "risk_quantile_skewt_base_settle": {
+   "control": "risk_quantile_skewt_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.0005248909087816404,
+      "high": 0.002410637573570857,
+      "low": -0.0015378035090831646
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.01568911562564397,
+       "high": 0.03341603404776644,
+       "low": 0.0019304984069525573
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -0.0005633962049938627,
+       "high": 0.0005993971663256925,
+       "low": -0.0019933029903290624
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": -0.007990105291247506,
+       "high": 0.002030589886507927,
+       "low": -0.01874493285409139
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -0.002465497652412876,
+       "high": 0.016263508275908813,
+       "low": -0.022530344602193764
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": -0.0005063304354843443,
+       "high": 0.009103314900877589,
+       "low": -0.01029378719561648
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.004616077629508715,
+       "high": 0.0073356234056768995,
+       "low": 0.0022425650054964815
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -4.397613494388789e-06,
+       "high": 1.649234199094688e-05,
+       "low": -2.6624741054049408e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0001158550256004971,
+       "high": 0.0003933644375178082,
+       "low": -5.2802996048553275e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -4.544273517416566e-05,
+       "high": 0.0003371071208777151,
+       "low": -0.0004520263613104737
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.0003067414884071468,
+      "high": 0.002487829523616661,
+      "low": -0.0015152925944241665
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0026840166135343713,
+       "high": 0.0031384210648116363,
+       "low": -0.008699782823951443
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -0.0002561932933047459,
+       "high": -5.78825735661512e-05,
+       "low": -0.0005086483082487396
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.003957556389936448,
+       "high": 0.007294213795808828,
+       "low": -0.017290628227290796
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.016923899990943084,
+       "high": 0.05176854412797681,
+       "low": -0.009430930141283446
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0016960682744503641,
+       "high": 0.014051509071984816,
+       "low": -0.006803549255421001
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0002539920269322187,
+       "high": 0.004505198888519087,
+       "low": -0.00402932562128391
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -9.46304098297655e-06,
+       "high": -2.3610663193118445e-06,
+       "low": -1.8012513856527038e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -7.87268359924254e-05,
+       "high": 3.8820708974834086e-05,
+       "low": -0.00028696977150559735
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0003899654757143451,
+       "high": 8.167922844494744e-06,
+       "low": -0.0009580755292030053
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0013705619168968733,
+      "high": 0.004553973160149977,
+      "low": -0.0012340547210101245
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.020163729361031175,
+       "high": 0.06089243546613704,
+       "low": -0.010088014743648004
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 0.00011410351201015669,
+       "high": 0.0013998890941082367,
+       "low": -0.000846985348452509
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.023902791574931723,
+       "high": 0.0065158363623455786,
+       "low": -0.056825363160793
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0008320434086185887,
+       "high": 0.0151103268778747,
+       "low": -0.01339425963424943
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.008609518693664428,
+       "high": 0.02322143581295133,
+       "low": -0.0031985708158626435
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.001701310488228777,
+       "high": 0.004707588270907703,
+       "low": -0.009238704029167925
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.4538625855131525e-07,
+       "high": 1.0491989308707817e-05,
+       "low": -1.070302708828348e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.00017183573598816745,
+       "high": -9.998819068521981e-07,
+       "low": -0.00039649630313426826
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0007114458176775552,
+       "high": -7.995076574965438e-05,
+       "low": -0.0015564377871670743
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.001092420233771441,
+      "high": 0.004788860119145337,
+      "low": -0.0021685943609126537
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.005568000501678603,
+       "high": 0.00870337399812363,
+       "low": -0.02311155479153914
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": -0.00041685084119964376,
+       "high": 0.0005682110807331747,
+       "low": -0.0014736746486137373
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.04104386059594176,
+       "high": 0.07534959098316817,
+       "low": 0.00817058690128489
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.026000992036929894,
+       "high": 0.06790369406459748,
+       "low": -0.0016428168828339343
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.004970137098726426,
+       "high": 0.023117185345064427,
+       "low": -0.011015639643605487
+      },
+      "2020": {
+       "days": 251,
+       "difference": -9.29355327737277e-05,
+       "high": 0.004673471457234021,
+       "low": -0.0060922699214598225
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.0003923662597875535,
+       "high": 0.001083249952277948,
+       "low": 1.4295736775572602e-05
+      },
+      "2024": {
+       "days": 250,
+       "difference": -6.154623121712557e-05,
+       "high": 0.00017713647134863164,
+       "low": -0.00035545401579367784
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0002443443749567863,
+       "high": 0.00023915093939354262,
+       "low": -0.0009772526612693746
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": -5.546245246720671e-05,
+      "high": 0.0008104800210141949,
+      "low": -0.0009303363049994541
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": -0.0037651248268695827,
+       "high": 0.0024434761422121704,
+       "low": -0.01039152626106135
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": -3.575942725677265e-05,
+       "high": 0.00044472228078317605,
+       "low": -0.0005250253071654972
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.0023323435003849316,
+       "high": 0.002691980980968907,
+       "low": -0.0074028234965263385
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.0066100538088945185,
+       "high": 0.012568829645445947,
+       "low": 0.0016728644102438628
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": -0.0002941256952512875,
+       "high": 0.0032350693654593496,
+       "low": -0.0037657597916791056
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.000823259012647656,
+       "high": 0.0038591782900656737,
+       "low": -0.003360539960110825
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 3.482487905118801e-05,
+       "high": 8.711976403084712e-05,
+       "low": -5.8686804995700234e-06
+      },
+      "2024": {
+       "days": 250,
+       "difference": 7.776499345734724e-05,
+       "high": 0.0002875328192091644,
+       "low": -4.672537799292361e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0009906303646271843,
+       "high": 0.00023837373635234504,
+       "low": -0.0028944061082440196
+      }
+     }
+    }
+   }
+  }
+ },
+ "recall_by_year": {
+  "risk_gbm": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    }
+   }
+  },
+  "risk_gbm_base": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    }
+   }
+  },
+  "risk_gbm_base_dealer": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     5,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      9,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      5,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      0,
+      5
+     ]
+    }
+   }
+  },
+  "risk_gbm_base_policy": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      4,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    }
+   }
+  },
+  "risk_gbm_base_settle": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      4,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_gbm_dealer": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    }
+   }
+  },
+  "risk_gbm_policy": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    }
+   }
+  },
+  "risk_gbm_settle": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      0,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_base": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_base_dealer": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     5,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      9,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      4,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_base_policy": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      4,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_base_settle": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      7,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_dealer": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     5,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      8,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      4,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      4,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_policy": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      9,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_settle": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      7,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_quantile_skewt_base": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      7,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      7,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_quantile_skewt_base_policy": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      4,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      0,
+      5
+     ]
+    }
+   }
+  },
+  "risk_quantile_skewt_base_settle": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      7,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  }
+ }
+}

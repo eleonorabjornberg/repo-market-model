@@ -1,0 +1,39 @@
+{
+  "role": "candidate",
+  "track": "U (#477)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "policy_days_since_known",
+    "policy_days_until_effective",
+    "policy_pending_count",
+    "policy_iorb_offset_bp",
+    "policy_qt_in_force",
+    "policy_standing_repo_in_force",
+    "policy_slr_exclusion_in_force",
+    "policy_reserve_management_in_force",
+    "policy_debt_limit_reinstated"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; metadata/risk_date_severity.json",
+  "control": "risk_gbm_base",
+  "adds": [
+    "policy_days_since_known",
+    "policy_days_until_effective",
+    "policy_pending_count",
+    "policy_iorb_offset_bp",
+    "policy_qt_in_force",
+    "policy_standing_repo_in_force",
+    "policy_slr_exclusion_in_force",
+    "policy_reserve_management_in_force",
+    "policy_debt_limit_reinstated"
+  ],
+  "inputs_note": "the passer risk_gbm_base with the policy group added at every horizon; metadata/unused_inputs.json"
+}

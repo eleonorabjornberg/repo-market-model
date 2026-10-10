@@ -1,0 +1,35 @@
+{
+  "role": "candidate",
+  "track": "U (#477)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "dealer_treasury_position",
+    "fed_repo_days_since_positive",
+    "fed_repo_log_accepted",
+    "fed_repo_log_accepted_change",
+    "fed_repo_ops",
+    "fed_repo_rate_iorb_bps",
+    "fed_repo_submitted"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; metadata/risk_date_severity.json",
+  "control": "risk_gbm_base",
+  "adds": [
+    "dealer_treasury_position",
+    "fed_repo_days_since_positive",
+    "fed_repo_log_accepted",
+    "fed_repo_log_accepted_change",
+    "fed_repo_ops",
+    "fed_repo_rate_iorb_bps",
+    "fed_repo_submitted"
+  ],
+  "inputs_note": "the passer risk_gbm_base with the dealer and segment group added at every horizon; metadata/unused_inputs.json"
+}
