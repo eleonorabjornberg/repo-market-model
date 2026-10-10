@@ -130,6 +130,78 @@ Every form fails tier 3 under both rules. The recalibrated forms lose tier 1 und
 onset (limit 2). Under the weighted rule three of the five recalibrated forms keep tier 1 and meet tier 5 (week-ahead), but tier 3 still fails.
 No form meets the full pass rule under either rule, so no "Publish?" issue is opened and the published declaration is unchanged.
 
+### The judge row split by regime and pressure-day type
+
+The tier 1, 3 and 5 results above are pooled. The judge's own cells split them by the five regimes and by pressure-day type
+(`splits.reporting_day_type`: ordinary, month-end, quarter-end, tax date). Nothing below is a new computation: `regime_recalibration.py tables`
+re-reads the judge results that Table 5 comes from. Every horizon, and the share of pressure days flagged (tier 1's flag) by regime and type,
+are in the evidence file (Tables 4 to 7 there).
+
+Table 6. Tier 1 by regime: onsets flagged of onsets (lead 1 or more), under each rule. The judge reports an interval only for the pooled recall, not
+for one regime's onsets, so these are counts.
+
+| model | rule | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
+|---|---|---|---|---|---|---|
+| risk_gbm | flat | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 3 of 5 |
+| risk_gbm | weighted | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 3 of 5 |
+| risk_gbm+regime_recal | flat | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+| risk_gbm+regime_recal | weighted | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+| risk_gbm_base | flat | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 4 of 5 |
+| risk_gbm_base | weighted | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 4 of 5 |
+| risk_gbm_base+regime_recal | flat | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+| risk_gbm_base+regime_recal | weighted | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+| risk_logistic | flat | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 4 of 5 |
+| risk_logistic | weighted | 10 of 17 | 0 of 2 | 0 of 0 | 1 of 2 | 5 of 5 |
+| risk_logistic+regime_recal | flat | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 3 of 5 |
+| risk_logistic+regime_recal | weighted | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 3 of 5 |
+| risk_logistic_base | flat | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 3 of 5 |
+| risk_logistic_base | weighted | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 5 of 5 |
+| risk_logistic_base+regime_recal | flat | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+| risk_logistic_base+regime_recal | weighted | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+| risk_quantile_skewt_base | flat | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 4 of 5 |
+| risk_quantile_skewt_base | weighted | 10 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 5 of 5 |
+| risk_quantile_skewt_base+regime_recal | flat | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+| risk_quantile_skewt_base+regime_recal | weighted | 11 of 17 | 0 of 2 | 0 of 0 | 0 of 2 | 2 of 5 |
+
+Table 7. Tier 3 by pressure-day type, horizon 1, flat rule: observed minus predicted pressure-day rate, 90% interval, pressure days in the group in brackets. The regime split is Tables 1 to 4.
+
+| model | month_end | ordinary | quarter_end | tax_date |
+|---|---|---|---|---|
+| risk_gbm | +0.015 [-0.014, +0.046] (17) | +0.050 [+0.029, +0.073] (101) | +0.070 [-0.045, +0.183] (9) | +0.050 [-0.009, +0.119] (13) |
+| risk_gbm+regime_recal | -0.069 [-0.108, -0.029] (17) | -0.014 [-0.036, +0.010] (101) | +0.024 [-0.100, +0.142] (9) | -0.037 [-0.098, +0.036] (13) |
+| risk_gbm_base | +0.015 [-0.020, +0.051] (17) | +0.050 [+0.030, +0.073] (101) | +0.087 [-0.032, +0.201] (9) | +0.026 [-0.034, +0.097] (13) |
+| risk_gbm_base+regime_recal | -0.062 [-0.098, -0.018] (17) | -0.014 [-0.037, +0.012] (101) | +0.038 [-0.081, +0.157] (9) | -0.051 [-0.115, +0.026] (13) |
+| risk_logistic | +0.011 [-0.026, +0.050] (17) | +0.050 [+0.029, +0.074] (101) | -0.066 [-0.192, +0.054] (9) | +0.016 [-0.035, +0.076] (13) |
+| risk_logistic+regime_recal | -0.073 [-0.115, -0.025] (17) | -0.015 [-0.039, +0.011] (101) | -0.040 [-0.159, +0.090] (9) | -0.060 [-0.116, +0.013] (13) |
+| risk_logistic_base | +0.014 [-0.020, +0.050] (17) | +0.051 [+0.029, +0.075] (101) | -0.029 [-0.158, +0.085] (9) | +0.013 [-0.042, +0.088] (13) |
+| risk_logistic_base+regime_recal | -0.071 [-0.112, -0.026] (17) | -0.014 [-0.037, +0.013] (101) | -0.023 [-0.141, +0.099] (9) | -0.062 [-0.123, +0.013] (13) |
+| risk_quantile_skewt_base | -0.026 [-0.065, +0.012] (17) | +0.047 [+0.026, +0.072] (101) | -0.033 [-0.171, +0.094] (9) | -0.058 [-0.112, +0.006] (13) |
+| risk_quantile_skewt_base+regime_recal | -0.076 [-0.116, -0.037] (17) | -0.016 [-0.039, +0.010] (101) | -0.005 [-0.149, +0.137] (9) | -0.100 [-0.160, -0.032] (13) |
+
+Table 8. Tier 5's form, horizon 1, by regime and by pressure-day type: Brier difference against calendar climatology (positive: better), 90% interval,
+pressure days in the group in brackets. Horizons 2 to 5 are in the evidence file.
+
+| model | regime: 2018-19 | regime: 2020 | regime: 2021-23 | regime: 2024 | regime: 2025-26 | day_type: month_end | day_type: ordinary | day_type: quarter_end | day_type: tax_date |
+|---|---|---|---|---|---|---|---|---|---|
+| risk_gbm | +0.002 [-0.020, +0.024] (102) | +0.040 [+0.031, +0.048] (4) | +0.014 [+0.012, +0.016] (no event) | +0.004 [-0.000, +0.007] (5) | +0.016 [-0.002, +0.039] (29) | +0.054 [+0.030, +0.079] (17) | +0.005 [-0.000, +0.010] (101) | +0.116 [+0.031, +0.202] (9) | +0.069 [+0.041, +0.095] (13) |
+| risk_gbm+regime_recal | +0.018 [+0.008, +0.029] (102) | +0.029 [+0.016, +0.040] (4) | +0.004 [+0.003, +0.005] (no event) | +0.002 [-0.001, +0.005] (5) | +0.016 [+0.001, +0.035] (29) | +0.029 [+0.008, +0.051] (17) | +0.005 [+0.002, +0.008] (101) | +0.112 [+0.044, +0.182] (9) | +0.062 [+0.040, +0.086] (13) |
+| risk_gbm_base | -0.001 [-0.021, +0.016] (102) | +0.033 [+0.022, +0.043] (4) | +0.014 [+0.012, +0.016] (no event) | +0.004 [+0.000, +0.007] (5) | +0.016 [+0.002, +0.033] (29) | +0.034 [+0.012, +0.057] (17) | +0.005 [+0.000, +0.010] (101) | +0.110 [+0.029, +0.193] (9) | +0.068 [+0.046, +0.093] (13) |
+| risk_gbm_base+regime_recal | +0.015 [+0.005, +0.025] (102) | +0.028 [+0.015, +0.040] (4) | +0.004 [+0.003, +0.005] (no event) | +0.002 [-0.001, +0.004] (5) | +0.021 [+0.005, +0.043] (29) | +0.026 [+0.007, +0.049] (17) | +0.005 [+0.002, +0.009] (101) | +0.111 [+0.042, +0.178] (9) | +0.058 [+0.038, +0.081] (13) |
+| risk_logistic | -0.003 [-0.024, +0.018] (102) | +0.025 [+0.009, +0.038] (4) | +0.014 [+0.012, +0.016] (no event) | +0.005 [+0.001, +0.010] (5) | +0.013 [+0.000, +0.029] (29) | +0.028 [+0.001, +0.056] (17) | +0.004 [-0.001, +0.009] (101) | +0.089 [+0.016, +0.160] (9) | +0.077 [+0.046, +0.112] (13) |
+| risk_logistic+regime_recal | +0.017 [+0.005, +0.028] (102) | +0.026 [+0.012, +0.038] (4) | +0.004 [+0.002, +0.005] (no event) | +0.001 [-0.001, +0.003] (5) | +0.009 [-0.000, +0.023] (29) | +0.015 [-0.005, +0.037] (17) | +0.004 [+0.001, +0.007] (101) | +0.113 [+0.066, +0.165] (9) | +0.064 [+0.034, +0.101] (13) |
+| risk_logistic_base | -0.002 [-0.022, +0.017] (102) | +0.030 [+0.020, +0.038] (4) | +0.014 [+0.012, +0.016] (no event) | +0.004 [+0.000, +0.007] (5) | +0.017 [+0.004, +0.034] (29) | +0.035 [+0.010, +0.060] (17) | +0.005 [-0.000, +0.009] (101) | +0.095 [+0.040, +0.152] (9) | +0.071 [+0.038, +0.111] (13) |
+| risk_logistic_base+regime_recal | +0.016 [+0.005, +0.027] (102) | +0.028 [+0.015, +0.039] (4) | +0.004 [+0.003, +0.005] (no event) | +0.001 [-0.000, +0.003] (5) | +0.013 [+0.002, +0.029] (29) | +0.020 [-0.001, +0.041] (17) | +0.005 [+0.002, +0.008] (101) | +0.121 [+0.080, +0.167] (9) | +0.059 [+0.028, +0.094] (13) |
+| risk_quantile_skewt_base | -0.017 [-0.041, +0.008] (102) | +0.022 [+0.012, +0.031] (4) | +0.014 [+0.012, +0.016] (no event) | +0.001 [-0.005, +0.005] (5) | +0.024 [+0.005, +0.046] (29) | +0.024 [-0.013, +0.063] (17) | +0.003 [-0.003, +0.008] (101) | +0.072 [-0.000, +0.137] (9) | +0.060 [+0.021, +0.103] (13) |
+| risk_quantile_skewt_base+regime_recal | +0.005 [-0.015, +0.022] (102) | +0.030 [+0.019, +0.041] (4) | +0.004 [+0.003, +0.005] (no event) | -0.000 [-0.001, +0.001] (5) | +0.018 [+0.002, +0.038] (29) | +0.023 [-0.007, +0.052] (17) | +0.004 [+0.001, +0.007] (101) | +0.062 [+0.006, +0.109] (9) | +0.054 [+0.019, +0.095] (13) |
+
+How it reads. The recalibration lifts the 2018-19 onsets flagged (10 to 11 of 17) and loses some in 2025-26 (3 or 4 of 5 down to 2 or 3). By type, the base forms
+under-forecast ordinary days (about +0.05, interval above zero for all five) and cover zero on month-end, quarter-end and tax days; the recalibrated forms cover zero
+on ordinary days but over-forecast month-end days (about -0.06 to -0.08, interval below zero for all five) and, for `risk_quantile_skewt_base`, tax days. Against
+climatology (Table 8) no recalibrated form has an interval wholly below zero in any cell at h = 1.
+
+Too thin to read: 2021-23 has no pressure day, so its cells are reported and not judged; 2020 (4 pressure days) and 2024 (5) are too few for any
+interval to settle a direction; 2018-19 onsets are the only regime with more than 5; quarter-end (9) and tax-date (13) cells carry wide intervals.
+
 ## What it does not show
 
 * The groups are the five declared calendar regimes; another grouping (the reserve-scarcity state, or a regime that begins at a policy

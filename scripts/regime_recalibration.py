@@ -235,6 +235,74 @@ def judge_rows(flat, weighted, names):
     return "\n".join(lines)
 
 
+def _split_cell(cell, key):
+    """One split cell: the judge's interval for `key`, then the pressure days in the group (`no event` when it has none)."""
+
+    return f"{_interval(cell[key])} ({cell['events'] or 'no event'})"
+
+
+def _split_labels(result, names, dimension, horizon):
+    labels = []
+    for name in names:
+        splits = result["candidates"][name]["horizons"][horizon]["5"]["splits"]
+        labels.extend(label for label in splits[dimension] if label not in labels)
+    return labels
+
+
+def split_gap(result, names, dimension, horizon):
+    """Tier 3 (observed minus predicted, 90% interval) at one horizon, split by `dimension`, the judge's own cells."""
+
+    labels = _split_labels(result, names, dimension, horizon)
+    lines = ["| model | " + " | ".join(labels) + " |", "|---|" + "---|" * len(labels)]
+    for name in names:
+        splits = result["candidates"][name]["horizons"][horizon]["5"]["splits"][dimension]
+        lines.append(f"| {name} | " + " | ".join(_split_cell(splits[l], "realised_minus_predicted") if l in splits else "–" for l in labels) + " |")
+    return "\n".join(lines)
+
+
+def split_brier(result, names, horizon):
+    """Brier difference against calendar climatology (the week-ahead criterion's form, positive = better), by regime and by day type."""
+
+    columns = [(d, l) for d in ("regime", "day_type") for l in _split_labels(result, names, d, horizon)]
+    lines = ["| model | " + " | ".join(f"{d}: {l}" for d, l in columns) + " |", "|---|" + "---|" * len(columns)]
+    for name in names:
+        splits = result["candidates"][name]["horizons"][horizon]["5"]["splits"]
+        cells = [_split_cell(splits[d][l], "brier_difference_vs_climatology") if l in splits[d] else "–" for d, l in columns]
+        lines.append(f"| {name} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def split_recall(result, names, horizon):
+    """Share of the pressure days flagged (tier 1's flag, per day), by regime and by day type; the judge gives no interval for it."""
+
+    columns = [(d, l) for d in ("regime", "day_type") for l in _split_labels(result, names, d, horizon)]
+    lines = ["| model | " + " | ".join(f"{d}: {l}" for d, l in columns) + " |", "|---|" + "---|" * len(columns)]
+    for name in names:
+        splits = result["candidates"][name]["horizons"][horizon]["5"]["splits"]
+        cells = []
+        for d, l in columns:
+            cell = splits[d].get(l)
+            cells.append("–" if cell is None else (f"{cell['flags']['recall']:.2f} ({cell['events']})" if cell["events"] else "no event"))
+        lines.append(f"| {name} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def onsets_by_regime(flat, weighted, names):
+    """Tier 1 by regime: onsets flagged of onsets at lead 1 or more, under each rule. The judge's per-regime counts carry no interval."""
+
+    regimes = []
+    for name in names:
+        by_regime = flat["candidates"][name]["tiers"]["onset_warning"]["lead_at_least_1"]["by_regime"]
+        regimes.extend(r for r in by_regime if r not in regimes)
+    lines = ["| model | rule | " + " | ".join(regimes) + " |", "|---|---|" + "---|" * len(regimes)]
+    for name in names:
+        for run, label in ((flat, "flat"), (weighted, "weighted")):
+            by_regime = run["candidates"][name]["tiers"]["onset_warning"]["lead_at_least_1"]["by_regime"]
+            cells = [f"{by_regime[r]['onsets_flagged']} of {by_regime[r]['onsets']}" if r in by_regime else "–" for r in regimes]
+            lines.append(f"| {name} | {label} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
 def tables_command(args) -> int:
     declared = json.loads(DECLARATION.read_text())
     flat, weighted = _read(args.flat), _read(args.weighted)
@@ -260,7 +328,30 @@ def tables_command(args) -> int:
         "",
         judge_rows(flat, weighted, both),
         "",
+        "Table 4. Tier 1 by regime: onsets flagged of onsets (lead 1 or more), base and recalibrated, both rules. "
+        "The judge gives an interval only for the pooled recall (Table 3), not for a regime's onsets.",
+        "",
+        onsets_by_regime(flat, weighted, both),
+        "",
     ]
+    horizons = sorted(next(iter(flat["candidates"].values()))["horizons"], key=int)
+    for h in horizons:
+        parts += [
+            f"Table 5, h = {h}. Tier 3 by pressure-day type, base and recalibrated, flat rule: observed minus predicted pressure-day rate "
+            "[90% interval] (pressure days in the group). The regime split is Tables 1 and 2.",
+            "",
+            split_gap(flat, both, "day_type", h),
+            "",
+            f"Table 6, h = {h}. Tier 5's form by regime and pressure-day type: Brier difference against calendar climatology "
+            "[90% interval] (pressure days in the group; positive = better than climatology).",
+            "",
+            split_brier(flat, both, h),
+            "",
+            f"Table 7, h = {h}. Tier 1's flag by regime and pressure-day type: share of the group's pressure days flagged (pressure days), flat rule.",
+            "",
+            split_recall(flat, both, h),
+            "",
+        ]
     text = "\n".join(parts)
     if args.output:
         args.output.write_text(text, encoding="utf-8")
