@@ -29,6 +29,10 @@ them.
   revision among the observations an earlier tracked vintage can compare. Two copied-row flags were checked against the source
   and are real, distinct days.
 
+  > *Correction, 10 October 2026 (#517).* The "no stale weekly value" part of this finding was measured on the panel rows, not on what
+  > the forecast reads, and does not stand. See "4a. What the forecast reads" below. The gap, blank, copied-row and revision checks
+  > are unchanged.
+
 ## 1. Training history at each episode (Table 1)
 
 The judge refits every 21 scored days from the first scored day. Each episode is read at the refit in force on its day: the model is
@@ -108,12 +112,49 @@ For each episode, the 10 panel days before it, on the published panel (digest `4
   than the previous day (`nyfed-sofr-rate`, fixture snapshot), so these are two genuine days that repeat in the six columns the panel keeps, not
   forward fills. The 'would blind a model' flag on 2019-08-30 is a false positive of the rule and is read so.
 * **Stale weekly values.** Reserve balances, TGA and the dealer position are never more than 7 calendar days old at a decision day.
+  *Corrected, 10 October 2026 (#517): this measured how long a value had stayed unchanged on the panel rows (`window_integrity`), and a
+  weekly series carried on later rows by its Wednesday reference date cannot exceed about a week on those rows by construction. It is
+  not the age of what a forecast reads. See 4a.*
 * **Revisions.** Of the reserve-balance, TGA and IOER observations in each window an earlier tracked ALFRED vintage holds, none differs from the latest tracked vintage (units
   aligned: the 2026 vintage is in millions). The first tracked vintage is 2019-09-16, so these are not first prints, and the 2024 and
   2025 windows have no earlier vintage to compare (3 of 4 observations for 2024-09-30; none for the others).
 * **Late publications:** not checked beyond the as-of rule, which the panel is built under.
 
 Nothing in the panel would blind a model before an episode.
+
+### 4a. What the forecast reads (correction, #517)
+
+Re-measured on the published panel (digest `4ddc3882…`) through the as-of rule, the way the forecast reads it
+(`InformationRule.information_set`), for every scored day at h = 1 to 5. The age is in calendar days from the Wednesday the observation is dated to
+(`setup_diagnostic.observation_wednesday`) to the day of the decision (`setup_diagnostic.read_age_days`); the 7-day threshold is the one the
+blinding rule above used. The code is `scripts/setup_reads.py`; the tables are `evidence/setup-diagnostic/setup_reads.md` (data: `setup_reads.json`).
+
+| input | age at the decision, days: min / median / max (h = 1) | scored days older than 7 days (h = 1, of 1,873) |
+|---|---|---|
+| reserve balances | 6 / 8 / 13 | 1,110 |
+| TGA | 6 / 8 / 13 | 1,110 |
+| dealer Treasury position | 9 / 13 / 19 | 1,873 |
+
+At h = 1 the reserve and TGA reads are 6 days old on 380 scored days, 7 on 383, 8 on 379, 9 on 379, 12 on 344 and 13 on 8; the
+dealer position is 9 to 19. The figures are the same to within a few days at h = 2 to 5 (`setup_reads.md`). They are week averages, so the data inside
+them is about three days older still. The 26 episodes' windows all carry such a read: the blinding rule's "a weekly column more than 7
+calendar days old" would flag every scored day through the dealer position and 59% of them through reserves and TGA. The panel-row check
+could not show it. The earlier sentence, "never more than 7 calendar days old", is wrong for what the model reads.
+
+The daily rates are read from further back than the decision-day row the copied-row check tested: the SOFR row read is 2 panel days
+before the scored day at h = 1 (the previous day's rate is not yet public at the 16:00 decision), and 3, 4, 5 and 6 at h = 2 to 5
+(`pressure-audit-result.md`, Table F). Tested on the row actually read, six scored days read a copied row at each horizon; one of them falls in an
+episode's window (the decision days before 2019-12-16). The earlier finding that two real, distinct days repeat stands, on the rows it tested.
+
+**What this changes.** The conclusion "data integrity does not explain the misses" rested on a check that could not fail for weekly inputs. On the
+correct clock the inputs the passers lean on (reserves and the scarcity state built from them, the TGA) are 6 to 13 days old, and this page no
+longer rules staleness out. It does not show that staleness explains the misses either: that needs a run with a fresher input, which the daily
+proxy of `desk-standard-result.md` §3 (corrected, #516) bears on. Three pages gave three ages for the same inputs (here "at most 7 days", `pressure-audit-result.md` Table 2 "4 to 6" panel days before, and
+`construction-gaps-result.md` gap 5 "6 to 12" days, measured around the 26 onsets). They count different things: panel rows against calendar
+days, and the onsets against every scored day. In calendar days from the observation's Wednesday the figures above are 6 to 13 over all
+scored days and 6 to 12 around the onsets at h = 1, which is gap 5's range; the panel-row count (4 to 6 rows for reserves and TGA) is the same
+reads in the other unit. The declared H.4.1 lag
+itself is #280.
 
 ## 5. Benchmarks by year (Table 8)
 

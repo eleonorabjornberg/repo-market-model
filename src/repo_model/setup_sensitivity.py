@@ -35,6 +35,21 @@ def downweights(in_period: Sequence[bool], share: float) -> List[float]:
     return [weight if flag else 1.0 for flag in in_period]
 
 
+def period_weights(first: date, last: date, share: float) -> Callable[[Sequence[date]], List[float]]:
+    """`downweights` for the days in `first`..`last`, as a function of a fit's training days (#518).
+
+    The refit of a model takes the label days of its training pairs and returns one weight per pair, so that the
+    period carries `share` of the fit's total weight. A fit whose pairs are all inside the period, or all outside it,
+    weighs every pair 1: the rule rebalances the period against the rest, and with nothing to rebalance against it is
+    the identity (the window of every refit that ends before 2020).
+    """
+
+    def weigh(days: Sequence[date]) -> List[float]:
+        return downweights([first <= day <= last for day in days], share)
+
+    return weigh
+
+
 def select_cutoff_weighted(
     limit: float,
     *,

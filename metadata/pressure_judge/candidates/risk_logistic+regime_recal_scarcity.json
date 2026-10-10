@@ -1,0 +1,22 @@
+{
+  "role": "candidate",
+  "track": "hindsight regime labels (#515, of #524)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "the raw risk_logistic forecast (metadata/risk_date_severity.json), then Platt fitted per as-of reserve-scarcity state (0 to 3, or none), on that state's earlier observable pairs, pooled Platt while the state holds fewer than 60 pairs or 3 events (group_calibration.walk_forward('group') with the state as the group); metadata/hindsight_regimes.json"
+}

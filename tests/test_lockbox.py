@@ -330,6 +330,11 @@ NOT_ENTRY_POINTS = {
         "scored day, calls require_unlocked on it before the first read, and refuses a scratch panel "
         "whose spread is not the published panel's"
     ),
+    "scripts/setup_reads.measure": (
+        "tabulates the age of what each input reads at the 16:00 decision, on the judge's scored days (#517); "
+        "scores no forecast, its caller drops every row after the declared last scored day, refuses a later "
+        "one (setup_diagnostic.require_window) and calls require_unlocked on it before the first read"
+    ),
     "scripts/pressure_track_m.states_command": (
         "tabulates the filtered state against #115's state on the fold grid (#384); scores "
         "nothing, it ends at the declared last scored day through _as_of_folds, which calls "

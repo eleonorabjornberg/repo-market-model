@@ -233,6 +233,51 @@ def window_integrity(
     }
 
 
+def observation_wednesday(row_date: date) -> date:
+    """The Wednesday a weekly H.4.1 value on the panel row `row_date` is dated to: the latest Wednesday on or before it."""
+
+    return row_date - timedelta(days=(row_date.weekday() - 2) % 7)
+
+
+def read_age_days(decision_day: date, row_date: date) -> int:
+    """Calendar days from the observation behind a weekly read to the decision day (#517).
+
+    `row_date` is the panel row the forecast reads. A weekly value is carried on every row from its print to the next, so
+    the row's own date says nothing about the value's age; the age runs from the observation's Wednesday.
+    """
+
+    return (decision_day - observation_wednesday(row_date)).days
+
+
+def age_summary(ages: Sequence[float], *, threshold: float) -> Dict[str, Any]:
+    """The distribution of read ages, and how many are strictly older than `threshold` calendar days."""
+
+    if not ages:
+        raise ValueError("no read to summarise")
+    ordered = sorted(ages)
+    middle = len(ordered) // 2
+    median = ordered[middle] if len(ordered) % 2 else (ordered[middle - 1] + ordered[middle]) / 2
+    by_age: Dict[str, int] = {}
+    for age in ordered:
+        by_age[str(int(age))] = by_age.get(str(int(age)), 0) + 1
+    return {
+        "reads": len(ordered),
+        "min": ordered[0],
+        "median": median,
+        "max": ordered[-1],
+        "older_than_threshold": sum(1 for a in ordered if a > threshold),
+        "by_age": by_age,
+    }
+
+
+def is_copied_row(rows: Sequence[Mapping[str, Any]], index: int, columns: Sequence[str]) -> bool:
+    """Whether every one of `columns` on row `index` equals the previous row's (and is present): a forward-fill-like repeat."""
+
+    return bool(index) and all(
+        rows[index].get(c) is not None and rows[index].get(c) == rows[index - 1].get(c) for c in columns
+    )
+
+
 def same_unit(reference: Mapping[date, float], other: Mapping[date, float]) -> Dict[date, float]:
     """`other` rescaled to `reference`'s unit when the two differ by a power of 1000 (a change of unit, not a revision).
 

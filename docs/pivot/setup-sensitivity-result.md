@@ -33,10 +33,46 @@ passes tier 5.
   from 23 to 11 flags per 252 days. The reason is in
   the data: until 2020 every training window is nearly all 2018-19, so there is little to rebalance towards, and the
   rows' flags already fall almost wholly where the pressure is. This is a reading of the cut-off choice only; the rows'
-  probabilities are not refitted (see "Not checked"). Weighting the period to its share of *all* days leaves the pooled
+  probabilities are not refitted (see "Not checked" and the correction below). Weighting the period to its share of *all* days leaves the pooled
   calibration over the whole window unchanged by construction (the weights are 1); outside 2018-19 the rows over-predict
   (realised minus predicted of -0.02 to -0.03 for four rows at h = 1, +0.01 for two) and inside it they under-predict
   (+0.01 to +0.08), so 2018-19 and the rest of the window pull the pooled figure in opposite directions (Table 4).
+* **Correction, 10 October 2026 (#518): "Down-weighting changes almost nothing" could not have come out otherwise through 2019.** The weight is
+  `share / (1 - share) * outside / inside` (`setup_sensitivity.downweights`), and every row gets 1.0 when a window holds only 2018-19 days. A
+  refit whose window ends in 2018 or 2019 therefore reweights nothing, and the cut-off choice is the identity; the weighting bites from 2020 on, where no row
+  warns an onset anyway. The page explained this only for the windows before 2020. The arithmetic, by the calendar year in which the training
+  window ends (the weight on a 2018-19 day, h = 1 grid; `evidence/setup-sensitivity/refit.md`, Table 1):
+
+  | window ends in | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 |
+  |---|---|---|---|---|---|---|---|---|
+  | weight on a 2018-19 day | 1.0 | 1.0 | 0.001 to 0.156 | 0.170 to 0.324 | 0.338 to 0.492 | 0.506 to 0.660 | 0.674 to 0.828 | 0.842 to 0.997 |
+
+  So the reweighting is the identity through 2019 and close to it in 2025, and the hits of every row fall in those two years. The test above is a
+  reading of the cut-off only. **Re-run with the models refitted.** `scripts/setup_sensitivity_refit.py` refits the five tier-1 risk-date models
+  (`risk_gbm`, `risk_gbm_base`, `risk_logistic`, `risk_logistic_base`, `risk_quantile_skewt_base`; these are the "passers" of the other pages, not
+  this page's five rows) with the training pairs weighted by the same rule (`ml.pressure_risk_date_exceedance(train_weight=...)`), and reads tier 1 under
+  four readings (`metadata/setup_sensitivity_refit.json`, committed before any refit; the flat miss rule, as #482 read it):
+
+  | model | reading | flagged of 26 | worst FA per onset | 2019 | 2020 | 2024 | 2025 |
+  |---|---|---|---|---|---|---|---|
+  | risk_gbm | declared | 13 | 1.35 | 10 of 13 | 0 of 2 | 0 of 2 | 3 of 5 |
+  | risk_gbm | refit and cut-off down-weighted | 13 | 1.12 | 10 of 13 | 0 of 2 | 0 of 2 | 3 of 5 |
+  | risk_gbm_base | declared | 14 | 1.50 | 10 of 13 | 0 of 2 | 0 of 2 | 4 of 5 |
+  | risk_gbm_base | refit and cut-off down-weighted | 14 | 1.12 | 10 of 13 | 0 of 2 | 0 of 2 | 4 of 5 |
+  | risk_logistic | declared | 14 | 1.85 | 10 of 13 | 0 of 2 | 0 of 2 | 4 of 5 |
+  | risk_logistic | refit and cut-off down-weighted | 15 | 1.58 | 10 of 13 | 0 of 2 | 0 of 2 | 5 of 5 |
+  | risk_logistic_base | declared | 13 | 1.77 | 10 of 13 | 0 of 2 | 0 of 2 | 3 of 5 |
+  | risk_logistic_base | refit and cut-off down-weighted | 14 | 1.35 | 10 of 13 | 0 of 2 | 0 of 2 | 4 of 5 |
+  | risk_quantile_skewt_base | declared | 14 | 1.88 | 10 of 13 | 0 of 2 | 0 of 2 | 4 of 5 |
+  | risk_quantile_skewt_base | refit and cut-off down-weighted | 15 | 1.50 | 10 of 13 | 0 of 2 | 0 of 2 | 5 of 5 |
+
+  (The cut-off-only and refit-only readings, and 2018, are in `evidence/setup-sensitivity/refit.md`; 2018 is 0 of 4 in every reading.) The declared rows reproduce
+  the passers' known figures. **Read plainly: through 2019 nothing moved, because nothing could.** All five models warn the same 10 of 13 onsets of 2019
+  and none warns 2018 or 2020 in any reading. The only warning that changes is 2025-10-15, which `risk_logistic`, `risk_logistic_base` and
+  `risk_quantile_skewt_base` now flag, and the false alarms fall for every model. The weighting that is available in the data cannot say whether dominance
+  by 2018-19 drives the 2019 hits: a window of 2018-19 days has no other period to be rebalanced toward, so any such test would need data from another period, or a different question (for
+  example, dropping a share of 2018-19 days from the training window and the cut-off window, which changes the sample, not its weights). That is a
+  new test, not run here. The question this section was read as answering remains open.
 * **By year.** Tier 1 is carried by 2019: 11 to 13 of its 13 onsets are flagged by each of the five rows. In 2018 the
   rows flag none or one of four (the first training window has no onset), in 2020 at most one of two, in 2024 none of two,
   in 2025 one to four of five (Table 2a). Tier 3's alarm rate is high only in 2019 (89 to 153 flags per 252 days, over
@@ -161,7 +197,8 @@ PYTHONPATH=src python3 scripts/setup_sensitivity.py run --panel PUB.csv --bench 
 ## Not checked, and for Eleonora
 
 * The rows' own probabilities are not refitted with 2018-19 down-weighted, nor with the cut-off cadence changed: the diagnostic
-  moves the cut-off choice, which is the judge's, and nothing inside the rows.
+  moves the cut-off choice, which is the judge's, and nothing inside the rows. (Corrected, 10 October 2026, #518: the five risk-date passers
+  were refitted with 2018-19 down-weighted, in the correction under "By year" above; the five rows of this page were not.)
 * `ngboost_laplace` is not named in the judge's declaration on main (it was scored by the pull request of #416 under a
   declaration that is not on main), so the script adds it in memory, with no features or calibration text, to run the judge's
   tier computations. No file under `metadata/pressure_judge/` is written and the declaration's digest is unchanged.

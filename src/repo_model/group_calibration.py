@@ -49,6 +49,7 @@ __all__ = [
     "group_label",
     "regime_walk_forward",
     "require_observable",
+    "scarcity_state_label",
     "require_regimes_asof",
     "walk_forward",
 ]
@@ -96,6 +97,20 @@ def group_label(state: Optional[float], day_type: str) -> str:
         if int(state) != state:
             raise ValueError(f"reserve-scarcity state {state!r} is not 0 to 3")
     return f"{band}|{'ordinary' if day_type == 'ordinary' else 'scheduled'}"
+
+
+def scarcity_state_label(state: Optional[float]) -> str:
+    """The group label of an as-of reserve-scarcity state: `0` to `3`, or `unknown` for none (#515).
+
+    Raises:
+        ValueError: for a state that is not 0, 1, 2, 3 or None.
+    """
+
+    if state is None:
+        return "unknown"
+    if state not in (0, 1, 2, 3):
+        raise ValueError(f"reserve-scarcity state {state!r} is not 0 to 3")
+    return str(int(state))
 
 
 def require_observable(pairs: Sequence[Tuple[date, float, int, str]], fitted_at: date) -> None:

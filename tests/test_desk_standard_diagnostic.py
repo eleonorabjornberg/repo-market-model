@@ -145,6 +145,73 @@ class ScoredDayGuardTests(unittest.TestCase):
         self.assertEqual([r.date for r in kept], [date(2025, 12, 31)])
 
 
+class WeekAverageProxyTests(unittest.TestCase):
+    """#516: the reserves proxy is built on the H.4.1's own definition, a Thursday-to-Wednesday seven-calendar-day average.
+
+    The page's first proxy compared Wednesday levels of the TGA and the reverse repo with changes in WRESBAL, a week average.
+    """
+
+    def test_a_week_average_carries_the_last_statement_over_days_without_one(self):
+        wednesday = date(2024, 3, 6)
+        daily = {date(2024, 2, 29): 10.0, date(2024, 3, 1): 20.0, date(2024, 3, 6): 90.0}  # Thu 29 Feb, Fri 1 Mar, Wed 6 Mar
+        # Thu 10, Fri 20, Sat 20, Sun 20, Mon 20, Tue 20, Wed 90
+        self.assertAlmostEqual(ds.week_average(daily, wednesday), (10 + 20 * 5 + 90) / 7)
+
+    def test_a_week_with_no_statement_to_carry_is_not_averaged(self):
+        self.assertIsNone(ds.week_average({date(2024, 3, 6): 1.0}, date(2024, 3, 6)))
+
+    def test_a_series_that_starts_inside_the_week_is_not_averaged(self):
+        self.assertIsNone(ds.week_average({date(2024, 3, 4): 1.0, date(2024, 3, 6): 2.0}, date(2024, 3, 6)))
+
+    def _world(self):
+        """Reserves are exactly 1000 less the week-average TGA and reverse repo; the daily series swing inside the week."""
+
+        tga, rrp, reserves = {}, {}, {}
+        day = date(2024, 1, 1)
+        while day <= date(2024, 3, 27):
+            if day.weekday() < 5:
+                tga[day] = 300.0 + 40.0 * ((day.toordinal() * 7) % 5)
+                rrp[day] = 100.0 + 30.0 * ((day.toordinal() * 3) % 4)
+            day = date.fromordinal(day.toordinal() + 1)
+        wednesday = date(2024, 1, 10)
+        while wednesday <= date(2024, 3, 27):
+            reserves[wednesday] = 1000.0 - ds.week_average(tga, wednesday) - ds.week_average(rrp, wednesday)
+            wednesday = date.fromordinal(wednesday.toordinal() + 7)
+        return reserves, tga, rrp
+
+    def test_the_matched_proxy_is_exact_when_reserves_are_the_balance_sheet_residual(self):
+        reserves, tga, rrp = self._world()
+        result = ds.week_average_proxy(reserves, tga, rrp)["base_1_weeks_earlier"]
+        self.assertGreater(result["wednesdays"], 8)
+        self.assertAlmostEqual(result["mae_proxy_billions"], 0.0, places=9)
+        self.assertAlmostEqual(result["correlation_of_changes"], 1.0, places=9)
+
+    def test_the_h41_level_is_checked_against_the_week_average_of_the_daily_series(self):
+        daily = {date(2024, 2, 29): 10.0, date(2024, 3, 1): 20.0, date(2024, 3, 6): 90.0}
+        average = (10 + 20 * 5 + 90) / 7
+        weekly = {date(2024, 3, 6): average + 0.005, date(2024, 2, 28): 5.0}  # that week has no statement to carry
+        result = ds.week_average_identity(weekly, daily)
+        self.assertEqual((result["wednesdays"], result["within_tolerance"]), (1, 1))
+        self.assertAlmostEqual(result["max_abs_difference_billions"], 0.005)
+        self.assertEqual(ds.week_average_identity({date(2024, 3, 6): average + 1.0}, daily)["within_tolerance"], 0)
+
+    def test_the_two_proxies_are_compared_on_the_same_wednesdays(self):
+        reserves, tga, rrp = self._world()
+        del tga[date(2024, 2, 21)]  # a Wednesday with no statement: the level proxy cannot be built there, the average can
+        only = ds.common_wednesdays(reserves, tga, rrp)
+        levels = ds.level_proxy(reserves, tga, rrp, only=only)
+        averages = ds.week_average_proxy(reserves, tga, rrp, only=only)
+        for key in levels:
+            self.assertEqual(levels[key]["wednesdays"], averages[key]["wednesdays"])
+        alone = ds.week_average_proxy(reserves, tga, rrp)["base_1_weeks_earlier"]["wednesdays"]
+        self.assertGreater(alone, averages["base_1_weeks_earlier"]["wednesdays"])
+
+    def test_the_level_proxy_on_the_same_data_is_not_exact(self):
+        reserves, tga, rrp = self._world()
+        result = ds.level_proxy(reserves, tga, rrp)["base_1_weeks_earlier"]
+        self.assertGreater(result["mae_proxy_billions"], 1.0)
+
+
 class EvidenceTests(unittest.TestCase):
     """The findings recorded in the evidence file. A change to the script or the inputs shows up here."""
 
@@ -191,6 +258,16 @@ class EvidenceTests(unittest.TestCase):
             ["2018-11-15", "2018-11-30"],
         )
         self.assertEqual(len(blind["risk_date_models_cannot_warn_at_any_horizon"]), 6)
+
+    def test_the_matched_proxy_tracks_reserves_and_the_level_proxy_does_not(self):
+        matched = self.evidence["reserves"]["daily_proxy_matched"]
+        levels, averages = matched["wednesday_levels"]["base_1_weeks_earlier"], matched["week_averages"]["base_1_weeks_earlier"]
+        self.assertEqual(levels["wednesdays"], averages["wednesdays"])
+        self.assertAlmostEqual(levels["correlation_of_changes"], 0.28, places=2)  # the page's first figure, reproduced
+        self.assertAlmostEqual(averages["correlation_of_changes"], 0.72, places=2)
+        self.assertLess(averages["mae_proxy_billions"], averages["mae_carry_forward_billions"])
+        identity = matched["h41_tga_is_the_week_average_of_the_dts_tga"]
+        self.assertEqual(identity["wednesdays"], identity["within_tolerance"])
 
     def test_the_nowcast_figures_of_445_are_reproduced(self):
         nowcast = self.evidence["nowcast"]

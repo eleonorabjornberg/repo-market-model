@@ -22,6 +22,12 @@ public at the refit's first decision instant, `stacking.training_window`). The i
 walk-forward probabilities for those days, never on its in-sample fit. The guard and its recorded mutations are in
 `tests/test_calibrated_stack.py`.
 
+
+> *Note, 10 October 2026 (#515, #524).* The "as-of regime" this stack reads is the regime of `metadata/evaluation_splits.json`, whose boundaries were drawn after the fact; a
+> forecaster could not have known on 2020-01-01, 2021-01-01, 2024-01-01 or 2025-01-01 that a new regime had begun. It was re-scored with the term removed and replaced by the as-of
+> scarcity state in `hindsight-regimes-result.md`: the regime coefficients are 0 before 2020, the 13 of 13 in 2019 is the same without the term, and the labels cost 2025 recall
+> and buy fewer false alarms. The "5.12" flat false-alarm count in the table below is the flat count at the weighted run's cut-offs; the flat run's own count is 3.88 (see `regime-recalibration-result.md`, correction of #519).
+
 ## Result: neither stack passes
 
 Rule in force: weighted miss criteria, adopted by Eleonora on #464 (her attested comment of 9 October 2026; the judge is run
