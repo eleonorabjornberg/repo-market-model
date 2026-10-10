@@ -466,6 +466,8 @@ def inputs_command(args) -> int:
         ranking[f] = cell
     out["rank_at_horizon_1"] = ranking
     args.output.write_text(json.dumps(out, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    if args.markdown:
+        args.markdown.write_text(markdown_inputs(out), encoding="utf-8")
     print(json.dumps({"output": str(args.output), "inputs": len(features)}))
     return 0
 
@@ -547,6 +549,74 @@ def markdown(result) -> str:
         lines.append(
             f"| {o['day']} | {o['day_type']} | {o['days_to_month_end']:g} | {o['settlement_bn']:g} ({o['coupons_bn']:g}) | {hits} |"
         )
+    years = sorted({o["year"] for o in result["onsets"]})
+    lines += [
+        "",
+        "Table E. Onsets on which the row was blind at every horizon: its cut-off (or clauses) was chosen on a window "
+        "with no onset it could catch within the false-alarm limit, so it flagged nothing on that day whatever the "
+        "inputs said. Onsets blind / onsets, by calendar year.",
+        "",
+        "| row | all | " + " | ".join(str(y) for y in years) + " |",
+        "|---|---|" + "---|" * len(years),
+    ]
+    for name in names:
+        cells = []
+        for y in years:
+            members = [o for o in result["onsets"] if o["year"] == y]
+            cells.append(f"{sum(1 for o in members if len(o['blind_at_horizons'][name]) == 5)}/{len(members)}")
+        total = sum(1 for o in result["onsets"] if len(o["blind_at_horizons"][name]) == 5)
+        lines.append(f"| {name} | {total}/{len(result['onsets'])} | " + " | ".join(cells) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def markdown_inputs(result) -> str:
+    lines = [
+        "Table F. What each input reads at the 16:00 decision, from the as-of rule (`InformationRule.information_set`) over "
+        "the judge's scored days. Rows before: panel days between the scored day and the observation read (range over "
+        "the scored days). Hours: how long the observation had been public at the decision, median; negative means "
+        "the value the rule would read was not yet public, so the input cannot be read at that horizon.",
+        "",
+        "| input | rows before, h = 1 | hours public, h = 1 | rows before, h = 2 | hours public, h = 2 |",
+        "|---|---|---|---|---|",
+    ]
+    h1, h2 = result["horizons"]["1"], result["horizons"]["2"]
+
+    def span(cell):
+        keys = sorted(int(k) for k in cell["panel_days_before_scored_day"])
+        return str(keys[0]) if keys[0] == keys[-1] else f"{keys[0]} to {keys[-1]}"
+
+    def hours(cell):
+        value = cell["median_hours_between_availability_and_decision"]
+        return "calendar" if value is None else f"{value:.1f}"
+
+    lines.append(
+        f"| spread (the target) | {', '.join(h1['target_row_read_panel_days_before_scored_day'])} | – | "
+        f"{', '.join(h2['target_row_read_panel_days_before_scored_day'])} | – |"
+    )
+    for name, cell in h1["inputs"].items():
+        other = h2["inputs"][name]
+        lines.append(f"| {name} | {span(cell)} | {hours(cell)} | {span(other)} | {hours(other)} |")
+    lines += [
+        "",
+        "Table G. How well the value read at h = 1 ranks the +5 bp pressure days and the onsets (AUROC; below 0.5 means "
+        "a low value goes with pressure), over the judge's shared scored days and, for the onsets, in the years no "
+        "model warns. Onset AUROC compares an onset with the days that are not pressure days. 2018, 2020 and 2024 "
+        "hold 4, 2 and 2 onsets, so those cells are descriptions of a few days and not evidence.",
+        "",
+        "| input | pressure days, all years | onsets, all years | onsets 2018 (4) | onsets 2020 (2) | onsets 2024 (2) |",
+        "|---|---|---|---|---|---|",
+    ]
+
+    def auroc(value):
+        return "–" if value is None else f"{value:.2f}"
+
+    for name, cell in result["rank_at_horizon_1"].items():
+        a = cell["all_years"]
+        lines.append(
+            f"| {name} | {auroc(a['auroc_pressure_day'])} | {auroc(a['auroc_onset_vs_non_pressure'])} | "
+            + " | ".join(auroc(cell[y]["auroc_onset_vs_non_pressure"]) for y in ("2018", "2020", "2024"))
+            + " |"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -563,6 +633,7 @@ def main(argv=None) -> int:
     inputs.add_argument("--panel", type=Path, required=True)
     inputs.add_argument("--published", type=Path, required=True)
     inputs.add_argument("--output", type=Path, required=True)
+    inputs.add_argument("--markdown", type=Path)
     inputs.set_defaults(handler=inputs_command)
     args = parser.parse_args(argv)
     return args.handler(args)
