@@ -86,6 +86,7 @@ from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .data import DailyObservation
 from .ingest import OFR_STFM_REAL_TIME_START, OFR_STFM_SOURCE_ID
+from .splits import LookAheadError
 
 __all__ = [
     "CANDIDATES",
@@ -104,12 +105,14 @@ __all__ = [
     "SENSITIVITIES",
     "STRESS_REGIMES",
     "VOLUME_CHANGE_ROWS",
+    "blank_ofr_before_real_time",
     "build_columns",
     "classify",
     "comparison_key",
     "family_size",
     "holm",
     "p_value_seed",
+    "require_ofr_public",
 ]
 
 #: The OFR's Short-term Funding Monitor repo collection (#187).
@@ -305,6 +308,41 @@ def build_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
         values["ofr_dvp_minus_bgcr_bp"] = None if row.date < OFR_REAL_TIME_START else spread
         out.append(DailyObservation(row.date, values))
     return out
+
+
+def blank_ofr_before_real_time(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
+    """`rows` with every `ofr_` column set to `None` on a day before `OFR_REAL_TIME_START`.
+
+    The OFR filled those days in after it began publishing (#508): no forecaster
+    had them. The input rows are not changed.
+    """
+
+    out: List[DailyObservation] = []
+    for row in rows:
+        if row.date >= OFR_REAL_TIME_START:
+            out.append(row)
+            continue
+        values = {name: (None if name.startswith("ofr_") else value) for name, value in row.values.items()}
+        out.append(DailyObservation(row.date, values))
+    return out
+
+
+def require_ofr_public(rows: Sequence[DailyObservation]) -> None:
+    """Refuse a panel that holds an OFR value from before the OFR published it (#522, of #508).
+
+    Every column named `ofr_*` is checked, on every row dated before
+    `OFR_REAL_TIME_START`. Raises `LookAheadError` naming the first such value.
+    """
+
+    for row in rows:
+        if row.date >= OFR_REAL_TIME_START:
+            continue
+        for column, value in row.values.items():
+            if column.startswith("ofr_") and value is not None:
+                raise LookAheadError(
+                    f"{column!r} holds a value on {row.date}, before the OFR published in real time "
+                    f"({OFR_REAL_TIME_START}); it was filled in later and was not public on its own day (#508)"
+                )
 
 
 def p_value_seed(*parts: object) -> int:

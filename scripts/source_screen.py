@@ -303,6 +303,8 @@ def panel_command(args) -> int:
             out = []
             for column in columns:
                 value = row.values[column] if column in row.values else extra_values[column].get(row.date)
+                if column.startswith("ofr_") and row.date < dvp_segment.OFR_REAL_TIME_START:
+                    value = None  # filled in after the OFR published in real time (#508, #522)
                 out.append(_cell(value))
             writer.writerow([row.date.isoformat()] + out)
     print(json.dumps({"rows": len(keep), "columns": len(columns), "last": keep[-1].date.isoformat()}))
@@ -425,6 +427,7 @@ def run_command(args) -> int:
     registry = measurement_fields.load_registry()
     if rows[-1].date > LAST_DAY:
         raise SystemExit(f"the panel runs past {LAST_DAY}; a screen reads no day in a locked tier")
+    dvp_segment.require_ofr_public(rows)
     with Switched():
         columns = screened_columns(rows)
         readable, unreadable = probe(registry, columns, rows)
