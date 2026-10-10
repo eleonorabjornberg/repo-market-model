@@ -71,14 +71,14 @@ def _solve(matrix: List[List[float]], vector: List[float]) -> List[float]:
     return [a[i][n] / a[i][i] for i in range(n)]
 
 
-def _loss(theta: Sequence[float], rows, y, ridge: float) -> float:
+def _loss(theta: Sequence[float], rows, y, ridge: float, prior: Sequence[float]) -> float:
     m = len(theta) - 1
     total = 0.0
     for x, outcome in zip(rows, y):
         z = theta[0] + sum(theta[1 + j] * x[j] for j in range(m))
         # log(1 + e^z) - y z, stable
         total += max(z, 0.0) + math.log1p(math.exp(-abs(z))) - outcome * z
-    total += 0.5 * ridge * sum((theta[1 + j] - 1.0 / m) ** 2 for j in range(m))
+    total += 0.5 * ridge * sum((theta[1 + j] - prior[j]) ** 2 for j in range(m))
     return total
 
 
@@ -89,12 +89,15 @@ def fit_logit_stack(
     ridge: float,
     iterations: int = 50,
     tolerance: float = 1e-8,
+    prior: Optional[Sequence[float]] = None,
 ) -> Tuple[float, Tuple[float, ...]]:
     """The intercept and weights of the penalised logistic stack.
 
     Newton's method, started from the equal-weight pool, with step halving when
     a step does not lower the penalised log loss. The penalty is
-    `(ridge / 2) * sum_m (w_m - 1/M)^2`; the intercept is not penalised.
+    `(ridge / 2) * sum_m (w_m - prior_m)^2`, the prior being `1/M` for every
+    column unless `prior` gives one per column (the calibrated stack of #475
+    pulls its regime columns towards 0); the intercept is not penalised.
 
     Raises:
         ValueError: on rows of different widths, a row count that is not the
@@ -110,8 +113,11 @@ def fit_logit_stack(
         raise ValueError("every row of the stack needs one logit per member")
     if any(o not in (0, 1) for o in outcomes):
         raise ValueError("stack outcomes are 0 or 1")
-    theta = [0.0] + [1.0 / m] * m
-    current = _loss(theta, rows, outcomes, ridge)
+    prior = [1.0 / m] * m if prior is None else [float(v) for v in prior]
+    if len(prior) != m:
+        raise ValueError(f"{len(prior)} prior values for {m} columns")
+    theta = [0.0] + list(prior)
+    current = _loss(theta, rows, outcomes, ridge, prior)
     for _ in range(iterations):
         gradient = [0.0] * (m + 1)
         hessian = [[0.0] * (m + 1) for _ in range(m + 1)]
@@ -125,7 +131,7 @@ def fit_logit_stack(
                 for b in range(m + 1):
                     hessian[a][b] += v * vec[a] * vec[b]
         for j in range(m):
-            gradient[1 + j] += ridge * (theta[1 + j] - 1.0 / m)
+            gradient[1 + j] += ridge * (theta[1 + j] - prior[j])
             hessian[1 + j][1 + j] += ridge
         for a in range(m + 1):
             hessian[a][a] += 1e-8
@@ -133,7 +139,7 @@ def fit_logit_stack(
         scale, moved = 1.0, False
         for _ in range(30):
             trial = [theta[a] - scale * step[a] for a in range(m + 1)]
-            loss = _loss(trial, rows, outcomes, ridge)
+            loss = _loss(trial, rows, outcomes, ridge, prior)
             if loss <= current + 1e-12:
                 moved = True
                 break

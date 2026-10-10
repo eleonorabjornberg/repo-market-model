@@ -1,0 +1,29 @@
+{
+  "role": "candidate",
+  "track": "calibrated stack (#475)",
+  "members": [
+    "risk_gbm",
+    "risk_gbm_base",
+    "risk_logistic",
+    "risk_logistic_base",
+    "risk_quantile_skewt_base"
+  ],
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps"
+  ],
+  "features_note": "the inputs the members read, as of the decision instant, plus the as-of regime; the stack adds no other input",
+  "calibration": "none (a logistic stack, so its probability is the stack's own): the five passers' probabilities and the as-of regime, ridge towards the equal-weight pool, refitted every 21 scored days on earlier outcomes; metadata/calibrated_stack.json"
+}

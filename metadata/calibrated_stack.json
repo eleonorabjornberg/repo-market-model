@@ -1,0 +1,46 @@
+{
+  "status": "declared before any score (#475, a track of #374); a scratch measurement, nothing published moves",
+  "form": "logistic regression of the pressure day on the logits of the five tier-1 passers' probabilities and the as-of regime, refitted at each refit block",
+  "candidates": {
+    "logistic": "calibrated_stack_logistic",
+    "isotonic": "calibrated_stack_isotonic"
+  },
+  "members": [
+    "risk_gbm",
+    "risk_gbm_base",
+    "risk_logistic",
+    "risk_logistic_base",
+    "risk_quantile_skewt_base"
+  ],
+  "members_note": "the five candidates that pass tier 1 (onset warning) under both false-alarm rules at the weighted-miss run (docs/pivot/weighted-miss-result.md, Table 1); the other tier-1 passers of that run (rare_gbm_focal+recalibrated, two_part_logistic) pass under the weighted rule only and are not members",
+  "regime_labels": ["2018-19", "2020", "2021-23", "2024", "2025-26"],
+  "regime_note": "the as-of regime of metadata/evaluation_splits.json, a function of the day's calendar date; one indicator per label, so a regime with no day in the training window keeps the coefficient 0",
+  "thresholds_bp": [5.0, 10.0],
+  "design": "for each threshold and horizon: log-odds of P(spread > tau) = intercept + sum_m w_m * logit(clip(p_m)) + sum_r c_r * [regime = r]",
+  "clip": 0.0001,
+  "fit": {
+    "method": "Newton's method on the penalised log loss; the intercept is not penalised",
+    "penalty": "(ridge / 2) * (sum_m (w_m - 1/M)^2 + sum_r c_r^2): the member weights are pulled towards the equal-weight logit pool, the regime coefficients towards 0",
+    "ridge": 1.0,
+    "iterations_at_most": 50,
+    "tolerance": 1e-8
+  },
+  "refit": {
+    "every": 21,
+    "blocks": "the judge's blocks: scored days 0..20, 21..41, ... of the shared fold grid",
+    "training_window": "the scored days of earlier blocks whose outcome was public at the block's first decision instant, as pressure_judge.choose_cutoffs reads it: up to the business day h + 1 business days before the block's first scored day",
+    "members_read": "each member's own walk-forward probabilities, made before the refit, out of sample when made"
+  },
+  "isotonic": {
+    "fit": "probability_calibration's CORP isotonic fit of the outcome on the stack's probability",
+    "training_pairs": "the stack's walk-forward probabilities (each made by an earlier refit, before the day's outcome) and the outcomes of the same training window; never the stack's in-sample fit",
+    "output": "held inside [clip, 1 - clip]"
+  },
+  "fallback": {
+    "rule": "the equal-weight logit pool (intercept 0, every member weight 1/M, regime coefficients 0) and, for the isotonic candidate, no recalibration",
+    "when": "the training window has fewer than 126 scored days, or fewer than 5 pressure days at the threshold, or fewer than 5 days without",
+    "minimum_days": 126,
+    "minimum_each_class": 5
+  },
+  "scoring": "pressure_judge.py judge under the weighted miss rule (adopted on #464; run with --rule weighted, and beside it unweighted), the declaration of metadata/pressure_judge.json, scored days 2018-06-29 to 2025-12-31 only; each stack is a candidate there, each member alone is a row beside it"
+}
