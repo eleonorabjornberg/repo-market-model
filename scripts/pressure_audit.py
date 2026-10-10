@@ -392,10 +392,11 @@ def inputs_command(args) -> int:
     features = PUBLISHED_INPUTS + MEASUREMENT_INPUTS
     tau = 5.0
     out = {"panel_sha256": panel_sha256(args.panel), "published_panel_sha256": panel_sha256(args.published), "horizons": {}}
-    series = {}
+    series, grids = {}, {}
     with risk.switched_on():
         for h in HORIZONS:
             grid = [i for i in fold_grid(dates, registry, decision_time=DECISION, minimum_history=MINIMUM_HISTORY, horizon=h) if dates[i] <= last]
+            grids[h] = {dates[i] for i in grid}
             rule = InformationRule(registry, features, decision_time=DECISION, horizon=h)
             rows_back = {f: Counter() for f in features}
             hours = {f: [] for f in features}
@@ -410,7 +411,9 @@ def inputs_command(args) -> int:
                     if read.hours is not None:
                         hours[read.feature].append(read.hours)
                     if h == 1:
-                        series.setdefault(read.feature, {})[dates[i]] = rows[read.row].values.get(read.feature)
+                        source = rows[read.row]
+                        value = source.spread_bps if read.feature == "spread_bps" else source.values.get(read.feature)
+                        series.setdefault(read.feature, {})[dates[i]] = value
             out["horizons"][str(h)] = {
                 "scored_days": len(grid),
                 "target_row_read_panel_days_before_scored_day": {str(k): v for k, v in sorted(anchors.items())},
@@ -422,8 +425,10 @@ def inputs_command(args) -> int:
                     for f in features
                 },
             }
-    pressure = {r.date: int(exceeds_bp(r.spread_bps, tau)) for r in rows if r.date <= last}
-    scored_days = [d for d in dates if date(2018, 6, 29) <= d <= last]
+    # The days every horizon scores (the judge's shared grid): the 26 onsets of the bar.
+    shared = set.intersection(*grids.values())
+    pressure = {r.date: int(exceeds_bp(r.spread_bps, tau)) for r in rows if r.date in shared}
+    scored_days = sorted(shared)
     onset_days = set(pressure_module.onsets(rows, tau, scored_days))
     ranking = {}
     for f, by_day in series.items():
