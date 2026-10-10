@@ -147,7 +147,7 @@ through 2019 for `risk_gbm_base` at h = 1 and h = 5 and summarises the rest.
 * The first refit has **12** risk-date training pairs at h = 1 (7 at h = 5), with **1** event at +5 bp and **0** at +10 bp. By
   November 2018 it is 33 pairs and 4 events at +5 bp, 1 at +10 bp (22 pairs and 2 events at h = 5).
 * `min_samples_leaf = 20` (`ml.py:4056`) means the gradient-boosted classifier cannot split a training set of fewer than 40
-  (`leaf_floor.json`: 39 pairs give one probability on 50 new rows, 40 give eight). On a smaller set `risk_gbm` and `risk_gbm_base` are
+  (`leaf_floor.json`: 39 pairs give one probability on 50 new rows, 40 give 27). On a smaller set `risk_gbm` and `risk_gbm_base` are
   a constant: the base rate of the training pairs. That is 6 of the 18 refits through 2019 at h = 1 (the first refit with 40 pairs is
   the one served from 2018-12-31) and 10 of 18 at h = 2 to 5 (the first is the one served from 2019-05-02). The logistic and the
   skew-t have no leaf floor but are fitted on the same few pairs.

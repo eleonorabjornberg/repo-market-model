@@ -15,15 +15,15 @@
   },
   {
    "training_pairs": 40,
-   "distinct_probabilities_on_50_new_rows": 8
+   "distinct_probabilities_on_50_new_rows": 27
   },
   {
    "training_pairs": 41,
-   "distinct_probabilities_on_50_new_rows": 9
+   "distinct_probabilities_on_50_new_rows": 15
   },
   {
    "training_pairs": 42,
-   "distinct_probabilities_on_50_new_rows": 11
+   "distinct_probabilities_on_50_new_rows": 30
   }
  ]
 }

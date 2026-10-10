@@ -40,7 +40,9 @@ Commands (the panels are the scratch panel of `risk_date_severity.py` and the pu
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import random
 import sys
 from datetime import date, time
 from pathlib import Path
@@ -49,7 +51,6 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "scripts"))
 
-import risk_date_severity as rds  # noqa: E402
 from repo_model import ml, measurement_fields, pressure  # noqa: E402
 from repo_model import pressure_judge as pj  # noqa: E402
 from repo_model.baseline import ExceedanceCurves, panel_sha256, rolling_exceedance_backtest  # noqa: E402
@@ -62,6 +63,17 @@ from repo_model.data import (  # noqa: E402
 )
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
+
+def _sibling(name: str):
+    """A sibling script, loaded by path (the scripts are not a package)."""
+
+    spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+rds = _sibling("risk_date_severity")
 
 VARIANTS = ("declared", "onset_label", "bill_days", "calendar_bd", "calendar_wide")
 QUARTER_MONTHS = (3, 6, 9, 12)
@@ -471,28 +483,22 @@ def onsets_command(args) -> int:
 
 
 def leaf_floor_command(args) -> int:
-    """The smallest training set on which the declared classifier is not a constant (gap 4)."""
+    """The smallest training set on which the declared classifier is not a constant (gap 4).
 
-    import numpy as np
-    from sklearn.ensemble import HistGradientBoostingClassifier
+    The repo's own fit (`ml._fit_classifier`, the declared `PRESSURE_CLASSIFIER_SETTINGS`) on random inputs
+    with about one pressure label in ten, read on 50 new rows: the number of distinct probabilities it returns.
+    """
 
-    settings = ml.PRESSURE_CLASSIFIER_SETTINGS
-    rng = np.random.default_rng(0)
+    floor = ml.PRESSURE_CLASSIFIER_SETTINGS["min_samples_leaf"]
+    rng = random.Random(0)
     rows = []
-    for n in range(2 * settings["min_samples_leaf"] - 3, 2 * settings["min_samples_leaf"] + 3):
-        x = rng.normal(size=(n, 5))
-        y = np.zeros(n, dtype=int)
-        y[: max(2, n // 10)] = 1
-        model = HistGradientBoostingClassifier(
-            learning_rate=settings["learning_rate"],
-            max_iter=settings["max_iter"],
-            max_leaf_nodes=settings["max_leaf_nodes"],
-            min_samples_leaf=settings["min_samples_leaf"],
-            random_state=settings["random_state"],
-        ).fit(x, y)
-        distinct = len(set(np.round(model.predict_proba(rng.normal(size=(50, 5)))[:, 1], 10)))
+    for n in range(2 * floor - 3, 2 * floor + 3):
+        xs = [[rng.gauss(0.0, 1.0) for _ in range(5)] for _ in range(n)]
+        labels = [1 if k < max(2, n // 10) else 0 for k in range(n)]
+        served = [[rng.gauss(0.0, 1.0) for _ in range(5)] for _ in range(50)]
+        distinct = len({round(p, 10) for p in ml._fit_classifier("gbm_classifier", xs, labels, served)})
         rows.append({"training_pairs": n, "distinct_probabilities_on_50_new_rows": distinct})
-    print(json.dumps({"min_samples_leaf": settings["min_samples_leaf"], "rows": rows}, indent=1))
+    print(json.dumps({"min_samples_leaf": floor, "rows": rows}, indent=1))
     return 0
 
 
