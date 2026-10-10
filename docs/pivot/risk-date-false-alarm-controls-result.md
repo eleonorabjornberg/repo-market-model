@@ -99,7 +99,7 @@ the controls differ is tier 1 and tier 5, and the two trade against each other.
   Table 2b). The gate passes tier 1 and **fails tier 5** on the two gradient-boosted rows: it is no longer calibrated and ahead of
   climatology over the week-ahead window, which the #525 variant was. The skew-t row passes tiers 1 and 5 and fails tier 3, the
   nearest any row comes to the full rule.
-* **That tier 1 pass does not survive the readings the audit questioned.** For the three gate rows, tier 1 passes as declared (a)
+* **That tier 1 result does not survive the readings the audit questioned.** For the three gate rows, tier 1 is met as declared (a)
   and at h = 1 alone (b1), and fails pooled across horizons (b2: 3.67, 3.64 and 3.90 weighted false alarms per onset against a
   limit of 2) and outside 2018-19 (e: 4 of 26 onsets at 2.58, 5 at 2.61 and 4 at 3.22). The parents fail (e) too (1.61, 2.06, 3.81),
   and the two gradient-boosted parents pass (b2) (1.48, 1.59) where the gate rows do not (`readings.md`). The gate rows' tier 1
