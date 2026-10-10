@@ -94,6 +94,7 @@ Standard library only, like the rest of `src/` outside `ml.py`.
 
 from __future__ import annotations
 
+import bisect
 import hashlib
 import json
 import math
@@ -119,14 +120,18 @@ __all__ = [
     "Declaration",
     "Forecast",
     "Grid",
+    "WeightedMiss",
     "auroc",
     "benchmark_forecasts",
     "build_grid",
     "choose_cutoffs",
+    "false_alarm_weights",
     "forecasts_from_horizon_document",
     "judge",
     "load_declaration",
+    "load_weighted_miss",
     "matched_false_alarm_weights",
+    "miss_weight",
     "report_forecast",
     "restrict_forecast",
     "require_scored_days",
@@ -135,6 +140,7 @@ __all__ = [
 ]
 
 DEFAULT_DECLARATION = Path(__file__).parents[2] / "metadata" / "pressure_judge.json"
+DEFAULT_WEIGHTED_MISS = Path(__file__).parents[2] / "metadata" / "weighted_miss.json"
 
 
 def candidates_directory(path: Path = DEFAULT_DECLARATION) -> Path:
@@ -201,10 +207,23 @@ class Declaration:
     climatology: str
     persistence: str
     candidates: Mapping[str, Mapping[str, Any]]
+    weighted_miss: Optional["WeightedMiss"] = None
+
+    @property
+    def weighting_applied(self) -> bool:
+        """Whether false alarms are weighted by their distance to a pressure day (#454); by default they are not."""
+
+        return self.weighted_miss is not None and self.weighted_miss.applied
 
     def document(self) -> dict:
         """What a result carries about the declaration it was judged under."""
 
+        document = self._document()
+        if self.weighted_miss is not None:
+            document["weighted_miss"] = self.weighted_miss.document()
+        return document
+
+    def _document(self) -> dict:
         return {
             "path": self.path,
             "sha256": self.sha256,
@@ -260,6 +279,146 @@ class Declaration:
                 for name, entry in self.candidates.items()
             },
         }
+
+
+@dataclass(frozen=True)
+class WeightedMiss:
+    """`metadata/weighted_miss.json`: how much a false alarm counts, by its distance to a pressure day (#454).
+
+    A flag on a day that is not a pressure day is a false alarm of weight `w(d)`, `d` the trading days to the
+    nearest pressure day. `bands` is `(distance_at_most, weight)` in ascending distance; a distance past the last
+    band, or no pressure day in reach, weighs `beyond`. `in_force` is the declared switch: false until Eleonora
+    merges `docs/decisions/weighted-miss.md` and attests the adoption (#256). `applied` is what a run does: the
+    judge counts the weighted false alarms only when it is true, and defaults to `in_force`.
+    """
+
+    path: str
+    sha256: str
+    in_force: bool
+    applied: bool
+    bands: Tuple[Tuple[int, float], ...]
+    beyond: float
+
+    def document(self) -> dict:
+        return {
+            "path": self.path,
+            "sha256": self.sha256,
+            "in_force": self.in_force,
+            "applied": self.applied,
+            "weights": [{"distance_at_most": d, "weight": w} for d, w in self.bands],
+            "beyond": self.beyond,
+        }
+
+
+def _weight(value: object, where: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.0 < value <= 1.0:
+        raise ValueError(f"{where} must be a number above 0 and at most 1, got {value!r}")
+    return float(value)
+
+
+def load_weighted_miss(path: Path = DEFAULT_WEIGHTED_MISS, *, applied: Optional[bool] = None) -> WeightedMiss:
+    """Read and check the weighted miss rule. `applied` overrides the declared switch for one run.
+
+    Raises:
+        ValueError: on a missing or malformed file, a switch that is not a boolean, bands that are not in
+            ascending distance, or a weight outside (0, 1].
+    """
+
+    raw = Path(path).read_bytes()
+    try:
+        document = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"{path} is not JSON: {exc}") from exc
+    if not isinstance(document, dict):
+        raise ValueError(f"{path} must hold an object")
+    in_force = document.get("in_force")
+    if not isinstance(in_force, bool):
+        raise ValueError(f"{path}: in_force must be true or false")
+    entries = document.get("weights")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError(f"{path}: weights must be a non-empty list")
+    bands: List[Tuple[int, float]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError(f"{path}: each weight must be an object")
+        distance = _integer(entry.get("distance_at_most"), "weights.distance_at_most")
+        weight = _weight(entry.get("weight"), "weights.weight")
+        if bands and distance <= bands[-1][0]:
+            raise ValueError(f"{path}: weights must be in ascending distance_at_most")
+        bands.append((distance, weight))
+    beyond = _weight(document.get("beyond"), "beyond")
+    return WeightedMiss(
+        path=_display(Path(path)),
+        sha256=hashlib.sha256(raw).hexdigest(),
+        in_force=in_force,
+        applied=in_force if applied is None else bool(applied),
+        bands=tuple(bands),
+        beyond=beyond,
+    )
+
+
+def miss_weight(rule: WeightedMiss, distance: Optional[int]) -> float:
+    """The weight of a false alarm `distance` trading days from the nearest pressure day (None: none in reach).
+
+    Raises:
+        ValueError: if `distance` is below 1 (a pressure day is not a false alarm).
+    """
+
+    if distance is None:
+        return rule.beyond
+    if distance < 1:
+        raise ValueError(f"a false alarm is at least 1 trading day from a pressure day, got {distance}")
+    for limit, weight in rule.bands:
+        if distance <= limit:
+            return weight
+    return rule.beyond
+
+
+def false_alarm_weights(
+    rule: WeightedMiss,
+    *,
+    positions: Sequence[int],
+    pressure: Sequence[int],
+    known_through: int,
+) -> Tuple[float, ...]:
+    """The weight of a false alarm on each day: 0 on a pressure day, else `miss_weight` of its distance.
+
+    `positions[k]` is the panel position of day k, ascending. The distance is read on the days given alone, so a
+    pressure day that was not yet known cannot lower a weight: `known_through` is the last panel position whose
+    outcome was known (inside the cut-off rule's training window, the refit's training end).
+
+    Raises:
+        LookAheadError: if a day is after `known_through`.
+        ValueError: if the series differ in length or positions are not ascending.
+    """
+
+    if len(positions) != len(pressure):
+        raise ValueError("the weights need one pressure flag per day")
+    if any(b <= a for a, b in zip(positions, positions[1:])):
+        raise ValueError("positions must be ascending")
+    late = [p for p in positions if p > known_through]
+    if late:
+        raise LookAheadError(
+            f"{len(late)} day(s) from position {min(late)} on are after position {known_through}, the last whose "
+            f"outcome was known; a false alarm's weight reads the pressure days known by then only"
+        )
+    pressure_positions = [p for p, y in zip(positions, pressure) if y]
+    out = []
+    for position, y in zip(positions, pressure):
+        if y:
+            out.append(0.0)
+            continue
+        near = None
+        if pressure_positions:
+            k = bisect.bisect_left(pressure_positions, position)
+            gaps = []
+            if k > 0:
+                gaps.append(position - pressure_positions[k - 1])
+            if k < len(pressure_positions):
+                gaps.append(pressure_positions[k] - position)
+            near = min(gaps)
+        out.append(miss_weight(rule, near))
+    return tuple(out)
 
 
 def _display(path: Path) -> str:
@@ -510,7 +669,8 @@ class Forecast:
 
     `cutoffs[tau][k]` is the flag cut-off in force on scored day k (`math.inf`:
     the refit's rule flags nothing). It is set by `choose_cutoffs` and by nothing
-    else: `cutoff_rule` is the digest of the declaration it was chosen under.
+    else: `cutoff_rule` is the digest of the declaration it was chosen under, and `cutoff_weighting` the digest of
+    the weighted miss rule it counted false alarms by (#454), None when it counted every false alarm as 1.
     """
 
     name: str
@@ -519,6 +679,7 @@ class Forecast:
     probabilities: Mapping[float, Tuple[float, ...]]
     cutoffs: Optional[Mapping[float, Tuple[float, ...]]] = None
     cutoff_rule: Optional[str] = None
+    cutoff_weighting: Optional[str] = None
 
 
 def require_scored_days(
@@ -638,6 +799,14 @@ def _check_forecasts(
                     f"{declaration.path} (digest {declaration.sha256[:12]}); the judge scores cut-offs "
                     f"chosen by `choose_cutoffs` from training data under the declared rule only"
                 )
+            expected = declaration.weighted_miss.sha256 if declaration.weighting_applied else None
+            if forecast.cutoff_weighting != expected:
+                raise ValueError(
+                    f"{forecast.name!r} h = {forecast.horizon}: its cut-offs counted false alarms "
+                    f"{'by the weights of ' + forecast.cutoff_weighting[:12] if forecast.cutoff_weighting else 'flat'}"
+                    f", but this run counts them "
+                    f"{'by the weights of ' + expected[:12] if expected else 'flat'}; choose them again"
+                )
             for tau in declaration.thresholds:
                 column = forecast.cutoffs.get(tau)
                 if column is None or len(column) != len(grid.dates):
@@ -671,6 +840,7 @@ def select_cutoff(
     pressure: Sequence[int],
     onset: Sequence[int],
     training_end: Optional[date],
+    false_alarm_weights: Optional[Sequence[float]] = None,
 ) -> float:
     """The flag cut-off for one refit, chosen on its training window alone.
 
@@ -682,6 +852,9 @@ def select_cutoff(
     in which no cut-off within the limit flags an onset, flags nothing: the
     cut-off is `math.inf`, as the declared rule says.
 
+    With `false_alarm_weights` (one per day, from the weighted miss rule, #454) a false alarm counts its weight
+    instead of 1; the limit stays the declared one.
+
     Raises:
         LookAheadError: if a day of the window is after `training_end`, the last
             day whose outcome the refit could read, or the window has a day and
@@ -691,6 +864,8 @@ def select_cutoff(
 
     if not len(days) == len(probabilities) == len(pressure) == len(onset):
         raise ValueError("the cut-off window needs one probability, outcome and onset flag per day")
+    if false_alarm_weights is not None and len(false_alarm_weights) != len(days):
+        raise ValueError("the cut-off window needs one false-alarm weight per day")
     if days:
         late = [day for day in days if training_end is None or day > training_end]
         if late:
@@ -711,7 +886,7 @@ def select_cutoff(
             if onset[index]:
                 caught += 1
             elif not pressure[index]:
-                false_alarms += 1
+                false_alarms += 1 if false_alarm_weights is None else false_alarm_weights[index]
         if false_alarms / onsets > declaration.cutoff_false_alarms_at_most + 1e-12:
             break
         if caught > best_recall:
@@ -790,6 +965,16 @@ def choose_cutoffs(
             for tau in declaration.thresholds:
 
                 def chosen(rows):
+                    weights = None
+                    if declaration.weighting_applied and rows:
+                        # The distance to a pressure day is read on the training rows alone: a pressure day
+                        # after the training end was not yet known at the refit's first decision instant.
+                        weights = false_alarm_weights(
+                            declaration.weighted_miss,
+                            positions=[position[forecast.dates[k]] for k in rows],
+                            pressure=[grid.outcomes[tau][k] for k in rows],
+                            known_through=position[training_end],
+                        )
                     return select_cutoff(
                         declaration,
                         days=[forecast.dates[k] for k in rows],
@@ -797,6 +982,7 @@ def choose_cutoffs(
                         pressure=[grid.outcomes[tau][k] for k in rows],
                         onset=[grid.onset_at(tau, declaration.primary)[k] for k in rows],
                         training_end=training_end,
+                        false_alarm_weights=weights,
                     )
 
                 value = chosen(window)
@@ -812,6 +998,7 @@ def choose_cutoffs(
                 probabilities=forecast.probabilities,
                 cutoffs={tau: tuple(column) for tau, column in cutoffs.items()},
                 cutoff_rule=declaration.sha256,
+                cutoff_weighting=declaration.weighted_miss.sha256 if declaration.weighting_applied else None,
             )
         )
     return out
@@ -1248,6 +1435,7 @@ def _scarce_inputs(
                 probabilities={tau: pick(c, keep[horizon]) for tau, c in forecast.probabilities.items()},
                 cutoffs={tau: pick(c, keep[horizon]) for tau, c in forecast.cutoffs.items()},
                 cutoff_rule=forecast.cutoff_rule,
+                cutoff_weighting=forecast.cutoff_weighting,
             )
             for horizon, forecast in per_horizon.items()
         }
@@ -1327,11 +1515,13 @@ def _candidate(
         per_horizon[str(horizon)] = per_tau
 
     onset_tiers = {
-        f"lead_at_least_{declaration.onset_lead}": _onset_tier(declaration, name, declaration.onset_lead, scored, grids, by_name),
+        f"lead_at_least_{declaration.onset_lead}": _onset_tier(
+            declaration, name, declaration.onset_lead, scored, grids, by_name, calendar
+        ),
     }
     if not lean:
         onset_tiers[f"lead_at_least_{declaration.far_lead}"] = _onset_tier(
-            declaration, name, declaration.far_lead, scored, grids, by_name
+            declaration, name, declaration.far_lead, scored, grids, by_name, calendar
         )
     tiers = {
         "onset_warning": onset_tiers,
@@ -1527,11 +1717,17 @@ def _onset_tier(
     scored: Sequence[int],
     grids: Mapping[int, Grid],
     by_name: Mapping[str, Mapping[int, Forecast]],
+    calendar: Sequence[date] = (),
 ) -> dict:
     """Tier 1 at lead >= `lead`: the share of +5 bp onsets flagged at some horizon h >= lead.
 
     False alarms are flags on days that are not pressure days, counted at each
     horizon h >= lead; the worst horizon's count per onset is the tier's.
+
+    With the weighted miss rule loaded (#454) each false alarm is also counted at its weight, by its distance
+    in `calendar` days to the nearest pressure day of the scored days (a test-only reading: the full outcome
+    record of the scored days). The tier's limit is read on that count when the rule is applied, on the flat
+    count otherwise; both are reported.
     """
 
     tau = declaration.primary
@@ -1547,6 +1743,18 @@ def _onset_tier(
     caught = [0.0] * len(common)
     reference_missed = [1.0] * len(common)
     false_alarms: Dict[str, dict] = {}
+    rule = declaration.weighted_miss
+    weighted_alarms: Dict[str, dict] = {}
+    by_regime: Dict[str, Dict[str, dict]] = {}
+    if rule is not None:
+        place = {day: k for k, day in enumerate(calendar)}
+        regime_column = grids[first].groups.get("regime")
+        regimes = (
+            [regime_column[position[first][day]] for day in common] if regime_column is not None else ["all"] * len(common)
+        )
+        missing = [day for day in common if day not in place]
+        if missing:
+            raise ValueError(f"scored day {missing[0]} is not a panel day; the weighted count needs the calendar")
     for h in horizons:
         at = [position[h][day] for day in common]
         pressure = [grids[h].outcomes[tau][k] for k in at]
@@ -1562,6 +1770,19 @@ def _onset_tier(
             "false_alarms": raised,
             "per_onset": raised / onsets if onsets else None,
         }
+        if rule is not None:
+            places = [place[day] for day in common]
+            miss = false_alarm_weights(rule, positions=places, pressure=pressure, known_through=places[-1])
+            weighted = sum(w for f, w in zip(flags, miss) if f)
+            weighted_alarms[str(h)] = {
+                "false_alarms": weighted,
+                "per_onset": weighted / onsets if onsets else None,
+            }
+            for index, label in enumerate(regimes):
+                if flags[index] and not pressure[index]:
+                    cell = by_regime.setdefault(label, {}).setdefault(str(h), {"flat": 0, "weighted": 0.0})
+                    cell["flat"] += 1
+                    cell["weighted"] += miss[index]
     reference_caught = [1.0 - m for m in reference_missed]
     out: Dict[str, Any] = {
         "lead_at_least": lead,
@@ -1572,6 +1793,19 @@ def _onset_tier(
         "onsets_flagged": _clean(sum(o * c for o, c in zip(onset, caught))),
         "false_alarms_by_horizon": false_alarms,
     }
+    if rule is not None:
+        out["weighted_miss_applied"] = rule.applied
+        out["weighted_false_alarms_by_horizon"] = weighted_alarms
+        out["by_regime"] = {
+            label: {
+                "onsets": int(sum(o for o, r in zip(onset, regimes) if r == label)),
+                "onsets_flagged": _clean(sum(o * c for o, c, r in zip(onset, caught, regimes) if r == label)),
+                "false_alarms_by_horizon": {
+                    str(h): by_regime.get(label, {}).get(str(h), {"flat": 0, "weighted": 0.0}) for h in horizons
+                },
+            }
+            for label in sorted(set(regimes))
+        }
     if not onsets:
         out["unavailable"] = "no onset on the scored days"
         return out
@@ -1583,6 +1817,12 @@ def _onset_tier(
         seed=_seed(declaration.seed, name, "onsets", lead),
     )["onsets"]
     worst = max(f["per_onset"] for f in false_alarms.values())
+    limited = worst
+    if rule is not None:
+        worst_weighted = max(f["per_onset"] for f in weighted_alarms.values())
+        out["worst_weighted_false_alarms_per_onset"] = worst_weighted
+        if rule.applied:
+            limited = worst_weighted
     out.update(
         recall=evidence["recall"],
         climatology_recall=evidence["climatology_recall"]["mean"],
@@ -1596,7 +1836,7 @@ def _onset_tier(
             and evidence["recall"]["mean"] >= declaration.onset_recall_at_least,
             "recall_above_climatology": lower is not None
             and lower > evidence["climatology_recall"]["mean"],
-            "false_alarms": worst <= declaration.onset_false_alarms_at_most,
+            "false_alarms": limited <= declaration.onset_false_alarms_at_most,
         }
         out["passes"] = out["complete"] and all(out["criteria"].values())
     else:
@@ -1747,6 +1987,7 @@ def restrict_forecast(forecast: Forecast, first: date, last: date) -> Forecast:
         if forecast.cutoffs is None
         else {tau: tuple(column[k] for k in keep) for tau, column in forecast.cutoffs.items()},
         cutoff_rule=forecast.cutoff_rule,
+        cutoff_weighting=forecast.cutoff_weighting,
     )
 
 

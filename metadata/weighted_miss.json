@@ -1,0 +1,15 @@
+{
+  "status": "DRAFT, declared by the pull request that closes #454 and never scored on: Eleonora's ruling of 9 October 2026 (relayed by the orchestrating session) introduces weighted miss criteria into the pressure judge; the weights below are a draft for her to confirm or change in docs/decisions/weighted-miss.md. The rule is in force only once she merges that record AND attests, on GitHub, the adoption as the judge bar (#256); until then in_force is false, the judge counts every false alarm as 1, and no published figure moves.",
+  "in_force": false,
+  "distance": "trading days (panel business days) from the flagged day to the nearest pressure day at the threshold scored, before or after it; a pressure day counts only if its outcome was known: inside the cut-off rule's training window, only pressure days whose outcome was known at the refit's first decision instant",
+  "weights": [
+    {"distance_at_most": 2, "weight": 0.25},
+    {"distance_at_most": 5, "weight": 0.5}
+  ],
+  "beyond": 1.0,
+  "applies_to": [
+    "cutoff_rule: the false alarms per onset that the flag cut-off's limit counts",
+    "tier 1 (onset warning): the false alarms per onset that the tier's limit counts"
+  ],
+  "unchanged": "the limit of 2 per onset in both places; the onset-warning tier's lead, recall and far-lead conditions; tiers 2 to 5; the pass rule"
+}

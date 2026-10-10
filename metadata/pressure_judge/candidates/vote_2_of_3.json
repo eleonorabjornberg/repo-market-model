@@ -1,0 +1,19 @@
+{
+  "role": "candidate",
+  "track": "two-of-three alarm (#458)",
+  "features": [
+    "days_to_month_end",
+    "quarter_end",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "spread_bps",
+    "tax_date",
+    "treasury_settlement_coupons"
+  ],
+  "calibration": "none: a vote count, not a fitted probability. Its probability is the share of the three voters (two_part_gbm, ngboost_laplace, hierarchical_logistic) whose own flag is up that day, and its flag is two of three, so its cut-off is 2/3 by construction. Each voter's flag is the judge's own, at the cut-off chosen refit by refit from that voter's training window (pressure_judge.choose_cutoffs); the vote has no cut-off of its own to choose. Existing walk-forward forecasts, no refit (scripts/vote_2_of_3.py)",
+  "voters": [
+    "two_part_gbm",
+    "ngboost_laplace",
+    "hierarchical_logistic"
+  ]
+}
