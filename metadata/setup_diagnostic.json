@@ -1,0 +1,38 @@
+{
+  "status": "declared by the pull request that closes #480 before any diagnostic was computed; reported only, nothing here changes the bar, the judge's declaration, a model or any published figure; the choices below are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "primary_threshold_bp": 5, "primary_calm_days": 5},
+  "training_history": {
+    "reading": "the refit in force at each episode is the judge's: refits every 21 scored days from the first scored day (metadata/pressure_judge.json, cutoff_rule); the model is fitted on the panel from its first day to the refit's training end, the business day h + 1 before the block's first day; shown at h = 1 and at h = 5",
+    "few_onsets_at_most": 3,
+    "cutoff_reading": "the flag cut-off in force is chosen on the scored days of the training window (select_cutoff); a window with no onset never flags"
+  },
+  "target": {
+    "thresholds_bp": [3, 5, 10],
+    "distribution_quantiles": [0.05, 0.25, 0.5, 0.75, 0.95],
+    "technical_adjustment_rule": "an IOER/IORB change in the panel whose size is not a multiple of 25 bp is read as a technical adjustment relative to the target range (the range itself is not in the tracked data); the 2021-07-29 IOER to IORB renaming (no change in level) is listed apart"
+  },
+  "episode_sensitivity": {
+    "calm_days": [1, 3, 5, 10],
+    "thresholds_bp": [3, 5, 10],
+    "rule": "an onset is a scored day above the threshold (whole basis points, strictly) with no day above it in the calm_days panel days before it; the episodes of the grid are compared with the primary (+5 bp, 5 calm days) by date"
+  },
+  "data_integrity": {
+    "window_panel_days": 10,
+    "columns": ["sofr", "iorb", "sofr_volume", "sofr_p25", "sofr_p75", "tgcr", "bgcr", "reserve_balances", "tga", "treasury_settlement", "dealer_treasury_position", "tbill_4w", "tbill_13w"],
+    "daily_columns": ["sofr", "iorb", "sofr_volume", "sofr_p25", "sofr_p75", "tgcr", "bgcr", "tbill_4w", "tbill_13w"],
+    "weekly_columns": ["reserve_balances", "tga", "dealer_treasury_position"],
+    "checks": {
+      "gap": "a weekday in the window that is neither a panel day nor a day in metadata/market_holidays.json",
+      "blank": "a window row whose cell is empty",
+      "repeat": "a daily column whose value equals the previous panel day's (a forward fill reads like this); a weekly column is judged by the panel days since its value last changed, flagged above 7 calendar days",
+      "revision": "for reserve_balances, tga and the IOER/IORB level: the first tracked ALFRED vintage that holds the observation against the latest tracked vintage; other fields have no tracked vintages and are not checked",
+      "late_publication": "not checked beyond what the as-of rule already does: the panel is point-in-time, so a late publication shows as a stale or repeated value"
+    },
+    "blinding_rule": "a window is flagged as one that would blind a model when the decision-day row has a blank or a gap in sofr or iorb, or a weekly column more than 7 calendar days old, or the previous panel day is missing"
+  },
+  "benchmarks_by_year": {
+    "rows": ["calendar_climatology", "persistence_logistic", "risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"],
+    "rows_note": "the five tier-1 passers of the unweighted rule are the five risk-date severity rows (docs/pivot/weighted-miss-result.md, Table 1); the two benchmarks are the judge's",
+    "flags": "the judge's own: a probability at or above the cut-off chosen refit by refit from the training window (pressure_judge.choose_cutoffs), at +5 bp, at each horizon h = 1 to 5; an episode is warned when some horizon flags it"
+  }
+}
