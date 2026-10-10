@@ -33,6 +33,7 @@ import contextlib
 import importlib.util
 import itertools
 import json
+import math
 import subprocess
 import sys
 from collections import Counter
@@ -175,8 +176,12 @@ def _mask(bits):
     return out
 
 
-def rule_flags(declared, variant, horizon, grid, values_by_day, calendar, limit, refit_every, tau):
-    """The rule's 0/1 flag on each grid day, chosen block by block, and the choice of each block."""
+def rule_flags(declared, variant, horizon, grid, values_by_day, calendar, limit, refit_every, tau, hindsight=False):
+    """The rule's 0/1 flag on each grid day, chosen block by block, whether each day is blind, and each block's choice.
+
+    A day is blind when its block chose nothing (no onset in the window, or no combination within the limit): the
+    rule flags nothing there, as the judge's cut-off is infinite. `hindsight` chooses once on every grid day.
+    """
 
     days = list(grid.dates)
     pressure = _mask(grid.outcomes[tau])
@@ -201,11 +206,11 @@ def rule_flags(declared, variant, horizon, grid, values_by_day, calendar, limit,
             for v in options["settlement"]
         },
     }
-    flags, blocks = [], []
+    flags, blind, blocks = [], [], []
     for start in range(0, len(days), refit_every):
         block = days[start : start + refit_every]
-        end = training_end(calendar, block[0], horizon)
-        window = [d for d in days[:start] if end is not None and d <= end]
+        end = training_end(calendar, block[0], horizon) if not hindsight else days[-1]
+        window = [d for d in days[:start] if end is not None and d <= end] if not hindsight else days
         choice = select_clauses(
             days=window, onset=onset, pressure=pressure, options=masks, training_end=end, limit=limit
         )
@@ -214,17 +219,21 @@ def rule_flags(declared, variant, horizon, grid, values_by_day, calendar, limit,
             for name in CLAUSES:
                 chosen |= masks[name][choice[name]]
         flags.extend((chosen >> (start + k)) & 1 for k in range(len(block)))
+        blind.extend([choice is None] * len(block))
         blocks.append({"first_day": block[0].isoformat(), "training_days": len(window), "choice": choice})
-    return flags, blocks
+    return flags, blind, blocks
 
 
-def rule_forecast(name, horizon, grid, flags, tau):
-    """The flags as a `Forecast` the judge's tier 1 reads: probability 1 on a flag, 0 elsewhere, cut-off 0.5."""
+def rule_forecast(name, horizon, grid, flags, blind, tau):
+    """The flags as a `Forecast` the judge's tier 1 reads: probability 1 on a flag, 0 elsewhere, cut-off 0.5.
 
-    n = len(flags)
+    The cut-off is infinite on a blind day, as the judge's is where its rule chooses nothing.
+    """
+
     return pj.Forecast(
         name=name, horizon=horizon, dates=tuple(grid.dates),
-        probabilities={tau: tuple(float(f) for f in flags)}, cutoffs={tau: tuple([0.5] * n)},
+        probabilities={tau: tuple(float(f) for f in flags)},
+        cutoffs={tau: tuple(math.inf if b else 0.5 for b in blind)},
     )
 
 
@@ -283,7 +292,14 @@ def summarise(name, by_name, grids, declaration, calendar, common, tau):
     flagged_at = {
         d.isoformat(): [h for h in scored if flags[h][place[h][d]]] for d in onset_days
     }
-    return {"tier_1": tiers, "by_horizon": by_horizon, "by_year": by_year, "onsets_flagged_at_horizons": flagged_at}
+    blind_at = {
+        d.isoformat(): [h for h in scored if math.isinf(by_name[name][h].cutoffs[tau][place[h][d]])]
+        for d in onset_days
+    }
+    return {
+        "tier_1": tiers, "by_horizon": by_horizon, "by_year": by_year,
+        "onsets_flagged_at_horizons": flagged_at, "onsets_blind_at_horizons": blind_at,
+    }
 
 
 def score_command(args) -> int:
@@ -325,16 +341,19 @@ def score_command(args) -> int:
     for forecast in chosen:
         by_name.setdefault(forecast.name, {})[forecast.horizon] = forecast
     choices = {}
-    for variant in VARIANTS:
-        name = f"audit_{variant}"
-        by_name[name] = {}
-        choices[name] = {}
-        for h in declaration.horizons:
-            flags, blocks = rule_flags(declared, variant, h, grids[h], values_by_day, calendar, limit, refit_every, tau)
-            by_name[name][h] = rule_forecast(name, h, grids[h], flags, tau)
-            choices[name][str(h)] = blocks
+    for prefix, hindsight in (("audit", False), ("ceiling", True)):
+        for variant in VARIANTS:
+            name = f"{prefix}_{variant}"
+            by_name[name] = {}
+            choices[name] = {}
+            for h in declaration.horizons:
+                flags, blind, blocks = rule_flags(
+                    declared, variant, h, grids[h], values_by_day, calendar, limit, refit_every, tau, hindsight
+                )
+                by_name[name][h] = rule_forecast(name, h, grids[h], flags, blind, tau)
+                choices[name][str(h)] = blocks
     common = sorted(set.intersection(*(set(grids[h].dates) for h in declaration.horizons)))
-    scored_names = [f"audit_{v}" for v in VARIANTS] + names
+    scored_names = [f"{p}_{v}" for p in ("audit", "ceiling") for v in VARIANTS] + names
     summaries = {name: summarise(name, by_name, grids, declaration, calendar, common, tau) for name in scored_names}
     first = declaration.horizons[0]
     place = {d: k for k, d in enumerate(grids[first].dates)}
@@ -351,6 +370,7 @@ def score_command(args) -> int:
                 "tax_date": values["tax_date"], "settlement_bn": values["treasury_settlement"],
                 "coupons_bn": values["treasury_settlement_coupons"], "bills_bn": values["treasury_settlement_bills"],
                 "flagged_at_horizons": {n: summaries[n]["onsets_flagged_at_horizons"][d.isoformat()] for n in scored_names},
+                "blind_at_horizons": {n: summaries[n]["onsets_blind_at_horizons"][d.isoformat()] for n in scored_names},
             }
         )
     result = {
@@ -512,13 +532,18 @@ def markdown(result) -> str:
         lines.append(f"| {name} | " + " | ".join(cells) + " |")
     lines += [
         "",
-        "Table D. Each onset: the calendar facts and the horizons (1 to 5) at which each row flagged it.",
+        "Table D. Each onset: the calendar facts and the horizons (1 to 5) at which each row flagged it; `blind` when "
+        "the row's cut-off (or clauses) was chosen on a window with no usable onset at every horizon, so it could not flag.",
         "",
         "| day | day type | days to month end | settlement bn (coupons) | " + " | ".join(names) + " |",
         "|---|---|---|---|" + "---|" * len(names),
     ]
     for o in result["onsets"]:
-        hits = " | ".join(",".join(str(h) for h in o["flagged_at_horizons"][n]) or "–" for n in names)
+        hits = " | ".join(
+            ",".join(str(h) for h in o["flagged_at_horizons"][n])
+            or ("blind" if len(o["blind_at_horizons"][n]) == 5 else "–")
+            for n in names
+        )
         lines.append(
             f"| {o['day']} | {o['day_type']} | {o['days_to_month_end']:g} | {o['settlement_bn']:g} ({o['coupons_bn']:g}) | {hits} |"
         )
