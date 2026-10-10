@@ -4,7 +4,7 @@ A sizing, not a candidate. It writes nothing into `docs/runs/`, changes no decla
 (`docs/decisions/lockbox.md`: scored days 2018-06-29 to 2025-12-31 only; the confirmation window and the blind tier are not
 looked at). The five models read are the tier-1 passers of the risk-date severity track (#428, `risk-date-severity-result.md`):
 `risk_gbm`, `risk_gbm_base`, `risk_logistic`, `risk_logistic_base` and `risk_quantile_skewt_base`. Each gap is confirmed or
-refuted against the code at `c14ab58`, then sized by refitting the same model with that one thing changed, on the same folds and
+refuted against the code (read at `c14ab58`, the directive's base, and checked again at `be75ea0`; `ml.py` did not move, the judge's line numbers below are those of `be75ea0`), then sized by refitting the same model with that one thing changed, on the same folds and
 the same inputs, under the judge's own cut-off rule (`pressure_judge.choose_cutoffs`). A reading is "+5 bp onsets flagged / onsets,
 false alarms per onset", as in `risk-date-severity-result.md`. There is no interval: with 26 or 27 onsets, one onset is about four
 percentage points, and a cell that moves by one or two onsets is inside what a change of fold or cut-off already moves.
@@ -48,7 +48,7 @@ flags are the declared ones: 27 onsets at h = 1 and 26 at h = 2 to 5.
 
 ## 1. Trained on all pressure days, judged on onsets
 
-**Confirmed.** `ml.py:6025` labels every risk-date pair `spread > tau`. `pressure_judge.select_cutoff` (`:886-888`) counts only an
+**Confirmed.** `ml.py:6025` labels every risk-date pair `spread > tau`. `pressure_judge.select_cutoff` (`:957-959`) counts only an
 onset as a catch and only a day that is not a pressure day as a false alarm, so a continuation day is neither. In the scored days
 there are 140 days above +5 bp and 27 of them are onsets (19%; the "about 80%" continuation share holds). On the risk dates at h = 1
 it is 58 and 21 (36%); at +10 bp it is 61 and 25 (41%). At the last refit of `risk_gbm_base` (h = 1) the training window holds
@@ -75,7 +75,7 @@ sign mixed.
 ## 2. Bill-settlement days are never risk dates
 
 **Confirmed.** `_RiskDateDesign.member` (`ml.py:5940-5945`) reads only `treasury_settlement_coupons`, and the judge's
-`_scheduled_risk_date` (`pressure_judge.py:2114-2124`) the same. The declared forecast is exactly 0 at both thresholds, at every
+`_scheduled_risk_date` (`pressure_judge.py:2191-2201`) the same. The declared forecast is exactly 0 at both thresholds, at every
 horizon and for all five models, on 2019-05-28, 2019-06-25, 2019-08-13 and 2024-12-26 (50 forecasts read on each, the largest 0;
 `tables.md`, "Gap 2"). The same holds for 2020-03-12 (bills 78) and 2020-03-04 (no settlement at all). Six of the 27 onsets have no
 coupon settlement; five of them have a bill settlement of 75 to 266 (USD billions), and a bill rule cannot reach 2020-03-04.
@@ -228,7 +228,7 @@ emergency cut would not, at any horizon. Neither onset is on a risk date, so the
 *Rule or data-meaning changes, for Eleonora:*
 
 * Whether a bill settlement, or a bill or coupon settlement above a size, is a risk date at h = 1 (gap 2). The judge's own
-  `risky_dates` tier shares the coupon-only clause (`pressure_judge.py:2114-2124`), so that tier would move with it.
+  `risky_dates` tier shares the coupon-only clause (`pressure_judge.py:2191-2201`), so that tier would move with it.
 * Whether `reporting_day_type` (last two business days) replaces `day_type`'s calendar-day month-end (gap 3). The code calls it "a v2
   candidate"; `day_type` is part of the frozen model and of the scorecaster's window, so this is a decision about what is frozen.
 * Whether `quarter_end_window` joins the calendar inputs, and whether the year-end and quarter-end window is wider than ±2 business
