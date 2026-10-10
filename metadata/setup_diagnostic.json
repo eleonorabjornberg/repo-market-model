@@ -28,7 +28,7 @@
       "revision": "for reserve_balances, tga and the IOER/IORB level: the first tracked ALFRED vintage that holds the observation against the latest tracked vintage; other fields have no tracked vintages and are not checked",
       "late_publication": "not checked beyond what the as-of rule already does: the panel is point-in-time, so a late publication shows as a stale or repeated value"
     },
-    "blinding_rule": "a window is flagged as one that would blind a model when the decision-day row has a blank or a gap in sofr or iorb, or a weekly column more than 7 calendar days old, or the previous panel day is missing"
+    "blinding_rule": "a window is flagged as one that would blind a model when the decision-day row (the last panel day before the episode) has a blank in sofr or iorb, or any gap lies in the window, or a weekly column on the decision-day row is more than 7 calendar days old"
   },
   "benchmarks_by_year": {
     "rows": ["calendar_climatology", "persistence_logistic", "risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"],
