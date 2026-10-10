@@ -472,6 +472,54 @@ def inputs_command(args) -> int:
     return 0
 
 
+def announcements_command(args) -> int:
+    """How many panel days before its issue date each Treasury auction was announced (the snapshot's `announcemt_date`).
+
+    A settlement is declared public at 15:00 on the panel day before its issue date (`treasury_auctions`,
+    `scheduled_availability`). The snapshot also records when Treasury announced the offering. This reads the gap
+    between the two on the judge's shared scored days, by security type and weighted by the offering, to show how far
+    ahead a settlement size could be known if it were dated from its announcement (as `treasury_auction_net_settlement`
+    does for the measurement fields, #426). Nothing is added to any declaration.
+    """
+
+    declared = committed_declaration(DECLARATION)
+    last = date.fromisoformat(declared["scoring"]["last_day"])
+    require_unlocked([last], where="pressure_audit")
+    rows = load_daily_panel(args.panel)
+    dates = [r.date for r in rows]
+    first = date(2018, 7, 2)
+    snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"))["data"]
+    by_type = {}
+    for record in snapshot:
+        issue = date.fromisoformat(record["issue_date"])
+        if not first <= issue <= last or issue not in set(dates):
+            continue
+        kind = record["security_type"] + (" (cash management)" if record["cash_management_bill_cmb"] == "Yes" else "")
+        lead = bisect.bisect_left(dates, issue) - bisect.bisect_left(dates, date.fromisoformat(record["announcemt_date"]))
+        entry = by_type.setdefault(kind, {"auctions": 0, "offering_bn": 0.0, "leads": Counter(), "offering_by_lead": Counter()})
+        entry["auctions"] += 1
+        amount = float(record["offering_amt"]) / 1e9
+        entry["offering_bn"] += amount
+        entry["leads"][lead] += 1
+        entry["offering_by_lead"][lead] += amount
+    out = {}
+    for kind, entry in sorted(by_type.items()):
+        total = entry["offering_bn"]
+        out[kind] = {
+            "auctions": entry["auctions"],
+            "offering_bn": total,
+            "announced_panel_days_before_issue": {str(k): v for k, v in sorted(entry["leads"].items())},
+            "share_of_offering_announced_at_least": {
+                str(k): sum(v for lead, v in entry["offering_by_lead"].items() if lead >= k) / total
+                for k in (1, 2, 3, 4, 5)
+            },
+        }
+    document = {"snapshot": str(args.snapshot.relative_to(REPO)) if args.snapshot.is_relative_to(REPO) else str(args.snapshot), "issue_days": [first.isoformat(), last.isoformat()], "by_security_type": out}
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output)}))
+    return 0
+
+
 def _onset_auroc(days, values, pressure, onset_days):
     keep = [(v, 1 if d in onset_days else 0) for d, v in zip(days, values) if d in onset_days or not pressure[d]]
     if not any(o for _, o in keep):
@@ -635,6 +683,11 @@ def main(argv=None) -> int:
     inputs.add_argument("--output", type=Path, required=True)
     inputs.add_argument("--markdown", type=Path)
     inputs.set_defaults(handler=inputs_command)
+    announcements = commands.add_parser("announcements", help="how far ahead of its issue date each auction is announced")
+    announcements.add_argument("--panel", type=Path, required=True)
+    announcements.add_argument("--snapshot", type=Path, required=True)
+    announcements.add_argument("--output", type=Path, required=True)
+    announcements.set_defaults(handler=announcements_command)
     args = parser.parse_args(argv)
     return args.handler(args)
 
