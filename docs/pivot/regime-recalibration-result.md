@@ -43,7 +43,7 @@ Evidence: `docs/pivot/evidence/regime-recalibration/tables.md` (the diagnosis fo
 ### Diagnosis (the base forms)
 
 Cells are mean predicted / realised pressure-day rate at +5 bp, then realised minus predicted with the judge's 90% stationary-bootstrap
-interval (positive = the model under-forecasts). Tier 3 tests only regimes that had a pressure day; 2021-23 had none and is reported.
+interval (positive = the model under-forecasts). Tier 3 is decided only in regimes that had a pressure day; 2021-23 had none and is reported.
 
 Table 1. Horizon 1.
 
