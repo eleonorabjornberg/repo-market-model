@@ -149,6 +149,94 @@ class WalkForwardTests(unittest.TestCase):
             self.assertTrue(all(0.0 <= p <= 1.0 for p in out))
 
 
+def _regime_series(count=1000, seed=5, block=21):
+    """Daily pairs from 2018-01-01 whose forecast is too low in the first regime and too high in the second."""
+
+    rng = random.Random(seed)
+    start = date(2018, 1, 1)
+    dates = [start + timedelta(days=k) for k in range(count)]
+    train_ends = [dates[(k // block) * block] - timedelta(days=1) for k in range(count)]
+    forecasts, outcomes = [], []
+    for day in dates:
+        p = min(0.95, max(0.01, rng.betavariate(0.7, 5.0)))
+        q = min(0.99, p * 3.0) if day.year < 2020 else p * 0.3
+        forecasts.append(p)
+        outcomes.append(1 if rng.random() < q else 0)
+    return dates, train_ends, forecasts, outcomes
+
+
+def _splits():
+    from repo_model.evaluation_splits import load_split_declaration
+    from pathlib import Path
+
+    return load_split_declaration(Path(__file__).parents[1] / "metadata" / "evaluation_splits.json")
+
+
+class RegimeRecalibrationTests(unittest.TestCase):
+    """The per-regime remedy of #471: a Platt curve per declared regime, from that regime's earlier pairs only.
+
+    The regime of a day is read off the declared calendar (`metadata/evaluation_splits.json`), so it is
+    known at the decision instant. A label that is not the calendar's (one assigned from realised
+    outcomes) is a look-ahead and is refused.
+
+    Recorded mutation (#471): in `group_calibration.require_regimes_asof`, the guard line
+    `if wrong:` mutated to `if False:`. `test_a_label_not_read_from_the_calendar_is_refused` then
+    failed with `AssertionError: LookAheadError not raised`.
+    """
+
+    def test_a_label_not_read_from_the_calendar_is_refused(self):
+        dates, train_ends, forecasts, outcomes = _regime_series(400)
+        by_outcome = ["hit" if y else "calm" for y in outcomes]
+        with self.assertRaises(LookAheadError):
+            gc.regime_walk_forward(forecasts, outcomes, dates, train_ends, by_outcome, _splits())
+
+    def test_calendar_labels_are_accepted(self):
+        dates, train_ends, forecasts, outcomes = _regime_series(400)
+        splits = _splits()
+        labels = [splits.regime(day) for day in dates]
+        column = gc.regime_walk_forward(forecasts, outcomes, dates, train_ends, labels, splits)
+        self.assertEqual(len(column), len(forecasts))
+
+    def test_a_block_does_not_move_when_later_outcomes_change(self):
+        dates, train_ends, forecasts, outcomes = _regime_series(900)
+        splits = _splits()
+        labels = [splits.regime(day) for day in dates]
+        base = gc.regime_walk_forward(forecasts, outcomes, dates, train_ends, labels, splits)
+        cut = 600
+        flipped = [y if k < cut else 1 - y for k, y in enumerate(outcomes)]
+        moved = gc.regime_walk_forward(forecasts, flipped, dates, train_ends, labels, splits)
+        # Outcomes from index `cut` on are unobservable to every block starting at or before it.
+        first_late_block = next(k for k in range(cut, len(dates)) if train_ends[k] >= dates[cut])
+        self.assertEqual(base[:first_late_block], moved[:first_late_block])
+
+    def test_a_new_regime_starts_on_the_pooled_curve(self):
+        dates, train_ends, forecasts, outcomes = _regime_series(1000)
+        splits = _splits()
+        labels = [splits.regime(day) for day in dates]
+        regime = gc.regime_walk_forward(forecasts, outcomes, dates, train_ends, labels, splits)
+        pooled = pc.walk_forward("platt", forecasts, outcomes, dates, train_ends)
+        first_2020 = next(k for k, day in enumerate(dates) if day.year == 2020)
+        self.assertEqual(regime[first_2020], pooled[first_2020])
+
+    def test_a_regime_curve_beats_pooled_where_regimes_miscalibrate_oppositely(self):
+        dates, train_ends, forecasts, outcomes = _regime_series(1000)
+        splits = _splits()
+        labels = [splits.regime(day) for day in dates]
+        regime = gc.regime_walk_forward(forecasts, outcomes, dates, train_ends, labels, splits)
+        pooled = pc.walk_forward("platt", forecasts, outcomes, dates, train_ends)
+        late = [k for k, day in enumerate(dates) if day >= date(2020, 7, 1)]
+
+        def brier(column):
+            return sum((column[k] - outcomes[k]) ** 2 for k in late) / len(late)
+
+        self.assertLess(brier(regime), brier(pooled))
+
+    def test_label_and_length_mismatches_are_refused(self):
+        dates, train_ends, forecasts, outcomes = _regime_series(300)
+        with self.assertRaises(ValueError):
+            gc.regime_walk_forward(forecasts, outcomes, dates, train_ends, ["2018-19"], _splits())
+
+
 class DeclarationTests(unittest.TestCase):
     def test_declaration_names_every_constant(self):
         d = gc.declaration()
@@ -167,6 +255,30 @@ class JudgeDeclarationTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(declaration.candidates[name]["role"], "candidate")
                 self.assertNotIn("cutoffs", declaration.candidates[name])
+
+
+class RegimeDeclarationTests(unittest.TestCase):
+    """#471's remedy is declared in `metadata/regime_recalibration.json` and one candidate file per base, before any score."""
+
+    def test_every_base_has_a_recalibrated_candidate_and_no_cutoff(self):
+        import json
+        from pathlib import Path
+
+        from repo_model import pressure_judge as pj
+
+        root = Path(__file__).parents[1] / "metadata"
+        declared = json.loads((root / "regime_recalibration.json").read_text())
+        risk = json.loads((root / "risk_date_severity.json").read_text())
+        suffix = declared["remedy"]["judged_form"]
+        declaration = pj.load_declaration()
+        self.assertEqual(len(declared["bases"]), 5)
+        for base in declared["bases"]:
+            with self.subTest(base=base):
+                self.assertIn(base, risk["candidates"])
+                entry = declaration.candidates[base + suffix]
+                self.assertEqual(entry["role"], "candidate")
+                self.assertNotIn("cutoffs", entry)
+                self.assertEqual(entry["features"], declaration.candidates[base]["features"])
 
 
 if __name__ == "__main__":
