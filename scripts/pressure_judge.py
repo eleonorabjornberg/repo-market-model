@@ -222,8 +222,8 @@ def _holdouts():
 def judge_command(args) -> int:
     declaration = pj.load_declaration()
     commit = require_committed_declaration(pj.DEFAULT_DECLARATION)
-    # The weighted miss rule (#454): `declared` follows the switch in metadata/weighted_miss.json (off: every
-    # false alarm counts 1, and the weighted count is reported beside it); `weighted` and `unweighted` force it
+    # The weighted miss rule (#454): `declared` follows the switch in metadata/weighted_miss.json (on: the weighted
+    # count decides, and the flat count is reported beside it); `weighted` and `unweighted` force it
     # for one scratch run, which is how a candidate is scored under both rules.
     require_committed_file(pj.DEFAULT_WEIGHTED_MISS)
     applied = {"declared": None, "weighted": True, "unweighted": False}[args.rule]

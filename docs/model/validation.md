@@ -604,7 +604,7 @@ GitHub herself (`docs/decisions/drafts/owner-attestation.md`).
 | `docs/decisions/tail-refusal.md` | Decision: refusing a tail fit clamped at the lower shape bound | Status: decided, merged in PR #66, 1 October 2026, and superseded (above). |
 | `docs/decisions/tail-shape-floor.md` | Decision: the fitted tail shape is never negative | Status: decided by Eleonora, 1 October 2026, in her ruling on [#63](https://github.com/eleonorabjornberg/repo-market-model/issues/63). |
 | `docs/decisions/weekly-carry.md` | Decision: a weekly column carries its last print forward, under a bound | Status: decided and implemented. |
-| `docs/decisions/weighted-miss.md` | Decision (draft): weighted miss criteria for the pressure judge | Status: a DRAFT for Eleonora's review, drafted by the pull request that closes #454. |
+| `docs/decisions/weighted-miss.md` | Decision: weighted miss criteria for the pressure judge | Status: adopted by Eleonora on 10 October 2026, in her own comment on #464 (comment 6092866136, `performed_via_github_app` null, the attested approval that #256 requires for a change to a pre-registered test). |
 
 The records in `docs/decisions/drafts/` are drafts for Eleonora and are in force only once she merges them. Her ruling on #112 delegates the review and merge of queued pull requests to the "Directive reviewer" routine until she revokes it in writing (`docs/decisions/workflow.md`, "Delegated review").
 

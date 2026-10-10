@@ -502,6 +502,44 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The risk-date model with the early-fit prior (#506). The every-day component reads inputs beyond a --regressors
+        # declaration and is run by scripts/risk_date_every_day.py only.
+        "pressure_risk_date_early_prior_logistic": _ModelChoice(
+            declared=_DeferredFactory("pressure_risk_date_variant_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+                early_prior=True,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_risk_date_early_prior_classifier": _ModelChoice(
+            declared=_DeferredFactory("pressure_risk_date_variant_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+                early_prior=True,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_risk_date_early_prior_quantile": _ModelChoice(
+            declared=_DeferredFactory("pressure_risk_date_variant_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "quantile_skewt",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+                early_prior=True,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         "pressure_logistic_bootstrap": _ModelChoice(
             declared=_DeferredFactory("pressure_rare_event_exceedance"),
             build=lambda factory, regressors, regime, minimum_history, settings: factory(
