@@ -381,6 +381,16 @@ NOT_ENTRY_POINTS = {
         "checks one live forecast's reads against the placeholder rows (#215); "
         "selects and scores nothing"
     ),
+    "scripts/source_screen.read_series": (
+        "reads each series as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "source screen (#478); selects no model and scores no forecast, calls "
+        "lockbox.require_unlocked on every day before it reads one, and the screen's `run` refuses "
+        "a panel that runs past 2025-12-31 (tests/test_source_screen.py)"
+    ),
+    "scripts/source_screen.probe": (
+        "asks the as-of rule, on the one middle row of the panel, whether a column has a "
+        "row-relative availability; reads one row, scores and selects nothing (#478)"
+    ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
         "nothing, and leaves locked days out of every count through `counted` "
