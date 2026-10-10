@@ -163,7 +163,7 @@ class RowSeries:
         self.days = self.common
         self.onset = [float(grids[first].onset[position[first][day]]) for day in self.common]
         self.pressure = [grids[first].outcomes[tau][position[first][day]] for day in self.common]
-        self.flags, self.clim, self.state = {}, {}, {}
+        self.flags, self.clim, self.state, self.positive = {}, {}, {}, {}
         for h in self.horizons:
             at = [position[h][day] for day in self.common]
             if [grids[h].outcomes[tau][k] for k in at] != self.pressure:
@@ -173,6 +173,7 @@ class RowSeries:
             self.flags[h] = pj._alarm_flags(declaration, name, raw, self.onset)
             self.clim[h] = [by_name[declaration.climatology][h].probabilities[tau][k] for k in at]
             self.state[h] = [grids[h].groups["scarcity_state"][k] for k in at]
+            self.positive[h] = [chosen.probabilities[tau][k] > 0.0 for k in at]
         places = [place[day] for day in self.common]
         rule = declaration.weighted_miss
         self.miss = (
@@ -439,8 +440,10 @@ def _beyond_one_day(series: RowSeries) -> dict:
     onset_days = [k for k, o in enumerate(series.onset) if o]
     flagged_far = [k for k in onset_days if any(series.flags[h][k] for h in far)]
     on_risk = [k for k in onset_days if series.risk_date[k] == "1"]
+    reachable = [k for k in onset_days if any(series.positive[h][k] for h in far)]
     return {
         "onsets": len(onset_days),
+        "onsets_with_a_forecast_above_0_at_h_ge_2": len(reachable),
         "onsets_on_a_scheduled_risk_date": len(on_risk),
         "onsets_flagged_at_h_ge_2": len(flagged_far),
         "of_which_on_a_risk_date": sum(1 for k in flagged_far if series.risk_date[k] == "1"),
@@ -481,22 +484,31 @@ def _v(passes):
 
 def _row(name, cell):
     if "unavailable" in cell:
-        return f"| {name} | – | – | – | – |"
+        return f"| {name} | – | – | – | – | – | – |"
     low, high = cell["recall_interval"] or (None, None)
     return (
         f"| {name} | {cell['onsets_flagged']:g} of {cell['onsets']} | {_f(cell['recall'], 3)} [{_f(low, 3)}, {_f(high, 3)}] "
-        f"| {_f(cell['false_alarms_per_onset_limited'])} | {_v(cell['passes'])} |"
+        f"| {_f(cell['false_alarms_per_onset_limited'])} | {_f(cell['false_alarms_per_onset_flat'])} "
+        f"| {_f(cell['false_alarms_per_onset_weighted'])} | {_v(cell['passes'])} |"
     )
 
 
-HEAD = "| row | onsets warned | recall [90%] | false alarms per onset | tier 1 |\n|---|---|---|---|---|"
+HEAD = (
+    "| row | onsets warned | recall [90%] | false alarms per onset, as the rule counts them | flat count | weighted count | tier 1 |\n"
+    "|---|---|---|---|---|---|---|"
+)
 
 
 def markdown(result: dict, document: dict) -> str:
     names = document["rows"]["risk_date_passers"] + document["rows"]["best_recall_rows"] + document["rows"]["references"]
     lines = ["# Tier 1 under the readings the audit questioned (#523)", ""]
+    titles = {
+        "unweighted": "Unweighted rule",
+        "weighted": "Weighted rule in force",
+        "weighted/before_only": "(d) weighted rule, discount for alarms before an episode only",
+    }
     for key, rows in result["readings"].items():
-        lines += [f"## Rule: {key}", ""]
+        lines += [f"## {titles[key]}", ""]
         for title, pick in (
             ("(a) as declared", lambda r: r["a"]),
             ("(b2) warnings and false alarms pooled across horizons", lambda r: r["b2"]),
@@ -506,14 +518,21 @@ def markdown(result: dict, document: dict) -> str:
             lines += [f"### {title}", "", HEAD]
             lines += [_row(n, pick(rows[n])) for n in names]
             lines.append("")
-        lines += ["### (b1) one horizon alone: the best single horizon's verdict", "", "| row | passes at some horizon | horizon |", "|---|---|---|"]
+        lines += [
+            "### (b1) one horizon alone: onsets warned / false alarms per onset at each horizon",
+            "", "| row | h = 1 | h = 2 | h = 3 | h = 4 | h = 5 | passes at some horizon |", "|---|---|---|---|---|---|---|",
+        ]
         for n in names:
             b = rows[n]["b1_best"]
-            lines.append(f"| {n} | {_v(b['passes'])} | {b.get('horizon', '–')} |")
+            cells = [
+                f"{c['onsets_flagged']:g} / {_f(c['false_alarms_per_onset_limited'])}" if "onsets_flagged" in c else "–"
+                for c in (rows[n]["b1"][str(h)] for h in (1, 2, 3, 4, 5))
+            ]
+            lines.append(f"| {n} | " + " | ".join(cells) + f" | {_v(b['passes'])}" + (f" (h = {b['horizon']})" if b["passes"] else "") + " |")
         lines.append("")
     lines += ["## (c) the cut-off rule's training-window check beside the realised count", ""]
     for key, rows in result["training_checks"].items():
-        lines += [f"### Rule: {key}", "", "| row | realised, worst horizon | check at the last refit | largest check | median check |", "|---|---|---|---|---|"]
+        lines += [f"### {key}", "", "| row | realised, worst horizon | check at the last refit | largest check | median check |", "|---|---|---|---|---|"]
         for n in names:
             cell = result["readings"][key][n]["a"]
             if "unavailable" in cell:
@@ -528,26 +547,26 @@ def markdown(result: dict, document: dict) -> str:
     lines += ["## The ceiling at lead of at least 2 (#511): the judge's own rows", ""]
     for key, rows in result["judge"].items():
         lines += [
-            f"### Rule: {key}", "",
-            "| row | lead >= 1 warned | lead >= 2 warned | lead >= 3 warned | onsets on a risk date | flagged at h >= 2 on / off a risk date |",
+            f"### {key}", "",
+            "| row | judge: lead >= 1 warned | judge: lead >= 3 warned | onsets on a risk date (grid label) | onsets forecast above 0 at some h >= 2 | flagged at h >= 2 (on / off a risk date) |",
             "|---|---|---|---|---|---|",
         ]
         for n in names:
             ow = rows[n]["onset_warning"]
             ceiling = result["h_ge_2"][key][n]
             warned = [
-                f"{ow[f'lead_at_least_{k}']['onsets_flagged']:g} of {ow[f'lead_at_least_{k}']['onsets']}"
-                if "onsets_flagged" in ow[f"lead_at_least_{k}"] else "–"
-                for k in (1, 2, 3)
+                f"{ow[k]['onsets_flagged']:g} of {ow[k]['onsets']}" if "onsets_flagged" in ow.get(k, {}) else "–"
+                for k in ("lead_at_least_1", "lead_at_least_3")
             ]
             lines.append(
-                f"| {n} | {warned[0]} | {warned[1]} | {warned[2]} | {ceiling['onsets_on_a_scheduled_risk_date']} of {ceiling['onsets']} "
-                f"| {ceiling['of_which_on_a_risk_date']} / {ceiling['of_which_off_a_risk_date']} |"
+                f"| {n} | {warned[0]} | {warned[1]} | {ceiling['onsets_on_a_scheduled_risk_date']} of {ceiling['onsets']} "
+                f"| {ceiling['onsets_with_a_forecast_above_0_at_h_ge_2']} of {ceiling['onsets']} "
+                f"| {ceiling['onsets_flagged_at_h_ge_2']} ({ceiling['of_which_on_a_risk_date']} / {ceiling['of_which_off_a_risk_date']}) |"
             )
         lines.append("")
     lines += ["## 2020 false-alarm days by as-of scarcity state", ""]
     for key, rows in result["scarcity_2020"].items():
-        lines += [f"### Rule: {key}", "", "| row | worst horizon | false alarms there | by state | flagged at any horizon | by state |", "|---|---|---|---|---|---|"]
+        lines += [f"### {key}", "", "| row | worst horizon | false alarms there | by state | flagged at any horizon | by state |", "|---|---|---|---|---|---|"]
         for n, c in rows.items():
             lines.append(
                 f"| {n} | {c['worst_horizon']} | {c['worst_horizon_false_alarms']} | {c['worst_horizon_by_state']} "
@@ -555,6 +574,12 @@ def markdown(result: dict, document: dict) -> str:
             )
         lines.append("")
     return "\n".join(lines) + "\n"
+
+
+def render_command(args) -> int:
+    document = committed_declaration(DECLARATION)
+    args.markdown.write_text(markdown(json.loads(args.result.read_text()), document), encoding="utf-8")
+    return 0
 
 
 def main(argv=None) -> int:
@@ -568,6 +593,10 @@ def main(argv=None) -> int:
     score.add_argument("--output", type=Path, required=True)
     score.add_argument("--markdown", type=Path)
     score.set_defaults(func=score_command)
+    render = sub.add_parser("render", help="write the Markdown tables from a score's JSON")
+    render.add_argument("result", type=Path)
+    render.add_argument("--markdown", type=Path, required=True)
+    render.set_defaults(func=render_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
