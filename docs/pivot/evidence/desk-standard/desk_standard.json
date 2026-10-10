@@ -1,0 +1,3530 @@
+{
+ "blind_spots": {
+  "by_horizon": {
+   "1": {
+    "blind_to_both": [],
+    "cut_off_rule": {
+     "blocks": 90,
+     "blocks_with_no_onset_in_the_window": 1,
+     "onsets_by_training_window_onset_count": {
+      "2018-06-29": 0,
+      "2018-11-15": 1,
+      "2018-11-30": 2,
+      "2018-12-17": 2,
+      "2018-12-28": 2,
+      "2019-01-15": 5,
+      "2019-01-31": 5,
+      "2019-02-28": 7,
+      "2019-03-15": 8,
+      "2019-03-29": 8,
+      "2019-05-28": 10,
+      "2019-06-17": 11,
+      "2019-06-25": 11,
+      "2019-08-13": 13,
+      "2019-08-30": 13,
+      "2019-10-15": 15,
+      "2019-11-29": 16,
+      "2019-12-16": 17,
+      "2020-03-04": 18,
+      "2020-03-12": 19,
+      "2024-09-30": 20,
+      "2024-12-26": 21,
+      "2025-09-15": 22,
+      "2025-09-30": 23,
+      "2025-10-15": 23,
+      "2025-12-15": 25,
+      "2025-12-26": 26
+     },
+     "onsets_in_a_refit_block_whose_training_window_holds_no_onset": [
+      "2018-06-29"
+     ]
+    },
+    "cut_off_rule_alone_cannot_warn": [
+     "2018-06-29"
+    ],
+    "onsets": 27,
+    "risk_date_models": {
+     "onsets_off_the_risk_dates": [
+      "2019-05-28",
+      "2019-06-25",
+      "2019-08-13",
+      "2020-03-04",
+      "2020-03-12",
+      "2024-12-26"
+     ],
+     "onsets_on_the_risk_dates": 21
+    },
+    "risk_date_models_cannot_warn": [
+     "2018-06-29",
+     "2019-05-28",
+     "2019-06-25",
+     "2019-08-13",
+     "2020-03-04",
+     "2020-03-12",
+     "2024-12-26"
+    ],
+    "scored_days": 1873
+   },
+   "2": {
+    "blind_to_both": [
+     "2018-11-15"
+    ],
+    "cut_off_rule": {
+     "blocks": 90,
+     "blocks_with_no_onset_in_the_window": 5,
+     "onsets_by_training_window_onset_count": {
+      "2018-11-15": 0,
+      "2018-11-30": 0,
+      "2018-12-17": 1,
+      "2018-12-28": 1,
+      "2019-01-15": 4,
+      "2019-01-31": 4,
+      "2019-02-28": 6,
+      "2019-03-15": 7,
+      "2019-03-29": 7,
+      "2019-05-28": 9,
+      "2019-06-17": 10,
+      "2019-06-25": 10,
+      "2019-08-13": 12,
+      "2019-08-30": 12,
+      "2019-10-15": 14,
+      "2019-11-29": 15,
+      "2019-12-16": 16,
+      "2020-03-04": 17,
+      "2020-03-12": 18,
+      "2024-09-30": 19,
+      "2024-12-26": 20,
+      "2025-09-15": 21,
+      "2025-09-30": 22,
+      "2025-10-15": 22,
+      "2025-12-15": 24,
+      "2025-12-26": 24
+     },
+     "onsets_in_a_refit_block_whose_training_window_holds_no_onset": [
+      "2018-11-15",
+      "2018-11-30"
+     ]
+    },
+    "cut_off_rule_alone_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30"
+    ],
+    "onsets": 26,
+    "risk_date_models": {
+     "onsets_off_the_risk_dates": [
+      "2018-11-15",
+      "2018-12-28",
+      "2019-01-15",
+      "2019-03-15",
+      "2019-05-28",
+      "2019-06-25",
+      "2019-08-13",
+      "2019-10-15",
+      "2020-03-04",
+      "2020-03-12",
+      "2024-12-26",
+      "2025-10-15",
+      "2025-12-26"
+     ],
+     "onsets_on_the_risk_dates": 13
+    },
+    "risk_date_models_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-10-15",
+     "2020-03-04",
+     "2020-03-12",
+     "2024-12-26",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "scored_days": 1872
+   },
+   "3": {
+    "blind_to_both": [
+     "2018-11-15"
+    ],
+    "cut_off_rule": {
+     "blocks": 90,
+     "blocks_with_no_onset_in_the_window": 5,
+     "onsets_by_training_window_onset_count": {
+      "2018-11-15": 0,
+      "2018-11-30": 0,
+      "2018-12-17": 1,
+      "2018-12-28": 1,
+      "2019-01-15": 4,
+      "2019-01-31": 4,
+      "2019-02-28": 6,
+      "2019-03-15": 7,
+      "2019-03-29": 7,
+      "2019-05-28": 9,
+      "2019-06-17": 10,
+      "2019-06-25": 10,
+      "2019-08-13": 12,
+      "2019-08-30": 12,
+      "2019-10-15": 14,
+      "2019-11-29": 15,
+      "2019-12-16": 16,
+      "2020-03-04": 17,
+      "2020-03-12": 18,
+      "2024-09-30": 19,
+      "2024-12-26": 20,
+      "2025-09-15": 21,
+      "2025-09-30": 22,
+      "2025-10-15": 22,
+      "2025-12-15": 24,
+      "2025-12-26": 24
+     },
+     "onsets_in_a_refit_block_whose_training_window_holds_no_onset": [
+      "2018-11-15",
+      "2018-11-30"
+     ]
+    },
+    "cut_off_rule_alone_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30"
+    ],
+    "onsets": 26,
+    "risk_date_models": {
+     "onsets_off_the_risk_dates": [
+      "2018-11-15",
+      "2018-12-28",
+      "2019-01-15",
+      "2019-03-15",
+      "2019-05-28",
+      "2019-06-25",
+      "2019-08-13",
+      "2019-10-15",
+      "2020-03-04",
+      "2020-03-12",
+      "2024-12-26",
+      "2025-10-15",
+      "2025-12-26"
+     ],
+     "onsets_on_the_risk_dates": 13
+    },
+    "risk_date_models_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-10-15",
+     "2020-03-04",
+     "2020-03-12",
+     "2024-12-26",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "scored_days": 1871
+   },
+   "4": {
+    "blind_to_both": [
+     "2018-11-15"
+    ],
+    "cut_off_rule": {
+     "blocks": 90,
+     "blocks_with_no_onset_in_the_window": 5,
+     "onsets_by_training_window_onset_count": {
+      "2018-11-15": 0,
+      "2018-11-30": 0,
+      "2018-12-17": 1,
+      "2018-12-28": 1,
+      "2019-01-15": 4,
+      "2019-01-31": 4,
+      "2019-02-28": 6,
+      "2019-03-15": 7,
+      "2019-03-29": 7,
+      "2019-05-28": 9,
+      "2019-06-17": 10,
+      "2019-06-25": 10,
+      "2019-08-13": 12,
+      "2019-08-30": 12,
+      "2019-10-15": 14,
+      "2019-11-29": 15,
+      "2019-12-16": 16,
+      "2020-03-04": 17,
+      "2020-03-12": 18,
+      "2024-09-30": 19,
+      "2024-12-26": 20,
+      "2025-09-15": 21,
+      "2025-09-30": 22,
+      "2025-10-15": 22,
+      "2025-12-15": 24,
+      "2025-12-26": 24
+     },
+     "onsets_in_a_refit_block_whose_training_window_holds_no_onset": [
+      "2018-11-15",
+      "2018-11-30"
+     ]
+    },
+    "cut_off_rule_alone_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30"
+    ],
+    "onsets": 26,
+    "risk_date_models": {
+     "onsets_off_the_risk_dates": [
+      "2018-11-15",
+      "2018-12-28",
+      "2019-01-15",
+      "2019-03-15",
+      "2019-05-28",
+      "2019-06-25",
+      "2019-08-13",
+      "2019-10-15",
+      "2020-03-04",
+      "2020-03-12",
+      "2024-12-26",
+      "2025-10-15",
+      "2025-12-26"
+     ],
+     "onsets_on_the_risk_dates": 13
+    },
+    "risk_date_models_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-10-15",
+     "2020-03-04",
+     "2020-03-12",
+     "2024-12-26",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "scored_days": 1870
+   },
+   "5": {
+    "blind_to_both": [
+     "2018-11-15"
+    ],
+    "cut_off_rule": {
+     "blocks": 89,
+     "blocks_with_no_onset_in_the_window": 5,
+     "onsets_by_training_window_onset_count": {
+      "2018-11-15": 0,
+      "2018-11-30": 0,
+      "2018-12-17": 1,
+      "2018-12-28": 1,
+      "2019-01-15": 4,
+      "2019-01-31": 4,
+      "2019-02-28": 6,
+      "2019-03-15": 7,
+      "2019-03-29": 7,
+      "2019-05-28": 9,
+      "2019-06-17": 10,
+      "2019-06-25": 10,
+      "2019-08-13": 12,
+      "2019-08-30": 12,
+      "2019-10-15": 14,
+      "2019-11-29": 15,
+      "2019-12-16": 16,
+      "2020-03-04": 17,
+      "2020-03-12": 17,
+      "2024-09-30": 19,
+      "2024-12-26": 20,
+      "2025-09-15": 21,
+      "2025-09-30": 22,
+      "2025-10-15": 22,
+      "2025-12-15": 24,
+      "2025-12-26": 24
+     },
+     "onsets_in_a_refit_block_whose_training_window_holds_no_onset": [
+      "2018-11-15",
+      "2018-11-30"
+     ]
+    },
+    "cut_off_rule_alone_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30"
+    ],
+    "onsets": 26,
+    "risk_date_models": {
+     "onsets_off_the_risk_dates": [
+      "2018-11-15",
+      "2018-12-28",
+      "2019-01-15",
+      "2019-03-15",
+      "2019-05-28",
+      "2019-06-25",
+      "2019-08-13",
+      "2019-10-15",
+      "2020-03-04",
+      "2020-03-12",
+      "2024-12-26",
+      "2025-10-15",
+      "2025-12-26"
+     ],
+     "onsets_on_the_risk_dates": 13
+    },
+    "risk_date_models_cannot_warn": [
+     "2018-11-15",
+     "2018-11-30",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-05-28",
+     "2019-06-25",
+     "2019-08-13",
+     "2019-10-15",
+     "2020-03-04",
+     "2020-03-12",
+     "2024-12-26",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "scored_days": 1869
+   }
+  },
+  "common_onsets": [
+   "2018-11-15",
+   "2018-11-30",
+   "2018-12-17",
+   "2018-12-28",
+   "2019-01-15",
+   "2019-01-31",
+   "2019-02-28",
+   "2019-03-15",
+   "2019-03-29",
+   "2019-05-28",
+   "2019-06-17",
+   "2019-06-25",
+   "2019-08-13",
+   "2019-08-30",
+   "2019-10-15",
+   "2019-11-29",
+   "2019-12-16",
+   "2020-03-04",
+   "2020-03-12",
+   "2024-09-30",
+   "2024-12-26",
+   "2025-09-15",
+   "2025-09-30",
+   "2025-10-15",
+   "2025-12-15",
+   "2025-12-26"
+  ],
+  "risk_date_models_best_possible_recall_at_lead_1": 0.7692307692307693,
+  "risk_date_models_cannot_warn_at_any_horizon": [
+   "2019-05-28",
+   "2019-06-25",
+   "2019-08-13",
+   "2020-03-04",
+   "2020-03-12",
+   "2024-12-26"
+  ]
+ },
+ "nowcast": {
+  "alignment": {
+   "calendar_day_gaps_between_consecutive_panel_rows": {
+    "1": 1505,
+    "2": 25,
+    "3": 342,
+    "4": 62
+   },
+   "naive_is_the_previous_panel_rows_spread_on_every_scored_day": true,
+   "nowcast_row_is_the_scored_row": true
+  },
+  "availability": {
+   "admitted_days_to_2025-12-31": 1985,
+   "excluded_days_by_reason": {
+    "written after the declared time": 2,
+    "written again on a later date": 10
+   },
+   "rule": "a day is admitted only if every record's lastUpdated is on the operation date at or before 15:00 ET; the Desk states no publication time, so that a record is served when written is an assumption"
+  },
+  "reproduces_the_published_figures": {
+   "naive_mae_bp": 1.8248798718633206,
+   "primary_mae_bp": 3.4628435710971766
+  },
+  "scored_days": 1873,
+  "spread_changes": {
+   "days_with_abs_change_above_20_bp": 16,
+   "max_abs_bp": 282.0,
+   "median_abs_bp": 0.9999999999999787,
+   "p90_abs_bp": 4.0000000000000036,
+   "p99_abs_bp": 18.999999999999993
+  },
+  "units": {
+   "days_differing_by_more_than_0.01_billion": 8,
+   "largest_same_day_reverse_repo_billions": 2553.716,
+   "max_abs_difference_billions": 5.054,
+   "same_day_reverse_repo_days_compared_with_fred_rrpontsyd": 1985
+  },
+  "variants": {
+   "declared_published_only": {
+    "mae_bp": 3.612796021617594,
+    "mae_pressure_days_bp": 11.153643935339305,
+    "mae_quarter_end_days_bp": 9.661432211524504
+   },
+   "declared_rrp": {
+    "mae_bp": 3.3610220214041577,
+    "mae_pressure_days_bp": 11.102937217071663,
+    "mae_quarter_end_days_bp": 9.619795986321012
+   },
+   "declared_rrp_settlement": {
+    "mae_bp": 3.4628435710971766,
+    "mae_pressure_days_bp": 10.574350636541796,
+    "mae_quarter_end_days_bp": 10.076162079951713
+   },
+   "declared_settlement": {
+    "mae_bp": 3.695153057061212,
+    "mae_pressure_days_bp": 10.651706792303395,
+    "mae_quarter_end_days_bp": 10.706726244763127
+   },
+   "naive": {
+    "mae_bp": 1.8248798718633206,
+    "mae_pressure_days_bp": 10.80379746835443,
+    "mae_quarter_end_days_bp": 8.12903225806452
+   },
+   "no_same_day_input__target_clipped_at_10": {
+    "mae_bp": 1.9439011508487065,
+    "mae_pressure_days_bp": 10.44798604433901,
+    "mae_quarter_end_days_bp": 8.33980585657697
+   },
+   "no_same_day_input__target_clipped_at_20": {
+    "mae_bp": 2.0751502247009728,
+    "mae_pressure_days_bp": 10.38237567507911,
+    "mae_quarter_end_days_bp": 8.41903178779921
+   },
+   "no_same_day_input__target_clipped_at_5": {
+    "mae_bp": 1.8720018721466942,
+    "mae_pressure_days_bp": 10.531946588967752,
+    "mae_quarter_end_days_bp": 8.292610577516092
+   },
+   "primary_features__target_clipped_at_10": {
+    "mae_bp": 2.0160157257247135,
+    "mae_pressure_days_bp": 9.986898522725498,
+    "mae_quarter_end_days_bp": 8.184342051779577
+   },
+   "primary_features__target_clipped_at_20": {
+    "mae_bp": 2.2005573792803066,
+    "mae_pressure_days_bp": 9.872259012109536,
+    "mae_quarter_end_days_bp": 8.66645018972431
+   },
+   "primary_features__target_clipped_at_5": {
+    "mae_bp": 1.920102470117347,
+    "mae_pressure_days_bp": 10.172674826627057,
+    "mae_quarter_end_days_bp": 8.081089034370274
+   },
+   "same_day_inputs_only__target_clipped_at_10": {
+    "mae_bp": 2.064298633870037,
+    "mae_pressure_days_bp": 10.354565249513044,
+    "mae_quarter_end_days_bp": 8.005596430590062
+   },
+   "same_day_inputs_only__target_clipped_at_20": {
+    "mae_bp": 2.1963477410072874,
+    "mae_pressure_days_bp": 10.365294100930564,
+    "mae_quarter_end_days_bp": 8.35184953153013
+   },
+   "same_day_inputs_only__target_clipped_at_5": {
+    "mae_bp": 1.9810524983359343,
+    "mae_pressure_days_bp": 10.436856806635273,
+    "mae_quarter_end_days_bp": 7.977217255070691
+   },
+   "same_day_inputs_only__target_clipped_at_None": {
+    "mae_bp": 2.4641539425697756,
+    "mae_pressure_days_bp": 10.326160794147732,
+    "mae_quarter_end_days_bp": 7.905956742766289
+   }
+  }
+ },
+ "onset_count": {
+  "onset_definition": "pressure.onsets: SOFR - IORB strictly above +5 bp, with no such day on the five panel days before it; identical at every horizon",
+  "onsets_at_every_horizon": 26,
+  "onsets_at_h1_not_at_every_horizon": [
+   "2018-06-29"
+  ],
+  "onsets_by_horizon": {
+   "1": 27,
+   "2": 26,
+   "3": 26,
+   "4": 26,
+   "5": 26
+  },
+  "scored_days_by_horizon": {
+   "1": 1873,
+   "2": 1872,
+   "3": 1871,
+   "4": 1870,
+   "5": 1869
+  },
+  "scored_first_day_by_horizon": {
+   "1": "2018-06-29",
+   "2": "2018-07-02",
+   "3": "2018-07-03",
+   "4": "2018-07-05",
+   "5": "2018-07-06"
+  }
+ },
+ "onsets_used_elsewhere": [
+  "2018-11-15",
+  "2018-11-30",
+  "2018-12-17",
+  "2018-12-28",
+  "2019-01-15",
+  "2019-01-31",
+  "2019-02-28",
+  "2019-03-15",
+  "2019-03-29",
+  "2019-05-28",
+  "2019-06-17",
+  "2019-06-25",
+  "2019-08-13",
+  "2019-08-30",
+  "2019-10-15",
+  "2019-11-29",
+  "2019-12-16",
+  "2020-03-04",
+  "2020-03-12",
+  "2024-09-30",
+  "2024-12-26",
+  "2025-09-15",
+  "2025-09-30",
+  "2025-10-15",
+  "2025-12-15",
+  "2025-12-26"
+ ],
+ "reserves": {
+  "daily_proxy": {
+   "base_1_weeks_earlier": {
+    "ceiling_with_the_h41_tga": {
+     "correlation_of_changes": 0.4370812654824682,
+     "mae_billions": 50.00924427480912,
+     "wednesdays": 393
+    },
+    "correlation_of_changes": 0.2813203694302991,
+    "mae_carry_forward_billions": 53.336188295165385,
+    "mae_proxy_billions": 65.005844783715,
+    "mean_abs_gap_between_the_dts_tga_and_the_h41_tga_on_wednesdays_billions": 27.51551879699251,
+    "median_abs_error_carry_billions": 37.16199999999981,
+    "median_abs_error_proxy_billions": 43.011,
+    "onset_weeks": {
+     "2018-11-15": {
+      "change_actual": -24.748000000000047,
+      "change_proxy": -11.313999999999997,
+      "error": -13.43400000000005,
+      "wednesday": "2018-11-14"
+     },
+     "2018-11-30": {
+      "change_actual": -19.069999999999936,
+      "change_proxy": -0.35899999999999643,
+      "error": -18.71099999999994,
+      "wednesday": "2018-11-28"
+     },
+     "2018-12-17": {
+      "change_actual": -2.602000000000089,
+      "change_proxy": 5.488999999999988,
+      "error": -8.091000000000077,
+      "wednesday": "2018-12-12"
+     },
+     "2018-12-28": {
+      "change_actual": -37.914999999999964,
+      "change_proxy": 33.03400000000002,
+      "error": -70.94899999999998,
+      "wednesday": "2018-12-26"
+     },
+     "2019-01-15": {
+      "change_actual": 28.53099999999995,
+      "change_proxy": 50.117000000000004,
+      "error": -21.586000000000055,
+      "wednesday": "2019-01-09"
+     },
+     "2019-01-31": {
+      "change_actual": -4.336999999999989,
+      "change_proxy": 1.2679999999999598,
+      "error": -5.604999999999949,
+      "wednesday": "2019-01-30"
+     },
+     "2019-02-28": {
+      "change_actual": 8.170000000000073,
+      "change_proxy": 65.33899999999998,
+      "error": -57.16899999999991,
+      "wednesday": "2019-02-27"
+     },
+     "2019-03-15": {
+      "change_actual": -17.66599999999994,
+      "change_proxy": -22.67100000000001,
+      "error": 5.00500000000007,
+      "wednesday": "2019-03-13"
+     },
+     "2019-03-29": {
+      "change_actual": -7.449000000000069,
+      "change_proxy": 19.607000000000006,
+      "error": -27.056000000000076,
+      "wednesday": "2019-03-27"
+     },
+     "2019-05-28": {
+      "change_actual": 8.289999999999964,
+      "change_proxy": 27.198999999999977,
+      "error": -18.909000000000013,
+      "wednesday": "2019-05-22"
+     },
+     "2019-06-17": {
+      "change_actual": 49.874000000000024,
+      "change_proxy": 35.13499999999998,
+      "error": 14.739000000000047,
+      "wednesday": "2019-06-12"
+     },
+     "2019-06-25": {
+      "change_actual": -19.008000000000038,
+      "change_proxy": -106.23100000000001,
+      "error": 87.22299999999997,
+      "wednesday": "2019-06-19"
+     },
+     "2019-08-13": {
+      "change_actual": 4.721000000000004,
+      "change_proxy": 47.330000000000005,
+      "error": -42.609,
+      "wednesday": "2019-08-07"
+     },
+     "2019-08-30": {
+      "change_actual": -17.36500000000001,
+      "change_proxy": -7.800999999999984,
+      "error": -9.564000000000025,
+      "wednesday": "2019-08-28"
+     },
+     "2019-10-15": {
+      "change_actual": 37.25499999999988,
+      "change_proxy": 39.38099999999999,
+      "error": -2.1260000000001114,
+      "wednesday": "2019-10-09"
+     },
+     "2019-11-29": {
+      "change_actual": 7.9379999999998745,
+      "change_proxy": 24.174999999999972,
+      "error": -16.237000000000098,
+      "wednesday": "2019-11-27"
+     },
+     "2019-12-16": {
+      "change_actual": 65.39599999999996,
+      "change_proxy": 33.68799999999995,
+      "error": 31.708000000000006,
+      "wednesday": "2019-12-11"
+     },
+     "2020-03-04": {
+      "change_actual": 72.38599999999997,
+      "change_proxy": 3.5879999999999876,
+      "error": 68.79799999999997,
+      "wednesday": "2020-03-04"
+     },
+     "2020-03-12": {
+      "change_actual": 45.67000000000007,
+      "change_proxy": 12.665000000000031,
+      "error": 33.00500000000004,
+      "wednesday": "2020-03-11"
+     },
+     "2024-09-30": {
+      "change_actual": -144.13200000000006,
+      "change_proxy": -49.87399999999991,
+      "error": -94.25800000000015,
+      "wednesday": "2024-09-25"
+     },
+     "2025-09-15": {
+      "change_actual": -20.927000000000135,
+      "change_proxy": -17.123000000000072,
+      "error": -3.8040000000000624,
+      "wednesday": "2025-09-10"
+     },
+     "2025-09-30": {
+      "change_actual": -71.13700000000017,
+      "change_proxy": 33.96300000000002,
+      "error": -105.1000000000002,
+      "wednesday": "2025-09-24"
+     },
+     "2025-10-15": {
+      "change_actual": 20.55699999999979,
+      "change_proxy": -58.151000000000025,
+      "error": 78.70799999999981,
+      "wednesday": "2025-10-15"
+     },
+     "2025-12-15": {
+      "change_actual": 73.82799999999997,
+      "change_proxy": 100.16500000000002,
+      "error": -26.337000000000046,
+      "wednesday": "2025-12-10"
+     },
+     "2025-12-26": {
+      "change_actual": -3.462999999999738,
+      "change_proxy": 65.438,
+      "error": -68.90099999999974,
+      "wednesday": "2025-12-24"
+     }
+    },
+    "rmse_proxy_billions": 94.06297981521504,
+    "wednesdays": 393,
+    "wednesdays_proxy_closer_than_carry": 175
+   },
+   "base_2_weeks_earlier": {
+    "ceiling_with_the_h41_tga": {
+     "correlation_of_changes": 0.4592626181793384,
+     "mae_billions": 68.56721282051284,
+     "wednesdays": 390
+    },
+    "correlation_of_changes": 0.3496890980249714,
+    "mae_carry_forward_billions": 84.85318974358968,
+    "mae_proxy_billions": 81.74356923076931,
+    "mean_abs_gap_between_the_dts_tga_and_the_h41_tga_on_wednesdays_billions": 27.51551879699251,
+    "median_abs_error_carry_billions": 60.234500000000025,
+    "median_abs_error_proxy_billions": 47.94549999999985,
+    "onset_weeks": {
+     "2018-11-15": {
+      "change_actual": -0.8689999999999145,
+      "change_proxy": 42.065000000000026,
+      "error": -42.93399999999994,
+      "wednesday": "2018-11-14"
+     },
+     "2018-11-30": {
+      "change_actual": -62.72399999999993,
+      "change_proxy": -4.549000000000034,
+      "error": -58.1749999999999,
+      "wednesday": "2018-11-28"
+     },
+     "2018-12-17": {
+      "change_actual": -3.1200000000001182,
+      "change_proxy": 10.771,
+      "error": -13.891000000000119,
+      "wednesday": "2018-12-12"
+     },
+     "2018-12-28": {
+      "change_actual": -74.31600000000003,
+      "change_proxy": -46.116999999999976,
+      "error": -28.199000000000055,
+      "wednesday": "2018-12-26"
+     },
+     "2019-01-15": {
+      "change_actual": -10.836000000000013,
+      "change_proxy": 17.261000000000006,
+      "error": -28.09700000000002,
+      "wednesday": "2019-01-09"
+     },
+     "2019-01-31": {
+      "change_actual": -46.59899999999993,
+      "change_proxy": -14.644000000000027,
+      "error": -31.954999999999906,
+      "wednesday": "2019-01-30"
+     },
+     "2019-02-28": {
+      "change_actual": -9.222999999999956,
+      "change_proxy": 108.87700000000002,
+      "error": -118.09999999999998,
+      "wednesday": "2019-02-27"
+     },
+     "2019-03-15": {
+      "change_actual": 63.19800000000009,
+      "change_proxy": 29.542,
+      "error": 33.65600000000009,
+      "wednesday": "2019-03-13"
+     },
+     "2019-03-29": {
+      "change_actual": -81.66600000000017,
+      "change_proxy": -57.362000000000016,
+      "error": -24.30400000000015,
+      "wednesday": "2019-03-27"
+     },
+     "2019-05-28": {
+      "change_actual": 33.182000000000016,
+      "change_proxy": 76.14999999999999,
+      "error": -42.967999999999975,
+      "wednesday": "2019-05-22"
+     },
+     "2019-06-17": {
+      "change_actual": 42.25199999999995,
+      "change_proxy": 76.46999999999998,
+      "error": -34.21800000000003,
+      "wednesday": "2019-06-12"
+     },
+     "2019-06-25": {
+      "change_actual": 30.865999999999985,
+      "change_proxy": -71.09600000000003,
+      "error": 101.96200000000002,
+      "wednesday": "2019-06-19"
+     },
+     "2019-08-13": {
+      "change_actual": 20.922000000000025,
+      "change_proxy": 49.78300000000001,
+      "error": -28.860999999999983,
+      "wednesday": "2019-08-07"
+     },
+     "2019-08-30": {
+      "change_actual": -51.725999999999885,
+      "change_proxy": -20.67599999999999,
+      "error": -31.049999999999894,
+      "wednesday": "2019-08-28"
+     },
+     "2019-10-15": {
+      "change_actual": 106.28399999999988,
+      "change_proxy": 7.084999999999992,
+      "error": 99.19899999999988,
+      "wednesday": "2019-10-09"
+     },
+     "2019-11-29": {
+      "change_actual": -5.619000000000142,
+      "change_proxy": 12.544999999999987,
+      "error": -18.16400000000013,
+      "wednesday": "2019-11-27"
+     },
+     "2019-12-16": {
+      "change_actual": 111.96000000000004,
+      "change_proxy": 54.63699999999999,
+      "error": 57.32300000000004,
+      "wednesday": "2019-12-11"
+     },
+     "2020-03-04": {
+      "change_actual": 44.73700000000008,
+      "change_proxy": 39.87299999999997,
+      "error": 4.864000000000111,
+      "wednesday": "2020-03-04"
+     },
+     "2020-03-12": {
+      "change_actual": 118.05600000000004,
+      "change_proxy": 16.25300000000002,
+      "error": 101.80300000000003,
+      "wednesday": "2020-03-11"
+     },
+     "2024-09-30": {
+      "change_actual": -151.66900000000032,
+      "change_proxy": -190.31099999999998,
+      "error": 38.641999999999655,
+      "wednesday": "2024-09-25"
+     },
+     "2025-09-15": {
+      "change_actual": -64.19300000000021,
+      "change_proxy": -66.44300000000004,
+      "error": 2.2499999999998295,
+      "wednesday": "2025-09-10"
+     },
+     "2025-09-30": {
+      "change_actual": -158.55600000000004,
+      "change_proxy": -90.157,
+      "error": -68.39900000000004,
+      "wednesday": "2025-09-24"
+     },
+     "2025-10-15": {
+      "change_actual": 52.93399999999974,
+      "change_proxy": -27.878999999999955,
+      "error": 80.8129999999997,
+      "wednesday": "2025-10-15"
+     },
+     "2025-12-15": {
+      "change_actual": 35.526000000000295,
+      "change_proxy": 91.023,
+      "error": -55.4969999999997,
+      "wednesday": "2025-12-10"
+     },
+     "2025-12-26": {
+      "change_actual": 23.46900000000005,
+      "change_proxy": 4.531999999999964,
+      "error": 18.937000000000086,
+      "wednesday": "2025-12-24"
+     }
+    },
+    "rmse_proxy_billions": 134.10212635041455,
+    "wednesdays": 390,
+    "wednesdays_proxy_closer_than_carry": 206
+   }
+  },
+  "decision_days": 1874,
+  "decision_days_with_a_newer_print_public_and_unread": 710,
+  "declared": {
+   "available_time": "16:30",
+   "days": 5,
+   "unit": "calendar_days"
+  },
+  "per_onset": [
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2018-11-14",
+      "declared_print": "2018-11-07",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-11-07",
+      "reserves_declared": 1826.131,
+      "reserves_public": 1826.131,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2018-11-13",
+      "declared_print": "2018-11-07",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-11-07",
+      "reserves_declared": 1826.131,
+      "reserves_public": 1826.131,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2018-11-09",
+      "declared_print": "2018-10-31",
+      "newer_print_public_and_unread": true,
+      "public_print": "2018-11-07",
+      "reserves_declared": 1802.252,
+      "reserves_public": 1826.131,
+      "unread_change_billions": 23.879000000000133
+     },
+     "4": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2018-11-08",
+      "declared_print": "2018-10-31",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-10-31",
+      "reserves_declared": 1802.252,
+      "reserves_public": 1802.252,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2018-11-07",
+      "declared_print": "2018-10-31",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-10-31",
+      "reserves_declared": 1802.252,
+      "reserves_public": 1802.252,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2018-11-15"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2018-11-29",
+      "declared_print": "2018-11-21",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-11-21",
+      "reserves_declared": 1757.729,
+      "reserves_public": 1757.729,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2018-11-28",
+      "declared_print": "2018-11-21",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-11-21",
+      "reserves_declared": 1757.729,
+      "reserves_public": 1757.729,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2018-11-27",
+      "declared_print": "2018-11-21",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-11-21",
+      "reserves_declared": 1757.729,
+      "reserves_public": 1757.729,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2018-11-26",
+      "declared_print": "2018-11-14",
+      "newer_print_public_and_unread": true,
+      "public_print": "2018-11-21",
+      "reserves_declared": 1801.383,
+      "reserves_public": 1757.729,
+      "unread_change_billions": -43.653999999999996
+     },
+     "5": {
+      "age_days_declared": 9,
+      "age_days_public": 9,
+      "decision": "2018-11-23",
+      "declared_print": "2018-11-14",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-11-14",
+      "reserves_declared": 1801.383,
+      "reserves_public": 1801.383,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2018-11-30"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2018-12-14",
+      "declared_print": "2018-12-05",
+      "newer_print_public_and_unread": true,
+      "public_print": "2018-12-12",
+      "reserves_declared": 1738.141,
+      "reserves_public": 1735.539,
+      "unread_change_billions": -2.602000000000089
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2018-12-13",
+      "declared_print": "2018-12-05",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-12-05",
+      "reserves_declared": 1738.141,
+      "reserves_public": 1738.141,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2018-12-12",
+      "declared_print": "2018-12-05",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-12-05",
+      "reserves_declared": 1738.141,
+      "reserves_public": 1738.141,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2018-12-11",
+      "declared_print": "2018-12-05",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-12-05",
+      "reserves_declared": 1738.141,
+      "reserves_public": 1738.141,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2018-12-10",
+      "declared_print": "2018-11-28",
+      "newer_print_public_and_unread": true,
+      "public_print": "2018-12-05",
+      "reserves_declared": 1738.659,
+      "reserves_public": 1738.141,
+      "unread_change_billions": -0.5180000000000291
+     }
+    },
+    "onset": "2018-12-17"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2018-12-27",
+      "declared_print": "2018-12-19",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-12-19",
+      "reserves_declared": 1699.138,
+      "reserves_public": 1699.138,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2018-12-26",
+      "declared_print": "2018-12-19",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-12-19",
+      "reserves_declared": 1699.138,
+      "reserves_public": 1699.138,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2018-12-24",
+      "declared_print": "2018-12-12",
+      "newer_print_public_and_unread": true,
+      "public_print": "2018-12-19",
+      "reserves_declared": 1735.539,
+      "reserves_public": 1699.138,
+      "unread_change_billions": -36.40100000000007
+     },
+     "4": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2018-12-21",
+      "declared_print": "2018-12-12",
+      "newer_print_public_and_unread": true,
+      "public_print": "2018-12-19",
+      "reserves_declared": 1735.539,
+      "reserves_public": 1699.138,
+      "unread_change_billions": -36.40100000000007
+     },
+     "5": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2018-12-20",
+      "declared_print": "2018-12-12",
+      "newer_print_public_and_unread": false,
+      "public_print": "2018-12-12",
+      "reserves_declared": 1735.539,
+      "reserves_public": 1735.539,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2018-12-28"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-01-14",
+      "declared_print": "2019-01-02",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-01-09",
+      "reserves_declared": 1621.856,
+      "reserves_public": 1650.387,
+      "unread_change_billions": 28.53099999999995
+     },
+     "2": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-01-11",
+      "declared_print": "2019-01-02",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-01-09",
+      "reserves_declared": 1621.856,
+      "reserves_public": 1650.387,
+      "unread_change_billions": 28.53099999999995
+     },
+     "3": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-01-10",
+      "declared_print": "2019-01-02",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-01-02",
+      "reserves_declared": 1621.856,
+      "reserves_public": 1621.856,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-01-09",
+      "declared_print": "2019-01-02",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-01-02",
+      "reserves_declared": 1621.856,
+      "reserves_public": 1621.856,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-01-08",
+      "declared_print": "2019-01-02",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-01-02",
+      "reserves_declared": 1621.856,
+      "reserves_public": 1621.856,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2019-01-15"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-01-30",
+      "declared_print": "2019-01-23",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-01-23",
+      "reserves_declared": 1621.876,
+      "reserves_public": 1621.876,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-01-29",
+      "declared_print": "2019-01-23",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-01-23",
+      "reserves_declared": 1621.876,
+      "reserves_public": 1621.876,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-01-28",
+      "declared_print": "2019-01-16",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-01-23",
+      "reserves_declared": 1664.138,
+      "reserves_public": 1621.876,
+      "unread_change_billions": -42.261999999999944
+     },
+     "4": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-01-25",
+      "declared_print": "2019-01-16",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-01-23",
+      "reserves_declared": 1664.138,
+      "reserves_public": 1621.876,
+      "unread_change_billions": -42.261999999999944
+     },
+     "5": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-01-24",
+      "declared_print": "2019-01-16",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-01-16",
+      "reserves_declared": 1664.138,
+      "reserves_public": 1664.138,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2019-01-31"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-02-27",
+      "declared_print": "2019-02-20",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-02-20",
+      "reserves_declared": 1632.58,
+      "reserves_public": 1632.58,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-02-26",
+      "declared_print": "2019-02-20",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-02-20",
+      "reserves_declared": 1632.58,
+      "reserves_public": 1632.58,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-02-25",
+      "declared_print": "2019-02-13",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-02-20",
+      "reserves_declared": 1649.973,
+      "reserves_public": 1632.58,
+      "unread_change_billions": -17.39300000000003
+     },
+     "4": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-02-22",
+      "declared_print": "2019-02-13",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-02-20",
+      "reserves_declared": 1649.973,
+      "reserves_public": 1632.58,
+      "unread_change_billions": -17.39300000000003
+     },
+     "5": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-02-21",
+      "declared_print": "2019-02-13",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-02-13",
+      "reserves_declared": 1649.973,
+      "reserves_public": 1649.973,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2019-02-28"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-03-14",
+      "declared_print": "2019-03-06",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-03-06",
+      "reserves_declared": 1721.614,
+      "reserves_public": 1721.614,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-03-13",
+      "declared_print": "2019-03-06",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-03-06",
+      "reserves_declared": 1721.614,
+      "reserves_public": 1721.614,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-03-12",
+      "declared_print": "2019-03-06",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-03-06",
+      "reserves_declared": 1721.614,
+      "reserves_public": 1721.614,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-03-11",
+      "declared_print": "2019-02-27",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-03-06",
+      "reserves_declared": 1640.75,
+      "reserves_public": 1721.614,
+      "unread_change_billions": 80.86400000000003
+     },
+     "5": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-03-08",
+      "declared_print": "2019-02-27",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-03-06",
+      "reserves_declared": 1640.75,
+      "reserves_public": 1721.614,
+      "unread_change_billions": 80.86400000000003
+     }
+    },
+    "onset": "2019-03-15"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-03-28",
+      "declared_print": "2019-03-20",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-03-20",
+      "reserves_declared": 1629.731,
+      "reserves_public": 1629.731,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-03-27",
+      "declared_print": "2019-03-20",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-03-20",
+      "reserves_declared": 1629.731,
+      "reserves_public": 1629.731,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-03-26",
+      "declared_print": "2019-03-20",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-03-20",
+      "reserves_declared": 1629.731,
+      "reserves_public": 1629.731,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-03-25",
+      "declared_print": "2019-03-13",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-03-20",
+      "reserves_declared": 1703.948,
+      "reserves_public": 1629.731,
+      "unread_change_billions": -74.2170000000001
+     },
+     "5": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-03-22",
+      "declared_print": "2019-03-13",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-03-20",
+      "reserves_declared": 1703.948,
+      "reserves_public": 1629.731,
+      "unread_change_billions": -74.2170000000001
+     }
+    },
+    "onset": "2019-03-29"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-05-24",
+      "declared_print": "2019-05-15",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-05-22",
+      "reserves_declared": 1509.867,
+      "reserves_public": 1518.157,
+      "unread_change_billions": 8.289999999999964
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-05-23",
+      "declared_print": "2019-05-15",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-05-15",
+      "reserves_declared": 1509.867,
+      "reserves_public": 1509.867,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-05-22",
+      "declared_print": "2019-05-15",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-05-15",
+      "reserves_declared": 1509.867,
+      "reserves_public": 1509.867,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-05-21",
+      "declared_print": "2019-05-15",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-05-15",
+      "reserves_declared": 1509.867,
+      "reserves_public": 1509.867,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-05-20",
+      "declared_print": "2019-05-08",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-05-15",
+      "reserves_declared": 1484.975,
+      "reserves_public": 1509.867,
+      "unread_change_billions": 24.892000000000053
+     }
+    },
+    "onset": "2019-05-28"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-06-14",
+      "declared_print": "2019-06-05",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-06-12",
+      "reserves_declared": 1537.089,
+      "reserves_public": 1586.963,
+      "unread_change_billions": 49.874000000000024
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-06-13",
+      "declared_print": "2019-06-05",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-06-05",
+      "reserves_declared": 1537.089,
+      "reserves_public": 1537.089,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-06-12",
+      "declared_print": "2019-06-05",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-06-05",
+      "reserves_declared": 1537.089,
+      "reserves_public": 1537.089,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-06-11",
+      "declared_print": "2019-06-05",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-06-05",
+      "reserves_declared": 1537.089,
+      "reserves_public": 1537.089,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-06-10",
+      "declared_print": "2019-05-29",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-06-05",
+      "reserves_declared": 1544.711,
+      "reserves_public": 1537.089,
+      "unread_change_billions": -7.622000000000071
+     }
+    },
+    "onset": "2019-06-17"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-06-24",
+      "declared_print": "2019-06-12",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-06-19",
+      "reserves_declared": 1586.963,
+      "reserves_public": 1567.955,
+      "unread_change_billions": -19.008000000000038
+     },
+     "2": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-06-21",
+      "declared_print": "2019-06-12",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-06-19",
+      "reserves_declared": 1586.963,
+      "reserves_public": 1567.955,
+      "unread_change_billions": -19.008000000000038
+     },
+     "3": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-06-20",
+      "declared_print": "2019-06-12",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-06-12",
+      "reserves_declared": 1586.963,
+      "reserves_public": 1586.963,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-06-19",
+      "declared_print": "2019-06-12",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-06-12",
+      "reserves_declared": 1586.963,
+      "reserves_public": 1586.963,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-06-18",
+      "declared_print": "2019-06-12",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-06-12",
+      "reserves_declared": 1586.963,
+      "reserves_public": 1586.963,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2019-06-25"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-08-12",
+      "declared_print": "2019-07-31",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-08-07",
+      "reserves_declared": 1534.523,
+      "reserves_public": 1539.244,
+      "unread_change_billions": 4.721000000000004
+     },
+     "2": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-08-09",
+      "declared_print": "2019-07-31",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-08-07",
+      "reserves_declared": 1534.523,
+      "reserves_public": 1539.244,
+      "unread_change_billions": 4.721000000000004
+     },
+     "3": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-08-08",
+      "declared_print": "2019-07-31",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-07-31",
+      "reserves_declared": 1534.523,
+      "reserves_public": 1534.523,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-08-07",
+      "declared_print": "2019-07-31",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-07-31",
+      "reserves_declared": 1534.523,
+      "reserves_public": 1534.523,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-08-06",
+      "declared_print": "2019-07-31",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-07-31",
+      "reserves_declared": 1534.523,
+      "reserves_public": 1534.523,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2019-08-13"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-08-29",
+      "declared_print": "2019-08-21",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-08-21",
+      "reserves_declared": 1516.045,
+      "reserves_public": 1516.045,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-08-28",
+      "declared_print": "2019-08-21",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-08-21",
+      "reserves_declared": 1516.045,
+      "reserves_public": 1516.045,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-08-27",
+      "declared_print": "2019-08-21",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-08-21",
+      "reserves_declared": 1516.045,
+      "reserves_public": 1516.045,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-08-26",
+      "declared_print": "2019-08-14",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-08-21",
+      "reserves_declared": 1550.406,
+      "reserves_public": 1516.045,
+      "unread_change_billions": -34.360999999999876
+     },
+     "5": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-08-23",
+      "declared_print": "2019-08-14",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-08-21",
+      "reserves_declared": 1550.406,
+      "reserves_public": 1516.045,
+      "unread_change_billions": -34.360999999999876
+     }
+    },
+    "onset": "2019-08-30"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-10-11",
+      "declared_print": "2019-10-02",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-10-09",
+      "reserves_declared": 1469.2,
+      "reserves_public": 1506.455,
+      "unread_change_billions": 37.25499999999988
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-10-10",
+      "declared_print": "2019-10-02",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-10-02",
+      "reserves_declared": 1469.2,
+      "reserves_public": 1469.2,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-10-09",
+      "declared_print": "2019-10-02",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-10-02",
+      "reserves_declared": 1469.2,
+      "reserves_public": 1469.2,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-10-08",
+      "declared_print": "2019-10-02",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-10-02",
+      "reserves_declared": 1469.2,
+      "reserves_public": 1469.2,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-10-07",
+      "declared_print": "2019-09-25",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-10-02",
+      "reserves_declared": 1400.171,
+      "reserves_public": 1469.2,
+      "unread_change_billions": 69.029
+     }
+    },
+    "onset": "2019-10-15"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-11-27",
+      "declared_print": "2019-11-20",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-11-20",
+      "reserves_declared": 1518.759,
+      "reserves_public": 1518.759,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-11-26",
+      "declared_print": "2019-11-20",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-11-20",
+      "reserves_declared": 1518.759,
+      "reserves_public": 1518.759,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-11-25",
+      "declared_print": "2019-11-13",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-11-20",
+      "reserves_declared": 1532.316,
+      "reserves_public": 1518.759,
+      "unread_change_billions": -13.557000000000016
+     },
+     "4": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-11-22",
+      "declared_print": "2019-11-13",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-11-20",
+      "reserves_declared": 1532.316,
+      "reserves_public": 1518.759,
+      "unread_change_billions": -13.557000000000016
+     },
+     "5": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-11-21",
+      "declared_print": "2019-11-13",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-11-13",
+      "reserves_declared": 1532.316,
+      "reserves_public": 1532.316,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2019-11-29"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2019-12-13",
+      "declared_print": "2019-12-04",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-12-11",
+      "reserves_declared": 1573.261,
+      "reserves_public": 1638.657,
+      "unread_change_billions": 65.39599999999996
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2019-12-12",
+      "declared_print": "2019-12-04",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-12-04",
+      "reserves_declared": 1573.261,
+      "reserves_public": 1573.261,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2019-12-11",
+      "declared_print": "2019-12-04",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-12-04",
+      "reserves_declared": 1573.261,
+      "reserves_public": 1573.261,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2019-12-10",
+      "declared_print": "2019-12-04",
+      "newer_print_public_and_unread": false,
+      "public_print": "2019-12-04",
+      "reserves_declared": 1573.261,
+      "reserves_public": 1573.261,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2019-12-09",
+      "declared_print": "2019-11-27",
+      "newer_print_public_and_unread": true,
+      "public_print": "2019-12-04",
+      "reserves_declared": 1526.697,
+      "reserves_public": 1573.261,
+      "unread_change_billions": 46.56400000000008
+     }
+    },
+    "onset": "2019-12-16"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2020-03-03",
+      "declared_print": "2020-02-26",
+      "newer_print_public_and_unread": false,
+      "public_print": "2020-02-26",
+      "reserves_declared": 1626.469,
+      "reserves_public": 1626.469,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2020-03-02",
+      "declared_print": "2020-02-19",
+      "newer_print_public_and_unread": true,
+      "public_print": "2020-02-26",
+      "reserves_declared": 1654.118,
+      "reserves_public": 1626.469,
+      "unread_change_billions": -27.648999999999887
+     },
+     "3": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2020-02-28",
+      "declared_print": "2020-02-19",
+      "newer_print_public_and_unread": true,
+      "public_print": "2020-02-26",
+      "reserves_declared": 1654.118,
+      "reserves_public": 1626.469,
+      "unread_change_billions": -27.648999999999887
+     },
+     "4": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2020-02-27",
+      "declared_print": "2020-02-19",
+      "newer_print_public_and_unread": false,
+      "public_print": "2020-02-19",
+      "reserves_declared": 1654.118,
+      "reserves_public": 1654.118,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2020-02-26",
+      "declared_print": "2020-02-19",
+      "newer_print_public_and_unread": false,
+      "public_print": "2020-02-19",
+      "reserves_declared": 1654.118,
+      "reserves_public": 1654.118,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2020-03-04"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2020-03-11",
+      "declared_print": "2020-03-04",
+      "newer_print_public_and_unread": false,
+      "public_print": "2020-03-04",
+      "reserves_declared": 1698.855,
+      "reserves_public": 1698.855,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2020-03-10",
+      "declared_print": "2020-03-04",
+      "newer_print_public_and_unread": false,
+      "public_print": "2020-03-04",
+      "reserves_declared": 1698.855,
+      "reserves_public": 1698.855,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2020-03-09",
+      "declared_print": "2020-02-26",
+      "newer_print_public_and_unread": true,
+      "public_print": "2020-03-04",
+      "reserves_declared": 1626.469,
+      "reserves_public": 1698.855,
+      "unread_change_billions": 72.38599999999997
+     },
+     "4": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2020-03-06",
+      "declared_print": "2020-02-26",
+      "newer_print_public_and_unread": true,
+      "public_print": "2020-03-04",
+      "reserves_declared": 1626.469,
+      "reserves_public": 1698.855,
+      "unread_change_billions": 72.38599999999997
+     },
+     "5": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2020-03-05",
+      "declared_print": "2020-02-26",
+      "newer_print_public_and_unread": false,
+      "public_print": "2020-02-26",
+      "reserves_declared": 1626.469,
+      "reserves_public": 1626.469,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2020-03-12"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2024-09-27",
+      "declared_print": "2024-09-18",
+      "newer_print_public_and_unread": true,
+      "public_print": "2024-09-25",
+      "reserves_declared": 3313.281,
+      "reserves_public": 3169.149,
+      "unread_change_billions": -144.13200000000006
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2024-09-26",
+      "declared_print": "2024-09-18",
+      "newer_print_public_and_unread": false,
+      "public_print": "2024-09-18",
+      "reserves_declared": 3313.281,
+      "reserves_public": 3313.281,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2024-09-25",
+      "declared_print": "2024-09-18",
+      "newer_print_public_and_unread": false,
+      "public_print": "2024-09-18",
+      "reserves_declared": 3313.281,
+      "reserves_public": 3313.281,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2024-09-24",
+      "declared_print": "2024-09-18",
+      "newer_print_public_and_unread": false,
+      "public_print": "2024-09-18",
+      "reserves_declared": 3313.281,
+      "reserves_public": 3313.281,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2024-09-23",
+      "declared_print": "2024-09-11",
+      "newer_print_public_and_unread": true,
+      "public_print": "2024-09-18",
+      "reserves_declared": 3320.818,
+      "reserves_public": 3313.281,
+      "unread_change_billions": -7.537000000000262
+     }
+    },
+    "onset": "2024-09-30"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2024-12-24",
+      "declared_print": "2024-12-18",
+      "newer_print_public_and_unread": false,
+      "public_print": "2024-12-18",
+      "reserves_declared": 3282.229,
+      "reserves_public": 3282.229,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2024-12-23",
+      "declared_print": "2024-12-11",
+      "newer_print_public_and_unread": true,
+      "public_print": "2024-12-18",
+      "reserves_declared": 3264.559,
+      "reserves_public": 3282.229,
+      "unread_change_billions": 17.669999999999618
+     },
+     "3": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2024-12-20",
+      "declared_print": "2024-12-11",
+      "newer_print_public_and_unread": true,
+      "public_print": "2024-12-18",
+      "reserves_declared": 3264.559,
+      "reserves_public": 3282.229,
+      "unread_change_billions": 17.669999999999618
+     },
+     "4": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2024-12-19",
+      "declared_print": "2024-12-11",
+      "newer_print_public_and_unread": false,
+      "public_print": "2024-12-11",
+      "reserves_declared": 3264.559,
+      "reserves_public": 3264.559,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2024-12-18",
+      "declared_print": "2024-12-11",
+      "newer_print_public_and_unread": false,
+      "public_print": "2024-12-11",
+      "reserves_declared": 3264.559,
+      "reserves_public": 3264.559,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2024-12-26"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2025-09-12",
+      "declared_print": "2025-09-03",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-09-10",
+      "reserves_declared": 3181.701,
+      "reserves_public": 3160.774,
+      "unread_change_billions": -20.927000000000135
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2025-09-11",
+      "declared_print": "2025-09-03",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-09-03",
+      "reserves_declared": 3181.701,
+      "reserves_public": 3181.701,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2025-09-10",
+      "declared_print": "2025-09-03",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-09-03",
+      "reserves_declared": 3181.701,
+      "reserves_public": 3181.701,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2025-09-09",
+      "declared_print": "2025-09-03",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-09-03",
+      "reserves_declared": 3181.701,
+      "reserves_public": 3181.701,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2025-09-08",
+      "declared_print": "2025-08-27",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-09-03",
+      "reserves_declared": 3224.967,
+      "reserves_public": 3181.701,
+      "unread_change_billions": -43.266000000000076
+     }
+    },
+    "onset": "2025-09-15"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2025-09-29",
+      "declared_print": "2025-09-17",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-09-24",
+      "reserves_declared": 3073.355,
+      "reserves_public": 3002.218,
+      "unread_change_billions": -71.13700000000017
+     },
+     "2": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2025-09-26",
+      "declared_print": "2025-09-17",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-09-24",
+      "reserves_declared": 3073.355,
+      "reserves_public": 3002.218,
+      "unread_change_billions": -71.13700000000017
+     },
+     "3": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2025-09-25",
+      "declared_print": "2025-09-17",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-09-17",
+      "reserves_declared": 3073.355,
+      "reserves_public": 3073.355,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2025-09-24",
+      "declared_print": "2025-09-17",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-09-17",
+      "reserves_declared": 3073.355,
+      "reserves_public": 3073.355,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2025-09-23",
+      "declared_print": "2025-09-17",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-09-17",
+      "reserves_declared": 3073.355,
+      "reserves_public": 3073.355,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2025-09-30"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2025-10-14",
+      "declared_print": "2025-10-08",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-10-08",
+      "reserves_declared": 2998.471,
+      "reserves_public": 2998.471,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2025-10-10",
+      "declared_print": "2025-10-01",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-10-08",
+      "reserves_declared": 2966.094,
+      "reserves_public": 2998.471,
+      "unread_change_billions": 32.37699999999995
+     },
+     "3": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2025-10-09",
+      "declared_print": "2025-10-01",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-10-01",
+      "reserves_declared": 2966.094,
+      "reserves_public": 2966.094,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2025-10-08",
+      "declared_print": "2025-10-01",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-10-01",
+      "reserves_declared": 2966.094,
+      "reserves_public": 2966.094,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2025-10-07",
+      "declared_print": "2025-10-01",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-10-01",
+      "reserves_declared": 2966.094,
+      "reserves_public": 2966.094,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2025-10-15"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2025-12-12",
+      "declared_print": "2025-12-03",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-12-10",
+      "reserves_declared": 2858.284,
+      "reserves_public": 2932.112,
+      "unread_change_billions": 73.82799999999997
+     },
+     "2": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2025-12-11",
+      "declared_print": "2025-12-03",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-12-03",
+      "reserves_declared": 2858.284,
+      "reserves_public": 2858.284,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2025-12-10",
+      "declared_print": "2025-12-03",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-12-03",
+      "reserves_declared": 2858.284,
+      "reserves_public": 2858.284,
+      "unread_change_billions": 0.0
+     },
+     "4": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2025-12-09",
+      "declared_print": "2025-12-03",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-12-03",
+      "reserves_declared": 2858.284,
+      "reserves_public": 2858.284,
+      "unread_change_billions": 0.0
+     },
+     "5": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2025-12-08",
+      "declared_print": "2025-11-26",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-12-03",
+      "reserves_declared": 2896.586,
+      "reserves_public": 2858.284,
+      "unread_change_billions": -38.30199999999968
+     }
+    },
+    "onset": "2025-12-15"
+   },
+   {
+    "by_horizon": {
+     "1": {
+      "age_days_declared": 7,
+      "age_days_public": 7,
+      "decision": "2025-12-24",
+      "declared_print": "2025-12-17",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-12-17",
+      "reserves_declared": 2959.044,
+      "reserves_public": 2959.044,
+      "unread_change_billions": 0.0
+     },
+     "2": {
+      "age_days_declared": 6,
+      "age_days_public": 6,
+      "decision": "2025-12-23",
+      "declared_print": "2025-12-17",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-12-17",
+      "reserves_declared": 2959.044,
+      "reserves_public": 2959.044,
+      "unread_change_billions": 0.0
+     },
+     "3": {
+      "age_days_declared": 12,
+      "age_days_public": 5,
+      "decision": "2025-12-22",
+      "declared_print": "2025-12-10",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-12-17",
+      "reserves_declared": 2932.112,
+      "reserves_public": 2959.044,
+      "unread_change_billions": 26.93199999999979
+     },
+     "4": {
+      "age_days_declared": 9,
+      "age_days_public": 2,
+      "decision": "2025-12-19",
+      "declared_print": "2025-12-10",
+      "newer_print_public_and_unread": true,
+      "public_print": "2025-12-17",
+      "reserves_declared": 2932.112,
+      "reserves_public": 2959.044,
+      "unread_change_billions": 26.93199999999979
+     },
+     "5": {
+      "age_days_declared": 8,
+      "age_days_public": 8,
+      "decision": "2025-12-18",
+      "declared_print": "2025-12-10",
+      "newer_print_public_and_unread": false,
+      "public_print": "2025-12-10",
+      "reserves_declared": 2932.112,
+      "reserves_public": 2932.112,
+      "unread_change_billions": 0.0
+     }
+    },
+    "onset": "2025-12-26"
+   }
+  ],
+  "summary_by_horizon": {
+   "1": {
+    "age_days_declared": {
+     "max": 12,
+     "median": 8.0,
+     "min": 6
+    },
+    "age_days_public": {
+     "max": 8,
+     "median": 6.0,
+     "min": 2
+    },
+    "max_abs_unread_change_billions": 144.13200000000006,
+    "mean_abs_unread_change_billions": 20.21926923076924,
+    "newer_print_public_and_unread": 12,
+    "onsets": 26
+   },
+   "2": {
+    "age_days_declared": {
+     "max": 12,
+     "median": 8.0,
+     "min": 6
+    },
+    "age_days_public": {
+     "max": 8,
+     "median": 6.5,
+     "min": 2
+    },
+    "max_abs_unread_change_billions": 71.13700000000017,
+    "mean_abs_unread_change_billions": 7.734346153846139,
+    "newer_print_public_and_unread": 7,
+    "onsets": 26
+   },
+   "3": {
+    "age_days_declared": {
+     "max": 12,
+     "median": 8.0,
+     "min": 6
+    },
+    "age_days_public": {
+     "max": 8,
+     "median": 6.5,
+     "min": 2
+    },
+    "max_abs_unread_change_billions": 72.38599999999997,
+    "mean_abs_unread_change_billions": 10.69726923076921,
+    "newer_print_public_and_unread": 9,
+    "onsets": 26
+   },
+   "4": {
+    "age_days_declared": {
+     "max": 12,
+     "median": 7.5,
+     "min": 6
+    },
+    "age_days_public": {
+     "max": 8,
+     "median": 6.0,
+     "min": 2
+    },
+    "max_abs_unread_change_billions": 80.86400000000003,
+    "mean_abs_unread_change_billions": 17.001038461538453,
+    "newer_print_public_and_unread": 10,
+    "onsets": 26
+   },
+   "5": {
+    "age_days_declared": {
+     "max": 12,
+     "median": 8.0,
+     "min": 6
+    },
+    "age_days_public": {
+     "max": 9,
+     "median": 6.0,
+     "min": 2
+    },
+    "max_abs_unread_change_billions": 80.86400000000003,
+    "mean_abs_unread_change_billions": 16.429692307692317,
+    "newer_print_public_and_unread": 11,
+    "onsets": 26
+   }
+  },
+  "true": {
+   "clock": "16:30",
+   "lag": [
+    1,
+    "calendar_days"
+   ],
+   "source": "fed_h41_release_page"
+  }
+ },
+ "scored_days": "2018-06-29 to 2025-12-31",
+ "settlements": {
+  "distribution": {
+   "bill": {
+    "lead_of_the_earliest_announcement": {
+     "1": 2,
+     "2": 7,
+     "3": 5,
+     "4": 155,
+     "5": 621,
+     "6": 2,
+     "7": 1
+    },
+    "lead_of_the_first_auction": {
+     "1": 7,
+     "2": 80,
+     "3": 469,
+     "4": 237
+    },
+    "lead_of_the_last_announcement": {
+     "1": 4,
+     "2": 15,
+     "3": 39,
+     "4": 154,
+     "5": 579,
+     "6": 1,
+     "7": 1
+    },
+    "lead_of_the_last_auction": {
+     "1": 26,
+     "2": 370,
+     "3": 396,
+     "4": 1
+    },
+    "settlement_dates": 793,
+    "share_with_lead_at_least_2": 0.9974779319041615
+   },
+   "coupon": {
+    "lead_of_the_earliest_announcement": {
+     "1": 2,
+     "2": 2,
+     "3": 1,
+     "5": 18,
+     "6": 33,
+     "7": 39,
+     "8": 19,
+     "9": 14,
+     "10": 34,
+     "11": 42,
+     "12": 26,
+     "13": 11,
+     "14": 10
+    },
+    "lead_of_the_first_auction": {
+     "1": 2,
+     "2": 34,
+     "3": 8,
+     "4": 54,
+     "5": 27,
+     "6": 44,
+     "7": 28,
+     "8": 28,
+     "9": 18,
+     "10": 5,
+     "11": 3
+    },
+    "lead_of_the_last_announcement": {
+     "1": 2,
+     "2": 2,
+     "3": 1,
+     "4": 1,
+     "5": 39,
+     "6": 66,
+     "7": 67,
+     "8": 31,
+     "9": 18,
+     "10": 11,
+     "11": 11,
+     "12": 2
+    },
+    "lead_of_the_last_auction": {
+     "1": 2,
+     "2": 170,
+     "3": 33,
+     "4": 25,
+     "5": 10,
+     "6": 11
+    },
+    "settlement_dates": 251,
+    "share_with_lead_at_least_2": 0.9920318725099602
+   }
+  },
+  "issue_dates_off_the_panel": 350,
+  "onsets_known_by_horizon": {
+   "1": {
+    "amount_complete_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "announced_next_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "announced_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "coupon_settlements_that_are_not_risk_dates_at_this_horizon": [],
+    "declared": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "onsets": 26
+   },
+   "2": {
+    "amount_complete_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "announced_next_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "announced_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "coupon_settlements_that_are_not_risk_dates_at_this_horizon": [
+     "2018-11-15",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-10-15",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "declared": {
+     "any": 0,
+     "bill": 0,
+     "coupon": 0
+    },
+    "onsets": 26
+   },
+   "3": {
+    "amount_complete_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "announced_next_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "announced_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "coupon_settlements_that_are_not_risk_dates_at_this_horizon": [
+     "2018-11-15",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-10-15",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "declared": {
+     "any": 0,
+     "bill": 0,
+     "coupon": 0
+    },
+    "onsets": 26
+   },
+   "4": {
+    "amount_complete_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "announced_next_day": {
+     "any": 23,
+     "bill": 9,
+     "coupon": 20
+    },
+    "announced_same_day": {
+     "any": 25,
+     "bill": 13,
+     "coupon": 20
+    },
+    "coupon_settlements_that_are_not_risk_dates_at_this_horizon": [
+     "2018-11-15",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-10-15",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "declared": {
+     "any": 0,
+     "bill": 0,
+     "coupon": 0
+    },
+    "onsets": 26
+   },
+   "5": {
+    "amount_complete_same_day": {
+     "any": 23,
+     "bill": 9,
+     "coupon": 20
+    },
+    "announced_next_day": {
+     "any": 18,
+     "bill": 0,
+     "coupon": 18
+    },
+    "announced_same_day": {
+     "any": 23,
+     "bill": 9,
+     "coupon": 20
+    },
+    "coupon_settlements_that_are_not_risk_dates_at_this_horizon": [
+     "2018-11-15",
+     "2018-12-28",
+     "2019-01-15",
+     "2019-03-15",
+     "2019-10-15",
+     "2025-10-15",
+     "2025-12-26"
+    ],
+    "declared": {
+     "any": 0,
+     "bill": 0,
+     "coupon": 0
+    },
+    "onsets": 26
+   }
+  },
+  "per_onset": [
+   {
+    "bill": {
+     "first_announced": "2018-11-08",
+     "last_announced": "2018-11-08",
+     "lead_first": 4,
+     "lead_last": 4
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2018-10-31",
+     "last_announced": "2018-10-31",
+     "lead_first": 10,
+     "lead_last": 10
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2018-11-15",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2018-11-15",
+     "last_announced": "2018-11-21",
+     "lead_first": 10,
+     "lead_last": 6
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2018-11-30",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2018-12-06",
+     "last_announced": "2018-12-06",
+     "lead_first": 7,
+     "lead_last": 7
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2018-12-17",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2018-12-20",
+     "last_announced": "2018-12-20",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2018-12-28",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-01-08",
+     "last_announced": "2019-01-08",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2019-01-03",
+     "last_announced": "2019-01-03",
+     "lead_first": 8,
+     "lead_last": 8
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-01-15",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-01-24",
+     "last_announced": "2019-01-24",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2019-01-10",
+     "last_announced": "2019-01-24",
+     "lead_first": 14,
+     "lead_last": 5
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-01-31",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-02-21",
+     "last_announced": "2019-02-21",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2019-02-14",
+     "last_announced": "2019-02-21",
+     "lead_first": 9,
+     "lead_last": 5
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-02-28",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2019-03-07",
+     "last_announced": "2019-03-07",
+     "lead_first": 6,
+     "lead_last": 6
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-03-15",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2019-03-14",
+     "last_announced": "2019-03-21",
+     "lead_first": 11,
+     "lead_last": 6
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-03-29",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-05-21",
+     "last_announced": "2019-05-21",
+     "lead_first": 4,
+     "lead_last": 4
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": null,
+    "coupon_settlement_in_panel": false,
+    "onset": "2019-05-28",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2019-06-06",
+     "last_announced": "2019-06-06",
+     "lead_first": 7,
+     "lead_last": 7
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-06-17",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-06-18",
+     "last_announced": "2019-06-18",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": null,
+    "coupon_settlement_in_panel": false,
+    "onset": "2019-06-25",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-08-06",
+     "last_announced": "2019-08-06",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": null,
+    "coupon_settlement_in_panel": false,
+    "onset": "2019-08-13",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2019-08-15",
+     "last_announced": "2019-08-22",
+     "lead_first": 11,
+     "lead_last": 6
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-08-30",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-10-08",
+     "last_announced": "2019-10-08",
+     "lead_first": 4,
+     "lead_last": 4
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2019-10-03",
+     "last_announced": "2019-10-03",
+     "lead_first": 7,
+     "lead_last": 7
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-10-15",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2019-11-21",
+     "last_announced": "2019-11-21",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2019-11-14",
+     "last_announced": "2019-11-21",
+     "lead_first": 10,
+     "lead_last": 5
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-11-29",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2019-12-05",
+     "last_announced": "2019-12-05",
+     "lead_first": 7,
+     "lead_last": 7
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2019-12-16",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": null,
+    "coupon_settlement_in_panel": false,
+    "onset": "2020-03-04",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2020-03-05",
+     "last_announced": "2020-03-05",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": null,
+    "coupon_settlement_in_panel": false,
+    "onset": "2020-03-12",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2024-09-12",
+     "last_announced": "2024-09-19",
+     "lead_first": 12,
+     "lead_last": 7
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2024-09-30",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2024-12-19",
+     "last_announced": "2024-12-19",
+     "lead_first": 4,
+     "lead_last": 4
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": null,
+    "coupon_settlement_in_panel": false,
+    "onset": "2024-12-26",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2025-09-04",
+     "last_announced": "2025-09-04",
+     "lead_first": 7,
+     "lead_last": 7
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2025-09-15",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2025-09-23",
+     "last_announced": "2025-09-23",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2025-09-11",
+     "last_announced": "2025-09-18",
+     "lead_first": 13,
+     "lead_last": 8
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2025-09-30",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2025-10-02",
+     "last_announced": "2025-10-02",
+     "lead_first": 8,
+     "lead_last": 8
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2025-10-15",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2025-12-04",
+     "last_announced": "2025-12-04",
+     "lead_first": 7,
+     "lead_last": 7
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2025-12-15",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": {
+     "first_announced": "2025-12-18",
+     "last_announced": "2025-12-18",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "bill_settlement_in_panel": true,
+    "coupon": {
+     "first_announced": "2025-12-18",
+     "last_announced": "2025-12-18",
+     "lead_first": 5,
+     "lead_last": 5
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2025-12-26",
+    "scored_at_every_horizon": true
+   },
+   {
+    "bill": null,
+    "bill_settlement_in_panel": false,
+    "coupon": {
+     "first_announced": "2018-06-14",
+     "last_announced": "2018-06-21",
+     "lead_first": 11,
+     "lead_last": 6
+    },
+    "coupon_settlement_in_panel": true,
+    "onset": "2018-06-29",
+    "scored_at_every_horizon": false
+   }
+  ]
+ },
+ "timeline": [
+  {
+   "input": "SOFR (daily)",
+   "later_by_panel_days": {
+    "0": 1934
+   },
+   "later_by_panel_days_most_common": 0,
+   "ours": {
+    "available_time": "15:00",
+    "basis": "ref_date",
+    "days": 1,
+    "unit": "business_days"
+   },
+   "reference_days": 1934,
+   "true": {
+    "clock": "08:00",
+    "lag": [
+     1,
+     "business_days"
+    ],
+    "quote": "the New York Fed publishes the SOFR on the New York Fed website at approximately 8:00 a.m. ET",
+    "source": "nyfed_sofr_page",
+    "status": "stated"
+   }
+  },
+  {
+   "input": "TGCR (daily)",
+   "later_by_panel_days": {
+    "0": 1934
+   },
+   "later_by_panel_days_most_common": 0,
+   "ours": {
+    "available_time": "15:00",
+    "basis": "ref_date",
+    "days": 1,
+    "unit": "business_days"
+   },
+   "reference_days": 1934,
+   "true": {
+    "clock": "08:00",
+    "lag": [
+     1,
+     "business_days"
+    ],
+    "quote": "published with SOFR at approximately 8:00 a.m. ET",
+    "source": "nyfed_sofr_page",
+    "status": "stated (same publication as SOFR)"
+   }
+  },
+  {
+   "input": "BGCR (daily)",
+   "later_by_panel_days": {
+    "0": 1934
+   },
+   "later_by_panel_days_most_common": 0,
+   "ours": {
+    "available_time": "15:00",
+    "basis": "ref_date",
+    "days": 1,
+    "unit": "business_days"
+   },
+   "reference_days": 1934,
+   "true": {
+    "clock": "08:00",
+    "lag": [
+     1,
+     "business_days"
+    ],
+    "quote": "published with SOFR at approximately 8:00 a.m. ET",
+    "source": "nyfed_sofr_page",
+    "status": "stated (same publication as SOFR)"
+   }
+  },
+  {
+   "input": "EFFR (daily)",
+   "later_by_panel_days": {
+    "0": 1934
+   },
+   "later_by_panel_days_most_common": 0,
+   "ours": {
+    "available_time": "15:00",
+    "basis": "ref_date",
+    "days": 1,
+    "unit": "business_days"
+   },
+   "reference_days": 1934,
+   "true": {
+    "clock": "09:00",
+    "lag": [
+     1,
+     "business_days"
+    ],
+    "quote": "The EFFR and the OBFR will be published at approximately 9:00 a.m. ET each business day",
+    "source": "nyfed_reference_rates_info",
+    "status": "stated"
+   }
+  },
+  {
+   "input": "ON RRP results (daily)",
+   "later_by_panel_days": {
+    "1": 1934
+   },
+   "later_by_panel_days_most_common": 1,
+   "ours": {
+    "available_time": "16:00",
+    "basis": "ref_date",
+    "days": 1,
+    "unit": "business_days"
+   },
+   "reference_days": 1934,
+   "true": {
+    "clock": "15:00",
+    "lag": [
+     0,
+     "business_days"
+    ],
+    "quote": "the page states no publication time; the Desk's records were last written on the operation date by 15:00 ET on 1985 of 1997 operation days (docs/pivot/nowcast-result.md, section 1)",
+    "source": "nyfed_repo_reverse_repo_operations",
+    "status": "inferred, not stated"
+   }
+  },
+  {
+   "input": "Standing repo facility and repo operations (daily)",
+   "later_by_panel_days": {
+    "1": 1934
+   },
+   "later_by_panel_days_most_common": 1,
+   "ours": {
+    "available_time": "16:00",
+    "basis": "ref_date",
+    "days": 1,
+    "unit": "business_days"
+   },
+   "reference_days": 1934,
+   "true": {
+    "clock": "15:00",
+    "lag": [
+     0,
+     "business_days"
+    ],
+    "quote": "the page states no publication time; lastUpdated falls a median 0.7 minutes after the 13:45 close (metadata/sources_measurement.json, nyfed_repo_ops_sameday)",
+    "source": "nyfed_repo_reverse_repo_operations",
+    "status": "inferred, not stated"
+   }
+  },
+  {
+   "input": "Primary dealer statistics (weekly)",
+   "later_by_panel_days": {
+    "0": 395
+   },
+   "later_by_panel_days_most_common": 0,
+   "ours": {
+    "available_time": "16:30",
+    "basis": "ref_date",
+    "days": 6,
+    "unit": "business_days"
+   },
+   "reference_days": 395,
+   "true": {
+    "clock": "16:15",
+    "lag": [
+     6,
+     "business_days"
+    ],
+    "quote": "Data are updated on Thursdays at approximately 4:15 p.m. with the previous week's statistics",
+    "source": "nyfed_primary_dealer_statistics",
+    "status": "stated"
+   }
+  },
+  {
+   "input": "H.4.1 reserves, WRESBAL (weekly)",
+   "later_by_panel_days": {
+    "1": 75,
+    "2": 321
+   },
+   "later_by_panel_days_most_common": 2,
+   "ours": {
+    "available_time": "16:30",
+    "basis": "record_date",
+    "days": 5,
+    "unit": "calendar_days"
+   },
+   "reference_days": 396,
+   "true": {
+    "clock": "16:30",
+    "lag": [
+     1,
+     "calendar_days"
+    ],
+    "quote": "These data are released each Thursday, generally at 4:30 p.m. The Wednesday level is therefore public the next day",
+    "source": "fed_h41_release_page",
+    "status": "stated"
+   }
+  },
+  {
+   "input": "H.4.1 TGA, WTREGEN (weekly)",
+   "later_by_panel_days": {
+    "1": 75,
+    "2": 321
+   },
+   "later_by_panel_days_most_common": 2,
+   "ours": {
+    "available_time": "16:30",
+    "basis": "record_date",
+    "days": 5,
+    "unit": "calendar_days"
+   },
+   "reference_days": 396,
+   "true": {
+    "clock": "16:30",
+    "lag": [
+     1,
+     "calendar_days"
+    ],
+    "quote": "These data are released each Thursday, generally at 4:30 p.m. The Wednesday level is therefore public the next day",
+    "source": "fed_h41_release_page",
+    "status": "stated"
+   }
+  },
+  {
+   "input": "H.4.1 reverse repo, WLRRAOL (weekly)",
+   "later_by_panel_days": {
+    "1": 75,
+    "2": 321
+   },
+   "later_by_panel_days_most_common": 2,
+   "ours": {
+    "available_time": "16:30",
+    "basis": "record_date",
+    "days": 5,
+    "unit": "calendar_days"
+   },
+   "reference_days": 396,
+   "true": {
+    "clock": "16:30",
+    "lag": [
+     1,
+     "calendar_days"
+    ],
+    "quote": "These data are released each Thursday, generally at 4:30 p.m. The Wednesday level is therefore public the next day",
+    "source": "fed_h41_release_page",
+    "status": "stated"
+   }
+  },
+  {
+   "input": "Daily Treasury Statement, TGA (daily)",
+   "later_by_panel_days": {
+    "1": 1934
+   },
+   "later_by_panel_days_most_common": 1,
+   "ours": {
+    "available_time": "16:30",
+    "basis": "ref_date",
+    "days": 1,
+    "unit": "business_days"
+   },
+   "reference_days": 1934,
+   "true": {
+    "clock": "16:00",
+    "lag": [
+     1,
+     "business_days"
+    ],
+    "quote": "the statement for a business day is published at 4:00 PM ET on the next business day (metadata/sources_measurement.json, availability_provenance)",
+    "source": null,
+    "status": "recorded in the registry; fiscaldata.treasury.gov was not reachable on 10 October 2026, so not re-read"
+   }
+  },
+  {
+   "input": "Treasury bill rates (daily)",
+   "later_by_panel_days": {
+    "0": 1935
+   },
+   "later_by_panel_days_most_common": 0,
+   "ours": {
+    "available_time": "16:30",
+    "basis": "record_date",
+    "days": 0,
+    "unit": "calendar_days"
+   },
+   "reference_days": 1935,
+   "true": {
+    "clock": "16:30",
+    "lag": [
+     0,
+     "business_days"
+    ],
+    "quote": "the quotes are obtained at or near 3:30 PM; the H.15 file posts at 16:30 (metadata/sources.json, treasury_bill_rates.availability_provenance)",
+    "source": null,
+    "status": "stated (H.15 bulk file)"
+   }
+  }
+ ]
+}
