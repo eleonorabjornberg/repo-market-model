@@ -214,7 +214,7 @@ def inventory_markdown(declared: dict) -> str:
     rows = inventory_rows()
     new_columns = {c for g in declared["groups"].values() for c in g["columns"]}
     out = [
-        "| input | source | in the published declaration | as-of availability | declared candidates reading it today |",
+        "| input | source | in the published feature map | as-of availability | declared candidates reading it today |",
         "|---|---|---|---|---|",
     ]
     for r in rows:
