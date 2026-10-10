@@ -201,15 +201,6 @@ no interval was computed, so this is not a finding. These variants are diagnosti
 2025-12-31), not candidates; any estimator that should be tested for real (robust, quantile, or nonlinear in the level)
 is a new declaration.
 
-## 7. A public-data ceiling: what a desk sees that is not public
-
-Listed from market practice, not sourced from a document read here. Results from public data should be read against a ceiling
-that excludes: intraday broker and inter-dealer repo quotes and the when-issued and auction-bid colour that shows how a
-settlement will be financed; the desk's own and its clients' flows, financing book and balance-sheet limits at the
-quarter-end; intraday Fedwire and reserve balances and the Treasury's own cash forecasts; the prime brokers' view of dealer
-and hedge-fund financing demand; and counterparty-level money-fund and securities-lender cash. The Desk's own early view of its
-operations is public only as the results it posts. None of these is in `metadata/sources.json`.
-
 ## For Eleonora: changes to availability declarations this points to, not made
 
 1. **Date a Treasury settlement from its announcement** (`treasury_auctions.scheduled_availability`): bills 4 to 5 panel days
