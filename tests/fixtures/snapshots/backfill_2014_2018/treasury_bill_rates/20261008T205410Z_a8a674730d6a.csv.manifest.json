@@ -1,0 +1,8 @@
+{
+  "byte_count": 12968,
+  "path": "treasury_bill_rates/20261008T205410Z_a8a674730d6a.csv",
+  "retrieved_at": "2026-10-08T20:54:10.401277+00:00",
+  "sha256": "a8a674730d6a42b9a696c02e9c91a29e9e90df565affbf714e8f81c7802e1836",
+  "source_id": "treasury_bill_rates",
+  "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2014/all?type=daily_treasury_bill_rates&field_tdr_date_value=2014&_format=csv"
+}

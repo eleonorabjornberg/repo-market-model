@@ -6,6 +6,14 @@ blind tiers are not looked at). The inputs are off in every published declaratio
 `metadata/all_inputs.json` and, for the judge, in `metadata/pressure_judge/candidates/all_inputs_*+recalibrated.json`;
 `scripts/all_inputs.py` refuses an uncommitted declaration.
 
+> *Note, 10 October 2026 (#522, of #508).* The panel behind this page held OFR DVP values from before 2020-09-09, the day the OFR began publishing in
+> real time (`ofr_dvp_rate` and `ofr_dvp_minus_bgcr_bp_backfill`, on 566 of the 610 rows before it), so both candidates read data no forecaster
+> had at the time. The figures below are as published and are not edited. Re-scored with the columns blanked before they were public
+> (`docs/pivot/all-inputs-ofr-guard-result.md`): **the three 2019 onsets (2019-05-28, 2019-06-25, 2019-08-13) are still newly warned by
+> `all_inputs_gbm`, and 2019 stays 13 of 13**, so the leak does not explain the 2019 gain. `all_inputs_gbm` flags 16 of 26 onsets (published 15;
+> the difference against `risk_gbm` is +0.115 [+0.000, +0.261], published +0.077 [-0.046, +0.211]) and now also warns 2025-10-15;
+> `all_inputs_logistic` stays at 13 of 26. Neither candidate passes, as published. The panel's guard is `dvp_segment.require_ofr_public`.
+
 ## What was declared
 
 * **Inputs.** The 77 series the source screen (#478) inventories as readable as-of (`docs/pivot/source-screen-result.md`): the 76
