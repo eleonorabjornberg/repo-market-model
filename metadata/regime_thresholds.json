@@ -1,0 +1,40 @@
+{
+  "status": "declared by the pull request that closes #461 before any score; the six rows, the state threshold and everything reported are fixed here and are not tuned on a scored day; the judge, its bar, its cut-off rule and every published declaration are unchanged",
+  "issue": 461,
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "primary_threshold_bp": 5,
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "rows": {
+    "rule": "the six best candidate rows of Table 1 of docs/pivot/judge-amendment-result.md, by the reading #429 declared for 'best' (the most onsets flagged at lead of at least 1, ties broken by the smaller worst false alarms per onset, then by name; the three reference rows left out), extended from five rows to six; tests/test_regime_thresholds.py re-derives them from Table 1",
+    "chosen": [
+      "two_part_gbm",
+      "ngboost_laplace",
+      "hierarchical_logistic",
+      "settlement_quantile_timing",
+      "scarcity_logistic_interactions",
+      "scarcity_logistic"
+    ],
+    "variant_suffix": "+scarce_cutoff"
+  },
+  "scarce_cutoff": {
+    "scarcity_state_at_least": 2,
+    "state_reading": "the as-of reserve_scarcity_state at the day's decision instant (the judge grid's scarcity_state label); a day whose state is unknown is not scarce",
+    "choice": "pressure_judge.select_cutoff, the judge's cutoff_rule unchanged (highest onset recall whose false alarms per onset are at most the limit; of equal recall the highest), on the refit's training days whose state is at least 2 and on no other day; a window with no onset in that state flags nothing (never_flag)",
+    "other_days": "keep the cut-off chosen on all training days, as the judge chooses it today"
+  },
+  "reported": {
+    "judge_rows": "for each of the six rows, the judge's full row under the pooled cut-off (the baseline) and under the scarce-state cut-off: episodes warned at lead of at least 1, false alarms per episode, tiers 3 and 5, split by regime",
+    "weighted_rule": "the weighted-miss rule of #454 has not merged when this is declared; the unweighted rule only",
+    "onset_recall_by_year": "onsets and onsets flagged at lead of at least 1 (a flag on the onset day at any horizon 1 to 5) in each calendar year 2018 to 2025, for each row, pooled and scarce-state cut-off; the years 2018, 2020 and 2024 are called out",
+    "scarce_cutoff_diagnostics": "per row and horizon, the share of refit blocks whose scarce-state cut-off flags nothing, and the scored days in a scarce state"
+  }
+}

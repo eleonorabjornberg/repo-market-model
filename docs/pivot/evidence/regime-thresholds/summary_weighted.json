@@ -1,0 +1,337 @@
+{
+ "provenance": {
+  "declaration_commit": "21663c6dd0e53f6a3f12d81bfe3cf68197a5b610",
+  "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+ },
+ "regime_thresholds": {
+  "forecast_panels": {
+   "bench_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "hierarchical_logistic_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "ngboost_laplace_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "scarcity_logistic_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "settlement_quantile_timing_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+  },
+  "onsets": 26,
+  "onsets_by_year": {
+   "2018": 4,
+   "2019": 13,
+   "2020": 2,
+   "2024": 2,
+   "2025": 5
+  },
+  "recall_by_year": {
+   "hierarchical_logistic": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "hierarchical_logistic+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "ngboost_laplace": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 5,
+     "onsets": 5
+    }
+   },
+   "ngboost_laplace+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 5,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 10,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 10,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic_interactions": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic_interactions+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "settlement_quantile_timing": {
+    "2018": {
+     "flagged": 1,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 1,
+     "onsets": 5
+    }
+   },
+   "settlement_quantile_timing+scarce_cutoff": {
+    "2018": {
+     "flagged": 1,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 4,
+     "onsets": 5
+    }
+   },
+   "two_part_gbm": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "two_part_gbm+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   }
+  },
+  "scarcity_state_at_least": 2
+ },
+ "rule": "weighted (forced on; metadata/weighted_miss.json in_force is false)",
+ "verdicts": {
+  "calendar_climatology": false,
+  "hierarchical_logistic": false,
+  "hierarchical_logistic+scarce_cutoff": false,
+  "ngboost_laplace": false,
+  "ngboost_laplace+scarce_cutoff": false,
+  "persistence_logistic": false,
+  "scarcity_logistic": false,
+  "scarcity_logistic+scarce_cutoff": false,
+  "scarcity_logistic_interactions": false,
+  "scarcity_logistic_interactions+scarce_cutoff": false,
+  "settlement_quantile_timing": false,
+  "settlement_quantile_timing+scarce_cutoff": false,
+  "two_part_gbm": false,
+  "two_part_gbm+scarce_cutoff": false
+ }
+}

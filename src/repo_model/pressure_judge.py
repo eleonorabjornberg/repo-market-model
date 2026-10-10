@@ -965,11 +965,21 @@ def select_cutoff(
     return best
 
 
+def _state_at_least(label: str, at_least: int) -> bool:
+    """Whether a scarcity-state label ("0", "1", "2", "unknown") is a state of at least `at_least`."""
+
+    try:
+        return int(label) >= at_least
+    except ValueError:
+        return False
+
+
 def choose_cutoffs(
     declaration: Declaration,
     grids: Mapping[int, Grid],
     forecasts: Sequence[Forecast],
     calendar: Sequence[date],
+    scarce_at_least: Optional[int] = None,
 ) -> List[Forecast]:
     """Each forecast with the flag cut-off in force on every day, chosen refit by refit.
 
@@ -985,9 +995,17 @@ def choose_cutoffs(
     `grids` must cover the forecasts' days, which may reach past the days a
     comparison scores (the single look reads the development days as training).
 
+    With `scarce_at_least` (#461) a day whose as-of scarcity state (the grid's
+    `scarcity_state` label, read at the day's decision instant) is at least that
+    value takes a separate cut-off: `select_cutoff`, the same rule and limit, on
+    the training days of that block that are in such a state, and on those alone.
+    Other days, and days with an unknown state, keep the cut-off chosen on all
+    training days.
+
     Raises:
         LookAheadError: if a window reaches past its training end.
-        ValueError: if a forecast's days are not its grid's, or are not panel days.
+        ValueError: if a forecast's days are not its grid's, or are not panel days,
+            or `scarce_at_least` is set and the grid has no scarcity state.
     """
 
     position = {day: k for k, day in enumerate(calendar)}
@@ -1003,33 +1021,46 @@ def choose_cutoffs(
         missing = [day for day in forecast.dates if day not in position]
         if missing:
             raise ValueError(f"{forecast.name!r}: scored day {missing[0]} is not a panel day")
+        states = grid.groups.get("scarcity_state") if scarce_at_least is not None else None
+        if scarce_at_least is not None and states is None:
+            raise ValueError(f"{forecast.name!r} h = {forecast.horizon}: the grid has no scarcity state")
         cutoffs: Dict[float, List[float]] = {tau: [] for tau in declaration.thresholds}
         for start in range(0, len(forecast.dates), step):
             block = forecast.dates[start : start + step]
             last_known = position[block[0]] - forecast.horizon - 1
             training_end = calendar[last_known] if last_known >= 0 else None
             window = [k for k in range(start) if training_end is not None and forecast.dates[k] <= training_end]
+            scarce_window = (
+                [k for k in window if _state_at_least(states[k], scarce_at_least)] if states is not None else []
+            )
             for tau in declaration.thresholds:
-                weights = None
-                if declaration.weighting_applied and window:
-                    # The distance to a pressure day is read on the training window alone: a pressure day
-                    # after the training end was not yet known at the refit's first decision instant.
-                    weights = false_alarm_weights(
-                        declaration.weighted_miss,
-                        positions=[position[forecast.dates[k]] for k in window],
-                        pressure=[grid.outcomes[tau][k] for k in window],
-                        known_through=position[training_end],
+
+                def chosen(rows):
+                    weights = None
+                    if declaration.weighting_applied and rows:
+                        # The distance to a pressure day is read on the training rows alone: a pressure day
+                        # after the training end was not yet known at the refit's first decision instant.
+                        weights = false_alarm_weights(
+                            declaration.weighted_miss,
+                            positions=[position[forecast.dates[k]] for k in rows],
+                            pressure=[grid.outcomes[tau][k] for k in rows],
+                            known_through=position[training_end],
+                        )
+                    return select_cutoff(
+                        declaration,
+                        days=[forecast.dates[k] for k in rows],
+                        probabilities=[forecast.probabilities[tau][k] for k in rows],
+                        pressure=[grid.outcomes[tau][k] for k in rows],
+                        onset=[grid.onset_at(tau, declaration.primary)[k] for k in rows],
+                        training_end=training_end,
+                        false_alarm_weights=weights,
                     )
-                value = select_cutoff(
-                    declaration,
-                    days=[forecast.dates[k] for k in window],
-                    probabilities=[forecast.probabilities[tau][k] for k in window],
-                    pressure=[grid.outcomes[tau][k] for k in window],
-                    onset=[grid.onset_at(tau, declaration.primary)[k] for k in window],
-                    training_end=training_end,
-                    false_alarm_weights=weights,
-                )
-                cutoffs[tau].extend([value] * len(block))
+
+                value = chosen(window)
+                scarce_value = chosen(scarce_window) if states is not None else value
+                for k in range(start, start + len(block)):
+                    scarce = states is not None and _state_at_least(states[k], scarce_at_least)
+                    cutoffs[tau].append(scarce_value if scarce else value)
         out.append(
             Forecast(
                 name=forecast.name,

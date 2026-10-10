@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "regime cut-off (#461)",
+  "form": "quantile",
+  "inputs": "timing",
+  "features": [
+    "spread_bps",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date"
+  ],
+  "features_at_horizon_2_or_more": "without the two treasury_settlement columns",
+  "calibration": "none (the skew-t's exceedance as fitted)",
+  "derived_from": "settlement_quantile_timing",
+  "cutoff": "a separate flag cut-off on days whose as-of reserve_scarcity_state is at least 2, chosen on the refit's training days in that state by the same cutoff_rule; the forecasts are those of settlement_quantile_timing unchanged; metadata/regime_thresholds.json"
+}
