@@ -172,6 +172,44 @@ class RegimeTermTests(unittest.TestCase):
         self.assertEqual(cs.variant_name("calibrated_stack_isotonic", "scarcity"), "calibrated_stack_isotonic+scarcity")
 
 
+class HindsightEvidence(unittest.TestCase):
+    """The findings recorded in `evidence/hindsight-regimes/hindsight.json` (#515)."""
+
+    @classmethod
+    def setUpClass(cls):
+        path = REPO / "docs" / "pivot" / "evidence" / "hindsight-regimes" / "hindsight.json"
+        cls.evidence = json.loads(path.read_text(encoding="utf-8"))
+
+    def test_the_regime_term_is_zero_before_2020_and_the_controls_reproduce_the_stack_page(self):
+        trace = self.evidence["declared_stack_regime_coefficients_h1_5bp"]
+        self.assertLess(trace["largest_absolute_coefficient_before_2020"], 1e-9)
+        mean = trace["mean_over_fitted_refits"]
+        self.assertAlmostEqual(mean["2018-19"], 1.88, places=2)
+        self.assertAlmostEqual(mean["2021-23"], -1.26, places=2)
+        row = self.evidence["rows"]["calibrated_stack_logistic"]
+        self.assertAlmostEqual(row["flat"]["worst_false_alarms_per_onset"], 3.88, places=2)
+        self.assertAlmostEqual(row["weighted"]["worst_weighted_false_alarms_per_onset"], 2.50, places=2)
+
+    def test_the_stacks_2019_recall_is_the_same_without_the_regime_term(self):
+        rows = self.evidence["rows"]
+        for kind in ("calibrated_stack_logistic", "calibrated_stack_isotonic"):
+            declared = rows[kind]["flat"]["by_year"]["2019"]["onsets_flagged"]
+            for suffix in ("+no_regime", "+scarcity"):
+                self.assertEqual(rows[kind + suffix]["flat"]["by_year"]["2019"]["onsets_flagged"], declared)
+
+    def test_no_form_passes_the_full_rule_and_no_2026_day_is_in_the_evidence(self):
+        self.assertFalse(any(cell[rule]["passes"] for cell in self.evidence["rows"].values() for rule in ("flat", "weighted")))
+        self.assertNotIn('"2026-', json.dumps(self.evidence))
+
+    def test_the_recalibrations_weighted_tier_1_is_kept_only_with_the_declared_regime(self):
+        rows = self.evidence["rows"]
+        kept = {"risk_gbm_base", "risk_logistic_base", "risk_quantile_skewt_base"}
+        for base in ("risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"):
+            self.assertEqual(rows[base + "+regime_recal"]["weighted"]["tier_1"], base in kept, base)
+            self.assertFalse(rows[base + "+regime_recal_none"]["weighted"]["tier_1"], base)
+            self.assertFalse(rows[base + "+regime_recal_scarcity"]["weighted"]["tier_1"], base)
+
+
 class StackTests(unittest.TestCase):
     def setUp(self):
         self.world = _world()

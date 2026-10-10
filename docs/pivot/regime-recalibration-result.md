@@ -15,7 +15,7 @@ Before any recalibrated score, in `metadata/regime_recalibration.json` and one c
 
 * **Remedy.** A Platt curve per declared regime (`metadata/evaluation_splits.json`: 2018-19, 2020, 2021-23, 2024, 2025-26), per
   threshold and horizon, applied to the base's raw exceedance probability on every scored day, then made non-increasing in tau.
-* **No look-ahead.** The regime is read off the calendar date (known at the decision instant). A refit block's curve for a regime is
+* **No look-ahead.** The regime is read off the calendar date (known at the decision instant; *note, 10 October 2026, #515: the calendar table's boundaries were drawn after the fact, so the label is known at the decision instant only once the boundary is, see `hindsight-regimes-result.md`, which re-scores the recalibration with no group and with the as-of scarcity state*). A refit block's curve for a regime is
   fitted on that regime's own pairs whose scored day is at or before the block's last training label, and on none other
   (`group_calibration.regime_walk_forward`, which is `walk_forward('group')` with the regime as the group; the guard
   `group_calibration.require_regimes_asof` refuses a label that is not the calendar's, and `fit` refuses a late pair).

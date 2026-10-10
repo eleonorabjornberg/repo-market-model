@@ -122,16 +122,21 @@ def report_command(args) -> int:
         result["rows"][name] = {
             label: {**_tiers(judged[label], name), "by_year": by_year[label][name]["by_year"]} for label in ("flat", "weighted")
         }
-    # the regime coefficients the declared stack fits (the last refit before 2020 at h = 1, +5 bp)
+    # the regime coefficients the declared stack fits (h = 1, +5 bp): in 2019 and over all fitted refits
     traces = {}
     for path in args.inputs:
         document = json.loads(Path(path).read_text(encoding="utf-8"))
         if int(document.get("horizon", 0)) == 1 and "stack" in document and "stack_declared" in Path(path).name:
-            refits = document["stack"]["refits"]["5"]
-            last_2019 = [r for r in refits if r["first_day"] < "2020-01-01"][-1]
-            traces = {"first_day": last_2019["first_day"], "mode": last_2019["mode"], "regime_coefficients": last_2019["regime_coefficients"],
-                      "intercept": last_2019["intercept"], "weights": last_2019["weights"]}
-    result["declared_stack_regime_coefficients_last_refit_of_2019_h1_5bp"] = traces
+            refits = [r for r in document["stack"]["refits"]["5"] if r["mode"] == "fitted"]
+            in_2019 = [r for r in refits if r["first_day"] < "2020-01-01"]
+            labels = list(refits[-1]["regime_coefficients"])
+            traces = {
+                "fitted_refits": len(refits),
+                "fitted_refits_before_2020": len(in_2019),
+                "largest_absolute_coefficient_before_2020": max((abs(v) for r in in_2019 for v in r["regime_coefficients"].values()), default=None),
+                "mean_over_fitted_refits": {k: sum(r["regime_coefficients"][k] for r in refits) / len(refits) for k in labels},
+            }
+    result["declared_stack_regime_coefficients_h1_5bp"] = traces
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
     if args.markdown:
         args.markdown.write_text(markdown(result), encoding="utf-8")
@@ -179,10 +184,15 @@ def markdown(result: dict) -> str:
     for base in BASES:
         for label, suffix in RECAL_SUFFIX.items():
             lines.append(_line(f"{base} / {label}", result["rows"][base + suffix]))
-    trace = result["declared_stack_regime_coefficients_last_refit_of_2019_h1_5bp"]
+    trace = result["declared_stack_regime_coefficients_h1_5bp"]
     if trace:
-        lines += ["", f"The declared stack's regime coefficients at its last refit of 2019 (first day {trace['first_day']}, h = 1, +5 bp, mode {trace['mode']}): "
-                  + ", ".join(f"{k} {v:+.2f}" for k, v in trace["regime_coefficients"].items()) + f"; intercept {trace['intercept']:+.2f}."]
+        lines += [
+            "",
+            f"The declared stack's regime coefficients (h = 1, +5 bp): over its {trace['fitted_refits']} fitted refits the mean is "
+            + ", ".join(f"{k} {v:+.2f}" for k, v in trace["mean_over_fitted_refits"].items())
+            + f"; over the {trace['fitted_refits_before_2020']} fitted refits before 2020 the largest absolute coefficient is "
+            f"{trace['largest_absolute_coefficient_before_2020']:.2f}.",
+        ]
     return "\n".join(lines) + "\n"
 
 
