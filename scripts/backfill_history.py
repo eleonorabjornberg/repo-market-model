@@ -13,7 +13,7 @@ records the ruling (drafted by the pull request that closes #430, for her to mer
     PYTHONPATH=src python3 scripts/backfill_history.py run --extended EXT.csv --script scripts/X.py -- \\
         forecasts --panel EXT.csv --horizon H --output OUT/x_hH.json
     PYTHONPATH=src python3 scripts/backfill_history.py augment --extended EXT.csv --augmented AUG.csv --output EXTAUG.csv
-    PYTHONPATH=src python3 scripts/backfill_history.py relabel --suffix +history --output NEW.json OLD.json
+    PYTHONPATH=src python3 scripts/backfill_history.py relabel --suffix +history --output NEW.json OLD.json [OLD.json ...]
 
 * `check` verifies the saved workbook against its manifest and prints what it holds.
 * `panel` builds the **extended scratch panel**: the scratch panel of `pressure_v1_1.py panel` (the
@@ -340,22 +340,35 @@ def augment_command(args) -> int:
 
 
 def relabel_command(args) -> int:
-    document = json.loads(args.input.read_text(encoding="utf-8"))
+    """One horizon document from several, every forecast and declaration renamed with `--suffix`."""
+
+    documents = [json.loads(path.read_text(encoding="utf-8")) for path in args.inputs]
+    merged = dict(documents[0])
     for key in ("forecasts", "declarations"):
-        if key in document:
-            document[key] = {f"{name}{args.suffix}": value for name, value in document[key].items()}
-    args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
+        merged[key] = {}
+        for document in documents:
+            for name, value in document[key].items():
+                merged[key][f"{name}{args.suffix}"] = value
+    for document in documents[1:]:
+        for key in ("horizon", "panel_sha256", "scratch_panel_sha256"):
+            if key in document and document[key] != documents[0][key] and key != "scratch_panel_sha256":
+                raise SystemExit(f"the documents disagree on {key}")
+    args.output.write_text(json.dumps(merged, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
     return 0
 
 
 def judge_command(args) -> int:
     """The pressure-day judge on forecast files, and each model's onset recall split by year.
 
-    As `pressure_judge.py judge`, with two differences: a forecast file written on an extended
+    As `pressure_judge.py judge`, with three differences: a forecast file written on an extended
     panel is accepted (its dates are the judge grid's, which `choose_cutoffs` checks day by day, and
-    the judge reads the published panel), and the result carries, per model, the onsets and the onsets
-    flagged at some horizon h >= 1 for each calendar year of the onset (`onset_recall_by_year`).
+    the judge reads the published panel); the result carries, per model, the onsets and the onsets
+    flagged at some horizon h >= 1 for each calendar year of the onset (`onset_recall_by_year`); and,
+    per model and year, the false alarms at each horizon, flat and under the weighted miss rule
+    (`false_alarms_by_year`, #484). `--rule` is `pressure_judge.py judge`'s.
     """
+
+    from dataclasses import replace
 
     from repo_model import pressure_judge as pj
     from repo_model.baseline import panel_sha256
@@ -365,6 +378,9 @@ def judge_command(args) -> int:
     judge_script = _script("pressure_judge")
     declaration = pj.load_declaration()
     commit = judge_script.require_committed_declaration(pj.DEFAULT_DECLARATION)
+    judge_script.require_committed_file(pj.DEFAULT_WEIGHTED_MISS)
+    applied = {"declared": None, "weighted": True, "unweighted": False}[args.rule]
+    declaration = replace(declaration, weighted_miss=pj.load_weighted_miss(applied=applied))
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(judge_script.SPLITS)
@@ -399,8 +415,12 @@ def judge_command(args) -> int:
     common = sorted(set.intersection(*(set(grids[h].dates) for h in horizons)))
     position = {h: {day: k for k, day in enumerate(grids[h].dates)} for h in horizons}
     first = horizons[0]
-    onset_days = [day for day in common if grids[first].onset[position[first][day]]]
-    by_year = {}
+    onset = [int(grids[first].onset[position[first][day]]) for day in common]
+    onset_days = [day for day, flag in zip(common, onset) if flag]
+    place = {day: k for k, day in enumerate(calendar)}
+    rule = declaration.weighted_miss
+    places = [place[day] for day in common]
+    by_year, alarms_by_year = {}, {}
     for name, per_horizon in by_name.items():
         years = {}
         for day in onset_days:
@@ -412,7 +432,79 @@ def judge_command(args) -> int:
             entry["onsets"] += 1
             entry["flagged"] += int(caught)
         by_year[name] = years
+        alarms = {}
+        for h in horizons:
+            at = [position[h][day] for day in common]
+            pressure = [grids[h].outcomes[tau][k] for k in at]
+            chosen = per_horizon[h]
+            flags = pj._alarm_flags(
+                declaration, name, [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at], onset
+            )
+            weights = (
+                pj.false_alarm_weights(rule, positions=places, pressure=pressure, known_through=places[-1])
+                if rule is not None
+                else None
+            )
+            for day, flag, y, index in zip(common, flags, pressure, range(len(common))):
+                if flag and not y:
+                    cell = alarms.setdefault(str(day.year), {}).setdefault(str(h), {"flat": 0, "weighted": 0.0})
+                    cell["flat"] += 1
+                    if weights is not None:
+                        cell["weighted"] += weights[index]
+        alarms_by_year[name] = alarms
+    paired = {}
+    suffix = "+history"
+    for name in sorted(by_name):
+        control = name[: -len(suffix)] if name.endswith(suffix) else None
+        if control not in by_name:
+            continue
+        caught = {}
+        for label in (name, control):
+            vector = [0.0] * len(common)
+            for k, day in enumerate(common):
+                if onset[k]:
+                    vector[k] = float(
+                        any(
+                            by_name[label][h].probabilities[tau][position[h][day]]
+                            >= by_name[label][h].cutoffs[tau][position[h][day]]
+                            for h in horizons
+                        )
+                    )
+            caught[label] = vector
+        flat_onset = [float(o) for o in onset]
+        cells = {
+            "onsets": [flat_onset, caught[name], caught[control]],
+        }
+        recall = pj._bootstrap(
+            declaration, cells, pj._ONSET_STATS, len(common), seed=pj._seed(declaration.seed, name, "history")
+        )["onsets"]
+        entry = {
+            "recall_with": recall["recall"],
+            "recall_without": recall["climatology_recall"],
+            "recall_difference": recall["recall_difference"],
+            "brier_difference_by_horizon": {},
+        }
+        for h in horizons:
+            at = [position[h][day] for day in common]
+            outcomes = [grids[h].outcomes[tau][k] for k in at]
+            vectors = pj._paired_vectors(
+                [by_name[name][h].probabilities[tau][k] for k in at],
+                [by_name[control][h].probabilities[tau][k] for k in at],
+                [by_name[control][h].probabilities[tau][k] for k in at],
+                outcomes,
+            )
+            cell = pj._bootstrap(
+                declaration,
+                {"all": vectors},
+                {"d": pj._PAIRED_STATS["brier_difference_vs_climatology"]},
+                len(common),
+                seed=pj._seed(declaration.seed, name, "history", h),
+            )["all"]["d"]
+            entry["brier_difference_by_horizon"][str(h)] = cell
+        paired[control] = entry
+    result["paired_history"] = paired
     result["onset_recall_by_year"] = by_year
+    result["false_alarms_by_year"] = alarms_by_year
     result["provenance"] = {
         "panel_sha256": digest,
         "declaration_commit": commit,
@@ -449,12 +541,13 @@ def main(argv=None) -> int:
     relabel = commands.add_parser("relabel")
     relabel.add_argument("--suffix", required=True)
     relabel.add_argument("--output", type=Path, required=True)
-    relabel.add_argument("input", type=Path)
+    relabel.add_argument("inputs", nargs="+", type=Path)
     relabel.set_defaults(func=relabel_command)
     judge = commands.add_parser("judge")
     judge.add_argument("--panel", type=Path, required=True, help="the published panel")
     judge.add_argument("--output", type=Path, required=True)
     judge.add_argument("--markdown", type=Path)
+    judge.add_argument("--rule", choices=("declared", "weighted", "unweighted"), default="declared")
     judge.add_argument("inputs", nargs="+", type=Path)
     judge.set_defaults(func=judge_command)
     args = parser.parse_args(argv)
