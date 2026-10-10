@@ -6,6 +6,7 @@ nothing is computed anew.
 
 import importlib.util
 import unittest
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,78 @@ def _result():
     onset = {"by_regime": {"2018-19": {"onsets": 17, "onsets_flagged": 10}, "2021-23": {"onsets": 0, "onsets_flagged": 0}}}
     candidate = {"horizons": {"1": {"5": row}}, "tiers": {"onset_warning": {"lead_at_least_1": onset}}}
     return {"candidates": {"m": candidate}}
+
+
+def _judged(flat_worst, weighted_worst, own_flat_count):
+    """A judge result with one candidate: under the weighted rule the flat count and the weighted count differ."""
+
+    near = {
+        "onsets": 26,
+        "onsets_flagged": 13,
+        "worst_false_alarms_per_onset": flat_worst,
+        "recall": {"mean": 0.5, "interval": {"lower": 0.3, "upper": 0.7}},
+    }
+    if weighted_worst is not None:
+        near["worst_weighted_false_alarms_per_onset"] = weighted_worst
+    verdict = {"tier_1_onset_warning": True, "tier_3_no_crying_wolf": False, "tier_5_week_ahead": False, "passes": False}
+    return {"candidates": {"m": {"tiers": {"onset_warning": {"lead_at_least_1": near}}, "verdict": verdict}}}
+
+
+class FalseAlarmColumnTests(unittest.TestCase):
+    """#519: the column headed `(weighted count)` prints the weighted count, not the flat one.
+
+    Recorded mutation: reading `worst_false_alarms_per_onset` in the weighted run (the original line) fails
+    `test_the_weighted_rule_column_prints_the_weighted_count` with AssertionError.
+    """
+
+    def _row(self):
+        flat = _judged(3.50, None, None)
+        weighted = _judged(3.81, 1.38, None)
+        lines = _script().judge_rows(flat, weighted, ["m"]).splitlines()
+        header, row = lines[0], lines[2]
+        return [c.strip() for c in header.strip("|").split("|")], [c.strip() for c in row.strip("|").split("|")]
+
+    def test_the_weighted_rule_column_prints_the_weighted_count(self):
+        header, row = self._row()
+        cell = row[header.index("worst FA per onset (weighted count)")]
+        self.assertEqual(cell, "1.38")
+
+    def test_the_flat_rule_column_prints_the_flat_count(self):
+        header, row = self._row()
+        self.assertEqual(row[header.index("worst FA per onset (flat count)")], "3.50")
+
+    def test_the_flat_count_under_the_weighted_cut_offs_is_labelled_as_such(self):
+        header, row = self._row()
+        self.assertEqual(row[header.index("worst FA per onset (flat count, weighted-rule cut-offs)")], "3.81")
+
+
+class GroupingTests(unittest.TestCase):
+    """#515: the recalibration's group is the declared regime, nothing (one pooled curve), or the as-of scarcity state."""
+
+    class _Splits:
+        def regime(self, day):
+            return "2018-19" if day.year < 2020 else "2020"
+
+    days = [date(2019, 5, 1), date(2020, 5, 1)]
+
+    def test_the_regime_grouping_is_the_calendars_labels(self):
+        self.assertEqual(_script().group_labels("regime", self.days, self._Splits(), {}), ["2018-19", "2020"])
+
+    def test_no_grouping_is_one_group(self):
+        self.assertEqual(_script().group_labels("none", self.days, self._Splits(), {}), ["all", "all"])
+
+    def test_the_scarcity_grouping_is_the_state_of_the_day_and_unknown_when_there_is_none(self):
+        states = {self.days[0]: 3.0}
+        self.assertEqual(_script().group_labels("scarcity", self.days, self._Splits(), states), ["3", "unknown"])
+
+    def test_an_unknown_grouping_is_refused(self):
+        with self.assertRaises(ValueError):
+            _script().group_labels("hindsight", self.days, self._Splits(), {})
+
+    def test_the_variants_are_named_for_the_judge_candidates(self):
+        self.assertEqual(_script().form_name("risk_gbm", "regime"), "risk_gbm+regime_recal")
+        self.assertEqual(_script().form_name("risk_gbm", "none"), "risk_gbm+regime_recal_none")
+        self.assertEqual(_script().form_name("risk_gbm", "scarcity"), "risk_gbm+regime_recal_scarcity")
 
 
 class SplitTableTests(unittest.TestCase):

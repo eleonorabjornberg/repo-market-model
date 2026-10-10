@@ -169,6 +169,37 @@ class Integrity(unittest.TestCase):
         self.assertFalse(found["blinds_a_model"])
 
 
+class ReadAges(unittest.TestCase):
+    """#517: staleness is measured on what the forecast reads, from the observation's own Wednesday to the decision."""
+
+    def test_a_weekly_value_is_dated_to_the_wednesday_on_or_before_its_row(self):
+        self.assertEqual(sd.observation_wednesday(date(2024, 3, 7)), date(2024, 3, 6))  # the Thursday of the print
+        self.assertEqual(sd.observation_wednesday(date(2024, 3, 6)), date(2024, 3, 6))
+        self.assertEqual(sd.observation_wednesday(date(2024, 3, 5)), date(2024, 2, 28))
+
+    def test_the_age_counts_from_the_wednesday_to_the_decision_day_not_from_the_row(self):
+        # the row read is Monday 11 March (the Wednesday 6 March print, carried); the decision is Tuesday 12 March.
+        self.assertEqual(sd.read_age_days(date(2024, 3, 12), date(2024, 3, 11)), 6)
+        # a row-based count would call the value one day old.
+        self.assertEqual((date(2024, 3, 12) - date(2024, 3, 11)).days, 1)
+
+    def test_the_summary_counts_the_reads_older_than_the_threshold(self):
+        summary = sd.age_summary([6, 6, 7, 8, 9, 13], threshold=7)
+        self.assertEqual((summary["reads"], summary["min"], summary["max"], summary["median"]), (6, 6, 13, 7.5))
+        self.assertEqual(summary["older_than_threshold"], 3)
+        self.assertEqual(summary["by_age"], {"6": 2, "7": 1, "8": 1, "9": 1, "13": 1})
+
+    def test_an_empty_summary_is_refused(self):
+        with self.assertRaises(ValueError):
+            sd.age_summary([], threshold=7)
+
+    def test_a_copied_row_is_judged_on_the_row_read(self):
+        rows = [{"sofr": 1.0, "sofr_volume": 5.0}, {"sofr": 1.0, "sofr_volume": 5.0}, {"sofr": 1.1, "sofr_volume": 5.0}]
+        self.assertTrue(sd.is_copied_row(rows, 1, ["sofr", "sofr_volume"]))
+        self.assertFalse(sd.is_copied_row(rows, 2, ["sofr", "sofr_volume"]))
+        self.assertFalse(sd.is_copied_row(rows, 0, ["sofr", "sofr_volume"]))
+
+
 class Revisions(unittest.TestCase):
     def test_a_vintage_that_differs_is_a_revision(self):
         first = {date(2020, 1, 8): 100.0, date(2020, 1, 15): 101.0}

@@ -116,6 +116,62 @@ class RegimeTests(unittest.TestCase):
             cs.regime_indicators(LABELS, ["z"])
 
 
+class NoRegimeTests(unittest.TestCase):
+    """#515: the stack with its regime term removed (`regime_labels=()`), the control for the hindsight labels."""
+
+    def test_no_labels_means_no_indicator_and_no_check_of_the_regimes(self):
+        self.assertEqual(cs.regime_indicators((), ["anything", "else"]), [(), ()])
+
+    def test_the_stack_without_labels_does_not_read_the_regimes(self):
+        world = _world()
+        calendar, days, members, regimes, outcomes = world
+        flipped = [LABELS[(LABELS.index(r) + 1) % len(LABELS)] for r in regimes]
+        a = _run(world, regime_labels=())
+        b = _run((calendar, days, members, flipped, outcomes), regime_labels=())
+        self.assertEqual(a.stacked, b.stacked)
+        self.assertEqual(a.recalibrated, b.recalibrated)
+        self.assertEqual(a.trace[-1]["regime_coefficients"], {})
+        self.assertEqual(len(a.trace[-1]["weights"]), 2)
+
+    def test_the_stack_with_labels_does_read_them(self):
+        world = _world()
+        calendar, days, members, regimes, outcomes = world
+        flipped = [LABELS[(LABELS.index(r) + 1) % len(LABELS)] for r in regimes]
+        self.assertNotEqual(_run(world).stacked, _run((calendar, days, members, flipped, outcomes)).stacked)
+
+
+class RegimeTermTests(unittest.TestCase):
+    """#515: the stack's regime term as declared, removed, or replaced by the as-of scarcity state."""
+
+    class _Splits:
+        def regime(self, day):
+            return "a" if day.year < 2020 else "b"
+
+    days = [date(2019, 5, 1), date(2020, 5, 1), date(2020, 5, 4)]
+
+    def test_declared_is_the_calendars_regime_and_the_declared_labels(self):
+        labels, regimes = cs.regime_term("declared", ("a", "b"), self.days, self._Splits(), {})
+        self.assertEqual((labels, regimes), (("a", "b"), ["a", "b", "b"]))
+
+    def test_none_has_no_label(self):
+        labels, regimes = cs.regime_term("none", ("a", "b"), self.days, self._Splits(), {})
+        self.assertEqual(labels, ())
+
+    def test_scarcity_is_one_indicator_per_state_with_no_state_unknown(self):
+        labels, regimes = cs.regime_term("scarcity", ("a", "b"), self.days, self._Splits(), {self.days[0]: 3.0, self.days[1]: 0.0})
+        self.assertEqual(labels, ("0", "1", "2", "3", "unknown"))
+        self.assertEqual(regimes, ["3", "0", "unknown"])
+
+    def test_an_unknown_mode_is_refused(self):
+        with self.assertRaises(ValueError):
+            cs.regime_term("hindsight", ("a",), self.days, self._Splits(), {})
+
+    def test_the_variants_are_named_for_the_judge_candidates(self):
+        self.assertEqual(cs.variant_name("calibrated_stack_logistic", "declared"), "calibrated_stack_logistic")
+        self.assertEqual(cs.variant_name("calibrated_stack_logistic", "none"), "calibrated_stack_logistic+no_regime")
+        self.assertEqual(cs.variant_name("calibrated_stack_isotonic", "scarcity"), "calibrated_stack_isotonic+scarcity")
+
+
 class StackTests(unittest.TestCase):
     def setUp(self):
         self.world = _world()
