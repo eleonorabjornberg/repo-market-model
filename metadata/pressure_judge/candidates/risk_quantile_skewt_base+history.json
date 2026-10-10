@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "Y2 (#484)",
+  "parent": "risk_quantile_skewt_base",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: the parent's forecast (none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json), changed by one thing: the fits are trained on the back-filled 2014-08-22 to 2018-04-02 rows as well, where the parent's inputs exist for them (training history only, repo_model.backfill.require_training_only); metadata/backfill_tier1.json"
+}

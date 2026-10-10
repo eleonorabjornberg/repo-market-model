@@ -12,6 +12,8 @@ records the ruling (drafted by the pull request that closes #430, for her to mer
     PYTHONPATH=src python3 scripts/backfill_history.py panel --output EXT.csv --scratch SCRATCH.csv
     PYTHONPATH=src python3 scripts/backfill_history.py run --extended EXT.csv --script scripts/X.py -- \\
         forecasts --panel EXT.csv --horizon H --output OUT/x_hH.json
+    PYTHONPATH=src python3 scripts/backfill_history.py augment --extended EXT.csv --augmented AUG.csv --output EXTAUG.csv
+    PYTHONPATH=src python3 scripts/backfill_history.py relabel --suffix +history --output NEW.json OLD.json
 
 * `check` verifies the saved workbook against its manifest and prints what it holds.
 * `panel` builds the **extended scratch panel**: the scratch panel of `pressure_v1_1.py panel` (the
@@ -20,6 +22,10 @@ records the ruling (drafted by the pull request that closes #430, for her to mer
   the earlier years (bill rates, Treasury auctions, the Desk's ON RRP results, the H.8 first prints).
   FRED's reserves, TGA and IOER and the FR 2004 extract already reach back. It refuses to write
   unless the rows from 2018-04-03 reproduce the scratch panel cell for cell.
+* `augment` joins the measurement columns of `measurement_fields.py panel` onto the extended panel (#484):
+  published rows are the augmented panel's, back-filled rows carry a blank cell in each new column.
+* `relabel` renames the forecasts of a horizon document with a suffix, so a with-history file and its
+  without-history control can sit in one judge run.
 * `run` executes a scoring script **unchanged** on the extended panel. It swaps one function before
   the script is loaded: `baseline.rolling_exceedance_backtest` is called with `minimum_history`
   raised by the number of back-filled rows, so the first scored origin, every refit block and every
@@ -37,7 +43,7 @@ import importlib.util
 import json
 import sys
 import tempfile
-from datetime import datetime, time
+from datetime import date, datetime, time
 from pathlib import Path
 from types import MappingProxyType
 from unittest import mock
@@ -229,21 +235,29 @@ def panel_command(args) -> int:
 
 
 def run_command(args) -> int:
-    """Run a scoring script unchanged, its backtests trained on the back-filled rows as well."""
+    """Run a scoring script unchanged, its backtests trained on the back-filled rows as well.
 
-    from repo_model import baseline
+    `--control` accepts a panel with no back-filled row (the arm without history), read by the same
+    recorders. `--folds-output` records the refit blocks (training window and scored days) and
+    `--pairs-output` the training pairs that came from back-filled label days, per fit (#484).
+    """
+
+    from repo_model import baseline, ml
     from repo_model.data import load_daily_panel
 
     rows = load_daily_panel(args.extended)
     prefix = backfill.prefix_length([row.date for row in rows])
-    if not prefix:
+    if not prefix and not args.control:
         raise SystemExit(f"{args.extended} carries no back-filled row")
     script = args.script.resolve()
     if script.parent != REPO / "scripts":
         raise SystemExit("the script must be one of scripts/*.py")
     original = baseline.rolling_exceedance_backtest
+    original_pairs = ml._pressure_pairs
 
     calls = []
+    blocks = {}
+    fits = {}
 
     def with_history(observations, *, minimum_history=20, **kwargs):
         dates = [row.date for row in observations]
@@ -251,18 +265,87 @@ def run_command(args) -> int:
         report = original(observations, minimum_history=minimum_history + shift, **kwargs)
         backfill.require_training_only(report.folds, where=script.name)
         calls.append((shift, len(report.folds)))
+        for fold in report.folds:
+            key = (fold.train_start.isoformat(), fold.train_end.isoformat(), fold.train_rows)
+            span = blocks.setdefault(key, [fold.scored_date.isoformat(), fold.scored_date.isoformat()])
+            span[1] = fold.scored_date.isoformat()
         return report
 
+    def recording_pairs(design, information, train_rows, cache, positions=None):
+        mine = [] if positions is None else positions
+        xs, ys = original_pairs(design, information, train_rows, cache, mine)
+        back = [k for k, position in enumerate(mine) if train_rows[position].date < backfill.FIRST_PUBLISHED]
+        risk = [k for k in back if xs[k] and xs[k][-1] == 1.0]
+        fits[train_rows[-1].date.isoformat()] = {
+            "train_rows": len(train_rows),
+            "pairs": len(xs),
+            "backfilled_pairs": len(back),
+            "backfilled_risk_date_pairs": len(risk),
+        }
+        return xs, ys
+
     baseline.rolling_exceedance_backtest = with_history
+    ml._pressure_pairs = recording_pairs
     try:
         module = _script(script.stem)
         status = int(module.main(list(args.rest)) or 0)
         if not calls:
             raise SystemExit(f"{script.name} ran no backtest through the training-history function")
         print(json.dumps({"backtests_with_history": len(calls), "backfilled_rows": calls[0][0]}))
+        if args.folds_output:
+            document = [
+                {"train_start": a, "train_end": b, "train_rows": n, "first_scored": span[0], "last_scored": span[1]}
+                for (a, b, n), span in sorted(blocks.items(), key=lambda item: item[1][0])
+            ]
+            args.folds_output.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8")
+        if args.pairs_output:
+            args.pairs_output.write_text(
+                json.dumps({"backfilled_rows": prefix, "fits": fits}, indent=1, sort_keys=True) + "\n", encoding="utf-8"
+            )
         return status
     finally:
         baseline.rolling_exceedance_backtest = original
+        ml._pressure_pairs = original_pairs
+
+
+def augment_command(args) -> int:
+    """The extended panel with the measurement columns joined on (`backfill.augment_rows`)."""
+
+    def read(path):
+        with path.open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            return reader.fieldnames, list(reader)
+
+    extended_header, extended = read(args.extended)
+    augmented_header, augmented = read(args.augmented)
+    out = backfill.augment_rows(extended, augmented)
+    header = list(dict.fromkeys(list(extended_header) + list(augmented_header)))
+    with args.output.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=header, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(out)
+    print(
+        json.dumps(
+            {
+                "output": str(args.output),
+                "sha256": hashlib.sha256(args.output.read_bytes()).hexdigest(),
+                "rows": len(out),
+                "backfilled_rows": backfill.prefix_length([date.fromisoformat(row["date"]) for row in out]),
+                "columns_added_blank_in_backfilled_rows": [n for n in augmented_header if n not in extended_header],
+            },
+            indent=1,
+        )
+    )
+    return 0
+
+
+def relabel_command(args) -> int:
+    document = json.loads(args.input.read_text(encoding="utf-8"))
+    for key in ("forecasts", "declarations"):
+        if key in document:
+            document[key] = {f"{name}{args.suffix}": value for name, value in document[key].items()}
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    return 0
 
 
 def judge_command(args) -> int:
@@ -353,8 +436,21 @@ def main(argv=None) -> int:
     run = commands.add_parser("run")
     run.add_argument("--extended", type=Path, required=True)
     run.add_argument("--script", type=Path, required=True)
+    run.add_argument("--control", action="store_true", help="accept a panel with no back-filled row (the arm without history)")
+    run.add_argument("--folds-output", type=Path)
+    run.add_argument("--pairs-output", type=Path)
     run.add_argument("rest", nargs=argparse.REMAINDER)
     run.set_defaults(func=run_command)
+    augment = commands.add_parser("augment")
+    augment.add_argument("--extended", type=Path, required=True)
+    augment.add_argument("--augmented", type=Path, required=True)
+    augment.add_argument("--output", type=Path, required=True)
+    augment.set_defaults(func=augment_command)
+    relabel = commands.add_parser("relabel")
+    relabel.add_argument("--suffix", required=True)
+    relabel.add_argument("--output", type=Path, required=True)
+    relabel.add_argument("input", type=Path)
+    relabel.set_defaults(func=relabel_command)
     judge = commands.add_parser("judge")
     judge.add_argument("--panel", type=Path, required=True, help="the published panel")
     judge.add_argument("--output", type=Path, required=True)

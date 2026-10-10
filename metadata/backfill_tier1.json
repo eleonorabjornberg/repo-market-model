@@ -1,0 +1,39 @@
+{
+  "status": "declared by the pull request that closes #484 before any score was computed; a measurement, not a record. Nothing here is published, no published figure moves, no 2026 day is read. The back-filled history is used as training history only, under the guard of repo_model.backfill (#430, ruling of 8 October 2026 on #374).",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "note": "the scoring declaration of metadata/risk_date_severity.json, unchanged: scripts/risk_date_severity.py run through scripts/backfill_history.py run, which raises minimum_history by the number of back-filled rows so the first scored origin, every refit block and every scored day are the ones the script scores without the history"
+  },
+  "models": [
+    "risk_gbm",
+    "risk_gbm_base",
+    "risk_logistic",
+    "risk_logistic_base",
+    "risk_quantile_skewt_base"
+  ],
+  "horizons": [1, 2, 3, 4, 5],
+  "arms": {
+    "without": "scripts/risk_date_severity.py run on the published days' panel with the measurement columns (pressure_v1_1.py panel, then measurement_fields.py panel); the control, through backfill_history.py run --control so the same recorders read it",
+    "with": "the same script, unchanged, through backfill_history.py run on the extended panel (backfill_history.py panel, then backfill_history.py augment): the same rows from 2018-04-03 and 899 back-filled rows before them; the with-history forecasts are named <model>+history (metadata/pressure_judge/candidates/<model>+history.json)"
+  },
+  "missing_inputs_before_2018": {
+    "rule": "no fill. A back-filled row whose read of any declared input is blank trains no pair (ml._pressure_pairs: 'a direct pressure model is not fitted on an unobserved input'); the row is dropped from that model's training, as a blank is dropped in the published rows. The run records, per model, the back-filled label days that did train a pair (the recorder of backfill_history.py run --pairs-output).",
+    "inputs_with_no_back_filled_value": {
+      "sofr_p75_iorb_bps": "the workbook carries no percentiles (backfill.parse_workbook)",
+      "sofr_p99_iorb_bps": "the workbook carries no percentiles",
+      "tga_daily": "the daily TGA snapshot of measurement_fields starts on the first published day",
+      "tga_daily_change": "derived from tga_daily"
+    },
+    "so": "risk_gbm and risk_logistic read these four, so they train no pair on a back-filled row and are expected to score exactly as without the history (reported as measured); risk_gbm_base, risk_logistic_base and risk_quantile_skewt_base read none of them and use the back-filled risk-date label days whose other reads exist"
+  },
+  "reading": {
+    "judge_row": "scripts/backfill_history.py judge: tiers 1, 3 and 5 under the rule in force (metadata/pressure_judge.json, metadata/weighted_miss.json), with and without the history, paired, with the judge's stationary-bootstrap intervals",
+    "by_year": "onset recall by calendar year of the onset, 2018, 2020 and 2024 called out; false alarms per onset by calendar year, flat and under the weighted miss rule, at the worst horizon of the +5 bp onset tier",
+    "training_history": "for each 2018 onset, the refit in force at h = 1 and h = 5: the training window, the pressure days and onsets it holds (setup_diagnostic.training_counts), with and without the back-fill, and the pressure days on risk dates (what a risk-date model trains on)",
+    "rows_used": "per model, the back-filled rows that trained a pair in the last fit"
+  },
+  "pairing": "with against without, same scored days, same cut-off rule; the intervals are the judge's (stationary bootstrap, 90%)"
+}
