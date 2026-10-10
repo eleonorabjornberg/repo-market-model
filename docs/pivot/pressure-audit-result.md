@@ -245,6 +245,6 @@ Ranked by the evidence above. It recommends; it adds no input, changes no declar
   recommendation proposes it, this page does not run it); the ranks of Table 2 are one number per input over a few onsets and
   rank nothing with an interval; the announcement lead is measured on the snapshot's announcement dates, not on a clock time
   (the dataset states none).
-* **Outside the directive, reported as a finding:** the cut-off warm-up of section 4, as a property of the bar.
+* **Outside the directive, reported as a finding (#488):** the cut-off warm-up of section 4, as a property of the bar.
 * **For Eleonora.** Nothing here asks her to rule, and the pull request opens no `needs-eleonora` issue. Reading the bar as a
   two-day-ahead forecast from the last observation, and the choice in recommendation 2, are hers whenever she takes them up.
