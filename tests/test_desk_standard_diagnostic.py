@@ -94,14 +94,15 @@ class SettlementLeadTests(unittest.TestCase):
     def test_the_table_keeps_the_earliest_and_latest_announcement_of_a_settlement_date(self):
         calendar = ds.Calendar(_week(date(2024, 3, 4), 15))
         auctions = [
-            {"issue_date": "2024-03-12", "announcemt_date": "2024-03-05", "security_type": "Bill"},
-            {"issue_date": "2024-03-12", "announcemt_date": "2024-03-07", "security_type": "Bill"},
-            {"issue_date": "2024-03-12", "announcemt_date": "2024-03-01", "security_type": "Note"},
-            {"issue_date": "2024-03-09", "announcemt_date": "2024-03-01", "security_type": "Note"},  # off the panel
+            {"issue_date": "2024-03-12", "announcemt_date": "2024-03-05", "auction_date": "2024-03-07", "security_type": "Bill"},
+            {"issue_date": "2024-03-12", "announcemt_date": "2024-03-07", "auction_date": "2024-03-11", "security_type": "Bill"},
+            {"issue_date": "2024-03-12", "announcemt_date": "2024-03-01", "auction_date": "2024-03-07", "security_type": "Note"},
+            {"issue_date": "2024-03-09", "announcemt_date": "2024-03-01", "auction_date": "2024-03-05", "security_type": "Note"},  # off the panel
         ]
         table = ds.settlement_table(calendar, auctions)
         self.assertEqual(table["by_date"]["bill"][date(2024, 3, 12)], (date(2024, 3, 5), date(2024, 3, 7)))
         self.assertEqual(table["by_date"]["coupon"][date(2024, 3, 12)], (date(2024, 3, 1), date(2024, 3, 1)))
+        self.assertEqual(table["auction_dates"]["bill"][date(2024, 3, 12)], (date(2024, 3, 7), date(2024, 3, 11)))
         self.assertEqual(table["issue_dates_off_the_panel"], 1)
 
 
