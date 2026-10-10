@@ -340,6 +340,9 @@ def report_command(args) -> int:
     result = {"declaration": declared, "paired": {}, "onsets": {}, "recall_by_year": {}}
     for name, entry in declared["candidates"].items():
         control = entry["passer"]
+        if name not in by_name:
+            result.setdefault("not_scored", []).append(name)
+            continue
         result["paired"][name] = {"control": control, "horizons": {}}
         for h in declaration.horizons:
             grid = grids[h]
