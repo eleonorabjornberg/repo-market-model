@@ -174,6 +174,22 @@ def run_command(args) -> int:
     return 0
 
 
+def prune_command(args) -> int:
+    """Drop, from every horizon's file, a candidate whose fit failed at any horizon (the judge needs all five)."""
+
+    documents = [json.loads(Path(path).read_text()) for path in args.inputs]
+    dropped = sorted({name for d in documents for name in d.get("failed", {})})
+    for path, document in zip(args.inputs, documents):
+        for name in dropped:
+            document["forecasts"].pop(name, None)
+            document["declarations"].pop(name, None)
+        out = args.directory / Path(path).name.replace("unused_", "pruned_")
+        out.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    print(json.dumps({"dropped": {name: {str(d["horizon"]): d["failed"][name] for d in documents if name in d.get("failed", {})}
+                                  for name in dropped}}, indent=1))
+    return 0
+
+
 # -- the inventory ---------------------------------------------------------------
 
 
@@ -400,6 +416,10 @@ def main(argv=None) -> int:
     run.add_argument("--candidate")
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(handler=run_command)
+    prune = commands.add_parser("prune", help="drop a candidate that failed to fit at any horizon")
+    prune.add_argument("--directory", type=Path, required=True)
+    prune.add_argument("inputs", nargs="+", type=Path)
+    prune.set_defaults(handler=prune_command)
     report = commands.add_parser("report")
     report.add_argument("--panel", type=Path, required=True)
     report.add_argument("--output", type=Path, required=True)
