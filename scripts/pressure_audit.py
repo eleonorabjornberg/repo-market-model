@@ -37,6 +37,7 @@ import math
 import subprocess
 import sys
 from collections import Counter
+from dataclasses import replace
 from datetime import date, time
 from pathlib import Path
 
@@ -354,6 +355,10 @@ def score_command(args) -> int:
                 choices[name][str(h)] = blocks
     common = sorted(set.intersection(*(set(grids[h].dates) for h in declaration.horizons)))
     scored_names = [f"{p}_{v}" for p in ("audit", "ceiling") for v in VARIANTS] + names
+    # The judge reads a candidate's declaration for its alarm rule (a cool-down, #459); the audit's rows declare none.
+    declaration = replace(
+        declaration, candidates={**declaration.candidates, **{n: {"role": "audit"} for n in scored_names if n.startswith(("audit_", "ceiling_"))}}
+    )
     summaries = {name: summarise(name, by_name, grids, declaration, calendar, common, tau) for name in scored_names}
     first = declaration.horizons[0]
     place = {d: k for k, d in enumerate(grids[first].dates)}
