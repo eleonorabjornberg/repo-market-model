@@ -12365,6 +12365,94 @@ class OnsetLabelTests(unittest.TestCase):
             ml.pressure_onset_exceedance("logistic", "focal", _PRESSURE_CALENDAR, _pressure_splits())
 
 
+def _all_inputs_factory(kind):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_all_inputs_exceedance(kind, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_all_inputs_{kind}"
+    return factory
+
+
+class PressureAllInputsLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the all-inputs onset logistic (#479)."""
+
+    FACTORY = staticmethod(_all_inputs_factory("logistic"))
+    IMPLEMENTATION = staticmethod(ml.pressure_all_inputs_exceedance)
+
+
+class PressureAllInputsClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the all-inputs onset classifier (#479)."""
+
+    FACTORY = staticmethod(_all_inputs_factory("gbm_classifier"))
+    IMPLEMENTATION = staticmethod(ml.pressure_all_inputs_exceedance)
+
+
+class AllInputsSelectionTests(unittest.TestCase):
+    """The penalty or depth is chosen on the training pairs alone (#479).
+
+    Recorded mutations (these are the selection's own guards; the availability guards are
+    `pressure_onset_exceedance`'s, which the predictor reuses unchanged):
+
+    * `_blocked_folds`: `range(0, max(0, edges[j] - embargo))` replaced by `range(0, edges[j])` (no
+      embargo, the training part touches the validation block): `test_a_fold_trains_only_before_its_block_less_the_embargo`
+      fails with `AssertionError`.
+    * `_blocked_folds`: `range(0, max(0, edges[j] - embargo))` replaced by `range(0, edges[j + 1])` (the
+      training part contains its own validation block, a look ahead): the same test fails with
+      `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def test_a_fold_trains_only_before_its_block_less_the_embargo(self):
+        folds = ml._blocked_folds(100, 4, 5)
+        self.assertEqual(len(folds), 4)
+        for train, valid in folds:
+            self.assertLessEqual(train.stop, valid.start - 5)
+            self.assertEqual(train.start, 0)
+        # the validation blocks tile the later part of the pairs, in order, without overlap
+        self.assertEqual([v.stop for _t, v in folds[:-1]], [v.start for _t, v in folds[1:]])
+        self.assertEqual(folds[-1][1].stop, 100)
+
+    def test_the_default_is_returned_when_no_fold_has_both_classes(self):
+        xs = [[float(k), float(k % 3)] for k in range(60)]
+        setting, selected = ml.select_all_inputs_setting("logistic", xs, [0] * 60)
+        self.assertFalse(selected)
+        self.assertEqual(setting, ml.ALL_INPUTS_SETTINGS["default"]["logistic"])
+        setting, selected = ml.select_all_inputs_setting("gbm", xs, [0] * 60)
+        self.assertEqual((setting, selected), (ml.ALL_INPUTS_SETTINGS["default"]["gbm"], False))
+
+    def test_a_setting_comes_from_the_declared_grid_and_is_a_function_of_the_pairs_alone(self):
+        rng = random.Random(7)
+        xs = [[rng.gauss(0, 1) for _ in range(6)] for _ in range(200)]
+        labels = [1 if row[0] + 0.5 * rng.gauss(0, 1) > 1.0 else 0 for row in xs]
+        first = ml.select_all_inputs_setting("logistic", xs, labels)
+        self.assertEqual(first, ml.select_all_inputs_setting("logistic", list(xs), list(labels)))
+        penalty, c = first[0]
+        self.assertIn(penalty, ml.ALL_INPUTS_SETTINGS["logistic"]["penalties"])
+        self.assertIn(c, ml.ALL_INPUTS_SETTINGS["logistic"]["C"])
+        self.assertTrue(first[1])
+        (depth,), selected = ml.select_all_inputs_setting("gbm", xs, labels)
+        self.assertIn(depth, ml.ALL_INPUTS_SETTINGS["gbm"]["max_depth"])
+        self.assertTrue(selected)
+
+    def test_an_unknown_kind_is_refused(self):
+        with self.assertRaises(ValueError):
+            ml.pressure_all_inputs_exceedance("probit", _PRESSURE_CALENDAR, _pressure_splits())
+
+    def test_the_predictor_records_what_each_fit_selected(self):
+        from test_baseline import regressor_frame
+
+        rows = _with_calendar(regressor_frame())
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, _PRESSURE_CALENDAR, decision_time=time(16, 0))
+        predictor = ml.pressure_all_inputs_exceedance("logistic", _PRESSURE_CALENDAR, _pressure_splits(), 20)
+        info = rule.information_set([r.date for r in rows], len(rows) - 1)
+        curves = predictor(rows[:-1], (rule.observation(rows, info),), (5.0,), information=rule)
+        self.assertEqual(len(curves.curves[0]), 1)
+        for record in predictor.selections:
+            self.assertEqual(set(record), {"setting", "selected", "pairs", "onsets"})
+
+
 def _window_onset_factory(kind, treatment):
     def factory(features, declaration, minimum_history=20):
         return ml.pressure_window_onset_exceedance(kind, treatment, features, declaration, minimum_history)

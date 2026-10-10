@@ -1,0 +1,1369 @@
+{
+ "provenance": {
+  "declaration_commit": "27a4c54c51d55b806d92ec4960c5892d81c4787a",
+  "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+ },
+ "regime_thresholds": {
+  "declaration": {
+   "commit": "27a4c54c51d55b806d92ec4960c5892d81c4787a",
+   "path": "metadata/regime_thresholds.json"
+  },
+  "forecast_panels": {
+   "bench_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "bench_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "hierarchical_logistic_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "hierarchical_logistic_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "ngboost_laplace_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "ngboost_laplace_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "scarcity_logistic_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h1": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h2": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h3": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h4": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "scarcity_logistic_interactions_h5": "4137d0ad0ef82216deb011686bb03b17b8dc8fba11ae803221c9d735e29d4405",
+   "settlement_quantile_timing_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "settlement_quantile_timing_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h1": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h2": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h3": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h4": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "two_part_gbm_h5": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+  },
+  "judge_declaration_commit": "27a4c54c51d55b806d92ec4960c5892d81c4787a",
+  "onsets": 26,
+  "onsets_by_year": {
+   "2018": 4,
+   "2019": 13,
+   "2020": 2,
+   "2024": 2,
+   "2025": 5
+  },
+  "recall_by_year": {
+   "hierarchical_logistic": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "hierarchical_logistic+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "ngboost_laplace": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 4,
+     "onsets": 5
+    }
+   },
+   "ngboost_laplace+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 4,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 10,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 10,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic_interactions": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "scarcity_logistic_interactions+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "settlement_quantile_timing": {
+    "2018": {
+     "flagged": 1,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 1,
+     "onsets": 5
+    }
+   },
+   "settlement_quantile_timing+scarce_cutoff": {
+    "2018": {
+     "flagged": 1,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 1,
+     "onsets": 5
+    }
+   },
+   "two_part_gbm": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "two_part_gbm+scarce_cutoff": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   }
+  },
+  "scarce_cutoff_diagnostics": {
+   "hierarchical_logistic": {
+    "1": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 514,
+     "scarce_flags_pooled": 164,
+     "scarce_flags_scarce_cutoff": 164,
+     "scarce_onsets": 24,
+     "scarce_pressure_days": 134,
+     "scored_days": 1873
+    },
+    "2": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 513,
+     "scarce_flags_pooled": 91,
+     "scarce_flags_scarce_cutoff": 91,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 133,
+     "scored_days": 1872
+    },
+    "3": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 512,
+     "scarce_flags_pooled": 150,
+     "scarce_flags_scarce_cutoff": 150,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1871
+    },
+    "4": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 511,
+     "scarce_flags_pooled": 144,
+     "scarce_flags_scarce_cutoff": 144,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1870
+    },
+    "5": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 6,
+     "blocks_with_a_scarce_day": 25,
+     "scarce_days": 510,
+     "scarce_flags_pooled": 158,
+     "scarce_flags_scarce_cutoff": 158,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1869
+    }
+   },
+   "ngboost_laplace": {
+    "1": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 514,
+     "scarce_flags_pooled": 111,
+     "scarce_flags_scarce_cutoff": 110,
+     "scarce_onsets": 24,
+     "scarce_pressure_days": 134,
+     "scored_days": 1873
+    },
+    "2": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 8,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 513,
+     "scarce_flags_pooled": 63,
+     "scarce_flags_scarce_cutoff": 63,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 133,
+     "scored_days": 1872
+    },
+    "3": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 512,
+     "scarce_flags_pooled": 59,
+     "scarce_flags_scarce_cutoff": 59,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1871
+    },
+    "4": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 511,
+     "scarce_flags_pooled": 102,
+     "scarce_flags_scarce_cutoff": 102,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1870
+    },
+    "5": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 25,
+     "scarce_days": 510,
+     "scarce_flags_pooled": 59,
+     "scarce_flags_scarce_cutoff": 59,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1869
+    }
+   },
+   "scarcity_logistic": {
+    "1": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 514,
+     "scarce_flags_pooled": 152,
+     "scarce_flags_scarce_cutoff": 152,
+     "scarce_onsets": 24,
+     "scarce_pressure_days": 134,
+     "scored_days": 1873
+    },
+    "2": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 513,
+     "scarce_flags_pooled": 111,
+     "scarce_flags_scarce_cutoff": 111,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 133,
+     "scored_days": 1872
+    },
+    "3": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 512,
+     "scarce_flags_pooled": 150,
+     "scarce_flags_scarce_cutoff": 150,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1871
+    },
+    "4": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 511,
+     "scarce_flags_pooled": 144,
+     "scarce_flags_scarce_cutoff": 144,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1870
+    },
+    "5": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 25,
+     "scarce_days": 510,
+     "scarce_flags_pooled": 145,
+     "scarce_flags_scarce_cutoff": 145,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1869
+    }
+   },
+   "scarcity_logistic_interactions": {
+    "1": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 6,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 514,
+     "scarce_flags_pooled": 164,
+     "scarce_flags_scarce_cutoff": 163,
+     "scarce_onsets": 24,
+     "scarce_pressure_days": 134,
+     "scored_days": 1873
+    },
+    "2": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 513,
+     "scarce_flags_pooled": 111,
+     "scarce_flags_scarce_cutoff": 111,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 133,
+     "scored_days": 1872
+    },
+    "3": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 512,
+     "scarce_flags_pooled": 150,
+     "scarce_flags_scarce_cutoff": 150,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1871
+    },
+    "4": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 511,
+     "scarce_flags_pooled": 144,
+     "scarce_flags_scarce_cutoff": 144,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1870
+    },
+    "5": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 25,
+     "scarce_days": 510,
+     "scarce_flags_pooled": 145,
+     "scarce_flags_scarce_cutoff": 145,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1869
+    }
+   },
+   "settlement_quantile_timing": {
+    "1": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 5,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 514,
+     "scarce_flags_pooled": 129,
+     "scarce_flags_scarce_cutoff": 135,
+     "scarce_onsets": 24,
+     "scarce_pressure_days": 134,
+     "scored_days": 1873
+    },
+    "2": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 513,
+     "scarce_flags_pooled": 130,
+     "scarce_flags_scarce_cutoff": 131,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 133,
+     "scored_days": 1872
+    },
+    "3": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 512,
+     "scarce_flags_pooled": 144,
+     "scarce_flags_scarce_cutoff": 147,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1871
+    },
+    "4": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 511,
+     "scarce_flags_pooled": 148,
+     "scarce_flags_scarce_cutoff": 149,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1870
+    },
+    "5": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 25,
+     "scarce_days": 510,
+     "scarce_flags_pooled": 148,
+     "scarce_flags_scarce_cutoff": 148,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1869
+    }
+   },
+   "two_part_gbm": {
+    "1": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 514,
+     "scarce_flags_pooled": 39,
+     "scarce_flags_scarce_cutoff": 39,
+     "scarce_onsets": 24,
+     "scarce_pressure_days": 134,
+     "scored_days": 1873
+    },
+    "2": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 10,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 513,
+     "scarce_flags_pooled": 44,
+     "scarce_flags_scarce_cutoff": 44,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 133,
+     "scored_days": 1872
+    },
+    "3": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 6,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 512,
+     "scarce_flags_pooled": 57,
+     "scarce_flags_scarce_cutoff": 55,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1871
+    },
+    "4": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 7,
+     "blocks_with_a_scarce_day": 26,
+     "scarce_days": 511,
+     "scarce_flags_pooled": 69,
+     "scarce_flags_scarce_cutoff": 68,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1870
+    },
+    "5": {
+     "blocks_whose_scarce_cutoff_flags_nothing": 6,
+     "blocks_with_a_scarce_day": 25,
+     "scarce_days": 510,
+     "scarce_flags_pooled": 95,
+     "scarce_flags_scarce_cutoff": 95,
+     "scarce_onsets": 23,
+     "scarce_pressure_days": 132,
+     "scored_days": 1869
+    }
+   }
+  },
+  "scarcity_state_at_least": 2
+ },
+ "verdicts": {
+  "calendar_climatology": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.25,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1226844218,
+      "upper": 0.6428571428571429
+     },
+     "mean": 0.43478260869565216
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 4.434782608695652
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "hierarchical_logistic": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.47058823529411764,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1564434028,
+      "upper": 0.8333333333333334
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 4.130434782608695
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "hierarchical_logistic+scarce_cutoff": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.45814393939393927,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1048620221,
+      "upper": 0.8333333333333334
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 4.130434782608695
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "ngboost_laplace": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.45814393939393927,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1761861859,
+      "upper": 0.8333333333333334
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 2.869565217391304
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "ngboost_laplace+scarce_cutoff": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.46875,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1292970727,
+      "upper": 0.8421052631578947
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 2.869565217391304
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "persistence_logistic": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.13016304347826071,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 481335532,
+      "upper": 0.5217391304347826
+     },
+     "mean": 0.30434782608695654
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 3.739130434782609
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "scarcity_logistic": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.36345454545454536,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1014252905,
+      "upper": 0.7667948717948717
+     },
+     "mean": 0.5652173913043478
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 3.652173913043478
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "scarcity_logistic+scarce_cutoff": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.37037037037037035,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 2105362940,
+      "upper": 0.7777777777777778
+     },
+     "mean": 0.5652173913043478
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 3.652173913043478
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "scarcity_logistic_interactions": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4117647058823529,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 283139331,
+      "upper": 0.8095238095238095
+     },
+     "mean": 0.6086956521739131
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 3.652173913043478
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "scarcity_logistic_interactions+scarce_cutoff": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4090909090909091,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 342529376,
+      "upper": 0.8076923076923077
+     },
+     "mean": 0.6086956521739131
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 3.652173913043478
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "settlement_quantile_timing": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4760651629072681,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1645712106,
+      "upper": 0.8333333333333334
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 3.5652173913043477
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": true
+  },
+  "settlement_quantile_timing+scarce_cutoff": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4642857142857143,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1946932827,
+      "upper": 0.84
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 3.5652173913043477
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": true
+  },
+  "two_part_gbm": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.45,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 685676545,
+      "upper": 0.8421052631578947
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 2.782608695652174
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": true,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  },
+  "two_part_gbm+scarce_cutoff": {
+   "not_scored": [],
+   "passes": false,
+   "scarce_regime": {
+    "days_by_horizon": {
+     "1": 514,
+     "2": 513,
+     "3": 512,
+     "4": 511,
+     "5": 510
+    },
+    "events_by_horizon": {
+     "1": 134,
+     "2": 133,
+     "3": 132,
+     "4": 132,
+     "5": 132
+    },
+    "onsets": 23,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4666666666666667,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1313119062,
+      "upper": 0.84
+     },
+     "mean": 0.6521739130434783
+    },
+    "reported_only": true,
+    "scarcity_state_at_least": 2,
+    "tier_1_onset_warning": false,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false,
+    "week_ahead_days": 510,
+    "worst_false_alarms_per_onset": 2.782608695652174
+   },
+   "threshold_bp": 5.0,
+   "tier_1_onset_warning": false,
+   "tier_3_no_crying_wolf": false,
+   "tier_3_no_crying_wolf_by_horizon": {
+    "1": true,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false
+   },
+   "tier_5_week_ahead": false
+  }
+ }
+}

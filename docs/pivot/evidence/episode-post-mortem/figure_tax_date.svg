@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 410" width="920" height="410" font-family="sans-serif" font-size="10" role="img" aria-label="Episodes of type tax_date">
+<style>.t{fill:#222}.a{stroke:#888;stroke-width:1}.g{stroke:#ddd}@media (prefers-color-scheme: dark){.t{fill:#ddd}.a{stroke:#aaa}.g{stroke:#444}}</style>
+<text class="t" x="10" y="16" font-size="13" font-weight="bold">Episode type: tax_date (5 episodes): h = 1 probability of a +5 bp day, 10 days before the start; dashed: cut-off in force</text>
+<line x1="10" x2="26" y1="30" y2="30" stroke="#1f77b4" stroke-width="2"/>
+<text class="t" x="30" y="33">risk_gbm</text>
+<line x1="185" x2="201" y1="30" y2="30" stroke="#17becf" stroke-width="2"/>
+<text class="t" x="205" y="33">risk_gbm_base</text>
+<line x1="360" x2="376" y1="30" y2="30" stroke="#d62728" stroke-width="2"/>
+<text class="t" x="380" y="33">risk_logistic</text>
+<line x1="535" x2="551" y1="30" y2="30" stroke="#ff7f0e" stroke-width="2"/>
+<text class="t" x="555" y="33">risk_logistic_base</text>
+<line x1="710" x2="726" y1="30" y2="30" stroke="#2ca02c" stroke-width="2"/>
+<text class="t" x="730" y="33">risk_quantile_skewt_base</text>
+<text class="t" x="56" y="58" font-weight="bold">2018-12-17 · 2018-19 · missed by 5</text>
+<line class="a" x1="56" x2="56" y1="64" y2="172"/>
+<line class="a" x1="56" x2="298" y1="172" y2="172"/>
+<text class="t" x="52" y="175.0" text-anchor="end">0.00</text>
+<text class="t" x="52" y="67.0" text-anchor="end">1.00</text>
+<line x1="298.0" x2="298.0" y1="64" y2="172" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="298.0" y="184" text-anchor="middle">start</text>
+<text class="t" x="56.0" y="184" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="56.0,158.9 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,158.9"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="56.0,158.9 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,158.9"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="56.0,160.7 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,170.8"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="56.0,164.7 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,170.2"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="56.0,97.0 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,164.7"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,70.3 80.2,70.3 104.4,70.3 128.6,70.3 152.8,70.3 177.0,70.3 201.2,70.3 225.4,70.3 249.6,70.3 273.8,70.3 298.0,70.3"/>
+<text class="t" x="356" y="58" font-weight="bold">2019-06-17 · 2018-19</text>
+<line class="a" x1="356" x2="356" y1="64" y2="172"/>
+<line class="a" x1="356" x2="598" y1="172" y2="172"/>
+<text class="t" x="352" y="175.0" text-anchor="end">0.00</text>
+<text class="t" x="352" y="67.0" text-anchor="end">1.00</text>
+<line x1="598.0" x2="598.0" y1="64" y2="172" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="598.0" y="184" text-anchor="middle">start</text>
+<text class="t" x="356.0" y="184" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="356.0,172.0 380.2,172.0 404.4,172.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,79.0"/>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,158.9 380.2,158.9 404.4,158.9 428.6,158.9 452.8,158.9 477.0,158.9 501.2,158.9 525.4,158.9 549.6,158.9 573.8,158.9 598.0,158.9"/>
+<circle cx="598.0" cy="79.0" r="2.5" fill="#1f77b4"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="356.0,172.0 380.2,172.0 404.4,172.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,70.0"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,158.9 380.2,158.9 404.4,158.9 428.6,158.9 452.8,158.9 477.0,158.9 501.2,158.9 525.4,158.9 549.6,158.9 573.8,158.9 598.0,158.9"/>
+<circle cx="598.0" cy="70.0" r="2.5" fill="#17becf"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="356.0,172.0 380.2,172.0 404.4,172.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,80.2"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,170.8 380.2,170.8 404.4,170.8 428.6,170.8 452.8,170.8 477.0,170.8 501.2,170.8 525.4,170.8 549.6,170.8 573.8,170.8 598.0,170.8"/>
+<circle cx="598.0" cy="80.2" r="2.5" fill="#d62728"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="356.0,172.0 380.2,172.0 404.4,172.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,77.0"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,170.8 380.2,170.8 404.4,170.8 428.6,170.8 452.8,170.8 477.0,170.8 501.2,170.8 525.4,170.8 549.6,170.8 573.8,170.8 598.0,170.8"/>
+<circle cx="598.0" cy="77.0" r="2.5" fill="#ff7f0e"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="356.0,172.0 380.2,172.0 404.4,172.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,65.3"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,172.0 380.2,172.0 404.4,172.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,172.0"/>
+<circle cx="598.0" cy="65.3" r="2.5" fill="#2ca02c"/>
+<text class="t" x="656" y="58" font-weight="bold">2019-12-16 · 2018-19</text>
+<line class="a" x1="656" x2="656" y1="64" y2="172"/>
+<line class="a" x1="656" x2="898" y1="172" y2="172"/>
+<text class="t" x="652" y="175.0" text-anchor="end">0.00</text>
+<text class="t" x="652" y="67.0" text-anchor="end">1.00</text>
+<line x1="898.0" x2="898.0" y1="64" y2="172" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="898.0" y="184" text-anchor="middle">start</text>
+<text class="t" x="656.0" y="184" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="656.0,90.4 680.2,172.0 704.4,172.0 728.6,172.0 752.8,172.0 777.0,169.6 801.2,172.0 825.4,172.0 849.6,172.0 873.8,172.0 898.0,86.0"/>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,160.4 680.2,160.4 704.4,160.4 728.6,163.0 752.8,163.0 777.0,163.0 801.2,163.0 825.4,163.0 849.6,163.0 873.8,163.0 898.0,163.0"/>
+<circle cx="898.0" cy="86.0" r="2.5" fill="#1f77b4"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="656.0,67.8 680.2,172.0 704.4,172.0 728.6,172.0 752.8,172.0 777.0,170.4 801.2,172.0 825.4,172.0 849.6,172.0 873.8,172.0 898.0,103.9"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,160.4 680.2,160.4 704.4,160.4 728.6,163.0 752.8,163.0 777.0,163.0 801.2,163.0 825.4,163.0 849.6,163.0 873.8,163.0 898.0,163.0"/>
+<circle cx="898.0" cy="103.9" r="2.5" fill="#17becf"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="656.0,73.7 680.2,172.0 704.4,172.0 728.6,172.0 752.8,172.0 777.0,147.9 801.2,172.0 825.4,172.0 849.6,172.0 873.8,172.0 898.0,88.0"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,170.8 680.2,170.8 704.4,170.8 728.6,170.8 752.8,170.8 777.0,170.8 801.2,170.8 825.4,170.8 849.6,170.8 873.8,170.8 898.0,170.8"/>
+<circle cx="898.0" cy="88.0" r="2.5" fill="#d62728"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="656.0,74.0 680.2,172.0 704.4,172.0 728.6,172.0 752.8,172.0 777.0,145.8 801.2,172.0 825.4,172.0 849.6,172.0 873.8,172.0 898.0,84.9"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,170.8 680.2,170.8 704.4,170.8 728.6,170.8 752.8,170.8 777.0,170.8 801.2,170.8 825.4,170.8 849.6,170.8 873.8,170.8 898.0,170.8"/>
+<circle cx="898.0" cy="84.9" r="2.5" fill="#ff7f0e"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="656.0,78.0 680.2,172.0 704.4,172.0 728.6,172.0 752.8,172.0 777.0,171.9 801.2,172.0 825.4,172.0 849.6,172.0 873.8,172.0 898.0,99.1"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,172.0 680.2,172.0 704.4,172.0 728.6,172.0 752.8,172.0 777.0,172.0 801.2,172.0 825.4,172.0 849.6,172.0 873.8,172.0 898.0,172.0"/>
+<circle cx="898.0" cy="99.1" r="2.5" fill="#2ca02c"/>
+<text class="t" x="56" y="228" font-weight="bold">2025-09-15 · 2025-26 · missed by 3</text>
+<line class="a" x1="56" x2="56" y1="234" y2="342"/>
+<line class="a" x1="56" x2="298" y1="342" y2="342"/>
+<text class="t" x="52" y="345.0" text-anchor="end">0.00</text>
+<text class="t" x="52" y="237.0" text-anchor="end">0.30</text>
+<line x1="298.0" x2="298.0" y1="234" y2="342" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="298.0" y="354" text-anchor="middle">start</text>
+<text class="t" x="56.0" y="354" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="56.0,341.9 80.2,341.9 104.4,342.0 128.6,342.0 152.8,342.0 177.0,342.0 201.2,342.0 225.4,342.0 249.6,342.0 273.8,342.0 298.0,341.2"/>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,298.6 80.2,298.6 104.4,298.6 128.6,298.6 152.8,298.6 177.0,298.6 201.2,298.6 225.4,298.6 249.6,298.6 273.8,298.6 298.0,298.6"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="56.0,341.9 80.2,341.9 104.4,342.0 128.6,342.0 152.8,342.0 177.0,342.0 201.2,342.0 225.4,342.0 249.6,342.0 273.8,342.0 298.0,330.3"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,298.6 80.2,298.6 104.4,298.6 128.6,298.6 152.8,298.6 177.0,298.6 201.2,298.6 225.4,298.6 249.6,298.6 273.8,298.6 298.0,298.6"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="56.0,340.6 80.2,330.4 104.4,342.0 128.6,342.0 152.8,342.0 177.0,342.0 201.2,342.0 225.4,342.0 249.6,342.0 273.8,342.0 298.0,327.1"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,304.5 80.2,304.5 104.4,304.5 128.6,304.5 152.8,304.5 177.0,304.5 201.2,304.5 225.4,304.5 249.6,304.5 273.8,304.5 298.0,304.5"/>
+<circle cx="298.0" cy="327.1" r="2.5" fill="#d62728"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="56.0,341.3 80.2,334.1 104.4,342.0 128.6,342.0 152.8,342.0 177.0,342.0 201.2,342.0 225.4,342.0 249.6,342.0 273.8,342.0 298.0,326.5"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,293.4 80.2,293.4 104.4,293.4 128.6,293.4 152.8,293.4 177.0,293.4 201.2,293.4 225.4,293.4 249.6,293.4 273.8,293.4 298.0,293.4"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="56.0,339.4 80.2,331.6 104.4,342.0 128.6,342.0 152.8,342.0 177.0,342.0 201.2,342.0 225.4,342.0 249.6,342.0 273.8,342.0 298.0,285.2"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,243.8 80.2,243.8 104.4,243.8 128.6,243.8 152.8,243.8 177.0,243.8 201.2,243.8 225.4,243.8 249.6,243.8 273.8,243.8 298.0,243.8"/>
+<circle cx="298.0" cy="285.2" r="2.5" fill="#2ca02c"/>
+<text class="t" x="356" y="228" font-weight="bold">2025-12-15 · 2025-26</text>
+<line class="a" x1="356" x2="356" y1="234" y2="342"/>
+<line class="a" x1="356" x2="598" y1="342" y2="342"/>
+<text class="t" x="352" y="345.0" text-anchor="end">0.00</text>
+<text class="t" x="352" y="237.0" text-anchor="end">1.00</text>
+<line x1="598.0" x2="598.0" y1="234" y2="342" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="598.0" y="354" text-anchor="middle">start</text>
+<text class="t" x="356.0" y="354" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="356.0,234.2 380.2,342.0 404.4,342.0 428.6,342.0 452.8,342.0 477.0,342.0 501.2,342.0 525.4,342.0 549.6,342.0 573.8,342.0 598.0,236.2"/>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,333.0 380.2,333.0 404.4,333.0 428.6,333.0 452.8,333.0 477.0,333.0 501.2,333.0 525.4,333.0 549.6,333.0 573.8,333.0 598.0,333.0"/>
+<circle cx="598.0" cy="236.2" r="2.5" fill="#1f77b4"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="356.0,234.3 380.2,342.0 404.4,342.0 428.6,342.0 452.8,342.0 477.0,342.0 501.2,342.0 525.4,342.0 549.6,342.0 573.8,342.0 598.0,235.6"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,328.9 380.2,328.9 404.4,328.9 428.6,328.9 452.8,328.9 477.0,328.9 501.2,328.9 525.4,328.9 549.6,328.9 573.8,328.9 598.0,328.9"/>
+<circle cx="598.0" cy="235.6" r="2.5" fill="#17becf"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="356.0,235.4 380.2,342.0 404.4,342.0 428.6,342.0 452.8,342.0 477.0,342.0 501.2,342.0 525.4,342.0 549.6,342.0 573.8,342.0 598.0,302.0"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,334.8 380.2,334.8 404.4,334.8 428.6,334.8 452.8,334.8 477.0,334.8 501.2,334.8 525.4,334.8 549.6,334.8 573.8,334.8 598.0,334.8"/>
+<circle cx="598.0" cy="302.0" r="2.5" fill="#d62728"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="356.0,235.5 380.2,342.0 404.4,342.0 428.6,342.0 452.8,342.0 477.0,342.0 501.2,342.0 525.4,342.0 549.6,342.0 573.8,342.0 598.0,302.8"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,334.7 380.2,334.7 404.4,334.7 428.6,334.7 452.8,334.7 477.0,334.7 501.2,334.7 525.4,334.7 549.6,334.7 573.8,334.7 598.0,334.7"/>
+<circle cx="598.0" cy="302.8" r="2.5" fill="#ff7f0e"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="356.0,234.0 380.2,342.0 404.4,342.0 428.6,342.0 452.8,342.0 477.0,342.0 501.2,342.0 525.4,342.0 549.6,342.0 573.8,342.0 598.0,312.2"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,321.1 380.2,321.1 404.4,321.1 428.6,321.1 452.8,321.1 477.0,321.1 501.2,321.1 525.4,321.1 549.6,321.1 573.8,321.1 598.0,321.1"/>
+<circle cx="598.0" cy="312.2" r="2.5" fill="#2ca02c"/>
+</svg>

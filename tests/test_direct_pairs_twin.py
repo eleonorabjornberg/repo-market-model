@@ -63,6 +63,37 @@ class PureTest(unittest.TestCase):
         self.assertEqual(twin._best(table), 2)
 
 
+class CutSeriesTest(unittest.TestCase):
+    """The lag series stops at 2025-12-31 (#470, the locked-day read of #457).
+
+    Recorded mutation: `cut_series` returned `[row.spread_bps for row in rows]` (the `if row.date <= END` dropped);
+    `test_no_day_after_the_end_enters_the_series` then raised `AssertionError` (the lists differ: seven spreads against the four to 2025-12-31).
+    """
+
+    @staticmethod
+    def rows():
+        from types import SimpleNamespace
+        days = [date(2025, 12, 24), date(2025, 12, 29), date(2025, 12, 30), date(2025, 12, 31),
+                date(2026, 1, 2), date(2026, 1, 5), date(2026, 1, 6)]
+        return [SimpleNamespace(date=d, spread_bps=float(i)) for i, d in enumerate(days)]
+
+    def test_no_day_after_the_end_enters_the_series(self):
+        rows = self.rows()
+        series = twin.cut_series(rows)
+        self.assertEqual(series, [0.0, 1.0, 2.0, 3.0])
+        self.assertTrue(all(r.date <= twin.END for r in rows[:len(series)]))
+
+    def test_the_last_days_have_no_lag_at_minus_three(self):
+        series = twin.cut_series(self.rows())
+        self.assertEqual(twin.lag_members([0, 1, 2, 3], series), [0])
+        for k in twin.LAGS:
+            for i in twin.lag_members([0, 1, 2, 3], series):
+                self.assertLess([0, 1, 2, 3][i] - k, len(series))
+
+    def test_the_last_scored_day_is_not_a_turning_point_by_a_2026_spread(self):
+        self.assertIsNone(twin.turning_points(twin.cut_series(self.rows()), 0.5)[-1])
+
+
 @unittest.skipUnless(Path("/opt/rmm-venv/bin/python").exists() or importlib.util.find_spec("sklearn"), "needs the ml extra")
 class TwinSideTest(unittest.TestCase):
     def test_the_twin_differs_from_the_published_side_only_in_training_pairs(self):

@@ -1,0 +1,2304 @@
+{
+ "declaration": "dc372bbb90dd2d2031953fe7cdab18820e47c98180d837f80a6c340426b89e3a",
+ "rows": {
+  "hierarchical_logistic": {
+   "base": {
+    "criteria": {
+     "false_alarms": false,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 5.153846153846154,
+     "2": 4.384615384615385,
+     "3": 4.038461538461538,
+     "4": 4.576923076923077,
+     "5": 6.230769230769231
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 22,
+      "false_alarms": 10,
+      "false_alarms_per_true": 0.8333333333333334,
+      "hits": 12,
+      "precision": 0.5454545454545454,
+      "recall": 0.7058823529411765
+     },
+     "ordinary": {
+      "alarms": 181,
+      "false_alarms": 116,
+      "false_alarms_per_true": 1.7846153846153847,
+      "hits": 65,
+      "precision": 0.35911602209944754,
+      "recall": 0.6435643564356436
+     },
+     "quarter_end": {
+      "alarms": 7,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.4,
+      "hits": 5,
+      "precision": 0.7142857142857143,
+      "recall": 0.5555555555555556
+     },
+     "tax_date": {
+      "alarms": 15,
+      "false_alarms": 6,
+      "false_alarms_per_true": 0.6666666666666666,
+      "hits": 9,
+      "precision": 0.6,
+      "recall": 0.6923076923076923
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 180,
+      "false_alarms": 106,
+      "false_alarms_per_true": 1.4324324324324325,
+      "hits": 74,
+      "precision": 0.4111111111111111,
+      "recall": 0.7254901960784313
+     },
+     "2020": {
+      "alarms": 16,
+      "false_alarms": 15,
+      "false_alarms_per_true": 15.0,
+      "hits": 1,
+      "precision": 0.0625,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 29,
+      "false_alarms": 13,
+      "false_alarms_per_true": 0.8125,
+      "hits": 16,
+      "precision": 0.5517241379310345,
+      "recall": 0.5517241379310345
+     }
+    },
+    "h1_flags": {
+     "alarms": 225,
+     "false_alarms": 134,
+     "false_alarms_per_true": 1.4725274725274726,
+     "hits": 91,
+     "precision": 0.40444444444444444,
+     "recall": 0.65
+    },
+    "name": "hierarchical_logistic",
+    "onsets": 26,
+    "onsets_flagged": 15,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1564434028,
+      "upper": 0.7503787878787875
+     },
+     "mean": 0.5769230769230769
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 6.230769230769231,
+    "worst_weighted_false_alarms_per_onset": 2.9134615384615383
+   },
+   "strict": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": false,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 1.0384615384615385,
+     "2": 0.8846153846153846,
+     "3": 0.8076923076923077,
+     "4": 0.8076923076923077,
+     "5": 1.1153846153846154
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 5,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.6666666666666666,
+      "hits": 3,
+      "precision": 0.6,
+      "recall": 0.17647058823529413
+     },
+     "ordinary": {
+      "alarms": 35,
+      "false_alarms": 23,
+      "false_alarms_per_true": 1.9166666666666667,
+      "hits": 12,
+      "precision": 0.34285714285714286,
+      "recall": 0.1188118811881188
+     },
+     "quarter_end": {
+      "alarms": 5,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.6666666666666666,
+      "hits": 3,
+      "precision": 0.6,
+      "recall": 0.3333333333333333
+     },
+     "tax_date": {
+      "alarms": 3,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 3,
+      "precision": 1.0,
+      "recall": 0.23076923076923078
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 33,
+      "false_alarms": 19,
+      "false_alarms_per_true": 1.3571428571428572,
+      "hits": 14,
+      "precision": 0.42424242424242425,
+      "recall": 0.13725490196078433
+     },
+     "2020": {
+      "alarms": 7,
+      "false_alarms": 6,
+      "false_alarms_per_true": 6.0,
+      "hits": 1,
+      "precision": 0.14285714285714285,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 8,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.3333333333333333,
+      "hits": 6,
+      "precision": 0.75,
+      "recall": 0.20689655172413793
+     }
+    },
+    "h1_flags": {
+     "alarms": 48,
+     "false_alarms": 27,
+     "false_alarms_per_true": 1.2857142857142858,
+     "hits": 21,
+     "precision": 0.4375,
+     "recall": 0.15
+    },
+    "name": "hierarchical_logistic_cooldown5_strict",
+    "onsets": 26,
+    "onsets_flagged": 10,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.21739130434782608,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 280166888,
+      "upper": 0.56
+     },
+     "mean": 0.38461538461538464
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 1.1153846153846154,
+    "worst_weighted_false_alarms_per_onset": 0.5192307692307693
+   },
+   "with_exception": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 1.8846153846153846,
+     "2": 1.5769230769230769,
+     "3": 1.4615384615384615,
+     "4": 1.3076923076923077,
+     "5": 2.4615384615384617
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 13,
+      "false_alarms": 5,
+      "false_alarms_per_true": 0.625,
+      "hits": 8,
+      "precision": 0.6153846153846154,
+      "recall": 0.47058823529411764
+     },
+     "ordinary": {
+      "alarms": 64,
+      "false_alarms": 38,
+      "false_alarms_per_true": 1.4615384615384615,
+      "hits": 26,
+      "precision": 0.40625,
+      "recall": 0.25742574257425743
+     },
+     "quarter_end": {
+      "alarms": 6,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.5,
+      "hits": 4,
+      "precision": 0.6666666666666666,
+      "recall": 0.4444444444444444
+     },
+     "tax_date": {
+      "alarms": 9,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.8,
+      "hits": 5,
+      "precision": 0.5555555555555556,
+      "recall": 0.38461538461538464
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 73,
+      "false_alarms": 40,
+      "false_alarms_per_true": 1.2121212121212122,
+      "hits": 33,
+      "precision": 0.4520547945205479,
+      "recall": 0.3235294117647059
+     },
+     "2020": {
+      "alarms": 8,
+      "false_alarms": 7,
+      "false_alarms_per_true": 7.0,
+      "hits": 1,
+      "precision": 0.125,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 11,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.2222222222222222,
+      "hits": 9,
+      "precision": 0.8181818181818182,
+      "recall": 0.3103448275862069
+     }
+    },
+    "h1_flags": {
+     "alarms": 92,
+     "false_alarms": 49,
+     "false_alarms_per_true": 1.1395348837209303,
+     "hits": 43,
+     "precision": 0.4673913043478261,
+     "recall": 0.30714285714285716
+    },
+    "name": "hierarchical_logistic_cooldown5",
+    "onsets": 26,
+    "onsets_flagged": 15,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1080372180,
+      "upper": 0.75
+     },
+     "mean": 0.5769230769230769
+    },
+    "tier_1": true,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 2.4615384615384617,
+    "worst_weighted_false_alarms_per_onset": 0.9038461538461539
+   }
+  },
+  "ngboost_laplace": {
+   "base": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 3.3076923076923075,
+     "2": 3.4615384615384617,
+     "3": 3.269230769230769,
+     "4": 3.576923076923077,
+     "5": 4.076923076923077
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 19,
+      "false_alarms": 7,
+      "false_alarms_per_true": 0.5833333333333334,
+      "hits": 12,
+      "precision": 0.631578947368421,
+      "recall": 0.7058823529411765
+     },
+     "ordinary": {
+      "alarms": 124,
+      "false_alarms": 75,
+      "false_alarms_per_true": 1.530612244897959,
+      "hits": 49,
+      "precision": 0.3951612903225806,
+      "recall": 0.48514851485148514
+     },
+     "quarter_end": {
+      "alarms": 7,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.16666666666666666,
+      "hits": 6,
+      "precision": 0.8571428571428571,
+      "recall": 0.6666666666666666
+     },
+     "tax_date": {
+      "alarms": 11,
+      "false_alarms": 3,
+      "false_alarms_per_true": 0.375,
+      "hits": 8,
+      "precision": 0.7272727272727273,
+      "recall": 0.6153846153846154
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 142,
+      "false_alarms": 80,
+      "false_alarms_per_true": 1.2903225806451613,
+      "hits": 62,
+      "precision": 0.43661971830985913,
+      "recall": 0.6078431372549019
+     },
+     "2020": {
+      "alarms": 6,
+      "false_alarms": 5,
+      "false_alarms_per_true": 5.0,
+      "hits": 1,
+      "precision": 0.16666666666666666,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 1,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 1,
+      "precision": 1.0,
+      "recall": 0.2
+     },
+     "2025-26": {
+      "alarms": 12,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.09090909090909091,
+      "hits": 11,
+      "precision": 0.9166666666666666,
+      "recall": 0.3793103448275862
+     }
+    },
+    "h1_flags": {
+     "alarms": 161,
+     "false_alarms": 86,
+     "false_alarms_per_true": 1.1466666666666667,
+     "hits": 75,
+     "precision": 0.4658385093167702,
+     "recall": 0.5357142857142857
+    },
+    "name": "ngboost_laplace",
+    "onsets": 26,
+    "onsets_flagged": 17,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4666666666666667,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1761861859,
+      "upper": 0.8261619190404796
+     },
+     "mean": 0.6538461538461539
+    },
+    "tier_1": true,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 4.076923076923077,
+    "worst_weighted_false_alarms_per_onset": 1.7307692307692308
+   },
+   "strict": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": false,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 0.7307692307692307,
+     "2": 0.6923076923076923,
+     "3": 0.6153846153846154,
+     "4": 0.7307692307692307,
+     "5": 0.8461538461538461
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 10,
+      "false_alarms": 3,
+      "false_alarms_per_true": 0.42857142857142855,
+      "hits": 7,
+      "precision": 0.7,
+      "recall": 0.4117647058823529
+     },
+     "ordinary": {
+      "alarms": 29,
+      "false_alarms": 15,
+      "false_alarms_per_true": 1.0714285714285714,
+      "hits": 14,
+      "precision": 0.4827586206896552,
+      "recall": 0.13861386138613863
+     },
+     "quarter_end": {
+      "alarms": 3,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.5,
+      "hits": 2,
+      "precision": 0.6666666666666666,
+      "recall": 0.2222222222222222
+     },
+     "tax_date": {
+      "alarms": 6,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 6,
+      "precision": 1.0,
+      "recall": 0.46153846153846156
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 33,
+      "false_alarms": 14,
+      "false_alarms_per_true": 0.7368421052631579,
+      "hits": 19,
+      "precision": 0.5757575757575758,
+      "recall": 0.18627450980392157
+     },
+     "2020": {
+      "alarms": 6,
+      "false_alarms": 5,
+      "false_alarms_per_true": 5.0,
+      "hits": 1,
+      "precision": 0.16666666666666666,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 1,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 1,
+      "precision": 1.0,
+      "recall": 0.2
+     },
+     "2025-26": {
+      "alarms": 8,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 8,
+      "precision": 1.0,
+      "recall": 0.27586206896551724
+     }
+    },
+    "h1_flags": {
+     "alarms": 48,
+     "false_alarms": 19,
+     "false_alarms_per_true": 0.6551724137931034,
+     "hits": 29,
+     "precision": 0.6041666666666666,
+     "recall": 0.20714285714285716
+    },
+    "name": "ngboost_laplace_cooldown5_strict",
+    "onsets": 26,
+    "onsets_flagged": 11,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.25,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 133837319,
+      "upper": 0.6086956521739131
+     },
+     "mean": 0.4230769230769231
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 0.8461538461538461,
+    "worst_weighted_false_alarms_per_onset": 0.4230769230769231
+   },
+   "with_exception": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 1.1923076923076923,
+     "2": 1.1153846153846154,
+     "3": 1.0384615384615385,
+     "4": 1.5769230769230769,
+     "5": 1.7307692307692308
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 13,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.4444444444444444,
+      "hits": 9,
+      "precision": 0.6923076923076923,
+      "recall": 0.5294117647058824
+     },
+     "ordinary": {
+      "alarms": 43,
+      "false_alarms": 26,
+      "false_alarms_per_true": 1.5294117647058822,
+      "hits": 17,
+      "precision": 0.3953488372093023,
+      "recall": 0.16831683168316833
+     },
+     "quarter_end": {
+      "alarms": 4,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.3333333333333333,
+      "hits": 3,
+      "precision": 0.75,
+      "recall": 0.3333333333333333
+     },
+     "tax_date": {
+      "alarms": 6,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 6,
+      "precision": 1.0,
+      "recall": 0.46153846153846156
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 51,
+      "false_alarms": 26,
+      "false_alarms_per_true": 1.04,
+      "hits": 25,
+      "precision": 0.49019607843137253,
+      "recall": 0.24509803921568626
+     },
+     "2020": {
+      "alarms": 6,
+      "false_alarms": 5,
+      "false_alarms_per_true": 5.0,
+      "hits": 1,
+      "precision": 0.16666666666666666,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 1,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 1,
+      "precision": 1.0,
+      "recall": 0.2
+     },
+     "2025-26": {
+      "alarms": 8,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 8,
+      "precision": 1.0,
+      "recall": 0.27586206896551724
+     }
+    },
+    "h1_flags": {
+     "alarms": 66,
+     "false_alarms": 31,
+     "false_alarms_per_true": 0.8857142857142857,
+     "hits": 35,
+     "precision": 0.5303030303030303,
+     "recall": 0.25
+    },
+    "name": "ngboost_laplace_cooldown5",
+    "onsets": 26,
+    "onsets_flagged": 17,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.47368421052631576,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1737456239,
+      "upper": 0.8278735632183906
+     },
+     "mean": 0.6538461538461539
+    },
+    "tier_1": true,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 1.7307692307692308,
+    "worst_weighted_false_alarms_per_onset": 0.6057692307692307
+   }
+  },
+  "scarcity_logistic": {
+   "base": {
+    "criteria": {
+     "false_alarms": false,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 4.730769230769231,
+     "2": 4.384615384615385,
+     "3": 4.038461538461538,
+     "4": 4.5,
+     "5": 4.653846153846154
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 20,
+      "false_alarms": 8,
+      "false_alarms_per_true": 0.6666666666666666,
+      "hits": 12,
+      "precision": 0.6,
+      "recall": 0.7058823529411765
+     },
+     "ordinary": {
+      "alarms": 168,
+      "false_alarms": 107,
+      "false_alarms_per_true": 1.7540983606557377,
+      "hits": 61,
+      "precision": 0.3630952380952381,
+      "recall": 0.6039603960396039
+     },
+     "quarter_end": {
+      "alarms": 7,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.4,
+      "hits": 5,
+      "precision": 0.7142857142857143,
+      "recall": 0.5555555555555556
+     },
+     "tax_date": {
+      "alarms": 15,
+      "false_alarms": 6,
+      "false_alarms_per_true": 0.6666666666666666,
+      "hits": 9,
+      "precision": 0.6,
+      "recall": 0.6923076923076923
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 179,
+      "false_alarms": 106,
+      "false_alarms_per_true": 1.452054794520548,
+      "hits": 73,
+      "precision": 0.40782122905027934,
+      "recall": 0.7156862745098039
+     },
+     "2020": {
+      "alarms": 6,
+      "false_alarms": 6,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 25,
+      "false_alarms": 11,
+      "false_alarms_per_true": 0.7857142857142857,
+      "hits": 14,
+      "precision": 0.56,
+      "recall": 0.4827586206896552
+     }
+    },
+    "h1_flags": {
+     "alarms": 210,
+     "false_alarms": 123,
+     "false_alarms_per_true": 1.4137931034482758,
+     "hits": 87,
+     "precision": 0.4142857142857143,
+     "recall": 0.6214285714285714
+    },
+    "name": "scarcity_logistic",
+    "onsets": 26,
+    "onsets_flagged": 13,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.32,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1014252905,
+      "upper": 0.6956521739130435
+     },
+     "mean": 0.5
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 4.730769230769231,
+    "worst_weighted_false_alarms_per_onset": 2.0865384615384617
+   },
+   "strict": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": false,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 0.9230769230769231,
+     "2": 0.8846153846153846,
+     "3": 0.8076923076923077,
+     "4": 0.8076923076923077,
+     "5": 0.8461538461538461
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 4,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.3333333333333333,
+      "hits": 3,
+      "precision": 0.75,
+      "recall": 0.17647058823529413
+     },
+     "ordinary": {
+      "alarms": 31,
+      "false_alarms": 21,
+      "false_alarms_per_true": 2.1,
+      "hits": 10,
+      "precision": 0.3225806451612903,
+      "recall": 0.09900990099009901
+     },
+     "quarter_end": {
+      "alarms": 5,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.6666666666666666,
+      "hits": 3,
+      "precision": 0.6,
+      "recall": 0.3333333333333333
+     },
+     "tax_date": {
+      "alarms": 3,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 3,
+      "precision": 1.0,
+      "recall": 0.23076923076923078
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 33,
+      "false_alarms": 19,
+      "false_alarms_per_true": 1.3571428571428572,
+      "hits": 14,
+      "precision": 0.42424242424242425,
+      "recall": 0.13725490196078433
+     },
+     "2020": {
+      "alarms": 3,
+      "false_alarms": 3,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 7,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.4,
+      "hits": 5,
+      "precision": 0.7142857142857143,
+      "recall": 0.1724137931034483
+     }
+    },
+    "h1_flags": {
+     "alarms": 43,
+     "false_alarms": 24,
+     "false_alarms_per_true": 1.263157894736842,
+     "hits": 19,
+     "precision": 0.4418604651162791,
+     "recall": 0.1357142857142857
+    },
+    "name": "scarcity_logistic_cooldown5_strict",
+    "onsets": 26,
+    "onsets_flagged": 10,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.21739130434782608,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1982823063,
+      "upper": 0.5555555555555556
+     },
+     "mean": 0.38461538461538464
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 0.9230769230769231,
+    "worst_weighted_false_alarms_per_onset": 0.40384615384615385
+   },
+   "with_exception": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 1.7307692307692308,
+     "2": 1.5769230769230769,
+     "3": 1.4615384615384615,
+     "4": 1.3076923076923077,
+     "5": 1.8461538461538463
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 12,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.5,
+      "hits": 8,
+      "precision": 0.6666666666666666,
+      "recall": 0.47058823529411764
+     },
+     "ordinary": {
+      "alarms": 59,
+      "false_alarms": 35,
+      "false_alarms_per_true": 1.4583333333333333,
+      "hits": 24,
+      "precision": 0.4067796610169492,
+      "recall": 0.2376237623762376
+     },
+     "quarter_end": {
+      "alarms": 6,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.5,
+      "hits": 4,
+      "precision": 0.6666666666666666,
+      "recall": 0.4444444444444444
+     },
+     "tax_date": {
+      "alarms": 9,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.8,
+      "hits": 5,
+      "precision": 0.5555555555555556,
+      "recall": 0.38461538461538464
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 73,
+      "false_alarms": 40,
+      "false_alarms_per_true": 1.2121212121212122,
+      "hits": 33,
+      "precision": 0.4520547945205479,
+      "recall": 0.3235294117647059
+     },
+     "2020": {
+      "alarms": 3,
+      "false_alarms": 3,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 10,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.25,
+      "hits": 8,
+      "precision": 0.8,
+      "recall": 0.27586206896551724
+     }
+    },
+    "h1_flags": {
+     "alarms": 86,
+     "false_alarms": 45,
+     "false_alarms_per_true": 1.0975609756097562,
+     "hits": 41,
+     "precision": 0.47674418604651164,
+     "recall": 0.29285714285714287
+    },
+    "name": "scarcity_logistic_cooldown5",
+    "onsets": 26,
+    "onsets_flagged": 13,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.3157894736842105,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1716884553,
+      "upper": 0.6923076923076923
+     },
+     "mean": 0.5
+    },
+    "tier_1": true,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 1.8461538461538463,
+    "worst_weighted_false_alarms_per_onset": 0.6634615384615384
+   }
+  },
+  "scarcity_logistic_interactions": {
+   "base": {
+    "criteria": {
+     "false_alarms": false,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 5.5,
+     "2": 4.384615384615385,
+     "3": 4.038461538461538,
+     "4": 4.5,
+     "5": 4.653846153846154
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 21,
+      "false_alarms": 8,
+      "false_alarms_per_true": 0.6153846153846154,
+      "hits": 13,
+      "precision": 0.6190476190476191,
+      "recall": 0.7647058823529411
+     },
+     "ordinary": {
+      "alarms": 192,
+      "false_alarms": 128,
+      "false_alarms_per_true": 2.0,
+      "hits": 64,
+      "precision": 0.3333333333333333,
+      "recall": 0.6336633663366337
+     },
+     "quarter_end": {
+      "alarms": 5,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.25,
+      "hits": 4,
+      "precision": 0.8,
+      "recall": 0.4444444444444444
+     },
+     "tax_date": {
+      "alarms": 15,
+      "false_alarms": 6,
+      "false_alarms_per_true": 0.6666666666666666,
+      "hits": 9,
+      "precision": 0.6,
+      "recall": 0.6923076923076923
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 202,
+      "false_alarms": 126,
+      "false_alarms_per_true": 1.6578947368421053,
+      "hits": 76,
+      "precision": 0.37623762376237624,
+      "recall": 0.7450980392156863
+     },
+     "2020": {
+      "alarms": 5,
+      "false_alarms": 5,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 26,
+      "false_alarms": 12,
+      "false_alarms_per_true": 0.8571428571428571,
+      "hits": 14,
+      "precision": 0.5384615384615384,
+      "recall": 0.4827586206896552
+     }
+    },
+    "h1_flags": {
+     "alarms": 233,
+     "false_alarms": 143,
+     "false_alarms_per_true": 1.5888888888888888,
+     "hits": 90,
+     "precision": 0.38626609442060084,
+     "recall": 0.6428571428571429
+    },
+    "name": "scarcity_logistic_interactions",
+    "onsets": 26,
+    "onsets_flagged": 14,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.34615384615384615,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 283139331,
+      "upper": 0.7308974358974357
+     },
+     "mean": 0.5384615384615384
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 5.5,
+    "worst_weighted_false_alarms_per_onset": 2.394230769230769
+   },
+   "strict": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": false,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 1.1538461538461537,
+     "2": 0.8846153846153846,
+     "3": 0.8076923076923077,
+     "4": 0.8076923076923077,
+     "5": 0.8461538461538461
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 3,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.5,
+      "hits": 2,
+      "precision": 0.6666666666666666,
+      "recall": 0.11764705882352941
+     },
+     "ordinary": {
+      "alarms": 40,
+      "false_alarms": 28,
+      "false_alarms_per_true": 2.3333333333333335,
+      "hits": 12,
+      "precision": 0.3,
+      "recall": 0.1188118811881188
+     },
+     "quarter_end": {
+      "alarms": 3,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.5,
+      "hits": 2,
+      "precision": 0.6666666666666666,
+      "recall": 0.2222222222222222
+     },
+     "tax_date": {
+      "alarms": 3,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 3,
+      "precision": 1.0,
+      "recall": 0.23076923076923078
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 39,
+      "false_alarms": 24,
+      "false_alarms_per_true": 1.6,
+      "hits": 15,
+      "precision": 0.38461538461538464,
+      "recall": 0.14705882352941177
+     },
+     "2020": {
+      "alarms": 2,
+      "false_alarms": 2,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 8,
+      "false_alarms": 4,
+      "false_alarms_per_true": 1.0,
+      "hits": 4,
+      "precision": 0.5,
+      "recall": 0.13793103448275862
+     }
+    },
+    "h1_flags": {
+     "alarms": 49,
+     "false_alarms": 30,
+     "false_alarms_per_true": 1.5789473684210527,
+     "hits": 19,
+     "precision": 0.3877551020408163,
+     "recall": 0.1357142857142857
+    },
+    "name": "scarcity_logistic_interactions_cooldown5_strict",
+    "onsets": 26,
+    "onsets_flagged": 9,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.1850168350168349,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 879750169,
+      "upper": 0.5238095238095238
+     },
+     "mean": 0.34615384615384615
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 1.1538461538461537,
+    "worst_weighted_false_alarms_per_onset": 0.4807692307692308
+   },
+   "with_exception": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 2.0384615384615383,
+     "2": 1.5769230769230769,
+     "3": 1.4615384615384615,
+     "4": 1.3076923076923077,
+     "5": 1.8461538461538463
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 12,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.5,
+      "hits": 8,
+      "precision": 0.6666666666666666,
+      "recall": 0.47058823529411764
+     },
+     "ordinary": {
+      "alarms": 71,
+      "false_alarms": 44,
+      "false_alarms_per_true": 1.6296296296296295,
+      "hits": 27,
+      "precision": 0.38028169014084506,
+      "recall": 0.26732673267326734
+     },
+     "quarter_end": {
+      "alarms": 4,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.3333333333333333,
+      "hits": 3,
+      "precision": 0.75,
+      "recall": 0.3333333333333333
+     },
+     "tax_date": {
+      "alarms": 9,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.8,
+      "hits": 5,
+      "precision": 0.5555555555555556,
+      "recall": 0.38461538461538464
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 83,
+      "false_alarms": 47,
+      "false_alarms_per_true": 1.3055555555555556,
+      "hits": 36,
+      "precision": 0.43373493975903615,
+      "recall": 0.35294117647058826
+     },
+     "2020": {
+      "alarms": 2,
+      "false_alarms": 2,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 11,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.5714285714285714,
+      "hits": 7,
+      "precision": 0.6363636363636364,
+      "recall": 0.2413793103448276
+     }
+    },
+    "h1_flags": {
+     "alarms": 96,
+     "false_alarms": 53,
+     "false_alarms_per_true": 1.2325581395348837,
+     "hits": 43,
+     "precision": 0.4479166666666667,
+     "recall": 0.30714285714285716
+    },
+    "name": "scarcity_logistic_interactions_cooldown5",
+    "onsets": 26,
+    "onsets_flagged": 14,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.35286168521462635,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 417094117,
+      "upper": 0.7223180076628352
+     },
+     "mean": 0.5384615384615384
+    },
+    "tier_1": true,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 2.0384615384615383,
+    "worst_weighted_false_alarms_per_onset": 0.7115384615384616
+   }
+  },
+  "settlement_quantile_timing": {
+   "base": {
+    "criteria": {
+     "false_alarms": false,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 5.615384615384615,
+     "2": 6.269230769230769,
+     "3": 6.115384615384615,
+     "4": 6.384615384615385,
+     "5": 6.3076923076923075
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 26,
+      "false_alarms": 11,
+      "false_alarms_per_true": 0.7333333333333333,
+      "hits": 15,
+      "precision": 0.5769230769230769,
+      "recall": 0.8823529411764706
+     },
+     "ordinary": {
+      "alarms": 176,
+      "false_alarms": 110,
+      "false_alarms_per_true": 1.6666666666666667,
+      "hits": 66,
+      "precision": 0.375,
+      "recall": 0.6534653465346535
+     },
+     "quarter_end": {
+      "alarms": 21,
+      "false_alarms": 14,
+      "false_alarms_per_true": 2.0,
+      "hits": 7,
+      "precision": 0.3333333333333333,
+      "recall": 0.7777777777777778
+     },
+     "tax_date": {
+      "alarms": 19,
+      "false_alarms": 11,
+      "false_alarms_per_true": 1.375,
+      "hits": 8,
+      "precision": 0.42105263157894735,
+      "recall": 0.6153846153846154
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 166,
+      "false_alarms": 89,
+      "false_alarms_per_true": 1.155844155844156,
+      "hits": 77,
+      "precision": 0.463855421686747,
+      "recall": 0.7549019607843137
+     },
+     "2020": {
+      "alarms": 31,
+      "false_alarms": 30,
+      "false_alarms_per_true": 30.0,
+      "hits": 1,
+      "precision": 0.03225806451612903,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 12,
+      "false_alarms": 12,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 4,
+      "false_alarms": 3,
+      "false_alarms_per_true": 3.0,
+      "hits": 1,
+      "precision": 0.25,
+      "recall": 0.2
+     },
+     "2025-26": {
+      "alarms": 29,
+      "false_alarms": 12,
+      "false_alarms_per_true": 0.7058823529411765,
+      "hits": 17,
+      "precision": 0.5862068965517241,
+      "recall": 0.5862068965517241
+     }
+    },
+    "h1_flags": {
+     "alarms": 242,
+     "false_alarms": 146,
+     "false_alarms_per_true": 1.5208333333333333,
+     "hits": 96,
+     "precision": 0.39669421487603307,
+     "recall": 0.6857142857142857
+    },
+    "name": "settlement_quantile_timing",
+    "onsets": 26,
+    "onsets_flagged": 16,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4444444444444444,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1645712106,
+      "upper": 0.7777777777777778
+     },
+     "mean": 0.6153846153846154
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": true,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 6.384615384615385,
+    "worst_weighted_false_alarms_per_onset": 3.4134615384615383
+   },
+   "strict": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": false,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 2.1923076923076925,
+     "2": 1.6538461538461537,
+     "3": 1.6538461538461537,
+     "4": 1.7692307692307692,
+     "5": 1.8076923076923077
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 17,
+      "false_alarms": 9,
+      "false_alarms_per_true": 1.125,
+      "hits": 8,
+      "precision": 0.47058823529411764,
+      "recall": 0.47058823529411764
+     },
+     "ordinary": {
+      "alarms": 43,
+      "false_alarms": 31,
+      "false_alarms_per_true": 2.5833333333333335,
+      "hits": 12,
+      "precision": 0.27906976744186046,
+      "recall": 0.1188118811881188
+     },
+     "quarter_end": {
+      "alarms": 17,
+      "false_alarms": 14,
+      "false_alarms_per_true": 4.666666666666667,
+      "hits": 3,
+      "precision": 0.17647058823529413,
+      "recall": 0.3333333333333333
+     },
+     "tax_date": {
+      "alarms": 7,
+      "false_alarms": 3,
+      "false_alarms_per_true": 0.75,
+      "hits": 4,
+      "precision": 0.5714285714285714,
+      "recall": 0.3076923076923077
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 38,
+      "false_alarms": 17,
+      "false_alarms_per_true": 0.8095238095238095,
+      "hits": 21,
+      "precision": 0.5526315789473685,
+      "recall": 0.20588235294117646
+     },
+     "2020": {
+      "alarms": 23,
+      "false_alarms": 22,
+      "false_alarms_per_true": 22.0,
+      "hits": 1,
+      "precision": 0.043478260869565216,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 12,
+      "false_alarms": 12,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 2,
+      "false_alarms": 2,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 9,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.8,
+      "hits": 5,
+      "precision": 0.5555555555555556,
+      "recall": 0.1724137931034483
+     }
+    },
+    "h1_flags": {
+     "alarms": 84,
+     "false_alarms": 57,
+     "false_alarms_per_true": 2.111111111111111,
+     "hits": 27,
+     "precision": 0.32142857142857145,
+     "recall": 0.19285714285714287
+    },
+    "name": "settlement_quantile_timing_cooldown5_strict",
+    "onsets": 26,
+    "onsets_flagged": 10,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.2172360248447204,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1938379763,
+      "upper": 0.5484677419354838
+     },
+     "mean": 0.38461538461538464
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": true,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 2.1923076923076925,
+    "worst_weighted_false_alarms_per_onset": 1.7211538461538463
+   },
+   "with_exception": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 2.4615384615384617,
+     "2": 2.423076923076923,
+     "3": 2.3846153846153846,
+     "4": 2.8461538461538463,
+     "5": 2.6923076923076925
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 19,
+      "false_alarms": 9,
+      "false_alarms_per_true": 0.9,
+      "hits": 10,
+      "precision": 0.5263157894736842,
+      "recall": 0.5882352941176471
+     },
+     "ordinary": {
+      "alarms": 61,
+      "false_alarms": 38,
+      "false_alarms_per_true": 1.6521739130434783,
+      "hits": 23,
+      "precision": 0.3770491803278688,
+      "recall": 0.22772277227722773
+     },
+     "quarter_end": {
+      "alarms": 17,
+      "false_alarms": 14,
+      "false_alarms_per_true": 4.666666666666667,
+      "hits": 3,
+      "precision": 0.17647058823529413,
+      "recall": 0.3333333333333333
+     },
+     "tax_date": {
+      "alarms": 7,
+      "false_alarms": 3,
+      "false_alarms_per_true": 0.75,
+      "hits": 4,
+      "precision": 0.5714285714285714,
+      "recall": 0.3076923076923077
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 56,
+      "false_alarms": 22,
+      "false_alarms_per_true": 0.6470588235294118,
+      "hits": 34,
+      "precision": 0.6071428571428571,
+      "recall": 0.3333333333333333
+     },
+     "2020": {
+      "alarms": 25,
+      "false_alarms": 24,
+      "false_alarms_per_true": 24.0,
+      "hits": 1,
+      "precision": 0.04,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 12,
+      "false_alarms": 12,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 2,
+      "false_alarms": 2,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": 0.0,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 9,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.8,
+      "hits": 5,
+      "precision": 0.5555555555555556,
+      "recall": 0.1724137931034483
+     }
+    },
+    "h1_flags": {
+     "alarms": 104,
+     "false_alarms": 64,
+     "false_alarms_per_true": 1.6,
+     "hits": 40,
+     "precision": 0.38461538461538464,
+     "recall": 0.2857142857142857
+    },
+    "name": "settlement_quantile_timing_cooldown5",
+    "onsets": 26,
+    "onsets_flagged": 16,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4482758620689655,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 221361633,
+      "upper": 0.7777777777777778
+     },
+     "mean": 0.6153846153846154
+    },
+    "tier_1": true,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": false,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": true,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 2.8461538461538463,
+    "worst_weighted_false_alarms_per_onset": 1.7980769230769231
+   }
+  },
+  "two_part_gbm": {
+   "base": {
+    "criteria": {
+     "false_alarms": false,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 2.0384615384615383,
+     "2": 3.923076923076923,
+     "3": 4.269230769230769,
+     "4": 2.076923076923077,
+     "5": 4.8076923076923075
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 14,
+      "false_alarms": 4,
+      "false_alarms_per_true": 0.4,
+      "hits": 10,
+      "precision": 0.7142857142857143,
+      "recall": 0.5882352941176471
+     },
+     "ordinary": {
+      "alarms": 92,
+      "false_alarms": 45,
+      "false_alarms_per_true": 0.9574468085106383,
+      "hits": 47,
+      "precision": 0.5108695652173914,
+      "recall": 0.46534653465346537
+     },
+     "quarter_end": {
+      "alarms": 5,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.25,
+      "hits": 4,
+      "precision": 0.8,
+      "recall": 0.4444444444444444
+     },
+     "tax_date": {
+      "alarms": 10,
+      "false_alarms": 3,
+      "false_alarms_per_true": 0.42857142857142855,
+      "hits": 7,
+      "precision": 0.7,
+      "recall": 0.5384615384615384
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 94,
+      "false_alarms": 40,
+      "false_alarms_per_true": 0.7407407407407407,
+      "hits": 54,
+      "precision": 0.574468085106383,
+      "recall": 0.5294117647058824
+     },
+     "2020": {
+      "alarms": 5,
+      "false_alarms": 4,
+      "false_alarms_per_true": 4.0,
+      "hits": 1,
+      "precision": 0.2,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 22,
+      "false_alarms": 9,
+      "false_alarms_per_true": 0.6923076923076923,
+      "hits": 13,
+      "precision": 0.5909090909090909,
+      "recall": 0.4482758620689655
+     }
+    },
+    "h1_flags": {
+     "alarms": 121,
+     "false_alarms": 53,
+     "false_alarms_per_true": 0.7794117647058824,
+     "hits": 68,
+     "precision": 0.5619834710743802,
+     "recall": 0.4857142857142857
+    },
+    "name": "two_part_gbm",
+    "onsets": 26,
+    "onsets_flagged": 15,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.4,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 685676545,
+      "upper": 0.7620448179271707
+     },
+     "mean": 0.5769230769230769
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": true,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 4.8076923076923075,
+    "worst_weighted_false_alarms_per_onset": 2.548076923076923
+   },
+   "strict": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": false,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 0.5769230769230769,
+     "2": 0.8076923076923077,
+     "3": 0.8461538461538461,
+     "4": 0.6538461538461539,
+     "5": 1.1153846153846154
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 5,
+      "false_alarms": 3,
+      "false_alarms_per_true": 1.5,
+      "hits": 2,
+      "precision": 0.4,
+      "recall": 0.11764705882352941
+     },
+     "ordinary": {
+      "alarms": 24,
+      "false_alarms": 11,
+      "false_alarms_per_true": 0.8461538461538461,
+      "hits": 13,
+      "precision": 0.5416666666666666,
+      "recall": 0.12871287128712872
+     },
+     "quarter_end": {
+      "alarms": 3,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.5,
+      "hits": 2,
+      "precision": 0.6666666666666666,
+      "recall": 0.2222222222222222
+     },
+     "tax_date": {
+      "alarms": 3,
+      "false_alarms": 0,
+      "false_alarms_per_true": 0.0,
+      "hits": 3,
+      "precision": 1.0,
+      "recall": 0.23076923076923078
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 26,
+      "false_alarms": 11,
+      "false_alarms_per_true": 0.7333333333333333,
+      "hits": 15,
+      "precision": 0.5769230769230769,
+      "recall": 0.14705882352941177
+     },
+     "2020": {
+      "alarms": 3,
+      "false_alarms": 2,
+      "false_alarms_per_true": 2.0,
+      "hits": 1,
+      "precision": 0.3333333333333333,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 6,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.5,
+      "hits": 4,
+      "precision": 0.6666666666666666,
+      "recall": 0.13793103448275862
+     }
+    },
+    "h1_flags": {
+     "alarms": 35,
+     "false_alarms": 15,
+     "false_alarms_per_true": 0.75,
+     "hits": 20,
+     "precision": 0.5714285714285714,
+     "recall": 0.14285714285714285
+    },
+    "name": "two_part_gbm_cooldown5_strict",
+    "onsets": 26,
+    "onsets_flagged": 11,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.23529411764705882,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1460564077,
+      "upper": 0.60030303030303
+     },
+     "mean": 0.4230769230769231
+    },
+    "tier_1": false,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": true,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 1.1153846153846154,
+    "worst_weighted_false_alarms_per_onset": 0.5576923076923077
+   },
+   "with_exception": {
+    "criteria": {
+     "false_alarms": true,
+     "recall": true,
+     "recall_above_climatology": true
+    },
+    "false_alarms_per_onset_by_horizon": {
+     "1": 0.7692307692307693,
+     "2": 1.6153846153846154,
+     "3": 1.6153846153846154,
+     "4": 0.8846153846153846,
+     "5": 2.0
+    },
+    "h1_by_day_type": {
+     "month_end": {
+      "alarms": 7,
+      "false_alarms": 3,
+      "false_alarms_per_true": 0.75,
+      "hits": 4,
+      "precision": 0.5714285714285714,
+      "recall": 0.23529411764705882
+     },
+     "ordinary": {
+      "alarms": 37,
+      "false_alarms": 14,
+      "false_alarms_per_true": 0.6086956521739131,
+      "hits": 23,
+      "precision": 0.6216216216216216,
+      "recall": 0.22772277227722773
+     },
+     "quarter_end": {
+      "alarms": 4,
+      "false_alarms": 1,
+      "false_alarms_per_true": 0.3333333333333333,
+      "hits": 3,
+      "precision": 0.75,
+      "recall": 0.3333333333333333
+     },
+     "tax_date": {
+      "alarms": 6,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.5,
+      "hits": 4,
+      "precision": 0.6666666666666666,
+      "recall": 0.3076923076923077
+     }
+    },
+    "h1_by_regime": {
+     "2018-19": {
+      "alarms": 39,
+      "false_alarms": 14,
+      "false_alarms_per_true": 0.56,
+      "hits": 25,
+      "precision": 0.6410256410256411,
+      "recall": 0.24509803921568626
+     },
+     "2020": {
+      "alarms": 5,
+      "false_alarms": 4,
+      "false_alarms_per_true": 4.0,
+      "hits": 1,
+      "precision": 0.2,
+      "recall": 0.25
+     },
+     "2021-23": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": null
+     },
+     "2024": {
+      "alarms": 0,
+      "false_alarms": 0,
+      "false_alarms_per_true": null,
+      "hits": 0,
+      "precision": null,
+      "recall": 0.0
+     },
+     "2025-26": {
+      "alarms": 10,
+      "false_alarms": 2,
+      "false_alarms_per_true": 0.25,
+      "hits": 8,
+      "precision": 0.8,
+      "recall": 0.27586206896551724
+     }
+    },
+    "h1_flags": {
+     "alarms": 54,
+     "false_alarms": 20,
+     "false_alarms_per_true": 0.5882352941176471,
+     "hits": 34,
+     "precision": 0.6296296296296297,
+     "recall": 0.24285714285714285
+    },
+    "name": "two_part_gbm_cooldown5",
+    "onsets": 26,
+    "onsets_flagged": 15,
+    "passes": false,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.3870967741935484,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1596918447,
+      "upper": 0.7586206896551724
+     },
+     "mean": 0.5769230769230769
+    },
+    "tier_1": true,
+    "tier_3": false,
+    "tier_3_by_horizon": {
+     "1": true,
+     "2": false,
+     "3": false,
+     "4": false,
+     "5": false
+    },
+    "tier_5": false,
+    "weighted_miss_applied": true,
+    "worst_false_alarms_per_onset": 2.0,
+    "worst_weighted_false_alarms_per_onset": 0.8269230769230769
+   }
+  }
+ },
+ "weighted_miss_applied": true
+}

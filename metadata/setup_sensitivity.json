@@ -1,0 +1,29 @@
+{
+  "status": "declared by the pull request that closes #482 before anything was computed; reported only, nothing here changes the judge's declaration, a tier, a cut-off rule or any published figure; the choices below are the pull request's, listed there for Eleonora's review",
+  "scoring": {"last_day": "2025-12-31", "primary_threshold_bp": 5},
+  "rows": {
+    "source": "docs/pivot/onset-diagnostics-result.md, the five tier-1 rows (metadata/onset_diagnostics.json, false_alarms.rows.chosen)",
+    "chosen": ["two_part_gbm", "ngboost_laplace", "hierarchical_logistic", "settlement_quantile_timing", "scarcity_logistic_interactions"],
+    "benchmarks": ["calendar_climatology", "persistence_logistic"]
+  },
+  "year_dominance": {
+    "period": {"first": "2018-01-01", "last": "2019-12-31"},
+    "share_of_all_days": "the period's scored days over all scored days, 2018-06-29 to 2025-12-31 (an after-the-fact quantity: this is a sensitivity reading, not a rule)",
+    "weights": "in each refit's training window, every day of the period weighs the same and the period's days together weigh the period's share of all days; days outside it weigh 1; a window with days on one side only weighs every day 1. Onsets, caught onsets and false alarms of the cut-off choice are counted at their day's weight; the limit (2.0 false alarms per onset) and the tie rule are the declared ones",
+    "calibration": "the probabilities are the rows' own and are not refitted; calibration is read pooled over the scored days with the period's days at the same weights, and by regime unchanged (weights are constant within a regime)",
+    "by_year": "tier 1 (onsets, onsets flagged at some horizon, worst false alarms per onset) and tier 3 (flags per 252 days over all days; calibration by regime) read in calendar years, beside the declared reading",
+    "later_regime": {"label": "2024", "first": "2024-01-01", "last": "2024-12-31", "compared_with": "2018-19"}
+  },
+  "refit_cadence": {
+    "reading": "the flag cut-off is refitted every k scored days instead of the declared 21 (cutoff_rule.refit_every); the rows' probabilities, which their own scripts refit every 21 scored days, are unchanged",
+    "every": [5, 10]
+  },
+  "week_ahead_combiner": {
+    "declared": "max",
+    "other": "independence",
+    "reading": "tier 5 for each row and benchmark with the five horizons' probabilities combined by the maximum (declared) and by independence (one minus the product of one minus each probability)"
+  },
+  "tier_3_coverage": {
+    "reading": "the calibration table (mean predicted, realised, difference with its 90% interval, covers zero) in every regime, including those with no pressure day, at each horizon; with the alarm rate per year in the abundant stretches"
+  }
+}

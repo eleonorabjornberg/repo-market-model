@@ -125,6 +125,7 @@ __all__ = [
     "benchmark_forecasts",
     "build_grid",
     "choose_cutoffs",
+    "cooldown_flags",
     "false_alarm_weights",
     "forecasts_from_horizon_document",
     "judge",
@@ -275,7 +276,7 @@ class Declaration:
             "climatology": self.climatology,
             "persistence": self.persistence,
             "candidates": {
-                name: {key: entry[key] for key in ("role", "features", "calibration")}
+                name: {key: entry[key] for key in ("role", "features", "calibration", "alarm_rule") if key in entry}
                 for name, entry in self.candidates.items()
             },
         }
@@ -567,6 +568,8 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
         for key in ("features", "calibration"):
             if key not in entry:
                 raise ValueError(f"{path}: candidate {name!r} declares no {key!r}")
+        if "alarm_rule" in entry:
+            _check_alarm_rule(path, name, entry["alarm_rule"])
         if "cutoffs" in entry:
             raise ValueError(
                 f"{path}: candidate {name!r} declares a fixed 'cutoffs'; a flag cut-off is chosen from "
@@ -832,6 +835,74 @@ def _check_forecasts(
 # --------------------------------------------------------------------------
 
 
+def _check_alarm_rule(path: Path, name: str, rule: object) -> None:
+    """A candidate's `alarm_rule` (#459): a cool-down on its flags, declared in its file."""
+
+    if (
+        not isinstance(rule, dict)
+        or rule.get("kind") != "cooldown"
+        or not isinstance(rule.get("base"), str)
+        or not rule["base"]
+        or not isinstance(rule.get("keep_when_pressure_starts"), bool)
+        or set(rule) != {"kind", "base", "trading_days", "keep_when_pressure_starts"}
+    ):
+        raise ValueError(
+            f"{path}: candidate {name!r} alarm_rule must be exactly "
+            f"{{kind: 'cooldown', base, trading_days, keep_when_pressure_starts}}"
+        )
+    _integer(rule.get("trading_days"), f"candidate {name!r} alarm_rule.trading_days")
+
+
+def cooldown_flags(
+    flags: Sequence[int],
+    onset: Sequence[int],
+    trading_days: int,
+    *,
+    keep_when_pressure_starts: bool = True,
+) -> List[int]:
+    """The flags with repeats inside a cool-down counted as the alarm they repeat (#459).
+
+    A flag outside every earlier alarm's window raises an alarm. The window is the `trading_days` days after
+    it. A flag inside the window is a repeat and is dropped, so the burst counts once, unless
+    `keep_when_pressure_starts` and a pressure day starts (`onset`) inside the window: then the repeats stay,
+    each its own flag. A repeat never opens a window of its own. The series is one candidate's flags at one
+    horizon in day order; `onset[k]` is 1 when a pressure day starts on day k.
+
+    The exception reads the days after the flag, so it is a rule for counting alarms on a scored record, not
+    for a live forecaster; `keep_when_pressure_starts=False` is the rule a forecaster could apply as it goes.
+
+    Raises:
+        ValueError: if the series differ in length or `trading_days` is below 1.
+    """
+
+    if len(flags) != len(onset):
+        raise ValueError("the cool-down needs one onset flag per day")
+    if trading_days < 1:
+        raise ValueError("the cool-down is at least one trading day")
+    out = [0] * len(flags)
+    anchor = None
+    for k, flag in enumerate(flags):
+        if not flag:
+            continue
+        if anchor is None or k > anchor + trading_days:
+            anchor = k
+            out[k] = 1
+        elif keep_when_pressure_starts and any(onset[anchor + 1 : anchor + trading_days + 1]):
+            out[k] = 1
+    return out
+
+
+def _alarm_flags(declaration: "Declaration", name: str, flags: Sequence[int], onset: Sequence[int]) -> List[int]:
+    """`flags`, cooled down when the candidate declares an `alarm_rule`, else unchanged."""
+
+    rule = declaration.candidates[name].get("alarm_rule")
+    if rule is None:
+        return list(flags)
+    return cooldown_flags(
+        flags, onset, rule["trading_days"], keep_when_pressure_starts=rule["keep_when_pressure_starts"]
+    )
+
+
 def select_cutoff(
     declaration: Declaration,
     *,
@@ -894,11 +965,21 @@ def select_cutoff(
     return best
 
 
+def _state_at_least(label: str, at_least: int) -> bool:
+    """Whether a scarcity-state label ("0", "1", "2", "unknown") is a state of at least `at_least`."""
+
+    try:
+        return int(label) >= at_least
+    except ValueError:
+        return False
+
+
 def choose_cutoffs(
     declaration: Declaration,
     grids: Mapping[int, Grid],
     forecasts: Sequence[Forecast],
     calendar: Sequence[date],
+    scarce_at_least: Optional[int] = None,
 ) -> List[Forecast]:
     """Each forecast with the flag cut-off in force on every day, chosen refit by refit.
 
@@ -914,9 +995,17 @@ def choose_cutoffs(
     `grids` must cover the forecasts' days, which may reach past the days a
     comparison scores (the single look reads the development days as training).
 
+    With `scarce_at_least` (#461) a day whose as-of scarcity state (the grid's
+    `scarcity_state` label, read at the day's decision instant) is at least that
+    value takes a separate cut-off: `select_cutoff`, the same rule and limit, on
+    the training days of that block that are in such a state, and on those alone.
+    Other days, and days with an unknown state, keep the cut-off chosen on all
+    training days.
+
     Raises:
         LookAheadError: if a window reaches past its training end.
-        ValueError: if a forecast's days are not its grid's, or are not panel days.
+        ValueError: if a forecast's days are not its grid's, or are not panel days,
+            or `scarce_at_least` is set and the grid has no scarcity state.
     """
 
     position = {day: k for k, day in enumerate(calendar)}
@@ -932,33 +1021,46 @@ def choose_cutoffs(
         missing = [day for day in forecast.dates if day not in position]
         if missing:
             raise ValueError(f"{forecast.name!r}: scored day {missing[0]} is not a panel day")
+        states = grid.groups.get("scarcity_state") if scarce_at_least is not None else None
+        if scarce_at_least is not None and states is None:
+            raise ValueError(f"{forecast.name!r} h = {forecast.horizon}: the grid has no scarcity state")
         cutoffs: Dict[float, List[float]] = {tau: [] for tau in declaration.thresholds}
         for start in range(0, len(forecast.dates), step):
             block = forecast.dates[start : start + step]
             last_known = position[block[0]] - forecast.horizon - 1
             training_end = calendar[last_known] if last_known >= 0 else None
             window = [k for k in range(start) if training_end is not None and forecast.dates[k] <= training_end]
+            scarce_window = (
+                [k for k in window if _state_at_least(states[k], scarce_at_least)] if states is not None else []
+            )
             for tau in declaration.thresholds:
-                weights = None
-                if declaration.weighting_applied and window:
-                    # The distance to a pressure day is read on the training window alone: a pressure day
-                    # after the training end was not yet known at the refit's first decision instant.
-                    weights = false_alarm_weights(
-                        declaration.weighted_miss,
-                        positions=[position[forecast.dates[k]] for k in window],
-                        pressure=[grid.outcomes[tau][k] for k in window],
-                        known_through=position[training_end],
+
+                def chosen(rows):
+                    weights = None
+                    if declaration.weighting_applied and rows:
+                        # The distance to a pressure day is read on the training rows alone: a pressure day
+                        # after the training end was not yet known at the refit's first decision instant.
+                        weights = false_alarm_weights(
+                            declaration.weighted_miss,
+                            positions=[position[forecast.dates[k]] for k in rows],
+                            pressure=[grid.outcomes[tau][k] for k in rows],
+                            known_through=position[training_end],
+                        )
+                    return select_cutoff(
+                        declaration,
+                        days=[forecast.dates[k] for k in rows],
+                        probabilities=[forecast.probabilities[tau][k] for k in rows],
+                        pressure=[grid.outcomes[tau][k] for k in rows],
+                        onset=[grid.onset_at(tau, declaration.primary)[k] for k in rows],
+                        training_end=training_end,
+                        false_alarm_weights=weights,
                     )
-                value = select_cutoff(
-                    declaration,
-                    days=[forecast.dates[k] for k in window],
-                    probabilities=[forecast.probabilities[tau][k] for k in window],
-                    pressure=[grid.outcomes[tau][k] for k in window],
-                    onset=[grid.onset_at(tau, declaration.primary)[k] for k in window],
-                    training_end=training_end,
-                    false_alarm_weights=weights,
-                )
-                cutoffs[tau].extend([value] * len(block))
+
+                value = chosen(window)
+                scarce_value = chosen(scarce_window) if states is not None else value
+                for k in range(start, start + len(block)):
+                    scarce = states is not None and _state_at_least(states[k], scarce_at_least)
+                    cutoffs[tau].append(scarce_value if scarce else value)
         out.append(
             Forecast(
                 name=forecast.name,
@@ -1476,7 +1578,10 @@ def _candidate(
             forecast = by_name[name][horizon].probabilities[tau]
             outcomes = grid.outcomes[tau]
             cutoffs = by_name[name][horizon].cutoffs[tau]
-            flags = [1 if p >= c else 0 for p, c in zip(forecast, cutoffs)]
+            flags = _alarm_flags(
+                declaration, name, [1 if p >= c else 0 for p, c in zip(forecast, cutoffs)],
+                grid.onset_at(tau, declaration.primary),
+            )
             per_tau[_key(tau)] = _row(
                 declaration, name, horizon, tau, grid, forecast, outcomes, cutoffs, flags, by_name, holdouts,
                 lean=lean,
@@ -1519,6 +1624,7 @@ def _candidate(
         "role": entry["role"],
         "features": entry["features"],
         "calibration": entry["calibration"],
+        **({"alarm_rule": entry["alarm_rule"]} if "alarm_rule" in entry else {}),
         "horizons": per_horizon,
         "scored_horizons": scored,
         "tiers": tiers,
@@ -1728,7 +1834,9 @@ def _onset_tier(
         at = [position[h][day] for day in common]
         pressure = [grids[h].outcomes[tau][k] for k in at]
         chosen = by_name[name][h]
-        flags = [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at]
+        flags = _alarm_flags(
+            declaration, name, [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at], onset
+        )
         raised = sum(1 for f, y in zip(flags, pressure) if f and not y)
         weights = matched_false_alarm_weights(
             [by_name[declaration.climatology][h].probabilities[tau][k] for k in at], pressure, raised
