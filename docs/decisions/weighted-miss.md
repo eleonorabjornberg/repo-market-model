@@ -1,13 +1,17 @@
-# Decision (draft): weighted miss criteria for the pressure judge
+# Decision: weighted miss criteria for the pressure judge
 
-**Status: a DRAFT for Eleonora's review, drafted by the pull request that closes #454. It is not in force.** It is in
-force only once she merges it. Even then, making the weighted rule the judge's bar, or using it on the 2026
-confirmation tier, changes a pre-registered test, so it needs her own attested approval on GitHub (#256, ruling of
-6 October 2026): a comment, review or label event by her whose `performed_via_github_app` is null. A ruling relayed by
-the orchestrating session does not authorise it. The weights below are a draft for her to confirm or change.
+**Status: adopted by Eleonora on 10 October 2026, in her own comment on #464 (comment 6092866136,
+`performed_via_github_app` null, the attested approval that #256 requires for a change to a pre-registered test).**
+Put in force by the pull request that closes #472: `in_force` is true in `metadata/weighted_miss.json`.
+
+The adoption reads: weights 0.25 within 2 trading days of a pressure day, 0.5 within 3 to 5, 1 beyond; limit 2 per
+episode; cut-offs chosen on the weighted count using only the pressure days known at the refit; it applies at +5 and
++10 bp, it is the tier 1 bar, and it applies to the 2026 confirmation tier, which this change does not open
+(`docs/decisions/lockbox.md`). The judge's default (`judge --rule declared`) counts the weighted false alarms;
+`judge --rule unweighted` scores the flat count on request.
 
 Origin: Eleonora's ruling of 9 October 2026, relayed by the orchestrating session, to introduce weighted miss criteria
-into the pressure judge.
+into the pressure judge; adopted as above on #464.
 
 ## The rule
 
@@ -54,16 +58,13 @@ days: it asks how many false alarms a rule raised, not what it could have known.
 - Tier 1's lead (at least 1), its recall condition (at least 0.5, with the interval above climatology), and the far-lead
   reading; tiers 2 to 5; the pass rule.
 - The definition of a pressure day, an onset, and the scored days.
-- Every published figure. The switch is `in_force` in `metadata/weighted_miss.json`, false in this draft: the judge
-  counts every false alarm as 1, exactly as before, and only reports the weighted count beside it. Turning it on is a
-  later pull request, made after her ruling and attested approval.
+- Every record already in `docs/runs/`: they are not edited in place. The judge table is re-run under the rule in
+  force and published anew (`docs/pivot/weighted-miss-in-force-result.md`).
 
-## What the draft leaves to her
+## Left open
 
-- The weights and the bands (0.25 and 0.5; 2 and 5 trading days), and whether the same bands should apply at +10 bp.
-- Whether to adopt the rule as the judge's bar at all, and whether to use it on the 2026 confirmation tier. Either
-  changes a pre-registered test.
 - The scarce-regime reading (a reported-only pass within the scarce regime alone) distances to the pressure days among
-  that regime's days only; a pressure day outside the regime is not seen. The draft leaves that as is.
+  that regime's days only; a pressure day outside the regime is not seen. It stays as is.
+- Opening the 2026 confirmation tier is a separate act of hers; this change does not open it.
 
 The evidence under both rules is in `docs/pivot/weighted-miss-result.md`.

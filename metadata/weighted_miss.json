@@ -1,6 +1,6 @@
 {
-  "status": "DRAFT, declared by the pull request that closes #454 and never scored on: Eleonora's ruling of 9 October 2026 (relayed by the orchestrating session) introduces weighted miss criteria into the pressure judge; the weights below are a draft for her to confirm or change in docs/decisions/weighted-miss.md. The rule is in force only once she merges that record AND attests, on GitHub, the adoption as the judge bar (#256); until then in_force is false, the judge counts every false alarm as 1, and no published figure moves.",
-  "in_force": false,
+  "status": "IN FORCE: Eleonora adopted the weighted miss rule on #464 (her own comment 6092866136 of 10 October 2026, performed_via_github_app null, #256) and #472 put it in force. It is the tier 1 bar and applies at +5 and +10 bp. It also applies to the 2026 confirmation tier, which this change does not open. `judge --rule unweighted` still scores the flat count on request.",
+  "in_force": true,
   "distance": "trading days (panel business days) from the flagged day to the nearest pressure day at the threshold scored, before or after it; a pressure day counts only if its outcome was known: inside the cut-off rule's training window, only pressure days whose outcome was known at the refit's first decision instant",
   "weights": [
     {"distance_at_most": 2, "weight": 0.25},

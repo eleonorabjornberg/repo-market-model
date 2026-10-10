@@ -1,8 +1,9 @@
 """Weighted miss criteria for the pressure judge (#454): near-miss false alarms count less.
 
-`docs/decisions/weighted-miss.md` is a draft decision record; the rule is in force only once Eleonora merges it.
-`metadata/weighted_miss.json` declares the weights and the switch (`in_force`, false). With the switch off the
-judge counts a false alarm as 1, as before, so no published figure moves; these tests also pin that.
+`docs/decisions/weighted-miss.md` records the rule, adopted by Eleonora on #464 and put in force by #472.
+`metadata/weighted_miss.json` declares the weights and the switch (`in_force`, true). The judge's default
+(`--rule declared`) counts the weighted false alarms; `--rule unweighted` counts every false alarm as 1, and these
+tests pin both.
 
 **Recorded mutations** (CLAUDE.md: each new leakage guard carries one that kills it).
 
@@ -60,13 +61,42 @@ class RuleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             pj.miss_weight(_rule(), 0)
 
-    def test_the_declaration_file_drafts_the_weights_and_leaves_the_switch_off(self):
+    def test_the_declaration_file_is_in_force_with_the_adopted_weights(self):
         rule = pj.load_weighted_miss(WEIGHTED)
-        self.assertFalse(rule.in_force)
-        self.assertFalse(rule.applied)
+        self.assertTrue(rule.in_force)
+        self.assertTrue(rule.applied)
         self.assertEqual(rule.bands, ((2, 0.25), (5, 0.5)))
         self.assertEqual(rule.beyond, 1.0)
 
+    def test_the_unweighted_rule_stays_available_on_request(self):
+        rule = pj.load_weighted_miss(WEIGHTED, applied=False)
+        self.assertTrue(rule.in_force)
+        self.assertFalse(rule.applied)
+
+    def test_the_judge_default_is_the_declared_rule_and_the_declared_rule_is_weighted(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("pressure_judge_script", REPO / "scripts" / "pressure_judge.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        import argparse
+
+        captured = {}
+        original = argparse.ArgumentParser.parse_args
+
+        def spy(self, args=None, namespace=None):
+            result = original(self, args, namespace)
+            captured["rule"] = getattr(result, "rule", None)
+            raise SystemExit(0)
+
+        argparse.ArgumentParser.parse_args = spy
+        try:
+            with self.assertRaises(SystemExit):
+                module.main(["judge", "--panel", "p.csv", "--output", "o.json", "f.json"])
+        finally:
+            argparse.ArgumentParser.parse_args = original
+        self.assertEqual(captured["rule"], "declared")
+        self.assertTrue(pj.load_weighted_miss(WEIGHTED).applied)
     def test_a_malformed_rule_does_not_load(self):
         document = json.loads(WEIGHTED.read_text())
         for change in (
