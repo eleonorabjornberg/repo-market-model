@@ -61,15 +61,43 @@ def _risk():
     return RISK
 
 
-def recalibrate(report, regimes, splits, declared_taus):
-    """{tau: [probability per scored day]} for one raw run, Platt per regime, non-increasing in tau."""
+GROUPINGS = ("regime", "none", "scarcity")
+
+
+def group_labels(grouping, scored, splits, states):
+    """The group of each scored day: the declared regime, one group for all days, or the as-of scarcity state (#515)."""
+
+    if grouping == "regime":
+        return [splits.regime(day) for day in scored]
+    if grouping == "none":
+        return ["all"] * len(scored)
+    if grouping == "scarcity":
+        return [gc.scarcity_state_label(states.get(day)) for day in scored]
+    raise ValueError(f"a grouping is one of {list(GROUPINGS)}, got {grouping!r}")
+
+
+def form_name(base, grouping):
+    """`<base>+regime_recal` for the declared regime, `<base>+regime_recal_<grouping>` for the others."""
+
+    return base + ("+regime_recal" if grouping == "regime" else f"+regime_recal_{grouping}")
+
+
+def recalibrate(report, regimes, splits, declared_taus, grouping="regime"):
+    """{tau: [probability per scored day]} for one raw run, Platt per group, non-increasing in tau.
+
+    The declared grouping is the regime, whose labels the guard checks against the calendar; the other
+    groupings (#515) are walk-forward on their own labels, with the same gate and fallback.
+    """
 
     scored = list(report.scored_dates)
     train_ends = [fold.train_end for fold in report.folds]
     columns = []
     for tau in declared_taus:
         forecast, _, outcomes = report.at_tau(report.taus.index(tau))
-        columns.append(gc.regime_walk_forward(list(forecast), list(outcomes), scored, train_ends, regimes, splits))
+        if grouping == "regime":
+            columns.append(gc.regime_walk_forward(list(forecast), list(outcomes), scored, train_ends, regimes, splits))
+        else:
+            columns.append(gc.walk_forward("group", list(forecast), list(outcomes), scored, train_ends, regimes))
     curves = pc.monotone_curves(list(zip(*columns)))
     return {tau: [curve[k] for curve in curves] for k, tau in enumerate(declared_taus)}
 
@@ -90,7 +118,15 @@ def run_command(args) -> int:
     taus = tuple(float(t) for t in declared["thresholds_bp"])
     minimum = base_declared["scoring"]["minimum_history"]
     names = [args.candidate] if args.candidate else list(declared["bases"])
-    suffix = declared["remedy"]["judged_form"]
+    groupings = args.groupings.split(",")
+    if any(g not in GROUPINGS for g in groupings):
+        raise SystemExit(f"--groupings is a comma list of {list(GROUPINGS)}")
+    states = {}
+    if "scarcity" in groupings:
+        judge = importlib.util.spec_from_file_location("pressure_judge_script", REPO / "scripts" / "pressure_judge.py")
+        judge_script = importlib.util.module_from_spec(judge)
+        judge.loader.exec_module(judge_script)
+        states = judge_script._scarcity_states(h, last)
     forecasts, settings = {}, {}
     for name in names:
         spec = base_declared["candidates"][name]
@@ -112,11 +148,14 @@ def run_command(args) -> int:
             )
         scored = list(report.scored_dates)
         regimes = [splits.regime(day) for day in scored]
-        forecasts[name] = risk.column(report)
-        recalibrated = recalibrate(report, regimes, splits, taus)
-        forecasts[name + suffix] = {
-            f"{tau:g}": {day.isoformat(): recalibrated[tau][k] for k, day in enumerate(scored)} for tau in taus
-        }
+        if "regime" in groupings:  # the raw base is the judge's row once; a variants-only run leaves it to the declared run
+            forecasts[name] = risk.column(report)
+        for grouping in groupings:
+            groups = group_labels(grouping, scored, splits, states)
+            recalibrated = recalibrate(report, groups, splits, taus, grouping)
+            forecasts[form_name(name, grouping)] = {
+                f"{tau:g}": {day.isoformat(): recalibrated[tau][k] for k, day in enumerate(scored)} for tau in taus
+            }
         settings[name] = {
             "features": list(report.features),
             "model_settings": dict(report.model_settings),
@@ -205,24 +244,31 @@ def _yn(value):
 
 
 def judge_rows(flat, weighted, names):
-    """Full judge row, tiers 1, 3, 5 and the pass, under both rules for each name."""
+    """Full judge row, tiers 1, 3, 5 and the pass, under both rules for each name.
+
+    The flat run's false alarms are its flat count. The weighted run prints its weighted count under the weighted
+    header (`worst_weighted_false_alarms_per_onset`, the count that run's tier 1 is decided on), and the flat count at
+    that run's own cut-offs in a column of its own (#519: the weighted header used to carry the flat count).
+    """
 
     lines = [
         "| model | onsets flagged (flat rule) | worst FA per onset (flat count) | tier 1 / 3 / 5, flat rule | pass, flat rule "
-        "| onsets flagged (weighted rule) | worst FA per onset (weighted count) | tier 1 / 3 / 5, weighted rule | pass, weighted rule |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| onsets flagged (weighted rule) | worst FA per onset (weighted count) | worst FA per onset (flat count, weighted-rule cut-offs) "
+        "| tier 1 / 3 / 5, weighted rule | pass, weighted rule |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for name in names:
         cells = []
         for run, label in ((flat, "flat"), (weighted, "weighted")):
+            width = 4 if label == "flat" else 5
             candidate = run["candidates"].get(name)
             if candidate is None:
-                cells.extend(["–"] * 4)
+                cells.extend(["–"] * width)
                 continue
             near = candidate["tiers"]["onset_warning"]["lead_at_least_1"]
             onsets, flagged = near.get("onsets"), near.get("onsets_flagged")
-            worst = near.get("worst_false_alarms_per_onset")
-            fa = "–" if worst is None else f"{worst:.2f}"
+            counted = near.get("worst_false_alarms_per_onset")
+            flat_count = "–" if counted is None else f"{counted:.2f}"
             recall = near.get("recall", {}).get("interval", {})
             if recall:
                 flagged = f"{flagged} of {onsets} (recall {near['recall']['mean']:.2f} [{recall['lower']:.2f}, {recall['upper']:.2f}])"
@@ -230,8 +276,13 @@ def judge_rows(flat, weighted, names):
                 flagged = f"{flagged} of {onsets}"
             tiers = " / ".join(_yn(_tier(candidate, k)) for k in ("1", "3", "5"))
             passes = _yn(candidate["verdict"]["passes"])
-            cells.extend([flagged, fa, tiers, passes])
-        lines.append(f"| {name} | {cells[0]} | {cells[1]} | {cells[2]} | {cells[3]} | {cells[4]} | {cells[5]} | {cells[6]} | {cells[7]} |")
+            if label == "flat":
+                cells.extend([flagged, flat_count, tiers, passes])
+            else:
+                counted = near.get("worst_weighted_false_alarms_per_onset")
+                weighted_count = "–" if counted is None else f"{counted:.2f}"
+                cells.extend([flagged, weighted_count, flat_count, tiers, passes])
+        lines.append("| " + " | ".join([name] + cells) + " |")
     return "\n".join(lines)
 
 
@@ -368,6 +419,7 @@ def main(argv=None) -> int:
     one.add_argument("--published", type=Path, required=True)
     one.add_argument("--horizon", type=int, choices=(1, 2, 3, 4, 5), required=True)
     one.add_argument("--candidate")
+    one.add_argument("--groupings", default="regime", help="comma list of regime, none, scarcity (#515); the declared form is regime, and a run without it does not repeat the raw bases")
     one.add_argument("--output", type=Path, required=True)
     one.set_defaults(func=run_command)
     tables = commands.add_parser("tables", help="the diagnosis and the judge rows from the two judge results")

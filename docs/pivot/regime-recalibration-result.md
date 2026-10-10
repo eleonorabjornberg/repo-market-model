@@ -15,7 +15,7 @@ Before any recalibrated score, in `metadata/regime_recalibration.json` and one c
 
 * **Remedy.** A Platt curve per declared regime (`metadata/evaluation_splits.json`: 2018-19, 2020, 2021-23, 2024, 2025-26), per
   threshold and horizon, applied to the base's raw exceedance probability on every scored day, then made non-increasing in tau.
-* **No look-ahead.** The regime is read off the calendar date (known at the decision instant). A refit block's curve for a regime is
+* **No look-ahead.** The regime is read off the calendar date (known at the decision instant; *note, 10 October 2026, #515: the calendar table's boundaries were drawn after the fact, so the label is known at the decision instant only once the boundary is, see `hindsight-regimes-result.md`, which re-scores the recalibration with no group and with the as-of scarcity state*). A refit block's curve for a regime is
   fitted on that regime's own pairs whose scored day is at or before the block's last training label, and on none other
   (`group_calibration.regime_walk_forward`, which is `walk_forward('group')` with the regime as the group; the guard
   `group_calibration.require_regimes_asof` refuses a label that is not the calendar's, and `fit` refuses a late pair).
@@ -111,23 +111,31 @@ detail.
 
 Table 5. Base and recalibrated forms under the rule in force (flat: every false alarm counts 1) and the draft weighted rule
 (`docs/decisions/weighted-miss.md`, a draft, not in force). Recall is onsets flagged of 26 over leads 1 to 5; false alarms per onset is
-the worst horizon's under the run's own count (limit 2).
+the worst horizon's under the run's own count (limit 2). Under the weighted rule the column headed "weighted count" is the weighted false-alarm count, which
+tier 1 is decided on; the flat count at the weighted run's own cut-offs is in the next column.
 
-| model | onsets flagged (flat rule) | worst FA per onset (flat count) | tier 1 / 3 / 5, flat rule | pass, flat rule | onsets flagged (weighted rule) | worst FA per onset (weighted count) | tier 1 / 3 / 5, weighted rule | pass, weighted rule |
-|---|---|---|---|---|---|---|---|---|
-| risk_gbm | 13 of 26 (recall 0.50 [0.31, 0.67]) | 1.35 | pass / fail / fail | fail | 13 of 26 (recall 0.50 [0.31, 0.67]) | 1.38 | pass / fail / fail | fail |
-| risk_gbm+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.62 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 4.38 | fail / fail / pass | fail |
-| risk_gbm_base | 14 of 26 (recall 0.54 [0.36, 0.72]) | 1.50 | pass / fail / fail | fail | 14 of 26 (recall 0.54 [0.36, 0.72]) | 1.50 | pass / fail / fail | fail |
-| risk_gbm_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.69]) | 2.58 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.69]) | 3.81 | pass / fail / pass | fail |
-| risk_logistic | 14 of 26 (recall 0.54 [0.35, 0.72]) | 1.85 | pass / fail / fail | fail | 16 of 26 (recall 0.62 [0.43, 0.80]) | 2.42 | pass / fail / fail | fail |
-| risk_logistic+regime_recal | 14 of 26 (recall 0.54 [0.36, 0.71]) | 2.92 | fail / fail / pass | fail | 14 of 26 (recall 0.54 [0.36, 0.71]) | 4.42 | fail / fail / pass | fail |
-| risk_logistic_base | 13 of 26 (recall 0.50 [0.33, 0.68]) | 1.77 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.76]) | 2.31 | pass / fail / fail | fail |
-| risk_logistic_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.35 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 3.85 | pass / fail / pass | fail |
-| risk_quantile_skewt_base | 14 of 26 (recall 0.54 [0.36, 0.71]) | 1.88 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.75]) | 2.31 | pass / fail / fail | fail |
-| risk_quantile_skewt_base+regime_recal | 13 of 26 (recall 0.50 [0.32, 0.69]) | 2.65 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.32, 0.69]) | 3.69 | pass / fail / pass | fail |
+> *Correction, 10 October 2026 (#519).* The first version of this table printed the flat count under the weighted header (`scripts/regime_recalibration.py`
+> read `worst_false_alarms_per_onset` for both runs; the weighted figure is `worst_weighted_false_alarms_per_onset`). The old "weighted count" values
+> (for example 3.81 beside "pass") were the flat count at the weighted run's cut-offs, and are now the last-but-two column. The scoring was re-run from the
+> same commands (below) and every other cell of the table, and every tier verdict, reproduces unchanged; the weighted counts the verdicts rest on
+> are now printed. `evidence/regime-recalibration/tables.md` (Table 3 there) is corrected the same way.
+
+| model | onsets flagged (flat rule) | worst FA per onset (flat count) | tier 1 / 3 / 5, flat rule | pass, flat rule | onsets flagged (weighted rule) | worst FA per onset (weighted count) | worst FA per onset (flat count, weighted-rule cut-offs) | tier 1 / 3 / 5, weighted rule | pass, weighted rule |
+|---|---|---|---|---|---|---|---|---|---|
+| risk_gbm | 13 of 26 (recall 0.50 [0.31, 0.67]) | 1.35 | pass / fail / fail | fail | 13 of 26 (recall 0.50 [0.31, 0.67]) | 0.80 | 1.38 | pass / fail / fail | fail |
+| risk_gbm+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.62 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.67 | 4.38 | fail / fail / pass | fail |
+| risk_gbm_base | 14 of 26 (recall 0.54 [0.36, 0.72]) | 1.50 | pass / fail / fail | fail | 14 of 26 (recall 0.54 [0.36, 0.72]) | 0.97 | 1.50 | pass / fail / fail | fail |
+| risk_gbm_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.69]) | 2.58 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.69]) | 1.87 | 3.81 | pass / fail / pass | fail |
+| risk_logistic | 14 of 26 (recall 0.54 [0.35, 0.72]) | 1.85 | pass / fail / fail | fail | 16 of 26 (recall 0.62 [0.43, 0.80]) | 1.74 | 2.42 | pass / fail / fail | fail |
+| risk_logistic+regime_recal | 14 of 26 (recall 0.54 [0.36, 0.71]) | 2.92 | fail / fail / pass | fail | 14 of 26 (recall 0.54 [0.36, 0.71]) | 2.42 | 4.42 | fail / fail / pass | fail |
+| risk_logistic_base | 13 of 26 (recall 0.50 [0.33, 0.68]) | 1.77 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.76]) | 1.65 | 2.31 | pass / fail / fail | fail |
+| risk_logistic_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.35 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 1.88 | 3.85 | pass / fail / pass | fail |
+| risk_quantile_skewt_base | 14 of 26 (recall 0.54 [0.36, 0.71]) | 1.88 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.75]) | 1.62 | 2.31 | pass / fail / fail | fail |
+| risk_quantile_skewt_base+regime_recal | 13 of 26 (recall 0.50 [0.32, 0.69]) | 2.65 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.32, 0.69]) | 1.79 | 3.69 | pass / fail / pass | fail |
 
 Every form fails tier 3 under both rules. The recalibrated forms lose tier 1 under the flat rule: the worst horizon's false alarms rise to 2.35 to 2.92 per
-onset (limit 2). Under the weighted rule three of the five recalibrated forms keep tier 1 and meet tier 5 (week-ahead), but tier 3 still fails.
+onset (limit 2). Under the weighted rule three of the five recalibrated forms keep tier 1 (`risk_gbm_base`, `risk_logistic_base`, `risk_quantile_skewt_base`, with weighted counts of
+1.87, 1.88 and 1.79 against the limit of 2; `risk_gbm` and `risk_logistic` do not, at 2.67 and 2.42) and meet tier 5 (week-ahead), but tier 3 still fails.
 No form meets the full pass rule under either rule, so no "Publish?" issue is opened and the published declaration is unchanged.
 
 ### The judge row split by regime and pressure-day type

@@ -12678,6 +12678,85 @@ def _every_day_frame(count=160):
     ]
 
 
+class RiskDateTrainWeightTests(unittest.TestCase):
+    """#518: the risk-date models can be refitted with training pairs weighted by their label day.
+
+    Off by default (`train_weight=None` is the declared model). The callable sees the label days of the risk-date
+    pairs the fit uses and returns one positive weight per pair.
+
+    Recorded mutation: in `pressure_risk_date_exceedance`, `weights=weights` removed from the `_fit_classifier` call
+    (the weights are computed and never applied): `test_down_weighting_the_early_pairs_moves_the_forecast`
+    fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _every_day_frame()
+        self.features = _PRESSURE_CALENDAR
+        self.splits = _pressure_splits()
+
+    def predict(self, kind, scored, **options):
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, self.features, decision_time=time(16, 0))
+        info = rule.information_set([r.date for r in self.rows], scored)
+        observation = rule.observation(self.rows, info)
+        predictor = ml.pressure_risk_date_exceedance(kind, self.features, self.splits, 20, **options)
+        return predictor(self.rows[:scored], (observation,), (5.0, 10.0), information=rule)
+
+    def risk_day(self):
+        return [k for k in range(90, len(self.rows) - 1) if _is_risk(self.rows[k])][0]
+
+    def test_weights_of_one_are_the_declared_model(self):
+        scored = self.risk_day()
+        for kind in ml.RISK_DATE_KINDS:
+            declared = self.predict(kind, scored)
+            weighted = self.predict(kind, scored, train_weight=lambda days: [1.0] * len(days))
+            self.assertEqual(declared.curves, weighted.curves)
+
+    def test_the_callable_sees_the_label_days_of_the_risk_date_pairs_before_the_scored_day(self):
+        scored = self.risk_day()
+        seen = []
+
+        def spy(days):
+            seen.append(list(days))
+            return [1.0] * len(days)
+
+        result = self.predict("logistic", scored, train_weight=spy)
+        self.assertEqual(len(seen[0]), result.model_settings["risk_date_training_pairs"])
+        self.assertLess(max(seen[0]), self.rows[scored].date)
+        self.assertTrue(all(_is_risk(row) for row in self.rows if row.date in set(seen[0])))
+
+    def test_down_weighting_the_early_pairs_moves_the_forecast(self):
+        scored = self.risk_day()
+        cut = self.rows[scored // 2].date
+        for kind in ("logistic", "quantile_skewt"):
+            declared = self.predict(kind, scored)
+            weighted = self.predict(kind, scored, train_weight=lambda days: [0.05 if d < cut else 1.0 for d in days])
+            self.assertNotEqual(declared.curves, weighted.curves, kind)
+
+    def test_the_classifier_is_fitted_with_the_weights(self):
+        """The synthetic frame is too small for the gradient-boosted fit to split, so the weights are read where they enter."""
+
+        from unittest import mock
+
+        scored = self.risk_day()
+        real = ml._fit_classifier
+        with mock.patch.object(ml, "_fit_classifier", side_effect=real) as spy:
+            self.predict("gbm_classifier", scored, train_weight=lambda days: [0.5] * len(days))
+        self.assertTrue(spy.called)
+        for call in spy.call_args_list:
+            self.assertEqual(list(call.kwargs["weights"]), [0.5] * len(call.args[1]))
+
+    def test_a_weight_that_is_not_positive_is_refused(self):
+        scored = self.risk_day()
+        with self.assertRaises(ValueError):
+            self.predict("logistic", scored, train_weight=lambda days: [0.0] * len(days))
+
+    def test_one_weight_per_pair_is_required(self):
+        scored = self.risk_day()
+        with self.assertRaises(ValueError):
+            self.predict("logistic", scored, train_weight=lambda days: [1.0])
+
+
 class RiskDateVariantTests(unittest.TestCase):
     """The two changes of #506 to the risk-date model: an every-day component and the early-fit prior.
 

@@ -92,19 +92,22 @@ def forecasts_command(args) -> int:
     found, days, scratch = _members(declaration, args.files, digest, args.horizon, judge.last_day)
     by_date = {row.date: row for row in rows}
     calendar = [row.date for row in rows]
-    regimes = [splits.regime(day) for day in days]
+    states = _judge_script()._scarcity_states(args.horizon, judge.last_day) if args.regime_term == "scarcity" else {}
+    labels, regimes = cstack.regime_term(args.regime_term, declaration.regime_labels, days, splits, states)
+    logistic = cstack.variant_name(declaration.logistic, args.regime_term)
+    isotonic = cstack.variant_name(declaration.isotonic, args.regime_term)
     forecasts, trace = [], {}
-    results = {declaration.logistic: {}, declaration.isotonic: {}}
+    results = {logistic: {}, isotonic: {}}
     for tau in declaration.thresholds:
         members = {name: found[name].probabilities[tau] for name in declaration.members}
         outcomes = [int(exceeds_bp(by_date[day].spread_bps, tau)) for day in days]
         result = cstack.calibrated_stack(
-            days, calendar, members, regimes, outcomes, regime_labels=declaration.regime_labels,
+            days, calendar, members, regimes, outcomes, regime_labels=labels,
             horizon=args.horizon, step=declaration.step, ridge=declaration.ridge, clip=declaration.clip,
             fallback=declaration.fallback, iterations=declaration.iterations, tolerance=declaration.tolerance,
         )
-        results[declaration.logistic][tau] = result.stacked
-        results[declaration.isotonic][tau] = result.recalibrated
+        results[logistic][tau] = result.stacked
+        results[isotonic][tau] = result.recalibrated
         trace[f"{tau:g}"] = list(result.trace)
     for name, probabilities in results.items():
         forecasts.append(pj.Forecast(name=name, horizon=args.horizon, dates=days, probabilities=probabilities))
@@ -333,6 +336,7 @@ def main(argv=None) -> int:
     f.add_argument("--panel", type=Path, required=True)
     f.add_argument("--horizon", type=int, required=True)
     f.add_argument("--output", type=Path, required=True)
+    f.add_argument("--regime-term", choices=("declared", "none", "scarcity"), default="declared", help="the stack's regime term (#515); the declared stack is the default")
     f.add_argument("files", type=Path, nargs="+")
     f.set_defaults(run=forecasts_command)
     p = commands.add_parser("pair")

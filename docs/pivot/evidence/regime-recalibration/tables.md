@@ -262,18 +262,18 @@ Table 2. The same, the recalibrated forms.
 
 Table 3. Full judge row, base and recalibrated, under the rule in force (flat) and the draft weighted rule.
 
-| model | onsets flagged (flat rule) | worst FA per onset (flat count) | tier 1 / 3 / 5, flat rule | pass, flat rule | onsets flagged (weighted rule) | worst FA per onset (weighted count) | tier 1 / 3 / 5, weighted rule | pass, weighted rule |
-|---|---|---|---|---|---|---|---|---|
-| risk_gbm | 13 of 26 (recall 0.50 [0.31, 0.67]) | 1.35 | pass / fail / fail | fail | 13 of 26 (recall 0.50 [0.31, 0.67]) | 1.38 | pass / fail / fail | fail |
-| risk_gbm+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.62 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 4.38 | fail / fail / pass | fail |
-| risk_gbm_base | 14 of 26 (recall 0.54 [0.36, 0.72]) | 1.50 | pass / fail / fail | fail | 14 of 26 (recall 0.54 [0.36, 0.72]) | 1.50 | pass / fail / fail | fail |
-| risk_gbm_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.69]) | 2.58 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.69]) | 3.81 | pass / fail / pass | fail |
-| risk_logistic | 14 of 26 (recall 0.54 [0.35, 0.72]) | 1.85 | pass / fail / fail | fail | 16 of 26 (recall 0.62 [0.43, 0.80]) | 2.42 | pass / fail / fail | fail |
-| risk_logistic+regime_recal | 14 of 26 (recall 0.54 [0.36, 0.71]) | 2.92 | fail / fail / pass | fail | 14 of 26 (recall 0.54 [0.36, 0.71]) | 4.42 | fail / fail / pass | fail |
-| risk_logistic_base | 13 of 26 (recall 0.50 [0.33, 0.68]) | 1.77 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.76]) | 2.31 | pass / fail / fail | fail |
-| risk_logistic_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.35 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 3.85 | pass / fail / pass | fail |
-| risk_quantile_skewt_base | 14 of 26 (recall 0.54 [0.36, 0.71]) | 1.88 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.75]) | 2.31 | pass / fail / fail | fail |
-| risk_quantile_skewt_base+regime_recal | 13 of 26 (recall 0.50 [0.32, 0.69]) | 2.65 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.32, 0.69]) | 3.69 | pass / fail / pass | fail |
+| model | onsets flagged (flat rule) | worst FA per onset (flat count) | tier 1 / 3 / 5, flat rule | pass, flat rule | onsets flagged (weighted rule) | worst FA per onset (weighted count) | worst FA per onset (flat count, weighted-rule cut-offs) | tier 1 / 3 / 5, weighted rule | pass, weighted rule |
+|---|---|---|---|---|---|---|---|---|---|
+| risk_gbm | 13 of 26 (recall 0.50 [0.31, 0.67]) | 1.35 | pass / fail / fail | fail | 13 of 26 (recall 0.50 [0.31, 0.67]) | 0.80 | 1.38 | pass / fail / fail | fail |
+| risk_gbm+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.62 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.67 | 4.38 | fail / fail / pass | fail |
+| risk_gbm_base | 14 of 26 (recall 0.54 [0.36, 0.72]) | 1.50 | pass / fail / fail | fail | 14 of 26 (recall 0.54 [0.36, 0.72]) | 0.97 | 1.50 | pass / fail / fail | fail |
+| risk_gbm_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.69]) | 2.58 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.69]) | 1.87 | 3.81 | pass / fail / pass | fail |
+| risk_logistic | 14 of 26 (recall 0.54 [0.35, 0.72]) | 1.85 | pass / fail / fail | fail | 16 of 26 (recall 0.62 [0.43, 0.80]) | 1.74 | 2.42 | pass / fail / fail | fail |
+| risk_logistic+regime_recal | 14 of 26 (recall 0.54 [0.36, 0.71]) | 2.92 | fail / fail / pass | fail | 14 of 26 (recall 0.54 [0.36, 0.71]) | 2.42 | 4.42 | fail / fail / pass | fail |
+| risk_logistic_base | 13 of 26 (recall 0.50 [0.33, 0.68]) | 1.77 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.76]) | 1.65 | 2.31 | pass / fail / fail | fail |
+| risk_logistic_base+regime_recal | 13 of 26 (recall 0.50 [0.31, 0.68]) | 2.35 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.31, 0.68]) | 1.88 | 3.85 | pass / fail / pass | fail |
+| risk_quantile_skewt_base | 14 of 26 (recall 0.54 [0.36, 0.71]) | 1.88 | pass / fail / fail | fail | 15 of 26 (recall 0.58 [0.39, 0.75]) | 1.62 | 2.31 | pass / fail / fail | fail |
+| risk_quantile_skewt_base+regime_recal | 13 of 26 (recall 0.50 [0.32, 0.69]) | 2.65 | fail / fail / pass | fail | 13 of 26 (recall 0.50 [0.32, 0.69]) | 1.79 | 3.69 | pass / fail / pass | fail |
 
 Table 4. Tier 1 by regime: onsets flagged of onsets (lead 1 or more), base and recalibrated, both rules. The judge gives an interval only for the pooled recall (Table 3), not for a regime's onsets.
 

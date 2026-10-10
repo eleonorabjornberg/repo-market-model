@@ -1,0 +1,35 @@
+{
+  "status": "declared by the pull request that closes #524 (criterion 5, finding #515) before any variant was scored; reported only, nothing here changes the judge's declaration, a tier, a model, or any published figure; whether regime labels may be inputs at all is Eleonora's decision and this declaration does not settle it",
+  "scoring": {
+    "last_day": "2025-12-31"
+  },
+  "question": "what do the regime labels of metadata/evaluation_splits.json, whose boundaries were drawn after the fact, contribute to the calibrated stack (#475) and to the per-regime recalibration (#471)?",
+  "controls": "the stack and the per-regime recalibration as declared (metadata/calibrated_stack.json, metadata/regime_recalibration.json), unchanged; they are re-scored in the same run on the same panel and cut-off rule",
+  "variants": {
+    "no_regime": "the regime term removed: the stack without its five regime indicators; the recalibration without a group (one pooled Platt curve per threshold and horizon)",
+    "scarcity": "the regime term replaced by the as-of reserve-scarcity state (scarcity.py: 0 to 3, or none), read at each forecast's decision instant, which is the state the judge's own splits use (pressure_judge._scarcity_states): the stack gets one indicator per state, the recalibration one Platt curve per state"
+  },
+  "candidates": {
+    "stack": [
+      "calibrated_stack_logistic+no_regime",
+      "calibrated_stack_logistic+scarcity",
+      "calibrated_stack_isotonic+no_regime",
+      "calibrated_stack_isotonic+scarcity"
+    ],
+    "recalibration": [
+      "risk_gbm+regime_recal_none",
+      "risk_gbm+regime_recal_scarcity",
+      "risk_gbm_base+regime_recal_none",
+      "risk_gbm_base+regime_recal_scarcity",
+      "risk_logistic+regime_recal_none",
+      "risk_logistic+regime_recal_scarcity",
+      "risk_logistic_base+regime_recal_none",
+      "risk_logistic_base+regime_recal_scarcity",
+      "risk_quantile_skewt_base+regime_recal_none",
+      "risk_quantile_skewt_base+regime_recal_scarcity"
+    ]
+  },
+  "everything_else": "members, ridge, clip, refit blocks, fallback, gates, Platt constants and the judge's flag cut-off rule are those of the controls; no constant is searched",
+  "report": "the judge's tiers 1, 3 and 5 under both miss rules for each control and variant; onset recall by year (2019 called out); the regime coefficients of the controls' stacks in 2019; what the hindsight labels contributed is the control minus the variant, stated with the judge's intervals where it has them",
+  "scarcity_state_note": "states 0 to 3 are read from reserves as of the decision instant; the 2018-19 window is 99% state 3 (docs/pivot/setup-sensitivity-result.md), so the scarcity variant has little to switch on before 2020"
+}

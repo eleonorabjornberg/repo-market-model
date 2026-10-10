@@ -39,14 +39,58 @@ DEFAULT_DECLARATION = Path(__file__).resolve().parents[2] / "metadata" / "calibr
 def regime_indicators(labels: Sequence[str], regimes: Sequence[str]) -> List[Tuple[float, ...]]:
     """One 0/1 indicator per declared regime label for each day's regime.
 
+    With no label there is no indicator and the regimes are not read (#515: the stack with its regime term removed).
+
     Raises:
         ValueError: on a regime that is not among the declared labels.
     """
 
+    if not labels:
+        return [() for _ in regimes]
     unknown = sorted({r for r in regimes if r not in labels})
     if unknown:
         raise ValueError(f"regime {unknown[0]!r} is not among the declared labels {list(labels)}")
     return [tuple(1.0 if r == label else 0.0 for label in labels) for r in regimes]
+
+
+REGIME_TERMS = ("declared", "none", "scarcity")
+SCARCITY_LABELS = ("0", "1", "2", "3", "unknown")
+
+
+def regime_term(mode, declared_labels, days, splits, states):
+    """`(labels, regime of each day)` for the stack's regime term (#515).
+
+    `declared` is the calendar's regime (`metadata/evaluation_splits.json`), `none` removes the term, and `scarcity`
+    replaces it by the as-of reserve-scarcity state of each day (`states[day]`, 0 to 3, or none for `unknown`).
+
+    Raises:
+        ValueError: for a mode that is not in `REGIME_TERMS`, or a scarcity state that is not 0 to 3.
+    """
+
+    if mode == "declared":
+        return tuple(declared_labels), [splits.regime(day) for day in days]
+    if mode == "none":
+        return (), ["" for _ in days]
+    if mode == "scarcity":
+        regimes = []
+        for day in days:
+            state = states.get(day)
+            if state is None:
+                regimes.append("unknown")
+            elif state in (0, 1, 2, 3):
+                regimes.append(str(int(state)))
+            else:
+                raise ValueError(f"reserve-scarcity state {state!r} is not 0 to 3")
+        return SCARCITY_LABELS, regimes
+    raise ValueError(f"a regime term is one of {list(REGIME_TERMS)}, got {mode!r}")
+
+
+def variant_name(candidate, mode):
+    """The judge candidate of a stack under a regime term: the declared name, `+no_regime` or `+scarcity`."""
+
+    if mode not in REGIME_TERMS:
+        raise ValueError(f"a regime term is one of {list(REGIME_TERMS)}, got {mode!r}")
+    return candidate + {"declared": "", "none": "+no_regime", "scarcity": "+scarcity"}[mode]
 
 
 @dataclass(frozen=True)

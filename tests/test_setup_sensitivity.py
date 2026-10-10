@@ -65,6 +65,20 @@ class DownweightTests(unittest.TestCase):
                 ss.downweights([True, False], bad)
 
 
+class PeriodWeightsTests(unittest.TestCase):
+    """#518: the refit's weights are `downweights` over the fit's training days."""
+
+    def test_the_period_carries_its_share_of_a_window_that_holds_days_outside_it(self):
+        days = [date(2019, 6, 3), date(2019, 6, 4), date(2020, 6, 1), date(2020, 6, 2), date(2020, 6, 3), date(2020, 6, 4)]
+        weights = ss.period_weights(date(2018, 1, 1), date(2019, 12, 31), 0.2)(days)
+        self.assertAlmostEqual(sum(weights[:2]) / sum(weights), 0.2)
+        self.assertEqual(weights[2:], [1.0] * 4)
+
+    def test_a_window_inside_the_period_is_not_reweighted(self):
+        days = [date(2018, 7, 2), date(2019, 6, 4)]
+        self.assertEqual(ss.period_weights(date(2018, 1, 1), date(2019, 12, 31), 0.2)(days), [1.0, 1.0])
+
+
 class WeightedCutoffTests(unittest.TestCase):
     P = [0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
     PRESSURE = [1, 0, 0, 1, 0, 0, 1]

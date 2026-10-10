@@ -52,6 +52,19 @@ class GroupLabelTests(unittest.TestCase):
             gc.group_label(4, "ordinary")
 
 
+class ScarcityStateLabelTests(unittest.TestCase):
+    """#515: the as-of scarcity state as a group, in place of the hindsight regime."""
+
+    def test_a_state_is_its_digit_and_no_state_is_unknown(self):
+        self.assertEqual([gc.scarcity_state_label(s) for s in (0, 1.0, 2, 3.0)], ["0", "1", "2", "3"])
+        self.assertEqual(gc.scarcity_state_label(None), "unknown")
+
+    def test_a_state_outside_zero_to_three_is_refused(self):
+        for bad in (-1, 4, 1.5):
+            with self.assertRaises(ValueError):
+                gc.scarcity_state_label(bad)
+
+
 class LeakageGuardTests(unittest.TestCase):
     """A group curve never sees an outcome after its fitting date.
 

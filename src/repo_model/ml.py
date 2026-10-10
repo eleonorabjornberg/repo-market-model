@@ -573,7 +573,7 @@ from dataclasses import dataclass
 from datetime import date
 from fractions import Fraction
 from types import MappingProxyType
-from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple
+from typing import Any, Callable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .baseline import (
     SPREAD_COMPONENTS,
@@ -4779,8 +4779,13 @@ def _fit_classifier(
     effects_trace: Optional[List[dict]] = None,
     rare: Optional[str] = None,
     recency: Optional[Tuple[str, int, Sequence[int]]] = None,
+    weights: Optional[Sequence[float]] = None,
 ) -> List[float]:
     """Fit one estimator to one threshold's labels; P(label = 1) at `served`.
+
+    `weights`, the plain logistic's and the classifier's only (#518): one positive weight per training
+    pair, passed to scikit-learn as `sample_weight`. `None`, the default, passes nothing, so every
+    existing fit is unchanged.
 
     `recency`, the class-weighted logistic's only (#411): `(mode, parameter,
     ages)`, one age per training pair (`_fit_recency_logistic`).
@@ -4811,6 +4816,13 @@ def _fit_classifier(
     x = numpy.asarray(xs, dtype=float)
     y = numpy.asarray(labels, dtype=int)
     z = numpy.asarray(served, dtype=float)
+    fit_weight = {}
+    if weights is not None:
+        if len(weights) != len(y) or any(not w > 0 for w in weights):
+            raise ValueError("a weighted fit needs one positive weight per training pair")
+        if kind not in ("logistic", "gbm_classifier") or pooling is not None or rare is not None or recency is not None:
+            raise ValueError("training weights are the plain logistic's and the classifier's")
+        fit_weight = {"sample_weight": numpy.asarray(weights, dtype=float)}
     if recency is not None:
         if kind != "logistic" or rare != "class_weight" or monotone is not None:
             raise ValueError("recency weighting is the unconstrained class-weighted logistic's")
@@ -4841,7 +4853,7 @@ def _fit_classifier(
             C=PRESSURE_LOGISTIC_SETTINGS["C"],
             max_iter=PRESSURE_LOGISTIC_SETTINGS["max_iter"],
         )
-        model.fit((x - centre) / scale, y)
+        model.fit((x - centre) / scale, y, **fit_weight)
         if pooling is not None and effects_trace is not None:
             effects_trace.append(
                 _regime_effects(model.coef_[0], pooled, deviating, regimes, shrink, original_scale)
@@ -4869,7 +4881,7 @@ def _fit_classifier(
         early_stopping=False,
         **constraint,
     )
-    model.fit(x, y)
+    model.fit(x, y, **fit_weight)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
 
 
@@ -5369,8 +5381,12 @@ def _quantile_exceedance(
     served: Sequence[Sequence[float]],
     taus: Sequence[float],
     smoother: str = "linear",
+    weights: Optional[Sequence[float]] = None,
 ) -> List[Tuple[float, ...]]:
     """Linear quantile regressions of the spread, read as P(spread > tau) per day.
+
+    `weights` (#518): one positive weight per training pair, passed to each `QuantileRegressor` as
+    `sample_weight`; the standardiser stays unweighted. `None` passes nothing.
 
     `smoother` is `"linear"` (the default: linear interpolation between the
     predicted quantiles) or `"skew_t"` (`_skew_t_exceedance`, #379).
@@ -5388,6 +5404,11 @@ def _quantile_exceedance(
 
     x = numpy.asarray(xs, dtype=float)
     y = numpy.asarray(spreads, dtype=float)
+    fit_weight = {}
+    if weights is not None:
+        if len(weights) != len(y) or any(not w > 0 for w in weights):
+            raise ValueError("a weighted fit needs one positive weight per training pair")
+        fit_weight = {"sample_weight": numpy.asarray(weights, dtype=float)}
     centre, scale = _standardizer(x)
     train = (x - centre) / scale
     given = (numpy.asarray(served, dtype=float) - centre) / scale
@@ -5396,7 +5417,7 @@ def _quantile_exceedance(
         [
             QuantileRegressor(
                 quantile=q, alpha=PRESSURE_QUANTILE_SETTINGS["alpha"], solver="highs"
-            ).fit(train, y).predict(given)
+            ).fit(train, y, **fit_weight).predict(given)
             for q in grid
         ]
     )
@@ -6129,8 +6150,14 @@ def pressure_risk_date_exceedance(
     features: Sequence[str],
     declaration: Any,
     minimum_history: int = 20,
+    train_weight: Optional[Callable[[Sequence[date]], Sequence[float]]] = None,
 ) -> ExceedancePredictor:
     """A model fitted and served on the declared risk dates only (#428).
+
+    `train_weight` (#518): given the label days of a fit's risk-date training pairs, one positive weight
+    per pair, applied to the fit as `sample_weight`. It sees the dates of pairs the as-of rule has already
+    admitted (labels at or before the refit's last training label) and nothing else. `None`, the default,
+    weighs every pair 1 and leaves the model as declared.
 
     `kind` is one of `RISK_DATE_KINDS`. Training pairs are the direct pairs of
     `pressure_logistic_exceedance` (each label paired with what a forecast of it read at its own
@@ -6170,10 +6197,16 @@ def pressure_risk_date_exceedance(
                 "the TGA change is read off each forecast's own as-of history; one history per "
                 "feature row is required"
             )
-        pairs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        positions: List[int] = []
+        pairs, spreads = _pressure_pairs(design, information, train_rows, cache, positions)
         flags = [pair[-1] for pair in pairs]
         xs = [pair[:-1] for pair, flag in zip(pairs, flags) if flag]
         spreads = [spread for spread, flag in zip(spreads, flags) if flag]
+        weights = None
+        if train_weight is not None:
+            weights = [float(w) for w in train_weight([train_rows[p].date for p, flag in zip(positions, flags) if flag])]
+            if len(weights) != len(xs):
+                raise ValueError("train_weight must return one weight per risk-date training pair")
         served_all = [
             design.row(
                 row,
@@ -6190,7 +6223,7 @@ def pressure_risk_date_exceedance(
             fitted: dict = {}
             if kind == "quantile_skewt":
                 law = _quantile_exceedance(
-                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t"
+                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t", weights=weights
                 )
                 fits = [[curve[k] for curve in law] for k in range(len(taus))]
             else:
@@ -6202,7 +6235,7 @@ def pressure_risk_date_exceedance(
                         continue
                     key = tuple(labels)
                     if key not in fitted:
-                        fitted[key] = _fit_classifier(kind, xs, labels, served)
+                        fitted[key] = _fit_classifier(kind, xs, labels, served, weights=weights)
                     fits.append(fitted[key])
             for position, fit in enumerate(fits):
                 for day, value in zip(members, fit):
@@ -6226,6 +6259,8 @@ def pressure_risk_date_exceedance(
             + (", or a coupon settlement" if "treasury_settlement_coupons" in design.settlements else "")
         )
         settings["risk_date_training_pairs"] = len(xs)
+        if weights is not None:
+            settings["training_weights"] = "applied (#518)"
         if design.scarcity:
             settings["scarcity_state"] = SCARCITY_STATE
         if design.tga:

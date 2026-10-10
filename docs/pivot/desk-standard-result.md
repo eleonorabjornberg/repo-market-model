@@ -16,7 +16,8 @@ a bill settles and 5 to 14 before a coupon settles; the declaration prices them 
 H.4.1 is read 2 panel days after the Thursday it prints on in an ordinary week, because the registry carries a constant five
 calendar days. (3) The Desk's reverse-repo and repo-operation results are declared 1 panel day later than the day they were
 written, an assumption the Desk neither confirms nor denies. A daily proxy for the weekly reserves, built only from public
-daily series, does not track them. The two structural blind spots are exact: the five tier-1 passers cannot flag 6 of the 26
+daily series, does not track them (*corrected, 10 October 2026, #516: that holds for the proxy built from Wednesday levels; built on matched definitions it
+does track them, §3*). The two structural blind spots are exact: the five tier-1 passers cannot flag 6 of the 26
 onsets at any horizon, and at h of 2 or more at most 12 of 26 at one horizon. The 27th onset is a scored-window start, and
 the nowcast of #445 has no alignment, unit or availability defect, but has an estimator defect that explains most of its loss.
 
@@ -120,7 +121,7 @@ ordinary week. That is a change to the registry's shape and is listed below.
 > 1,874 includes the decision day 2025-12-31, whose scored day falls outside the window, so the 710 is over one day too many (the
 > share moves by at most one day). The 2042 of `information-set.md` is the whole panel to 2026-09-03, a different scope. See `docs/pivot/diagnostics-reconciliation.md`, point 2.
 
-**A daily proxy does not track weekly reserves.** For each Wednesday W the proxy is the print `k` weeks earlier less the
+**A daily proxy does not track weekly reserves** *(withdrawn, 10 October 2026, #516: see the correction below)*. For each Wednesday W the proxy is the print `k` weeks earlier less the
 changes in the Daily Treasury Statement's closing TGA and in the Desk's reverse repo over the same weeks (the balance
 sheet identity: a rise in either drains reserves). Both series are read by their reference date, 2018 to 2025:
 
@@ -129,11 +130,32 @@ sheet identity: a rise in either drains reserves). Both series are read by their
 | 1 week earlier | 393 | 0.28 | 65.0 | 53.3 | 175 of 393 | 0.44 / 50.0 |
 | 2 weeks earlier | 390 | 0.35 | 81.7 | 84.9 | 206 of 390 | 0.46 / 68.6 |
 
-In the 25 onset weeks with a Wednesday pair the proxy's mean absolute error is 37.2 billion at one week (the carried
+In the 25 onset weeks with a Wednesday pair the level proxy's mean absolute error is 37.2 billion at one week (the carried
 print's is 32.5) and 46.6 at two (56.2). The proxy is no better than the stale print at the lag the declaration implies
 most days, and the identity is loose even with the H.4.1's own TGA, because the Fed's other liabilities move reserves too.
 The closing TGA of the Daily Treasury Statement also differs from the H.4.1's Wednesday TGA by a mean absolute 27.5 billion;
 this was not diagnosed here.
+
+> *Correction, 10 October 2026 (#516).* The table above compares unlike things. The proxy is built from Wednesday *levels* of the daily
+> TGA and reverse repo, and compared with changes in `WRESBAL`, which is a Thursday-to-Wednesday seven-day *average* (`construction-gaps-result.md`,
+> gap 5). The 27.5 billion gap between the DTS and H.4.1 TGA "not diagnosed here" is the same averaging: `WTREGEN` equals the seven-calendar-day
+> average of the DTS closing TGA (weekends and holidays carried) on every Wednesday it can be built (406 of 406, within 0.001 billion;
+> `evidence/desk-standard/desk_standard.json`, `reserves.daily_proxy_matched.h41_tga_is_the_week_average_of_the_dts_tga`). Rebuilt on the H.4.1's
+> own definition (`desk_standard_diagnostic.week_average_proxy`: the print `k` weeks earlier less the change in the week-average TGA and the
+> week-average reverse repo, the Desk's amount carried over days without an operation), on the same Wednesdays as the level version:
+>
+> | proxy built from | base | Wednesdays | correlation of changes | MAE of the proxy (USD billions) | MAE of carrying the print forward | proxy closer than carry | onset weeks: proxy MAE / carry MAE (25) |
+> |---|---|---|---|---|---|---|---|
+> | Wednesday levels (the method above) | 1 week earlier | 393 | 0.28 | 65.0 | 53.3 | 175 | 37.2 / 32.5 |
+> | week averages (matched to `WRESBAL`) | 1 week earlier | 393 | 0.72 | 28.4 | 53.3 | 279 | 14.6 / 32.5 |
+> | Wednesday levels | 2 weeks earlier | 390 | 0.35 | 81.7 | 84.9 | 206 | 46.6 / 56.2 |
+> | week averages | 2 weeks earlier | 390 | 0.61 | 48.7 | 84.9 | 273 | 30.9 / 56.2 |
+>
+> The first row reproduces the 0.28, 65.0 and 53.3 above. The conclusion "a daily proxy does not track weekly reserves" is withdrawn: on matched
+> definitions the proxy tracks them (correlation 0.72) and is closer than the carried print on most Wednesdays (279 of 393), also in the onset
+> weeks. The caveat the audit made stands: a week-average proxy is complete only at the Wednesday, so its gain is on the days between releases and over the
+> declared lag, not over the real Thursday print. Whether forecasts improve with it needs a run, which this correction does not make. How the H.4.1 is
+> read stays Eleonora's item (point 2 of "For Eleonora" below).
 
 ## 4. Structural blind spots
 
