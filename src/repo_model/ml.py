@@ -5587,8 +5587,13 @@ def pressure_onset_exceedance(
     declaration: Any,
     minimum_history: int = 20,
     optional: Sequence[str] = (),
+    fitter: Optional[Any] = None,
 ) -> ExceedancePredictor:
     """The direct logistic or classifier fitted to the onset label (#409).
+
+    `fitter`, when given (#479), replaces `_fit_classifier` for the fits: it is called as
+    `fitter(kind, xs, labels, served)` and returns the probabilities at `served`. `None`, the
+    default, changes nothing.
 
     `kind` is `"logistic"` or `"gbm_classifier"`; `treatment` is `None` or one of
     `PRESSURE_RARE_EVENT_SETTINGS["treatments"]` (#381). The label at each threshold is an onset
@@ -5669,7 +5674,11 @@ def pressure_onset_exceedance(
                 continue
             key = tuple(labels)
             if key not in fitted:
-                fitted[key] = _fit_classifier(kind, xs, labels, served, rare=treatment)
+                fitted[key] = (
+                    _fit_classifier(kind, xs, labels, served, rare=treatment)
+                    if fitter is None
+                    else fitter(kind, xs, labels, served)
+                )
             columns.append(fitted[key])
         curves = []
         for day in range(len(served)):
@@ -5707,6 +5716,171 @@ def pressure_onset_exceedance(
         )
 
     return fit_predict
+
+
+# --------------------------------------------------------------------------
+# The all-inputs onset classifiers (#479)
+# --------------------------------------------------------------------------
+#
+# One model that reads every collected input at once. The design, the pair builder, the onset label
+# and the guards are `pressure_onset_exceedance`'s; only the fit differs: the penalty (logistic) or the
+# depth limit (gradient-boosted classifier) is chosen from a declared grid on the training pairs alone.
+
+#: Declared in `metadata/all_inputs.json` before any score; not tuned on a scored day.
+ALL_INPUTS_SETTINGS = MappingProxyType(
+    {
+        "folds": 4,
+        "embargo_pairs": 5,
+        "criterion": "log loss of the pooled held-out blocks",
+        "logistic": MappingProxyType(
+            {"penalties": ("l1", "l2"), "C": (0.01, 0.03, 0.1, 0.3, 1.0), "solver": "liblinear", "max_iter": 5000}
+        ),
+        "gbm": MappingProxyType(
+            {
+                "max_depth": (2, 3, 4),
+                "learning_rate": 0.05,
+                "max_iter": 200,
+                "min_samples_leaf": 20,
+                "l2_regularization": 1.0,
+            }
+        ),
+        "default": MappingProxyType({"logistic": ("l2", 1.0), "gbm": (3,)}),
+    }
+)
+
+
+def _blocked_folds(count: int, folds: int, embargo: int) -> List[Tuple[range, range]]:
+    """Expanding-window folds over `count` pairs in time order: (train, validation) index ranges.
+
+    The pairs are cut into `folds + 1` contiguous blocks; fold `j` validates on block `j` and trains on
+    the blocks before it, less the last `embargo` pairs before the block, so no validation pair has a
+    training pair within `embargo` positions of it. Only earlier pairs ever train a fold.
+    """
+
+    if folds < 1 or embargo < 0:
+        raise ValueError("folds must be positive and the embargo not negative")
+    edges = [round(count * k / (folds + 1)) for k in range(folds + 2)]
+    out = []
+    for j in range(1, folds + 1):
+        train = range(0, max(0, edges[j] - embargo))
+        out.append((train, range(edges[j], edges[j + 1])))
+    return out
+
+
+def _fit_with_setting(kind: str, setting: Tuple, x: Any, y: Any, z: Any) -> Any:
+    """One fit at one grid point; the probabilities at `z`."""
+
+    declared = ALL_INPUTS_SETTINGS["gbm" if kind == "gbm" else "logistic"]
+    if kind == "logistic":
+        from sklearn.linear_model import LogisticRegression
+
+        penalty, c = setting
+        centre = x.mean(axis=0)
+        scale = x.std(axis=0)
+        scale[scale == 0.0] = 1.0
+        # scikit-learn 1.9 spells the penalty as the L1 share: 1 is L1, 0 is L2.
+        model = LogisticRegression(
+            l1_ratio=1.0 if penalty == "l1" else 0.0, C=c, solver=declared["solver"], max_iter=declared["max_iter"]
+        )
+        model.fit((x - centre) / scale, y)
+        return model.predict_proba((z - centre) / scale)[:, 1]
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    (depth,) = setting
+    model = HistGradientBoostingClassifier(
+        learning_rate=declared["learning_rate"],
+        max_iter=declared["max_iter"],
+        max_depth=depth,
+        min_samples_leaf=declared["min_samples_leaf"],
+        l2_regularization=declared["l2_regularization"],
+        random_state=DEFAULT_RANDOM_STATE,
+        early_stopping=False,
+    )
+    model.fit(x, y)
+    return model.predict_proba(z)[:, 1]
+
+
+def _grid_of(kind: str) -> List[Tuple]:
+    if kind == "logistic":
+        spec = ALL_INPUTS_SETTINGS["logistic"]
+        return [(penalty, c) for c in spec["C"] for penalty in spec["penalties"]]
+    return [(depth,) for depth in ALL_INPUTS_SETTINGS["gbm"]["max_depth"]]
+
+
+def select_all_inputs_setting(kind: str, xs: Any, labels: Any) -> Tuple[Tuple, bool]:
+    """The grid point with the lowest pooled held-out log loss on these training pairs alone.
+
+    Returns `(setting, selected)`: `selected` is False when no fold could be scored (a training part
+    with one class) and the declared default is returned. Ties go to the first point of the grid,
+    the strongest penalty or the shallowest depth.
+    """
+
+    import numpy
+
+    x = numpy.asarray(xs, dtype=float)
+    y = numpy.asarray(labels, dtype=int)
+    spec = ALL_INPUTS_SETTINGS
+    folds = [
+        (train, valid)
+        for train, valid in _blocked_folds(len(y), spec["folds"], spec["embargo_pairs"])
+        if len(train) and len(set(y[train.start : train.stop])) == 2 and len(valid)
+    ]
+    default = tuple(spec["default"]["logistic" if kind == "logistic" else "gbm"])
+    if not folds:
+        return default, False
+    best, best_loss = default, None
+    for setting in _grid_of(kind):
+        loss, seen = 0.0, 0
+        for train, valid in folds:
+            p = _fit_with_setting(
+                kind, setting, x[train.start : train.stop], y[train.start : train.stop], x[valid.start : valid.stop]
+            )
+            p = numpy.clip(p, 1e-6, 1.0 - 1e-6)
+            yv = y[valid.start : valid.stop]
+            loss -= float(numpy.sum(yv * numpy.log(p) + (1 - yv) * numpy.log(1.0 - p)))
+            seen += len(yv)
+        loss /= seen
+        if best_loss is None or loss < best_loss - 1e-12:
+            best, best_loss = setting, loss
+    return best, True
+
+
+def pressure_all_inputs_exceedance(
+    kind: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    optional: Sequence[str] = (),
+) -> ExceedancePredictor:
+    """The onset classifier on every declared input, its penalty or depth chosen on the training pairs (#479).
+
+    `kind` is `"logistic"` (an L1 or L2 penalty and `C` from the declared grid) or `"gbm_classifier"` (a
+    depth limit from the declared grid). Everything else is `pressure_onset_exceedance`. The predictor
+    carries `selections`, one dict per fit: the chosen setting, whether it was selected or the default,
+    and the pairs and onsets it rests on.
+    """
+
+    if kind not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"an all-inputs onset classifier is the logistic or the classifier, not {kind!r}")
+    selections: List[dict] = []
+    short = "logistic" if kind == "logistic" else "gbm"
+
+    def fitter(_kind: str, xs: Any, labels: Any, served: Any) -> List[float]:
+        import numpy
+
+        setting, selected = select_all_inputs_setting(short, xs, labels)
+        selections.append(
+            {"setting": list(setting), "selected": selected, "pairs": len(labels), "onsets": int(sum(labels))}
+        )
+        p = _fit_with_setting(short, setting, numpy.asarray(xs, dtype=float), numpy.asarray(labels, dtype=int),
+                              numpy.asarray(served, dtype=float))
+        return [float(value) for value in p]
+
+    predictor = pressure_onset_exceedance(
+        kind, None, features, declaration, minimum_history=minimum_history, optional=optional, fitter=fitter
+    )
+    predictor.selections = selections  # type: ignore[attr-defined]
+    return predictor
 
 
 # --------------------------------------------------------------------------
