@@ -10,7 +10,7 @@ The result in `direct-pairs-result.md` and `evidence/direct_pairs/score.json` is
 
 ## How the figures moved
 
-* **No verdict changed, and no published figure.** Every CRPS cell, the primary test (twin gain −0.045 bp, 90% interval
+* **No verdict changed, and no published figure.** Every CRPS cell except the turning-point-day cell, the primary test (twin gain −0.045 bp, 90% interval
   [−0.080, −0.011], "twin worse"), the calibration table and every best lag are the same as before.
 * **The lag tables** use 1870 days instead of 1873 (the last three scored days are dropped): the published model's correlation at k = 2 is 0.679
   instead of 0.680, the twin's 0.626 instead of 0.627; the best lag is still 2 for both.
