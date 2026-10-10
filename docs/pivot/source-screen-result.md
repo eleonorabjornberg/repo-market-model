@@ -13,6 +13,14 @@ way. No correction for the number of tests is applied, no interval is drawn, and
 `CLAUDE.md` (paired, bootstrapped, split by regime and day type). A series that ranks high is a candidate for the paired test
 that #473 and #477 would run, not evidence that it carries signal.
 
+> *Note, 10 October 2026 (#522, of #508).* This screen read two OFR columns on days before 2020-09-09, when the OFR began publishing in real time:
+> `ofr_dvp_minus_bgcr_bp_backfill` and `ofr_dvp_rate` (1,778 days at lead 1, against 1,246 for the real-time column). Those values were filled in
+> later and were not public, so the statement above that every series is read as of the decision instant did not hold for those two. The numbers
+> below are as published and are not edited. Re-run with the guard on (`docs/pivot/all-inputs-ofr-guard-result.md`; evidence in
+> `docs/pivot/evidence/source-screen-ofr-guard/`), only those two series move: `ofr_dvp_minus_bgcr_bp_backfill` goes from +0.105 to +0.185 at lead 1
+> (rank 26 to 17; it is now the same column as `ofr_dvp_minus_bgcr_bp`) and `ofr_dvp_rate` from +0.017 to -0.010 (rank 70 to 74), both on 1,246
+> days. Every other series is unchanged. The panel's hash is now `4de66765…`.
+
 ## Method, in short
 
 * **Days.** The 1,873 scored days of the published fold grid, 2018-06-29 to 2025-12-31, of which 140 are above +5 bp (strictly,

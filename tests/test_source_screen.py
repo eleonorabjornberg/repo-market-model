@@ -222,6 +222,45 @@ class RunTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 screen.main(["run", "--panel", str(panel), "--output", str(Path(directory) / "out.json")])
 
+    def test_a_panel_with_an_ofr_value_before_it_was_public_is_refused(self):
+        """The screen reads no OFR value from before 2020-09-09 (#522, of #508).
+
+        Recorded mutation (CLAUDE.md), 10 October 2026, in a disposable copy:
+        `scripts/source_screen.py`, the line `dvp_segment.require_ofr_public(rows)` in `run_command`
+        deleted. This test then fails with `AssertionError` (`LookAheadError not raised`).
+        """
+
+        rows = synthetic_rows(date(2018, 4, 3), 330)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "panel.csv"
+            with path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["date", "sofr", "iorb", "ofr_dvp_rate"])
+                for row in rows:
+                    writer.writerow([row.date.isoformat(), repr(row.values["sofr"]), repr(row.values["iorb"]), "2.1"])
+            with self.assertRaises(LookAheadError):
+                screen.main(["run", "--panel", str(path), "--output", str(Path(directory) / "out.json")])
+
+    def test_the_panel_command_blanks_ofr_columns_before_they_were_public(self):
+        rows = synthetic_rows(date(2020, 9, 1), 12)
+        with tempfile.TemporaryDirectory() as directory:
+            base = self.write_panel(directory, rows)
+            extra = Path(directory) / "extra.csv"
+            with extra.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["date", "sofr", "iorb", "ofr_dvp_rate", "ofr_dvp_minus_bgcr_bp_backfill"])
+                for row in rows:
+                    writer.writerow([row.date.isoformat(), repr(row.values["sofr"]), repr(row.values["iorb"]), "2.1", "5.0"])
+            out = Path(directory) / "screen.csv"
+            with mock.patch("sys.stdout"):
+                screen.main(["panel", "--panel", str(base), "--extra", str(extra), "--output", str(out)])
+            with out.open(newline="", encoding="utf-8") as handle:
+                table = list(csv.DictReader(handle))
+            for line in table:
+                for column in ("ofr_dvp_rate", "ofr_dvp_minus_bgcr_bp_backfill"):
+                    blank = line[column] == ""
+                    self.assertEqual(blank, line["date"] < "2020-09-09", (line["date"], column))
+
     def test_a_run_and_its_report_are_deterministic_and_complete(self):
         rows = synthetic_rows(date(2018, 4, 3), 330)
         with tempfile.TemporaryDirectory() as directory:

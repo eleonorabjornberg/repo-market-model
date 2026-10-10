@@ -118,6 +118,62 @@ class BuildColumnsTests(unittest.TestCase):
         self.assertEqual(built[0].values["ofr_dvp_minus_bgcr_bp_backfill"], 5.0)
 
 
+class OfrRealTimeGuardTests(unittest.TestCase):
+    """No OFR value is read from before the OFR published in real time (#522, of #508).
+
+    `ofr_dvp_rate` and `ofr_dvp_minus_bgcr_bp_backfill` carry the OFR's values
+    for days before 2020-09-09, which the OFR filled in after it began
+    publishing: nobody had them at the time. The guard refuses a panel that
+    holds a value in any `ofr_` column on such a day.
+
+    Written red first: `require_ofr_public` did not exist (`AttributeError`).
+
+    Recorded mutation (CLAUDE.md), 10 October 2026, in a disposable copy:
+    `src/repo_model/dvp_segment.py`, `if column.startswith("ofr_") and value is not None:`
+    in `require_ofr_public` mutated to `if column.startswith("ofr_") and value is not None and False:`.
+    `test_a_value_before_the_real_time_start_is_refused` then fails with
+    `AssertionError` (`LookAheadError not raised`), and so does
+    `test_every_ofr_column_is_covered`.
+    """
+
+    def rows(self, dates, value=5.0):
+        return [
+            DailyObservation(when, {"spread_bps": 3.0, "ofr_dvp_rate": value, "ofr_dvp_minus_bgcr_bp_backfill": value})
+            for when in dates
+        ]
+
+    def test_a_value_before_the_real_time_start_is_refused(self):
+        rows = self.rows([date(2020, 9, 8), date(2020, 9, 9)])
+        with self.assertRaises(LookAheadError):
+            dvp_segment.require_ofr_public(rows)
+
+    def test_every_ofr_column_is_covered(self):
+        for column in ("ofr_dvp_rate", "ofr_dvp_minus_bgcr_bp", "ofr_dvp_minus_bgcr_bp_backfill", "ofr_tri_rate"):
+            rows = [DailyObservation(date(2019, 9, 16), {column: 1.0})]
+            with self.assertRaises(LookAheadError, msg=column):
+                dvp_segment.require_ofr_public(rows)
+
+    def test_a_panel_blanked_or_read_from_the_start_passes(self):
+        dvp_segment.require_ofr_public(self.rows([date(2020, 9, 9), date(2020, 9, 10)]))
+        blanked = [
+            DailyObservation(date(2019, 9, 16), {"ofr_dvp_rate": None, "ofr_dvp_minus_bgcr_bp_backfill": None})
+        ]
+        dvp_segment.require_ofr_public(blanked)
+
+    def test_blanking_clears_only_ofr_values_before_the_start(self):
+        rows = self.rows([date(2020, 9, 8), date(2020, 9, 9)])
+        blanked = dvp_segment.blank_ofr_before_real_time(rows)
+        self.assertIsNone(blanked[0].values["ofr_dvp_rate"])
+        self.assertIsNone(blanked[0].values["ofr_dvp_minus_bgcr_bp_backfill"])
+        self.assertEqual(blanked[0].values["spread_bps"], 3.0)
+        self.assertEqual(blanked[1].values["ofr_dvp_rate"], 5.0)
+        self.assertEqual(rows[0].values["ofr_dvp_rate"], 5.0, "the input rows are not changed")
+        dvp_segment.require_ofr_public(blanked)
+
+    def test_the_start_is_the_ofr_real_time_start(self):
+        self.assertEqual(dvp_segment.OFR_REAL_TIME_START, date(2020, 9, 9))
+
+
 class OfrAvailabilityTests(unittest.TestCase):
     """`ofr_dvp_minus_bgcr_bp` is read two business days after its date (#187).
 

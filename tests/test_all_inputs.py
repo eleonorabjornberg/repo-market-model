@@ -68,3 +68,38 @@ class AllInputsDeclarationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OfrGuardTests(unittest.TestCase):
+    def test_a_panel_with_an_ofr_value_before_it_was_public_is_refused(self):
+        """`run` refuses a panel that holds an OFR value from before 2020-09-09 (#522, of #508).
+
+        Recorded mutation (CLAUDE.md), 10 October 2026, in a disposable copy:
+        `scripts/all_inputs.py`, the line `dvp_segment.require_ofr_public(rows)` in `run_command` deleted.
+        This test then errors with `ValueError` (`not enough observations for requested minimum history`): the
+        run goes on to fit on the leaked panel instead of raising `LookAheadError`.
+        """
+
+        import argparse
+        import csv
+        import tempfile
+        from unittest import mock
+
+        from repo_model.splits import LookAheadError
+
+        script = _script()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "panel.csv"
+            from datetime import date, timedelta
+
+            with path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["date", "sofr", "iorb", "reserve_balances", "tga", "ofr_dvp_rate"])
+                day = date(2019, 9, 2)
+                for _ in range(8):
+                    if day.weekday() < 5:
+                        writer.writerow([day.isoformat(), "2.2", "2.1", "1500", "300", "2.3"])
+                    day += timedelta(days=1)
+            args = argparse.Namespace(panel=path, published=path, horizon=1, output=Path(directory) / "o.json", candidate=None)
+            with mock.patch.object(script, "audit_panel"), self.assertRaises(LookAheadError):
+                script.run_command(args)

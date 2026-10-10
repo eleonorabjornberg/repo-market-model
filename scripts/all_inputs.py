@@ -40,7 +40,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import measurement_fields, ml, pressure  # noqa: E402
+from repo_model import dvp_segment, measurement_fields, ml, pressure  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -181,6 +181,7 @@ def run_command(args) -> int:
     audit_panel(rows)
     if rows[-1].date > last:
         raise SystemExit(f"the panel runs past {last}; this measurement reads no later day")
+    dvp_segment.require_ofr_public(rows)
     splits = load_split_declaration(SPLITS)
     registry = measurement_fields.load_registry()
     taus = tuple(float(t) for t in declared["thresholds_bp"])
