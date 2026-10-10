@@ -12539,6 +12539,35 @@ class PressureRiskDateQuantileConformanceTests(_PressureConformance, unittest.Te
     IMPLEMENTATION = staticmethod(ml.pressure_risk_date_exceedance)
 
 
+def _risk_variant_factory(kind):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_risk_date_variant_exceedance(kind, features, declaration, minimum_history, early_prior=True)
+
+    factory.__name__ = f"pressure_risk_date_variant_{kind}"
+    return factory
+
+
+class PressureRiskDateVariantLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date logistic with the early-fit prior (#506)."""
+
+    FACTORY = staticmethod(_risk_variant_factory("logistic"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_variant_exceedance)
+
+
+class PressureRiskDateVariantClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date classifier with the early-fit prior (#506)."""
+
+    FACTORY = staticmethod(_risk_variant_factory("gbm_classifier"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_variant_exceedance)
+
+
+class PressureRiskDateVariantQuantileConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date skew-t quantile regression with the early-fit prior (#506)."""
+
+    FACTORY = staticmethod(_risk_variant_factory("quantile_skewt"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_variant_exceedance)
+
+
 class RiskDateModelTests(unittest.TestCase):
     """The risk-date severity model (#428) is trained and served on declared risk dates only.
 
