@@ -1,8 +1,8 @@
 """Weighted miss criteria for the pressure judge (#454): near-miss false alarms count less.
 
-`docs/decisions/weighted-miss.md` is a draft decision record; the rule is in force only once Eleonora merges it.
-`metadata/weighted_miss.json` declares the weights and the switch (`in_force`, false). With the switch off the
-judge counts a false alarm as 1, as before, so no published figure moves; these tests also pin that.
+`docs/decisions/weighted-miss.md` records Eleonora's adoption of the rule (#464, 9 October 2026; put in force by #472).
+`metadata/weighted_miss.json` declares the weights and the switch (`in_force`, true). The judge's default counts the
+weighted false alarms; `--rule unweighted` counts a false alarm as 1, and these tests pin both.
 
 **Recorded mutations** (CLAUDE.md: each new leakage guard carries one that kills it).
 
@@ -60,12 +60,23 @@ class RuleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             pj.miss_weight(_rule(), 0)
 
-    def test_the_declaration_file_drafts_the_weights_and_leaves_the_switch_off(self):
+    def test_the_declaration_file_has_the_adopted_weights_and_the_switch_on(self):
         rule = pj.load_weighted_miss(WEIGHTED)
-        self.assertFalse(rule.in_force)
-        self.assertFalse(rule.applied)
+        self.assertTrue(rule.in_force)
+        self.assertTrue(rule.applied)  # the judge's default (`--rule declared`) counts the weighted false alarms
         self.assertEqual(rule.bands, ((2, 0.25), (5, 0.5)))
         self.assertEqual(rule.beyond, 1.0)
+
+    def test_the_unweighted_rule_stays_available_on_request(self):
+        rule = pj.load_weighted_miss(WEIGHTED, applied=False)
+        self.assertTrue(rule.in_force)  # the declaration is unchanged
+        self.assertFalse(rule.applied)  # this run counts every false alarm as 1
+
+    def test_one_declaration_serves_both_thresholds(self):
+        # The weights apply at +5 and +10 bp: the judge reads one rule at every threshold it scores.
+        declaration = pj.load_declaration()
+        self.assertEqual(declaration.thresholds, (5.0, 10.0))
+        self.assertTrue(pj.load_weighted_miss(WEIGHTED).applied)
 
     def test_a_malformed_rule_does_not_load(self):
         document = json.loads(WEIGHTED.read_text())

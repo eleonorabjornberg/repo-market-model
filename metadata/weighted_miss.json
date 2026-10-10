@@ -1,6 +1,6 @@
 {
-  "status": "DRAFT, declared by the pull request that closes #454 and never scored on: Eleonora's ruling of 9 October 2026 (relayed by the orchestrating session) introduces weighted miss criteria into the pressure judge; the weights below are a draft for her to confirm or change in docs/decisions/weighted-miss.md. The rule is in force only once she merges that record AND attests, on GitHub, the adoption as the judge bar (#256); until then in_force is false, the judge counts every false alarm as 1, and no published figure moves.",
-  "in_force": false,
+  "status": "IN FORCE since the pull request that closes #472: Eleonora adopted the rule on #464 on 9 October 2026 (comment 6092866136, her own, performed_via_github_app null, the attestation #256 asks for). Weights 0.25 within 2 trading days of a pressure day, 0.5 within 3 to 5, 1 beyond; limit 2 per onset; at +5 and +10 bp. It is the tier 1 bar and applies to the 2026 confirmation tier, which this change does not open. The record is docs/decisions/weighted-miss.md.",
+  "in_force": true,
   "distance": "trading days (panel business days) from the flagged day to the nearest pressure day at the threshold scored, before or after it; a pressure day counts only if its outcome was known: inside the cut-off rule's training window, only pressure days whose outcome was known at the refit's first decision instant",
   "weights": [
     {"distance_at_most": 2, "weight": 0.25},
@@ -9,7 +9,8 @@
   "beyond": 1.0,
   "applies_to": [
     "cutoff_rule: the false alarms per onset that the flag cut-off's limit counts",
-    "tier 1 (onset warning): the false alarms per onset that the tier's limit counts"
+    "tier 1 (onset warning): the false alarms per onset that the tier's limit counts",
+    "the 2026 confirmation tier, when Eleonora opens it (not opened by this change)"
   ],
-  "unchanged": "the limit of 2 per onset in both places; the onset-warning tier's lead, recall and far-lead conditions; tiers 2 to 5; the pass rule"
+  "unchanged": "the limit of 2 per onset in both places; the onset-warning tier's lead, recall and far-lead conditions; tiers 2 to 5; the pass rule; the thresholds the judge scores (+5 bp primary and +10 bp), at both of which the weights apply"
 }
