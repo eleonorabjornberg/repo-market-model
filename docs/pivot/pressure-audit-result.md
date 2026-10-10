@@ -162,6 +162,10 @@ least 2 panel days before the issue date is 100% for notes and bonds, 100% for b
 Table 4. Onsets of the three years, with the calendar facts and where each row flagged them (horizons 1 to 5; `blind`: the
 row's cut-off or clauses were chosen on a window with nothing it could catch, at every horizon).
 
+> *Note, 10 October 2026 (#503).* "Blind" here means the flag cut-off in force on the day is infinite (`cutoff_rule`: no onset in the
+> training window, or no cut-off within 2 false alarms per onset). `desk-standard-result.md` §4 counts only the first cause, and
+> `setup-diagnostic-result.md` uses "would blind a model" for a panel defect. See `docs/pivot/diagnostics-reconciliation.md`, point 4.
+
 | onset | day type | days to month end | settlement bn (coupons) | audit_calendar | ceiling_calendar_settlement | risk_gbm | risk_quantile_skewt_base | calendar_climatology |
 |---|---|---|---|---|---|---|---|---|
 | 2018-11-15 | ordinary | 15 | 247 (83) | – | – | blind | blind | blind |

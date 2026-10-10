@@ -9,6 +9,10 @@ commits after a first run showed a rule counted ordinary repeats; they are liste
 The full tables are `docs/pivot/evidence/setup-diagnostic/setup_diagnostic.md` (and `.json`); the numbers below are read from
 them.
 
+> *Note, 10 October 2026 (#503).* "Scored days 2018-06-29 to 2025-12-31" is the declared window; the 1,869 days and the 26 episodes below are
+> the **shared grid** (from 2018-07-06), which every horizon scores. The h = 1 grid starts 2018-06-29 and has 27 onsets. "Would blind a
+> model" (Table 7) flags a panel defect, not the infinite flag cut-off that `pressure-audit-result.md` calls blind. See `docs/pivot/diagnostics-reconciliation.md`, points 2 and 4.
+
 ## Short answer
 
 * **The 2018 misses are a thin-history problem; the 2020 and 2024 misses are not.** The four 2018 episodes fall where the

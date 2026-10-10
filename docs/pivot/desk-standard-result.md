@@ -116,6 +116,10 @@ release (the week ending 2020-12-23 printed on 2020-12-28, `fred_macro_latest_vi
 Board's release dates are published in advance, so a per-release availability would remove the two days in an
 ordinary week. That is a change to the registry's shape and is listed below.
 
+> *Correction, 10 October 2026 (#503).* The decision days that serve a scored day at h = 1 are 1,873 (2018-06-28 to 2025-12-30); the
+> 1,874 includes the decision day 2025-12-31, whose scored day falls outside the window, so the 710 is over one day too many (the
+> share moves by at most one day). The 2042 of `information-set.md` is the whole panel to 2026-09-03, a different scope. See `docs/pivot/diagnostics-reconciliation.md`, point 2.
+
 **A daily proxy does not track weekly reserves.** For each Wednesday W the proxy is the print `k` weeks earlier less the
 changes in the Daily Treasury Statement's closing TGA and in the Desk's reverse repo over the same weeks (the balance
 sheet identity: a rise in either drains reserves). Both series are read by their reference date, 2018 to 2025:
@@ -132,6 +136,11 @@ The closing TGA of the Daily Treasury Statement also differs from the H.4.1's We
 this was not diagnosed here.
 
 ## 4. Structural blind spots
+
+> *Note, 10 October 2026 (#503).* "Blind spot" here has two causes: a risk-date model's probability of exactly 0 off a risk date (called
+> *silent* on the post-mortem page) and a cut-off that is infinite because the training window holds no onset. The second is only the
+> first branch of what `pressure-audit-result.md` calls blind (that page also counts a window with no cut-off within the limit, which is
+> why it finds all four 2018 onsets blind where this section finds two). "Five tier-1 passers" is the same set on both pages. See `docs/pivot/diagnostics-reconciliation.md`, points 4 and 6.
 
 The "five tier-1 passers" are read as the five risk-date severity models that pass tier 1 under the unweighted and the
 weighted rule (`docs/pivot/weighted-miss-result.md`, Table 1): `risk_gbm`, `risk_gbm_base`, `risk_logistic`,

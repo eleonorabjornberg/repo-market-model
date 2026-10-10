@@ -35,6 +35,10 @@ the fetched H.4.1 page, its checksum and the two lines read from it; `leaf_floor
 difference in any forecast), so a difference below is the one change and not a different model. The scored days, the folds and the
 flags are the declared ones: 27 onsets at h = 1 and 26 at h = 2 to 5.
 
+> *Note, 10 October 2026 (#503).* The `/27` cells and the 1.30 false alarms per onset of `risk_gbm` at h = 1 are on the **h = 1 grid**
+> (2018-06-29 onward, 27 onsets, five in 2018). On the shared grid the judge's tier 1 uses (from 2018-07-06, 26 onsets, four in 2018) the
+> same 35 false alarms are 1.35 per onset, as in `pressure-audit-result.md`. See `docs/pivot/diagnostics-reconciliation.md`, points 1, 3 and 7.
+
 ## Summary
 
 | # | gap | confirmed? | size on the five passers |
@@ -82,6 +86,10 @@ coupon settlement; five of them have a bill settlement of 75 to 266 (USD billion
 
 **Sensitivity.** `bill_days`: at h = 1 a day with any settlement is a risk date. A settlement is public one business day ahead and
 no earlier (`information-set.md`), so nothing moves at h ≥ 2.
+
+> *Note, 10 October 2026 (#503).* "Public one business day ahead and no earlier" is what the declaration says, not what Treasury's
+> schedules say: `desk-standard-result.md` §2 measures announcements 4 to 14 panel days before the settlement. Which reading the
+> information set adopts is not settled here or in #503; it is Eleonora's decision. See `docs/pivot/diagnostics-reconciliation.md`, point 5.
 
 | model | h=1 declared | h=1 bill days |
 |---|---|---|
@@ -144,6 +152,10 @@ horizons 3 and 4 and the by-year tables are in `tables.md`.
 **Confirmed.** The first scored day is 2018-06-27 (served by the refit with 61 training rows). `tables.md`, "Gap 4", lists every refit
 through 2019 for `risk_gbm_base` at h = 1 and h = 5 and summarises the rest.
 
+> *Correction, 10 October 2026 (#503).* 2018-06-27 is the first *feature* date of the first fold, not a scored day: the first fold reads
+> its features on 2018-06-27 and scores 2018-06-29 (`folds.first` of the persistence backtest of `REPRODUCIBILITY.md`; 61 training
+> rows, last on 2018-06-27). The first scored day at h = 1 is 2018-06-29. The refit sizes in this section are unchanged. See `docs/pivot/diagnostics-reconciliation.md`, point 2.
+
 * The first refit has **12** risk-date training pairs at h = 1 (7 at h = 5), with **1** event at +5 bp and **0** at +10 bp. By
   November 2018 it is 33 pairs and 4 events at +5 bp, 1 at +10 bp (22 pairs and 2 events at h = 5).
 * `min_samples_leaf = 20` (`ml.py:4056`) means the gradient-boosted classifier cannot split a training set of fewer than 40
@@ -156,6 +168,8 @@ through 2019 for `risk_gbm_base` at h = 1 and h = 5 and summarises the rest.
 * All five of the 2018 onsets are unwarned by every model at h = 1 (and the four of 2018 at h ≥ 2), as are the two 2020 onsets. That
   is consistent with fits on one to four events and with a cut-off chosen on a window that has few onsets (`select_cutoff` returns no
   flag when the window has none); it is a coincidence of timing as much as a finding, and this sizing did not separate the two.
+
+  *Note, 10 October 2026 (#503).* Five is the h = 1 grid (it includes 2018-06-29); four is the shared grid and every h ≥ 2. See `docs/pivot/diagnostics-reconciliation.md`, point 3.
 
 ## 5. Weekly averages read as Wednesday levels
 

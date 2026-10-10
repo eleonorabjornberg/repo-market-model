@@ -16,6 +16,11 @@ are the five rows with the most onsets flagged. None passes tier 1 as declared**
 fail the false-alarm limit of 2 per onset, and none passes tier 3 either (see item 4). Only `settlement_quantile_timing`
 passes tier 5.
 
+> *Note, 10 October 2026 (#503).* The "five tier-1 passers of the directive" here are the five best-recall rows of the judge's declared
+> candidates (`two_part_gbm`, `ngboost_laplace`, `hierarchical_logistic`, `settlement_quantile_timing`,
+> `scarcity_logistic_interactions`), not the five risk-date severity models that pass tier 1 on the other diagnostic pages
+> (`risk_gbm`, `risk_gbm_base`, `risk_logistic`, `risk_logistic_base`, `risk_quantile_skewt_base`). See `docs/pivot/diagnostics-reconciliation.md`, point 6.
+
 ## 1. 2018-19 dominance
 
 * **The concentration.** 2018-19 holds 102 of the 140 scored pressure days and 17 of the 26 onsets (by calendar year of the
@@ -39,6 +44,11 @@ passes tier 5.
   `scarcity_logistic_interactions` (26 each) and `settlement_quantile_timing` (29), where scarcity states 2 and 3 hold 27% of days.
 * **2024 behaves differently from 2018-19** (Table 5; its "scored days" are the days every horizon scores, its pressure shares are over the h = 1 days). 2018-19 is 99% scarcity state 3, with 102 pressure days (27% of
   scored days) in 32 episodes up to 12 days long, a spread whose 90th percentile is +11 bp and whose maximum is +315 bp.
+
+  *Note, 10 October 2026 (#503).* "Episodes" in Table 5 are maximal runs of consecutive pressure days (the one-calm-day episode) on the
+  h = 1 grid; the 17 onsets are the five-calm-day episodes on the shared grid. Over the whole window the runs are 47 on the h = 1 grid and
+  46 on the shared grid (`setup-diagnostic-result.md` §3). The 375 days of 2018-19 in Table 10 are the h = 1 grid, the 371 of Table 5 the
+  shared grid. See `docs/pivot/diagnostics-reconciliation.md`, points 2 and 8.
   2024 is 100% scarcity state 0 (reserve balances about 3.3 trillion dollars, as in 2021-23, against 1.6 trillion in
   2018-19), with 5 pressure days (2%) in 3 episodes of at most 2 days, a maximum of +15 bp and a 90th percentile of -4 bp.
   The inputs that moved most against 2018-19 are SOFR volume (median 2.0 trillion against 1.0 trillion), the dealer
