@@ -134,18 +134,25 @@ def run_command(args) -> int:
     minimum = declared["scoring"]["minimum_history"]
     passers = sorted({entry["passer"] for entry in declared["candidates"].values()})
     names = [args.candidate] if args.candidate else passers + list(declared["candidates"])
-    forecasts, settings = {}, {}
+    forecasts, settings, failed = {}, {}, {}
     for name in names:
         kind = risk_declared["candidates"][declared["candidates"].get(name, {"passer": name})["passer"]]["kind"]
         features = candidate_features(declared, risk_declared, name, h)
         predictor = ml.pressure_risk_date_exceedance(kind, features, splits, minimum_history=minimum)
-        with switched_on():
-            report = rolling_exceedance_backtest(
-                rows, predictor=predictor, model_name=name, features=features, registry=registry,
-                decision_time=time.fromisoformat(declared["scoring"]["decision_time"]),
-                taus=taus, minimum_history=minimum, refit_every=declared["scoring"]["refit_every"],
-                end=last, horizon=h,
-            )
+        try:
+            with switched_on():
+                report = rolling_exceedance_backtest(
+                    rows, predictor=predictor, model_name=name, features=features, registry=registry,
+                    decision_time=time.fromisoformat(declared["scoring"]["decision_time"]),
+                    taus=taus, minimum_history=minimum, refit_every=declared["scoring"]["refit_every"],
+                    end=last, horizon=h,
+                )
+        except (ValueError, TypeError) as error:
+            # A fit that the solver cannot complete (the skew-t quantile regression's linear program on
+            # unscaled inputs, for one) is recorded as a failure of that candidate, not as a score.
+            failed[name] = f"{type(error).__name__}: {error}"
+            print(json.dumps({"horizon": h, "candidate": name, "failed": failed[name]}), flush=True)
+            continue
         forecasts[name] = risk.column(report)
         settings[name] = {
             "features": list(report.features),
@@ -159,6 +166,7 @@ def run_command(args) -> int:
         "scratch_panel_sha256": panel_sha256(args.panel),
         "declaration": declared,
         "declarations": settings,
+        "failed": failed,
         "forecasts": forecasts,
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
