@@ -1,0 +1,3384 @@
+{
+ "episodes": {
+  "2018-11-15": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2018-11-30": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 16,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2018-12-17": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 16,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 13,
+      "tga": 13
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2018-12-28": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-01-15": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-01-31": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 16,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-02-28": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 16,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-03-15": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-03-29": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-05-28": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-06-17": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-06-25": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-08-13": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-08-30": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-10-15": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-11-29": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2019-12-16": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 1,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 1,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 1,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 1,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": true,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2020-03-04": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2020-03-12": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2024-09-30": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2024-12-26": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2025-09-15": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2025-09-30": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2025-10-15": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2025-12-15": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  },
+  "2025-12-26": {
+   "1": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 14,
+      "reserve_balances": 7,
+      "tga": 7
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 2,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "2": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 13,
+      "reserve_balances": 6,
+      "tga": 6
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 3,
+     "stale": [
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "3": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 12,
+      "reserve_balances": 12,
+      "tga": 12
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 4,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "4": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 9,
+      "reserve_balances": 9,
+      "tga": 9
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 5,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   },
+   "5": {
+    "at_the_onset": {
+     "ages": {
+      "dealer_treasury_position": 15,
+      "reserve_balances": 8,
+      "tga": 8
+     },
+     "copied_at_the_row_read": false,
+     "spread_rows_back": 6,
+     "stale": [
+      "reserve_balances",
+      "tga",
+      "dealer_treasury_position"
+     ]
+    },
+    "copied_rows_read": 0,
+    "days_with_a_stale_read": 10,
+    "decision_days_read": 10,
+    "stale_reads": [
+     "dealer_treasury_position",
+     "reserve_balances",
+     "tga"
+    ]
+   }
+  }
+ },
+ "horizons": {
+  "1": {
+   "scored_days": 1873,
+   "scored_days_whose_spread_row_read_is_a_copied_row": 6,
+   "scored_days_with_a_weekly_read_older_than_the_threshold": 1873,
+   "spread_read_panel_days_before_the_scored_day": {
+    "2": 1873
+   },
+   "weekly_age_days": {
+    "dealer_treasury_position": {
+     "by_age": {
+      "12": 341,
+      "13": 388,
+      "14": 383,
+      "15": 379,
+      "16": 103,
+      "19": 3,
+      "9": 276
+     },
+     "max": 19,
+     "median": 13,
+     "min": 9,
+     "older_than_threshold": 1873,
+     "reads": 1873
+    },
+    "reserve_balances": {
+     "by_age": {
+      "12": 344,
+      "13": 8,
+      "6": 380,
+      "7": 383,
+      "8": 379,
+      "9": 379
+     },
+     "max": 13,
+     "median": 8,
+     "min": 6,
+     "older_than_threshold": 1110,
+     "reads": 1873
+    },
+    "tga": {
+     "by_age": {
+      "12": 344,
+      "13": 8,
+      "6": 380,
+      "7": 383,
+      "8": 379,
+      "9": 379
+     },
+     "max": 13,
+     "median": 8,
+     "min": 6,
+     "older_than_threshold": 1110,
+     "reads": 1873
+    }
+   }
+  },
+  "2": {
+   "scored_days": 1872,
+   "scored_days_whose_spread_row_read_is_a_copied_row": 6,
+   "scored_days_with_a_weekly_read_older_than_the_threshold": 1872,
+   "spread_read_panel_days_before_the_scored_day": {
+    "3": 1872
+   },
+   "weekly_age_days": {
+    "dealer_treasury_position": {
+     "by_age": {
+      "12": 341,
+      "13": 387,
+      "14": 383,
+      "15": 379,
+      "16": 103,
+      "19": 3,
+      "9": 276
+     },
+     "max": 19,
+     "median": 13.0,
+     "min": 9,
+     "older_than_threshold": 1872,
+     "reads": 1872
+    },
+    "reserve_balances": {
+     "by_age": {
+      "12": 344,
+      "13": 8,
+      "6": 379,
+      "7": 383,
+      "8": 379,
+      "9": 379
+     },
+     "max": 13,
+     "median": 8.0,
+     "min": 6,
+     "older_than_threshold": 1110,
+     "reads": 1872
+    },
+    "tga": {
+     "by_age": {
+      "12": 344,
+      "13": 8,
+      "6": 379,
+      "7": 383,
+      "8": 379,
+      "9": 379
+     },
+     "max": 13,
+     "median": 8.0,
+     "min": 6,
+     "older_than_threshold": 1110,
+     "reads": 1872
+    }
+   }
+  },
+  "3": {
+   "scored_days": 1871,
+   "scored_days_whose_spread_row_read_is_a_copied_row": 6,
+   "scored_days_with_a_weekly_read_older_than_the_threshold": 1871,
+   "spread_read_panel_days_before_the_scored_day": {
+    "4": 1871
+   },
+   "weekly_age_days": {
+    "dealer_treasury_position": {
+     "by_age": {
+      "12": 340,
+      "13": 387,
+      "14": 383,
+      "15": 379,
+      "16": 103,
+      "19": 3,
+      "9": 276
+     },
+     "max": 19,
+     "median": 13,
+     "min": 9,
+     "older_than_threshold": 1871,
+     "reads": 1871
+    },
+    "reserve_balances": {
+     "by_age": {
+      "12": 343,
+      "13": 8,
+      "6": 379,
+      "7": 383,
+      "8": 379,
+      "9": 379
+     },
+     "max": 13,
+     "median": 8,
+     "min": 6,
+     "older_than_threshold": 1109,
+     "reads": 1871
+    },
+    "tga": {
+     "by_age": {
+      "12": 343,
+      "13": 8,
+      "6": 379,
+      "7": 383,
+      "8": 379,
+      "9": 379
+     },
+     "max": 13,
+     "median": 8,
+     "min": 6,
+     "older_than_threshold": 1109,
+     "reads": 1871
+    }
+   }
+  },
+  "4": {
+   "scored_days": 1870,
+   "scored_days_whose_spread_row_read_is_a_copied_row": 6,
+   "scored_days_with_a_weekly_read_older_than_the_threshold": 1870,
+   "spread_read_panel_days_before_the_scored_day": {
+    "5": 1870
+   },
+   "weekly_age_days": {
+    "dealer_treasury_position": {
+     "by_age": {
+      "12": 340,
+      "13": 387,
+      "14": 383,
+      "15": 379,
+      "16": 102,
+      "19": 3,
+      "9": 276
+     },
+     "max": 19,
+     "median": 13.0,
+     "min": 9,
+     "older_than_threshold": 1870,
+     "reads": 1870
+    },
+    "reserve_balances": {
+     "by_age": {
+      "12": 343,
+      "13": 8,
+      "6": 379,
+      "7": 383,
+      "8": 379,
+      "9": 378
+     },
+     "max": 13,
+     "median": 8.0,
+     "min": 6,
+     "older_than_threshold": 1108,
+     "reads": 1870
+    },
+    "tga": {
+     "by_age": {
+      "12": 343,
+      "13": 8,
+      "6": 379,
+      "7": 383,
+      "8": 379,
+      "9": 378
+     },
+     "max": 13,
+     "median": 8.0,
+     "min": 6,
+     "older_than_threshold": 1108,
+     "reads": 1870
+    }
+   }
+  },
+  "5": {
+   "scored_days": 1869,
+   "scored_days_whose_spread_row_read_is_a_copied_row": 6,
+   "scored_days_with_a_weekly_read_older_than_the_threshold": 1869,
+   "spread_read_panel_days_before_the_scored_day": {
+    "6": 1869
+   },
+   "weekly_age_days": {
+    "dealer_treasury_position": {
+     "by_age": {
+      "12": 340,
+      "13": 387,
+      "14": 382,
+      "15": 379,
+      "16": 102,
+      "19": 3,
+      "9": 276
+     },
+     "max": 19,
+     "median": 13,
+     "min": 9,
+     "older_than_threshold": 1869,
+     "reads": 1869
+    },
+    "reserve_balances": {
+     "by_age": {
+      "12": 343,
+      "13": 8,
+      "6": 379,
+      "7": 382,
+      "8": 379,
+      "9": 378
+     },
+     "max": 13,
+     "median": 8,
+     "min": 6,
+     "older_than_threshold": 1108,
+     "reads": 1869
+    },
+    "tga": {
+     "by_age": {
+      "12": 343,
+      "13": 8,
+      "6": 379,
+      "7": 382,
+      "8": 379,
+      "9": 378
+     },
+     "max": 13,
+     "median": 8,
+     "min": 6,
+     "older_than_threshold": 1108,
+     "reads": 1869
+    }
+   }
+  }
+ },
+ "onsets": [
+  "2018-11-15",
+  "2018-11-30",
+  "2018-12-17",
+  "2018-12-28",
+  "2019-01-15",
+  "2019-01-31",
+  "2019-02-28",
+  "2019-03-15",
+  "2019-03-29",
+  "2019-05-28",
+  "2019-06-17",
+  "2019-06-25",
+  "2019-08-13",
+  "2019-08-30",
+  "2019-10-15",
+  "2019-11-29",
+  "2019-12-16",
+  "2020-03-04",
+  "2020-03-12",
+  "2024-09-30",
+  "2024-12-26",
+  "2025-09-15",
+  "2025-09-30",
+  "2025-10-15",
+  "2025-12-15",
+  "2025-12-26"
+ ],
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "threshold_calendar_days": 7
+}

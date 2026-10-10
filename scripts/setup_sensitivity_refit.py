@@ -14,7 +14,7 @@ declared or refitted, the cut-off as declared or chosen with the same weights.
     PYTHONPATH=src /opt/rmm-venv/bin/python scripts/setup_sensitivity_refit.py refit --panel AUG2.csv --published PUB.csv \\
         --bench OUT/bench_hH.json --horizon H --output OUT/dw_hH.json
     PYTHONPATH=src python3 scripts/setup_sensitivity_refit.py report --panel PUB.csv --bench 'OUT/bench_h{h}.json' \\
-        --parent 'OUT/risk_h{h}.json' --refit 'OUT/dw_h{h}.json' --output OUT/refit.json --markdown OUT/refit.md
+        --parent 'OUT/risk_h{h}.json' --refit 'OUT/dw_h{h}.json' --rule unweighted --output OUT/refit.json --markdown OUT/refit.md
 
 Scored days are before 2026-01-01 (`docs/decisions/lockbox.md`); no 2026 day is read and nothing is written into `docs/runs/`.
 """
@@ -142,9 +142,7 @@ def report_command(args) -> int:
     declaration = pj.load_declaration()
     judge_script.require_committed_declaration(pj.DEFAULT_DECLARATION)
     judge_script.require_committed_file(pj.DEFAULT_WEIGHTED_MISS)
-    declaration = replace(declaration, weighted_miss=pj.load_weighted_miss(applied=None))
-    if declaration.weighting_applied:
-        raise SystemExit("the weighted miss rule is on in the declaration; this reading uses the declared cut-off rule")
+    declaration = replace(declaration, weighted_miss=pj.load_weighted_miss(applied=args.rule == "weighted"))
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
@@ -219,6 +217,7 @@ def report_command(args) -> int:
     result = {
         "declaration": "metadata/setup_sensitivity_refit.json",
         "judge_sha256": declaration.sha256,
+        "miss_rule": args.rule,
         "panel_sha256": panel_sha256(args.panel),
         "forecast_panels": digests,
         "period_share": share,
@@ -237,7 +236,7 @@ def markdown(result: dict) -> str:
     lines = [
         "# 2018-19 down-weighted in the refit as well as the cut-off (#518)",
         "",
-        f"The period's share of the scored days: {result['period_share']:.3f}.",
+        f"The period's share of the scored days: {result['period_share']:.3f}. Miss rule: {result['miss_rule']}.",
         "",
         "## Table 1. The weight on a 2018-19 day, by the calendar year in which the refit window ends",
         "",
@@ -277,6 +276,7 @@ def main(argv=None) -> int:
     refit.set_defaults(run=refit_command)
     report = commands.add_parser("report")
     report.add_argument("--panel", type=Path, required=True)
+    report.add_argument("--rule", choices=("unweighted", "weighted"), default="unweighted", help="the judge's miss rule; #482 read the flat (unweighted) one")
     report.add_argument("--bench", required=True)
     report.add_argument("--parent", required=True)
     report.add_argument("--refit", required=True)

@@ -148,7 +148,8 @@ def run_command(args) -> int:
             )
         scored = list(report.scored_dates)
         regimes = [splits.regime(day) for day in scored]
-        forecasts[name] = risk.column(report)
+        if "regime" in groupings:  # the raw base is the judge's row once; a variants-only run leaves it to the declared run
+            forecasts[name] = risk.column(report)
         for grouping in groupings:
             groups = group_labels(grouping, scored, splits, states)
             recalibrated = recalibrate(report, groups, splits, taus, grouping)
@@ -418,7 +419,7 @@ def main(argv=None) -> int:
     one.add_argument("--published", type=Path, required=True)
     one.add_argument("--horizon", type=int, choices=(1, 2, 3, 4, 5), required=True)
     one.add_argument("--candidate")
-    one.add_argument("--groupings", default="regime", help="comma list of regime, none, scarcity (#515); the declared form is regime")
+    one.add_argument("--groupings", default="regime", help="comma list of regime, none, scarcity (#515); the declared form is regime, and a run without it does not repeat the raw bases")
     one.add_argument("--output", type=Path, required=True)
     one.set_defaults(func=run_command)
     tables = commands.add_parser("tables", help="the diagnosis and the judge rows from the two judge results")

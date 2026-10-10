@@ -148,6 +148,20 @@ regime and calibration effect on a calendar day, not a missing input". The post-
 no information about it". A correction note is added where the label is first used. The post-mortem's other "no signal" episodes
 (2018-11-15, 2018-12-17, 2018-12-28, 2020-03-04) are not warned by the audit's calendar rule either, so only 2024-09-30 changes.
 
+### 10. How old the weekly inputs are (correction, 10 October 2026, #517)
+
+Three pages gave three ages for reserves, TGA and the dealer position, and the first measured the wrong thing.
+
+| page | says | supported |
+|---|---|---|
+| `setup-diagnostic-result.md` §4 | never more than 7 calendar days old at a decision day | **wrong for what the forecast reads**: it counted how long a value stayed unchanged on the panel rows, which a weekly series carried by its Wednesday cannot exceed by construction |
+| `pressure-audit-result.md`, Table 2 | 4 to 6 panel days before (reserves, TGA), 8 (dealer position) | right, in panel rows |
+| `construction-gaps-result.md`, gap 5 | 6 to 12 days old | right, in calendar days from the Wednesday, around the 26 onsets |
+
+Over all scored days, read through the as-of rule (`scripts/setup_reads.py`, `evidence/setup-diagnostic/setup_reads.md`): reserves and TGA are 6 to 13 calendar days
+old at the decision (median 8; older than 7 on 1,110 of 1,873 scored days at h = 1), the dealer position 9 to 19 (older than 7 on every scored day). The
+convention for the next pages: state the unit, and state whether the age is of the row or of the observation's Wednesday.
+
 ## Commands that show the supported values
 
 ```

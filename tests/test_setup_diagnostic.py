@@ -200,6 +200,43 @@ class ReadAges(unittest.TestCase):
         self.assertFalse(sd.is_copied_row(rows, 0, ["sofr", "sofr_volume"]))
 
 
+class ReadEvidence(unittest.TestCase):
+    """The findings recorded in `evidence/setup-diagnostic/setup_reads.json` (#517) and `evidence/setup-sensitivity/refit.json` (#518)."""
+
+    @classmethod
+    def setUpClass(cls):
+        root = Path(__file__).resolve().parents[1] / "docs" / "pivot" / "evidence"
+        cls.reads = json.loads((root / "setup-diagnostic" / "setup_reads.json").read_text(encoding="utf-8"))
+        cls.refit = json.loads((root / "setup-sensitivity" / "refit.json").read_text(encoding="utf-8"))
+
+    def test_the_weekly_reads_are_older_than_a_week_on_most_scored_days(self):
+        h1 = self.reads["horizons"]["1"]["weekly_age_days"]
+        self.assertEqual((h1["reserve_balances"]["min"], h1["reserve_balances"]["max"]), (6, 13))
+        self.assertEqual(h1["reserve_balances"]["by_age"], h1["tga"]["by_age"])
+        self.assertGreater(h1["reserve_balances"]["older_than_threshold"], h1["reserve_balances"]["reads"] / 2)
+        self.assertEqual(h1["dealer_treasury_position"]["older_than_threshold"], h1["dealer_treasury_position"]["reads"])
+
+    def test_the_daily_rate_is_read_further_back_as_the_horizon_grows(self):
+        back = {h: list(self.reads["horizons"][h]["spread_read_panel_days_before_the_scored_day"]) for h in "12345"}
+        self.assertEqual(back, {"1": ["2"], "2": ["3"], "3": ["4"], "4": ["5"], "5": ["6"]})
+
+    def test_no_2026_day_is_in_the_evidence(self):
+        self.assertNotIn('"2026-', json.dumps(self.reads))
+        self.assertNotIn('"2026-', json.dumps(self.refit))
+
+    def test_the_refit_weighting_is_the_identity_through_2019(self):
+        windows = self.refit["weights_by_window"]
+        for year in ("2018", "2019"):
+            self.assertEqual((windows[year]["min"], windows[year]["max"]), (1.0, 1.0))
+        self.assertLess(windows["2020"]["min"], 0.01)
+
+    def test_nothing_in_2018_or_2019_moves_under_any_reading(self):
+        for name, row in self.refit["rows"].items():
+            for reading in ("declared", "cutoff_only", "refit", "refit_and_cutoff"):
+                by_year = row[reading]["by_year"]
+                self.assertEqual((by_year["2018"]["onsets_flagged"], by_year["2019"]["onsets_flagged"]), (0, 10), (name, reading))
+
+
 class Revisions(unittest.TestCase):
     def test_a_vintage_that_differs_is_a_revision(self):
         first = {date(2020, 1, 8): 100.0, date(2020, 1, 15): 101.0}

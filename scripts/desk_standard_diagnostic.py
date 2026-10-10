@@ -411,7 +411,7 @@ def reserves(calendar: Calendar, registry: dict, rows_by_date: dict, onsets: lis
             "per_onset": per_onset, "summary_by_horizon": summary,
             "decision_days_with_a_newer_print_public_and_unread": unread, "decision_days": len(all_days),
             "daily_proxy": proxy,
-            "daily_proxy_matched": matched_proxy(series, onsets)}
+            "daily_proxy_matched": matched_proxy(series, onsets, weekly_series(calendar, rows_by_date, "tga"))}
 
 
 def week_average(daily: dict, wednesday: date) -> float | None:
@@ -433,8 +433,24 @@ def week_average(daily: dict, wednesday: date) -> float | None:
     return total / 7
 
 
-def _proxy_table(reserves: dict, level_tga, level_rrp, onsets: list) -> dict:
-    """Does reserves(W) - reserves(W - 7k) track -(change in TGA) - (change in ON RRP), the TGA and RRP levels from the given readers?"""
+def _proxy_wednesdays(reserves: dict, level_tga, level_rrp, weeks: int) -> set:
+    """The Wednesdays `W` with a print `weeks` earlier and a TGA and reverse repo level at both ends, as the given readers read them."""
+
+    out = set()
+    for wednesday in reserves:
+        base = wednesday - timedelta(days=7 * weeks)
+        if base not in reserves or wednesday > LAST:
+            continue
+        if None not in (level_tga(base), level_tga(wednesday), level_rrp(base), level_rrp(wednesday)):
+            out.add(wednesday)
+    return out
+
+
+def _proxy_table(reserves: dict, level_tga, level_rrp, onsets: list, only: dict | None = None) -> dict:
+    """Does reserves(W) - reserves(W - 7k) track -(change in TGA) - (change in ON RRP), the TGA and RRP levels from the given readers?
+
+    `only`, `{weeks: set of Wednesdays}`, restricts the table to those Wednesdays (a common sample for two readers).
+    """
 
     result = {}
     for weeks in (1, 2):
@@ -442,6 +458,8 @@ def _proxy_table(reserves: dict, level_tga, level_rrp, onsets: list) -> dict:
         for wednesday in sorted(reserves):
             base = wednesday - timedelta(days=7 * weeks)
             if base not in reserves or wednesday > LAST:
+                continue
+            if only is not None and wednesday not in only[weeks]:
                 continue
             tga0, tga1 = level_tga(base), level_tga(wednesday)
             rrp0, rrp1 = level_rrp(base), level_rrp(wednesday)
@@ -473,23 +491,68 @@ def _proxy_table(reserves: dict, level_tga, level_rrp, onsets: list) -> dict:
     return result
 
 
-def level_proxy(reserves: dict, tga: dict, rrp: dict, onsets: list = ()) -> dict:
-    """The first proxy: Wednesday levels of the daily TGA and reverse repo (no operation that day counts as none taken)."""
+def _level_readers(tga: dict, rrp: dict) -> tuple:
+    """Wednesday levels of the daily TGA and reverse repo (no operation that day counts as none taken)."""
 
-    return _proxy_table(reserves, tga.get, lambda day: rrp.get(day, 0.0) if tga.get(day) is not None else None, list(onsets))
+    return tga.get, lambda day: rrp.get(day, 0.0) if tga.get(day) is not None else None
 
 
-def week_average_proxy(reserves: dict, tga: dict, rrp: dict, onsets: list = ()) -> dict:
+def _average_readers(tga: dict, rrp: dict) -> tuple:
+    return (lambda w: week_average(tga, w)), (lambda w: week_average(rrp, w))
+
+
+def level_proxy(reserves: dict, tga: dict, rrp: dict, onsets: list = (), only: dict | None = None) -> dict:
+    """The first proxy: Wednesday levels of the daily TGA and reverse repo (the page's method before #516)."""
+
+    return _proxy_table(reserves, *_level_readers(tga, rrp), list(onsets), only)
+
+
+def week_average_proxy(reserves: dict, tga: dict, rrp: dict, onsets: list = (), only: dict | None = None) -> dict:
     """The matched proxy (#516): the same identity with Thursday-to-Wednesday averages, the definition WRESBAL is published on."""
 
-    return _proxy_table(reserves, lambda w: week_average(tga, w), lambda w: week_average(rrp, w), list(onsets))
+    return _proxy_table(reserves, *_average_readers(tga, rrp), list(onsets), only)
 
 
-def matched_proxy(series: dict, onsets: list) -> dict:
+def common_wednesdays(reserves: dict, tga: dict, rrp: dict) -> dict:
+    """`{weeks: Wednesdays}` that both proxies can be built on, so that the two tables compare the same weeks."""
+
+    return {
+        weeks: _proxy_wednesdays(reserves, *_level_readers(tga, rrp), weeks) & _proxy_wednesdays(reserves, *_average_readers(tga, rrp), weeks)
+        for weeks in (1, 2)
+    }
+
+
+def week_average_identity(weekly: dict, daily: dict, tolerance: float = 0.01) -> dict:
+    """How often the H.4.1's weekly level equals the Thursday-to-Wednesday average of the daily series (#516).
+
+    `weekly` is `{Wednesday: level}` and `daily` the Daily Treasury Statement's closing balances. Compared on the Wednesdays
+    where both exist: how many, how many agree to within `tolerance` (USD billions), and the largest difference.
+    """
+
+    differences = []
+    for wednesday, level in weekly.items():
+        average = week_average(daily, wednesday)
+        if average is not None and wednesday <= LAST:
+            differences.append(abs(level - average))
+    return {
+        "wednesdays": len(differences),
+        "within_tolerance": sum(1 for d in differences if d <= tolerance),
+        "tolerance_billions": tolerance,
+        "max_abs_difference_billions": max(differences) if differences else None,
+    }
+
+
+def matched_proxy(series: dict, onsets: list, weekly_tga: dict | None = None) -> dict:
     """Both proxies side by side on the same Wednesdays (#516): levels against a week average, then week averages against it."""
 
     tga, rrp = dts_tga(), reverse_repo_by_date()
-    return {"wednesday_levels": level_proxy(series, tga, rrp, onsets), "week_averages": week_average_proxy(series, tga, rrp, onsets)}
+    only = common_wednesdays(series, tga, rrp)
+    return {
+        "common_sample": True,
+        "wednesday_levels": level_proxy(series, tga, rrp, onsets, only),
+        "week_averages": week_average_proxy(series, tga, rrp, onsets, only),
+        "h41_tga_is_the_week_average_of_the_dts_tga": week_average_identity(weekly_tga, tga) if weekly_tga else None,
+    }
 
 
 def _correlation(a: list, b: list) -> float:
