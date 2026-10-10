@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 240" width="920" height="240" font-family="sans-serif" font-size="10" role="img" aria-label="Episodes of type quarter_end">
+<style>.t{fill:#222}.a{stroke:#888;stroke-width:1}.g{stroke:#ddd}@media (prefers-color-scheme: dark){.t{fill:#ddd}.a{stroke:#aaa}.g{stroke:#444}}</style>
+<text class="t" x="10" y="16" font-size="13" font-weight="bold">Episode type: quarter_end (3 episodes): h = 1 probability of a +5 bp day, 10 days before the start; dashed: cut-off in force</text>
+<line x1="10" x2="26" y1="30" y2="30" stroke="#1f77b4" stroke-width="2"/>
+<text class="t" x="30" y="33">risk_gbm</text>
+<line x1="185" x2="201" y1="30" y2="30" stroke="#17becf" stroke-width="2"/>
+<text class="t" x="205" y="33">risk_gbm_base</text>
+<line x1="360" x2="376" y1="30" y2="30" stroke="#d62728" stroke-width="2"/>
+<text class="t" x="380" y="33">risk_logistic</text>
+<line x1="535" x2="551" y1="30" y2="30" stroke="#ff7f0e" stroke-width="2"/>
+<text class="t" x="555" y="33">risk_logistic_base</text>
+<line x1="710" x2="726" y1="30" y2="30" stroke="#2ca02c" stroke-width="2"/>
+<text class="t" x="730" y="33">risk_quantile_skewt_base</text>
+<text class="t" x="56" y="58" font-weight="bold">2019-03-29 · 2018-19</text>
+<line class="a" x1="56" x2="56" y1="64" y2="172"/>
+<line class="a" x1="56" x2="298" y1="172" y2="172"/>
+<text class="t" x="52" y="175.0" text-anchor="end">0.00</text>
+<text class="t" x="52" y="67.0" text-anchor="end">1.00</text>
+<line x1="298.0" x2="298.0" y1="64" y2="172" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="298.0" y="184" text-anchor="middle">start</text>
+<text class="t" x="56.0" y="184" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="56.0,71.3 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,70.4"/>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,158.9 80.2,158.9 104.4,158.9 128.6,158.9 152.8,158.9 177.0,158.9 201.2,158.9 225.4,158.9 249.6,158.9 273.8,158.9 298.0,158.9"/>
+<circle cx="298.0" cy="70.4" r="2.5" fill="#1f77b4"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="56.0,98.5 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,86.9"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,158.9 80.2,158.9 104.4,158.9 128.6,158.9 152.8,158.9 177.0,158.9 201.2,158.9 225.4,158.9 249.6,158.9 273.8,158.9 298.0,158.9"/>
+<circle cx="298.0" cy="86.9" r="2.5" fill="#17becf"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="56.0,147.3 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,67.0"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,164.8 80.2,164.8 104.4,164.8 128.6,164.8 152.8,164.8 177.0,164.8 201.2,164.8 225.4,164.8 249.6,164.8 273.8,164.8 298.0,164.8"/>
+<circle cx="298.0" cy="67.0" r="2.5" fill="#d62728"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="56.0,157.4 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,68.9"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,164.7 80.2,164.7 104.4,164.7 128.6,164.7 152.8,164.7 177.0,164.7 201.2,164.7 225.4,164.7 249.6,164.7 273.8,164.7 298.0,164.7"/>
+<circle cx="298.0" cy="68.9" r="2.5" fill="#ff7f0e"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="56.0,155.4 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,64.0"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="56.0,172.0 80.2,172.0 104.4,172.0 128.6,172.0 152.8,172.0 177.0,172.0 201.2,172.0 225.4,172.0 249.6,172.0 273.8,172.0 298.0,172.0"/>
+<circle cx="298.0" cy="64.0" r="2.5" fill="#2ca02c"/>
+<text class="t" x="356" y="58" font-weight="bold">2024-09-30 · 2024 · missed by 5</text>
+<line class="a" x1="356" x2="356" y1="64" y2="172"/>
+<line class="a" x1="356" x2="598" y1="172" y2="172"/>
+<text class="t" x="352" y="175.0" text-anchor="end">0.00</text>
+<text class="t" x="352" y="67.0" text-anchor="end">0.30</text>
+<line x1="598.0" x2="598.0" y1="64" y2="172" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="598.0" y="184" text-anchor="middle">start</text>
+<text class="t" x="356.0" y="184" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="356.0,171.9 380.2,172.0 404.4,172.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,171.9 598.0,172.0"/>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,128.6 380.2,128.6 404.4,128.6 428.6,128.6 452.8,128.6 477.0,128.6 501.2,128.6 525.4,128.6 549.6,128.6 573.8,128.6 598.0,128.6"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="356.0,171.8 380.2,171.9 404.4,171.7 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,172.0"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,105.1 380.2,105.1 404.4,105.1 428.6,105.1 452.8,105.1 477.0,105.1 501.2,105.1 525.4,105.1 549.6,105.1 573.8,105.1 598.0,105.1"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="356.0,170.3 380.2,171.6 404.4,171.0 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,171.7 598.0,163.2"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,134.5 380.2,134.5 404.4,134.5 428.6,134.5 452.8,134.5 477.0,134.5 501.2,134.5 525.4,134.5 549.6,134.5 573.8,134.5 598.0,134.5"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="356.0,170.7 380.2,171.5 404.4,171.4 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,171.6 598.0,168.4"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,123.4 380.2,123.4 404.4,123.4 428.6,123.4 452.8,123.4 477.0,123.4 501.2,123.4 525.4,123.4 549.6,123.4 573.8,123.4 598.0,123.4"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="356.0,144.5 380.2,145.0 404.4,139.5 428.6,172.0 452.8,172.0 477.0,172.0 501.2,172.0 525.4,172.0 549.6,172.0 573.8,172.0 598.0,124.8"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="356.0,73.8 380.2,73.8 404.4,73.8 428.6,73.8 452.8,73.8 477.0,73.8 501.2,73.8 525.4,73.8 549.6,73.8 573.8,73.8 598.0,73.8"/>
+<text class="t" x="656" y="58" font-weight="bold">2025-09-30 · 2025-26</text>
+<line class="a" x1="656" x2="656" y1="64" y2="172"/>
+<line class="a" x1="656" x2="898" y1="172" y2="172"/>
+<text class="t" x="652" y="175.0" text-anchor="end">0.00</text>
+<text class="t" x="652" y="67.0" text-anchor="end">0.75</text>
+<line x1="898.0" x2="898.0" y1="64" y2="172" stroke="#c00" stroke-dasharray="2 2"/>
+<text class="t" x="898.0" y="184" text-anchor="middle">start</text>
+<text class="t" x="656.0" y="184" text-anchor="middle">-10</text>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1.6" points="656.0,164.2 680.2,112.2 704.4,172.0 728.6,172.0 752.8,172.0 777.0,172.0 801.2,172.0 825.4,172.0 849.6,171.2 873.8,169.7 898.0,143.0"/>
+<polyline fill="none" stroke="#1f77b4" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,154.5 680.2,154.5 704.4,154.5 728.6,154.5 752.8,154.5 777.0,154.5 801.2,154.5 825.4,154.5 849.6,154.5 873.8,154.5 898.0,154.5"/>
+<circle cx="898.0" cy="143.0" r="2.5" fill="#1f77b4"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1.6" points="656.0,171.4 680.2,167.9 704.4,172.0 728.6,172.0 752.8,172.0 777.0,172.0 801.2,172.0 825.4,172.0 849.6,170.9 873.8,171.6 898.0,167.3"/>
+<polyline fill="none" stroke="#17becf" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,154.5 680.2,154.5 704.4,154.5 728.6,154.5 752.8,154.5 777.0,154.5 801.2,154.5 825.4,154.5 849.6,154.5 873.8,154.5 898.0,154.5"/>
+<circle cx="898.0" cy="167.3" r="2.5" fill="#17becf"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1.6" points="656.0,168.9 680.2,141.0 704.4,172.0 728.6,172.0 752.8,172.0 777.0,172.0 801.2,172.0 825.4,172.0 849.6,170.6 873.8,171.2 898.0,110.5"/>
+<polyline fill="none" stroke="#d62728" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,156.9 680.2,156.9 704.4,156.9 728.6,156.9 752.8,156.9 777.0,156.9 801.2,156.9 825.4,156.9 849.6,156.9 873.8,156.9 898.0,156.9"/>
+<circle cx="898.0" cy="110.5" r="2.5" fill="#d62728"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1.6" points="656.0,169.6 680.2,161.3 704.4,172.0 728.6,172.0 752.8,172.0 777.0,172.0 801.2,172.0 825.4,172.0 849.6,170.3 873.8,170.9 898.0,115.5"/>
+<polyline fill="none" stroke="#ff7f0e" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,152.4 680.2,152.4 704.4,152.4 728.6,152.4 752.8,152.4 777.0,152.4 801.2,152.4 825.4,152.4 849.6,152.4 873.8,152.4 898.0,152.4"/>
+<circle cx="898.0" cy="115.5" r="2.5" fill="#ff7f0e"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1.6" points="656.0,147.7 680.2,73.8 704.4,172.0 728.6,172.0 752.8,172.0 777.0,172.0 801.2,172.0 825.4,172.0 849.6,166.7 873.8,144.1 898.0,82.0"/>
+<polyline fill="none" stroke="#2ca02c" stroke-width="1" stroke-dasharray="3 2" opacity="0.7" points="656.0,132.4 680.2,132.4 704.4,132.4 728.6,132.4 752.8,132.4 777.0,132.4 801.2,132.4 825.4,132.4 849.6,132.4 873.8,132.4 898.0,132.4"/>
+<circle cx="898.0" cy="82.0" r="2.5" fill="#2ca02c"/>
+</svg>
