@@ -33,6 +33,7 @@ from .splits import LookAheadError
 
 __all__ = [
     "BACKFILL_SOURCE_ID",
+    "augment_rows",
     "BackfilledDay",
     "FIRST_PUBLISHED",
     "RATE_NAMES",
@@ -206,3 +207,39 @@ def require_training_only(folds: Iterable, *, where: str) -> None:
                     f"back-filled day (before {FIRST_PUBLISHED}); back-filled values are training "
                     f"history only (docs/decisions/information-set.md)"
                 )
+
+
+def augment_rows(
+    extended: Sequence[Mapping[str, str]], augmented: Sequence[Mapping[str, str]]
+) -> List[Dict[str, str]]:
+    """The extended panel's rows with the measurement columns of the published days joined on (#484).
+
+    `extended` is the extended scratch panel (`date` and its columns, as CSV cells); `augmented` is the
+    published days' panel with the measurement columns added. Back-filled rows (before
+    `FIRST_PUBLISHED`) carry a blank cell in every column `extended` lacks: the sources of those
+    columns do not reach back, so a model that reads one trains no pair on such a row. Published rows
+    are the augmented panel's.
+
+    Raises:
+        ValueError: if the published days differ, or a column both carry differs on a published day.
+    """
+
+    first = FIRST_PUBLISHED.isoformat()
+    published = [row for row in extended if row["date"] >= first]
+    if [row["date"] for row in published] != [row["date"] for row in augmented]:
+        raise ValueError("the extended panel's published days are not the augmented panel's days")
+    extra = [name for name in augmented[0] if name not in extended[0]] if augmented else []
+    for mine, theirs in zip(published, augmented):
+        for name in mine:
+            a, b = mine[name], theirs.get(name, "")
+            if a == b:
+                continue
+            same = bool(a) and bool(b) and abs(float(a) - float(b)) <= 1e-9
+            if not same:
+                raise ValueError(f"{mine['date']} {name}: extended {a!r} != augmented {b!r}")
+    out: List[Dict[str, str]] = []
+    for row in extended:
+        if row["date"] < first:
+            out.append({**row, **{name: "" for name in extra}})
+    out.extend(dict(row) for row in augmented)
+    return out

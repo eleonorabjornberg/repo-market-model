@@ -235,3 +235,46 @@ class TheShiftKeepsTheScoredDays(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AugmentingTheExtendedPanel(unittest.TestCase):
+    """The measurement columns join the extended panel; the back-filled rows carry none of them (#484).
+
+    Mutation record: red first, before `augment_rows` existed
+    (`AttributeError: module 'repo_model.backfill' has no attribute 'augment_rows'`). Then, with the function in place, one mutation
+    in a disposable copy, `PYTHONDONTWRITEBYTECODE=1`, `python3 -B`, unmutated control green before
+    and after, the line confirmed applied by grep: `src/repo_model/backfill.py`, in `augment_rows`,
+    `if not same:` replaced by `if False:`; `test_a_published_row_that_disagrees_is_refused` failed with
+    `AssertionError: ValueError not raised`.
+    """
+
+    def _rows(self):
+        extended = [
+            {"date": "2018-03-29", "sofr": "1.75", "reserve_balances": "2200.0"},
+            {"date": "2018-04-03", "sofr": "1.83", "reserve_balances": "2113.3"},
+            {"date": "2018-04-04", "sofr": "1.76", "reserve_balances": ""},
+        ]
+        augmented = [
+            {"date": "2018-04-03", "sofr": "1.83", "reserve_balances": "2113.3", "tga_daily": "300.0"},
+            {"date": "2018-04-04", "sofr": "1.76", "reserve_balances": "", "tga_daily": ""},
+        ]
+        return extended, augmented
+
+    def test_back_filled_rows_get_blank_measurement_columns_and_published_rows_the_measurements(self):
+        extended, augmented = self._rows()
+        out = backfill.augment_rows(extended, augmented)
+        self.assertEqual([row["date"] for row in out], ["2018-03-29", "2018-04-03", "2018-04-04"])
+        self.assertEqual(out[0]["tga_daily"], "")
+        self.assertEqual(out[0]["sofr"], "1.75")
+        self.assertEqual(out[1]["tga_daily"], "300.0")
+
+    def test_a_published_row_that_disagrees_is_refused(self):
+        extended, augmented = self._rows()
+        augmented[0]["sofr"] = "1.90"
+        with self.assertRaises(ValueError):
+            backfill.augment_rows(extended, augmented)
+
+    def test_different_published_days_are_refused(self):
+        extended, augmented = self._rows()
+        with self.assertRaises(ValueError):
+            backfill.augment_rows(extended, augmented[:1])
