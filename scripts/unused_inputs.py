@@ -395,11 +395,11 @@ def report_command(args) -> int:
         pairs.append((name, name, entry["passer"]))
         if name in declared.get("also_against", {}):
             pairs.append((f"{name} vs {declared['also_against'][name]}", name, declared["also_against"][name]))
-    for label, name, control in pairs:
+    for pair, name, control in pairs:
         if name not in by_name or control not in by_name:
-            result.setdefault("not_scored", []).append(label)
+            result.setdefault("not_scored", []).append(pair)
             continue
-        result["paired"][label] = {"control": control, "horizons": {}}
+        result["paired"][pair] = {"control": control, "horizons": {}}
         for h in declaration.horizons:
             grid = grids[h]
             outcomes = grid.outcomes[tau]
@@ -414,7 +414,7 @@ def report_command(args) -> int:
                     parts[label] = _interval([diffs[k] for k in members], seed, boot["block_length"],
                                              boot["replications"], boot["level"])
                 cell[dimension] = parts
-            result["paired"][label]["horizons"][str(h)] = cell
+            result["paired"][pair]["horizons"][str(h)] = cell
             result["onsets"].setdefault(name, {})[str(h)] = totals(name, h)
             result["onsets"].setdefault(control, {})[str(h)] = totals(control, h)
         result["recall_by_year"][name] = recall_by_year(name)
