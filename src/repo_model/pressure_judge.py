@@ -209,6 +209,8 @@ class Declaration:
     persistence: str
     candidates: Mapping[str, Mapping[str, Any]]
     weighted_miss: Optional["WeightedMiss"] = None
+    #: tier 1 reading of #588: a flag from a refit block whose cut-off flags every day in it is no warning (off in force)
+    always_flag_not_warning: bool = False
 
     @property
     def weighting_applied(self) -> bool:
@@ -222,6 +224,11 @@ class Declaration:
         document = self._document()
         if self.weighted_miss is not None:
             document["weighted_miss"] = self.weighted_miss.document()
+        if self.always_flag_not_warning:
+            document["tiers"]["onset_warning"]["always_flag_blocks"] = (
+                "a flag from a refit block whose cut-off is at or below every probability in it counts neither as a "
+                "warning nor as a false alarm; the blocks are listed (#588)"
+            )
         return document
 
     def _document(self) -> dict:
@@ -853,6 +860,26 @@ def _check_alarm_rule(path: Path, name: str, rule: object) -> None:
     _integer(rule.get("trading_days"), f"candidate {name!r} alarm_rule.trading_days")
 
 
+def always_flag_blocks(probabilities: Sequence[float], cutoffs: Sequence[float], step: int) -> List[bool]:
+    """Which refit blocks of `step` days are always-flag (#588): the cut-off is at or below every probability in the block.
+
+    The cut-off of a block is the one on its first day; an infinite cut-off (never flag) is at or below nothing. Every day
+    of an always-flag block flags, whatever the model says.
+
+    Raises:
+        ValueError: if the series differ in length or `step` is below 1.
+    """
+
+    if len(probabilities) != len(cutoffs):
+        raise ValueError("probabilities and cutoffs must have one entry per day")
+    if step < 1:
+        raise ValueError("a refit block needs at least one day")
+    return [
+        cutoffs[start] != float("inf") and cutoffs[start] <= min(probabilities[start : start + step])
+        for start in range(0, len(probabilities), step)
+    ]
+
+
 def cooldown_flags(
     flags: Sequence[int],
     onset: Sequence[int],
@@ -1423,6 +1450,11 @@ def judge(
             is scored in the look without being named for it.
     """
 
+    if declaration.always_flag_not_warning and confirmation:
+        raise ValueError(
+            "the always-flag reading (#588) reads the refit blocks of the development days; "
+            "the single look is cut to its window and cannot be read that way"
+        )
     _check_grid(declaration, grids, confirmation=confirmation)
     by_name = _check_forecasts(declaration, grids, forecasts, confirmation=confirmation)
     if list(calendar) != sorted(set(calendar)):
@@ -1816,8 +1848,11 @@ def _onset_tier(
     onset = [float(grids[first].onset[position[first][day]]) for day in common]
     onsets = int(sum(onset))
     caught = [0.0] * len(common)
+    caught_anyway = [0.0] * len(common)
     reference_missed = [1.0] * len(common)
     false_alarms: Dict[str, dict] = {}
+    always_flag: Dict[str, dict] = {}
+    dropped: Dict[str, int] = {}
     rule = declaration.weighted_miss
     weighted_alarms: Dict[str, dict] = {}
     by_regime: Dict[str, Dict[str, dict]] = {}
@@ -1834,9 +1869,22 @@ def _onset_tier(
         at = [position[h][day] for day in common]
         pressure = [grids[h].outcomes[tau][k] for k in at]
         chosen = by_name[name][h]
-        flags = _alarm_flags(
-            declaration, name, [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at], onset
-        )
+        raw = [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at]
+        if declaration.always_flag_not_warning:
+            # #588: a flag from a block whose cut-off flags every day in it counts as nothing; it is listed instead.
+            step = declaration.cutoff_refit_every
+            blocks = always_flag_blocks(chosen.probabilities[tau], chosen.cutoffs[tau], step)
+            blanket = [blocks[k // step] for k in at]
+            always_flag[str(h)] = {
+                "count": sum(blocks),
+                "first_days": [grids[h].dates[b * step].isoformat() for b, x in enumerate(blocks) if x],
+            }
+            dropped[str(h)] = sum(r for r, b in zip(raw, blanket) if b)
+            caught_anyway = [
+                max(c, float(f)) for c, f in zip(caught_anyway, _alarm_flags(declaration, name, raw, onset))
+            ]
+            raw = [0 if b else r for r, b in zip(raw, blanket)]
+        flags = _alarm_flags(declaration, name, raw, onset)
         raised = sum(1 for f, y in zip(flags, pressure) if f and not y)
         weights = matched_false_alarm_weights(
             [by_name[declaration.climatology][h].probabilities[tau][k] for k in at], pressure, raised
@@ -1870,6 +1918,14 @@ def _onset_tier(
         "onsets_flagged": _clean(sum(o * c for o, c in zip(onset, caught))),
         "false_alarms_by_horizon": false_alarms,
     }
+    if declaration.always_flag_not_warning:
+        out["always_flag"] = {
+            "blocks_by_horizon": always_flag,
+            "flags_dropped_by_horizon": dropped,
+            "onsets_lost": [
+                day.isoformat() for day, o, c, a in zip(common, onset, caught, caught_anyway) if o and a and not c
+            ],
+        }
     if rule is not None:
         out["weighted_miss_applied"] = rule.applied
         out["weighted_false_alarms_by_horizon"] = weighted_alarms
