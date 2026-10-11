@@ -5382,8 +5382,14 @@ def _quantile_exceedance(
     taus: Sequence[float],
     smoother: str = "linear",
     weights: Optional[Sequence[float]] = None,
+    scaling: str = "standardize",
 ) -> List[Tuple[float, ...]]:
     """Linear quantile regressions of the spread, read as P(spread > tau) per day.
+
+    `scaling` (#537): `"standardize"` (the default, the estimator every earlier record was scored
+    with) or `"minmax"` (`_scale_inputs`): how the columns are scaled on `xs` before the linear
+    programs. The fit is equivariant to either, but the solver is not: the median's program on a
+    standardized design can return no solution.
 
     `weights` (#518): one positive weight per training pair, passed to each `QuantileRegressor` as
     `sample_weight`; the standardiser stays unweighted. `None` passes nothing.
@@ -5409,9 +5415,7 @@ def _quantile_exceedance(
         if len(weights) != len(y) or any(not w > 0 for w in weights):
             raise ValueError("a weighted fit needs one positive weight per training pair")
         fit_weight = {"sample_weight": numpy.asarray(weights, dtype=float)}
-    centre, scale = _standardizer(x)
-    train = (x - centre) / scale
-    given = (numpy.asarray(served, dtype=float) - centre) / scale
+    train, given = _scale_inputs(x, numpy.asarray(served, dtype=float), scaling)
     grid = PRESSURE_QUANTILE_SETTINGS["quantile_grid"]
     predicted = numpy.column_stack(
         [
@@ -6151,8 +6155,13 @@ def pressure_risk_date_exceedance(
     declaration: Any,
     minimum_history: int = 20,
     train_weight: Optional[Callable[[Sequence[date]], Sequence[float]]] = None,
+    input_scaling: str = "standardize",
 ) -> ExceedancePredictor:
     """A model fitted and served on the declared risk dates only (#428).
+
+    `input_scaling` (#537): how the quantile regression's columns are scaled, `"standardize"` (the
+    default; every earlier record) or `"minmax"` (`_scale_inputs`). Only the `quantile_skewt` form
+    takes anything but the default; the others refuse it rather than ignore it.
 
     `train_weight` (#518): given the label days of a fit's risk-date training pairs, one positive weight
     per pair, applied to the fit as `sample_weight`. It sees the dates of pairs the as-of rule has already
@@ -6173,6 +6182,10 @@ def pressure_risk_date_exceedance(
         raise ValueError(f"a risk-date model is one of {list(RISK_DATE_KINDS)}, got {kind!r}")
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if input_scaling not in QUANTILE_INPUT_SCALINGS:
+        raise ValueError(f"an input scaling is one of {list(QUANTILE_INPUT_SCALINGS)}, got {input_scaling!r}")
+    if input_scaling != "standardize" and kind != "quantile_skewt":
+        raise ValueError(f"the {kind!r} form takes no input scaling; only the quantile form does")
     design = _RiskDateDesign(features, declaration)
     cache: dict = {}
 
@@ -6223,7 +6236,8 @@ def pressure_risk_date_exceedance(
             fitted: dict = {}
             if kind == "quantile_skewt":
                 law = _quantile_exceedance(
-                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t", weights=weights
+                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t", weights=weights,
+                    scaling=input_scaling,
                 )
                 fits = [[curve[k] for curve in law] for k in range(len(taus))]
             else:
@@ -6259,6 +6273,8 @@ def pressure_risk_date_exceedance(
             + (", or a coupon settlement" if "treasury_settlement_coupons" in design.settlements else "")
         )
         settings["risk_date_training_pairs"] = len(xs)
+        if input_scaling != "standardize":
+            settings["input_scaling"] = input_scaling
         if weights is not None:
             settings["training_weights"] = "applied (#518)"
         if design.scarcity:
@@ -7550,6 +7566,30 @@ def _standardizer(x: Any) -> Tuple[Any, Any]:
     scale = x.std(axis=0)
     scale[scale == 0.0] = 1.0
     return centre, scale
+
+
+#: The input scalings a quantile regression may be fitted with (#537).
+QUANTILE_INPUT_SCALINGS = ("standardize", "minmax")
+
+
+def _scale_inputs(x: Any, other: Any, scaling: str) -> Tuple[Any, Any]:
+    """`x` and `other` scaled by `x`'s own statistics (#537).
+
+    `"standardize"`: zero mean and unit standard deviation (a constant column keeps scale 1).
+    `"minmax"`: each column to [0, 1] on `x`, so `x`'s smallest value is 0 and its largest 1 (a
+    constant column is left at 0). `other` is not clipped: a served value outside `x`'s range lies
+    outside [0, 1], as a standardized one lies outside a few standard deviations.
+    """
+
+    if scaling == "standardize":
+        centre, scale = _standardizer(x)
+    elif scaling == "minmax":
+        centre = x.min(axis=0)
+        scale = x.max(axis=0) - centre
+        scale[scale == 0.0] = 1.0
+    else:
+        raise ValueError(f"an input scaling is one of {list(QUANTILE_INPUT_SCALINGS)}, got {scaling!r}")
+    return (x - centre) / scale, (other - centre) / scale
 
 
 def _fit_logit(x: Any, y: Any, c: float = 1.0) -> _Logit:

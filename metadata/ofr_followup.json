@@ -1,0 +1,115 @@
+{
+ "directive": "#537",
+ "status": "declared by the pull request that closes #537 before any score was computed, as Eleonora ruled on #496 on 10 October 2026: a 'not yet published' flag for the OFR values before their first public date, and an input scaling so the skewed model solves. Nothing here is tuned on a scored day. No input is added to the panel's published columns, to metadata/sources.json or to contract.py, and none is on in any published declaration. The scaling was chosen by whether the median quantile regression's linear program returns a solution on the one design of #496 that failed (it solved under every rescaling tried on that design); it was not chosen by any score.",
+ "extends": "metadata/unused_inputs.json (#477): the passers, scoring window, thresholds, horizons and the other groups are those declarations'. This file re-scores the dealer-and-segment group only.",
+ "scoring": {
+  "last_day": "2025-12-31",
+  "minimum_history": 61,
+  "refit_every": 21,
+  "decision_time": "16:00"
+ },
+ "thresholds_bp": [
+  5,
+  10
+ ],
+ "horizons": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "passers": "the five tier-1 passers of #428 (docs/pivot/risk-date-severity-result.md), as metadata/risk_date_severity.json declares them: risk_gbm, risk_gbm_base, risk_logistic, risk_logistic_base, risk_quantile_skewt_base. Their estimators, risk-date rule, inputs and the exact-zero forecast on other days are unchanged; only the declared group is added to the inputs.",
+ "control": "each candidate's control is its own passer, scored by this script on the same scratch panel and fold grid, so a difference is the group's (and, for the skew-t form, the scaling's) and nothing else. The skew-t candidate is also paired against risk_quantile_skewt_base_minmax, the passer refitted with the same scaling, so the group's effect and the scaling's can be told apart.",
+ "ofr_not_yet_published": {
+  "first_public": "2020-09-09",
+  "why": "the OFR began publishing its repo-segment series in real time on this day; earlier values were filled in after the fact and are not read (#508, #522). The panel carries ofr_tri_rate and ofr_gcf_rate empty before it.",
+  "flag": "<series>_not_yet_published: 1.0 on a row dated before first_public, else 0.0. A function of the row's date alone, never of whether a value exists: the GCF 'observed' indicator is not an input (Eleonora's ruling of 10 October 2026 on #520).",
+  "value": "<series>_filled: the panel's rate where it has one; 0.0 on a flagged row; empty otherwise. A gap after first_public is not filled, and a fit that needs the column refuses that day.",
+  "series": {
+   "ofr_tri_rate": {
+    "filled": "tri_rate_filled",
+    "flag": "tri_rate_not_yet_published",
+    "scored": true
+   },
+   "ofr_gcf_rate": {
+    "filled": "gcf_rate_filled",
+    "flag": "gcf_rate_not_yet_published",
+    "scored": false,
+    "why_not_scored": "the GCF rate is empty on most days after first_public (144 of 1325 scratch-panel rows up to 2025-12-31 hold a value). Reading it would drop those days, and filling them would make a value's existence an input, which the ruling on #520 refuses. The flag and the filled column are built and tested, and the GCF rate stays out of every candidate. A fill for the GCF gaps is a design choice for Eleonora."
+   }
+  },
+  "guard": "scripts/unused_inputs.py panel and run call dvp_segment.require_ofr_public (#522, of #508): a panel holding an OFR value dated before first_public raises LookAheadError. Both new column pairs draw on the OFR source's own fields, so the as-of rule reads them at that source's release lag.",
+  "implementation": "repo_model.ofr_publication"
+ },
+ "scaling": {
+  "input_scaling": "minmax",
+  "applies_to": [
+   "risk_quantile_skewt_base_dealer_ofr",
+   "risk_quantile_skewt_base_minmax"
+  ],
+  "rule": "each column rescaled to [0, 1] on the fit's training pairs, then the linear programs (ml._scale_inputs). A linear quantile regression with an intercept is equivariant to the change, so the model is the same; only the solver's conditioning changes. The five passers and every other candidate keep the standardizer.",
+  "why": "risk_quantile_skewt_base_dealer could not be fitted at h = 1 and h = 5 in #496: the median's program on the standardized design returned no solution (HiGHS status 4).",
+  "if_a_fit_still_fails": "the candidate is reported as not scored, as in #496. No second scaling is tried in this pull request.",
+  "implementation": "ml.pressure_risk_date_exceedance(..., input_scaling='minmax')"
+ },
+ "groups": {
+  "dealer_ofr": {
+   "label": "dealer and segment, with the OFR tri-party rate",
+   "columns": [
+    "dealer_treasury_position",
+    "fed_repo_days_since_positive",
+    "fed_repo_log_accepted",
+    "fed_repo_log_accepted_change",
+    "fed_repo_ops",
+    "fed_repo_rate_iorb_bps",
+    "fed_repo_submitted",
+    "tri_rate_filled",
+    "tri_rate_not_yet_published"
+   ],
+   "source": "dealer_treasury_position: nyfed_fr2004, six business days after the as-of date (published panel column, weekly, staleness-guarded); fed_repo_*: nyfed_repo_ops, 16:00 ET on the next business day (#425), the conservative reading, not the same-day one; tri_rate_filled and tri_rate_not_yet_published: ofr_stfm_repo_segments, 2 business days after the ref_date at 16:00 (the registry's release lag), flag by date only",
+   "left_out": {
+    "ofr_gcf_rate": "see ofr_not_yet_published.series.ofr_gcf_rate.why_not_scored"
+   }
+  }
+ },
+ "columns_at_horizon": "every group column is read at every horizon; the passers' own rule that treasury_settlement and treasury_settlement_coupons leave the inputs at h >= 2 is unchanged",
+ "candidates": {
+  "risk_gbm_dealer_ofr": {
+   "passer": "risk_gbm",
+   "group": "dealer_ofr"
+  },
+  "risk_gbm_base_dealer_ofr": {
+   "passer": "risk_gbm_base",
+   "group": "dealer_ofr"
+  },
+  "risk_logistic_dealer_ofr": {
+   "passer": "risk_logistic",
+   "group": "dealer_ofr"
+  },
+  "risk_logistic_base_dealer_ofr": {
+   "passer": "risk_logistic_base",
+   "group": "dealer_ofr"
+  },
+  "risk_quantile_skewt_base_dealer_ofr": {
+   "passer": "risk_quantile_skewt_base",
+   "group": "dealer_ofr"
+  }
+ },
+ "extra_controls": {
+  "risk_quantile_skewt_base_minmax": {
+   "passer": "risk_quantile_skewt_base",
+   "input_scaling": "minmax"
+  }
+ },
+ "also_against": {
+  "risk_quantile_skewt_base_dealer_ofr": "risk_quantile_skewt_base_minmax"
+ },
+ "input_scaling": {
+  "risk_quantile_skewt_base_dealer_ofr": "minmax",
+  "risk_quantile_skewt_base_minmax": "minmax"
+ },
+ "new_availability_guard": "none beyond the two above: the flag and the filled column are read through the as-of rule at the OFR source's own lag, and the panel is refused if it holds an OFR value dated before first_public",
+ "judge": "scripts/pressure_judge.py judge, tiers 1, 3 and 5 under the rule in force; flag cut-offs chosen by metadata/pressure_judge.json's cutoff_rule from each refit's training window alone; none is declared here",
+ "published_declaration": "none: no candidate is in confirmation.candidates and no column is in contract.FEATURE_FIELDS; nothing here is published, and no 2026 day is scored"
+}

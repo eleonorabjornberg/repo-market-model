@@ -22,6 +22,14 @@ declaration and switched on for these runs only.
     PYTHONPATH=src python3 scripts/unused_inputs.py report --panel PUBLISHED.csv --output OUT/paired.json \\
         --markdown OUT/paired.md OUT/bench_h?.json OUT/unused_h?.json
 
+#537 (the OFR flag and the skew-t scaling, `metadata/ofr_followup.json`) adds one panel step and a `--declaration`:
+
+    PYTHONPATH=src python3 scripts/unused_inputs.py panel --panel AUG5.csv --output AUG6.csv
+    for h in 1 2 3 4 5:
+      PYTHONPATH=src python3 scripts/unused_inputs.py run --declaration metadata/ofr_followup.json \\
+          --panel AUG6.csv --published PUBLISHED.csv --horizon $h --output OUT/ofr_h$h.json
+    # then `prune`, `judge` and `report --declaration metadata/ofr_followup.json` as above, on OUT/ofr_h?.json
+
 * `inventory` lists each collected input: whether it is a column of the published panel, its as-of availability
   (the registry's release lag), and the declared candidates that read it today.
 * `run` fits the five passers (the controls) and the fifteen candidates on the risk-date label days of the shared
@@ -35,6 +43,8 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import csv
+import hashlib
 import importlib.util
 import json
 import random
@@ -48,7 +58,8 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import contract, fed_liquidity, measurement_fields, ml, net_settlement, policy_features  # noqa: E402
+from repo_model import contract, dvp_segment, fed_liquidity, measurement_fields, ml, net_settlement  # noqa: E402
+from repo_model import ofr_publication, policy_features  # noqa: E402
 from repo_model import pressure_judge as pj, scarcity  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
@@ -68,6 +79,7 @@ risk = _script("risk_date_severity")
 
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 DECLARATION = REPO / "metadata" / "unused_inputs.json"
+FOLLOWUP = REPO / "metadata" / "ofr_followup.json"
 RISK_DECLARATION = REPO / "metadata" / "risk_date_severity.json"
 CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
 SNAPSHOTS = REPO / "tests" / "fixtures" / "snapshots"
@@ -85,6 +97,7 @@ def all_column_fields() -> dict:
         **net_settlement.COLUMN_FIELDS,
         **fed_liquidity.ALL_COLUMN_FIELDS,
         **policy_features.COLUMN_FIELDS,
+        **ofr_publication.COLUMN_FIELDS,
     }
 
 
@@ -113,13 +126,25 @@ def candidate_features(declared: dict, risk_declared: dict, name: str, horizon: 
         entry = declared["candidates"][name]
         passer, extra = entry["passer"], declared["groups"][entry["group"]]["columns"]
     else:
-        passer, extra = name, []
+        passer, extra = declared.get("extra_controls", {}).get(name, {}).get("passer", name), []
     base = risk.features_at_horizon(risk_declared, risk_declared["candidates"][passer], horizon)
     return tuple(dict.fromkeys(list(base) + list(extra)))
 
 
+def declaration_path(args) -> Path:
+    """The declaration a command reads: `--declaration`, else #477's (`metadata/unused_inputs.json`)."""
+
+    return (args.declaration or DECLARATION).resolve()
+
+
+def candidate_owner(declared: dict, name: str) -> str:
+    """The passer a name is: itself, or the passer a candidate or an extra control refits."""
+
+    return {**declared.get("extra_controls", {}), **declared["candidates"]}.get(name, {"passer": name})["passer"]
+
+
 def run_command(args) -> int:
-    declared = committed_declaration(DECLARATION)
+    declared = committed_declaration(declaration_path(args))
     risk_declared = committed_declaration(RISK_DECLARATION)
     h = args.horizon
     if h not in declared["horizons"]:
@@ -128,17 +153,20 @@ def run_command(args) -> int:
     require_unlocked([last], where="unused_inputs")
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
+    dvp_segment.require_ofr_public(rows)
     splits = load_split_declaration(SPLITS)
     registry = measurement_fields.load_registry()
     taus = tuple(float(t) for t in declared["thresholds_bp"])
     minimum = declared["scoring"]["minimum_history"]
     passers = sorted({entry["passer"] for entry in declared["candidates"].values()})
-    names = [args.candidate] if args.candidate else passers + list(declared["candidates"])
+    scalings = declared.get("input_scaling", {})
+    names = [args.candidate] if args.candidate else passers + list(declared.get("extra_controls", {})) + list(declared["candidates"])
     forecasts, settings, failed = {}, {}, {}
     for name in names:
-        kind = risk_declared["candidates"][declared["candidates"].get(name, {"passer": name})["passer"]]["kind"]
+        kind = risk_declared["candidates"][candidate_owner(declared, name)]["kind"]
         features = candidate_features(declared, risk_declared, name, h)
-        predictor = ml.pressure_risk_date_exceedance(kind, features, splits, minimum_history=minimum)
+        scaling = {"input_scaling": scalings[name]} if name in scalings else {}
+        predictor = ml.pressure_risk_date_exceedance(kind, features, splits, minimum_history=minimum, **scaling)
         try:
             with switched_on():
                 report = rolling_exceedance_backtest(
@@ -187,6 +215,30 @@ def prune_command(args) -> int:
         out.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
     print(json.dumps({"dropped": {name: {str(d["horizon"]): d["failed"][name] for d in documents if name in d.get("failed", {})}
                                   for name in dropped}}, indent=1))
+    return 0
+
+
+# -- the not-yet-published columns (#537) -----------------------------------------
+
+
+def _cell(value) -> str:
+    return "" if value is None else repr(float(value))
+
+
+def panel_command(args) -> int:
+    """Add the OFR flag and filled columns (`repo_model.ofr_publication`) to a scratch panel."""
+
+    rows = ofr_publication.add_columns(load_daily_panel(args.panel))
+    with args.panel.open(newline="", encoding="utf-8") as handle:
+        base = next(csv.reader(handle))
+    header = list(dict.fromkeys(base + list(ofr_publication.COLUMNS)))
+    with args.output.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(header)
+        for row in rows:
+            writer.writerow([row.date.isoformat()] + [_cell(row.values.get(name)) for name in header[1:]])
+    print(json.dumps({"output": str(args.output), "sha256": hashlib.sha256(args.output.read_bytes()).hexdigest(),
+                      "rows": len(rows), "columns": list(ofr_publication.COLUMNS)}, indent=1))
     return 0
 
 
@@ -275,7 +327,7 @@ def _interval(diffs, seed, block, replications, level):
 
 
 def report_command(args) -> int:
-    declared = committed_declaration(DECLARATION)
+    declared = committed_declaration(declaration_path(args))
     declaration = pj.load_declaration()
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
@@ -338,12 +390,16 @@ def report_command(args) -> int:
                 "false_alarms_per_onset": false / onsets if onsets else None}
 
     result = {"declaration": declared, "paired": {}, "onsets": {}, "recall_by_year": {}}
+    pairs = []
     for name, entry in declared["candidates"].items():
-        control = entry["passer"]
-        if name not in by_name:
-            result.setdefault("not_scored", []).append(name)
+        pairs.append((name, name, entry["passer"]))
+        if name in declared.get("also_against", {}):
+            pairs.append((f"{name} vs {declared['also_against'][name]}", name, declared["also_against"][name]))
+    for label, name, control in pairs:
+        if name not in by_name or control not in by_name:
+            result.setdefault("not_scored", []).append(label)
             continue
-        result["paired"][name] = {"control": control, "horizons": {}}
+        result["paired"][label] = {"control": control, "horizons": {}}
         for h in declaration.horizons:
             grid = grids[h]
             outcomes = grid.outcomes[tau]
@@ -358,7 +414,7 @@ def report_command(args) -> int:
                     parts[label] = _interval([diffs[k] for k in members], seed, boot["block_length"],
                                              boot["replications"], boot["level"])
                 cell[dimension] = parts
-            result["paired"][name]["horizons"][str(h)] = cell
+            result["paired"][label]["horizons"][str(h)] = cell
             result["onsets"].setdefault(name, {})[str(h)] = totals(name, h)
             result["onsets"].setdefault(control, {})[str(h)] = totals(control, h)
         result["recall_by_year"][name] = recall_by_year(name)
@@ -412,11 +468,16 @@ def main(argv=None) -> int:
     inventory = commands.add_parser("inventory")
     inventory.add_argument("--output", type=Path)
     inventory.set_defaults(handler=inventory_command)
+    panel = commands.add_parser("panel", help="add the OFR flag and filled columns to a scratch panel (#537)")
+    panel.add_argument("--panel", type=Path, required=True)
+    panel.add_argument("--output", type=Path, required=True)
+    panel.set_defaults(handler=panel_command)
     run = commands.add_parser("run")
     run.add_argument("--panel", type=Path, required=True)
     run.add_argument("--published", type=Path, required=True)
     run.add_argument("--horizon", type=int, required=True)
     run.add_argument("--candidate")
+    run.add_argument("--declaration", type=Path, help="default metadata/unused_inputs.json (#477)")
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(handler=run_command)
     prune = commands.add_parser("prune", help="drop a candidate that failed to fit at any horizon")
@@ -427,6 +488,7 @@ def main(argv=None) -> int:
     report.add_argument("--panel", type=Path, required=True)
     report.add_argument("--output", type=Path, required=True)
     report.add_argument("--markdown", type=Path)
+    report.add_argument("--declaration", type=Path, help="default metadata/unused_inputs.json (#477)")
     report.add_argument("inputs", nargs="+", type=Path)
     report.set_defaults(handler=report_command)
     args = parser.parse_args(argv)
