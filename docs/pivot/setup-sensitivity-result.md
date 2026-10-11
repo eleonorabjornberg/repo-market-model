@@ -9,6 +9,13 @@ uncommitted declaration. The arithmetic is `src/repo_model/setup_sensitivity.py`
 `docs/pivot/evidence/setup-sensitivity/setup_sensitivity.md` (data: `setup_sensitivity.json`); the figures below are
 read from them.
 
+**Note, 11 October 2026 (#536).** Eleonora's ruling of 10 October 2026 (draft record
+[`judge-rulings-10-october.md`](../decisions/judge-rulings-10-october.md), for her to merge) makes tier 3 check calibration only in
+regimes with at least 20 pressure days, and counts tier 1's false alarms across the horizons that count its warnings. The figures below were
+scored under the earlier rules and are not edited; the same rows under the new ones are in
+[`judge-rulings-rescore-result.md`](judge-rulings-rescore-result.md). Section 4 below lists 2020 (4 pressure days) and 2024 (5) as tested
+regimes; under the new rule they are reported only.
+
 **The declared reading is reproduced first.** Under the unchanged judge, the five rows flag 15, 15, 15, 15 and 14 of the 26
 onsets and have worst false alarms per onset of 2.46, 2.54, 3.65, 3.65 and 3.23, as Table 1 of
 `docs/pivot/judge-amendment-result.md` has them; the two benchmarks match too. **The "five tier-1 passers" of the directive

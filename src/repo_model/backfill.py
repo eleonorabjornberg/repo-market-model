@@ -16,6 +16,11 @@ closes #430. The rule is narrow:
 `require_training_only` is the guard. It reads a scored backtest report's own folds and raises
 `LookAheadError` for any fold whose scored day or feature row is not a published day.
 
+`require_posting_established` is the second (#572): the ruling is drafted, not in force, until the date the
+Bank first posted the workbook is established, and a back-filled value is stamped public in real time from
+2014 by the ordinary parser. A fit that trains on it is refused unless the posting instant is declared
+(`metadata/backfill_posting.json`) and is no later than the start of the fit's training-end day.
+
 Standard library only: the workbook is read with `zipfile` and `xml.etree`.
 """
 
@@ -25,8 +30,9 @@ import io
 import json
 import zipfile
 from dataclasses import dataclass
-from datetime import date, timedelta
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
+from datetime import date, datetime, time, timedelta
+from pathlib import Path
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 from xml.etree import ElementTree
 
 from .splits import LookAheadError
@@ -35,11 +41,13 @@ __all__ = [
     "BACKFILL_SOURCE_ID",
     "augment_rows",
     "BackfilledDay",
+    "load_posting_instant",
     "FIRST_PUBLISHED",
     "RATE_NAMES",
     "nyfed_documents",
     "parse_workbook",
     "prefix_length",
+    "require_posting_established",
     "require_training_only",
 ]
 
@@ -207,6 +215,53 @@ def require_training_only(folds: Iterable, *, where: str) -> None:
                     f"back-filled day (before {FIRST_PUBLISHED}); back-filled values are training "
                     f"history only (docs/decisions/information-set.md)"
                 )
+
+
+def load_posting_instant(path: Path) -> Optional[datetime]:
+    """The declared instant the Bank first posted the workbook, or `None` while it is unknown.
+
+    Raises:
+        ValueError: the file has no `posting_instant` key, or it is neither null nor an ISO date-time.
+    """
+
+    declaration = json.loads(Path(path).read_text(encoding="utf-8"))
+    if "posting_instant" not in declaration:
+        raise ValueError(f"{path}: the back-fill posting declaration lacks 'posting_instant'")
+    value = declaration["posting_instant"]
+    if value is None:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{path}: posting_instant must be null or an ISO date-time, got {value!r}") from exc
+
+
+def require_posting_established(
+    folds: Iterable, posting_instant: Optional[datetime], *, where: str
+) -> None:
+    """Refuse a fit that trains on back-filled values before the workbook's posting instant (#572).
+
+    A fold whose training window begins before `FIRST_PUBLISHED` uses back-filled values. Such a fit is
+    refused while `posting_instant` is unknown (`None`), and when it is declared but later than the start of
+    the day the fit's training ends (the instant may fall after that day's decision, so the day itself is
+    not enough). A fold trained on published days only is not affected.
+
+    Raises:
+        LookAheadError: naming `where`, the fold and the dates.
+    """
+
+    for fold in folds:
+        if fold.train_start >= FIRST_PUBLISHED:
+            continue
+        start = datetime.combine(fold.train_end, time.min)
+        if posting_instant is None or posting_instant > start:
+            declared = "is not declared" if posting_instant is None else f"is {posting_instant.isoformat()}"
+            raise LookAheadError(
+                f"{where}: the fit scored on {fold.scored_date} trains on back-filled values (from "
+                f"{fold.train_start}) and ends {fold.train_end}, but the workbook's posting instant {declared}; "
+                f"no back-filled value is training history before it is established "
+                f"(docs/decisions/information-set.md, metadata/backfill_posting.json)"
+            )
 
 
 def augment_rows(

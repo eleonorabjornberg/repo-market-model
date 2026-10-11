@@ -1,5 +1,16 @@
 # Back-filled 2014-2018 repo-rate history as training history (#430)
 
+> **Note, 11 October 2026 (#583, finding #572).** The page stands as published. A new guard,
+> `repo_model.backfill.require_posting_established`, now refuses any fit that trains on back-filled values while the
+> workbook's posting instant is undeclared (`metadata/backfill_posting.json`, `null` today) or later than the start of
+> the fit's training-end day. The draft amendment in `docs/decisions/information-set.md` already says no back-filled value is
+> used as training history before the posting date is established; the guard makes that mechanical. **Every
+> `with`-history row of this page would now be refused** (the #431 fits of `hierarchical_logistic`, `calendar_climatology`,
+> `persistence_logistic`, `published_v1`, `two_part_gbm` and `ngboost_laplace`: each fit's training window starts 2014-08-22
+> and the first ends 2018-06-27, before any posting date that is not yet established). The 2018 gains of the `with` rows rest on exactly those early fits
+> (`ngboost_laplace`, 0 of 5 onsets in 2018 rising to 3 of 5): they are not evidence until the posting date is established.
+> The `without` rows are unaffected. Nothing is re-scored and no figure changes.
+
 A scratch measurement. It writes nothing into `docs/runs/` and moves no published figure. No comparison scores a
 locked day (`docs/decisions/lockbox.md`); scored days are 2018-06-29 to 2025-12-31. The amendment it supports is a
 draft in `docs/decisions/information-set.md`, for Eleonora to review.
