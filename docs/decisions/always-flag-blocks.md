@@ -29,15 +29,18 @@ switch from a key in `metadata/pressure_judge.json` (`tiers.onset_warning`); tha
 
 ## What it does on the scored days (2018-06-29 to 2025-12-31)
 
-From `docs/pivot/evidence/always-flag/result.md`, weighted rule in force, tier 1 at lead of at least 1:
+From `docs/pivot/evidence/always-flag/result.md`, on the judge as it stands after the rulings of 10 October 2026 (false alarms
+pooled across horizons), weighted rule in force, tier 1 at lead of at least 1:
 
-| row | option off | option on | tier 1 on |
-|---|---|---|---|
-| `risk_gbm+every_day+gate+settle+h41+iorb` | 19 of 26, 1.64 | 19 of 26, 1.64 | pass |
-| `risk_gbm+settle+h41` | 14 of 26, 0.88 | 14 of 26, 0.88 | pass |
-| `ngboost_laplace` | 17 of 26, 1.73 | 13 of 26, 1.04 | pass (recall exactly 0.500, interval [0.316, 0.696]) |
-| `risk_gbm` | 13 of 26, 0.80 | 13 of 26, 0.80 | pass |
+| row | option off | option on |
+|---|---|---|
+| `risk_gbm+every_day+gate+settle+h41+iorb` | 19 of 26, 3.46 false alarms per onset: fails | same: fails |
+| `risk_gbm+settle+h41` | 14 of 26, 1.44: passes | same: passes |
+| `ngboost_laplace` | 17 of 26, 2.34: **fails** | 13 of 26, 1.81: **passes**, with recall exactly 0.500, interval [0.316, 0.696] |
+| `risk_gbm` | 13 of 26, 1.48: passes | same: passes |
 
-Only `ngboost_laplace` is touched among the frozen candidates: it loses 2019-01-15, 2019-01-31, 2019-06-25 and 2019-10-15,
-and sits on the recall limit. The benchmarks lose most of their 2019 warnings (calendar climatology 12 to 2, persistence-logistic
+The option moves only `ngboost_laplace` among the frozen candidates: it loses 2019-01-15, 2019-01-31, 2019-06-25 and 2019-10-15,
+and, because the blanket blocks also carry false alarms that are dropped, it moves from a fail (false alarms 2.34, over the limit
+of 2) to a pass on the recall limit. Eleonora should read that pass for what it is: it rests on the dropped false alarms, and its recall
+sits exactly on the bar. The benchmarks lose most of their 2019 warnings (calendar climatology 12 to 2, persistence-logistic
 12 to 4, `published_v1` 14 to 8).
