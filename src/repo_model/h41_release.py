@@ -2,11 +2,13 @@
 
 Eleonora's ruling of 10 October 2026 (relayed on #541): the H.4.1 is read per release, at the
 release's own publication instant, not five calendar days after the Wednesday.
-`metadata/h41_release_dating.json` declares it; `asof.release_instant` dates a Wednesday level by it.
+`metadata/h41_release_dating.json` declares it; `release_instant` dates a Wednesday level by it.
 
 `metadata/sources.json` is frozen by the final-test pre-registration (bytes), so it is not edited.
 `release_dated_registry` returns a copy of the registry with a `release_calendar` block on the
-`fred_macro_latest_vintage` source, which `asof.declared_availability` reads for the listed fields. The
+`fred_macro_latest_vintage` source, which `release_dating()` makes the as-of rule read for the listed fields,
+for the length of one measurement run: `asof.py` is frozen by the final-test pre-registration (the whole
+file), so it is not edited, and the rule's two lookups are swapped for the run and restored on the way out. The
 fields' `field_release_lags` are kept as they are (the purge still reads their `days`); only the
 instant a read is dated by changes. No published record reads either file.
 
@@ -15,16 +17,20 @@ Stdlib only, like the rest of `src/` outside `ml.py`.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import json
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
-from typing import Mapping
+from typing import Iterator, Mapping, Optional, Sequence
 
 from . import asof
-from .asof import RELEASE_CALENDAR_KEY
+from .asof import InformationRule
 
-__all__ = ["load_release_dating", "release_dated_registry"]
+__all__ = ["RELEASE_CALENDAR_KEY", "load_release_dating", "release_dated_registry", "release_instant", "release_dating"]
+
+#: A source-level block dating a weekly field by its release's own instant. Absent from every published registry.
+RELEASE_CALENDAR_KEY = "release_calendar"
 
 _REQUIRED = {
     "source", "fields", "observation_weekday", "offset_days", "available_time", "timezone",
@@ -92,3 +98,59 @@ def release_dated_registry(
         "note": "A measurement variant, read by no published record (#541).",
     }
     return out
+
+
+def release_instant(calendar: Mapping[str, object], row_date: date) -> datetime:
+    """The print of the release that first carries the weekly level `row_date` holds.
+
+    A panel row carries the latest Wednesday level on or before it (`docs/decisions/weekly-carry.md`), so
+    the instant is the same for every row of a week: the Wednesday plus `offset_days` at `available_time`,
+    or the date in `exceptions` when the Board moved the release.
+    """
+
+    behind = (row_date.weekday() - asof.WEEKLY_OBSERVATION_WEEKDAY) % 7
+    observed = row_date - timedelta(days=behind)
+    moved = (calendar.get("exceptions") or {}).get(observed.isoformat())
+    printed = date.fromisoformat(str(moved)) if moved else observed + timedelta(days=int(calendar["offset_days"]))
+    return datetime.combine(printed, time.fromisoformat(str(calendar["available_time"])))
+
+
+def _calendar(registry: Mapping[str, Mapping[str, object]], source_id: str, field: str) -> Optional[Mapping[str, object]]:
+    calendar = registry[source_id].get(RELEASE_CALENDAR_KEY)
+    if isinstance(calendar, Mapping) and field in (calendar.get("fields") or ()):
+        return calendar
+    return None
+
+
+@contextlib.contextmanager
+def release_dating() -> Iterator[None]:
+    """The as-of rule reading a `release_calendar` block, for one measurement run.
+
+    Swaps `asof.declared_availability` and `InformationRule._observation_available` and restores both on the
+    way out, raise or return. A field no block lists is dated by the original functions, so a registry with
+    no block is read exactly as before.
+    """
+
+    original_availability = asof.declared_availability
+    original_observation = InformationRule._observation_available
+
+    def declared_availability(registry, source_id, field, dates, position):
+        calendar = _calendar(registry, source_id, field)
+        if calendar is not None:
+            return release_instant(calendar, dates[position])
+        return original_availability(registry, source_id, field, dates, position)
+
+    def observation_available(self, dates: Sequence[date], fields, row: int, available: datetime) -> datetime:
+        for source_id, field in fields:
+            if _calendar(self.registry, source_id, field) is not None:
+                # Dated by the release of its own Wednesday: the row's instant is the observation's.
+                return available
+        return original_observation(self, dates, fields, row, available)
+
+    asof.declared_availability = declared_availability
+    InformationRule._observation_available = observation_available
+    try:
+        yield
+    finally:
+        asof.declared_availability = original_availability
+        InformationRule._observation_available = original_observation

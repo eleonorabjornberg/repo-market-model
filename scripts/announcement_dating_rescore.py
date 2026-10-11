@@ -25,6 +25,7 @@ and `risk_date_false_alarm_controls.py` (the `+every_day` variant and its `+gate
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib.util
 import json
 import sys
@@ -177,7 +178,7 @@ def run_command(args) -> int:
     h, arm = args.horizon, args.arm
     if h not in declared["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
-    settle, _h41, suffix = ARMS[arm]
+    settle, h41, suffix = ARMS[arm]
     last = date.fromisoformat(declared["scoring"]["last_day"])
     require_unlocked([last], where="announcement_dating_rescore")
     rows = load_daily_panel(args.panel)
@@ -204,7 +205,7 @@ def run_command(args) -> int:
                 )
             else:
                 predictor = ml.pressure_risk_date_exceedance(spec["kind"], features, splits, minimum_history=minimum)
-            with rds.switched_on():
+            with rds.switched_on(), (h41_release.release_dating() if h41 else contextlib.nullcontext()):
                 report = rolling_exceedance_backtest(
                     rows,
                     predictor=predictor,

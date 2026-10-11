@@ -211,7 +211,7 @@ class H41ReleaseTests(unittest.TestCase):
     Red first: written before `repo_model.h41_release` existed (`ImportError`).
 
     Mutation record. In a `git archive` copy of the tree under /tmp, CPython 3.11
-    (`/opt/rmm-venv`), this class run alone, unmutated control green. In `asof.release_instant`, the
+    (`/opt/rmm-venv`), this class run alone, unmutated control green. In `h41_release.release_instant`, the
     declared print time `time.fromisoformat(calendar["available_time"])` was mutated to
     `time.fromisoformat("00:00")` (a Wednesday level treated as public at midnight on its release
     day). The target was found once before the change and was gone after. Killed, 5 failures, all
@@ -223,6 +223,9 @@ class H41ReleaseTests(unittest.TestCase):
     """
 
     def setUp(self):
+        patch = h41.release_dating()
+        patch.__enter__()
+        self.addCleanup(patch.__exit__, None, None, None)
         self.declaration = h41.load_release_dating(H41)
         self.registry = h41.release_dated_registry(load_source_registry(REGISTRY), self.declaration)
         # An ordinary week: Wednesday 2024-03-06 is printed on Thursday 2024-03-07 at 16:30.
@@ -321,6 +324,21 @@ class H41ReleaseTests(unittest.TestCase):
             self.assertEqual(observed.weekday(), 2, wednesday)
             self.assertLess(printed.weekday(), 5, published)
             self.assertGreater(printed, observed + timedelta(days=self.declaration["offset_days"]), wednesday)
+
+    def test_the_as_of_rule_is_restored_on_the_way_out(self):
+        patched = asof.declared_availability
+        with h41.release_dating():
+            pass  # nested: restores the patched functions of setUp, not the originals
+        self.assertIs(asof.declared_availability, patched)
+        with self.assertRaises(RuntimeError), h41.release_dating():
+            raise RuntimeError("raised inside")
+        self.assertIs(asof.declared_availability, patched)
+
+    def test_a_registry_with_no_calendar_is_read_as_before(self):
+        published = load_source_registry(REGISTRY)
+        dates = self.dates
+        moment = asof.declared_availability(published, "fred_macro_latest_vintage", "WRESBAL", dates, 5)
+        self.assertEqual(moment, datetime.combine(dates[5] + timedelta(days=5), time(16, 30)))
 
     def test_the_published_registry_is_not_touched(self):
         registry = load_source_registry(REGISTRY)
