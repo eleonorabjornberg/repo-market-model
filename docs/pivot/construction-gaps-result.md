@@ -91,6 +91,8 @@ no earlier (`information-set.md`), so nothing moves at h ≥ 2.
 > schedules say: `desk-standard-result.md` §2 measures announcements 4 to 14 panel days before the settlement. Which reading the
 > information set adopts is not settled here or in #503; it is Eleonora's decision. See `docs/pivot/diagnostics-reconciliation.md`, point 5.
 
+> *Ruled, 10 October 2026 (#541).* Eleonora ruled that a settlement is dated from the auction announcement and that the H.4.1 is read per release. Both are measured, and off in the published declaration, in `docs/pivot/settlement-h41-dating-result.md`; the amendment to `docs/decisions/information-set.md` is a draft for her to merge.
+
 | model | h=1 declared | h=1 bill days |
 |---|---|---|
 | risk_gbm | 13/27, 1.30 | 9/27, 1.22 |
