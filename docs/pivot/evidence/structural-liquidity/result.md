@@ -1,5 +1,7 @@
 # The structural liquidity model (#542)
 
+> **Correction of 11 October 2026 (#578).** This page was re-scored after the audit's construction fixes: net settlement subtracted the coupon maturities twice when Notes and Bonds settled together (#566), and at h = 1 the model read the decision day's settlement, not the scored day's (#568). Every figure below is the re-score; the first scoring of 11 October is in git history and in the before columns of the linked page. The before-and-after figures are in [`audit-fixes-578-result.md`](../../audit-fixes-578-result.md).
+
 # structural_liquidity
 
 ## Tier 1 under unweighted

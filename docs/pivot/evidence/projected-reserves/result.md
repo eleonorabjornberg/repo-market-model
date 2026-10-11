@@ -1,5 +1,7 @@
 # Reserves projected to the scored day (#545)
 
+> **Correction of 11 October 2026 (#578).** This page was re-scored after the audit's construction fixes: the same net settlement double subtraction (#566), and the roll-forward measured the Treasury account and the facility from Wednesday levels while the reserve level it starts from is a week average (#574). Every figure below is the re-score; the first scoring is in git history and in the before columns of the linked page. The before-and-after figures are in [`audit-fixes-578-result.md`](../../audit-fixes-578-result.md).
+
 # projected_reserves
 
 ## Tier 1 under unweighted
