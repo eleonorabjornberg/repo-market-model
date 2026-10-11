@@ -1,0 +1,786 @@
+{
+ "added": {
+  "risk_gbm": {
+   "1": {
+    "added": {
+     "false_alarms": 17,
+     "flagged_onsets": [],
+     "flags": 33,
+     "onsets_flagged": 0,
+     "onsets_on_them": 5,
+     "risk_dates": 669
+    },
+    "days": 1873,
+    "onsets": 27,
+    "onsets_off_every_risk_date": 1,
+    "original": {
+     "false_alarms": 14,
+     "flagged_onsets": [
+      "2019-01-15",
+      "2019-01-31",
+      "2019-02-28",
+      "2019-03-15",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-10-15",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15",
+      "2025-12-26"
+     ],
+     "flags": 48,
+     "onsets_flagged": 12,
+     "onsets_on_them": 21,
+     "risk_dates": 404
+    },
+    "unserved_added_dates": 30
+   },
+   "2": {
+    "added": {
+     "false_alarms": 23,
+     "flagged_onsets": [],
+     "flags": 30,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 108
+    },
+    "days": 1872,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 23,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30",
+      "2025-12-15"
+     ],
+     "flags": 46,
+     "onsets_flagged": 8,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 2
+   },
+   "3": {
+    "added": {
+     "false_alarms": 24,
+     "flagged_onsets": [],
+     "flags": 31,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 107
+    },
+    "days": 1871,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 21,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15"
+     ],
+     "flags": 45,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 1
+   },
+   "4": {
+    "added": {
+     "false_alarms": 26,
+     "flagged_onsets": [],
+     "flags": 33,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1870,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 16,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15"
+     ],
+     "flags": 39,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   },
+   "5": {
+    "added": {
+     "false_alarms": 24,
+     "flagged_onsets": [],
+     "flags": 31,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1869,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 22,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15"
+     ],
+     "flags": 42,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   }
+  },
+  "risk_gbm_base": {
+   "1": {
+    "added": {
+     "false_alarms": 35,
+     "flagged_onsets": [
+      "2019-06-25",
+      "2019-08-13"
+     ],
+     "flags": 60,
+     "onsets_flagged": 2,
+     "onsets_on_them": 5,
+     "risk_dates": 669
+    },
+    "days": 1873,
+    "onsets": 27,
+    "onsets_off_every_risk_date": 1,
+    "original": {
+     "false_alarms": 25,
+     "flagged_onsets": [
+      "2019-01-15",
+      "2019-01-31",
+      "2019-02-28",
+      "2019-03-15",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-10-15",
+      "2019-12-16",
+      "2025-12-15",
+      "2025-12-26"
+     ],
+     "flags": 64,
+     "onsets_flagged": 11,
+     "onsets_on_them": 21,
+     "risk_dates": 404
+    },
+    "unserved_added_dates": 29
+   },
+   "2": {
+    "added": {
+     "false_alarms": 19,
+     "flagged_onsets": [],
+     "flags": 26,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 108
+    },
+    "days": 1872,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 22,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 45,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 2
+   },
+   "3": {
+    "added": {
+     "false_alarms": 22,
+     "flagged_onsets": [],
+     "flags": 30,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 107
+    },
+    "days": 1871,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 21,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15"
+     ],
+     "flags": 43,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 1
+   },
+   "4": {
+    "added": {
+     "false_alarms": 22,
+     "flagged_onsets": [],
+     "flags": 29,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1870,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 19,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15"
+     ],
+     "flags": 42,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   },
+   "5": {
+    "added": {
+     "false_alarms": 19,
+     "flagged_onsets": [],
+     "flags": 26,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1869,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 27,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16"
+     ],
+     "flags": 46,
+     "onsets_flagged": 6,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   }
+  },
+  "risk_logistic": {
+   "1": {
+    "added": {
+     "false_alarms": 39,
+     "flagged_onsets": [
+      "2019-05-28",
+      "2019-06-25",
+      "2019-08-13"
+     ],
+     "flags": 69,
+     "onsets_flagged": 3,
+     "onsets_on_them": 5,
+     "risk_dates": 669
+    },
+    "days": 1873,
+    "onsets": 27,
+    "onsets_off_every_risk_date": 1,
+    "original": {
+     "false_alarms": 32,
+     "flagged_onsets": [
+      "2019-01-15",
+      "2019-01-31",
+      "2019-02-28",
+      "2019-03-15",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-10-15",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 71,
+     "onsets_flagged": 10,
+     "onsets_on_them": 21,
+     "risk_dates": 404
+    },
+    "unserved_added_dates": 30
+   },
+   "2": {
+    "added": {
+     "false_alarms": 5,
+     "flagged_onsets": [],
+     "flags": 11,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 108
+    },
+    "days": 1872,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 17,
+     "flagged_onsets": [
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 41,
+     "onsets_flagged": 6,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 2
+   },
+   "3": {
+    "added": {
+     "false_alarms": 11,
+     "flagged_onsets": [],
+     "flags": 16,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 107
+    },
+    "days": 1871,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 18,
+     "flagged_onsets": [
+      "2019-03-29",
+      "2019-06-17",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15"
+     ],
+     "flags": 43,
+     "onsets_flagged": 5,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 1
+   },
+   "4": {
+    "added": {
+     "false_alarms": 12,
+     "flagged_onsets": [],
+     "flags": 18,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1870,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 20,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30",
+      "2025-12-15"
+     ],
+     "flags": 43,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   },
+   "5": {
+    "added": {
+     "false_alarms": 13,
+     "flagged_onsets": [],
+     "flags": 17,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1869,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 23,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30",
+      "2025-12-15"
+     ],
+     "flags": 37,
+     "onsets_flagged": 6,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   }
+  },
+  "risk_logistic_base": {
+   "1": {
+    "added": {
+     "false_alarms": 41,
+     "flagged_onsets": [
+      "2019-05-28",
+      "2019-06-25",
+      "2019-08-13"
+     ],
+     "flags": 73,
+     "onsets_flagged": 3,
+     "onsets_on_them": 5,
+     "risk_dates": 669
+    },
+    "days": 1873,
+    "onsets": 27,
+    "onsets_off_every_risk_date": 1,
+    "original": {
+     "false_alarms": 24,
+     "flagged_onsets": [
+      "2019-01-15",
+      "2019-01-31",
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-10-15",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30",
+      "2025-12-15"
+     ],
+     "flags": 62,
+     "onsets_flagged": 11,
+     "onsets_on_them": 21,
+     "risk_dates": 404
+    },
+    "unserved_added_dates": 29
+   },
+   "2": {
+    "added": {
+     "false_alarms": 9,
+     "flagged_onsets": [],
+     "flags": 15,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 108
+    },
+    "days": 1872,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 17,
+     "flagged_onsets": [
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 40,
+     "onsets_flagged": 5,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 2
+   },
+   "3": {
+    "added": {
+     "false_alarms": 8,
+     "flagged_onsets": [],
+     "flags": 13,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 107
+    },
+    "days": 1871,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 17,
+     "flagged_onsets": [
+      "2019-03-29",
+      "2019-06-17",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-12-15"
+     ],
+     "flags": 39,
+     "onsets_flagged": 5,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 1
+   },
+   "4": {
+    "added": {
+     "false_alarms": 10,
+     "flagged_onsets": [],
+     "flags": 17,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1870,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 21,
+     "flagged_onsets": [
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30",
+      "2025-12-15"
+     ],
+     "flags": 42,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   },
+   "5": {
+    "added": {
+     "false_alarms": 10,
+     "flagged_onsets": [],
+     "flags": 17,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1869,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 19,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 40,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 0
+   }
+  },
+  "risk_quantile_skewt_base": {
+   "1": {
+    "added": {
+     "false_alarms": 20,
+     "flagged_onsets": [],
+     "flags": 35,
+     "onsets_flagged": 0,
+     "onsets_on_them": 5,
+     "risk_dates": 669
+    },
+    "days": 1873,
+    "onsets": 27,
+    "onsets_off_every_risk_date": 1,
+    "original": {
+     "false_alarms": 18,
+     "flagged_onsets": [
+      "2019-01-15",
+      "2019-01-31",
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-10-15",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 56,
+     "onsets_flagged": 9,
+     "onsets_on_them": 21,
+     "risk_dates": 404
+    },
+    "unserved_added_dates": 109
+   },
+   "2": {
+    "added": {
+     "false_alarms": 15,
+     "flagged_onsets": [],
+     "flags": 22,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 108
+    },
+    "days": 1872,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 24,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 52,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 17
+   },
+   "3": {
+    "added": {
+     "false_alarms": 12,
+     "flagged_onsets": [],
+     "flags": 19,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 107
+    },
+    "days": 1871,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 29,
+     "flagged_onsets": [
+      "2019-01-31",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16"
+     ],
+     "flags": 55,
+     "onsets_flagged": 6,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 9
+   },
+   "4": {
+    "added": {
+     "false_alarms": 15,
+     "flagged_onsets": [],
+     "flags": 22,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1870,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 26,
+     "flagged_onsets": [
+      "2019-01-31",
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30",
+      "2025-12-15"
+     ],
+     "flags": 53,
+     "onsets_flagged": 9,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 8
+   },
+   "5": {
+    "added": {
+     "false_alarms": 12,
+     "flagged_onsets": [],
+     "flags": 19,
+     "onsets_flagged": 0,
+     "onsets_on_them": 1,
+     "risk_dates": 106
+    },
+    "days": 1869,
+    "onsets": 26,
+    "onsets_off_every_risk_date": 12,
+    "original": {
+     "false_alarms": 23,
+     "flagged_onsets": [
+      "2019-02-28",
+      "2019-03-29",
+      "2019-06-17",
+      "2019-08-30",
+      "2019-11-29",
+      "2019-12-16",
+      "2025-09-30"
+     ],
+     "flags": 46,
+     "onsets_flagged": 7,
+     "onsets_on_them": 13,
+     "risk_dates": 277
+    },
+    "unserved_added_dates": 9
+   }
+  }
+ }
+}

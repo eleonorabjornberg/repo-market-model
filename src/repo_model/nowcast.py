@@ -352,6 +352,7 @@ def walk_forward(
     penalty: float,
     min_pairs: int,
     refit_every: int,
+    target_cap_bp: Optional[float] = None,
 ) -> WalkForward:
     """The nowcast of every row, each from its own decision instant's information.
 
@@ -360,7 +361,16 @@ def walk_forward(
     The first refit is at the first row with `min_pairs` such pairs; later ones follow every `refit_every`
     rows. A row before the first refit, or with a missing feature, gets the naive nowcast, the spread of
     row `r - 1`. With no features the nowcast is the naive one on every row.
+
+    `target_cap_bp` (#540): the training target, the spread's one-day change, is clipped to
+    `[-target_cap_bp, +target_cap_bp]` before the ridge is fitted, so a few extreme days do not set its
+    weights (the change has a 99th percentile of 19 bp and a maximum of 282 bp). It acts on the fit's
+    target only: the nowcast is still the spread of row `r - 1` plus the predicted change, and scoring
+    is against the unclipped spread. `None`, the default, clips nothing.
     """
+
+    if target_cap_bp is not None and not target_cap_bp > 0:
+        raise ValueError(f"the training-target cap must be positive, got {target_cap_bp}")
 
     n = len(rows)
     spreads = [row.spread_bps for row in rows]
@@ -388,6 +398,8 @@ def walk_forward(
             check_labels_observable(pairs, origin=r)
             x = [_feature_values(rows, spreads, k, names) for k in pairs]
             y = [spreads[k] - spreads[k - 1] for k in pairs]
+            if target_cap_bp is not None:
+                y = [max(-target_cap_bp, min(target_cap_bp, value)) for value in y]
             model = fit_ridge(x, y, penalty=penalty)
             refits.append(r)
             next_refit = r + refit_every
