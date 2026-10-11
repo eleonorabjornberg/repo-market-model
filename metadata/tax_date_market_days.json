@@ -1,0 +1,13 @@
+{
+  "status": "declared by the pull request that closes #538 before any score: the rule, and the panel it builds. Not a published declaration: the published panel keeps the DC-holiday window until a publish pull request rebuilds it.",
+  "ruling": "Eleonora, 10 October 2026, on #521: the tax-date window counts market days, so DC Emancipation Day no longer pushes 16 April out of it.",
+  "rule": "data.tax_date_market_days: the deadline stays on the DC rule (26 USC 7503, data.corporate_tax_deadline); the two payment days after it are weekdays not in metadata/market_holidays.json.",
+  "switch": "data.tax_window_on_market_days() builds the tax_date column with the rule for one run; scripts/tax_date_market_days.py runs a script or module inside it.",
+  "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "market_days_panel_sha256": "477c2d4af20c206abda2ca42e9d2faee7ce2ecd87f9caa9e2d1c086c7a160bab",
+  "build": "python3 scripts/tax_date_market_days.py -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs --output PANEL.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00",
+  "panel_days_where_tax_date_differs": [
+    "2019-04-16", "2019-04-18", "2020-04-16", "2020-04-20", "2021-04-16", "2021-04-20",
+    "2024-04-16", "2024-04-18", "2025-04-16", "2026-04-16", "2026-04-20"
+  ]
+}

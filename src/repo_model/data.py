@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import hashlib
 import json
@@ -2856,6 +2857,60 @@ def tax_date(day: date) -> float:
         if _is_tax_business_day(current):
             window.append(current)
     return float(day in window)
+
+
+def _is_market_business_day(day: date) -> bool:
+    """A weekday not in the market holiday table, as for `quarter_end`."""
+
+    holidays = market_holidays()
+    if day < holidays.first or day > holidays.last:
+        raise ValueError(
+            f"the market holiday table covers {holidays.first.isoformat()} to "
+            f"{holidays.last.isoformat()}, not {day.isoformat()}"
+        )
+    return day.weekday() < 5 and day not in holidays.closed
+
+
+def tax_date_market_days(day: date) -> float:
+    """1.0 on the tax deadline and the two market days after it; 0.0 otherwise (#538).
+
+    Eleonora's ruling of 10 October 2026 on #521. The deadline stays on the
+    DC rule (`corporate_tax_deadline`, 26 U.S.C. 7503). The payment days after
+    it are counted on the market calendar, a weekday not in
+    `metadata/market_holidays.json`, because the cash drain falls on days repo
+    trades: DC Emancipation Day no longer pushes 16 April out of the window.
+    Like `tax_date`, a function of the date and a tracked table alone.
+
+    Not the published column. `tax_date` is, until a publish pull request
+    rebuilds the panel; `tax_window_on_market_days` puts this rule in a build
+    for one run.
+
+    Raises:
+        ValueError: if the window reaches a day the market holiday table does not cover.
+    """
+
+    if day.month not in TAX_DEADLINE_MONTHS:
+        return 0.0
+    current = corporate_tax_deadline(day.year, day.month)
+    window = [current]
+    while len(window) <= TAX_WINDOW_BUSINESS_DAYS:
+        current += timedelta(days=1)
+        if _is_market_business_day(current):
+            window.append(current)
+    return float(day in window)
+
+
+@contextlib.contextmanager
+def tax_window_on_market_days():
+    """Build the `tax_date` column with `tax_date_market_days`, for this run only (#538)."""
+
+    global CALENDAR_COLUMN_RULES
+    published = CALENDAR_COLUMN_RULES
+    CALENDAR_COLUMN_RULES = MappingProxyType({**published, "tax_date": tax_date_market_days})
+    try:
+        yield
+    finally:
+        CALENDAR_COLUMN_RULES = published
 
 
 #: Calendar column -> its rule. A `contract.CALENDAR_FEATURES` name with no
