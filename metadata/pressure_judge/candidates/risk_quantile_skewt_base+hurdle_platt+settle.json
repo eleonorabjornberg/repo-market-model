@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "G (#556)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+  ],
+  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons",
+  "calibration": "the parent's risk-date forecast on a risk date; on any other day a walk-forward platt-calibrated every-day hazard: the hazard on spread_bps, sofr_p75_iorb_bps and sofr_p99_iorb_bps, mapped through a Platt curve fitted walk-forward; a day missing an input is served the hazard fitted without it; scored under settlements dated from the auction announcement (metadata/settlement_announcement_dating.json), the settlement columns kept in the parent's features at every horizon and the coupon clause of the risk-date rule applied at h >= 2; metadata/hurdle_dating.json",
+  "parent": "risk_quantile_skewt_base+hurdle_platt"
+}
