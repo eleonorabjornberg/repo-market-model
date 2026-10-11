@@ -339,5 +339,76 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
+  },
+  "projected_reserves_columns": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 11 October 2026 for #545. Not a fetched series: the columns are computed per panel row by repo_model.projected_reserves. net_settlement_ahead_{k}d is the announced net Treasury settlement of the next k business days, each auction counted from its announcemt_date as at the declared instant of treasury_auction_net_settlement (12:00 ET on the row's own day). proj_reserves_h{h}, proj_dist_h{h} and proj_change_h{h} roll the reserve level that the as-of rule reads at the row's 16:00 decision forward to the scored day through the flows public by then; every read goes through asof.InformationRule with the scored row one after the decision row, and repo_model.projected_reserves.check_no_future rebuilds a row from the panel cut at it and refuses a column that differs. A row's value is therefore public at 16:00 on its own date.",
+      "publication": "metadata/projected_reserves.json declares the rule; its inputs are the registry's reserve_balances (H.4.1 WRESBAL), tga_daily (Daily Treasury Statement), on_rrp, bank_total_assets (H.8) and treasury_auction_net_settlement, each under its own lag."
+    },
+    "coverage": [
+      "one value per panel day to 2025-12-31, from the first day on which the as-of rule reads every input"
+    ],
+    "field_frequencies": {
+      "net_settlement_ahead_1d": "business_daily",
+      "net_settlement_ahead_2d": "business_daily",
+      "net_settlement_ahead_3d": "business_daily",
+      "net_settlement_ahead_4d": "business_daily",
+      "net_settlement_ahead_5d": "business_daily",
+      "proj_reserves_h1": "business_daily",
+      "proj_dist_h1": "business_daily",
+      "proj_change_h1": "business_daily",
+      "proj_reserves_h2": "business_daily",
+      "proj_dist_h2": "business_daily",
+      "proj_change_h2": "business_daily",
+      "proj_reserves_h3": "business_daily",
+      "proj_dist_h3": "business_daily",
+      "proj_change_h3": "business_daily",
+      "proj_reserves_h4": "business_daily",
+      "proj_dist_h4": "business_daily",
+      "proj_change_h4": "business_daily",
+      "proj_reserves_h5": "business_daily",
+      "proj_dist_h5": "business_daily",
+      "proj_change_h5": "business_daily"
+    },
+    "fields": [
+      "net_settlement_ahead_1d",
+      "net_settlement_ahead_2d",
+      "net_settlement_ahead_3d",
+      "net_settlement_ahead_4d",
+      "net_settlement_ahead_5d",
+      "proj_reserves_h1",
+      "proj_dist_h1",
+      "proj_change_h1",
+      "proj_reserves_h2",
+      "proj_dist_h2",
+      "proj_change_h2",
+      "proj_reserves_h3",
+      "proj_dist_h3",
+      "proj_change_h3",
+      "proj_reserves_h4",
+      "proj_dist_h4",
+      "proj_change_h4",
+      "proj_reserves_h5",
+      "proj_dist_h5",
+      "proj_change_h5"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#545), declared here and not in metadata/sources.json for the reason treasury_auction_net_settlement gives. Read only by a track that switches the columns on (repo_model.projected_reserves.COLUMN_FIELDS). The projection rolls the weekly reserve level forward by the Fed liability identity (Treasury account and facility gain what reserves lose); it ignores currency and the Federal Reserve's own asset changes, and it adds no separate runoff leg: the Treasury leg is inside the announced net settlement, and agency MBS paydowns are in no tracked series. No announced TGA path is tracked, so persistence applies beyond the settlements and the expected tax receipts.",
+    "provider": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 11 October 2026 (#545). The value on the row of day t uses only reads the as-of rule allows at 16:00 ET on t (availability_provenance), so the 16:00 ET decision of t reads it.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Derived columns: no structural zeros. A hole is a missing input or a row where the rule has no read.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/projected_reserves.json"
   }
 }
