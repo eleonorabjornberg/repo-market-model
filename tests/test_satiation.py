@@ -311,6 +311,23 @@ class DesignTests(unittest.TestCase):
         self.assertAlmostEqual(done[1], e * 60.0)
         self.assertEqual(len(done), len(sl.COLUMN_NAMES))
 
+    def test_a_constant_level_only_rescales_the_elasticity_columns(self):
+        # e = exp(-(ratio - level) / L) = exp(-(ratio - 0.12) / L) * exp((level - 0.12) / L): one level for a whole refit
+        # multiplies the four elasticity terms by one constant, which the logistic's standardisation removes. The
+        # `fitted` form is therefore the same model as `fixed` for the structural terms (a finding of #587).
+        design = sl.StructuralDesign(sl.features_at_horizon(1), SPLITS, "fitted")
+        raws = [design.row(_obs(reserve_balances=26000.0 * r, net_settlement_ahead_1d=60.0 + 90.0 * k), 5.0 + k)
+                for k, r in enumerate((0.09, 0.11, 0.13, 0.15))]
+        low = [design.finish(raw, 0.10) for raw in raws]
+        high = [design.finish(raw, 0.14) for raw in raws]
+        factor = None
+        for a, b in zip(low, high):
+            for x, y in zip(a[1:3], b[1:3]):
+                if x > 0.0:
+                    factor = factor or y / x
+                    self.assertAlmostEqual(y / x, factor, places=9)
+        self.assertAlmostEqual(factor, sl.math.exp((0.14 - 0.10) / sl.LENGTH))
+
     def test_an_unknown_form_is_refused(self):
         with self.assertRaises(ValueError):
             sl.StructuralDesign(sl.features_at_horizon(1), SPLITS, "kinked")

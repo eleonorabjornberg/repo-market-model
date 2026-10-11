@@ -29,7 +29,10 @@ published declaration.
 **Time-varying satiation (#587).** `StructuralDesign` takes a satiation form (`satiation.FORMS`): `fixed` (this
 page's model), `rolling` (the level at a decision is the panel column `satiation_roll`, built from as-of reads
 only) or `fitted` (one level per refit, fitted on that refit's training pairs by `satiation.fit_level`). The
-terms are unchanged; only the `SATIATION` in the elasticity moves. Declared in `metadata/satiation_587.json`;
+terms are unchanged; only the `SATIATION` in the elasticity moves. One level for a whole refit (`fitted`) multiplies the
+four elasticity terms by the constant `exp((level - 0.12) / LENGTH)`, which the logistic's standardisation removes, so
+`fitted` forecasts the same as `fixed` here (to rounding); only a level that varies across the rows (`rolling`) moves
+the model. Declared in `metadata/satiation_587.json`;
 a measurement, off in every published declaration.
 
 Standard library only: the six-coefficient ridge logistic is fitted here by Newton's method; the

@@ -7186,8 +7186,11 @@ def pressure_projected_hinge_exceedance(
     *,
     horizon: int,
     satiation: str = "fixed_kink",
-) -> ExceedancePredictor:
+) -> Any:
     """The projected-reserves logistic (#545) with its kink kept after standardisation (#587).
+
+    Returns an `ExceedancePredictor`, declared `Any` as `structural_liquidity.structural_exceedance` is: it reads the
+    scratch-panel columns `proj_dist_h` and `proj_change_h` (and `satiation_roll`), so no `--model` run can construct it.
 
     `pressure_logistic_exceedance` on `_ProjectedHingeDesign`: the same estimator (`PRESSURE_LOGISTIC_SETTINGS`), the same
     direct pairs under the as-of rule, with the linear distance to satiation replaced by a hinge at the satiation
