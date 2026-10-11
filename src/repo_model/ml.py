@@ -6492,6 +6492,162 @@ def pressure_risk_date_variant_exceedance(
     return fit_predict
 
 
+#: The hurdle hazard's inputs (#539), by variant. The first two are the every-day component's
+#: (#506) with SOFR's 99th and 75th percentiles above IORB; the `state` variants add the as-of
+#: reserve scarcity state (`scarcity.RESERVE_SCARCITY_STATE`, 0 to 3), the only regime-like input
+#: that is public at the decision instant. The hindsight regime labels are not an input. Declared
+#: in `metadata/risk_date_hurdle.json` before any score, not tuned.
+HURDLE_BASE_INPUTS = EVERY_DAY_COMPONENT_INPUTS
+HURDLE_STATE_INPUTS = EVERY_DAY_COMPONENT_INPUTS + ("reserve_scarcity_state",)
+HURDLE_VARIANTS = MappingProxyType(
+    {
+        "+hurdle_platt": (HURDLE_BASE_INPUTS, "platt"),
+        "+hurdle_isotonic": (HURDLE_BASE_INPUTS, "isotonic"),
+        "+hurdle_state_platt": (HURDLE_STATE_INPUTS, "platt"),
+        "+hurdle_state_isotonic": (HURDLE_STATE_INPUTS, "isotonic"),
+    }
+)
+#: The hazard's walk-forward calibration (#539): a refit's training pairs, in date order, are cut
+#: into this many blocks; the hazard fitted on blocks `0..k-1` forecasts block `k` (`k >= 1`), and
+#: the calibrator is fitted on those out-of-sample forecasts and the labels. The final hazard, fitted
+#: on every pair, is mapped through it. Identity until the out-of-sample pairs number
+#: `probability_calibration.MINIMUM_PAIRS` and hold `MINIMUM_EVENTS` events.
+HURDLE_CALIBRATION_BLOCKS = 5
+
+
+def _walk_forward_calibrator(
+    method: str, xs: Sequence[Sequence[float]], labels: Sequence[int]
+) -> Optional[Callable[[float], float]]:
+    """The `method` curve fitted on the training pairs' own walk-forward hazard forecasts, or None.
+
+    `xs` and `labels` are in date order. Every forecast the curve sees was made by a hazard fitted on
+    earlier pairs of the same training window only, so no label is used to calibrate its own forecast.
+    `None` (the identity) when those forecasts are too few or too rare, as the bake-off's gate.
+    """
+
+    from . import probability_calibration as calibration
+
+    count = len(labels)
+    edges = [count * k // HURDLE_CALIBRATION_BLOCKS for k in range(HURDLE_CALIBRATION_BLOCKS + 1)]
+    pairs: List[Tuple[float, int]] = []
+    for block in range(1, HURDLE_CALIBRATION_BLOCKS):
+        early, late = labels[: edges[block]], range(edges[block], edges[block + 1])
+        if len(set(early)) < 2:
+            continue
+        served = [xs[i] for i in late]
+        fit = _fit_classifier("logistic", xs[: edges[block]], early, served)
+        pairs.extend((float(p), int(labels[i])) for p, i in zip(fit, late))
+    events = sum(y for _, y in pairs)
+    if len(pairs) < calibration.MINIMUM_PAIRS or not calibration.MINIMUM_EVENTS <= events < len(pairs):
+        return None
+    return calibration._FITTERS[method](pairs)
+
+
+def pressure_risk_date_hurdle_exceedance(
+    kind: str,
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    variant: str = "+hurdle_platt",
+    parent_predictor: Optional[ExceedancePredictor] = None,
+) -> ExceedancePredictor:
+    """The risk-date model of #428 with a calibrated every-day hazard on the other days (#539).
+
+    P(pressure) = P(risk date) x the parent's forecast + P(ordinary day) x the hazard. Whether a day is a
+    risk date is a fact about the calendar known in advance, so the first weight is 1 on a risk date and
+    0 on any other day: a risk date keeps the parent's forecast exactly (`pressure_risk_date_exceedance`)
+    and any other day is served the hazard.
+
+    The hazard is a ridge logistic (`PRESSURE_LOGISTIC_SETTINGS`) of `spread > tau` on the variant's inputs
+    (`HURDLE_VARIANTS`) fitted on the direct pairs of every training day, then mapped through a Platt or
+    isotonic curve fitted walk-forward (`_walk_forward_calibrator`). A served day whose inputs are not all
+    public is not forecast 0: it is served the hazard fitted on the inputs that are public (the model without
+    the missing ones), which always includes the spread, and which is calibrated the same way. Every input is
+    read through the information rule and both of its guards.
+
+    `parent_predictor`: the risk-date model to serve a risk date, if the caller already has one (so several
+    variants of one parent share its fits); it must be `pressure_risk_date_exceedance(kind, features, ...)`.
+    """
+
+    if kind not in RISK_DATE_KINDS:
+        raise ValueError(f"a risk-date model is one of {list(RISK_DATE_KINDS)}, got {kind!r}")
+    if variant not in HURDLE_VARIANTS:
+        raise ValueError(f"a hurdle variant is one of {list(HURDLE_VARIANTS)}, got {variant!r}")
+    inputs, method = HURDLE_VARIANTS[variant]
+    parent = parent_predictor or pressure_risk_date_exceedance(kind, features, declaration, minimum_history)
+    design = _RiskDateDesign(features, declaration)
+    caches: dict = {}
+
+    def public_inputs(row: DailyObservation) -> Tuple[str, ...]:
+        have = []
+        for name in inputs:
+            value = row.spread_bps if name == "spread_bps" else row.values.get(name)
+            if value is not None and math.isfinite(float(value)):
+                have.append(name)
+        return tuple(have)
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        base = parent(train_rows, feature_rows, taus, information, histories)
+        columns = [[curve[k] for curve in base.curves] for k in range(len(taus))]
+        served = [day for day, row in enumerate(feature_rows) if not design.member(row)]
+        by_subset: dict = {}
+        for day in served:
+            subset = public_inputs(feature_rows[day])
+            if "spread_bps" in subset:
+                by_subset.setdefault(subset, []).append(day)
+        pairs_used: dict = {}
+        calibrated: dict = {}
+        for subset, days in by_subset.items():
+            hazard_design = _PressureDesign(subset, declaration)
+            xs, spreads = _pressure_pairs(hazard_design, information, train_rows, caches.setdefault(subset, {}))
+            if not xs:
+                continue
+            rows = [hazard_design.row(feature_rows[day], None) for day in days]
+            pairs_used["+".join(subset)] = len(xs)
+            for position, tau in enumerate(taus):
+                labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+                if len(set(labels)) < 2:
+                    fit = [float(labels[0])] * len(rows)
+                else:
+                    fit = _fit_classifier("logistic", xs, labels, rows)
+                    curve = _walk_forward_calibrator(method, xs, labels)
+                    calibrated[(subset, float(tau))] = curve is not None
+                    if curve is not None:
+                        fit = [curve(float(p)) for p in fit]
+                for day, value in zip(days, fit):
+                    columns[position][day] = value
+        curves = []
+        for day in range(len(feature_rows)):
+            curve_values: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve_values.append(value if not curve_values else min(curve_values[-1], value))
+            curves.append(tuple(curve_values))
+        settings = dict(base.model_settings)
+        settings["hurdle_variant"] = variant
+        settings["hurdle_inputs"] = list(inputs)
+        settings["hurdle_calibration"] = method
+        settings["hurdle_training_pairs"] = dict(pairs_used)
+        settings["hurdle_calibrated_fits"] = sum(calibrated.values())
+        settings["hurdle_uncalibrated_fits"] = len(calibrated) - sum(calibrated.values())
+        read = tuple(dict.fromkeys(base.features_read + tuple(name for subset in by_subset for name in subset)))
+        return ExceedanceCurves(
+            tuple(curves),
+            read,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=base.history_ends,
+        )
+
+    return fit_predict
+
+
 def pressure_probit_exceedance(
     features: Sequence[str], declaration: Any, minimum_history: int = 20
 ) -> ExceedancePredictor:

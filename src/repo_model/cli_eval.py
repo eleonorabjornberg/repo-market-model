@@ -553,6 +553,41 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The risk-date model with a calibrated every-day hazard (#539). The hazard reads inputs beyond a --regressors
+        # declaration, so the CLI builds the default variant and scripts/risk_date_hurdle.py runs all four.
+        "pressure_risk_date_hurdle_logistic": _ModelChoice(
+            declared=_DeferredFactory("pressure_risk_date_hurdle_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "logistic",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_risk_date_hurdle_classifier": _ModelChoice(
+            declared=_DeferredFactory("pressure_risk_date_hurdle_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "gbm_classifier",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_risk_date_hurdle_quantile": _ModelChoice(
+            declared=_DeferredFactory("pressure_risk_date_hurdle_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                "quantile_skewt",
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         "pressure_logistic_bootstrap": _ModelChoice(
             declared=_DeferredFactory("pressure_rare_event_exceedance"),
             build=lambda factory, regressors, regime, minimum_history, settings: factory(
