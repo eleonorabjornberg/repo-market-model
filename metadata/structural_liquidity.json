@@ -1,0 +1,98 @@
+{
+  "status": "declared by the pull request that closes #542 before any score was computed; the functional form, the inputs and the fixed constants below are the directive's mechanism, written down once; only the six coefficients are fitted. Nothing here is tuned on a scored day.",
+  "candidate": "structural_liquidity",
+  "combined_candidate": "risk_gbm+structural",
+  "mechanism": "P(pressure on T) = logistic(b0 + b1 * spread_bps + b2 * e * shortfall + b3 * e * tga_up + b4 * e * tax_date + b5 * e * window), a logistic of the expected spread move: the reserve-demand elasticity e times the drain that the ON RRP balance has not absorbed, plus the as-of spread. It forecasts every day.",
+  "elasticity": {
+    "form": "e = exp(-(reserves / bank_total_assets - satiation) / length), the exponential reserve demand curve of NY Fed Staff Report 1019 (Afonso, Giannone, La Spada and Williams): flat well above satiation, steep below it",
+    "reserves_over_bank_assets": "reserve_balances / bank_total_assets, as scarcity.reserves_ratio",
+    "satiation": 0.12,
+    "length": 0.01,
+    "satiation_source": "scarcity.SATIATION_BAND, its lower end (about 12 percent of bank assets); the length is one percentage point of bank assets, fixed, not fitted"
+  },
+  "drain": {
+    "settlement": "net_settlement (USD billions, the securities settling less those maturing, as announced; metadata/net_settlement.json) at horizon 1; net_settlement_due_5d at horizons 2 to 5, where the scored day's own settlement is not yet public",
+    "buffer": "on_rrp (USD billions): the ON RRP balance absorbs the drain before reserves do; shortfall = max(0, max(0, net settlement) - on_rrp), absorbed one for one",
+    "tga_up": "max(0, the five-row change in tga, USD billions), from the forecast's own as-of history, as the direct models read it (ml.TGA_CHANGE_ROWS)",
+    "tax_date": "1 on a tax date (the split declaration's day type), the expected tax-date inflow to the TGA",
+    "window": "1 on a quarter-end or month-end day (the split declaration's day type), the balance-sheet window-dressing window"
+  },
+  "parameters": {
+    "count": 6,
+    "names": [
+      "intercept",
+      "spread_bps",
+      "e_x_shortfall",
+      "e_x_tga_up",
+      "e_x_tax_date",
+      "e_x_window"
+    ],
+    "expected_signs": {
+      "spread_bps": "+",
+      "e_x_shortfall": "+",
+      "e_x_tga_up": "+",
+      "e_x_tax_date": "+",
+      "e_x_window": "+"
+    },
+    "estimator": "ridge logistic on standardized columns, C = 1.0, Newton's method, standard library only; the penalty is the direct logistic's (ml.PRESSURE_LOGISTIC_SETTINGS)",
+    "refit": "walk-forward on the judge's cadence: minimum history 61, refit every 21 scored days, scored days through 2025-12-31"
+  },
+  "calibration": "none: the logistic of a few declared terms is not recalibrated",
+  "combined_row": "risk_gbm+structural: the risk-date passer risk_gbm's forecast on every day it is nonzero (a risk date), this model's probability on every day the passer leaves at 0. A measurement beside #539's hurdle; if #539 has merged its code is used instead.",
+  "inputs_off_in_every_published_declaration": [
+    "net_settlement",
+    "net_settlement_due_5d",
+    "bank_total_assets",
+    "on_rrp"
+  ],
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "issue": 542,
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5,
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "lead_at_least": 1
+  },
+  "rows": [
+    "structural_liquidity",
+    "risk_gbm+structural"
+  ],
+  "risk_date_passers": [
+    "risk_gbm",
+    "risk_gbm_base",
+    "risk_logistic",
+    "risk_logistic_base",
+    "risk_quantile_skewt_base"
+  ],
+  "pair_against": [
+    "risk_gbm",
+    "ngboost_laplace",
+    "calendar_climatology",
+    "persistence_logistic"
+  ],
+  "reports": {
+    "criterion_2": "the judge as declared under the weighted rule in force: tier 1 pooled and per lead, tiers 3 and 5, for the two rows beside the five risk-date passers, ngboost_laplace and the two benchmarks; onset recall by calendar year (2018, 2020 and 2024 called out) from the 26 onsets; the fitted coefficients by refit, with their signs and how often each has the sign the mechanism says",
+    "criterion_3": "each row against risk_gbm, ngboost_laplace, calendar_climatology and persistence_logistic at +5 bp: the Brier difference at h = 1 to 5 and the onset recall difference, pooled and by regime and pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed"
+  },
+  "unchanged": "the judge, its bar, its cut-off rule, the weighted miss rule in force, the bootstrap, every published declaration, the information set and the lockbox. A measurement only: nothing is published and no day after 2025-12-31 is read (docs/decisions/lockbox.md)."
+}
