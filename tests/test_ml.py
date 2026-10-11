@@ -13097,6 +13097,83 @@ class RiskDateVariantTests(unittest.TestCase):
             ml.pressure_risk_date_variant_exceedance("probit", _PRESSURE_CALENDAR, self.splits)
 
 
+class RiskDateComponentInputsTests(unittest.TestCase):
+    """#579: the every-day component can read one more input, and only the component does.
+
+    `component_inputs` defaults to `EVERY_DAY_COMPONENT_INPUTS`, which is the component of #506 forecast for
+    forecast. A named extra input is read through the information rule, moves the forecast of a day that is not a risk
+    date, and leaves a risk date's forecast, which the risk-date model makes, alone.
+
+    Recorded mutation, 11 October 2026: `pressure_risk_date_variant_exceedance`, `_PressureDesign(component_inputs,
+    declaration)` changed to `_PressureDesign(EVERY_DAY_COMPONENT_INPUTS, declaration)` (the argument is ignored):
+    `test_an_extra_input_moves_an_ordinary_day_and_is_read` fails with `AssertionError`.
+    """
+
+    EXTRA = "iorb_announced_change_bps"
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = [
+            DailyObservation(row.date, {**row.values, self.EXTRA: 4.0 * (index % 7 == 3) - 2.0 * (index % 11 == 5)})
+            for index, row in enumerate(_every_day_frame())
+        ]
+        self.features = _PRESSURE_CALENDAR + ml.EVERY_DAY_COMPONENT_INPUTS[1:] + (self.EXTRA,)
+        self.splits = _pressure_splits()
+
+    def predict(self, scored, **options):
+        from types import MappingProxyType
+        from unittest import mock
+
+        from repo_model import contract, measurement_fields
+
+        fields = dict(measurement_fields.COLUMN_FIELDS)
+        patched = mock.patch.multiple(
+            contract,
+            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+            FEATURE_SOURCES=MappingProxyType(
+                {
+                    **contract.FEATURE_SOURCES,
+                    **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()},
+                }
+            ),
+        )
+        with patched:
+            rule = ml.InformationRule(_PRESSURE_REGISTRY, self.features, decision_time=time(16, 0))
+            info = rule.information_set([r.date for r in self.rows], scored)
+            observation = rule.observation(self.rows, info)
+            predictor = ml.pressure_risk_date_variant_exceedance(
+                "gbm_classifier", _PRESSURE_CALENDAR, self.splits, 20, every_day=True, **options
+            )
+            return predictor(self.rows[:scored], (observation,), (5.0, 10.0), information=rule)
+
+    def days(self, risk, start=90):
+        return [k for k in range(start, len(self.rows) - 1) if _is_risk(self.rows[k]) is risk]
+
+    def test_the_default_component_is_the_declared_one(self):
+        scored = self.days(False)[0]
+        same = self.predict(scored, component_inputs=ml.EVERY_DAY_COMPONENT_INPUTS)
+        self.assertEqual(self.predict(scored).curves, same.curves)
+
+    def test_an_extra_input_moves_an_ordinary_day_and_is_read(self):
+        extra = ml.EVERY_DAY_COMPONENT_INPUTS + (self.EXTRA,)
+        moved = 0
+        for scored in self.days(False)[:6]:
+            plain, with_extra = self.predict(scored), self.predict(scored, component_inputs=extra)
+            self.assertIn(self.EXTRA, with_extra.features_read)
+            self.assertNotIn(self.EXTRA, plain.features_read)
+            moved += plain.curves != with_extra.curves
+        self.assertGreater(moved, 0)
+
+    def test_a_risk_date_keeps_the_risk_date_models_forecast(self):
+        extra = ml.EVERY_DAY_COMPONENT_INPUTS + (self.EXTRA,)
+        for scored in self.days(True)[:3]:
+            self.assertEqual(self.predict(scored).curves, self.predict(scored, component_inputs=extra).curves)
+
+    def test_a_component_without_the_spread_is_refused(self):
+        with self.assertRaises(ValueError):
+            self.predict(self.days(False)[0], component_inputs=("sofr_p75_iorb_bps", self.EXTRA))
+
+
 class RiskDateHurdleTests(unittest.TestCase):
     """The hurdle model of #539: the risk-date model on a risk date, a calibrated every-day hazard elsewhere.
 
