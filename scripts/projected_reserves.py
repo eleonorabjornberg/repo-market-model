@@ -153,14 +153,35 @@ def panel_command(args) -> int:
 # -- run ----------------------------------------------------------------------
 
 
-def combine(parent: Dict[str, Dict[str, float]], structural: Dict[str, Dict[str, float]]) -> Dict[str, Dict[str, float]]:
-    """The parent's probability on every day it is nonzero, the projected model's where the parent is 0."""
+def is_risk_date(values, horizon: int, splits) -> bool:
+    """Whether the passer serves the day: `ml._RiskDateDesign.member`, which #539's hurdle also uses.
+
+    A day is a risk date when its pressure-day type is not ordinary, or, at h = 1 only (the scored day's own
+    settlement is not public earlier, so the passer does not read it), when coupons settle on it.
+    """
+
+    if splits.day_type(values) != "ordinary":
+        return True
+    return horizon == 1 and float(values.get("treasury_settlement_coupons") or 0.0) > 0.0
+
+
+def combine(
+    parent: Dict[str, Dict[str, float]], projected: Dict[str, Dict[str, float]], members: Dict[str, bool]
+) -> Dict[str, Dict[str, float]]:
+    """#539's hurdle with this model as the every-day hazard: the passer's forecast on a risk date, the model's elsewhere.
+
+    On a risk date the passer's forecast is kept exactly, even where it is 0 (`ml.pressure_risk_date_hurdle_exceedance`
+    keeps it). Off a risk date the passer forecasts exactly 0 (checked), and the model is served.
+    """
 
     out: Dict[str, Dict[str, float]] = {}
-    for tau, column in structural.items():
-        if set(parent[tau]) != set(column):
+    for tau, column in projected.items():
+        if set(parent[tau]) != set(column) or set(members) != set(column):
             raise SystemExit(f"the parent and the projected model were not scored on the same days at {tau} bp")
-        out[tau] = {day: (parent[tau][day] if parent[tau][day] > 0.0 else p) for day, p in column.items()}
+        bad = [day for day in column if not members[day] and parent[tau][day] != 0.0]
+        if bad:
+            raise SystemExit(f"the passer forecasts above 0 on {bad[:3]}, which are not risk dates")
+        out[tau] = {day: (parent[tau][day] if members[day] else p) for day, p in column.items()}
     return out
 
 
@@ -187,6 +208,7 @@ def run_command(args) -> int:
             decision_time=time.fromisoformat(scoring["decision_time"]), taus=tuple(float(t) for t in declared["thresholds_bp"]),
             minimum_history=scoring["minimum_history"], refit_every=scoring["refit_every"], end=last, horizon=h,
         )
+    by_date = {row.date: row for row in rows}
     forecast = pj.report_forecast(declared["rows"][0], report)
     column = {
         f"{tau:g}": {day.isoformat(): p for day, p in zip(forecast.dates, values)}
@@ -195,7 +217,10 @@ def run_command(args) -> int:
     forecasts = {declared["rows"][0]: column}
     if args.risk:
         parent = json.loads(Path(args.risk).read_text())["forecasts"]["risk_gbm"]
-        forecasts[declared["rows"][1]] = combine(parent, column)
+        members = {
+            day.isoformat(): is_risk_date(by_date[day].values, h, splits) for day in forecast.dates
+        }
+        forecasts[declared["rows"][1]] = combine(parent, column, members)
     document = {
         "horizon": h,
         "panel_sha256": panel_sha256(args.published),
