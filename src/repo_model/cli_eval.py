@@ -357,6 +357,15 @@ MODEL_FACTORIES = MappingProxyType(
             ),
             needs_regime_variable=False,
         ),
+        # The latent funding-stress factor (#543): one AR(1) factor over nine money-market series,
+        # filtered forward through each forecast's as-of history. No regressor and no splits.
+        "latent_factor": _ModelChoice(
+            declared=_DeferredFactory("latent_factor_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+        ),
         # The rare-event treatments of the direct pressure classifiers (#381): class weights, a
         # focal-loss classifier and event-balanced bootstraps, on the same direct design.
         "pressure_logistic_weighted": _ModelChoice(
