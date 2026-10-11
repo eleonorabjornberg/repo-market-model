@@ -82,6 +82,8 @@ def slim(cell: dict) -> dict:
         "climatology_recall": cell["climatology_recall"],
         "worst_false_alarms_per_onset": cell["worst_false_alarms_per_onset"],
         "worst_weighted_false_alarms_per_onset": cell.get("worst_weighted_false_alarms_per_onset"),
+        "pooled_false_alarms_per_onset": cell.get("pooled_false_alarms_per_onset"),
+        "pooled_weighted_false_alarms_per_onset": cell.get("pooled_weighted_false_alarms_per_onset"),
         "complete": cell["complete"],
     }
     if "criteria" in cell:
@@ -201,9 +203,9 @@ def markdown(result: dict, document: dict) -> str:
     titles = {"weighted": "Weighted rule in force", "unweighted": "Flat count"}
     for rule, by_option in result["tier_1"].items():
         off, on = by_option["off"], by_option["on"]
-        limit = "worst_weighted_false_alarms_per_onset" if rule == "weighted" else "worst_false_alarms_per_onset"
+        limit = "pooled_weighted_false_alarms_per_onset" if rule == "weighted" else "pooled_false_alarms_per_onset"
         lines += [f"## {titles[rule]}", "", "### Tier 1, leads 1 to 5 (pooled)", "",
-                  "| row | option | onsets warned, recall [90%] | worst false alarms per onset (limit 2) | criteria met | tier 1 |",
+                  "| row | option | onsets warned, recall [90%] | pooled false alarms per onset (limit 2) | criteria met | tier 1 |",
                   "|---|---|---|---|---|---|"]
         for n in names:
             for label, cells in (("off", off), ("on", on)):

@@ -106,11 +106,13 @@ def _declaration(**overrides):
             "onset_warning": {
                 "lead_at_least": 1, "recall_at_least": 0.5, "false_alarms_per_onset_at_most": 2.0,
                 "far_lead_at_least": 2, "far_recall_at_least": 0.3,
+                "split_years": [2019],
             },
             "risky_dates": {"scarcity_state_at_least": 2, "lead": 2, "auroc_at_least": 0.75},
             "no_crying_wolf": {
                 "abundant_scarcity_state": 0, "abundant_regime": "b",
                 "flags_per_year_at_most": 21, "business_days_per_year": 252,
+                "calibration_min_pressure_days": 1,
             },
             "week_ahead": {"days": 2, "combine": "independence"},
         },
@@ -1003,7 +1005,9 @@ class TierTests(unittest.TestCase):
         # 38 false alarms of 380 non-pressure days at each of two horizons: a flat climatology
         # that spends the same budget flags a tenth of the days at each, and misses an onset
         # only when it misses at both.
-        self.assertAlmostEqual(near["climatology_recall"], 1.0 - 0.9 ** 2, places=6)
+        # The flags are the same days at both horizons, so a day flagged at both is one false alarm (#509):
+        # 38 of 380 days in all, and a flat climatology flagging a tenth of the days catches a tenth.
+        self.assertAlmostEqual(near["climatology_recall"], 0.1, places=6)
 
     def test_lead_at_least_reads_the_longest_horizon_that_flagged_the_onset(self):
         series = Series()
@@ -1289,6 +1293,168 @@ class AlwaysFlagBlockTests(unittest.TestCase):
         self.assertIn("always_flag_blocks", on)
 
 
+class RulingsOfTenOctoberTests(unittest.TestCase):
+    """Eleonora's rulings of 10 October 2026 on the judge (#509, #510 and regime scoring; directive #536).
+
+    **Recorded mutations** (CLAUDE.md: a rule that changes what passes carries one). #509: in
+    `pressure_judge._onset_tier`, replace `out["criteria"] = criteria_of(pooled, pooled_limited)` by
+    `out["criteria"] = criteria_of(pooled, worst)` (the limit read again on the worst single horizon); the failing test
+    was `test_tier_one_counts_false_alarms_across_the_horizons_that_count_its_warnings`, which raised
+    `AssertionError` (`True is not false`). #510: in `_onset_tier`, append
+    `and out["early_years"]["outside"].get("onsets_flagged", 0) >= 4` to
+    `out["passes"] = out["complete"] and all(out["criteria"].values())` (a pass outside the early years required);
+    the failing test was `test_the_pass_rule_does_not_require_a_pass_outside_the_early_years` (`AssertionError:
+    False is not true`). Tier 3 (regime scoring): in `_no_crying_wolf`, replace
+    `if cell["events"] >= declaration.calibration_min_events:` by `if cell["events"] > 0:`; the failing test was
+    `test_calibration_is_tested_only_in_regimes_with_enough_pressure_days` (`AssertionError: Items in the first set
+    but not the second`).
+    """
+
+    def _noisy(self, series, offsets):
+        # Flags each onset and, at the given offsets in each 20-day block, one false alarm per offset.
+        def build(h):
+            at = offsets[h]
+            return series.forecast(
+                "sharp", h, [1.0 if (y or k % 20 in at) else 0.0 for k, y in enumerate(series.y5)]
+            )
+
+        return build
+
+    def _strict(self, limit):
+        document = _declaration()
+        document["tiers"]["onset_warning"]["false_alarms_per_onset_at_most"] = limit
+        return pj.load_declaration(_write(document))
+
+    def test_tier_one_counts_false_alarms_across_the_horizons_that_count_its_warnings(self):
+        series = Series()
+        # One false alarm per block at h = 1 (day 3) and a different one at h = 2 (day 2): each horizon
+        # alone raises 19 of 20 false alarms per onset; flagged at either, 38 of 20.
+        candidate = self._noisy(series, {1: (3,), 2: (2,)})
+        grids, forecasts = series.everything(candidate)
+        near = pj.judge(self._strict(1.5), grids, forecasts, calendar=series.dates)["candidates"]["sharp"][
+            "tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertAlmostEqual(near["worst_false_alarms_per_onset"], 19 / 20)
+        self.assertAlmostEqual(near["pooled_false_alarms_per_onset"], 38 / 20)
+        self.assertFalse(near["criteria"]["false_alarms"])
+        self.assertFalse(near["passes"])
+        # Under the declared limit of 2 the same row passes.
+        grids, forecasts = series.everything(candidate)
+        near = series.judged(candidate)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertTrue(near["criteria"]["false_alarms"])
+
+    def test_a_day_flagged_at_two_horizons_is_one_false_alarm(self):
+        series = Series()
+        candidate = self._noisy(series, {1: (3,), 2: (3,)})
+        near = series.judged(candidate)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertAlmostEqual(near["pooled_false_alarms_per_onset"], 19 / 20)
+        self.assertEqual(near["pooled_false_alarms"], 19)
+
+    def test_the_pooled_count_is_weighted_when_the_rule_is_applied(self):
+        series = Series()
+        candidate = self._noisy(series, {1: (3,), 2: (3,)})
+        grids, forecasts = series.everything(candidate)
+        declaration = replace(_load(), weighted_miss=pj.load_weighted_miss(applied=True))
+        near = pj.judge(declaration, grids, forecasts, calendar=series.dates)["candidates"]["sharp"][
+            "tiers"]["onset_warning"]["lead_at_least_1"]
+        # Day 3 of a block is one day before the onset: weight 0.25, counted once for the two horizons.
+        self.assertAlmostEqual(near["pooled_weighted_false_alarms_per_onset"], 19 * 0.25 / 20)
+        self.assertAlmostEqual(near["worst_weighted_false_alarms_per_onset"], 19 * 0.25 / 20)
+
+    def test_tier_one_is_reported_per_lead_time_as_well_as_pooled(self):
+        series = Series()
+        candidate = self._noisy(series, {1: (3,), 2: (2,)})
+        near = series.judged(candidate)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(set(near["per_lead"]), {"1", "2"})
+        for h in ("1", "2"):
+            cell = near["per_lead"][h]
+            self.assertEqual(cell["onsets"], 20)
+            self.assertEqual(cell["onsets_flagged"], 19)
+            self.assertAlmostEqual(cell["false_alarms_per_onset"]["flat"]["mean"], 19 / 20)
+            self.assertTrue(cell["passes"])
+            self.assertIn("mean", cell["recall"])
+        # A horizon that flags nothing has recall 0 at its own lead, and the pooled row is the union.
+        only_one = lambda h: series.perfect(h) if h == 1 else series.flat("sharp", h, 0.0)
+        near = series.judged(only_one)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(near["per_lead"]["2"]["onsets_flagged"], 0)
+        self.assertFalse(near["per_lead"]["2"]["passes"])
+        self.assertEqual(near["onsets_flagged"], 19)
+
+    def test_recall_and_false_alarms_outside_the_early_years_are_a_line_of_their_own(self):
+        series = Series()
+        candidate = self._noisy(series, {1: (3,), 2: (3,)})
+        near = series.judged(candidate)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        early = near["early_years"]
+        self.assertEqual(early["years"], [2019])
+        inside, outside = early["inside"], early["outside"]
+        self.assertEqual((inside["onsets"], outside["onsets"]), (13, 7))
+        # The first refit flags nothing, so the first onset (day 4, 2019) is missed.
+        self.assertEqual((inside["onsets_flagged"], outside["onsets_flagged"]), (12, 7))
+        self.assertAlmostEqual(outside["recall"]["mean"], 1.0)
+        self.assertIn("interval", outside["recall"])
+        self.assertAlmostEqual(outside["false_alarms_per_onset"]["flat"]["mean"], 7 / 7)
+        self.assertEqual(inside["days"] + outside["days"], near["days"])
+
+    def test_the_pass_rule_does_not_require_a_pass_outside_the_early_years(self):
+        series = Series()
+        # Flags the onsets of 2019 (regime a) and nothing after: recall 12 of 20 overall, 0 outside 2019.
+        year_one = lambda h: series.forecast(
+            "sharp", h, [1.0 if (y and series.dates[k].year == 2019) else 0.0 for k, y in enumerate(series.y5)]
+        )
+        near = series.judged(year_one)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(near["early_years"]["outside"]["onsets_flagged"], 0)
+        self.assertEqual(near["early_years"]["outside"]["recall"]["mean"], 0.0)
+        self.assertTrue(near["passes"])
+
+    def test_the_regimes_recall_is_averaged_with_equal_weight(self):
+        series = Series()
+        candidate = lambda h: series.perfect(h)
+        near = series.judged(candidate)["candidates"]["sharp"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        equal = near["regime_equal_weight_recall"]
+        self.assertEqual(set(equal["regimes"]), {"a", "b"})
+        self.assertEqual((equal["regimes"]["a"]["onsets"], equal["regimes"]["a"]["onsets_flagged"]), (13, 12))
+        self.assertEqual((equal["regimes"]["b"]["onsets"], equal["regimes"]["b"]["onsets_flagged"]), (7, 7))
+        self.assertAlmostEqual(equal["recall"], (12 / 13 + 1.0) / 2)
+        # The pooled recall weights the regimes by their onsets: 19 of 20.
+        self.assertAlmostEqual(near["recall"]["mean"], 0.95)
+
+    def test_calibration_is_tested_only_in_regimes_with_enough_pressure_days(self):
+        series = Series(800)
+        document = _declaration()
+        document["tiers"]["no_crying_wolf"]["calibration_min_pressure_days"] = 20
+        declaration = pj.load_declaration(_write(document))
+        self.assertEqual(declaration.calibration_min_events, 20)
+        grids = {h: series.grid(h) for h in (1, 2)}
+        forecasts = []
+        for h in (1, 2):
+            forecasts += [series.flat("calendar_climatology", h, 0.1), series.flat("persistence_logistic", h, 0.1)]
+            forecasts.append(series.flat("sharp", h, 0.1))
+        result = pj.judge(declaration, grids, forecasts, calendar=series.dates)["candidates"]["sharp"]
+        wolf = result["tiers"]["no_crying_wolf"]["1"]
+        # Regime "a" (2019) has 13 pressure days, regime "b" has 27.
+        self.assertEqual(set(wolf["calibrated_by_regime"]), {"b"})
+        self.assertEqual(set(wolf["calibration_reported_regimes"]), {"a"})
+        self.assertEqual(wolf["calibration_reported_regimes"]["a"]["events"], 13)
+
+    def test_every_judge_table_carries_the_added_lines(self):
+        spec = importlib.util.spec_from_file_location(
+            "pressure_judge_script", Path(__file__).parents[1] / "scripts" / "pressure_judge.py"
+        )
+        script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(script)
+        series = Series()
+        result = series.judged(lambda h: series.perfect(h))
+        for text in (script.markdown(result), script.summary_tables(result)):
+            self.assertIn("lead 1 alone", text)
+            self.assertIn("outside 2019-2019", text)
+            self.assertIn("Recall with equal weight per regime", text)
+
+    def test_the_tracked_declaration_carries_the_rulings(self):
+        declaration = pj.load_declaration()
+        self.assertEqual(declaration.calibration_min_events, 20)
+        self.assertEqual(declaration.split_years, (2018, 2019))
+        self.assertEqual(declaration.primary, 5.0)
+
+
 class InputTests(unittest.TestCase):
     def test_forecasts_are_read_from_a_horizon_document(self):
         document = {
@@ -1416,6 +1582,16 @@ class SummaryTableTests(unittest.TestCase):
         self.assertIn("5.10 flat", row)
         self.assertIn("3.42 weighted", row)
         self.assertIn("tier 1 on the weighted count", row)
+
+    def test_a_result_with_the_pooled_count_prints_it_not_the_worst_horizon(self):
+        """The merge of #509 (pooled count) with #577 (labelled counts): the pooled figures are the ones shown."""
+
+        result = self.result(9.9, 8.8, True)
+        near = result["candidates"]["model"]["tiers"]["onset_warning"]["lead_at_least_1"]
+        near.update(pooled_false_alarms_per_onset=5.10, pooled_weighted_false_alarms_per_onset=3.42)
+        row = [line for line in self.script.summary_tables(result).splitlines() if line.startswith("| model |") and "tier 1 on the" in line][0]
+        self.assertIn("5.10 flat / 3.42 weighted (tier 1 on the weighted count)", row)
+        self.assertNotIn("9.90", row)
 
     def test_under_the_flat_rule_the_flat_count_is_the_one_marked(self):
         text = self.script.summary_tables(self.result(5.10, 3.42, False))

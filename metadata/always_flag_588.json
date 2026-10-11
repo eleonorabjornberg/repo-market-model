@@ -23,6 +23,6 @@
     "off": "the judge in force",
     "on": "Declaration.always_flag_not_warning: a refit block of cutoff_rule.refit_every scored days whose cut-off (on its first day) is at or below every probability in it is always-flag; a flag in it is counted neither as a warning nor as a false alarm, and the blocks, the flags dropped and the onsets only they warned are listed. Tier 1 only: tiers 2 to 5 are unchanged."
   },
-  "reported": "tier 1 at lead of at least 1 (the pooled verdict) and at least 2, 3, 4 and 5, option off and on: onsets warned, recall with its 90% interval, worst false alarms per onset (flat and weighted), the three criteria and the pass; the always-flag blocks per row and horizon; the onsets lost.",
+  "reported": "tier 1 at lead of at least 1 (the pooled verdict) and at least 2, 3, 4 and 5, option off and on: onsets warned, recall with its 90% interval, pooled false alarms per onset (flat and weighted; the count the judge's limit reads since the rulings of 10 October 2026), the three criteria and the pass; the always-flag blocks per row and horizon; the onsets lost.",
   "unchanged": "the bar (recall at least 0.5 with the interval above climatology, false alarms per onset at most 2), the cut-off rule, the bootstrap, the weights and bands of metadata/weighted_miss.json. The cut-offs are chosen once per rule and shared by both options. No day after 2025-12-31 is read (docs/decisions/lockbox.md)."
 }
