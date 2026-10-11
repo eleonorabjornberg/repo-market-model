@@ -1,0 +1,14 @@
+{
+  "role": "candidate",
+  "track": "T (#544)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "tga"
+  ],
+  "features_at_horizon_2_or_more": "unchanged: the design has no settlement column",
+  "calibration": "none: (a) one fit on the SOFR pairs (weight 1) and the source pairs (weight source_weight), with a source indicator as the design's last column (0 on every served row); columns standardised on the SOFR pairs alone; metadata/effr_pretrain.json"
+}
