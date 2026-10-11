@@ -19,6 +19,7 @@ market-day window. A run that rebuilds a calendar value from the date inside thi
 
 from __future__ import annotations
 
+import json
 import runpy
 import sys
 from pathlib import Path
@@ -28,10 +29,28 @@ sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import data  # noqa: E402
 
+DECLARATION = REPO / "metadata" / "tax_date_market_days.json"
+
+_published_verifier = data.verify_daily_panel
+
+
+def _verify_either(panel_path, manifest_path):
+    """The published manifest's digest, or the declared digest of the market-day build; nothing else."""
+
+    try:
+        return _published_verifier(panel_path, manifest_path)
+    except data.DataContractError:
+        declared = json.loads(DECLARATION.read_text(encoding="utf-8"))["market_days_panel_sha256"]
+        computed = data.hashlib.sha256(Path(panel_path).read_bytes()).hexdigest()
+        if computed != declared:
+            raise
+        return computed
+
 
 def main(argv) -> int:
     if len(argv) < 2:
         raise SystemExit("usage: tax_date_market_days.py (-m MODULE | SCRIPT) [args ...]")
+    data.verify_daily_panel = _verify_either
     with data.tax_window_on_market_days():
         if argv[0] == "-m":
             sys.argv = [argv[1], *argv[2:]]

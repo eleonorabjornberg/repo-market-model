@@ -28,7 +28,13 @@ run alone:
    `MarketWindowTests.test_a_market_holiday_in_the_window_moves_its_end`, AssertionError.
 """
 
+import contextlib
+import csv
+import hashlib
+import io
+import json
 import sys
+import tempfile
 import unittest
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
@@ -37,6 +43,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from repo_model import data  # noqa: E402
+from repo_model.cli import main as cli_main  # noqa: E402
+
+FIXTURES = ROOT / "tests" / "fixtures" / "snapshots" / "funding_inputs"
+CUTOFF = "2026-09-08T21:31:42+00:00"
+DECLARATION = ROOT / "metadata" / "tax_date_market_days.json"
 
 
 def window(rule, year, month):
@@ -134,6 +145,42 @@ class SwitchTests(unittest.TestCase):
         self.assertEqual(tax_column(), [1.0, 0.0, 1.0, 1.0])
         with data.tax_window_on_market_days():
             self.assertEqual(tax_column(), [1.0, 1.0, 1.0, 0.0])
+
+
+class DeclaredPanelTests(unittest.TestCase):
+    def build(self, output):
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = cli_main(
+                ["build", "--raw-root", str(FIXTURES), "--output", str(output), "--build-cutoff", CUTOFF,
+                 "--decision-time", "16:00:00"]
+            )
+        self.assertEqual(code, 0)
+
+    def test_the_declared_panel_is_the_published_panel_with_only_tax_date_moved(self):
+        declared = json.loads(DECLARATION.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            published = Path(tmp) / "published.csv"
+            market = Path(tmp) / "market.csv"
+            self.build(published)
+            with data.tax_window_on_market_days():
+                self.build(market)
+            self.assertEqual(
+                hashlib.sha256(published.read_bytes()).hexdigest(), declared["published_panel_sha256"]
+            )
+            self.assertEqual(hashlib.sha256(market.read_bytes()).hexdigest(), declared["market_days_panel_sha256"])
+            old = {row["date"]: row for row in csv.DictReader(published.open())}
+            new = {row["date"]: row for row in csv.DictReader(market.open())}
+            self.assertEqual(old.keys(), new.keys())
+            moved = [day for day in old if old[day]["tax_date"] != new[day]["tax_date"]]
+            self.assertEqual(moved, declared["panel_days_where_tax_date_differs"])
+            for day in old:
+                self.assertEqual(
+                    {k: v for k, v in old[day].items() if k != "tax_date"},
+                    {k: v for k, v in new[day].items() if k != "tax_date"},
+                    day,
+                )
+            self.assertEqual(new["2019-04-16"]["tax_date"], "1")
+            self.assertEqual(old["2019-04-16"]["tax_date"], "0")
 
 
 if __name__ == "__main__":
