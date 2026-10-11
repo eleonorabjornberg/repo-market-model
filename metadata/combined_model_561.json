@@ -1,0 +1,212 @@
+{
+  "status": "declared by the pull request that closes #561 before any score was computed; a measurement, not a record. Nothing here is published: every input is off in every published declaration, no 2026 day is scored, no rule changes and the live record and pin do not move. The choices below are the directive's, written down once; only the logistic's coefficients, the factor's parameters and the calibration curve are fitted, on the judge's cadence",
+  "issue": 561,
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parents": {
+    "risk_gbm": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_logistic": {
+      "kind": "logistic",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    }
+  },
+  "parents_declaration": "metadata/risk_date_severity.json (unchanged: the risk dates, the features, the estimators)",
+  "parent_timing": "both",
+  "parent_timing_reading": "the passers are scored as in scripts/announcement_dating_rescore.py --arm both (#541): settlements dated from the auction announcement (metadata/settlement_announcement_dating.json), the settlement columns kept at every horizon and the coupon clause of the risk-date rule applied at h >= 2, and the H.4.1 weeklies read per release (metadata/h41_release_dating.json). The ordinary-day component is scored on the published timing, the one its inputs were built and scored on (#542, #543, #545); the projected-reserves columns are built from the published H.4.1 lag",
+  "ordinary_days": {
+    "form": "one walk-forward ridge logistic of spread > tau per threshold (ml.PRESSURE_LOGISTIC_SETTINGS), fitted on the direct pairs of every training day under the as-of rule, on the spread and the three blocks below, then mapped through a calibration curve",
+    "blocks": [
+      "factor",
+      "structural",
+      "projected"
+    ],
+    "block_columns": {
+      "factor": [
+        "factor_level: the filtered level of the latent funding-stress factor (#543, metadata/latent_factor.json, fitted on the refit's training frame) at the forecast's anchor row",
+        "factor_change_5: that level less the level 5 rows earlier"
+      ],
+      "structural": [
+        "e_x_shortfall, e_x_tga_up, e_x_tax_date, e_x_window: the four structural terms of #542 (metadata/structural_liquidity.json), the reserve-demand elasticity times the drain the ON RRP balance has not absorbed, the TGA rise, the tax date and the window"
+      ],
+      "projected": [
+        "proj_dist_h{h}: the projected reserves over bank assets above the satiation level at the scored day (#545, metadata/projected_reserves.json)"
+      ]
+    },
+    "factor_change_rows": 5,
+    "inputs_at_horizon_2": {
+      "design": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "bank_total_assets",
+        "on_rrp",
+        "tga",
+        "net_settlement_due_5d",
+        "proj_dist_h2"
+      ],
+      "declared_to_the_backtest": [
+        "spread_bps",
+        "days_to_month_end",
+        "quarter_end",
+        "tax_date",
+        "reserve_balances",
+        "bank_total_assets",
+        "on_rrp",
+        "tga",
+        "net_settlement_due_5d",
+        "proj_dist_h2",
+        "sofr_p1",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_p99",
+        "tgcr",
+        "bgcr",
+        "effr",
+        "iorb"
+      ]
+    },
+    "calibration": "platt",
+    "calibration_reading": "Platt, as the headline of the hurdle (#539): walk-forward, refit on the judge's cadence (minimum history 61, refit every 21 scored days), cut into five blocks of the training pairs in date order, the identity until 250 out-of-sample pairs hold 5 events (ml._walk_forward_calibrator). Chosen before any score, not tuned",
+    "conditioning": "on the as-of columns above only. It is never conditioned on a hindsight regime label (metadata/evaluation_splits.json regimes were drawn after the fact; ruling on #515)",
+    "missing_input": "a served day whose inputs are not all public is refused (ValueError), not forecast 0; the run says how many"
+  },
+  "gate": {
+    "control": "gate",
+    "from": "#532 (metadata/risk_date_false_alarm_controls.json, scripts/risk_date_false_alarm_controls.py)",
+    "why": "the one of #534's four controls that passed tier 1 under the weighted rule in force (the other that passed tier 1, +shrunk, passed it under the flat rule only). Declared as #532 declared it, not tuned",
+    "quantile": 0.9,
+    "window": 250,
+    "minimum_earlier": 60,
+    "applies_to": "the ordinary-day component's forecast on a day that is not a risk date, from forecasts already issued on earlier scored days; a risk date keeps the passer's forecast",
+    "rule": "on a day that is not a risk date the component's probability is kept only if it is strictly above the quantile (nearest rank) of the component's forecasts on the days that were not risk dates among the previous window scored days; with fewer than minimum_earlier such forecasts it is 0. A walk-forward cut-off for the days the component serves, from forecasts already issued"
+  },
+  "combination": "on a risk date the passer's forecast, unchanged; on any other day the component's, then the gate; the curve across thresholds is made non-increasing afterwards. Risk dates are the days whose pressure-day type is not ordinary and any day on which coupons settle (known h days ahead from the announcement, the arm the passer runs in)",
+  "variants": {
+    "risk_gbm+combined": {
+      "parent": "risk_gbm",
+      "gate": true,
+      "blocks": [
+        "factor",
+        "structural",
+        "projected"
+      ]
+    },
+    "risk_gbm+combined_nogate": {
+      "parent": "risk_gbm",
+      "gate": false,
+      "blocks": [
+        "factor",
+        "structural",
+        "projected"
+      ]
+    },
+    "risk_logistic+combined": {
+      "parent": "risk_logistic",
+      "gate": true,
+      "blocks": [
+        "factor",
+        "structural",
+        "projected"
+      ]
+    },
+    "risk_logistic+combined_nogate": {
+      "parent": "risk_logistic",
+      "gate": false,
+      "blocks": [
+        "factor",
+        "structural",
+        "projected"
+      ]
+    }
+  },
+  "ablations": {
+    "risk_gbm+combined_no_factor": {
+      "parent": "risk_gbm",
+      "gate": true,
+      "blocks": [
+        "structural",
+        "projected"
+      ],
+      "dropped": "factor"
+    },
+    "risk_gbm+combined_no_structural": {
+      "parent": "risk_gbm",
+      "gate": true,
+      "blocks": [
+        "factor",
+        "projected"
+      ],
+      "dropped": "structural"
+    },
+    "risk_gbm+combined_no_projected": {
+      "parent": "risk_gbm",
+      "gate": true,
+      "blocks": [
+        "factor",
+        "structural"
+      ],
+      "dropped": "projected"
+    }
+  },
+  "ablation_reading": "criterion 3 of #561: each block (factor, structural, projected, gate) dropped in turn from the gated model under risk_gbm. The gate is dropped by the variant risk_gbm+combined_nogate; the others are the three ablation rows. They are analysis rows of the criterion, not a fifth variant",
+  "references": {
+    "pair_against": [
+      "risk_gbm",
+      "ngboost_laplace",
+      "calendar_climatology",
+      "persistence_logistic"
+    ],
+    "controls": [
+      "risk_gbm+settle+h41",
+      "risk_logistic+settle+h41",
+      "risk_gbm+every_day+gate+settle+h41",
+      "risk_logistic+every_day+gate+settle+h41"
+    ],
+    "controls_reading": "the passers with settlement and H.4.1 timing on (the base the combination is built on), and the same with the three-input every-day component and the gate of #541's table (the best earlier version of this construction). Every row is also paired against these two",
+    "risk_date_passers": [
+      "risk_gbm",
+      "risk_logistic",
+      "risk_gbm_base",
+      "risk_logistic_base",
+      "risk_quantile_skewt_base"
+    ]
+  },
+  "judging": "the judge as declared (metadata/pressure_judge.json), unchanged, under the weighted miss rule in force and beside it the flat rule: tiers 1, 3 and 5, h = 1 to 5, +5 and +10 bp; tier 1 pooled and per lead; recall by calendar year with 2018, 2020 and 2024 called out; the predicted rate against the realised rate by regime. Paired against the references with 90% stationary-bootstrap intervals, split by regime and pressure-day type",
+  "selection": "The combination was chosen after seeing the results of #539, #541, #542, #543, #545 and #534 on these same days (2018-06-29 to 2025-12-31), so a pass here is not a confirmation. Only the 2026 confirmation window can confirm it, and it is not opened here: no row below is in the confirmation look",
+  "reports": [
+    "docs/pivot/combined-model-result.md",
+    "docs/pivot/evidence/combined-model/"
+  ],
+  "unchanged": [
+    "the judge's bar, tiers, thresholds, horizons and cut-off rule",
+    "the information-set rule, every availability time, and every published declaration",
+    "metadata/lockbox.json: no lockbox tier is opened, no 2026 day is scored"
+  ],
+  "published": "nothing: every input is off in every published declaration; no rule, threshold, definition or availability time changes"
+}

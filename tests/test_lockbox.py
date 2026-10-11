@@ -360,6 +360,11 @@ NOT_ENTRY_POINTS = {
         "training frame (#114); scores nothing, the backtest that calls the "
         "predictor guards the scored days"
     ),
+    "ml._combined_pairs": (
+        "builds the combined model's training pairs, with their anchors, inside a fit's own "
+        "training frame (#561), as ml._pressure_pairs does; scores nothing, the backtest that "
+        "calls the predictor guards the scored days"
+    ),
     "ml._dynamic_rows": (
         "builds the dynamic pressure models' design rows and anchors inside a "
         "fit's own as-of frames (#137); scores nothing, the backtest that calls "

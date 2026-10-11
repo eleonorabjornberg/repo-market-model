@@ -13912,5 +13912,183 @@ class LatentFactorConformanceTests(ExceedancePredictorConformance, unittest.Test
         return bound
 
 
+class CombinedOrdinaryTests(unittest.TestCase):
+    """The ordinary-day component of the combined model (#561): a calibrated logistic on the declared blocks.
+
+    The blocks are the stress factor (its filtered level and five-row change), the structural terms (#542) and
+    the projected-reserves distance (#545). The factor is read at the row of the forecast's own anchor, and a
+    history that runs past its forecast is refused.
+
+    Recorded mutations:
+
+    * `_combined_factor_columns`, `means[anchor]` changed to `means[anchor + 1]` in the returned level (a training
+      pair reads the factor of the row after its anchor):
+      `test_a_training_pair_reads_the_factor_at_its_anchor_and_no_later_row` and
+      `test_the_factor_columns_are_the_level_and_the_change_over_five_rows` fail with `AssertionError`.
+    * `pressure_combined_ordinary_exceedance`, the condition `history[-1].date > feature_row.date` changed to
+      `False` (the filter reads the row after the anchor): `test_a_history_past_its_forecast_is_refused` fails
+      with `AssertionError: LookAheadError not raised`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _factor_frame(count=200)
+        self.rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0), horizon=2
+        )
+
+    def call(self, predictor, train, feature_rows, histories, taus=(5.0, 10.0)):
+        return predictor(train, feature_rows, taus, information=self.rule, histories=histories)
+
+    def factor_only(self, **kwargs):
+        return ml.pressure_combined_ordinary_exceedance(
+            ("spread_bps",), None, minimum_history=40, blocks=("factor",), **kwargs
+        )
+
+    def test_the_factor_columns_are_the_level_and_the_change_over_five_rows(self):
+        means = [float(k * k) for k in range(12)]
+        self.assertEqual(ml._combined_factor_columns(means, 7), (49.0, 49.0 - 4.0))
+        self.assertIsNone(ml._combined_factor_columns(means, 4))
+        self.assertEqual(ml.COMBINED_FACTOR_CHANGE_ROWS, 5)
+
+    def test_a_training_pair_reads_the_factor_at_its_anchor_and_no_later_row(self):
+        means = [float(k) for k in range(60)]
+        pairs = [(10, [1.5], 3.0), (20, [2.5], 7.0), (3, [9.0], 1.0)]
+        xs, spreads = ml._combined_training_matrix(pairs, means, factor=True)
+        self.assertEqual(xs, [[1.5, 10.0, 5.0], [2.5, 20.0, 5.0]])  # the pair anchored at 3 has no five-row change
+        self.assertEqual(spreads, [3.0, 7.0])
+        plain_xs, plain_spreads = ml._combined_training_matrix(pairs, means, factor=False)
+        self.assertEqual(plain_xs, [[1.5], [2.5], [9.0]])
+        self.assertEqual(plain_spreads, [3.0, 7.0, 1.0])
+
+    def test_a_history_past_its_forecast_is_refused(self):
+        predictor = self.factor_only()
+        train, feature_rows = self.rows[:120], self.rows[120:122]
+        with self.assertRaises(LookAheadError):
+            self.call(predictor, train, feature_rows, [self.rows[:121], self.rows[:123]])
+
+    def test_it_will_not_forecast_without_the_rule_or_the_histories(self):
+        predictor = self.factor_only()
+        with self.assertRaises(ValueError):
+            predictor(self.rows[:120], self.rows[120:121], (5.0,))
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:120], self.rows[120:122], [self.rows[:121]])
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:120], self.rows[120:121], [[]])
+
+    def test_a_short_frame_is_refused(self):
+        predictor = ml.pressure_combined_ordinary_exceedance(
+            ("spread_bps",), None, minimum_history=150, blocks=("factor",)
+        )
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:100], self.rows[100:101], [self.rows[:101]])
+
+    def test_the_curve_ends_at_the_anchor_is_monotone_and_names_what_it_read(self):
+        predictor = self.factor_only()
+        train, feature_rows = self.rows[:150], self.rows[150:152]
+        result = self.call(predictor, train, feature_rows, [self.rows[:151], self.rows[:152]])
+        self.assertEqual(result.history_ends, (feature_rows[0].date, feature_rows[1].date))
+        self.assertEqual(set(result.features_read), set(ml.LATENT_FACTOR_COLUMNS) | {"spread_bps"})
+        self.assertEqual(result.model_settings["combined_blocks"], ["factor"])
+        self.assertEqual(result.model_settings["combined_columns"], ["spread_bps", "factor_level", "factor_change_5"])
+        for curve in result.curves:
+            self.assertEqual(len(curve), 2)
+            self.assertGreaterEqual(curve[0], curve[1])
+            self.assertTrue(all(0.0 <= p <= 1.0 for p in curve))
+
+    def test_a_stressed_history_raises_the_served_factor_and_moves_the_probability(self):
+        predictor = self.factor_only()
+        train, feature_rows = self.rows[:150], self.rows[150:151]
+        calm = list(self.rows[:151])
+        hot = calm[:-30] + [
+            DailyObservation(
+                r.date,
+                dict(
+                    r.values,
+                    sofr_p1=r.values["iorb"] + 0.1, sofr_p25=r.values["iorb"] + 0.15,
+                    sofr_p75=r.values["iorb"] + 0.2, sofr_p99=r.values["iorb"] + 0.4,
+                    tgcr=r.values["iorb"] + 0.15, bgcr=r.values["iorb"] + 0.15, on_rrp=0.0,
+                ),
+            )
+            for r in calm[-30:]
+        ]
+        low = self.call(predictor, train, feature_rows, [calm])
+        high = self.call(predictor, train, feature_rows, [hot])
+        # The sign of the fitted coefficients is the data's to say; the served factor and the forecast follow the history.
+        self.assertGreater(high.model_settings["filtered_factor"][0], low.model_settings["filtered_factor"][0])
+        self.assertNotEqual(high.curves, low.curves)
+
+    def test_the_blocks_and_the_calibration_must_be_declared(self):
+        with self.assertRaises(ValueError):
+            ml.pressure_combined_ordinary_exceedance(("spread_bps",), None, blocks=("factor", "regime"))
+        with self.assertRaises(ValueError):
+            ml.pressure_combined_ordinary_exceedance(("spread_bps",), None, blocks=("factor",), calibration="beta")
+        with self.assertRaises(ValueError):
+            ml.pressure_combined_ordinary_exceedance(("spread_bps",), None, blocks=())
+
+    def test_the_projected_block_reads_one_declared_distance_column_and_the_structural_block_the_structural_terms(self):
+        from repo_model.structural_liquidity import features_at_horizon
+
+        design = ml._CombinedDesign(("spread_bps", "proj_dist_h2"), None, ("projected",))
+        self.assertEqual(design.names, ("spread_bps", "proj_dist_h2"))
+        row = DailyObservation(date(2024, 1, 2), {"sofr": 4.03, "iorb": 4.0, "proj_dist_h2": -0.75})
+        self.assertEqual(design.row(row, None), [row.spread_bps, -0.75])
+        with self.assertRaises(ValueError):
+            ml._CombinedDesign(("spread_bps",), None, ("projected",))
+        with self.assertRaises(ValueError):
+            ml._CombinedDesign(("spread_bps", "proj_dist_h2", "proj_dist_h3"), None, ("projected",))
+        structural = ml._CombinedDesign(features_at_horizon(2), _pressure_splits(), ("structural",))
+        self.assertEqual(structural.names, ("spread_bps", "e_x_shortfall", "e_x_tga_up", "e_x_tax_date", "e_x_window"))
+        self.assertTrue(structural.tga)
+
+    def test_the_declaration_pins_the_blocks_and_the_calibration(self):
+        document = json.loads((Path(__file__).resolve().parents[1] / "metadata" / "combined_model_561.json").read_text())
+        self.assertEqual(tuple(document["ordinary_days"]["blocks"]), ml.COMBINED_BLOCKS)
+        self.assertEqual(document["ordinary_days"]["calibration"], ml.COMBINED_CALIBRATION)
+        self.assertEqual(document["ordinary_days"]["factor_change_rows"], ml.COMBINED_FACTOR_CHANGE_ROWS)
+
+
+class CombinedOrdinaryConformanceTests(ExceedancePredictorConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_combined_ordinary_exceedance` (#561), factor block only."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_combined_ordinary_exceedance)
+    MINIMUM_HISTORY = 40
+
+    def setUp(self):
+        require_extra(self)
+        from types import MappingProxyType
+        from repo_model import contract, measurement_fields
+
+        fields = dict(measurement_fields.COLUMN_FIELDS)
+        patch = mock.patch.multiple(
+            contract,
+            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+            FEATURE_SOURCES=MappingProxyType(
+                {
+                    **contract.FEATURE_SOURCES,
+                    **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()},
+                }
+            ),
+        )
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def frame(self):
+        return _factor_frame(count=100)
+
+    def make_predictor(self):
+        predictor = ml.pressure_combined_ordinary_exceedance(
+            ("spread_bps",), None, minimum_history=self.MINIMUM_HISTORY, blocks=("factor",)
+        )
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0))
+        full = self.frame()
+
+        def bound(train_rows, feature_rows, taus):
+            histories = [[r for r in full if r.date <= f.date] for f in feature_rows]
+            return predictor(train_rows, feature_rows, taus, information=rule, histories=histories)
+
+        return bound
+
+
 if __name__ == "__main__":
     unittest.main()
