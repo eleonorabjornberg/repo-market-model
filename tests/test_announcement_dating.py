@@ -212,7 +212,7 @@ class H41ReleaseTests(unittest.TestCase):
 
     Mutation record. In a `git archive` copy of the tree under /tmp, CPython 3.11
     (`/opt/rmm-venv`), this class run alone, unmutated control green. In `h41_release.release_instant`, the
-    declared print time `time.fromisoformat(calendar["available_time"])` was mutated to
+    declared print time `time.fromisoformat(str(calendar["available_time"]))` was mutated to
     `time.fromisoformat("00:00")` (a Wednesday level treated as public at midnight on its release
     day). The target was found once before the change and was gone after. Killed, 5 failures, all
     `AssertionError`: `test_a_wednesday_level_is_readable_on_the_next_market_days_decision` (`datetime(2024, 3,

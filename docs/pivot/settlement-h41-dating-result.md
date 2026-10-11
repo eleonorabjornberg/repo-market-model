@@ -134,7 +134,7 @@ changes none of this.
   a better-evidenced instant is hers.
 * **The release calendar** was fetched for holiday and holiday-adjacent weeks; ordinary weeks were spot-checked, not each fetched. A week the Board moved
   for another reason would be missed. 16:30 is the registry's own instant; the Board's pages state a date and no clock time.
-* **#539 and #540** have no open pull request or branch at the time of scoring, so no open model-work variant was re-scored.
+* **#539 and #540.** #540 has no pull request. #539 merged while this was scored, and its hurdle variants (five parents, four variants) are not re-scored here: that is 300 rolling backtests and 60 judge candidates on top of this page's, and is queued as #556, to start once this has merged.
 * **Turning either reading on in the published declaration** needs a change to `metadata/sources.json`, which the final-test pre-registration freezes by its bytes
   (owner-attested, #256). This pull request does not make it; no "Publish?" issue is opened because the readings are off and no published figure moves.
 * The scoring script was written before its tests (the dating modules were test-first); the tests pin its inputs and its risk-date rule.
