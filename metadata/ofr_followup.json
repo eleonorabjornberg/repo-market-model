@@ -25,7 +25,7 @@
   "first_public": "2020-09-09",
   "why": "the OFR began publishing its repo-segment series in real time on this day; earlier values were filled in after the fact and are not read (#508, #522). The panel carries ofr_tri_rate and ofr_gcf_rate empty before it.",
   "flag": "<series>_not_yet_published: 1.0 on a row dated before first_public, else 0.0. A function of the row's date alone, never of whether a value exists: the GCF 'observed' indicator is not an input (Eleonora's ruling of 10 October 2026 on #520).",
-  "value": "<series>_filled: the panel's rate where it has one; 0.0 on a flagged row; empty otherwise. A gap after first_public is not filled, and a fit that needs the column refuses that day.",
+  "value": "<series>_filled: the panel's rate where it has one; 0.0 on a flagged row; empty otherwise, except that a one-row hole in ofr_tri_rate after first_public takes the row before it (older, never newer; the rule measurement_fields.carry_one_row_holes applies to SOFR's percentiles, without looking at the row after). Any other gap after first_public is not filled, and a fit that needs the column refuses that day. The GCF rate is never carried.",
   "series": {
    "ofr_tri_rate": {
     "filled": "tri_rate_filled",
@@ -111,5 +111,6 @@
  },
  "new_availability_guard": "none beyond the two above: the flag and the filled column are read through the as-of rule at the OFR source's own lag, and the panel is refused if it holds an OFR value dated before first_public",
  "judge": "scripts/pressure_judge.py judge, tiers 1, 3 and 5 under the rule in force; flag cut-offs chosen by metadata/pressure_judge.json's cutoff_rule from each refit's training window alone; none is declared here",
- "published_declaration": "none: no candidate is in confirmation.candidates and no column is in contract.FEATURE_FIELDS; nothing here is published, and no 2026 day is scored"
+ "published_declaration": "none: no candidate is in confirmation.candidates and no column is in contract.FEATURE_FIELDS; nothing here is published, and no 2026 day is scored",
+ "amendment": "11 October 2026, before any score was read. The first scoring pass refused a served day at h = 4 (2022-06-21) because the tri-party rate has one empty row after first_public (2022-06-17), which the first draft of this file left unfilled; the pass was stopped and its scores were not read. This file now carries that one-row hole (the precedent of measurement_fields.carry_one_row_holes), and all five horizons were re-run from the start on the amended panel."
 }

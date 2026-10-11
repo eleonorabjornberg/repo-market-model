@@ -15,6 +15,9 @@ Recorded mutations (CLAUDE.md), 11 October 2026, in a disposable copy of `src/re
 * `dvp_segment.require_ofr_public(rows)` deleted from `add_columns`: a value before 2020-09-09 is no
   longer refused. `test_a_value_before_the_first_public_date_is_refused` then fails with `AssertionError`
   (`LookAheadError not raised`).
+* `before = rows[position - 1].values.get(raw)` in `add_columns` mutated to `rows[position + 1]`: a hole would
+  take the value of the row after it, which was not yet public. `test_a_one_row_hole_in_the_tri_party_rate_takes_the_row_before_and_is_not_carried_twice`
+  then fails with `AssertionError` (`None != 0.1`).
 """
 
 from __future__ import annotations
@@ -56,6 +59,23 @@ class OfrPublicationTests(unittest.TestCase):
         self.assertEqual(built[0].values["gcf_rate_filled"], 0.0)
         self.assertEqual(built[1].values["tri_rate_filled"], 0.1)
         self.assertIsNone(built[1].values["gcf_rate_filled"], "a gap after publication is not filled")
+
+    def test_a_one_row_hole_in_the_tri_party_rate_takes_the_row_before_and_is_not_carried_twice(self):
+        built = ofr_publication.add_columns(
+            [row(date(2021, 3, 1), 0.1), row(date(2021, 3, 2)), row(date(2021, 3, 3)), row(date(2021, 3, 4), 0.2)]
+        )
+        self.assertEqual(built[1].values["tri_rate_filled"], 0.1)
+        self.assertIsNone(built[2].values["tri_rate_filled"], "a second hole in a row is left")
+        self.assertEqual(built[3].values["tri_rate_filled"], 0.2)
+
+    def test_the_gcf_rate_is_never_carried(self):
+        built = ofr_publication.add_columns([row(date(2021, 3, 1), 0.1, 0.3), row(date(2021, 3, 2), 0.1, None)])
+        self.assertIsNone(built[1].values["gcf_rate_filled"])
+        self.assertEqual(ofr_publication.CARRY_ONE_ROW_HOLES, ("ofr_tri_rate",))
+
+    def test_the_first_published_row_with_no_row_before_is_left(self):
+        built = ofr_publication.add_columns([row(date(2020, 9, 9))])
+        self.assertIsNone(built[0].values["tri_rate_filled"])
 
     def test_a_value_before_the_first_public_date_is_refused(self):
         with self.assertRaises(LookAheadError):

@@ -10,10 +10,13 @@ rate, two scratch columns that keep those days in a comparison:
   row's date alone.** It is never read off whether a value exists, because the presence of an OFR GCF
   value is not an admissible input (Eleonora's ruling of 10 October 2026 on #520: its gaps differ
   between the preliminary and the final series).
-* `<series>_filled`: the rate where the panel has it; 0.0 on a flagged row; missing otherwise. A gap
-  after `FIRST_PUBLIC` is **not** filled, so a fit that needs the column still refuses that day. The
-  GCF rate is empty on most days after publication, and any fill of those days would turn the value
-  into a presence signal.
+* `<series>_filled`: the rate where the panel has it; 0.0 on a flagged row; otherwise missing, except
+  that a one-row hole in a series of `CARRY_ONE_ROW_HOLES` takes the row before it (older, never
+  newer, the rule `measurement_fields.carry_one_row_holes` applies to SOFR's percentiles, here
+  without looking at the row after). Any other gap after `FIRST_PUBLIC` is **not** filled, so a fit
+  that needs the column still refuses that day. The GCF rate is empty on most days after
+  publication, and any fill of those days would turn the value into a presence signal; only the
+  tri-party rate, which has one hole after `FIRST_PUBLIC` (2022-06-17), is carried.
 
 `add_columns` first refuses, with `LookAheadError`, a panel that holds an OFR value from before
 `FIRST_PUBLIC` (`dvp_segment.require_ofr_public`, #522). Each new column draws on its series' own
@@ -31,7 +34,7 @@ from . import dvp_segment
 from .data import DailyObservation
 from .ingest import OFR_STFM_SEGMENTS_SOURCE_ID
 
-__all__ = ["COLUMNS", "COLUMN_FIELDS", "FIRST_PUBLIC", "RAW_FIELDS", "SERIES", "add_columns"]
+__all__ = ["CARRY_ONE_ROW_HOLES", "COLUMNS", "COLUMN_FIELDS", "FIRST_PUBLIC", "RAW_FIELDS", "SERIES", "add_columns"]
 
 #: First day the OFR's values were public on their own date (#508).
 FIRST_PUBLIC = dvp_segment.OFR_REAL_TIME_START
@@ -41,6 +44,8 @@ SERIES: Mapping[str, Tuple[str, str]] = {
     "ofr_tri_rate": ("tri_rate_filled", "tri_rate_not_yet_published"),
     "ofr_gcf_rate": ("gcf_rate_filled", "gcf_rate_not_yet_published"),
 }
+#: The series whose one-row hole after `FIRST_PUBLIC` takes the row before it.
+CARRY_ONE_ROW_HOLES: Tuple[str, ...] = ("ofr_tri_rate",)
 #: Raw panel column -> its source fields, for the as-of rule.
 RAW_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
     "ofr_tri_rate": ((OFR_STFM_SEGMENTS_SOURCE_ID, "REPO-TRI_AR_OO-P"),),
@@ -57,11 +62,14 @@ def add_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
 
     dvp_segment.require_ofr_public(rows)
     out: List[DailyObservation] = []
-    for row in rows:
+    for position, row in enumerate(rows):
         values: Dict[str, object] = dict(row.values)
         flagged = row.date < FIRST_PUBLIC
         for raw, (filled, flag) in SERIES.items():
             value = row.values.get(raw)
+            if value is None and raw in CARRY_ONE_ROW_HOLES and position > 0 and not flagged:
+                before = rows[position - 1].values.get(raw)  # a carried value is not carried again
+                value = before
             values[flag] = 1.0 if flagged else 0.0
             values[filled] = 0.0 if flagged else value
         out.append(DailyObservation(row.date, values))
