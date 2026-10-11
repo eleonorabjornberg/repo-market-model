@@ -201,6 +201,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 465.0,
        "treasury_settlement_bills": 250.0,
@@ -483,6 +484,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -772,6 +774,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -1061,6 +1064,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -1350,6 +1354,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -4058,6 +4063,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 119.0,
        "treasury_settlement_bills": 0.0,
@@ -4351,6 +4357,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -4671,6 +4678,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -4946,6 +4954,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -5221,6 +5230,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -7931,6 +7941,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 316.0,
        "treasury_settlement_bills": 288.0,
@@ -8199,6 +8210,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -8474,6 +8486,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -8774,6 +8787,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -9074,6 +9088,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -11979,6 +11994,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 247.0,
        "treasury_settlement_bills": 164.0,
@@ -12232,6 +12248,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -12492,6 +12509,12 @@
         }
        ]
       },
+      "refunding_within_10_days": [
+       {
+        "statement_day": "2018-10-31",
+        "url": "https://home.treasury.gov/news/press-releases/sm538"
+       }
+      ],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -12752,6 +12775,12 @@
         }
        ]
       },
+      "refunding_within_10_days": [
+       {
+        "statement_day": "2018-10-31",
+        "url": "https://home.treasury.gov/news/press-releases/sm538"
+       }
+      ],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -13012,6 +13041,12 @@
         }
        ]
       },
+      "refunding_within_10_days": [
+       {
+        "statement_day": "2018-10-31",
+        "url": "https://home.treasury.gov/news/press-releases/sm538"
+       }
+      ],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -15616,6 +15651,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 140.0,
        "treasury_settlement_bills": 0.0,
@@ -15864,6 +15900,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -16119,6 +16156,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -16374,6 +16412,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -16629,6 +16668,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -19279,6 +19319,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 78.0,
        "treasury_settlement_bills": 0.0,
@@ -19527,6 +19568,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -19782,6 +19824,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -20037,6 +20080,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -20292,6 +20336,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -22914,6 +22959,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 18.0,
        "treasury_settlement_bills": 0.0,
@@ -23180,6 +23226,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -23453,6 +23500,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -23726,6 +23774,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -23999,6 +24048,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -26588,6 +26638,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 0.0,
        "treasury_settlement_bills": 0.0,
@@ -26841,6 +26892,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -27101,6 +27153,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -27361,6 +27414,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -27621,6 +27675,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -30277,6 +30332,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 78.0,
        "treasury_settlement_bills": 78.0,
@@ -30543,6 +30599,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -30816,6 +30873,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -31089,6 +31147,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -31362,6 +31421,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -34072,6 +34132,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 213.0,
        "treasury_settlement_bills": 0.0,
@@ -34359,6 +34420,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -34653,6 +34715,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -34947,6 +35010,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -35241,6 +35305,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -37875,6 +37940,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": 266.0,
        "treasury_settlement_bills": 266.0,
@@ -38162,6 +38228,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -38456,6 +38523,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -38750,6 +38818,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,
@@ -39059,6 +39128,7 @@
         }
        ]
       },
+      "refunding_within_10_days": [],
       "settlement_for_the_target_day_as_public_at_origin": {
        "treasury_settlement": null,
        "treasury_settlement_bills": null,

@@ -13,7 +13,7 @@ For each onset and each lead L = 1 to 5 (the forecast made L scored days before 
 * every scored row's probability and cut-off at that lead, and whether it flags (the judge's own flags);
 * the scheduled events known at the decision instant: the calendar, the settlement sizes as announced, the policy
   register as of the decision instant and the entries announced in the ten days before, and the FOMC meeting
-  days within ten days (`FOMC`, each with its URL).
+  days and the Treasury quarterly-refunding statement days within ten days (`FOMC`, `REFUNDING`, each with its URL).
 
 The verdict per onset is the first that holds of "signal public and unused", "signal public and too weak" and "no
 public signal found" (`verdict`). The sources outside the panel that plausibly carried a signal are named in the
@@ -88,6 +88,22 @@ FOMC = (
     ("2024-06-12", FED_CALENDAR), ("2024-07-31", FED_CALENDAR), ("2024-09-18", FED_CALENDAR),
     ("2024-11-07", FED_CALENDAR), ("2024-12-18", FED_CALENDAR),
 )
+
+# Treasury quarterly-refunding statement days (the day the refunding announcement is made), read from the
+# statements themselves on home.treasury.gov (#560 review): one per quarter that bounds an onset or a contrast onset.
+# The statements of the other quarters of these years were not fetched.
+TREASURY_PR = "https://home.treasury.gov/news/press-releases/"
+REFUNDING = (
+    ("2018-10-31", TREASURY_PR + "sm538"), ("2020-02-05", TREASURY_PR + "sm896"), ("2020-05-06", TREASURY_PR + "sm1001"),
+    ("2024-07-31", TREASURY_PR + "jy2512"), ("2024-10-30", TREASURY_PR + "jy2697"),
+    ("2025-07-30", TREASURY_PR + "sb0212"), ("2025-11-05", TREASURY_PR + "sb0305"),
+)
+
+
+def scheduled_within(table, origin: date, target: date) -> list[dict]:
+    """The scheduled days of `table` ((day, url) pairs) within ten days of the origin and not after the target."""
+
+    return [{"day": d, "url": u} for d, u in table if origin - timedelta(days=10) <= date.fromisoformat(d) <= target]
 
 
 def _script(name: str):
@@ -478,8 +494,10 @@ def build(panel: Path, scratch: Path, templates) -> dict:
                 ],
             },
             "fomc_within_10_days": [
-                {"statement_day": d, "url": u} for d, u in FOMC
-                if origin - timedelta(days=10) <= date.fromisoformat(d) <= target
+                {"statement_day": x["day"], "url": x["url"]} for x in scheduled_within(FOMC, origin, target)
+            ],
+            "refunding_within_10_days": [
+                {"statement_day": x["day"], "url": x["url"]} for x in scheduled_within(REFUNDING, origin, target)
             ],
         }
 
@@ -653,6 +671,7 @@ def markdown(result: dict) -> str:
                 f"* lead {lead} (origin {e['origin_day']}): target-day calendar {cal['target']}; origin-day calendar {cal['origin']}; "
                 f"settlement due on the target day (bills, coupons, SOMA; public then only at lead 1) {sett}; "
                 f"announced net settlement of the next 1 to 5 days {[net.get(k) for k in NET_SETTLEMENT]}; FOMC statement days {[f['statement_day'] for f in e['fomc_within_10_days']]}; "
+                f"Treasury refunding statement days {[f['statement_day'] for f in e['refunding_within_10_days']]}; "
                 f"register entries announced in the 10 days before {[x['id'] for x in e['policy_register']['announced_in_the_10_days_before']]}; "
                 f"pending {[x['id'] for x in e['policy_register']['pending']]}; "
                 f"in force {[(x['kind'], x['action'], x['effective']) for x in e['policy_register']['in_force']]}"

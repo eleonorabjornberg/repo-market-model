@@ -46,7 +46,7 @@ a policy announcement the models do not read; for 2024-12-26 and for the rest, t
 * **The announced net settlement** of the next 1 to 5 days is the column of `scripts/net_settlement.py`, read from the origin row.
 * **Events** (Table 5 of the evidence): the calendar type of the target and origin days, the policy register as of the decision instant
   (`policy_events.policy_state`: IORB, ON RRP, standing repo, QT, SLR, reserve management, the debt-limit state and pending entries), the
-  entries announced in the ten days before, and FOMC statement days within ten days (Fed calendar pages, saved as the URLs in the script).
+  entries announced in the ten days before, FOMC statement days within ten days (Fed calendar pages, saved as the URLs in the script), and Treasury quarterly-refunding statement days within ten days (`REFUNDING`, each with its home.treasury.gov URL).
 
 ## Reproduce
 
@@ -85,7 +85,7 @@ families alone is the same for every onset as the verdict on all rows. "No cut-o
 
 | onset (regime, type) | warned by | rule | the signal (lead, z) and what the rows did | public source outside the panel |
 |---|---|---|---|---|
-| 2018-11-15 (2018-19, ordinary) | none | **signal public and unused**; and **no cut-off in force** (285 of 285 model-row cells) | The refunding settles on the 15th: `treasury_settlement_soma` +5.4, `treasury_settlement` +4.0, `treasury_settlement_coupons` +3.8 at lead 1 (readable only then). No other input moved (next largest +1.7). Rows' probabilities: `risk_quantile_skewt_base` 0.94 at lead 1 (above 98 percent of the regime's ordinary days), the settlement-dated skew-t row 0.96 at lead 4; the other passers 0.07 to 0.11 at lead 1 and about 0 at leads 2 to 5. No cut-off, so none could flag. | TreasuryDirect auction data: the 3-, 10- and 30-year auctions of 5, 6 and 7 November 2018 ($37bn, $27bn, $19bn) all issue on 15 November 2018, so the settlement was auctioned 8 to 10 days ahead. <https://www.treasurydirect.gov/TA_WS/securities/search?format=json&startDate=2018-11-01&endDate=2018-11-10&dateFieldName=auctionDate> |
+| 2018-11-15 (2018-19, ordinary) | none | **signal public and unused**; and **no cut-off in force** (285 of 285 model-row cells) | The refunding settles on the 15th: `treasury_settlement_soma` +5.4, `treasury_settlement` +4.0, `treasury_settlement_coupons` +3.8 at lead 1 (readable only then). No other input moved (next largest +1.7). Rows' probabilities: `risk_quantile_skewt_base` 0.94 at lead 1 (above 98 percent of the regime's ordinary days), the settlement-dated skew-t row 0.96 at lead 4; the other passers 0.07 to 0.11 at lead 1 and about 0 at leads 2 to 5. No cut-off, so none could flag. | TreasuryDirect auction data: the 3-, 10- and 30-year auctions of 5, 6 and 7 November 2018 ($37bn, $27bn, $19bn) all issue on 15 November 2018, so the settlement was auctioned 8 to 10 days ahead. The quarterly refunding statement of 31 October 2018 announced the refunding (settling 15 November; the statement's own text names 15 November 2018): <https://home.treasury.gov/news/press-releases/sm538>. <https://www.treasurydirect.gov/TA_WS/securities/search?format=json&startDate=2018-11-01&endDate=2018-11-10&dateFieldName=auctionDate> |
 | 2018-11-30 (2018-19, month end) | none | **signal public and unused**; and **no cut-off in force** (277 of 285) | `treasury_settlement_coupons` +6.6 (read by the passers) and `treasury_settlement_soma` +3.9 (read by none) at lead 1. Nothing else moves. `risk_quantile_skewt_base+h41` 1.00 at lead 5 and `structural_liquidity` 0.96 at lead 3 (above 99 and 92 percent of ordinary days); the base skew-t row had a cut-off of 0.94 at lead 1 (probability 0.69). | The month-end coupon settlement is scheduled in the same auction calendar; no document outside the panel is named for this one. |
 | 2018-12-17 (2018-19, tax date) | none | **signal public and too weak**; and **no cut-off in force** (277 of 285) | Only `treasury_settlement_coupons` +3.6 at lead 1. The settlement-dated skew-t rows give 1.00 at leads 3 to 5 (above 97 to 99 percent of ordinary days); `risk_gbm` 0.08 to 0.12. A tax date is a calendar risk date. | The FOMC meeting of 18-19 December 2018 follows the onset; its statement (19 December) is not public at any lead. None named. |
 | 2018-12-28 (2018-19, month end) | none | **no public signal found**; and **no cut-off in force** (277 of 285) | No input reaches |z| of 1.3 at any lead. The register's only entries in the ten days before are the 19 December IORB and ON RRP announcements. The settlement-dated skew-t row gives 0.81 at lead 5 (above 94 percent of ordinary days), from the month-end calendar. | None found. |
@@ -138,14 +138,20 @@ The directive leaves these open; each is declared in `metadata/unwarned_onsets.j
 5. **The row set** was widened beyond the directive's list after the declaration only in the sense that the files hold more rows than the
    directive names; "warned" counts the directive's families only, and the verdict is given on both sets (identical for every onset).
 6. **FOMC statement days** are the last day of each meeting from the Fed's calendar pages for 2018, 2020 and 2024; the unscheduled actions of
-   March 2020 are in the policy register. Treasury quarterly-refunding announcement dates are in no tracked file and are not a column here; the
-   settlement and the auction calendar stand in for them (a gap, listed below).
+   March 2020 are in the policy register. **Treasury quarterly-refunding statement days** (`REFUNDING` in the script) are the dates on the
+   refunding statements themselves, each read on home.treasury.gov: 31 October 2018 (<https://home.treasury.gov/news/press-releases/sm538>),
+   5 February 2020 (`sm896`), 6 May 2020 (`sm1001`), 31 July 2024 (`jy2512`), 30 October 2024 (`jy2697`), 30 July 2025 (`sb0212`) and
+   5 November 2025 (`sb0305`), all under the same press-releases path. They are the quarters that bound the eight onsets and the three
+   contrast onsets; the statements of the other quarters of those years were not fetched. The Table 5 line for each lead lists the ones
+   within ten days of the origin (only the 31 October 2018 statement falls in a window, for 2018-11-15).
+7. **The count of inputs.** `metadata/unwarned_onsets.json` (`inputs`), committed before any score was read, says "the 35 panel fields". That
+   was a miscount: `INPUTS` in the script has 33, the fields the information set can read, and 33 are read. The declaration is left as it was
+   committed; this entry is the correction, and no field was added or dropped after the scores were read.
 
 ## Not checked
 
 * No source outside the panel was fetched into it or made an input. The TreasuryDirect, Federal Reserve and New York Fed pages named were read once
   each to confirm they exist and say what is cited; nothing else was fetched.
-* The Treasury's quarterly refunding statements (announcement dates and URLs), the Desk's operation schedules for the other onsets, and market
-  commentary were not searched. An onset with "none named" is not shown to have no public source.
+* The Desk's operation schedules for the other onsets, and market commentary, were not searched. An onset with "none named" is not shown to have no public source. The refunding statements of the quarters not listed in reading 6 were not fetched.
 * The policy-register features (#412) were not run on these onsets.
 * No 2026 day is scored; the confirmation window is not looked at.

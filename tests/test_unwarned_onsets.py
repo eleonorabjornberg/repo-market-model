@@ -69,6 +69,21 @@ class MovesTests(unittest.TestCase):
         self.assertEqual(len(uo.largest_moves(zs, 10)), 4)
 
 
+class ScheduledDaysTests(unittest.TestCase):
+    def test_a_day_is_listed_when_within_ten_days_of_the_origin_and_not_after_the_target(self):
+        table = (("2018-10-31", "u1"), ("2018-11-08", "u2"), ("2018-11-20", "u3"))
+        got = uo.scheduled_within(table, date(2018, 11, 10), date(2018, 11, 15))
+        self.assertEqual([d["day"] for d in got], ["2018-10-31", "2018-11-08"])
+        self.assertEqual(got[0]["url"], "u1")
+
+    def test_the_refunding_table_names_a_treasury_url_for_every_statement_day(self):
+        self.assertTrue(uo.REFUNDING)
+        for day, url in uo.REFUNDING:
+            date.fromisoformat(day)
+            self.assertTrue(url.startswith("https://home.treasury.gov/news/press-releases/"), url)
+        self.assertIn("2018-10-31", [d for d, _ in uo.REFUNDING])
+
+
 class VerdictTests(unittest.TestCase):
     used = {"tgcr", "tga"}
 
