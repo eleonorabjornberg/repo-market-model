@@ -12,15 +12,20 @@ the bar a pressure probability must clear, on days up to 2025-12-31:
 * **Tier 1, onset warning.** At lead >= 1 (flagged at some horizon h >= 1) at
   least 50% of onsets, with the lower end of the bootstrap 90% interval on that
   recall above climatology's recall at the same false-alarm rate; at most 2 false
-  alarms per onset. At lead >= 3, at least 30% of onsets (reported only).
+  alarms per onset, counted the way the warnings are: a day flagged at some horizon is
+  one false alarm (ruling of 10 October 2026, #509). Tier 1 is also reported at each lead
+  alone, inside and outside 2018-19 (not part of the pass rule, #510) and as the recall
+  averaged with equal weight over the regimes. At lead >= 3, at least 30% of onsets
+  (reported only).
 * **Tier 2, risky dates.** On scheduled risk dates in scarcity state >= 2, at
   lead 5: AUROC >= 0.75 and above calendar-type climatology, paired, with an
   interval (reported only).
 * **Tier 3, no crying wolf.** In abundant-reserve stretches (scarcity state 0,
   and the 2021-23 regime) at most 21 flags per 252 business days, at each lead 1
   to 5; and calibration by regime (CORP reliability; predicted frequency within
-  the interval of the realised one), tested only in regimes with at least one
-  pressure day (+5 bp) in the scored window and reported in the others.
+  the interval of the realised one), tested only in regimes with at least 20
+  pressure days (+5 bp) in the scored window (ruling of 10 October 2026) and reported
+  in the others.
 * **Tier 4, continuation.** Brier at +5 bp against the persistence-logistic,
   paired, at each lead 1 to 5 (reported only). +10 bp is reported only.
 * **Tier 5, week-ahead window.** P(at least one pressure day in the next 5
@@ -194,6 +199,7 @@ class Declaration:
     onset_false_alarms_at_most: float
     far_lead: int
     far_recall_at_least: float
+    split_years: Tuple[int, ...]
     risky_state_at_least: int
     risky_lead: int
     risky_auroc_at_least: float
@@ -201,6 +207,7 @@ class Declaration:
     abundant_regime: str
     flags_per_year_at_most: float
     business_days_per_year: int
+    calibration_min_events: int
     week_days: int
     week_combine: str
     usefulness_preference: float
@@ -257,6 +264,7 @@ class Declaration:
                     "false_alarms_per_onset_at_most": self.onset_false_alarms_at_most,
                     "far_lead_at_least": self.far_lead,
                     "far_recall_at_least": self.far_recall_at_least,
+                    "split_years": list(self.split_years),
                 },
                 "risky_dates": {
                     "scarcity_state_at_least": self.risky_state_at_least,
@@ -268,6 +276,7 @@ class Declaration:
                     "abundant_regime": self.abundant_regime,
                     "flags_per_year_at_most": self.flags_per_year_at_most,
                     "business_days_per_year": self.business_days_per_year,
+                    "calibration_min_pressure_days": self.calibration_min_events,
                 },
                 "week_ahead": {"days": self.week_days, "combine": self.week_combine},
             },
@@ -544,6 +553,9 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
             f"{path}: the week-ahead window of {week_days} days needs horizons 1 to {week_days}, "
             f"got {list(horizons)}"
         )
+    split_years = tuple(_integer(y, "onset_warning.split_years", 1) for y in onset.get("split_years", ()))
+    if not split_years or list(split_years) != sorted(set(split_years)):
+        raise ValueError(f"{path}: onset_warning.split_years must be ascending, distinct calendar years")
     groupings = tuple(document["groupings"])
     if not groupings or any(not isinstance(g, str) or not g for g in groupings):
         raise ValueError(f"{path}: groupings must be non-empty names")
@@ -614,6 +626,7 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
         ),
         far_lead=far_lead,
         far_recall_at_least=_number(onset.get("far_recall_at_least"), "onset_warning.far_recall_at_least", 0.0, 1.0),
+        split_years=split_years,
         risky_state_at_least=_integer(risky.get("scarcity_state_at_least"), "risky_dates.scarcity_state_at_least", 0),
         risky_lead=risky_lead,
         risky_auroc_at_least=_number(risky.get("auroc_at_least"), "risky_dates.auroc_at_least", 0.0, 1.0),
@@ -621,6 +634,9 @@ def load_declaration(path: Path = DEFAULT_DECLARATION) -> Declaration:
         abundant_regime=str(wolf.get("abundant_regime")),
         flags_per_year_at_most=_number(wolf.get("flags_per_year_at_most"), "no_crying_wolf.flags_per_year_at_most", 0.0, 1000.0),
         business_days_per_year=_integer(wolf.get("business_days_per_year"), "no_crying_wolf.business_days_per_year"),
+        calibration_min_events=_integer(
+            wolf.get("calibration_min_pressure_days"), "no_crying_wolf.calibration_min_pressure_days", 1
+        ),
         week_days=week_days,
         week_combine=combine,
         usefulness_preference=_number(
@@ -1253,6 +1269,13 @@ _ONSET_STATS: Mapping[str, Statistic] = {
     "recall_difference": lambda t: (t[1] - t[2]) / t[0] if t[0] else None,
 }
 
+#: The same, with two more cell vectors for tier 1 (#509, #510): the false alarms and their weighted count.
+_ONSET_TIER_STATS: Mapping[str, Statistic] = {
+    **_ONSET_STATS,
+    "false_alarms_per_onset": _ratio(3, 0),
+    "weighted_false_alarms_per_onset": _ratio(4, 0),
+}
+
 
 def _paired_vectors(
     probabilities: Sequence[float],
@@ -1767,22 +1790,51 @@ def _no_crying_wolf(
             "at_most": declaration.flags_per_year_at_most,
             "ok": (rate is None and restricted) or (rate is not None and rate <= declaration.flags_per_year_at_most),
         }
-    # Calibration is tested in the regimes that had a pressure day (+5 bp) in the scored window; the
-    # others are reported (does the interval cover zero?) and do not count (ruling of 8 October 2026).
+    # Calibration is tested in the regimes with at least `calibration_min_events` pressure days (+5 bp) in the
+    # scored window (20; ruling of 10 October 2026, replacing the ruling of 8 October 2026 that asked for one);
+    # the others are reported (does the interval cover zero?) and do not count.
     tested: Dict[str, bool] = {}
     reported: Dict[str, dict] = {}
     for label, cell in splits["regime"].items():
         covers = _covers_zero(cell["realised_minus_predicted"])
-        if cell["events"] > 0:
+        if cell["events"] >= declaration.calibration_min_events:
             tested[label] = covers
         else:
-            reported[label] = {"days": cell["days"], "events": 0, "covers_zero": covers}
+            reported[label] = {"days": cell["days"], "events": cell["events"], "covers_zero": covers}
     return {
         "abundant_stretches": abundant,
         "calibrated_by_regime": tested,
         "calibration_reported_regimes": reported,
         "ok": all(c["ok"] for c in abundant.values()) and all(tested.values()),
     }
+
+
+def _onset_cell(
+    evidence: Mapping[str, Any],
+    *,
+    days: int,
+    onsets: int,
+    flagged: float,
+    flat: int,
+    weighted: Optional[float],
+) -> dict:
+    """One cell of tier 1 (pooled, one lead, or a span of years): onsets warned, recall, false alarms."""
+
+    out: Dict[str, Any] = {"days": days, "onsets": onsets}
+    if not onsets:
+        out["unavailable"] = "no onset on these days"
+        return out
+    out.update(
+        onsets_flagged=_clean(flagged),
+        recall=evidence["recall"],
+        climatology_recall=evidence["climatology_recall"]["mean"],
+        false_alarms={"flat": flat, "weighted": weighted},
+        false_alarms_per_onset={
+            "flat": evidence["false_alarms_per_onset"],
+            "weighted": evidence["weighted_false_alarms_per_onset"] if weighted is not None else None,
+        },
+    )
+    return out
 
 
 def _onset_tier(
@@ -1796,13 +1848,21 @@ def _onset_tier(
 ) -> dict:
     """Tier 1 at lead >= `lead`: the share of +5 bp onsets flagged at some horizon h >= lead.
 
-    False alarms are flags on days that are not pressure days, counted at each
-    horizon h >= lead; the worst horizon's count per onset is the tier's.
+    False alarms are counted the way warnings are (ruling of 10 October 2026 on #509): a day that is not a
+    pressure day and is flagged at some horizon h >= lead is one false alarm, however many horizons flag it,
+    and the tier's limit is read on that pooled count per onset. The count at each horizon alone is reported
+    (`false_alarms_by_horizon`, `worst_false_alarms_per_onset`) and so is tier 1 at each lead alone
+    (`per_lead`: the onsets that horizon flags, against the false alarms that horizon raises).
 
     With the weighted miss rule loaded (#454) each false alarm is also counted at its weight, by its distance
     in `calendar` days to the nearest pressure day of the scored days (a test-only reading: the full outcome
     record of the scored days). The tier's limit is read on that count when the rule is applied, on the flat
     count otherwise; both are reported.
+
+    Reported beside the tier, never part of the pass rule (ruling of 10 October 2026 on #510 and on
+    regime scoring): the same figures inside and outside the declared `split_years`
+    (`early_years`), and the recall averaged with equal weight over the regimes that have an onset
+    (`regime_equal_weight_recall`).
     """
 
     tau = declaration.primary
@@ -1815,112 +1875,185 @@ def _onset_tier(
     first = horizons[0]
     onset = [float(grids[first].onset[position[first][day]]) for day in common]
     onsets = int(sum(onset))
-    caught = [0.0] * len(common)
-    reference_missed = [1.0] * len(common)
-    false_alarms: Dict[str, dict] = {}
+    count = len(common)
     rule = declaration.weighted_miss
-    weighted_alarms: Dict[str, dict] = {}
-    by_regime: Dict[str, Dict[str, dict]] = {}
+    regime_column = grids[first].groups.get("regime")
+    regimes = [regime_column[position[first][day]] for day in common] if regime_column is not None else None
+    labels = regimes if regimes is not None else ["all"] * count
     if rule is not None:
         place = {day: k for k, day in enumerate(calendar)}
-        regime_column = grids[first].groups.get("regime")
-        regimes = (
-            [regime_column[position[first][day]] for day in common] if regime_column is not None else ["all"] * len(common)
-        )
         missing = [day for day in common if day not in place]
         if missing:
             raise ValueError(f"scored day {missing[0]} is not a panel day; the weighted count needs the calendar")
+        places = [place[day] for day in common]
+    pressure = [grids[first].outcomes[tau][position[first][day]] for day in common]
+
+    flags: Dict[int, List[int]] = {}
+    miss: List[float] = [1.0] * count
+    false_alarms: Dict[str, dict] = {}
+    weighted_alarms: Dict[str, dict] = {}
+    by_regime: Dict[str, Dict[str, dict]] = {}
     for h in horizons:
         at = [position[h][day] for day in common]
-        pressure = [grids[h].outcomes[tau][k] for k in at]
+        if [grids[h].outcomes[tau][k] for k in at] != pressure:
+            raise ValueError(f"{name}: the outcome of a scored day differs between horizons {first} and {h}")
         chosen = by_name[name][h]
-        flags = _alarm_flags(
+        flags[h] = _alarm_flags(
             declaration, name, [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at], onset
         )
-        raised = sum(1 for f, y in zip(flags, pressure) if f and not y)
-        weights = matched_false_alarm_weights(
-            [by_name[declaration.climatology][h].probabilities[tau][k] for k in at], pressure, raised
-        )
-        caught = [max(c, float(f)) for c, f in zip(caught, flags)]
-        reference_missed = [m * (1.0 - w) for m, w in zip(reference_missed, weights)]
-        false_alarms[str(h)] = {
-            "false_alarms": raised,
-            "per_onset": raised / onsets if onsets else None,
-        }
-        if rule is not None:
-            places = [place[day] for day in common]
-            miss = false_alarm_weights(rule, positions=places, pressure=pressure, known_through=places[-1])
-            weighted = sum(w for f, w in zip(flags, miss) if f)
-            weighted_alarms[str(h)] = {
-                "false_alarms": weighted,
-                "per_onset": weighted / onsets if onsets else None,
-            }
-            for index, label in enumerate(regimes):
-                if flags[index] and not pressure[index]:
+        raised = sum(1 for f, y in zip(flags[h], pressure) if f and not y)
+        false_alarms[str(h)] = {"false_alarms": raised, "per_onset": raised / onsets if onsets else None}
+    if rule is not None:
+        miss = list(false_alarm_weights(rule, positions=places, pressure=pressure, known_through=places[-1]))
+        for h in horizons:
+            weighted = sum(w for f, w in zip(flags[h], miss) if f)
+            weighted_alarms[str(h)] = {"false_alarms": weighted, "per_onset": weighted / onsets if onsets else None}
+            for index, label in enumerate(labels):
+                if flags[h][index] and not pressure[index]:
                     cell = by_regime.setdefault(label, {}).setdefault(str(h), {"flat": 0, "weighted": 0.0})
                     cell["flat"] += 1
                     cell["weighted"] += miss[index]
-    reference_caught = [1.0 - m for m in reference_missed]
+
+    def union_of(members: Sequence[int]) -> List[int]:
+        return [1 if (not pressure[k] and any(flags[h][k] for h in members)) else 0 for k in range(count)]
+
+    def caught_by(members: Sequence[int]) -> List[float]:
+        return [float(any(flags[h][k] for h in members)) for k in range(count)]
+
+    def reference_caught(members: Sequence[int], raised: int) -> List[float]:
+        """Climatology's recall where its own ranking has raised as many false alarms as the cell."""
+
+        weights = matched_false_alarm_weights(
+            [by_name[declaration.climatology][members[0]].probabilities[tau][position[members[0]][day]] for day in common],
+            pressure,
+            raised,
+        )
+        return list(weights)
+
+    def vectors(members: Sequence[int], inside: Optional[Sequence[bool]] = None) -> List[List[float]]:
+        mask = [1.0] * count if inside is None else [1.0 if x else 0.0 for x in inside]
+        union = union_of(members)
+        caught = caught_by(members)
+        reference = reference_caught(members, sum(union))
+        return [
+            [o * m for o, m in zip(onset, mask)],
+            [o * c * m for o, c, m in zip(onset, caught, mask)],
+            [o * r * m for o, r, m in zip(onset, reference, mask)],
+            [u * m for u, m in zip(union, mask)],
+            [u * w * m for u, w, m in zip(union, miss, mask)] if rule is not None else [0.0] * count,
+        ]
+
+    years = [day.year in declaration.split_years for day in common]
+    bootstrap_cells: Dict[str, List[List[float]]] = {}
+    bootstrap_cells["pooled"] = vectors(horizons)
+    for h in horizons:
+        bootstrap_cells[f"lead_{h}"] = vectors([h])
+    bootstrap_cells["inside"] = vectors(horizons, years)
+    bootstrap_cells["outside"] = vectors(horizons, [not x for x in years])
+    evidence = _bootstrap(
+        declaration, bootstrap_cells, _ONSET_TIER_STATS, count, seed=_seed(declaration.seed, name, "onsets", lead)
+    )
+
+    def read(label: str, inside: Optional[Sequence[bool]] = None) -> dict:
+        total = bootstrap_cells[label]
+        return _onset_cell(
+            evidence[label],
+            days=count if inside is None else sum(1 for x in inside if x),
+            onsets=int(sum(total[0])),
+            flagged=sum(total[1]),
+            flat=int(sum(total[3])),
+            weighted=sum(total[4]) if rule is not None else None,
+        )
+
+    pooled = read("pooled")
     out: Dict[str, Any] = {
         "lead_at_least": lead,
         "horizons": horizons,
         "complete": horizons == wanted,
-        "days": len(common),
+        "days": count,
         "onsets": onsets,
-        "onsets_flagged": _clean(sum(o * c for o, c in zip(onset, caught))),
+        "onsets_flagged": pooled.get("onsets_flagged", 0),
         "false_alarms_by_horizon": false_alarms,
+        "false_alarm_count": "pooled across the horizons that count the warnings (ruling of 10 October 2026, #509)",
+        "pooled_false_alarms": pooled["false_alarms"]["flat"] if onsets else 0,
     }
     if rule is not None:
         out["weighted_miss_applied"] = rule.applied
         out["weighted_false_alarms_by_horizon"] = weighted_alarms
+        out["pooled_weighted_false_alarms"] = pooled["false_alarms"]["weighted"] if onsets else 0.0
         out["by_regime"] = {
             label: {
-                "onsets": int(sum(o for o, r in zip(onset, regimes) if r == label)),
-                "onsets_flagged": _clean(sum(o * c for o, c, r in zip(onset, caught, regimes) if r == label)),
+                "onsets": int(sum(o for o, r in zip(onset, labels) if r == label)),
+                "onsets_flagged": _clean(sum(o * c for o, c, r in zip(onset, caught_by(horizons), labels) if r == label)),
                 "false_alarms_by_horizon": {
                     str(h): by_regime.get(label, {}).get(str(h), {"flat": 0, "weighted": 0.0}) for h in horizons
                 },
             }
-            for label in sorted(set(regimes))
+            for label in sorted(set(labels))
         }
+    if regimes is not None:
+        caught = caught_by(horizons)
+        cells = {}
+        for label in sorted(set(regimes)):
+            of_regime = sum(o for o, r in zip(onset, regimes) if r == label)
+            if of_regime:
+                warned = sum(o * c for o, c, r in zip(onset, caught, regimes) if r == label)
+                cells[label] = {"onsets": int(of_regime), "onsets_flagged": _clean(warned), "recall": warned / of_regime}
+        out["regime_equal_weight_recall"] = {
+            "recall": sum(c["recall"] for c in cells.values()) / len(cells) if cells else None,
+            "regimes": cells,
+            "note": "reported, not part of the pass rule: the mean of the recalls of the regimes with an onset",
+        }
+    out["early_years"] = {
+        "years": list(declaration.split_years),
+        "inside": read("inside", years),
+        "outside": read("outside", [not x for x in years]),
+        "note": "reported, not part of the pass rule (ruling of 10 October 2026, #510)",
+    }
+    per_lead = {str(h): read(f"lead_{h}") for h in horizons}
+    out["per_lead"] = per_lead
     if not onsets:
         out["unavailable"] = "no onset on the scored days"
         return out
-    evidence = _bootstrap(
-        declaration,
-        {"onsets": [onset, [o * c for o, c in zip(onset, caught)], [o * c for o, c in zip(onset, reference_caught)]]},
-        _ONSET_STATS,
-        len(common),
-        seed=_seed(declaration.seed, name, "onsets", lead),
-    )["onsets"]
+
     worst = max(f["per_onset"] for f in false_alarms.values())
-    limited = worst
+    out["worst_false_alarms_per_onset"] = worst
+    out["pooled_false_alarms_per_onset"] = pooled["false_alarms_per_onset"]["flat"]["mean"]
+    pooled_limited = out["pooled_false_alarms_per_onset"]
     if rule is not None:
-        worst_weighted = max(f["per_onset"] for f in weighted_alarms.values())
-        out["worst_weighted_false_alarms_per_onset"] = worst_weighted
+        out["worst_weighted_false_alarms_per_onset"] = max(f["per_onset"] for f in weighted_alarms.values())
+        out["pooled_weighted_false_alarms_per_onset"] = pooled["false_alarms_per_onset"]["weighted"]["mean"]
         if rule.applied:
-            limited = worst_weighted
+            pooled_limited = out["pooled_weighted_false_alarms_per_onset"]
     out.update(
-        recall=evidence["recall"],
-        climatology_recall=evidence["climatology_recall"]["mean"],
-        recall_difference=evidence["recall_difference"],
-        worst_false_alarms_per_onset=worst,
+        recall=evidence["pooled"]["recall"],
+        climatology_recall=evidence["pooled"]["climatology_recall"]["mean"],
+        recall_difference=evidence["pooled"]["recall_difference"],
     )
-    if lead == declaration.onset_lead:
-        lower = _lower(evidence["recall"])
-        out["criteria"] = {
-            "recall": evidence["recall"]["mean"] is not None
-            and evidence["recall"]["mean"] >= declaration.onset_recall_at_least,
-            "recall_above_climatology": lower is not None
-            and lower > evidence["climatology_recall"]["mean"],
+
+    def criteria_of(cell: Mapping[str, Any], limited: float) -> Dict[str, bool]:
+        lower = _lower(cell["recall"])
+        return {
+            "recall": cell["recall"]["mean"] is not None and cell["recall"]["mean"] >= declaration.onset_recall_at_least,
+            "recall_above_climatology": lower is not None and lower > cell["climatology_recall"],
             "false_alarms": limited <= declaration.onset_false_alarms_at_most,
         }
+
+    applied = rule is not None and rule.applied
+    for h, cell in per_lead.items():
+        if "unavailable" in cell:
+            continue
+        figure = cell["false_alarms_per_onset"]["weighted" if applied else "flat"]["mean"]
+        cell["criteria"] = criteria_of(cell, figure)
+        cell["passes"] = all(cell["criteria"].values())
+    if lead == declaration.onset_lead:
+        out["criteria"] = criteria_of(pooled, pooled_limited)
         out["passes"] = out["complete"] and all(out["criteria"].values())
     else:
         out["reported_only"] = True
         out["meets_far_recall"] = (
-            evidence["recall"]["mean"] is not None
-            and evidence["recall"]["mean"] >= declaration.far_recall_at_least
+            evidence["pooled"]["recall"]["mean"] is not None
+            and evidence["pooled"]["recall"]["mean"] >= declaration.far_recall_at_least
         )
     return out
 

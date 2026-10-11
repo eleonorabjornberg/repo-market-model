@@ -4,6 +4,13 @@ A scratch measurement under the pressure-day judge (#375, as amended by #407 and
 nothing into `docs/runs/`, moves no published figure and logs nothing to the live record. Scored days 2018-06-29 to
 2025-12-31 only; no 2026 day is read and the confirmation window is not looked at (`docs/decisions/lockbox.md`).
 
+**Note, 11 October 2026 (#536).** Eleonora's ruling of 10 October 2026 (draft record
+[`judge-rulings-10-october.md`](../decisions/judge-rulings-10-october.md), for her to merge) makes tier 3 check calibration only in
+regimes with at least 20 pressure days, where this page's scores tested every regime with a pressure day. At h = 1 that leaves 2018-19
+(102) and 2025-26 (29) tested and 2020 (4), 2021-23 (0) and 2024 (5) reported. The figures below were scored under the earlier rule and are
+not edited; the five rows under the new rule are in [`judge-rulings-rescore-result.md`](judge-rulings-rescore-result.md), where all five still
+fail tier 3 in both tested regimes.
+
 **The five.** The risk-date models of #428 that meet tier 1 (`docs/pivot/risk-date-severity-result.md`): `risk_gbm`,
 `risk_gbm_base`, `risk_logistic`, `risk_logistic_base`, `risk_quantile_skewt_base`. Each is fitted exactly as
 `metadata/risk_date_severity.json` declares, unchanged.

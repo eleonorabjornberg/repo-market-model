@@ -13,6 +13,12 @@ episode; cut-offs chosen on the weighted count using only the pressure days know
 Origin: Eleonora's ruling of 9 October 2026, relayed by the orchestrating session, to introduce weighted miss criteria
 into the pressure judge; adopted as above on #464.
 
+**Ruling of 10 October 2026 (#514), relayed by the orchestrating session:** the rule stays as adopted. An alarm after an
+episode is discounted as much as an alarm before it. The judge's other amendments of that day (tier 1 counts false alarms
+across horizons, the pass rule and 2018-19, regime scoring) are in the draft record `judge-rulings-10-october.md`; none
+changes the weights, the bands or the limit here, except that tier 1's weighted count is now taken per day across the
+horizons that count its warnings, each day once.
+
 ## The rule
 
 A flagged day that is not a pressure day is a **false alarm of weight `w(d)`**, where `d` is the number of trading days
@@ -30,8 +36,9 @@ onset**. Two places count false alarms, and both count the weighted sum when the
 
 1. **The flag cut-off rule** (`cutoff_rule` in `metadata/pressure_judge.json`): at each refit, the cut-off with the
    highest onset recall whose weighted false alarms per onset on the training window are at most 2.
-2. **Tier 1, the onset-warning tier** (lead at least 1): the worst horizon's weighted false alarms per onset are at
-   most 2.
+2. **Tier 1, the onset-warning tier** (lead at least 1): the weighted false alarms per onset, each day flagged at any
+   horizon counted once at its weight (it was: the worst horizon's count; amended by the draft record
+   `judge-rulings-10-october.md`), are at most 2.
 
 ## Why
 
