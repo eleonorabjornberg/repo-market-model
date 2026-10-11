@@ -13634,6 +13634,78 @@ class RecencyTrainingTests(unittest.TestCase):
         json.dumps(dict(curves.model_settings))
 
 
+class QuantileInputScalingTests(unittest.TestCase):
+    """The declared input scaling of the skew-t quantile regression (#537, follow-up to #477).
+
+    `risk_quantile_skewt_base_dealer` could not be fitted at h = 1 and h = 5: the median's linear
+    program on the standardized inputs returned no solution (HiGHS status 4). The scaling is declared
+    in `metadata/ofr_followup.json` before any score: each column is rescaled to [0, 1] on the training
+    pairs (`input_scaling="minmax"`). The default, `"standardize"`, is the estimator the five passers
+    were scored with and does not change. A linear quantile regression with an intercept is equivariant
+    to an affine change of its inputs, so where both solve the two scalings give the same curves.
+
+    Written red first: `_quantile_exceedance` took no `scaling` (`TypeError`).
+
+    Recorded mutation (CLAUDE.md), 11 October 2026, in a disposable copy of `src/repo_model/ml.py`:
+    `_scale_inputs`, `scale = x.max(axis=0) - centre` mutated to `scale = x.std(axis=0)` in the `minmax`
+    branch. `test_minmax_columns_span_the_unit_interval` then fails with `AssertionError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+
+    def design(self):
+        import numpy
+
+        rng = numpy.random.default_rng(7)
+        x = rng.normal(size=(400, 3)) * [1.0, 50.0, 0.01] + [0.0, 300.0, 5.0]
+        spread = 1.5 + 0.8 * x[:, 0] + 0.01 * x[:, 1] + rng.normal(size=400)
+        return x.tolist(), spread.tolist(), x[:3].tolist()
+
+    def test_the_two_scalings_agree_where_both_solve(self):
+        xs, spreads, served = self.design()
+        taus = (0.5, 2.5, 6.5)
+        standard = ml._quantile_exceedance(xs, spreads, served, taus)
+        minmax = ml._quantile_exceedance(xs, spreads, served, taus, scaling="minmax")
+        for a, b in zip(standard, minmax):
+            for p, q in zip(a, b):
+                self.assertAlmostEqual(p, q, delta=1e-4)
+
+    def test_minmax_columns_span_the_unit_interval(self):
+        import numpy
+
+        xs, _spreads, _served = self.design()
+        scaled = ml._scale_inputs(numpy.asarray(xs), numpy.asarray(xs), "minmax")[0]
+        self.assertTrue(numpy.allclose(scaled.min(axis=0), 0.0))
+        self.assertTrue(numpy.allclose(scaled.max(axis=0), 1.0))
+
+    def test_a_constant_column_is_left_at_zero(self):
+        import numpy
+
+        x = numpy.asarray([[1.0, 4.0], [2.0, 4.0], [3.0, 4.0]])
+        scaled = ml._scale_inputs(x, x, "minmax")[0]
+        self.assertTrue(numpy.allclose(scaled[:, 1], 0.0))
+
+    def test_an_unknown_scaling_is_refused(self):
+        with self.assertRaises(ValueError):
+            ml._quantile_exceedance([[0.0]] * 40, [0.0] * 40, [[0.0]], (5.0,), scaling="log")
+
+    def test_the_default_is_the_standardizer(self):
+        xs, spreads, served = self.design()
+        taus = (0.5, 2.5, 6.5)
+        self.assertEqual(
+            ml._quantile_exceedance(xs, spreads, served, taus),
+            ml._quantile_exceedance(xs, spreads, served, taus, scaling="standardize"),
+        )
+
+    def test_the_risk_date_factory_takes_the_scaling_for_the_quantile_form_only(self):
+        splits = _pressure_splits()
+        ml.pressure_risk_date_exceedance("quantile_skewt", _PRESSURE_CALENDAR, splits, 20, input_scaling="minmax")
+        with self.assertRaises(ValueError):
+            ml.pressure_risk_date_exceedance("logistic", _PRESSURE_CALENDAR, splits, 20, input_scaling="minmax")
+        with self.assertRaises(ValueError):
+            ml.pressure_risk_date_exceedance("quantile_skewt", _PRESSURE_CALENDAR, splits, 20, input_scaling="log")
+
 
 def _factor_series(count=500, seed=7, phi=0.85, hole=0.0):
     """Five series that load on one AR(1) factor (the fourth, the anchor, positively); returns (truth, rows)."""
