@@ -370,6 +370,20 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             needs_measurement_fields=True,
         ),
+        # The ordinary-day component of the combined model (#561) with its factor block only: the structural
+        # and projected blocks read scratch-panel columns (#542, #545) that no `--model` run carries.
+        "combined_ordinary": _ModelChoice(
+            declared=_DeferredFactory("pressure_combined_ordinary_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                ("spread_bps",),
+                settings["splits"],
+                minimum_history=minimum_history,
+                blocks=("factor",),
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+            needs_measurement_fields=True,
+        ),
         # The rare-event treatments of the direct pressure classifiers (#381): class weights, a
         # focal-loss classifier and event-balanced bootstraps, on the same direct design.
         "pressure_logistic_weighted": _ModelChoice(

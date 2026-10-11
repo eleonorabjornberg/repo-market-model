@@ -186,5 +186,29 @@ class RunGuardTests(unittest.TestCase):
                 SCRIPT.run_command(self.args())
 
 
+class SummaryTests(unittest.TestCase):
+    def judged(self, flagged, flat_false, weighted_false, tiers=(True, False, False)):
+        verdict = dict(zip(("tier_1_onset_warning", "tier_3_no_crying_wolf", "tier_5_week_ahead"), tiers), passes=False)
+        tier = {
+            "onsets_flagged": flagged,
+            "onsets": 26,
+            "recall": {"mean": flagged / 26.0, "interval": {"lower": 0.1, "upper": 0.9}},
+            "worst_false_alarms_per_onset": flat_false,
+            "worst_weighted_false_alarms_per_onset": weighted_false,
+        }
+        return {"tiers": {"onset_warning": {"lead_at_least_1": tier}}, "verdict": verdict}
+
+    def test_the_table_has_a_row_for_every_combined_row_control_and_benchmark(self):
+        rows = SCRIPT.summary_rows(DECLARED)
+        self.assertEqual(rows[:7], SCRIPT.all_rows())
+        for name in ("ngboost_laplace", "calendar_climatology", "persistence_logistic", "risk_gbm+every_day+gate+settle+h41"):
+            self.assertIn(name, rows)
+        entries = {name: self.judged(10, 1.5, 1.0) for name in rows}
+        text = SCRIPT.summary_table(DECLARED, entries, entries)
+        self.assertEqual(len(text.strip().splitlines()), len(rows) + 2)
+        self.assertIn("| risk_gbm+combined | 10/26 / 10/26 |", text)
+        self.assertIn("yes / no / no", text)
+
+
 if __name__ == "__main__":
     unittest.main()

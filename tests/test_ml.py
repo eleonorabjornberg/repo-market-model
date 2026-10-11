@@ -14048,5 +14048,47 @@ class CombinedOrdinaryTests(unittest.TestCase):
         self.assertEqual(document["ordinary_days"]["factor_change_rows"], ml.COMBINED_FACTOR_CHANGE_ROWS)
 
 
+class CombinedOrdinaryConformanceTests(ExceedancePredictorConformance, unittest.TestCase):
+    """The conformance suite against `ml.pressure_combined_ordinary_exceedance` (#561), factor block only."""
+
+    IMPLEMENTATION = staticmethod(ml.pressure_combined_ordinary_exceedance)
+    MINIMUM_HISTORY = 40
+
+    def setUp(self):
+        require_extra(self)
+        from types import MappingProxyType
+        from repo_model import contract, measurement_fields
+
+        fields = dict(measurement_fields.COLUMN_FIELDS)
+        patch = mock.patch.multiple(
+            contract,
+            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+            FEATURE_SOURCES=MappingProxyType(
+                {
+                    **contract.FEATURE_SOURCES,
+                    **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()},
+                }
+            ),
+        )
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def frame(self):
+        return _factor_frame(count=100)
+
+    def make_predictor(self):
+        predictor = ml.pressure_combined_ordinary_exceedance(
+            ("spread_bps",), None, minimum_history=self.MINIMUM_HISTORY, blocks=("factor",)
+        )
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0))
+        full = self.frame()
+
+        def bound(train_rows, feature_rows, taus):
+            histories = [[r for r in full if r.date <= f.date] for f in feature_rows]
+            return predictor(train_rows, feature_rows, taus, information=rule, histories=histories)
+
+        return bound
+
+
 if __name__ == "__main__":
     unittest.main()

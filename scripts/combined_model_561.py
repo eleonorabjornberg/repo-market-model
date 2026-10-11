@@ -672,6 +672,73 @@ def markdown(result: dict, document: dict, names: List[str], rows_names: List[st
     return text + "\n" + "\n".join(lines) + "\n"
 
 
+# -- the summary ------------------------------------------------------------------------------------------
+
+
+def summary_rows(document: dict) -> List[str]:
+    """The rows of Table 1: the combined rows, their controls, the references and the benchmarks."""
+
+    refs = document["references"]
+    return all_rows() + list(refs["controls"]) + ["risk_gbm", "ngboost_laplace", "calendar_climatology", "persistence_logistic"]
+
+
+def summary_table(document: dict, flat: Mapping[str, dict], weighted: Mapping[str, dict]) -> str:
+    """The judge's tier 1 row at +5 bp for every row, under the flat and the weighted rule."""
+
+    lines = [
+        "| model | onsets flagged, flat / weighted rule | recall, flat [90%] | recall, weighted [90%] | worst false alarms per onset, flat | worst weighted false alarms per onset, weighted rule | tiers 1 / 3 / 5, flat | tiers 1 / 3 / 5, weighted | passes the full rule, flat / weighted |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    yes = lambda x: "yes" if x else "no"
+    for name in summary_rows(document):
+        cells = {}
+        for rule, candidates in (("flat", flat), ("weighted", weighted)):
+            entry = candidates[name]
+            tier = entry["tiers"]["onset_warning"]["lead_at_least_1"]
+            verdict = entry["verdict"]
+            cells[rule] = {
+                "flagged": tier["onsets_flagged"],
+                "onsets": tier["onsets"],
+                "recall": tier["recall"],
+                "flat": tier["worst_false_alarms_per_onset"],
+                "weighted": tier.get("worst_weighted_false_alarms_per_onset"),
+                "tiers": " / ".join(yes(verdict[k]) for k in ("tier_1_onset_warning", "tier_3_no_crying_wolf", "tier_5_week_ahead")),
+                "passes": verdict["passes"],
+            }
+        f, w = cells["flat"], cells["weighted"]
+        ci = lambda c: f"{c['recall']['mean']:.3f} [{c['recall']['interval']['lower']:.3f}, {c['recall']['interval']['upper']:.3f}]"
+        lines.append(
+            f"| {name} | {f['flagged']:g}/{f['onsets']} / {w['flagged']:g}/{w['onsets']} | {ci(f)} | {ci(w)} | {f['flat']:.2f} | "
+            f"{w['weighted']:.2f} | {f['tiers']} | {w['tiers']} | {yes(f['passes'])} / {yes(w['passes'])} |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def summary_command(args) -> int:
+    document = declared_document()
+    judged = {rule: json.loads(Path(path).read_text())["candidates"] for rule, path in (("flat", args.flat), ("weighted", args.weighted))}
+    text = summary_table(document, judged["flat"], judged["weighted"])
+    args.output.write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
+def refits_command(args) -> int:
+    """Each refit's training pairs and calibrated fits, by horizon and component, from the `run` outputs."""
+
+    out: Dict[str, dict] = {}
+    for path in args.inputs:
+        doc = json.loads(Path(path).read_text())
+        out[str(doc["horizon"])] = {
+            "refits": doc["refits"],
+            "scored_days": doc["risk_date_check"]["scored_days"],
+            "risk_dates": doc["risk_date_check"]["risk_dates"],
+        }
+    args.output.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output), "horizons": sorted(out)}))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -688,8 +755,16 @@ def main(argv=None) -> int:
         compare.add_argument(f"--{name}", required=True, help="a template with {h}")
     compare.add_argument("--output", type=Path, required=True)
     compare.add_argument("--markdown", type=Path)
+    summary = sub.add_parser("summary", help="the judge's tier 1 row for every row, under both rules")
+    summary.add_argument("--flat", type=Path, required=True, help="the judge's report under --rule unweighted")
+    summary.add_argument("--weighted", type=Path, required=True, help="the judge's report under --rule weighted")
+    summary.add_argument("--output", type=Path, required=True)
+    refits = sub.add_parser("refits", help="the refits of each component, from the run outputs")
+    refits.add_argument("--output", type=Path, required=True)
+    refits.add_argument("inputs", nargs="+", type=Path)
     args = parser.parse_args(argv)
-    return {"declare": declare_command, "run": run_command, "compare": compare_command}[args.command](args)
+    handlers = {"declare": declare_command, "run": run_command, "compare": compare_command, "summary": summary_command, "refits": refits_command}
+    return handlers[args.command](args)
 
 
 if __name__ == "__main__":
