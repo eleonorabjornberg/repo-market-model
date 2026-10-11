@@ -519,23 +519,24 @@ def nowcast_command(args) -> int:
     bootstrap = pj.load_declaration().document()["bootstrap"]
     block, rng_seed, draws = float(bootstrap["block_length"]), int(bootstrap["seed"]), int(bootstrap["replications"])
 
-    import numpy
-
     rng = random.Random(rng_seed)
-    resamples = numpy.array([stationary_bootstrap_indices(n, block, rng) for _ in range(draws)])
+    counts = []
+    for _ in range(draws):
+        tally = [0] * n
+        for pick in stationary_bootstrap_indices(n, block, rng):
+            tally[pick] += 1
+        counts.append(tally)
 
     def interval(difference, members):
         """Mean over the group's days and its 90% stationary-bootstrap interval (days resampled jointly)."""
 
-        diff = numpy.asarray(difference, dtype=float)
-        mask = numpy.zeros(n)
-        mask[members] = 1.0
-        inside = mask[resamples]
-        means = numpy.sort((diff[resamples] * inside).sum(axis=1) / inside.sum(axis=1))
+        means = sorted(
+            sum(tally[i] * difference[i] for i in members) / sum(tally[i] for i in members) for tally in counts
+        )
         return {
-            "mean": float((diff * mask).sum() / mask.sum()),
-            "lower": float(means[int(0.05 * draws)]),
-            "upper": float(means[int(0.95 * draws) - 1]),
+            "mean": sum(difference[i] for i in members) / len(members),
+            "lower": means[int(0.05 * draws)],
+            "upper": means[int(0.95 * draws) - 1],
             "days": len(members),
         }
 
