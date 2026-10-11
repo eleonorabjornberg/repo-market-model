@@ -166,6 +166,9 @@ class _ModelChoice:
     #: Needs the split declaration (`--splits`) that defines the pressure-day
     #: types: the calendar-type climatology.
     takes_splits: bool = False
+    #: Reads columns that are measurement fields (`repo_model.measurement_fields`): off in every published
+    #: declaration and absent from the published panel, so the model runs only on a scratch panel (#543).
+    needs_measurement_fields: bool = False
 
     @property
     def factory(self) -> Callable[..., ExceedancePredictor]:
@@ -365,6 +368,7 @@ MODEL_FACTORIES = MappingProxyType(
                 minimum_history=minimum_history
             ),
             needs_regime_variable=False,
+            needs_measurement_fields=True,
         ),
         # The rare-event treatments of the direct pressure classifiers (#381): class weights, a
         # focal-loss classifier and event-balanced bootstraps, on the same direct design.
