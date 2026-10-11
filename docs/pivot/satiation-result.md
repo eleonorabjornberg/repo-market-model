@@ -42,8 +42,9 @@ The judge in force is the one on main: the rulings of 10 October 2026 (#536) are
 pooled across the horizons, and the weighted rule is in force. All tables are under it; the full set is
 [`evidence/satiation/report.md`](evidence/satiation/report.md) (the judge's Tables 1, 1b and 2 for each row, the calendar-year
 recall, the Brier scores and every row paired with its fixed version with 90% stationary-bootstrap intervals by regime, pressure-day
-type and scarcity state). `evidence/satiation/compare.md` also carries the earlier readings (a) to (e) of
-[`judge-readings-result.md`](judge-readings-result.md), which count false alarms at the worst horizon and are not the judge in force.
+type and scarcity state). Where a figure was first produced under the earlier counting (false alarms at the worst horizon), the table below
+shows both, the one in force first, as the orchestrating session's mechanical ruling on #587 asks; `evidence/satiation/compare.md` also carries the earlier
+readings (a) to (e) of [`judge-readings-result.md`](judge-readings-result.md), which count at the worst horizon. Neither counting passes any new row at tier 1.
 
 **The three control rows reproduce main.** `structural_liquidity` and `projected_reserves` warn 11 of 26 onsets each, and
 `risk_gbm+combined` 10 of 26, as in [`audit-fixes-578-result.md`](audit-fixes-578-result.md).
@@ -60,19 +61,19 @@ variant, under both counts. The verdicts that do change, against the fixed versi
 Tier 1, pooled over h = 1 to 5, lead >= 1 (26 onsets; recall with the 90% interval; weighted false alarms per onset, limit 2),
 and the onsets warned in 2025 (5 onsets; 2018, 2020 and 2024 warn none in any row):
 
-| row | onsets flagged | recall | weighted false alarms per onset | 2025 | tiers 1 / 3 / 5 |
+| row | onsets flagged | recall | weighted false alarms per onset: pooled (in force) / worst horizon (earlier counting) | 2025 | tiers 1 / 3 / 5 |
 |---|---|---|---|---|---|
-| structural_liquidity (fixed) | 11 | 0.423 [0.250, 0.613] | 1.69 | 0 of 5 | no / yes / yes |
-| structural_rolling | 14 | 0.538 [0.364, 0.727] | 3.12 | 5 of 5 | no / no / yes |
-| structural_fitted | 11 | 0.423 [0.238, 0.613] | 1.69 | 0 of 5 | no / yes / yes |
-| projected_reserves (linear, fixed) | 11 | 0.423 [0.238, 0.611] | 2.85 | 0 of 5 | no / no / no |
-| projected_hinge_fixed | 11 | 0.423 [0.241, 0.619] | 2.82 | 0 of 5 | no / no / yes |
-| projected_rolling | 14 | 0.538 [0.357, 0.727] | 5.02 | 4 of 5 | no / no / yes |
-| projected_fitted | 12 | 0.462 [0.263, 0.667] | 3.19 | 0 of 5 | no / no / yes |
-| risk_gbm+combined (fixed) | 10 | 0.385 [0.212, 0.571] | 1.72 | 2 of 5 | no / no / no |
-| risk_gbm+combined_hinge_fixed | 10 | 0.385 [0.208, 0.571] | 1.92 | 2 of 5 | no / no / no |
-| risk_gbm+combined_rolling | 11 | 0.423 [0.250, 0.616] | 2.89 | 2 of 5 | no / no / no |
-| risk_gbm+combined_fitted | 10 | 0.385 [0.200, 0.583] | 1.71 | 2 of 5 | no / no / no |
+| structural_liquidity (fixed) | 11 | 0.423 [0.250, 0.613] | 1.69 / 1.00 | 0 of 5 | no / yes / yes |
+| structural_rolling | 14 | 0.538 [0.364, 0.727] | 3.12 / 2.35 | 5 of 5 | no / no / yes |
+| structural_fitted | 11 | 0.423 [0.238, 0.613] | 1.69 / 1.00 | 0 of 5 | no / yes / yes |
+| projected_reserves (linear, fixed) | 11 | 0.423 [0.238, 0.611] | 2.85 / 2.14 | 0 of 5 | no / no / no |
+| projected_hinge_fixed | 11 | 0.423 [0.241, 0.619] | 2.82 / 2.14 | 0 of 5 | no / no / yes |
+| projected_rolling | 14 | 0.538 [0.357, 0.727] | 5.02 / 3.08 | 4 of 5 | no / no / yes |
+| projected_fitted | 12 | 0.462 [0.263, 0.667] | 3.19 / 2.10 | 0 of 5 | no / no / yes |
+| risk_gbm+combined (fixed) | 10 | 0.385 [0.212, 0.571] | 1.72 / 1.14 | 2 of 5 | no / no / no |
+| risk_gbm+combined_hinge_fixed | 10 | 0.385 [0.208, 0.571] | 1.92 / 1.24 | 2 of 5 | no / no / no |
+| risk_gbm+combined_rolling | 11 | 0.423 [0.250, 0.616] | 2.89 / 1.59 | 2 of 5 | no / no / no |
+| risk_gbm+combined_fitted | 10 | 0.385 [0.200, 0.583] | 1.71 / 1.10 | 2 of 5 | no / no / no |
 
 **Form (a), the rolling level, does what #569 expected for the models that read the level.** It moves the 2025 onsets from 0 of 5
 to 5 of 5 in the structural model and 4 of 5 in the projected one, and the recall averaged with equal weight over the regimes
