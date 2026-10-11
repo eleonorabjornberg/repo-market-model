@@ -1,0 +1,17 @@
+{
+  "role": "candidate",
+  "track": "L (#543)",
+  "features": [
+    "spread_bps",
+    "sofr_p1",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_p99",
+    "tgcr",
+    "bgcr",
+    "effr",
+    "iorb",
+    "on_rrp"
+  ],
+  "calibration": "none (the model's own probability: a latent funding-stress factor, a Kalman filter and a Gaussian mapping to the spread, with the mapping's residual variance added; metadata/latent_factor.json)"
+}

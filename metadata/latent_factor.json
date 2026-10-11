@@ -1,0 +1,114 @@
+{
+  "status": "declared by the pull request that closes #543 before any score; the series, the model, the mapping, the settings and everything reported are fixed here and are not tuned on a scored day. A scratch measurement: it chooses nothing and decides nothing; the judge, its bar, its cut-off rule, the weighted miss rule in force and every published declaration are unchanged.",
+  "issue": 543,
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00:00",
+    "primary_threshold_bp": 5
+  },
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "columns": [
+    "sofr_p1",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_p99",
+    "tgcr",
+    "bgcr",
+    "effr",
+    "iorb",
+    "on_rrp"
+  ],
+  "series": [
+    "sofr_p1_iorb_bps",
+    "sofr_p25_iorb_bps",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps",
+    "tgcr_iorb_bps",
+    "bgcr_iorb_bps",
+    "effr_iorb_bps",
+    "sofr_p99_minus_p1_bps",
+    "log1p_on_rrp_bn"
+  ],
+  "series_note": "Rates are read as the panel carries them (percent) and differenced on one row, so a derived value never joins two days: the SOFR 1st, 25th, 75th and 99th percentiles, TGCR, BGCR and EFFR minus IORB in basis points; the SOFR 99th minus the 1st percentile in basis points; and the natural log of one plus ON RRP take-up in USD billions. The OFR series are not used, so the OFR guard of #522 is not needed. IORB is read as the spread's own leg is read (the anchor row), the way every model reads the spread.",
+  "model": {
+    "family": "dynamic factor model: one latent factor, AR(1) dynamics, a Kalman filter, maximum likelihood by EM",
+    "factors": 1,
+    "second_factor": "none; a second factor is not declared",
+    "state": "f(t) = phi * f(t-1) + e(t), e ~ N(0, 1): the innovation variance is fixed at 1 to identify the scale; the initial state is the stationary law",
+    "observation": "each series, standardised on the refit's training frame, is mu(i) + lambda(i) * f(t) + noise(i); noises are independent with variance floored at 0.01",
+    "missing": "a series that is a hole on a day informs nothing on that day, in the filter; it is never filled and never carried",
+    "orientation": "the factor is signed so that the loading of sofr_p99_iorb_bps is positive, the same way at every refit",
+    "estimation": "EM with a scalar Rauch-Tung-Striebel smoother and parameter expansion (the innovation variance is estimated freely each iteration and folded back into the loadings); at most 100 iterations, stopped when the log-likelihood moves by less than 1e-6 of its size; deterministic, started at loading 0.7, noise variance 0.5, persistence 0.9",
+    "walk_forward": "refitted on the training frame of each refit block (every 21 scored days, the judge's cadence), the frame as public at the block's first decision instant; each forecast then filters its own as-of history from its start with the block's parameters. The filter never smooths, so no later row reaches a forecast"
+  },
+  "mapping": {
+    "to_spread": "an OLS of the spread (spread_bps, the target's own as-of read) on the filtered factor mean, over the refit's training days that carry both; fitted on the same frame, at the same refits, as the factor",
+    "pressure_probability": "P(spread at T+h > tau), the spread read on whole basis points so the point is tau + 1/2: the carried factor's tail above the level the mapping puts at tau + 1/2. The factor is carried h rows ahead of the history's last row (h = the horizon) by its AR(1): mean phi^h m, variance phi^(2h) V + (1 - phi^(2h)) / (1 - phi^2)",
+    "variants": {
+      "latent_factor": "the row of the directive: the factor's own predictive uncertainty only (the tail of the factor above the level)",
+      "latent_factor_resid": "the same, with the mapping's OLS residual variance added to the spread's predictive variance (the full predictive law of the spread, Gaussian)"
+    },
+    "fallback": "a mapping slope at or below 1e-9 bp per factor unit does not rise with the factor: the forecast is then the training rate of spread > tau, constant, and the fit records it. The fallback is counted by refit and reported",
+    "same_curve": "one curve per threshold from the same factor, +5 and +10 bp; no calibration step, no recalibration, no tuned shrinkage"
+  },
+  "settings": {
+    "innovation_variance": 1.0,
+    "max_iterations": 100,
+    "tolerance": 1e-06,
+    "noise_variance_floor": 0.01,
+    "persistence_ceiling": 0.995,
+    "initial_loading": 0.7,
+    "initial_noise_variance": 0.5,
+    "initial_persistence": 0.9,
+    "minimum_rows": 20,
+    "minimum_observed_per_series": 10,
+    "minimum_mapping_days": 20,
+    "mapping_slope_floor_bp": 1e-09
+  },
+  "rows": {
+    "latent_factor": "the model above, tau = 5 and 10 bp, every day",
+    "latent_factor_resid": "the same with the residual variance added",
+    "combined": {
+      "rule": "the model as the every-day component under a risk-date passer (#506): on a risk date the forecast is the passer's, unchanged; on any other day it is the model's. Risk dates are the days whose pressure-day type is not ordinary (quarter-end, month-end, tax date) and, at h = 1, a coupon-settlement day. The curve across thresholds is made non-increasing afterwards. The passer is risk_gbm (the passer #506 and #532 build on); the hurdle of #539 has not merged, so it is not used",
+      "names": [
+        "risk_gbm+latent_factor",
+        "risk_gbm+latent_factor_resid"
+      ]
+    }
+  },
+  "references": {
+    "pair_against": [
+      "risk_gbm",
+      "ngboost_laplace",
+      "calendar_climatology",
+      "persistence_logistic"
+    ],
+    "risk_date_passers": [
+      "risk_gbm",
+      "risk_gbm_base",
+      "risk_logistic",
+      "risk_logistic_base",
+      "risk_quantile_skewt_base"
+    ]
+  },
+  "reports": {
+    "criterion_1": "the judge as declared under the weighted rule in force and, beside it for scale, the flat rule: tiers 1, 3 and 5, h = 1 to 5; Brier score and log loss at +5 bp pooled by horizon (natural log, probabilities clipped to [1e-6, 1 - 1e-6]); tier 1 pooled and per lead",
+    "criterion_2": "paired against risk_gbm, ngboost_laplace, calendar_climatology and persistence_logistic: the Brier difference (reference minus row, positive when the row is better) at each horizon and the onset recall difference (row minus reference, each at its own chosen cut-offs, any horizon 1 to 5), pooled and by regime and by pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed",
+    "criterion_3": "onset recall by calendar year, with 2018, 2020 and 2024 called out; the refits at which the probability is constant, is 0 on every day, or the cut-off flags nothing or every day; the fallback refits",
+    "criterion_4": "the factor loadings by refit (each series, each refit), the count of refits at which a loading changes sign, the persistence by refit, and the filtered factor over 2018 to 2025 against the 26 onsets of the post-mortem (#474)"
+  },
+  "unchanged": "the bar (recall at least 0.5 with the interval above climatology, false alarms per onset at most 2), the cut-off rule, the bootstrap (90%, stationary, the judge's seed), the weights and bands of metadata/weighted_miss.json, every published declaration. No day after 2025-12-31 is read (docs/decisions/lockbox.md); nothing is published, no 2026 day is scored, no information-set rule changes and no published record is edited."
+}
