@@ -6,6 +6,14 @@ under the previous rule was re-scored or archived.
 > **Proposed in #267, for Eleonora to review:** the corrected wording of rule 1 below (the H.4.1
 > read lag). A decision is in force only once she merges it.
 >
+> **Proposed in #541, for Eleonora to review:** the wording of rule 1's H.4.1 sentence and of rule 2's
+> Treasury-settlement bullet, which record her ruling of 10 October 2026 (relayed on #541): a settlement
+> is dated from the auction announcement, not the auction results, and the H.4.1 is read per release, at
+> the release's own publication instant. It was drafted by the pull request that closes #541 and is **not
+> in force** until she merges it. Both readings are measured and off in the published registry:
+> `metadata/sources.json` is frozen by the final-test pre-registration (bytes), so turning either on is a
+> later pull request, with the re-pin that needs, made after her ruling on it.
+>
 > **Proposed in #430, for Eleonora to review:** the amendment at the end of this record, which
 > records her ruling of 8 October 2026 (#374) on the New York Fed's back-filled repo-rate history.
 > It was drafted by the pull request that closes #430. A decision is in force only once she merges it.
@@ -18,18 +26,22 @@ A forecast for scored day `T` is made at the declared decision time on the last 
 1. **Each input is read per field, at its latest value whose declared first-observable instant is at
    or before the decision instant.** The declarations are the registry's own `release_lag` blocks,
    read through `baseline._declared_availability`. Under them, the daily NY Fed rates and bill rates
-   are read at the row two panel days before `T`, and the H.4.1 weekly series at the latest row whose declared instant (the row's date plus the registry's
-   five calendar days, at the declared time) is at or before the decision. Each Wednesday level is carried
-   on the rows after it (`weekly-carry.md`), so a value is read 5 to 12 days after its Thursday print, and a
-   newer print was public and unread on 795 of 2042 scored days. That is the safe direction and not a
-   leak. A record's `hours_observable` counts from the observation row's declared instant and says so.
+   are read at the row two panel days before `T`. The H.4.1 weekly series are read per release: a
+   Wednesday level is first observable at the print of its own release, the Thursday after the Wednesday
+   at 16:30 New York time, or the date the Board moved the release to when a holiday moves it (the
+   Board's release pages are the evidence, recorded with the declaration). Each Wednesday level is carried
+   on the rows after it (`weekly-carry.md`), and a forecast reads it from the first decision at or after
+   the print and never before. A newer print that was public at the decision is read, not left unread.
+   A record's `hours_observable` counts from the observation row's declared instant and says so.
 2. **Values that refer to `T` itself are admissible only as declared scheduled inputs**, meaning a
    value announced before the decision instant. That covers:
    - the calendar columns, which are always known;
    - FOMC schedules, under `docs/decisions/fomc-point-in-time.md`;
    - Treasury settlements, under a `treasury_auctions` availability declaration dated from the
-     auction results time. That declaration is approved, and its exact instant is taken from
-     Treasury's published auction procedure and recorded as evidence in the declaration.
+     auction announcement: each settlement's first-observable instant is the announcement time of its
+     auction. Treasury publishes no clock time for an individual announcement, so the declared
+     instant and what it rests on are recorded as evidence in the declaration. The risk-date calendar then marks a settlement as known at the
+     decision instant from the day it is announced.
    Each scheduled input passes the same availability check as any other input.
 3. **A training target is admissible only if it was observable by the fold's decision instant.**
    This replaces the purge as the rule for training labels.
