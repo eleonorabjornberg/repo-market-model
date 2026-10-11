@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "directive": "#560",
+  "description": "Declaration of the diagnostic of the eight onsets of 2018, 2020 and 2024 that no scored model warns. Made before any score is read. A diagnostic only: no model, rule, cut-off, threshold or published figure changes; no day after 2025-12-31 is scored (docs/decisions/lockbox.md).",
+  "onsets": {
+    "unwarned": ["2018-11-15", "2018-11-30", "2018-12-17", "2018-12-28", "2020-03-04", "2020-03-12", "2024-09-30", "2024-12-26"],
+    "unwarned_note": "The dates are those the directive lists by regime (2018, 2020, 2024): the +5 bp onsets of tier 1 at lead >= 1 that no model of docs/pivot/episode-post-mortem-result.md warned. The script recomputes which onsets no row warns, under the judge's cut-offs as in force, and reports any difference from this list; it does not change the list.",
+    "contrast": "the 2025 onsets that both the structural_liquidity and the projected_reserves rows miss while risk_gbm warns them, recomputed by the script from the same forecasts"
+  },
+  "leads": [1, 2, 3, 4, 5],
+  "lead_reading": "Lead L is the forecast made L scored days before the onset day: the as-of values are those of the decision instant (16:00) of the day L rows before the onset row, read through asof.InformationRule at horizon L.",
+  "inputs": "every field of the scratch panel that the information set can read as of a decision instant (episode_post_mortem.as_of_series): the 35 panel fields of scripts/unwarned_onsets.py INPUTS. The calendar fields (quarter_end, tax_date, days_to_month_end) are classification and are listed with the events, not z-scored.",
+  "z_score": "z = (value - mean) / sd of the same input, as read at the same lead, over the scored days of the same regime (metadata/evaluation_splits.json regimes, as the judge groups them) that are not pressure days at the primary threshold. Descriptive and in hindsight: the mean and sd use the whole regime, so nothing here is a forecast. An input with sd 0 has no z-score.",
+  "largest_moves": 10,
+  "events": "per onset and lead: the calendar type of the target day and of the origin day; the settlement sizes as announced (treasury_settlement fields, and net_settlement_ahead_kd from scripts/net_settlement.py, both read at the origin row); the policy register of metadata/policy_events.json as of the decision instant (policy_events.policy_state: IORB, ON RRP, standing repo, QT, SLR, reserve management, debt-limit state, pending entries) and the entries announced in the 10 days before; FOMC meeting days and Treasury quarterly refunding announcement days within 10 days of the origin, from the table in scripts/unwarned_onsets.py (each with its URL).",
+  "rows": "every row the scoring commands of the PRs of #539 (hurdle), #541 (settlement and H.4.1 dating), #542 (structural), #543 (latent factor), #544 (2008-2018 pre-training), #545 (projected reserves) and #533 (ngboost_laplace) write, with the five tier-1 passers and the two references; scored with the commands of docs/pivot/unwarned-onsets-result.md on the published panel 4ddc3882, the scratch panels of those PRs and the judge's cut-offs as in force (weighted rule).",
+  "readings": {
+    "z_strong": 3.0,
+    "under_ratio": 0.5,
+    "verdicts": [
+      "signal public and unused: at some lead 1 to 5 an input that no scored row reads (outside the union of the features of the rows' candidate files) has |z| >= z_strong, or a scheduled-event measure (the announced net settlement of the next 1 to 5 days) has |z| >= z_strong; the input is named",
+      "signal public and too weak: otherwise, at some lead a row's probability reached under_ratio of its cut-off without flagging, or an input that some row reads has |z| >= z_strong",
+      "no public signal found: otherwise"
+    ],
+    "order": "the first verdict that holds, in the order above"
+  },
+  "sources_outside_the_panel": "named per onset with date and URL; none is fetched into the panel and none is an input of any row."
+}
