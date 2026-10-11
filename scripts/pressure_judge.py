@@ -47,6 +47,7 @@ import tempfile
 from dataclasses import replace
 from datetime import date, time
 from pathlib import Path
+from typing import List
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
@@ -327,6 +328,67 @@ def _cutoff(summary):
     return f"{median} ({summary['days_never_flag']} of {summary['days']} days never flag)"
 
 
+def _pooled_alarms(cell) -> str:
+    """Tier 1's false alarms per onset as the rule counts them (#509): a day flagged at any horizon is one."""
+
+    if "pooled_false_alarms_per_onset" not in cell:
+        return _f(cell.get("worst_false_alarms_per_onset"), 2)
+    shown = _f(cell["pooled_false_alarms_per_onset"], 2)
+    if "pooled_weighted_false_alarms_per_onset" in cell:
+        shown += f" flat / {_f(cell['pooled_weighted_false_alarms_per_onset'], 2)} weighted"
+    return shown
+
+
+def _interval(stat) -> str:
+    if not stat:
+        return "–"
+    interval = stat.get("interval")
+    return f"{_f(stat['mean'], 3)}" + (f" [{interval['lower']:.3f}, {interval['upper']:.3f}]" if interval else " (no interval)")
+
+
+def _span_line(label: str, cell) -> str:
+    """One line of tier 1 on a span of days: onsets warned, recall with its interval, false alarms per onset (flat / weighted)."""
+
+    if "onsets_flagged" not in cell:
+        return f"| {label} | {cell.get('onsets', 0)} | – | – | – | – |"
+    alarms = cell["false_alarms_per_onset"]
+    weighted = alarms.get("weighted")
+    return (
+        f"| {label} | {cell['onsets']} | {cell['onsets_flagged']:g} | {_interval(cell['recall'])} | "
+        f"{_interval(alarms['flat'])} | {_interval(weighted) if weighted else '–'} |"
+    )
+
+
+SPAN_HEAD = (
+    "| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |\n"
+    "|---|---|---|---|---|---|"
+)
+
+
+def tier1_lines(onset) -> List[str]:
+    """The lines every judge table adds to tier 1 (rulings of 10 October 2026): each lead alone, inside and outside the
+    early years (#510), and the recall with equal weight per regime. Empty for a result written before them."""
+
+    cell = onset.get("lead_at_least_1") or next(iter(onset.values()), {})
+    if "per_lead" not in cell:
+        return []
+    lines = [SPAN_HEAD]
+    for h, lead in cell["per_lead"].items():
+        passes = lead.get("passes")
+        lines.append(_span_line(f"lead {h} alone" + ("" if passes is None else f" ({'pass' if passes else 'fail'})"), lead))
+    years = cell["early_years"]
+    span = "-".join(str(y) for y in (years["years"][0], years["years"][-1]))
+    lines.append(_span_line(f"inside {span}", years["inside"]))
+    lines.append(_span_line(f"outside {span}", years["outside"]))
+    equal = cell.get("regime_equal_weight_recall")
+    if equal:
+        parts = ", ".join(
+            f"{label} {c['onsets_flagged']:g}/{c['onsets']}" for label, c in equal["regimes"].items()
+        )
+        lines += ["", f"Recall with equal weight per regime: {_f(equal['recall'], 3)} ({parts})."]
+    return lines
+
+
 def markdown(result) -> str:
     declaration = result["declaration"]
     primary = f"{declaration['primary_threshold_bp']:g}"
@@ -354,7 +416,7 @@ def markdown(result) -> str:
             + (f" Not scored at horizons {verdict['not_scored']}." if verdict["not_scored"] else "")
             + _scarce_line(verdict["scarce_regime"]),
             "",
-            "| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | worst false alarms per onset | criteria |",
+            "| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |",
             "|---|---|---|---|---|---|---|",
         ]
         for key in (near_key, far_key):
@@ -372,8 +434,11 @@ def markdown(result) -> str:
             )
             lines.append(
                 f"| {key} | {cell['onsets']} | {cell['onsets_flagged']} | {shown} | {_f(cell['climatology_recall'])} | "
-                f"{_f(cell['worst_false_alarms_per_onset'], 2)} | {note}{'' if cell['complete'] else ' (partial horizons)'} |"
+                f"{_pooled_alarms(cell)} | {note}{'' if cell['complete'] else ' (partial horizons)'} |"
             )
+        extra = tier1_lines(onset)
+        if extra:
+            lines += ["", "Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):", ""] + extra
         lines += [
             "",
             "| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |",
@@ -397,11 +462,11 @@ def markdown(result) -> str:
             )
             calibrated = ", ".join(f"{k} {_yes(v)}" for k, v in wolf["calibrated_by_regime"].items())
             reported = ", ".join(
-                f"{k} {_yes(v['covers_zero'])}" for k, v in wolf["calibration_reported_regimes"].items()
+                f"{k} {_yes(v['covers_zero'])} ({v['events']} pressure days)" for k, v in wolf["calibration_reported_regimes"].items()
             )
             lines.append(
-                f"- h = {horizon}: {stretches}. Calibrated (regimes with a pressure day): {calibrated or 'none'}."
-                + (f" Reported, no pressure day: {reported}." if reported else "")
+                f"- h = {horizon}: {stretches}. Calibrated (regimes with enough pressure days): {calibrated or 'none'}."
+                + (f" Reported, too few pressure days to test: {reported}." if reported else "")
             )
         risky = candidate["tiers"]["risky_dates"]
         lines += ["", "Tier 2 (reported only): " + (
@@ -466,8 +531,8 @@ def summary_tables(result, horizon="1") -> str:
         f"Table 1. Tiers at +{primary} bp, h = 1 to 5; 90% stationary-bootstrap intervals. "
         f"The pass rule is tier 1 at lead >= 1, tier 3 at every lead and tier 5.",
         "",
-        "| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset (limit 2) "
-        "| tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes with pressure, h = 1 | tier 5: calibrated, beats clim. "
+        "| model | onsets flagged | recall [90%] | clim. recall, same false alarms | false alarms per onset, pooled across horizons (limit 2) "
+        "| tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes tested, h = 1 | tier 5: calibrated, beats clim. "
         "| pass | scarce regime alone (tiers 1 / 3 / 5) |",
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
@@ -500,11 +565,21 @@ def summary_tables(result, horizon="1") -> str:
         )
         lines.append(
             f"| {name} | {onset.get('onsets_flagged', '–')} of {onset.get('onsets', '–')} | {shown} | "
-            f"{_f(onset.get('climatology_recall'))} | {_f(onset.get('worst_false_alarms_per_onset'), 2)} | "
+            f"{_f(onset.get('climatology_recall'))} | {_pooled_alarms(onset)} | "
             f"{_f(state0, 1)} / {_f(regime, 1)} | {sum(tested.values())} of {len(tested)} | {week_cell} | "
             f"{'PASS' if verdict['passes'] else 'fail'} (tiers {_yes(verdict['tier_1_onset_warning'])} / "
             f"{_yes(verdict['tier_3_no_crying_wolf'])} / {_yes(verdict['tier_5_week_ahead'])}) | {scarce_cell} |"
         )
+    detail = {name: tier1_lines(c["tiers"]["onset_warning"]) for name, c in result["candidates"].items()}
+    if any(detail.values()):
+        lines += [
+            "",
+            "Table 1b. Tier 1 at each lead alone, inside and outside the early years, and the recall with equal weight "
+            "per regime: reported for every model, not part of the pass rule.",
+        ]
+        for name, rows in detail.items():
+            if rows:
+                lines += ["", f"{name}:", ""] + rows
     labels = {}
     for candidate in result["candidates"].values():
         splits = candidate["horizons"].get(horizon, {}).get(primary, {}).get("splits", {})
