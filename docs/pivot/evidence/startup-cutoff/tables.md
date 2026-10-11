@@ -1,23 +1,23 @@
 
 ### Tier 1, 3 and 5, weighted rule
 
-| row | start-up rule | onsets flagged at leads 1 to 5, recall [90%], worst false alarms per onset (limit 2) | tier 1 | leads 3 to 5: flagged, recall [90%] | tier 3 | tier 5 | passes |
+| row | start-up rule | onsets flagged at leads 1 to 5, recall [90%], false alarms per onset pooled over the leads (limit 2) | tier 1 | leads 3 to 5: flagged, recall [90%] | tier 3 | tier 5 | passes |
 |---|---|---|---|---|---|---|---|
-| risk_gbm+every_day+gate+settle+h41+iorb | declared | 19 of 26, 0.731 [0.560, 0.889], 1.64 | yes | 15 of 26, 0.577 [0.385, 0.762] | no | no | no |
-| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | 21 of 26, 0.808 [0.667, 0.933], 1.91 | yes | 15 of 26, 0.577 [0.385, 0.762] | no | no | no |
-| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | 19 of 26, 0.731 [0.560, 0.889], 1.80 | yes | 15 of 26, 0.577 [0.385, 0.762] | no | no | no |
-| risk_gbm+settle+h41 | declared | 14 of 26, 0.538 [0.353, 0.710], 0.88 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
-| risk_gbm+settle+h41 | a: climatology rate | 16 of 26, 0.615 [0.435, 0.774], 1.10 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
-| risk_gbm+settle+h41 | b: fixed 0.2 | 14 of 26, 0.538 [0.353, 0.710], 1.00 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
-| ngboost_laplace | declared | 17 of 26, 0.654 [0.467, 0.826], 1.73 | yes | 12 of 26, 0.462 [0.273, 0.650] | no | no | no |
-| ngboost_laplace | a: climatology rate | 17 of 26, 0.654 [0.467, 0.826], 2.00 | yes | 12 of 26, 0.462 [0.273, 0.650] | no | no | no |
-| ngboost_laplace | b: fixed 0.2 | 17 of 26, 0.654 [0.467, 0.826], 1.73 | yes | 12 of 26, 0.462 [0.273, 0.650] | no | no | no |
-| calendar_climatology | declared | 12 of 26, 0.462 [0.286, 0.667], 3.75 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
-| calendar_climatology | a: climatology rate | 14 of 26, 0.538 [0.360, 0.727], 5.10 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
-| calendar_climatology | b: fixed 0.2 | 12 of 26, 0.462 [0.286, 0.667], 3.79 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
-| persistence_logistic | declared | 12 of 26, 0.462 [0.273, 0.650], 3.25 | no | 11 of 26, 0.423 [0.256, 0.600] | no | no | no |
-| persistence_logistic | a: climatology rate | 14 of 26, 0.538 [0.346, 0.720], 4.48 | no | 11 of 26, 0.423 [0.256, 0.600] | no | no | no |
-| persistence_logistic | b: fixed 0.2 | 12 of 26, 0.462 [0.273, 0.650], 3.25 | no | 11 of 26, 0.423 [0.256, 0.600] | no | no | no |
+| risk_gbm+every_day+gate+settle+h41+iorb | declared | 19 of 26, 0.731 [0.560, 0.889], 3.46 | no | 15 of 26, 0.577 [0.385, 0.762] | no | no | no |
+| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | 21 of 26, 0.808 [0.667, 0.933], 3.94 | no | 15 of 26, 0.577 [0.385, 0.762] | no | no | no |
+| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | 19 of 26, 0.731 [0.560, 0.889], 3.58 | no | 15 of 26, 0.577 [0.385, 0.762] | no | no | no |
+| risk_gbm+settle+h41 | declared | 14 of 26, 0.538 [0.353, 0.710], 1.44 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
+| risk_gbm+settle+h41 | a: climatology rate | 16 of 26, 0.615 [0.435, 0.774], 1.92 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
+| risk_gbm+settle+h41 | b: fixed 0.2 | 14 of 26, 0.538 [0.353, 0.710], 1.56 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
+| ngboost_laplace | declared | 17 of 26, 0.654 [0.467, 0.826], 2.34 | no | 12 of 26, 0.462 [0.273, 0.650] | no | no | no |
+| ngboost_laplace | a: climatology rate | 17 of 26, 0.654 [0.467, 0.826], 2.91 | no | 12 of 26, 0.462 [0.273, 0.650] | no | no | no |
+| ngboost_laplace | b: fixed 0.2 | 17 of 26, 0.654 [0.467, 0.826], 2.34 | no | 12 of 26, 0.462 [0.273, 0.650] | no | no | no |
+| calendar_climatology | declared | 12 of 26, 0.462 [0.286, 0.667], 3.90 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
+| calendar_climatology | a: climatology rate | 14 of 26, 0.538 [0.360, 0.727], 5.71 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
+| calendar_climatology | b: fixed 0.2 | 12 of 26, 0.462 [0.286, 0.667], 3.98 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
+| persistence_logistic | declared | 12 of 26, 0.462 [0.273, 0.650], 4.09 | no | 11 of 26, 0.423 [0.256, 0.600] | no | no | no |
+| persistence_logistic | a: climatology rate | 14 of 26, 0.538 [0.346, 0.720], 6.50 | no | 11 of 26, 0.423 [0.256, 0.600] | no | no | no |
+| persistence_logistic | b: fixed 0.2 | 12 of 26, 0.462 [0.273, 0.650], 4.43 | no | 11 of 26, 0.423 [0.256, 0.600] | no | no | no |
 
 ### Tier 1 per lead, +5 bp, weighted rule: onsets flagged of the 26 and recall [90%]; 2018 onsets flagged of 4; weighted false alarms per onset (limit 2)
 
@@ -69,18 +69,18 @@
 
 ### Recall difference from the declared judge, by regime and day type, weighted rule
 
-| row | start-up rule | regime 2018-19 (17) | regime 2020 (2) | regime 2021-23 (0) | regime 2024 (2) | regime 2025-26 (5) | day type month_end (6) | day type ordinary (12) | day type quarter_end (3) | day type tax_date (5) |
+| row | start-up rule | day type month_end (6) | day type ordinary (12) | day type quarter_end (3) | day type tax_date (5) | regime 2018-19 (17) | regime 2020 (2) | regime 2021-23 (0) | regime 2024 (2) | regime 2025-26 (5) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| risk_gbm+settle+h41 | a: climatology rate | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| risk_gbm+settle+h41 | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| ngboost_laplace | a: climatology rate | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| ngboost_laplace | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| calendar_climatology | a: climatology rate | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| calendar_climatology | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| persistence_logistic | a: climatology rate | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| persistence_logistic | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+settle+h41 | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+settle+h41 | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| ngboost_laplace | a: climatology rate | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| ngboost_laplace | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| calendar_climatology | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| calendar_climatology | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| persistence_logistic | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| persistence_logistic | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
 
 ### Flags the start-up rule adds against the declared judge, by year, weighted rule: flags (of which not pressure days; onsets), over h = 1 to 5
 
@@ -99,23 +99,23 @@
 
 ### Tier 1, 3 and 5, flat rule
 
-| row | start-up rule | onsets flagged at leads 1 to 5, recall [90%], worst false alarms per onset (limit 2) | tier 1 | leads 3 to 5: flagged, recall [90%] | tier 3 | tier 5 | passes |
+| row | start-up rule | onsets flagged at leads 1 to 5, recall [90%], false alarms per onset pooled over the leads (limit 2) | tier 1 | leads 3 to 5: flagged, recall [90%] | tier 3 | tier 5 | passes |
 |---|---|---|---|---|---|---|---|
-| risk_gbm+every_day+gate+settle+h41+iorb | declared | 16 of 26, 0.615 [0.440, 0.786], 2.35 | no | 12 of 26, 0.462 [0.280, 0.652] | no | no | no |
-| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | 18 of 26, 0.692 [0.533, 0.846], 2.35 | no | 12 of 26, 0.462 [0.280, 0.652] | no | no | no |
-| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | 16 of 26, 0.615 [0.440, 0.786], 2.50 | no | 12 of 26, 0.462 [0.280, 0.652] | no | no | no |
-| risk_gbm+settle+h41 | declared | 14 of 26, 0.538 [0.353, 0.710], 1.35 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
-| risk_gbm+settle+h41 | a: climatology rate | 16 of 26, 0.615 [0.435, 0.774], 1.54 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
-| risk_gbm+settle+h41 | b: fixed 0.2 | 14 of 26, 0.538 [0.353, 0.710], 1.35 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
-| ngboost_laplace | declared | 15 of 26, 0.577 [0.400, 0.759], 2.54 | no | 9 of 26, 0.346 [0.174, 0.536] | no | no | no |
-| ngboost_laplace | a: climatology rate | 15 of 26, 0.577 [0.400, 0.759], 2.54 | no | 9 of 26, 0.346 [0.174, 0.536] | no | no | no |
-| ngboost_laplace | b: fixed 0.2 | 15 of 26, 0.577 [0.400, 0.759], 2.54 | no | 9 of 26, 0.346 [0.174, 0.536] | no | no | no |
-| calendar_climatology | declared | 10 of 26, 0.385 [0.208, 0.588], 5.00 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
-| calendar_climatology | a: climatology rate | 12 of 26, 0.462 [0.286, 0.656], 7.12 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
-| calendar_climatology | b: fixed 0.2 | 10 of 26, 0.385 [0.208, 0.588], 5.23 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
-| persistence_logistic | declared | 7 of 26, 0.269 [0.111, 0.444], 3.42 | no | 7 of 26, 0.269 [0.107, 0.448] | no | no | no |
-| persistence_logistic | a: climatology rate | 9 of 26, 0.346 [0.167, 0.535], 6.04 | no | 7 of 26, 0.269 [0.107, 0.448] | no | no | no |
-| persistence_logistic | b: fixed 0.2 | 7 of 26, 0.269 [0.111, 0.444], 3.42 | no | 7 of 26, 0.269 [0.107, 0.448] | no | no | no |
+| risk_gbm+every_day+gate+settle+h41+iorb | declared | 16 of 26, 0.615 [0.440, 0.786], 4.35 | no | 12 of 26, 0.462 [0.280, 0.652] | no | no | no |
+| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | 18 of 26, 0.692 [0.533, 0.846], 4.88 | no | 12 of 26, 0.462 [0.280, 0.652] | no | no | no |
+| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | 16 of 26, 0.615 [0.440, 0.786], 4.46 | no | 12 of 26, 0.462 [0.280, 0.652] | no | no | no |
+| risk_gbm+settle+h41 | declared | 14 of 26, 0.538 [0.353, 0.710], 2.00 | yes | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
+| risk_gbm+settle+h41 | a: climatology rate | 16 of 26, 0.615 [0.435, 0.774], 2.54 | no | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
+| risk_gbm+settle+h41 | b: fixed 0.2 | 14 of 26, 0.538 [0.353, 0.710], 2.12 | no | 11 of 26, 0.423 [0.250, 0.607] | no | no | no |
+| ngboost_laplace | declared | 15 of 26, 0.577 [0.400, 0.759], 4.38 | no | 9 of 26, 0.346 [0.174, 0.536] | no | no | no |
+| ngboost_laplace | a: climatology rate | 15 of 26, 0.577 [0.400, 0.759], 4.96 | no | 9 of 26, 0.346 [0.174, 0.536] | no | no | no |
+| ngboost_laplace | b: fixed 0.2 | 15 of 26, 0.577 [0.400, 0.759], 4.38 | no | 9 of 26, 0.346 [0.174, 0.536] | no | no | no |
+| calendar_climatology | declared | 10 of 26, 0.385 [0.208, 0.588], 5.38 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
+| calendar_climatology | a: climatology rate | 12 of 26, 0.462 [0.286, 0.656], 7.50 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
+| calendar_climatology | b: fixed 0.2 | 10 of 26, 0.385 [0.208, 0.588], 5.46 | no | 10 of 26, 0.385 [0.212, 0.576] | no | no | no |
+| persistence_logistic | declared | 7 of 26, 0.269 [0.111, 0.444], 5.73 | no | 7 of 26, 0.269 [0.107, 0.448] | no | no | no |
+| persistence_logistic | a: climatology rate | 9 of 26, 0.346 [0.167, 0.535], 8.35 | no | 7 of 26, 0.269 [0.107, 0.448] | no | no | no |
+| persistence_logistic | b: fixed 0.2 | 7 of 26, 0.269 [0.111, 0.444], 6.08 | no | 7 of 26, 0.269 [0.107, 0.448] | no | no | no |
 
 ### Tier 1 per lead, +5 bp, flat rule: onsets flagged of the 26 and recall [90%]; 2018 onsets flagged of 4; flat false alarms per onset (limit 2)
 
@@ -167,18 +167,18 @@
 
 ### Recall difference from the declared judge, by regime and day type, flat rule
 
-| row | start-up rule | regime 2018-19 (17) | regime 2020 (2) | regime 2021-23 (0) | regime 2024 (2) | regime 2025-26 (5) | day type month_end (6) | day type ordinary (12) | day type quarter_end (3) | day type tax_date (5) |
+| row | start-up rule | day type month_end (6) | day type ordinary (12) | day type quarter_end (3) | day type tax_date (5) | regime 2018-19 (17) | regime 2020 (2) | regime 2021-23 (0) | regime 2024 (2) | regime 2025-26 (5) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| risk_gbm+settle+h41 | a: climatology rate | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| risk_gbm+settle+h41 | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| ngboost_laplace | a: climatology rate | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| ngboost_laplace | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| calendar_climatology | a: climatology rate | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| calendar_climatology | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
-| persistence_logistic | a: climatology rate | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) |
-| persistence_logistic | b: fixed 0.2 | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+every_day+gate+settle+h41+iorb | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+every_day+gate+settle+h41+iorb | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+settle+h41 | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| risk_gbm+settle+h41 | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| ngboost_laplace | a: climatology rate | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| ngboost_laplace | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| calendar_climatology | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.286] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| calendar_climatology | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| persistence_logistic | a: climatology rate | 0.167 (no interval) | +0.083 [+0.000, +0.250] | 0.000 (no interval) | 0.000 (no interval) | +0.118 [+0.000, +0.278] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
+| persistence_logistic | b: fixed 0.2 | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | 0.000 (no interval) | +0.000 [+0.000, +0.000] | 0.000 (no interval) | – (no interval) | 0.000 (no interval) | 0.000 (no interval) |
 
 ### Flags the start-up rule adds against the declared judge, by year, flat rule: flags (of which not pressure days; onsets), over h = 1 to 5
 

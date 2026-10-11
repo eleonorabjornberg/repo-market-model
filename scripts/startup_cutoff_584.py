@@ -266,7 +266,7 @@ def markdown(document: dict) -> str:
     for weighting in WEIGHTINGS:
         out.append(f"\n### Tier 1, 3 and 5, {weighting} rule\n")
         out.append(
-            "| row | start-up rule | onsets flagged at leads 1 to 5, recall [90%], worst false alarms per onset (limit 2) | tier 1 | "
+            "| row | start-up rule | onsets flagged at leads 1 to 5, recall [90%], false alarms per onset pooled over the leads (limit 2) | tier 1 | "
             "leads 3 to 5: flagged, recall [90%] | tier 3 | tier 5 | passes |"
         )
         out.append("|---|---|---|---|---|---|---|---|")
@@ -276,7 +276,7 @@ def markdown(document: dict) -> str:
                 if "recall" not in tier:
                     out.append(f"| {name} | {label} | not judged | | | | | |")
                     continue
-                worst = tier.get("worst_weighted_false_alarms_per_onset", tier["worst_false_alarms_per_onset"]) if weighting == "weighted" else tier["worst_false_alarms_per_onset"]
+                worst = tier["pooled_weighted_false_alarms_per_onset"] if weighting == "weighted" else tier["pooled_false_alarms_per_onset"]
                 verdict = judge["verdict"]
                 yes = lambda x: "yes" if x else "no"
                 lcell = f"{late['onsets_flagged']:g} of {late['onsets']}, {_recall(late['recall'])}" if "recall" in late else "–"
@@ -353,6 +353,13 @@ def markdown(document: dict) -> str:
     return "\n".join(out) + "\n"
 
 
+def render_command(args) -> int:
+    """Write the Markdown again from the JSON `run` wrote."""
+
+    args.markdown.write_text(markdown(json.loads(args.input.read_text(encoding="utf-8"))), encoding="utf-8")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -362,6 +369,10 @@ def main(argv=None) -> int:
     run.add_argument("--markdown", type=Path)
     run.add_argument("inputs", nargs="+", type=Path)
     run.set_defaults(func=run_command)
+    render = sub.add_parser("render")
+    render.add_argument("--input", type=Path, required=True)
+    render.add_argument("--markdown", type=Path, required=True)
+    render.set_defaults(func=render_command)
     args = parser.parse_args(argv)
     return args.func(args)
 

@@ -39,9 +39,10 @@ is `never_flag` (no cut-off within the limit reaches an onset). The two options 
   `startup_cutoff` refuses (`LookAheadError`) a day after the training end.
 * **Option B, fixed probability.** The block's cut-off is a constant, 0.2 (the placeholder the judge was first declared with
   before any candidate was scored, #375), read from no outcome. Code: `pressure_judge.StartupRule("fixed_probability", 0.2)`.
-  The directive's alternative, a probability chosen from the 2014-2018 back-filled history, is not offered: no guard ties
-  that history to the workbook's posting date (#572), and `docs/decisions/information-set.md` bars its use as training
-  history until that date is established.
+  The directive's alternative, a probability chosen from the 2014-2018 back-filled history, is not offered: the guard of #572
+  refuses a fit trained on a back-filled value while the workbook's posting instant is unestablished
+  (`metadata/backfill_posting.json`, `posting_instant` null), and `docs/decisions/information-set.md` bars its use as
+  training history until that date is established.
 
 `choose_cutoffs` takes the rule as an optional argument (`startup=`), and the default is none, so merging the code changes no
 figure. Putting a rule in force is a second, separate act: setting `startup` in `metadata/pressure_judge.json` and re-scoring
@@ -51,8 +52,10 @@ the records that the change moves (a published record is never edited in place: 
 
 The result page gives the numbers; the draft states the reading it supports and what it does not.
 
-* The rule matters only for 2018 and only for the cut-off. Nothing after 2018 changes under either option, and no tier
-  verdict changes under either: tier 3 and tier 5 still fail for all three frozen rows, tier 1 is as before under each rule.
+* The rule matters only for 2018 and only for the cut-off. Nothing after 2018 changes under either option. Under the
+  weighted rule in force no tier verdict changes under either option; tier 3 and tier 5 fail for all three frozen rows. Under
+  the flat rule both options take `risk_gbm+settle+h41` out of tier 1 (pooled false alarms per onset 2.00 to 2.54 and 2.12),
+  because the false alarms added in 2018 are pooled into the count.
 * **A pass on these days is not a confirmation** (Eleonora's ruling of 11 October 2026 on #567): the 2018 onsets were seen when
   the rules were chosen, the three rows were frozen on 2018-2025, and neither option can be confirmed except on the blind tier.
 * Neither option is a measure of a model's skill on those onsets. Under Option A the benchmarks flag the same two 2018 onsets
