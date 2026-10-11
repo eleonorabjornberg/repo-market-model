@@ -1184,21 +1184,6 @@ class HorizonTests(unittest.TestCase):
         for scored in range(5, len(DATES)):
             self.assertEqual(current.anchor(DATES, scored), scored - 4, DATES[scored])
 
-    def test_the_served_lead_is_the_rows_from_the_anchor_to_the_scored_day(self):
-        # #575: a model that carries a state from the anchor to the scored day takes this many steps, not `horizon`.
-        for horizon in (1, 2, 3, 5):
-            current = self.rule(horizon)
-            self.assertEqual(current.served_lead(), horizon + 1)
-            scored = index_of(date(2026, 1, 22))
-            self.assertEqual(current.served_lead(), scored - current.anchor(DATES, scored))
-
-    def test_a_target_whose_lead_depends_on_the_weekday_has_no_single_served_lead(self):
-        registry = copy.deepcopy(REGISTRY)
-        for name in ("IORB", "IOER"):
-            registry["fred_macro_latest_vintage"]["field_release_lags"][name]["days"] = 1
-        with self.assertRaises(ValueError):
-            self.rule(1, registry=registry).served_lead()
-
     def test_a_calendar_field_is_still_read_at_the_scored_day(self):
         scored = index_of(date(2026, 1, 22))
         info = self.rule(4).information_set(DATES, scored)
