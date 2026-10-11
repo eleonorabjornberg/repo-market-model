@@ -6492,6 +6492,305 @@ def pressure_risk_date_variant_exceedance(
     return fit_predict
 
 
+#: The pre-2018 transfer study (#544). Two ways to let the SOFR-era fit learn from the 2008-2018
+#: EFFR - IOER history (`effr_history`): `pooled`, one fit on the SOFR pairs and the source pairs
+#: behind a source indicator, each source pair carrying `PRESSURE_TRANSFER_SOURCE_WEIGHT`; and
+#: `pretrain_finetune`, a fit on the source alone whose slopes are the prior of an L2 penalty in the
+#: SOFR-era fit. Declared in `metadata/effr_pretrain.json` before any score, not tuned.
+PRESSURE_TRANSFER_VARIANTS = ("pooled", "pretrain_finetune")
+PRESSURE_TRANSFER_SOURCE_WEIGHT = 0.25
+
+
+class _LogitFit(NamedTuple):
+    """A weighted ridge logistic fit on columns standardized on its own training rows."""
+
+    probabilities: Tuple[float, ...]
+    intercept: float
+    slopes: Any
+    centre: Any
+    scale: Any
+
+
+def _fit_logit_toward(
+    x: Any,
+    y: Any,
+    z: Any,
+    prior_slopes: Any = None,
+    weights: Any = None,
+    c: float = None,
+    standardize_on: Optional[int] = None,
+) -> _LogitFit:
+    """A ridge logistic by Newton's method whose penalty is centred on `prior_slopes` (#544).
+
+    Columns are standardized on `x`. The loss is the weighted summed negative log-likelihood
+    plus `|b - prior|^2 / (2c)` on the standardized slopes, `c` defaulting to
+    `PRESSURE_LOGISTIC_SETTINGS["C"]`; the intercept is free. With no prior and no weights it is
+    scikit-learn's `LogisticRegression` with that `C`. `prior_slopes` are in this fit's
+    standardized units. Both classes must be present in `y`. Deterministic.
+    """
+
+    import numpy
+
+    x = numpy.asarray(x, dtype=float)
+    y = numpy.asarray(y, dtype=float)
+    z = numpy.asarray(z, dtype=float)
+    if len(set(y.tolist())) < 2:
+        raise ValueError("a logistic fit needs both classes in its training labels")
+    weight = numpy.ones(len(y)) if weights is None else numpy.asarray(weights, dtype=float)
+    if len(weight) != len(y) or not numpy.all(weight > 0):
+        raise ValueError("a weighted fit needs one positive weight per training pair")
+    c = PRESSURE_LOGISTIC_SETTINGS["C"] if c is None else c
+    centre, scale = _standardizer(x if standardize_on is None else x[:standardize_on])
+    a = numpy.hstack([numpy.ones((len(x), 1)), (x - centre) / scale])
+    prior = numpy.zeros(a.shape[1])
+    if prior_slopes is not None:
+        prior[1:] = numpy.asarray(prior_slopes, dtype=float)
+    penalty = numpy.full(a.shape[1], 1.0 / c)
+    penalty[0] = 0.0
+    rate = min(max(float(numpy.sum(weight * y) / numpy.sum(weight)), 1e-6), 1 - 1e-6)
+    w = prior.copy()
+    w[0] = math.log(rate / (1 - rate))
+
+    def objective(coefficients: Any) -> float:
+        eta = a @ coefficients
+        loss = numpy.sum(weight * (numpy.logaddexp(0.0, eta) - y * eta))
+        return float(loss + 0.5 * numpy.sum(penalty * (coefficients - prior) ** 2))
+
+    current = objective(w)
+    for _ in range(_NEWTON_ITERATIONS):
+        p = _expit(a @ w)
+        gradient = a.T @ (weight * (p - y)) + penalty * (w - prior)
+        hessian = (a * (weight * p * (1 - p))[:, None]).T @ a + numpy.diag(penalty) + 1e-10 * numpy.eye(len(w))
+        step = numpy.linalg.solve(hessian, gradient)
+        size = 1.0
+        while True:
+            candidate = w - size * step
+            value = objective(candidate)
+            if value <= current or size < 1e-8:
+                break
+            size /= 2.0
+        if current - value < 1e-12 * max(1.0, abs(current)):
+            w, current = (candidate, value) if value <= current else (w, current)
+            break
+        w, current = candidate, value
+    probabilities = _expit(w[0] + ((z - centre) / scale) @ w[1:])
+    return _LogitFit(tuple(float(p) for p in probabilities), float(w[0]), w[1:], centre, scale)
+
+
+def _raw_coefficients(fit: _LogitFit) -> Tuple[float, Any]:
+    """The fit's intercept and slopes in the units of its columns, not standardized."""
+
+    slopes = fit.slopes / fit.scale
+    return float(fit.intercept - (slopes * fit.centre).sum()), slopes
+
+
+def pressure_transfer_exceedance(
+    variant: str,
+    features: Sequence[str],
+    declaration: Any,
+    history: Tuple[Sequence[Any], Any],
+    source_thresholds: Mapping[float, float],
+    minimum_history: int = 20,
+    source_weight: float = PRESSURE_TRANSFER_SOURCE_WEIGHT,
+) -> Any:
+    """The every-day logistic of the pressure label, helped by the 2008-2018 EFFR - IOER history (#544).
+
+    The design, the direct pairs and the as-of rule are `pressure_logistic_exceedance`'s. The
+    history is `(rows, rule)`, the `effr_history` rows and their rule: their direct pairs are built
+    with the same design, each label labelled `spread > source_thresholds[tau]` (EFFR - IOER traded
+    below IOER throughout, so the source has its own, declared, threshold for each SOFR threshold).
+    Every fit refuses a source label not public before its last training day
+    (`effr_history.require_pool_public`) and a rule whose horizon is not the run's. The source rows
+    are training data only; a served row is the SOFR market.
+
+    `pooled`: one ridge logistic on the SOFR pairs (weight 1) and the source pairs (weight
+    `source_weight`), with a source indicator as the design's last column, 0 on every served row;
+    columns are standardized on the SOFR pairs alone.
+
+    `pretrain_finetune`: a ridge logistic on the source pairs alone, then the SOFR-era fit with its
+    L2 penalty centred on the pre-trained slopes (in raw units, so the two standardizations
+    differ freely) and a free intercept. When the source has no event at the threshold the
+    SOFR-era fit has no prior; when the SOFR window has no event the pre-trained model is served.
+
+    Annotated `Any`, like `_direct_pressure_predictor`, its pooling sibling: it takes the history rows, which
+    no `--model` name can supply, so it is a study candidate (`scripts/effr_pretrain.py`), not a declared model
+    the command line constructs.
+
+    `fit_predict.coefficients` collects, per fit and per threshold, the coefficients in the SOFR
+    window's standardized units: `sofr_era` (no help), `pretrained` and `fine_tuned`, or `pooled`.
+    """
+
+    if variant not in PRESSURE_TRANSFER_VARIANTS:
+        raise ValueError(f"a transfer variant is one of {list(PRESSURE_TRANSFER_VARIANTS)}, got {variant!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if not source_weight > 0:
+        raise ValueError(f"the source weight must be positive, got {source_weight}")
+    from . import effr_history
+
+    history_rows, history_rule = history
+    thresholds = {float(tau): float(value) for tau, value in source_thresholds.items()}
+    design = _PressureDesign(features, declaration)
+    cache: dict = {}
+    pooled: dict = {}
+    trace: List[dict] = []
+    without_events: List[bool] = []
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        import numpy
+
+        if information is None:
+            raise ValueError(
+                "a transfer model pairs each training label with what was public at that label's "
+                "own decision instant, which only the as-of rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a transfer model needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        if history_rule.horizon != information.horizon:
+            raise ValueError(
+                f"the history is read at horizon {history_rule.horizon}, the run at {information.horizon}"
+            )
+        for tau in taus:
+            if float(tau) not in thresholds:
+                raise ValueError(f"no source threshold is declared for the {float(tau):g} bp threshold")
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        if "pool" not in pooled:
+            pooled["pool"] = effr_history.history_pairs(design, history_rule, history_rows)
+        pool = pooled["pool"]
+        effr_history.require_pool_public(pool.available_at, train_rows[-1].date)
+        x = numpy.asarray(xs, dtype=float)
+        z = numpy.asarray(served, dtype=float)
+        source_x = numpy.asarray(pool.xs, dtype=float).reshape(len(pool.xs), x.shape[1])
+        names = list(design.names)
+        columns: List[List[float]] = []
+        record = {"train_end": train_rows[-1].date.isoformat(), "sofr_pairs": len(xs), "columns": names, "fits": {}}
+        for tau in taus:
+            labels = numpy.asarray([1 if exceeds_bp(v, float(tau)) else 0 for v in spreads], dtype=float)
+            source_labels = numpy.asarray(
+                [1 if exceeds_bp(v, thresholds[float(tau)]) else 0 for v in pool.spreads], dtype=float
+            )
+            source_has_events = len(set(source_labels.tolist())) == 2 and len(source_labels) > 0
+            sofr_has_events = len(set(labels.tolist())) == 2
+            fits: dict = {}
+
+            def units(fit: _LogitFit, reference: _LogitFit) -> dict:
+                """`fit`'s coefficients in `reference`'s standardized units, by column."""
+
+                intercept, slopes = _raw_coefficients(fit)
+                shifted = intercept + float((slopes * reference.centre).sum())
+                out = {"intercept": shifted}
+                out.update({name: float(v) for name, v in zip(names, slopes * reference.scale)})
+                return out
+
+            if variant == "pooled":
+                joint = _fit_logit_toward(
+                    numpy.vstack([numpy.hstack([x, numpy.zeros((len(x), 1))]), numpy.hstack([source_x, numpy.ones((len(source_x), 1))])]),
+                    numpy.concatenate([labels, source_labels]),
+                    numpy.hstack([z, numpy.zeros((len(z), 1))]),
+                    weights=numpy.concatenate([numpy.ones(len(x)), numpy.full(len(source_x), float(source_weight))]),
+                    standardize_on=len(x),
+                ) if (sofr_has_events or source_has_events) else None
+                if joint is None:
+                    column = [float(labels[0])] * len(served)
+                else:
+                    column = list(joint.probabilities)
+                alone = _fit_logit_toward(x, labels, z) if sofr_has_events else None
+                if joint is not None:
+                    names_joint = names + [HISTORY_MARKET_COLUMN]
+                    fits[f"{tau:g}"] = {
+                        "sofr_era": None if alone is None else units(alone, alone),
+                        "pooled": {
+                            "intercept": float(joint.intercept),
+                            **{n: float(v) for n, v in zip(names_joint, joint.slopes)},
+                        },
+                    }
+            else:
+                pretrained = _fit_logit_toward(source_x, source_labels, z) if source_has_events else None
+                alone = _fit_logit_toward(x, labels, z) if sofr_has_events else None
+                if not source_has_events:
+                    without_events.append(True)
+                if alone is None and pretrained is None:
+                    column = [float(labels[0])] * len(served)
+                elif alone is None:
+                    column = list(pretrained.probabilities)
+                    fits[f"{tau:g}"] = {"sofr_era": None, "pretrained": None, "fine_tuned": None, "served": "pretrained"}
+                elif pretrained is None:
+                    column = list(alone.probabilities)
+                else:
+                    _, raw = _raw_coefficients(pretrained)
+                    _, sofr_scale = _standardizer(x)
+                    tuned = _fit_logit_toward(x, labels, z, prior_slopes=raw * sofr_scale)
+                    column = list(tuned.probabilities)
+                    fits[f"{tau:g}"] = {
+                        "sofr_era": units(alone, alone),
+                        "pretrained": units(pretrained, alone),
+                        "fine_tuned": units(tuned, alone),
+                    }
+            columns.append(column)
+            record["fits"].update(fits)
+        trace.append(record)
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(PRESSURE_LOGISTIC_SETTINGS)
+        settings["design"] = names + ([HISTORY_MARKET_COLUMN] if variant == "pooled" else [])
+        settings["transfer"] = {
+            "variant": variant,
+            "source_weight": float(source_weight) if variant == "pooled" else None,
+            "source_thresholds_bp": {f"{tau:g}": value for tau, value in sorted(thresholds.items())},
+            "source_without_events": bool(without_events),
+        }
+        settings["pooled_history"] = {
+            "pairs": len(pool.xs),
+            "first": pool.dates[0].isoformat() if pool.dates else None,
+            "last": pool.dates[-1].isoformat() if pool.dates else None,
+            "horizon": pool.horizon,
+        }
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    #: What each fit learned, one entry per fit (`fit_predict.coefficients`).
+    fit_predict.coefficients = trace  # type: ignore[attr-defined]
+    return fit_predict
+
+
 #: The hurdle hazard's inputs (#539), by variant. The first two are the every-day component's
 #: (#506) with SOFR's 99th and 75th percentiles above IORB; the `state` variants add the as-of
 #: reserve scarcity state (`scarcity.RESERVE_SCARCITY_STATE`, 0 to 3), the only regime-like input

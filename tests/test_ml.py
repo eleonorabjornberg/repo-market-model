@@ -10898,6 +10898,178 @@ class PooledHistoryTests(unittest.TestCase):
             self.backtest((history, rule))
 
 
+class TransferTests(unittest.TestCase):
+    """The pre-2018 transfer models (#544): pooled with a source weight, and pre-train then fine-tune.
+
+    Written red first, before `ml.pressure_transfer_exceedance` existed (`AttributeError`).
+
+    Recorded mutation for the leakage guard: in `pressure_transfer_exceedance`'s `fit_predict`, the call
+    `effr_history.require_pool_public(pool.available_at, train_rows[-1].date)` mutated to `pass`. Applied in
+    a scratch copy, `test_a_source_label_not_yet_public_is_refused` failed with `AssertionError`
+    ("LookAheadError not raised").
+    """
+
+    SOURCE_THRESHOLDS = {5.0: 2.0, 10.0: 6.0}
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+
+    def history(self, end=date(2025, 12, 31), horizon=1):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=horizon)
+        return _history_rows(date(2025, 6, 2), end), rule
+
+    def predictor(self, variant, history, **options):
+        options.setdefault("source_thresholds", self.SOURCE_THRESHOLDS)
+        return ml.pressure_transfer_exceedance(
+            variant, _PRESSURE_FULL, _pressure_splits(), history, minimum_history=60, **options
+        )
+
+    def backtest(self, predictor, horizon=1):
+        return baseline.rolling_exceedance_backtest(
+            self.rows,
+            predictor=predictor,
+            model_name="transfer",
+            features=_PRESSURE_FULL,
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=(5.0, 10.0),
+            minimum_history=60,
+            refit_every=21,
+            horizon=horizon,
+        )
+
+    def plain(self):
+        return self.backtest(ml.pressure_logistic_exceedance(_PRESSURE_FULL, _pressure_splits(), minimum_history=60))
+
+    def test_the_prior_fit_without_a_prior_is_the_ridge_logistic(self):
+        import numpy
+
+        rng = numpy.random.default_rng(3)
+        x = rng.normal(size=(300, 3))
+        y = (x[:, 0] + 0.5 * rng.normal(size=300) > 0.8).astype(float)
+        z = rng.normal(size=(20, 3))
+        got = ml._fit_logit_toward(x, y, z)
+        want = ml._fit_classifier("logistic", x.tolist(), y.astype(int).tolist(), z.tolist())
+        for a, b in zip(got.probabilities, want):
+            self.assertAlmostEqual(a, b, delta=1e-3)
+
+    def test_a_weighted_prior_fit_is_the_weighted_ridge_logistic(self):
+        import numpy
+
+        rng = numpy.random.default_rng(4)
+        x = rng.normal(size=(300, 3))
+        y = (x[:, 1] + 0.5 * rng.normal(size=300) > 0.5).astype(float)
+        weights = numpy.where(numpy.arange(300) < 150, 0.25, 1.0)
+        z = rng.normal(size=(20, 3))
+        got = ml._fit_logit_toward(x, y, z, weights=weights)
+        want = ml._fit_classifier("logistic", x.tolist(), y.astype(int).tolist(), z.tolist(), weights=weights.tolist())
+        for a, b in zip(got.probabilities, want):
+            self.assertAlmostEqual(a, b, delta=1e-3)
+
+    def test_the_prior_pulls_the_slopes_toward_it_and_a_stiff_one_lands_on_it(self):
+        import numpy
+
+        rng = numpy.random.default_rng(5)
+        x = rng.normal(size=(200, 2))
+        y = (x[:, 0] > 0.7).astype(float)
+        z = x[:5]
+        prior = numpy.array([-2.0, 3.0])  # standardized-slope prior, far from the data
+        free = ml._fit_logit_toward(x, y, z)
+        pulled = ml._fit_logit_toward(x, y, z, prior_slopes=prior)
+        stiff = ml._fit_logit_toward(x, y, z, prior_slopes=prior, c=1e-9)
+        self.assertLess(abs(pulled.slopes[1] - prior[1]), abs(free.slopes[1] - prior[1]))
+        for a, b in zip(stiff.slopes, prior):
+            self.assertAlmostEqual(a, b, places=4)
+
+    def test_both_variants_run_under_every_guard_and_record_their_pool(self):
+        history = self.history()
+        plain = self.plain()
+        for variant in ml.PRESSURE_TRANSFER_VARIANTS:
+            report = self.backtest(self.predictor(variant, history))
+            self.assertEqual(report.scored_dates, plain.scored_dates)
+            self.assertNotEqual(report.forecast, plain.forecast)
+            self.assertEqual(report.model_settings["transfer"]["variant"], variant)
+            self.assertEqual(report.model_settings["transfer"]["source_thresholds_bp"], {"5": 2.0, "10": 6.0})
+            self.assertGreater(report.model_settings["pooled_history"]["pairs"], 100)
+            for curve in report.forecast:
+                self.assertTrue(all(0.0 <= p <= 1.0 for p in curve))
+                self.assertEqual(list(curve), sorted(curve, reverse=True))
+
+    def test_a_near_zero_source_weight_is_the_sofr_era_fit(self):
+        history = self.history()
+        plain = self.plain()
+        report = self.backtest(self.predictor("pooled", history, source_weight=1e-9))
+        for got, want in zip(report.forecast, plain.forecast):
+            for a, b in zip(got, want):
+                self.assertAlmostEqual(a, b, delta=0.02)
+
+    def test_the_source_is_labelled_at_its_own_threshold_not_the_sofr_one(self):
+        history = self.history()
+        # No source row is above 50 bp, so the pre-training has one class and the fine-tune has no prior.
+        report = self.backtest(self.predictor("pretrain_finetune", history, source_thresholds={5.0: 50.0, 10.0: 50.0}))
+        plain = self.plain()
+        for got, want in zip(report.forecast, plain.forecast):
+            for a, b in zip(got, want):
+                self.assertAlmostEqual(a, b, delta=1e-2)
+        self.assertTrue(report.model_settings["transfer"]["source_without_events"])
+
+    def test_the_fine_tune_records_the_pretrained_and_the_sofr_era_coefficients(self):
+        history = self.history()
+        predictor = self.predictor("pretrain_finetune", history)
+        self.backtest(predictor)
+        self.assertTrue(predictor.coefficients)
+        tuned = [
+            (entry, fit)
+            for entry in predictor.coefficients
+            for fit in entry["fits"].values()
+            if fit.get("fine_tuned")
+        ]
+        self.assertTrue(tuned)
+        for entry, fit in tuned:
+            for key in ("pretrained", "sofr_era", "fine_tuned"):
+                self.assertEqual(set(fit[key]), set(entry["columns"]) | {"intercept"})
+
+    def test_a_sofr_window_without_events_is_served_the_pretrained_model(self):
+        history = self.history()
+        quiet = [
+            DailyObservation(row.date, {**row.values, "sofr": 4.0 - 0.2, "iorb": 4.0}) for row in self.rows
+        ]  # SOFR 20 bp under IORB throughout
+        self.rows, saved = quiet, self.rows
+        try:
+            report = self.backtest(self.predictor("pretrain_finetune", history))
+            plain = self.plain()
+        finally:
+            self.rows = saved
+        self.assertTrue(all(p == 0.0 for curve in plain.forecast for p in curve))
+        self.assertTrue(any(p > 0.0 for curve in report.forecast for p in curve))
+
+    def test_a_source_label_not_yet_public_is_refused(self):
+        history = self.history(end=date(2026, 6, 30))
+        for variant in ml.PRESSURE_TRANSFER_VARIANTS:
+            with self.assertRaises(LookAheadError):
+                self.backtest(self.predictor(variant, history))
+
+    def test_a_history_read_at_another_horizon_is_refused(self):
+        history = self.history(horizon=2)
+        with self.assertRaisesRegex(ValueError, "horizon"):
+            self.backtest(self.predictor("pooled", history))
+
+    def test_a_threshold_without_a_source_threshold_is_refused(self):
+        history = self.history()
+        with self.assertRaisesRegex(ValueError, "source threshold"):
+            self.backtest(self.predictor("pooled", history, source_thresholds={5.0: 2.0}))
+
+    def test_an_unknown_variant_or_weight_is_refused(self):
+        history = self.history()
+        with self.assertRaisesRegex(ValueError, "variant"):
+            self.predictor("both", history)
+        with self.assertRaisesRegex(ValueError, "weight"):
+            self.predictor("pooled", history, source_weight=0.0)
+
+
 class RecalibrationPartsTests(unittest.TestCase):
     """`cross_conformal_parts` and `law_from_band`: CV+ taken apart, and put back (#116).
 
