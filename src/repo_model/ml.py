@@ -6313,6 +6313,7 @@ def pressure_risk_date_variant_exceedance(
     minimum_history: int = 20,
     every_day: bool = False,
     early_prior: bool = False,
+    component_inputs: Sequence[str] = EVERY_DAY_COMPONENT_INPUTS,
 ) -> ExceedancePredictor:
     """The risk-date model of #428 with the two changes of #506, each off by default.
 
@@ -6326,6 +6327,10 @@ def pressure_risk_date_variant_exceedance(
     all public is left at 0. The component's inputs are read through the same information rule and
     both of its guards, so `features` handed to the backtest must contain them.
 
+    `component_inputs` (#579): the component's inputs, `EVERY_DAY_COMPONENT_INPUTS` by default, which is the
+    component of #506 exactly. A measurement may name one more; it changes the component only, never the
+    risk-date model.
+
     `early_prior`: on a refit whose risk-date training window holds fewer than
     `EARLY_FIT_MINIMUM_PAIRS` pairs, the risk-date forecast is the day-type prior instead of the
     estimator: the training rate of `spread > tau` among the window's pairs of the same day type
@@ -6338,7 +6343,7 @@ def pressure_risk_date_variant_exceedance(
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
     design = _RiskDateDesign(features, declaration)
-    component = _PressureDesign(EVERY_DAY_COMPONENT_INPUTS, declaration) if every_day else None
+    component = _PressureDesign(component_inputs, declaration) if every_day else None
     type_columns = [design.names.index(name) for name in _PRESSURE_DAY_TYPES]
     cache: dict = {}
     component_cache: dict = {}
