@@ -122,6 +122,15 @@ def all_rows() -> List[str]:
     return variant_names() + ablation_names()
 
 
+def paired_with_model(name: str) -> List[str]:
+    """The combined row an ablation is paired against: an ablation or an ungated variant against the gated model of its parent."""
+
+    parent = name.split("+")[0]
+    if name in ablation_names() or name == row_name(parent, gate=False):
+        return [row_name(parent)]
+    return []
+
+
 # -- the declaration --------------------------------------------------------------------------------------
 
 
@@ -633,10 +642,9 @@ def compare_command(args) -> int:
                 dim: [grids[first].groups[dim][at_first[d]] for d in days]
                 for dim in dict.fromkeys(declaration.groupings + ("regime",))
             }
-            full = row_name(PARENTS[0])
             for n in rows_names:
                 result["paired"][n] = {}
-                references = pair_against + controls + ([full] if n in ablation_names() else [])
+                references = pair_against + controls + paired_with_model(n)
                 for ref in references:
                     result["paired"][n][ref] = {"brier": {}, "recall": {}}
                     for h in horizons:

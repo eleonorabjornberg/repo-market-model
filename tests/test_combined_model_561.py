@@ -210,5 +210,17 @@ class SummaryTests(unittest.TestCase):
         self.assertIn("yes / no / no", text)
 
 
+class PairingTests(unittest.TestCase):
+    def test_an_ablation_and_an_ungated_variant_are_paired_with_the_gated_model_of_their_parent(self):
+        for name in SCRIPT.ablation_names():
+            self.assertEqual(SCRIPT.paired_with_model(name), ["risk_gbm+combined"])
+        self.assertEqual(SCRIPT.paired_with_model("risk_gbm+combined_nogate"), ["risk_gbm+combined"])
+        self.assertEqual(SCRIPT.paired_with_model("risk_logistic+combined_nogate"), ["risk_logistic+combined"])
+
+    def test_a_gated_variant_is_paired_with_no_model_of_its_own(self):
+        self.assertEqual(SCRIPT.paired_with_model("risk_gbm+combined"), [])
+        self.assertEqual(SCRIPT.paired_with_model("risk_logistic+combined"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

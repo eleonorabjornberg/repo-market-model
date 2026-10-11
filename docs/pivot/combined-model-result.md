@@ -156,10 +156,12 @@ Each block dropped in turn from `risk_gbm+combined` (the gated model under `risk
 | factor (`_no_factor`) | 10 / 1.09 | +0.0000 [-0.0002, +0.0002] / +0.0003 [-0.0002, +0.0009] / +0.0001 [-0.0000, +0.0003] | +0.0000 [+0.0000, +0.0000] |
 | structural terms (`_no_structural`) | 11 / 1.06 | -0.0002 [-0.0027, +0.0022] / +0.0012 [-0.0017, +0.0047] / +0.0003 [-0.0031, +0.0040] | +0.0385 [+0.0000, +0.1154] |
 | projected distance (`_no_projected`) | 10 / 1.07 | +0.0006 [-0.0001, +0.0014] / -0.0007 [-0.0019, +0.0002] / -0.0000 [-0.0015, +0.0012] | +0.0000 [+0.0000, +0.0000] |
-| gate (`risk_gbm+combined_nogate`) | 13 / 1.74 | not paired; pooled Brier 0.0505 / 0.0577 / 0.0628 without the gate, 0.0601 / 0.0661 / 0.0644 with it | 13 of 26 flagged, against 10 |
+| gate (`risk_gbm+combined_nogate`) | 13 / 1.74 | +0.0095 [+0.0006, +0.0193] / +0.0084 [-0.0020, +0.0204] / +0.0017 [-0.0076, +0.0126] | +0.1154 [+0.0000, +0.2258] |
 
-Under the gate, none of the three data blocks changes the Brier score beyond its interval or the recall by an onset in either direction beyond one
-(the structural block's removal flags one more onset). **The gate is the only element that moves the result, and it moves it against the recall.**
+Under the gate, none of the three data blocks changes the Brier score beyond its interval or the recall by more than one onset (the structural
+block's removal flags one more). **The gate is the only element that moves the result.** Under `risk_gbm`, removing it raises recall by 0.1154 (three onsets;
+interval [0.0000, 0.2258]) and improves Brier at h = 1 beyond its interval, at the price of worst weighted false alarms of 1.74 per onset
+against 1.07: under `risk_gbm` the gate buys false alarms with recall, and is the difference between a row that passes two tiers and one that passes none.
 One reading, not tested here, is that the spread, which every version reads, carries most of the signal at these leads. This does not say the
 blocks are useless, only that on these days, with these 26 onsets, nothing separates them under the gate.
 
@@ -172,6 +174,7 @@ blocks are useless, only that on these days, with these 26 onsets, nothing separ
   version of the columns built under the per-release reading is not scored.
 * The calibration is Platt only (declared); isotonic is not scored. The gate is #532's, with its parameters; no other gate or quantile is scored.
 * The mean-forecast-against-realised table pools five leads; the realised rate repeats each day at each lead, so its days are not independent.
-* The ablation drops one block at a time from the gated model; it does not drop two, and it is run under `risk_gbm` only.
+* The ablation drops one block at a time from the gated model; it does not drop two, and it is run under `risk_gbm` only (the gate is also
+  paired under `risk_logistic`, where removing it moves recall by -0.0385 [-0.1818, +0.0953], in `compare.md`).
 * Calibrated fits: Platt was applied on 154 of 179 fits at h = 1 to 4, and 152 of 177 at h = 5 (the rest had fewer than 250 out-of-sample pairs
   or 5 events, so the curve was the identity); the same counts hold for all four components.
