@@ -1,0 +1,40 @@
+{
+  "role": "candidate",
+  "track": "U2 (#537)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "dealer_treasury_position",
+    "fed_repo_days_since_positive",
+    "fed_repo_log_accepted",
+    "fed_repo_log_accepted_change",
+    "fed_repo_ops",
+    "fed_repo_rate_iorb_bps",
+    "fed_repo_submitted",
+    "tri_rate_filled",
+    "tri_rate_not_yet_published"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json",
+  "control": "risk_quantile_skewt_base",
+  "adds": [
+    "dealer_treasury_position",
+    "fed_repo_days_since_positive",
+    "fed_repo_log_accepted",
+    "fed_repo_log_accepted_change",
+    "fed_repo_ops",
+    "fed_repo_rate_iorb_bps",
+    "fed_repo_submitted",
+    "tri_rate_filled",
+    "tri_rate_not_yet_published"
+  ],
+  "inputs_note": "the passer risk_quantile_skewt_base with the dealer and segment group and the OFR tri-party rate (with its not-yet-published flag) added at every horizon; metadata/ofr_followup.json",
+  "input_scaling": "minmax: each column rescaled to [0, 1] on the training pairs; metadata/ofr_followup.json"
+}

@@ -1,0 +1,20 @@
+{
+  "role": "candidate",
+  "track": "U2 (#537)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; severity of the spread as a skew-t law from quantile regressions; metadata/risk_date_severity.json",
+  "control": "risk_quantile_skewt_base",
+  "input_scaling": "minmax: each column rescaled to [0, 1] on the training pairs; metadata/ofr_followup.json",
+  "inputs_note": "the passer risk_quantile_skewt_base refitted with the minmax input scaling, the control for the scaling alone; metadata/ofr_followup.json"
+}
