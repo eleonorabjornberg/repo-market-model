@@ -1,0 +1,31 @@
+{
+  "role": "candidate",
+  "track": "L (#543)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps",
+    "sofr_p1",
+    "sofr_p25",
+    "sofr_p75",
+    "sofr_p99",
+    "tgcr",
+    "bgcr",
+    "effr",
+    "iorb"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: the parent's risk-date forecast, unchanged, on a risk date; on any other day the latent funding-stress factor model (latent_factor_resid); metadata/latent_factor.json",
+  "parent": "risk_gbm"
+}
