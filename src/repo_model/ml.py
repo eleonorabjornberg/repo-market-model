@@ -602,6 +602,16 @@ __all__ = [
     "PRESSURE_DISTRIBUTION_SELECTION",
     "pressure_qrf_exceedance",
     "pressure_natural_gradient_exceedance",
+    "LATENT_FACTOR_SETTINGS",
+    "LATENT_FACTOR_COLUMNS",
+    "LATENT_FACTOR_SERIES",
+    "LATENT_FACTOR_ANCHOR",
+    "FittedLatentFactor",
+    "latent_factor_observation",
+    "fit_latent_factor",
+    "filter_latent_factor",
+    "latent_factor_forecast",
+    "latent_factor_exceedance",
     "MARKOV_SWITCHING_SETTINGS",
     "FittedMarkovSwitching",
     "fit_markov_switching",
@@ -8661,6 +8671,451 @@ def markov_switching_exceedance(
             read,
             ml_libraries=_library_versions(),
             model_settings=MappingProxyType(settings),
+            history_ends=tuple(history[-1].date for history in histories),
+        )
+
+    return fit_predict
+
+
+# -- a latent funding-stress factor (#543, a model variant under #374) ----------------------------
+#
+# One hidden factor drives the co-movement of nine money-market series (the SOFR 1st, 25th, 75th
+# and 99th percentiles, TGCR, BGCR and EFFR above IORB, the SOFR 99th-minus-1st dispersion, and the
+# log of ON RRP take-up). The factor is an AR(1) with unit innovation variance (the scale
+# identification); each series loads on it with its own mean, loading and noise. Fitted by EM
+# (Kalman smoother, scalar state) on each refit block's training frame, then *forward-filtered*
+# through each forecast's own as-of history: the filter never smooths, and a series missing on a day
+# informs nothing that day -- it is neither filled nor carried. The factor is mapped to the spread by
+# an OLS of the spread on the filtered factor over the training days, and the probability of a
+# pressure day `h` panel days ahead is the tail of the carried factor above the level that mapping
+# puts at the threshold.
+
+#: What the fit is built with. Declared in `metadata/latent_factor.json` before any score; a test pins
+#: the two together.
+LATENT_FACTOR_SETTINGS = MappingProxyType(
+    {
+        "innovation_variance": 1.0,
+        "max_iterations": 100,
+        "tolerance": 1e-6,
+        "noise_variance_floor": 0.01,
+        "persistence_ceiling": 0.995,
+        "initial_loading": 0.7,
+        "initial_noise_variance": 0.5,
+        "initial_persistence": 0.9,
+        "minimum_rows": 20,
+        "minimum_observed_per_series": 10,
+        "minimum_mapping_days": 20,
+        "mapping_slope_floor_bp": 1e-9,
+    }
+)
+
+#: The panel columns the series are built from (percent, except `on_rrp` in USD billions).
+LATENT_FACTOR_COLUMNS = (
+    "sofr_p1", "sofr_p25", "sofr_p75", "sofr_p99", "tgcr", "bgcr", "effr", "iorb", "on_rrp",
+)
+
+#: The series, in the order of an observation: spreads over IORB in basis points, the SOFR dispersion
+#: in basis points, and the log of one plus ON RRP take-up in USD billions.
+LATENT_FACTOR_SERIES = (
+    "sofr_p1_iorb_bps", "sofr_p25_iorb_bps", "sofr_p75_iorb_bps", "sofr_p99_iorb_bps",
+    "tgcr_iorb_bps", "bgcr_iorb_bps", "effr_iorb_bps", "sofr_p99_minus_p1_bps", "log1p_on_rrp_bn",
+)
+
+#: The series whose loading is oriented positive (the SOFR 99th percentile above IORB: higher is
+#: more stress). The factor's sign is otherwise free; this fixes it, the same way for every refit.
+LATENT_FACTOR_ANCHOR = 3
+
+_LATENT_FACTOR_OVER_IORB = ("sofr_p1", "sofr_p25", "sofr_p75", "sofr_p99", "tgcr", "bgcr", "effr")
+
+
+class FittedLatentFactor(NamedTuple):
+    """A one-factor dynamic model: standardised series, a loading and a noise variance each."""
+
+    #: the training mean and standard deviation each series was standardised with
+    means: Tuple[float, ...]
+    scales: Tuple[float, ...]
+    #: per standardised series: intercept-free loading on the factor, and idiosyncratic variance
+    loadings: Tuple[float, ...]
+    noise_variances: Tuple[float, ...]
+    #: the AR(1) coefficient of the factor (innovation variance fixed at 1)
+    persistence: float
+    log_likelihood: float
+    iterations: int
+
+
+def latent_factor_observation(row: DailyObservation) -> Tuple[Optional[float], ...]:
+    """The nine series on one row, `None` where a constituent is a hole.
+
+    Every constituent is read off the one row, so the as-of rule's per-field reads stay per field and a
+    derived value never joins two days. An absent column is `MissingRegressorError`, as for any model.
+    """
+
+    values = {name: _raw_regressor(row, name, "latent_factor", role="a series of the latent factor")
+              for name in LATENT_FACTOR_COLUMNS}
+    iorb = values["iorb"]
+    out: List[Optional[float]] = []
+    for name in _LATENT_FACTOR_OVER_IORB:
+        value = values[name]
+        out.append(None if value is None or iorb is None else (value - iorb) * 100.0)
+    p99, p1 = values["sofr_p99"], values["sofr_p1"]
+    out.append(None if p99 is None or p1 is None else (p99 - p1) * 100.0)
+    take_up = values["on_rrp"]
+    out.append(None if take_up is None else math.log1p(max(take_up, 0.0)))
+    return tuple(out)
+
+
+def _latent_matrix(observations: Sequence[Sequence[Optional[float]]], width: int) -> Any:
+    import numpy
+
+    if not len(observations):
+        raise ValueError("a latent-factor model needs at least one row")
+    if any(len(row) != width for row in observations):
+        raise ValueError(f"every row of a latent-factor model must carry {width} series")
+    return numpy.array(
+        [[numpy.nan if v is None else float(v) for v in row] for row in observations], dtype=float
+    )
+
+
+def _latent_forward(z: Any, mask: Any, intercepts: Any, loadings: Any, noise: Any, phi: float) -> Tuple[Any, ...]:
+    """The scalar-state Kalman filter on standardised series: predicted and filtered moments, and the likelihood.
+
+    Information form: with a diagonal noise, the update of a scalar state from the series seen on a day
+    is its precision `A` and its precision-weighted residual `B`; an unseen series adds nothing.
+    """
+
+    import numpy
+
+    clean = numpy.where(mask, z - intercepts[None, :], 0.0)
+    weight = loadings / noise
+    precision = (mask * (loadings ** 2 / noise)[None, :]).sum(axis=1).tolist()
+    pull = (clean @ weight).tolist()
+    length = len(precision)
+    predicted_mean, predicted_var = [0.0] * length, [0.0] * length
+    mean, var = [0.0] * length, [0.0] * length
+    for t in range(length):
+        if t:
+            a = phi * mean[t - 1]
+            p = phi * phi * var[t - 1] + 1.0
+        else:
+            a = 0.0
+            p = 1.0 / (1.0 - phi * phi)
+        predicted_mean[t], predicted_var[t] = a, p
+        v = 1.0 / (1.0 / p + precision[t])
+        var[t] = v
+        mean[t] = v * (a / p + pull[t])
+    a = numpy.array(predicted_mean)
+    p = numpy.array(predicted_var)
+    big_a = numpy.array(precision)
+    resid = numpy.where(mask, clean - loadings[None, :] * a[:, None], 0.0)
+    s_term = (resid ** 2 / noise[None, :]).sum(axis=1)
+    c_term = (resid * weight[None, :]).sum(axis=1)
+    gain = 1.0 + p * big_a
+    quad = s_term - p * c_term ** 2 / gain
+    logdet = (mask * numpy.log(noise)[None, :]).sum(axis=1) + numpy.log(gain)
+    seen = mask.sum(axis=1)
+    likelihood = float(-0.5 * (seen * math.log(2.0 * math.pi) + logdet + quad).sum())
+    return predicted_mean, predicted_var, mean, var, likelihood
+
+
+def fit_latent_factor(
+    observations: Sequence[Sequence[Optional[float]]], max_iterations: Optional[int] = None
+) -> FittedLatentFactor:
+    """EM for a one-factor AR(1) dynamic factor model with missing observations, deterministic.
+
+    Args:
+        observations: one row per day, one value (or `None`) per series.
+        max_iterations: overrides `LATENT_FACTOR_SETTINGS["max_iterations"]`.
+
+    Raises:
+        ValueError: on too few rows, a series with too few observations, rows of unequal length, or
+            an anchor index outside the rows.
+    """
+
+    import numpy
+
+    settings = LATENT_FACTOR_SETTINGS
+    if not len(observations):
+        raise ValueError("a latent-factor model needs at least one row")
+    width = len(observations[0])
+    if width <= LATENT_FACTOR_ANCHOR:
+        raise ValueError(f"a latent-factor model needs more than {LATENT_FACTOR_ANCHOR} series, got {width}")
+    y = _latent_matrix(observations, width)
+    if len(y) < settings["minimum_rows"]:
+        raise ValueError(f"{len(y)} rows cannot fit a latent factor; at least {settings['minimum_rows']} are needed")
+    mask = ~numpy.isnan(y)
+    counts = mask.sum(axis=0)
+    if int(counts.min()) < settings["minimum_observed_per_series"]:
+        raise ValueError(
+            f"a series has {int(counts.min())} observations; at least "
+            f"{settings['minimum_observed_per_series']} are needed"
+        )
+    clean = numpy.where(mask, y, 0.0)
+    means = clean.sum(axis=0) / counts
+    scales = numpy.sqrt((numpy.where(mask, y - means[None, :], 0.0) ** 2).sum(axis=0) / counts)
+    scales = numpy.maximum(scales, 1e-6)
+    z = numpy.where(mask, (y - means[None, :]) / scales[None, :], 0.0)
+    length = len(z)
+    floor = float(settings["noise_variance_floor"])
+    ceiling = float(settings["persistence_ceiling"])
+    intercepts = numpy.zeros(width)
+    loadings = numpy.full(width, float(settings["initial_loading"]))
+    noise = numpy.full(width, float(settings["initial_noise_variance"]))
+    phi = float(settings["initial_persistence"])
+    iterations = 0
+    previous = -math.inf
+    limit = int(settings["max_iterations"] if max_iterations is None else max_iterations)
+    for iterations in range(1, limit + 1):
+        a, p, m, v, likelihood = _latent_forward(z, mask, intercepts, loadings, noise, phi)
+        # Rauch-Tung-Striebel smoother, scalar state
+        smooth_mean, smooth_var = m[:], v[:]
+        lag_gain = [0.0] * length
+        for t in range(length - 2, -1, -1):
+            j = v[t] * phi / p[t + 1]
+            lag_gain[t] = j
+            smooth_mean[t] = m[t] + j * (smooth_mean[t + 1] - a[t + 1])
+            smooth_var[t] = v[t] + j * j * (smooth_var[t + 1] - p[t + 1])
+        ef = numpy.array(smooth_mean)
+        ef2 = numpy.array(smooth_var) + ef ** 2
+        cross = numpy.array([lag_gain[t - 1] * smooth_var[t] + smooth_mean[t] * smooth_mean[t - 1] for t in range(1, length)])
+        phi = float(min(ceiling, max(-ceiling, cross.sum() / ef2[:-1].sum())))
+        n = counts.astype(float)
+        s1 = (mask * ef[:, None]).sum(axis=0)
+        s2 = (mask * ef2[:, None]).sum(axis=0)
+        sz = (mask * z).sum(axis=0)
+        szf = (mask * z * ef[:, None]).sum(axis=0)
+        szz = (mask * z * z).sum(axis=0)
+        det = n * s2 - s1 * s1
+        intercepts = (s2 * sz - s1 * szf) / det
+        loadings = (n * szf - s1 * sz) / det
+        resid = szz - 2 * intercepts * sz - 2 * loadings * szf + n * intercepts ** 2 + 2 * intercepts * loadings * s1 + loadings ** 2 * s2
+        noise = numpy.maximum(resid / n, floor)
+        # Parameter expansion: estimate the innovation variance freely, then fold it into the loadings so
+        # it is 1 again. The observation law is unchanged by the rescaling; EM along the scale direction,
+        # which the fixed unit variance leaves nearly flat, converges in a few iterations instead of many.
+        innovation = float(
+            (ef2[1:] - 2.0 * phi * cross + phi * phi * ef2[:-1]).sum() / (length - 1)
+        )
+        loadings = loadings * math.sqrt(max(innovation, 1e-12))
+        if abs(likelihood - previous) < float(settings["tolerance"]) * max(1.0, abs(likelihood)):
+            break
+        previous = likelihood
+    if loadings[LATENT_FACTOR_ANCHOR] < 0:
+        loadings = -loadings
+    final = _latent_forward(z, mask, intercepts, loadings, noise, phi)[4]
+    # the series means move by the fitted intercepts, so the model is stated in raw-mean terms
+    return FittedLatentFactor(
+        means=tuple(float(x) for x in means + intercepts * scales),
+        scales=tuple(float(x) for x in scales),
+        loadings=tuple(float(x) for x in loadings),
+        noise_variances=tuple(float(x) for x in noise),
+        persistence=phi,
+        log_likelihood=final,
+        iterations=iterations,
+    )
+
+
+def filter_latent_factor(
+    fitted: FittedLatentFactor, observations: Sequence[Sequence[Optional[float]]]
+) -> Tuple[Tuple[float, float], ...]:
+    """The filtered mean and variance of the factor at every row: forward pass only.
+
+    Row t reads rows 0..t and nothing after it, so this is what a forecaster at row t could have
+    computed. A series absent on a row informs nothing on it.
+    """
+
+    import numpy
+
+    width = len(fitted.loadings)
+    y = _latent_matrix(observations, width)
+    mask = ~numpy.isnan(y)
+    means, scales = numpy.array(fitted.means), numpy.array(fitted.scales)
+    z = numpy.where(mask, (y - means[None, :]) / scales[None, :], 0.0)
+    _, _, mean, var, _ = _latent_forward(
+        z, mask, numpy.zeros(width), numpy.array(fitted.loadings), numpy.array(fitted.noise_variances),
+        fitted.persistence,
+    )
+    return tuple(zip(mean, var))
+
+
+def latent_factor_forecast(
+    fitted: FittedLatentFactor, mean: float, variance: float, steps: int
+) -> Tuple[float, float]:
+    """The factor's mean and variance `steps` rows after a filtered one."""
+
+    if steps < 0:
+        raise ValueError(f"steps must not be negative, got {steps}")
+    phi = fitted.persistence
+    decay = phi ** (2 * steps)
+    return phi ** steps * mean, decay * variance + (1.0 - decay) / (1.0 - phi * phi)
+
+
+def _normal_tail(location: float, scale: float, point: float) -> float:
+    """`P(X > point)` for `X ~ N(location, scale^2)`."""
+
+    return 0.5 * math.erfc((point - location) / (scale * math.sqrt(2.0)))
+
+
+def latent_factor_exceedance(
+    minimum_history: int = 20, residual: bool = False, link: str = "gaussian"
+) -> ExceedancePredictor:
+    """Pressure probabilities from a latent funding-stress factor (#543).
+
+    Fitted on each refit block's training frame, filtered forward through each forecast's own as-of
+    history, carried `information.horizon` rows ahead. How the carried factor becomes a probability of
+    `spread > tau` (the spread read on whole basis points, so the point is `tau + 1/2`) is the `link`:
+
+    * `"gaussian"`: the spread is mapped to the filtered factor by an OLS over the training days, and
+      the probability is the tail of the carried factor above the level the mapping puts at the point.
+      With `residual`, the mapping's residual variance is added to the spread's predictive variance. A
+      mapping that does not rise with the factor (slope at or below `mapping_slope_floor_bp`) gives the
+      training rate of `spread > tau` instead, and the fit says so (`fallback`).
+    * `"logit"`: a ridge logistic (`PRESSURE_LOGISTIC_SETTINGS`) of `spread > tau` on the carried factor
+      mean, fitted on the training days whose factor was carried `information.horizon` rows to a label
+      inside the frame, one fit per threshold. Calibration is by construction, not by the factor's law.
+
+    Raises:
+        ValueError: on a short frame, a call without the as-of rule or without each row's history, an
+            unknown link, `residual` with the logistic link, or too few training days with both a
+            filtered factor and a spread.
+        LookAheadError: if a history runs past its forecast's anchor.
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if link not in ("gaussian", "logit"):
+        raise ValueError(f"the link is 'gaussian' or 'logit', got {link!r}")
+    if residual and link != "gaussian":
+        raise ValueError("the mapping residual belongs to the gaussian link")
+    settings = LATENT_FACTOR_SETTINGS
+    cache: dict = {}
+
+    def observed(row: DailyObservation) -> Tuple[Optional[float], ...]:
+        # Histories are mostly the same row objects; the cache keeps the row alive so its id is not reused.
+        hit = cache.get(id(row))
+        if hit is None or hit[0] is not row:
+            hit = (row, latent_factor_observation(row))
+            cache[id(row)] = hit
+        return hit[1]
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None or histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "a latent-factor forecast is filtered through its own as-of history; "
+                "it was called without the rule or without one history per feature row"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a latent-factor model needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        training = [observed(row) for row in train_rows]
+        fitted = fit_latent_factor(training)
+        filtered = filter_latent_factor(fitted, training)
+        spreads = [_observed_spread(row, "latent_factor") for row in train_rows]
+        pairs = [(mean, spread) for (mean, _var), spread in zip(filtered, spreads) if spread is not None]
+        if len(pairs) < settings["minimum_mapping_days"]:
+            raise ValueError(
+                f"{len(pairs)} training days carry both a filtered factor and a spread; "
+                f"at least {settings['minimum_mapping_days']} are needed to map the factor to the spread"
+            )
+        count = len(pairs)
+        mean_f = sum(f for f, _ in pairs) / count
+        mean_s = sum(s for _, s in pairs) / count
+        var_f = sum((f - mean_f) ** 2 for f, _ in pairs)
+        slope = sum((f - mean_f) * (s - mean_s) for f, s in pairs) / var_f if var_f > 0.0 else 0.0
+        intercept = mean_s - slope * mean_f
+        residual_var = sum((s - intercept - slope * f) ** 2 for f, s in pairs) / max(count - 2, 1)
+        fallback = link == "gaussian" and not slope > float(settings["mapping_slope_floor_bp"])
+        rates = [sum(1 for _, s in pairs if exceeds_bp(s, float(tau))) / count for tau in taus]
+        carried: List[Optional[Tuple[float, float, float]]] = []
+        for feature_row, history in zip(feature_rows, histories):
+            if not history:
+                raise ValueError("a forecast's as-of history is empty")
+            if history[-1].date > feature_row.date:
+                raise LookAheadError(
+                    f"the filter for the forecast anchored {feature_row.date} was handed "
+                    f"history through {history[-1].date}"
+                )
+            if fallback:
+                carried.append(None)
+                continue
+            now_mean, now_var = filter_latent_factor(fitted, [observed(row) for row in history])[-1]
+            ahead_mean, ahead_var = latent_factor_forecast(fitted, now_mean, now_var, information.horizon)
+            carried.append((now_mean, ahead_mean, ahead_var))
+        logit_pairs = 0
+        if link == "gaussian":
+            curves = []
+            for item in carried:
+                if item is None:
+                    curves.append(tuple(rates))
+                    continue
+                _now, ahead_mean, ahead_var = item
+                location = intercept + slope * ahead_mean
+                scale = math.sqrt(slope * slope * ahead_var + (residual_var if residual else 0.0))
+                curves.append(
+                    tuple(min(1.0, max(0.0, _normal_tail(location, scale, float(tau) + 0.5))) for tau in taus)
+                )
+        else:
+            steps = information.horizon
+            carry = fitted.persistence ** steps
+            xs, labelled = [], []
+            for k in range(len(train_rows) - steps):
+                spread = spreads[k + steps]
+                if spread is not None:
+                    xs.append([carry * filtered[k][0]])
+                    labelled.append(spread)
+            logit_pairs = len(xs)
+            if logit_pairs < settings["minimum_mapping_days"]:
+                raise ValueError(
+                    f"{logit_pairs} training days carry a factor to a spread {steps} rows on; "
+                    f"at least {settings['minimum_mapping_days']} are needed"
+                )
+            served = [[item[1]] for item in carried]
+            columns = []
+            for tau in taus:
+                labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in labelled]
+                columns.append(
+                    [float(labels[0])] * len(served)
+                    if len(set(labels)) < 2
+                    else _fit_classifier("logistic", xs, labels, served)
+                )
+            curves = []
+            for day in range(len(feature_rows)):
+                curve: List[float] = []
+                for column in columns:
+                    value = min(1.0, max(0.0, column[day]))
+                    curve.append(value if not curve else min(curve[-1], value))
+                curves.append(tuple(curve))
+        factor_means = [None if item is None else item[0] for item in carried]
+        read = ("spread_bps",) + LATENT_FACTOR_COLUMNS
+        report = dict(settings)
+        report.update(
+            {
+                "link": link,
+                "residual": bool(residual),
+                "fallback": bool(fallback),
+                "persistence": fitted.persistence,
+                "loadings": list(fitted.loadings),
+                "mapping_intercept_bp": intercept,
+                "mapping_slope_bp": slope,
+                "mapping_residual_variance": residual_var,
+                "logit_training_pairs": logit_pairs,
+                "filtered_factor": factor_means,
+                "em_iterations": fitted.iterations,
+                "log_likelihood": fitted.log_likelihood,
+            }
+        )
+        return ExceedanceCurves(
+            tuple(curves),
+            read,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(report),
             history_ends=tuple(history[-1].date for history in histories),
         )
 
