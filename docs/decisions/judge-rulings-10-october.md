@@ -43,7 +43,7 @@ dropped.
 
 ### 3. Regime scoring
 
-* **Tier 3 tests calibration only in regimes with at least 20 pressure days** (`+5 bp`, in the scored window, at the
+* **Tier 3 checks calibration only in regimes with at least 20 pressure days** (`+5 bp`, in the scored window, at the
   horizon scored). It tested every regime with at least one before (ruling of 8 October 2026, #407). A regime with fewer
   is reported, with its interval and the number of pressure days, and does not decide tier 3. The number is
   `tiers.no_crying_wolf.calibration_min_pressure_days`.
