@@ -1,0 +1,105 @@
+{
+  "status": "declared by the pull request that closes #556 before any score was computed; a measurement, not a record. Nothing here is published: the settlement and H.4.1 declarations it reads are off in every published declaration, no 2026 day is scored, and the live record and pin do not move. The rulings are Eleonora's of 10 October 2026, relayed by the orchestrating session on #541",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parents": {
+    "risk_gbm": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_gbm_base": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_logistic": {
+      "kind": "logistic",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_logistic_base": {
+      "kind": "logistic",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_quantile_skewt_base": {
+      "kind": "quantile_skewt",
+      "inputs": [
+        "base"
+      ]
+    }
+  },
+  "variants": {
+    "+hurdle_platt": {
+      "inputs": [
+        "spread_bps",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps"
+      ],
+      "calibration": "platt",
+      "reading": "the hazard on spread_bps, sofr_p75_iorb_bps and sofr_p99_iorb_bps, mapped through a Platt curve fitted walk-forward"
+    },
+    "+hurdle_isotonic": {
+      "inputs": [
+        "spread_bps",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps"
+      ],
+      "calibration": "isotonic",
+      "reading": "the same hazard, mapped through an isotonic curve fitted walk-forward"
+    },
+    "+hurdle_state_platt": {
+      "inputs": [
+        "spread_bps",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps",
+        "reserve_scarcity_state"
+      ],
+      "calibration": "platt",
+      "reading": "the hazard on those three and the as-of reserve scarcity state, mapped through a Platt curve fitted walk-forward"
+    },
+    "+hurdle_state_isotonic": {
+      "inputs": [
+        "spread_bps",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps",
+        "reserve_scarcity_state"
+      ],
+      "calibration": "isotonic",
+      "reading": "the same four-input hazard, mapped through an isotonic curve fitted walk-forward"
+    }
+  },
+  "declaration_of_the_variants": "metadata/risk_date_hurdle.json (unchanged: the hazard, its inputs and the walk-forward calibration), which reads metadata/risk_date_severity.json for the parents (unchanged)",
+  "arms": {
+    "published": "the published registry and panel columns: re-run here by the same code as the other arms, because #539's evidence keeps the pairing tables and not the forecasts; the control of every pairing",
+    "settle": "metadata/settlement_announcement_dating.json (#541): the settlement columns are those known h panel days ahead from the auction announcements and the registry declares them public then; the settlement columns stay in the parent's features at every horizon, so the coupon clause of the risk-date rule applies at h >= 2",
+    "h41": "metadata/h41_release_dating.json (#541): reserve_balances, tga and the reserve read of reserve_scarcity_state are dated by the print of their own Wednesday's release",
+    "both": "both of the above"
+  },
+  "what_an_arm_changes": "the parent's forecast on a risk date (its inputs: settlements under settle and both, reserves under h41 and both), the set of risk days (the coupon clause at h >= 2 under settle and both; a coupon-settlement day moves from the hazard to the parent), and the reserve scarcity state, the hazard's input in the two state variants (h41 and both). The hazard of the two plain variants reads the spread and SOFR's percentiles, which neither dating moves. compare reports the days on which each arm's forecast differs from the published row, split by whether the day is a risk day under either reading",
+  "judge": "the judge as declared (metadata/pressure_judge.json), unchanged, under the flat and the weighted rule; the benchmarks and the evaluation days, tiers and onsets do not depend on an arm",
+  "pairing": "each arm's variant against the same variant under the published arm, with 90% stationary-bootstrap intervals (the judge's bootstrap), split by regime and pressure-day type and by year; the Brier score and the log loss (probability floor 1e-6)",
+  "published": "nothing; no rule, threshold, definition or availability time changes in a published declaration"
+}
