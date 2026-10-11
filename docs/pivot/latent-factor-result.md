@@ -1,5 +1,7 @@
 # A latent funding-stress factor (#543, of #374)
 
+> **Correction of 11 October 2026 (#578).** The tables and prose below are the first scoring of 11 October. The model was re-scored after the factor was carried one row short of the scored day (#575), with the shared judge table now printing both false-alarm counts (#577). The re-score is in `docs/pivot/evidence/latent-factor/`; the figures below are not updated. The before-and-after figures are in [`audit-fixes-578-result.md`](audit-fixes-578-result.md).
+
 A scratch measurement under the pressure-day judge. It writes nothing into `docs/runs/`, publishes nothing, moves no published
 figure, scores no day of 2026 and reads no day after 2025-12-31 (`docs/decisions/lockbox.md`; the scripts refuse a later panel).
 No rule, threshold, onset definition, cut-off rule or availability time changes. The model was declared in

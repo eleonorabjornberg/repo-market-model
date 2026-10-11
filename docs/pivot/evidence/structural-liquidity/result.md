@@ -1,12 +1,14 @@
 # The structural liquidity model (#542)
 
+> **Correction of 11 October 2026 (#578).** This page was re-scored after the audit's construction fixes: net settlement subtracted the coupon maturities twice when Notes and Bonds settled together (#566), and at h = 1 the model read the decision day's settlement, not the scored day's (#568). Every figure below is the re-score; the first scoring of 11 October is in git history and in the before columns of the linked page. The before-and-after figures are in [`audit-fixes-578-result.md`](../../audit-fixes-578-result.md).
+
 # structural_liquidity
 
 ## Tier 1 under unweighted
 
 | row | (a) as declared | (b1) best horizon | (b2) pooled | (e) outside 2018-19 |
 |---|---|---|---|---|
-| structural_liquidity | 6 / 1.35 fail | fail | 6 / 2.04 fail | 0 / 0.44 fail |
+| structural_liquidity | 10 / 1.42 fail | fail | 10 / 2.42 fail | 0 / 0.33 fail |
 | risk_gbm | 13 / 1.35 pass | pass (h = 1) | 13 / 2.00 pass | 3 / 1.56 fail |
 | risk_gbm_base | 14 / 1.50 pass | pass (h = 1) | 14 / 2.04 fail | 4 / 2.00 fail |
 | risk_logistic | 14 / 1.85 pass | pass (h = 1) | 14 / 2.42 fail | 4 / 2.89 fail |
@@ -20,7 +22,7 @@
 
 | row | (a) as declared | (b1) best horizon | (b2) pooled | (e) outside 2018-19 |
 |---|---|---|---|---|
-| structural_liquidity | 7 / 0.89 fail | fail | 7 / 1.54 fail | 0 / 0.72 fail |
+| structural_liquidity | 11 / 1.00 fail | fail | 11 / 1.69 fail | 0 / 0.83 fail |
 | risk_gbm | 13 / 0.80 pass | pass (h = 1) | 13 / 1.48 pass | 3 / 1.61 fail |
 | risk_gbm_base | 14 / 0.97 pass | pass (h = 1) | 14 / 1.59 pass | 4 / 2.06 fail |
 | risk_logistic | 16 / 1.74 pass | pass (h = 1) | 16 / 2.55 fail | 6 / 4.39 fail |
@@ -34,18 +36,18 @@
 
 Table 1. Tiers at +5 bp, h = 1 to 5; 90% stationary-bootstrap intervals. The pass rule is tier 1 at lead >= 1, tier 3 at every lead and tier 5.
 
-| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset (limit 2) | tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes with pressure, h = 1 | tier 5: calibrated, beats clim. | pass | scarce regime alone (tiers 1 / 3 / 5) |
+| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset (limit 2), flat count / weighted count (tier 1 is decided on the one named) | tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes with pressure, h = 1 | tier 5: calibrated, beats clim. | pass | scarce regime alone (tiers 1 / 3 / 5) |
 |---|---|---|---|---|---|---|---|---|---|
-| calendar_climatology | 10 of 26 | 0.385 [0.208, 0.588] | 0.269 | 5.00 | 2.7 / 4.4 | 1 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
-| persistence_logistic | 7 of 26 | 0.269 [0.111, 0.444] | 0.231 | 3.42 | 0.5 / 0.0 | 2 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
-| ngboost_laplace | 15 of 26 | 0.577 [0.400, 0.759] | 0.231 | 2.54 | 0.2 / 0.0 | 2 of 4 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm | 13 of 26 | 0.500 [0.310, 0.667] | 0.115 | 1.35 | 1.2 / 0.3 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_gbm+structural | 10 of 26 | 0.385 [0.212, 0.563] | 0.154 | 1.62 | 0.2 / 0.0 | 3 of 4 | yes, yes | fail (tiers no / no / yes) | fail (no / no / no) |
-| risk_gbm_base | 14 of 26 | 0.538 [0.360, 0.719] | 0.154 | 1.50 | 0.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_logistic | 14 of 26 | 0.538 [0.350, 0.724] | 0.192 | 1.85 | 1.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_logistic_base | 13 of 26 | 0.500 [0.333, 0.680] | 0.192 | 1.77 | 0.7 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_quantile_skewt_base | 14 of 26 | 0.538 [0.360, 0.714] | 0.192 | 1.88 | 0.7 / 0.0 | 1 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| structural_liquidity | 6 of 26 | 0.231 [0.100, 0.379] | 0.115 | 1.35 | 0.0 / 0.0 | 3 of 4 | yes, yes | fail (tiers no / no / yes) | fail (no / no / no) |
+| calendar_climatology | 10 of 26 | 0.385 [0.208, 0.588] | 0.269 | 5.00 flat / 2.80 weighted (tier 1 on the flat count) | 2.7 / 4.4 | 1 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
+| persistence_logistic | 7 of 26 | 0.269 [0.111, 0.444] | 0.231 | 3.42 flat / 1.17 weighted (tier 1 on the flat count) | 0.5 / 0.0 | 2 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
+| ngboost_laplace | 15 of 26 | 0.577 [0.400, 0.759] | 0.231 | 2.54 flat / 1.03 weighted (tier 1 on the flat count) | 0.2 / 0.0 | 2 of 4 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm | 13 of 26 | 0.500 [0.310, 0.667] | 0.115 | 1.35 flat / 0.76 weighted (tier 1 on the flat count) | 1.2 / 0.3 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_gbm+structural | 10 of 26 | 0.385 [0.212, 0.563] | 0.192 | 2.08 flat / 0.86 weighted (tier 1 on the flat count) | 0.2 / 0.0 | 3 of 4 | yes, yes | fail (tiers no / no / yes) | fail (no / no / no) |
+| risk_gbm_base | 14 of 26 | 0.538 [0.360, 0.719] | 0.154 | 1.50 flat / 0.97 weighted (tier 1 on the flat count) | 0.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_logistic | 14 of 26 | 0.538 [0.350, 0.724] | 0.192 | 1.85 flat / 1.19 weighted (tier 1 on the flat count) | 1.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_logistic_base | 13 of 26 | 0.500 [0.333, 0.680] | 0.192 | 1.77 flat / 1.16 weighted (tier 1 on the flat count) | 0.7 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_quantile_skewt_base | 14 of 26 | 0.538 [0.360, 0.714] | 0.192 | 1.88 flat / 1.25 weighted (tier 1 on the flat count) | 0.7 / 0.0 | 1 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| structural_liquidity | 10 of 26 | 0.385 [0.217, 0.552] | 0.154 | 1.42 flat / 0.57 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 3 of 4 | yes, yes | fail (tiers no / no / yes) | fail (no / no / yes) |
 
 Table 2. Share of the pressure days flagged at h = 1 (+5 bp), by regime and pressure-day type; the number of pressure days in the group in brackets.
 
@@ -60,7 +62,7 @@ Table 2. Share of the pressure days flagged at h = 1 (+5 bp), by regime and pres
 | risk_logistic | 0.30 (102) | 0.25 (4) | – | 0.20 (5) | 0.34 (29) | 0.76 (17) | 0.15 (101) | 0.67 (9) | 0.69 (13) |
 | risk_logistic_base | 0.30 (102) | 0.25 (4) | – | 0.20 (5) | 0.38 (29) | 0.76 (17) | 0.16 (101) | 0.67 (9) | 0.69 (13) |
 | risk_quantile_skewt_base | 0.30 (102) | 0.25 (4) | – | 0.20 (5) | 0.38 (29) | 0.76 (17) | 0.16 (101) | 0.67 (9) | 0.69 (13) |
-| structural_liquidity | 0.32 (102) | 0.00 (4) | – | 0.00 (5) | 0.14 (29) | 0.41 (17) | 0.21 (101) | 0.22 (9) | 0.54 (13) |
+| structural_liquidity | 0.49 (102) | 0.00 (4) | – | 0.00 (5) | 0.14 (29) | 0.53 (17) | 0.33 (101) | 0.44 (9) | 0.62 (13) |
 
 Table 3. Brier difference against calendar climatology at h = 1 (+5 bp), by regime and pressure-day type (positive: better than climatology; 90% interval).
 
@@ -70,30 +72,30 @@ Table 3. Brier difference against calendar climatology at h = 1 (+5 bp), by regi
 | persistence_logistic | +0.0168 [-0.0027, +0.0376] | +0.0235 [+0.0133, +0.0333] | +0.0130 [+0.0114, +0.0148] | -0.0002 [-0.0064, +0.0045] | +0.0256 [+0.0003, +0.0575] | +0.0212 [+0.0029, +0.0434] | +0.0125 [+0.0072, +0.0187] | +0.0604 [-0.0440, +0.1631] | +0.0355 [+0.0130, +0.0568] |
 | ngboost_laplace | +0.0543 [+0.0271, +0.0844] | +0.0329 [+0.0235, +0.0419] | +0.0138 [+0.0121, +0.0157] | +0.0041 [+0.0006, +0.0072] | +0.0287 [+0.0113, +0.0503] | +0.0481 [+0.0291, +0.0671] | +0.0187 [+0.0123, +0.0262] | +0.1308 [+0.0495, +0.2125] | +0.0670 [+0.0493, +0.0861] |
 | risk_gbm | +0.0016 [-0.0200, +0.0242] | +0.0396 [+0.0307, +0.0483] | +0.0138 [+0.0120, +0.0155] | +0.0037 [-0.0002, +0.0067] | +0.0155 [-0.0024, +0.0394] | +0.0543 [+0.0303, +0.0787] | +0.0049 [-0.0002, +0.0099] | +0.1155 [+0.0314, +0.2020] | +0.0686 [+0.0412, +0.0953] |
-| risk_gbm+structural | +0.0359 [-0.0026, +0.0781] | +0.0284 [+0.0184, +0.0380] | +0.0132 [+0.0115, +0.0151] | +0.0023 [-0.0030, +0.0063] | +0.0288 [+0.0024, +0.0597] | +0.0579 [+0.0339, +0.0834] | +0.0124 [+0.0038, +0.0220] | +0.1155 [+0.0311, +0.1957] | +0.0686 [+0.0416, +0.0951] |
+| risk_gbm+structural | +0.0396 [+0.0046, +0.0778] | +0.0286 [+0.0173, +0.0391] | +0.0133 [+0.0116, +0.0152] | +0.0027 [-0.0023, +0.0064] | +0.0290 [+0.0031, +0.0593] | +0.0569 [+0.0330, +0.0829] | +0.0135 [+0.0056, +0.0225] | +0.1155 [+0.0311, +0.1957] | +0.0686 [+0.0416, +0.0951] |
 | risk_gbm_base | -0.0015 [-0.0206, +0.0159] | +0.0329 [+0.0223, +0.0434] | +0.0138 [+0.0121, +0.0156] | +0.0038 [+0.0001, +0.0070] | +0.0158 [+0.0016, +0.0330] | +0.0339 [+0.0115, +0.0566] | +0.0052 [+0.0001, +0.0097] | +0.1101 [+0.0294, +0.1928] | +0.0681 [+0.0463, +0.0927] |
 | risk_logistic | -0.0026 [-0.0240, +0.0179] | +0.0252 [+0.0095, +0.0381] | +0.0138 [+0.0120, +0.0157] | +0.0050 [+0.0008, +0.0096] | +0.0133 [+0.0003, +0.0294] | +0.0282 [+0.0011, +0.0563] | +0.0040 [-0.0012, +0.0088] | +0.0892 [+0.0158, +0.1596] | +0.0774 [+0.0463, +0.1124] |
 | risk_logistic_base | -0.0024 [-0.0224, +0.0166] | +0.0298 [+0.0202, +0.0383] | +0.0138 [+0.0120, +0.0157] | +0.0040 [+0.0003, +0.0070] | +0.0168 [+0.0040, +0.0338] | +0.0352 [+0.0096, +0.0600] | +0.0047 [-0.0004, +0.0092] | +0.0954 [+0.0396, +0.1520] | +0.0711 [+0.0381, +0.1107] |
 | risk_quantile_skewt_base | -0.0169 [-0.0413, +0.0085] | +0.0220 [+0.0121, +0.0313] | +0.0136 [+0.0119, +0.0156] | +0.0015 [-0.0048, +0.0055] | +0.0242 [+0.0051, +0.0465] | +0.0244 [-0.0130, +0.0627] | +0.0028 [-0.0028, +0.0082] | +0.0724 [-0.0002, +0.1368] | +0.0602 [+0.0207, +0.1034] |
-| structural_liquidity | +0.0023 [-0.0350, +0.0417] | +0.0263 [+0.0163, +0.0360] | +0.0131 [+0.0114, +0.0150] | +0.0006 [-0.0046, +0.0048] | +0.0233 [+0.0019, +0.0513] | +0.0144 [-0.0111, +0.0426] | +0.0077 [+0.0001, +0.0157] | +0.1405 [+0.0681, +0.2129] | +0.0496 [+0.0020, +0.0940] |
+| structural_liquidity | +0.0321 [-0.0050, +0.0708] | +0.0268 [+0.0160, +0.0373] | +0.0133 [+0.0116, +0.0152] | +0.0009 [-0.0041, +0.0049] | +0.0231 [+0.0027, +0.0495] | +0.0390 [+0.0091, +0.0702] | +0.0123 [+0.0044, +0.0208] | +0.1343 [+0.0762, +0.1967] | +0.0557 [+0.0113, +0.0996] |
 
 
 ## The judge's tables under the weighted rule
 
 Table 1. Tiers at +5 bp, h = 1 to 5; 90% stationary-bootstrap intervals. The pass rule is tier 1 at lead >= 1, tier 3 at every lead and tier 5.
 
-| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset (limit 2) | tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes with pressure, h = 1 | tier 5: calibrated, beats clim. | pass | scarce regime alone (tiers 1 / 3 / 5) |
+| model | onsets flagged | recall [90%] | clim. recall, same false alarms | worst false alarms per onset (limit 2), flat count / weighted count (tier 1 is decided on the one named) | tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes with pressure, h = 1 | tier 5: calibrated, beats clim. | pass | scarce regime alone (tiers 1 / 3 / 5) |
 |---|---|---|---|---|---|---|---|---|---|
-| calendar_climatology | 12 of 26 | 0.462 [0.286, 0.667] | 0.358 | 6.69 | 2.9 / 4.7 | 1 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
-| persistence_logistic | 12 of 26 | 0.462 [0.273, 0.650] | 0.380 | 7.04 | 1.2 / 0.0 | 2 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
-| ngboost_laplace | 17 of 26 | 0.654 [0.467, 0.826] | 0.231 | 4.08 | 0.2 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_gbm | 13 of 26 | 0.500 [0.310, 0.667] | 0.154 | 1.38 | 1.5 / 0.7 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_gbm+structural | 13 of 26 | 0.500 [0.310, 0.682] | 0.231 | 3.42 | 0.5 / 0.0 | 3 of 4 | yes, yes | fail (tiers yes / no / yes) | fail (yes / no / no) |
-| risk_gbm_base | 14 of 26 | 0.538 [0.360, 0.719] | 0.154 | 1.50 | 0.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_logistic | 16 of 26 | 0.615 [0.435, 0.800] | 0.192 | 2.42 | 3.2 / 0.7 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_logistic_base | 15 of 26 | 0.577 [0.391, 0.762] | 0.192 | 2.31 | 1.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_quantile_skewt_base | 15 of 26 | 0.577 [0.391, 0.750] | 0.192 | 2.31 | 1.0 / 0.7 | 1 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| structural_liquidity | 7 of 26 | 0.269 [0.125, 0.429] | 0.192 | 2.27 | 0.5 / 0.0 | 3 of 4 | yes, yes | fail (tiers no / no / yes) | fail (no / no / no) |
+| calendar_climatology | 12 of 26 | 0.462 [0.286, 0.667] | 0.358 | 6.69 flat / 3.75 weighted (tier 1 on the weighted count) | 2.9 / 4.7 | 1 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
+| persistence_logistic | 12 of 26 | 0.462 [0.273, 0.650] | 0.380 | 7.04 flat / 3.25 weighted (tier 1 on the weighted count) | 1.2 / 0.0 | 2 of 4 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
+| ngboost_laplace | 17 of 26 | 0.654 [0.467, 0.826] | 0.231 | 4.08 flat / 1.73 weighted (tier 1 on the weighted count) | 0.2 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_gbm | 13 of 26 | 0.500 [0.310, 0.667] | 0.154 | 1.38 flat / 0.80 weighted (tier 1 on the weighted count) | 1.5 / 0.7 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_gbm+structural | 11 of 26 | 0.423 [0.241, 0.609] | 0.231 | 3.38 flat / 1.63 weighted (tier 1 on the weighted count) | 0.5 / 0.0 | 3 of 4 | yes, yes | fail (tiers no / no / yes) | fail (no / no / no) |
+| risk_gbm_base | 14 of 26 | 0.538 [0.360, 0.719] | 0.154 | 1.50 flat / 0.97 weighted (tier 1 on the weighted count) | 0.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_logistic | 16 of 26 | 0.615 [0.435, 0.800] | 0.192 | 2.42 flat / 1.74 weighted (tier 1 on the weighted count) | 3.2 / 0.7 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_logistic_base | 15 of 26 | 0.577 [0.391, 0.762] | 0.192 | 2.31 flat / 1.65 weighted (tier 1 on the weighted count) | 1.5 / 0.0 | 2 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| risk_quantile_skewt_base | 15 of 26 | 0.577 [0.391, 0.750] | 0.192 | 2.31 flat / 1.62 weighted (tier 1 on the weighted count) | 1.0 / 0.7 | 1 of 4 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
+| structural_liquidity | 11 of 26 | 0.423 [0.250, 0.613] | 0.231 | 2.54 flat / 1.00 weighted (tier 1 on the weighted count) | 0.5 / 0.0 | 3 of 4 | yes, yes | fail (tiers no / no / yes) | fail (no / no / yes) |
 
 Table 2. Share of the pressure days flagged at h = 1 (+5 bp), by regime and pressure-day type; the number of pressure days in the group in brackets.
 
@@ -108,7 +110,7 @@ Table 2. Share of the pressure days flagged at h = 1 (+5 bp), by regime and pres
 | risk_logistic | 0.30 (102) | 0.25 (4) | – | 0.20 (5) | 0.45 (29) | 0.76 (17) | 0.18 (101) | 0.67 (9) | 0.69 (13) |
 | risk_logistic_base | 0.30 (102) | 0.25 (4) | – | 0.20 (5) | 0.45 (29) | 0.76 (17) | 0.18 (101) | 0.67 (9) | 0.69 (13) |
 | risk_quantile_skewt_base | 0.30 (102) | 0.25 (4) | – | 0.20 (5) | 0.48 (29) | 0.76 (17) | 0.18 (101) | 0.67 (9) | 0.77 (13) |
-| structural_liquidity | 0.44 (102) | 0.25 (4) | – | 0.00 (5) | 0.38 (29) | 0.65 (17) | 0.34 (101) | 0.44 (9) | 0.62 (13) |
+| structural_liquidity | 0.54 (102) | 0.25 (4) | – | 0.00 (5) | 0.31 (29) | 0.76 (17) | 0.40 (101) | 0.44 (9) | 0.62 (13) |
 
 Table 3. Brier difference against calendar climatology at h = 1 (+5 bp), by regime and pressure-day type (positive: better than climatology; 90% interval).
 
@@ -118,19 +120,19 @@ Table 3. Brier difference against calendar climatology at h = 1 (+5 bp), by regi
 | persistence_logistic | +0.0168 [-0.0027, +0.0376] | +0.0235 [+0.0133, +0.0333] | +0.0130 [+0.0114, +0.0148] | -0.0002 [-0.0064, +0.0045] | +0.0256 [+0.0003, +0.0575] | +0.0212 [+0.0029, +0.0434] | +0.0125 [+0.0072, +0.0187] | +0.0604 [-0.0440, +0.1631] | +0.0355 [+0.0130, +0.0568] |
 | ngboost_laplace | +0.0543 [+0.0271, +0.0844] | +0.0329 [+0.0235, +0.0419] | +0.0138 [+0.0121, +0.0157] | +0.0041 [+0.0006, +0.0072] | +0.0287 [+0.0113, +0.0503] | +0.0481 [+0.0291, +0.0671] | +0.0187 [+0.0123, +0.0262] | +0.1308 [+0.0495, +0.2125] | +0.0670 [+0.0493, +0.0861] |
 | risk_gbm | +0.0016 [-0.0200, +0.0242] | +0.0396 [+0.0307, +0.0483] | +0.0138 [+0.0120, +0.0155] | +0.0037 [-0.0002, +0.0067] | +0.0155 [-0.0024, +0.0394] | +0.0543 [+0.0303, +0.0787] | +0.0049 [-0.0002, +0.0099] | +0.1155 [+0.0314, +0.2020] | +0.0686 [+0.0412, +0.0953] |
-| risk_gbm+structural | +0.0359 [-0.0026, +0.0781] | +0.0284 [+0.0184, +0.0380] | +0.0132 [+0.0115, +0.0151] | +0.0023 [-0.0030, +0.0063] | +0.0288 [+0.0024, +0.0597] | +0.0579 [+0.0339, +0.0834] | +0.0124 [+0.0038, +0.0220] | +0.1155 [+0.0311, +0.1957] | +0.0686 [+0.0416, +0.0951] |
+| risk_gbm+structural | +0.0396 [+0.0046, +0.0778] | +0.0286 [+0.0173, +0.0391] | +0.0133 [+0.0116, +0.0152] | +0.0027 [-0.0023, +0.0064] | +0.0290 [+0.0031, +0.0593] | +0.0569 [+0.0330, +0.0829] | +0.0135 [+0.0056, +0.0225] | +0.1155 [+0.0311, +0.1957] | +0.0686 [+0.0416, +0.0951] |
 | risk_gbm_base | -0.0015 [-0.0206, +0.0159] | +0.0329 [+0.0223, +0.0434] | +0.0138 [+0.0121, +0.0156] | +0.0038 [+0.0001, +0.0070] | +0.0158 [+0.0016, +0.0330] | +0.0339 [+0.0115, +0.0566] | +0.0052 [+0.0001, +0.0097] | +0.1101 [+0.0294, +0.1928] | +0.0681 [+0.0463, +0.0927] |
 | risk_logistic | -0.0026 [-0.0240, +0.0179] | +0.0252 [+0.0095, +0.0381] | +0.0138 [+0.0120, +0.0157] | +0.0050 [+0.0008, +0.0096] | +0.0133 [+0.0003, +0.0294] | +0.0282 [+0.0011, +0.0563] | +0.0040 [-0.0012, +0.0088] | +0.0892 [+0.0158, +0.1596] | +0.0774 [+0.0463, +0.1124] |
 | risk_logistic_base | -0.0024 [-0.0224, +0.0166] | +0.0298 [+0.0202, +0.0383] | +0.0138 [+0.0120, +0.0157] | +0.0040 [+0.0003, +0.0070] | +0.0168 [+0.0040, +0.0338] | +0.0352 [+0.0096, +0.0600] | +0.0047 [-0.0004, +0.0092] | +0.0954 [+0.0396, +0.1520] | +0.0711 [+0.0381, +0.1107] |
 | risk_quantile_skewt_base | -0.0169 [-0.0413, +0.0085] | +0.0220 [+0.0121, +0.0313] | +0.0136 [+0.0119, +0.0156] | +0.0015 [-0.0048, +0.0055] | +0.0242 [+0.0051, +0.0465] | +0.0244 [-0.0130, +0.0627] | +0.0028 [-0.0028, +0.0082] | +0.0724 [-0.0002, +0.1368] | +0.0602 [+0.0207, +0.1034] |
-| structural_liquidity | +0.0023 [-0.0350, +0.0417] | +0.0263 [+0.0163, +0.0360] | +0.0131 [+0.0114, +0.0150] | +0.0006 [-0.0046, +0.0048] | +0.0233 [+0.0019, +0.0513] | +0.0144 [-0.0111, +0.0426] | +0.0077 [+0.0001, +0.0157] | +0.1405 [+0.0681, +0.2129] | +0.0496 [+0.0020, +0.0940] |
+| structural_liquidity | +0.0321 [-0.0050, +0.0708] | +0.0268 [+0.0160, +0.0373] | +0.0133 [+0.0116, +0.0152] | +0.0009 [-0.0041, +0.0049] | +0.0231 [+0.0027, +0.0495] | +0.0390 [+0.0091, +0.0702] | +0.0123 [+0.0044, +0.0208] | +0.1343 [+0.0762, +0.1967] | +0.0557 [+0.0113, +0.0996] |
 
 
 ## Onsets warned by calendar year (lead >= 1, any horizon 1 to 5), weighted rule
 
 | row | 2018 | 2019 | 2020 | 2024 | 2025 |
 |---|---|---|---|---|---|
-| structural_liquidity | 0 of 4 | 7 of 13 | 0 of 2 | 0 of 2 | 0 of 5 |
+| structural_liquidity | 0 of 4 | 11 of 13 | 0 of 2 | 0 of 2 | 0 of 5 |
 | risk_gbm | 0 of 4 | 10 of 13 | 0 of 2 | 0 of 2 | 3 of 5 |
 | risk_gbm_base | 0 of 4 | 10 of 13 | 0 of 2 | 0 of 2 | 4 of 5 |
 | risk_logistic | 0 of 4 | 10 of 13 | 0 of 2 | 1 of 2 | 5 of 5 |
@@ -142,20 +144,21 @@ Table 3. Brier difference against calendar climatology at h = 1 (+5 bp), by regi
 
 ## Onsets only this row warns
 
-structural_liquidity warns 7 of 26 onsets; at least one of the five passers warns 16. 0 are warned by structural_liquidity and by none of the five passers:
+structural_liquidity warns 11 of 26 onsets; at least one of the five passers warns 16. 1 are warned by structural_liquidity and by none of the five passers:
 
+* 2019-08-13 (flagged at h = 1, 2, 3)
 
-Warned by a passer and not by structural_liquidity: 2019-01-15, 2019-02-28, 2019-03-15, 2024-09-30, 2025-09-15, 2025-09-30, 2025-10-15, 2025-12-15, 2025-12-26
+Warned by a passer and not by structural_liquidity: 2024-09-30, 2025-09-15, 2025-09-30, 2025-10-15, 2025-12-15, 2025-12-26
 
 ## Constant or degenerate refits
 
 | h | refits | probability constant | all zero | cut-off flags nothing | cut-off flags every day | days at probability 0 | distinct probabilities |
 |---|---|---|---|---|---|---|---|
-| 1 | 90 | 1 | 0 | 6 | 0 | 0 of 1873 | 1125 |
-| 2 | 90 | 1 | 0 | 6 | 1 | 0 of 1872 | 1212 |
-| 3 | 90 | 2 | 0 | 6 | 0 | 0 of 1871 | 1196 |
-| 4 | 90 | 2 | 0 | 6 | 0 | 0 of 1870 | 1193 |
-| 5 | 89 | 0 | 0 | 7 | 0 | 0 of 1869 | 1215 |
+| 1 | 90 | 1 | 0 | 6 | 0 | 0 of 1873 | 1127 |
+| 2 | 90 | 1 | 0 | 6 | 1 | 0 of 1872 | 1249 |
+| 3 | 90 | 1 | 0 | 6 | 0 | 0 of 1871 | 1235 |
+| 4 | 90 | 2 | 0 | 6 | 0 | 0 of 1870 | 1233 |
+| 5 | 89 | 0 | 0 | 7 | 0 | 0 of 1869 | 1252 |
 
 ## structural_liquidity against risk_gbm
 
@@ -163,45 +166,45 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | -0.001 [-0.011, 0.008] |
-| 2 | 0.004 [-0.006, 0.016] |
-| 3 | -0.001 [-0.012, 0.012] |
-| 4 | -0.002 [-0.012, 0.010] |
-| 5 | -0.002 [-0.013, 0.010] |
+| 1 | 0.005 [-0.004, 0.014] |
+| 2 | 0.004 [-0.007, 0.016] |
+| 3 | -0.002 [-0.016, 0.011] |
+| 4 | -0.003 [-0.016, 0.009] |
+| 5 | -0.003 [-0.018, 0.009] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.001 [-0.043, 0.047] | 0.015 [-0.044, 0.076] | -0.011 [-0.067, 0.042] |
-| 2020 | 251 | -0.013 [-0.020, -0.008] | -0.017 [-0.023, -0.009] | -0.011 [-0.018, -0.004] |
-| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.003 [-0.003, -0.002] | -0.001 [-0.002, -0.001] |
-| 2024 | 250 | -0.003 [-0.007, -0.000] | -0.003 [-0.007, -0.000] | -0.001 [-0.002, 0.000] |
-| 2025-26 | 249 | 0.008 [-0.015, 0.032] | 0.001 [-0.017, 0.017] | 0.019 [0.001, 0.041] |
+| 2018-19 | 375 | 0.030 [-0.011, 0.073] | 0.003 [-0.063, 0.073] | -0.021 [-0.091, 0.044] |
+| 2020 | 251 | -0.013 [-0.019, -0.008] | -0.015 [-0.023, -0.007] | -0.010 [-0.017, -0.003] |
+| 2021-23 | 748 | -0.000 [-0.001, -0.000] | -0.002 [-0.003, -0.002] | -0.001 [-0.001, -0.001] |
+| 2024 | 250 | -0.003 [-0.007, -0.000] | -0.003 [-0.007, -0.000] | -0.001 [-0.001, 0.000] |
+| 2025-26 | 249 | 0.008 [-0.014, 0.030] | 0.001 [-0.017, 0.017] | 0.019 [0.001, 0.039] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | -0.040 [-0.064, -0.020] | -0.033 [-0.065, -0.004] | -0.009 [-0.030, 0.010] |
-| ordinary | 1603 | 0.003 [-0.007, 0.013] | 0.002 [-0.010, 0.015] | -0.003 [-0.015, 0.009] |
-| quarter_end | 31 | 0.025 [-0.024, 0.074] | 0.011 [-0.072, 0.095] | 0.007 [-0.044, 0.056] |
-| tax_date | 89 | -0.019 [-0.074, 0.036] | -0.004 [-0.039, 0.033] | 0.027 [-0.012, 0.073] |
+| month_end | 150 | -0.015 [-0.035, 0.003] | -0.028 [-0.061, 0.001] | -0.009 [-0.029, 0.010] |
+| ordinary | 1603 | 0.007 [-0.002, 0.018] | -0.000 [-0.015, 0.015] | -0.005 [-0.021, 0.009] |
+| quarter_end | 31 | 0.019 [-0.039, 0.078] | 0.009 [-0.074, 0.094] | 0.019 [-0.040, 0.080] |
+| tax_date | 89 | -0.013 [-0.065, 0.040] | -0.004 [-0.040, 0.033] | 0.025 [-0.015, 0.073] |
 
 By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | -0.000 [-0.001, 0.001] | -0.002 [-0.003, -0.001] | -0.001 [-0.001, -0.001] |
-| 1 | 324 | -0.006 [-0.008, -0.004] | -0.011 [-0.013, -0.008] | -0.007 [-0.009, -0.005] |
-| 2 | 41 | 0.100 [–] | 0.050 [–] | 0.083 [–] |
-| 3 | 473 | -0.009 [-0.044, 0.028] | 0.004 [-0.043, 0.054] | -0.007 [-0.052, 0.036] |
+| 0 | 1035 | -0.000 [-0.001, 0.001] | -0.001 [-0.003, -0.000] | -0.001 [-0.001, -0.000] |
+| 1 | 324 | -0.004 [-0.006, -0.002] | -0.009 [-0.011, -0.007] | -0.006 [-0.007, -0.004] |
+| 2 | 41 | 0.081 [–] | 0.051 [–] | 0.084 [–] |
+| 3 | 473 | 0.016 [-0.019, 0.053] | -0.005 [-0.058, 0.050] | -0.015 [-0.070, 0.035] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.382, -0.086] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.226, 0.056] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | -0.176 [-0.353, 0.000] |
+| 2018-19 | 17 | 0.059 [0.000, 0.167] |
 | 2020 | 2 | 0.000 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
@@ -209,8 +212,8 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
-| month_end | 6 | -0.167 [–] |
-| ordinary | 12 | -0.250 [-0.500, -0.067] |
+| month_end | 6 | 0.000 [–] |
+| ordinary | 12 | 0.000 [-0.200, 0.200] |
 | quarter_end | 3 | -0.333 [–] |
 | tax_date | 5 | -0.200 [–] |
 
@@ -219,7 +222,7 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | 0.000 [–] |
 | 2 | 2 | -0.500 [–] |
-| 3 | 21 | -0.238 [-0.423, -0.071] |
+| 3 | 21 | -0.048 [-0.222, 0.097] |
 
 ## structural_liquidity against ngboost_laplace
 
@@ -227,45 +230,45 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | -0.013 [-0.020, -0.006] |
-| 2 | -0.007 [-0.016, 0.000] |
-| 3 | -0.008 [-0.018, 0.003] |
-| 4 | -0.007 [-0.016, 0.002] |
-| 5 | -0.008 [-0.017, 0.001] |
+| 1 | -0.007 [-0.013, -0.000] |
+| 2 | -0.008 [-0.017, 0.001] |
+| 3 | -0.010 [-0.022, 0.002] |
+| 4 | -0.009 [-0.020, 0.002] |
+| 5 | -0.009 [-0.019, 0.000] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.052 [-0.082, -0.019] | -0.024 [-0.076, 0.029] | -0.036 [-0.078, 0.006] |
-| 2020 | 251 | -0.007 [-0.013, -0.002] | -0.018 [-0.022, -0.014] | -0.010 [-0.014, -0.007] |
-| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.003 [-0.003, -0.002] | -0.001 [-0.002, -0.001] |
-| 2024 | 250 | -0.004 [-0.008, -0.000] | -0.003 [-0.005, -0.001] | -0.001 [-0.002, 0.000] |
-| 2025-26 | 249 | -0.005 [-0.024, 0.016] | 0.005 [-0.006, 0.018] | 0.011 [-0.005, 0.030] |
+| 2018-19 | 375 | -0.022 [-0.049, 0.007] | -0.035 [-0.093, 0.024] | -0.045 [-0.090, 0.001] |
+| 2020 | 251 | -0.006 [-0.012, -0.001] | -0.016 [-0.022, -0.012] | -0.009 [-0.013, -0.005] |
+| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.002 [-0.003, -0.002] | -0.001 [-0.001, -0.001] |
+| 2024 | 250 | -0.003 [-0.008, -0.000] | -0.003 [-0.005, -0.001] | -0.001 [-0.001, 0.000] |
+| 2025-26 | 249 | -0.006 [-0.023, 0.014] | 0.005 [-0.005, 0.018] | 0.010 [-0.005, 0.028] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | -0.034 [-0.057, -0.012] | -0.017 [-0.052, 0.015] | -0.005 [-0.029, 0.023] |
-| ordinary | 1603 | -0.011 [-0.018, -0.005] | -0.008 [-0.018, 0.001] | -0.010 [-0.018, -0.002] |
-| quarter_end | 31 | 0.010 [-0.051, 0.065] | 0.001 [-0.096, 0.102] | -0.019 [-0.055, 0.014] |
-| tax_date | 89 | -0.017 [-0.062, 0.032] | 0.011 [-0.037, 0.070] | 0.026 [-0.028, 0.088] |
+| month_end | 150 | -0.009 [-0.033, 0.013] | -0.013 [-0.048, 0.020] | -0.004 [-0.028, 0.022] |
+| ordinary | 1603 | -0.006 [-0.012, -0.001] | -0.011 [-0.023, 0.000] | -0.012 [-0.021, -0.003] |
+| quarter_end | 31 | 0.003 [-0.065, 0.073] | -0.000 [-0.098, 0.100] | -0.008 [-0.060, 0.053] |
+| tax_date | 89 | -0.011 [-0.053, 0.038] | 0.010 [-0.038, 0.070] | 0.024 [-0.030, 0.087] |
 
 By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | -0.001 [-0.002, -0.000] | -0.002 [-0.003, -0.001] | -0.001 [-0.001, -0.001] |
-| 1 | 324 | -0.005 [-0.008, -0.003] | -0.011 [-0.013, -0.008] | -0.007 [-0.009, -0.005] |
-| 2 | 41 | 0.051 [-0.049, 0.166] | 0.036 [-0.034, 0.085] | 0.069 [–] |
-| 3 | 473 | -0.049 [-0.074, -0.023] | -0.022 [-0.062, 0.019] | -0.030 [-0.063, 0.004] |
+| 0 | 1035 | -0.001 [-0.002, -0.000] | -0.002 [-0.002, -0.001] | -0.001 [-0.001, -0.000] |
+| 1 | 324 | -0.003 [-0.006, -0.001] | -0.009 [-0.011, -0.007] | -0.005 [-0.007, -0.004] |
+| 2 | 41 | 0.032 [-0.059, 0.126] | 0.037 [-0.030, 0.085] | 0.070 [–] |
+| 3 | 473 | -0.025 [-0.046, -0.001] | -0.031 [-0.078, 0.015] | -0.038 [-0.074, -0.002] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.385 [-0.559, -0.222] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.419, -0.053] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | -0.294 [-0.500, -0.111] |
+| 2018-19 | 17 | -0.059 [-0.238, 0.111] |
 | 2020 | 2 | 0.000 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
@@ -273,8 +276,8 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
-| month_end | 6 | -0.167 [–] |
-| ordinary | 12 | -0.500 [-0.750, -0.250] |
+| month_end | 6 | 0.000 [–] |
+| ordinary | 12 | -0.250 [-0.545, 0.000] |
 | quarter_end | 3 | -0.333 [–] |
 | tax_date | 5 | -0.400 [–] |
 
@@ -283,7 +286,7 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | -1.000 [–] |
 | 2 | 2 | -1.000 [–] |
-| 3 | 21 | -0.333 [-0.522, -0.167] |
+| 3 | 21 | -0.143 [-0.333, 0.002] |
 
 ## structural_liquidity against calendar_climatology
 
@@ -291,45 +294,45 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | 0.012 [0.004, 0.022] |
-| 2 | 0.007 [-0.002, 0.016] |
-| 3 | 0.003 [-0.007, 0.013] |
-| 4 | 0.002 [-0.007, 0.011] |
-| 5 | -0.000 [-0.011, 0.009] |
+| 1 | 0.019 [0.010, 0.027] |
+| 2 | 0.007 [-0.003, 0.017] |
+| 3 | 0.002 [-0.010, 0.013] |
+| 4 | 0.001 [-0.013, 0.012] |
+| 5 | -0.002 [-0.016, 0.009] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.002 [-0.036, 0.044] | -0.022 [-0.070, 0.027] | -0.048 [-0.092, -0.005] |
-| 2020 | 251 | 0.026 [0.016, 0.036] | 0.021 [0.013, 0.029] | 0.025 [0.017, 0.033] |
-| 2021-23 | 748 | 0.013 [0.011, 0.015] | 0.011 [0.010, 0.013] | 0.013 [0.011, 0.014] |
-| 2024 | 250 | 0.001 [-0.005, 0.005] | 0.001 [-0.003, 0.004] | 0.001 [-0.004, 0.004] |
-| 2025-26 | 249 | 0.023 [0.003, 0.051] | 0.003 [-0.004, 0.010] | 0.005 [-0.006, 0.018] |
+| 2018-19 | 375 | 0.032 [-0.006, 0.073] | -0.033 [-0.091, 0.023] | -0.058 [-0.116, -0.004] |
+| 2020 | 251 | 0.027 [0.016, 0.037] | 0.022 [0.013, 0.031] | 0.026 [0.017, 0.035] |
+| 2021-23 | 748 | 0.013 [0.012, 0.015] | 0.012 [0.010, 0.013] | 0.013 [0.011, 0.015] |
+| 2024 | 250 | 0.001 [-0.004, 0.005] | 0.001 [-0.003, 0.004] | 0.001 [-0.004, 0.005] |
+| 2025-26 | 249 | 0.023 [0.003, 0.049] | 0.003 [-0.004, 0.010] | 0.004 [-0.006, 0.016] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.014 [-0.012, 0.042] | -0.006 [-0.039, 0.024] | 0.004 [-0.017, 0.024] |
-| ordinary | 1603 | 0.008 [0.000, 0.016] | 0.000 [-0.010, 0.009] | -0.005 [-0.016, 0.005] |
-| quarter_end | 31 | 0.141 [0.068, 0.217] | 0.089 [0.027, 0.151] | 0.070 [-0.016, 0.156] |
-| tax_date | 89 | 0.050 [0.006, 0.098] | 0.049 [0.003, 0.099] | 0.052 [0.006, 0.095] |
+| month_end | 150 | 0.039 [0.007, 0.070] | -0.001 [-0.034, 0.029] | 0.005 [-0.015, 0.024] |
+| ordinary | 1603 | 0.012 [0.005, 0.021] | -0.002 [-0.015, 0.009] | -0.007 [-0.022, 0.005] |
+| quarter_end | 31 | 0.134 [0.073, 0.197] | 0.088 [0.025, 0.150] | 0.082 [-0.005, 0.168] |
+| tax_date | 89 | 0.056 [0.013, 0.103] | 0.049 [0.002, 0.099] | 0.051 [0.004, 0.095] |
 
 By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | 0.008 [0.006, 0.010] | 0.007 [0.006, 0.009] | 0.008 [0.006, 0.010] |
-| 1 | 324 | 0.023 [0.017, 0.029] | 0.018 [0.014, 0.023] | 0.020 [0.015, 0.025] |
-| 2 | 41 | 0.092 [–] | 0.018 [-0.023, 0.054] | 0.042 [–] |
-| 3 | 473 | 0.007 [-0.024, 0.041] | -0.017 [-0.056, 0.021] | -0.038 [-0.073, -0.003] |
+| 0 | 1035 | 0.008 [0.007, 0.010] | 0.008 [0.006, 0.009] | 0.008 [0.006, 0.010] |
+| 1 | 324 | 0.025 [0.019, 0.031] | 0.020 [0.015, 0.025] | 0.022 [0.017, 0.027] |
+| 2 | 41 | 0.073 [–] | 0.019 [-0.018, 0.054] | 0.043 [–] |
+| 3 | 473 | 0.031 [0.001, 0.063] | -0.026 [-0.073, 0.018] | -0.046 [-0.095, -0.003] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.333, -0.069] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.158, 0.071] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | -0.294 [-0.474, -0.125] |
+| 2018-19 | 17 | -0.059 [-0.250, 0.111] |
 | 2020 | 2 | 0.000 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
@@ -337,8 +340,8 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
-| month_end | 6 | -0.167 [–] |
-| ordinary | 12 | -0.333 [-0.588, -0.111] |
+| month_end | 6 | 0.000 [–] |
+| ordinary | 12 | -0.083 [-0.333, 0.167] |
 | quarter_end | 3 | 0.000 [–] |
 | tax_date | 5 | 0.000 [–] |
 
@@ -347,7 +350,7 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | 0.000 [–] |
 | 2 | 2 | 0.000 [–] |
-| 3 | 21 | -0.238 [-0.400, -0.091] |
+| 3 | 21 | -0.048 [-0.200, 0.091] |
 
 ## structural_liquidity against persistence_logistic
 
@@ -355,45 +358,45 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | -0.003 [-0.009, 0.004] |
-| 2 | -0.003 [-0.012, 0.005] |
-| 3 | -0.003 [-0.013, 0.008] |
-| 4 | -0.006 [-0.016, 0.002] |
-| 5 | -0.008 [-0.017, 0.000] |
+| 1 | 0.003 [-0.003, 0.010] |
+| 2 | -0.003 [-0.013, 0.006] |
+| 3 | -0.005 [-0.017, 0.007] |
+| 4 | -0.008 [-0.020, 0.003] |
+| 5 | -0.010 [-0.022, 0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.015 [-0.045, 0.021] | -0.022 [-0.073, 0.031] | -0.046 [-0.090, -0.005] |
-| 2020 | 251 | 0.003 [0.001, 0.004] | 0.009 [0.005, 0.012] | 0.007 [0.004, 0.010] |
-| 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.001, 0.002] | 0.001 [0.001, 0.001] |
-| 2024 | 250 | 0.001 [0.000, 0.002] | 0.001 [0.000, 0.001] | 0.001 [0.000, 0.002] |
-| 2025-26 | 249 | -0.002 [-0.007, 0.002] | -0.004 [-0.013, 0.003] | -0.003 [-0.011, 0.004] |
+| 2018-19 | 375 | 0.015 [-0.015, 0.048] | -0.033 [-0.092, 0.026] | -0.055 [-0.113, -0.004] |
+| 2020 | 251 | 0.003 [-0.001, 0.008] | 0.010 [0.005, 0.014] | 0.009 [0.004, 0.012] |
+| 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.002 [0.001, 0.002] | 0.001 [0.001, 0.002] |
+| 2024 | 250 | 0.001 [-0.000, 0.003] | 0.001 [0.000, 0.002] | 0.001 [0.000, 0.002] |
+| 2025-26 | 249 | -0.003 [-0.009, 0.003] | -0.003 [-0.013, 0.004] | -0.003 [-0.014, 0.005] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | -0.007 [-0.026, 0.015] | -0.015 [-0.050, 0.017] | -0.005 [-0.027, 0.016] |
-| ordinary | 1603 | -0.005 [-0.010, 0.001] | -0.004 [-0.014, 0.005] | -0.011 [-0.021, -0.003] |
-| quarter_end | 31 | 0.080 [0.016, 0.147] | 0.055 [-0.035, 0.143] | 0.044 [0.006, 0.091] |
-| tax_date | 89 | 0.014 [-0.031, 0.067] | 0.022 [-0.032, 0.083] | 0.027 [-0.025, 0.087] |
+| month_end | 150 | 0.018 [-0.010, 0.048] | -0.011 [-0.045, 0.020] | -0.004 [-0.026, 0.017] |
+| ordinary | 1603 | -0.000 [-0.006, 0.005] | -0.007 [-0.019, 0.004] | -0.013 [-0.027, -0.002] |
+| quarter_end | 31 | 0.074 [0.001, 0.155] | 0.053 [-0.036, 0.141] | 0.056 [0.007, 0.117] |
+| tax_date | 89 | 0.020 [-0.024, 0.072] | 0.021 [-0.033, 0.083] | 0.025 [-0.028, 0.086] |
 
 By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | 0.000 [0.000, 0.001] | 0.001 [0.001, 0.001] | 0.001 [0.000, 0.001] |
-| 1 | 324 | 0.003 [0.002, 0.004] | 0.009 [0.007, 0.010] | 0.007 [0.005, 0.008] |
-| 2 | 41 | 0.003 [–] | -0.028 [–] | -0.034 [–] |
-| 3 | 473 | -0.013 [-0.038, 0.015] | -0.017 [-0.056, 0.024] | -0.035 [-0.071, -0.003] |
+| 0 | 1035 | 0.000 [0.000, 0.001] | 0.001 [0.001, 0.001] | 0.001 [0.001, 0.001] |
+| 1 | 324 | 0.005 [0.003, 0.006] | 0.010 [0.008, 0.012] | 0.008 [0.007, 0.010] |
+| 2 | 41 | -0.016 [–] | -0.027 [–] | -0.033 [–] |
+| 3 | 473 | 0.011 [-0.013, 0.038] | -0.026 [-0.072, 0.021] | -0.043 [-0.090, -0.003] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.353, -0.036] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.200, 0.125] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | -0.235 [-0.462, 0.000] |
+| 2018-19 | 17 | 0.000 [-0.222, 0.222] |
 | 2020 | 2 | -0.500 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
@@ -401,8 +404,8 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
-| month_end | 6 | 0.000 [–] |
-| ordinary | 12 | -0.417 [-0.667, -0.167] |
+| month_end | 6 | 0.167 [–] |
+| ordinary | 12 | -0.167 [-0.444, 0.125] |
 | quarter_end | 3 | 0.000 [–] |
 | tax_date | 5 | 0.000 [–] |
 
@@ -411,7 +414,7 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | 0.000 [–] |
 | 2 | 2 | 0.000 [–] |
-| 3 | 21 | -0.238 [-0.438, -0.043] |
+| 3 | 21 | -0.048 [-0.250, 0.158] |
 
 
 # risk_gbm+structural
@@ -420,7 +423,7 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | row | 2018 | 2019 | 2020 | 2024 | 2025 |
 |---|---|---|---|---|---|
-| risk_gbm+structural | 0 of 4 | 10 of 13 | 0 of 2 | 0 of 2 | 3 of 5 |
+| risk_gbm+structural | 0 of 4 | 9 of 13 | 0 of 2 | 0 of 2 | 2 of 5 |
 | risk_gbm | 0 of 4 | 10 of 13 | 0 of 2 | 0 of 2 | 3 of 5 |
 | risk_gbm_base | 0 of 4 | 10 of 13 | 0 of 2 | 0 of 2 | 4 of 5 |
 | risk_logistic | 0 of 4 | 10 of 13 | 0 of 2 | 1 of 2 | 5 of 5 |
@@ -432,22 +435,21 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 ## Onsets only this row warns
 
-risk_gbm+structural warns 13 of 26 onsets; at least one of the five passers warns 16. 2 are warned by risk_gbm+structural and by none of the five passers:
+risk_gbm+structural warns 11 of 26 onsets; at least one of the five passers warns 16. 1 are warned by risk_gbm+structural and by none of the five passers:
 
-* 2019-05-28 (flagged at h = 2)
-* 2019-08-13 (flagged at h = 5)
+* 2019-08-13 (flagged at h = 2, 3)
 
-Warned by a passer and not by risk_gbm+structural: 2019-01-15, 2019-01-31, 2024-09-30, 2025-09-15, 2025-10-15
+Warned by a passer and not by risk_gbm+structural: 2019-01-15, 2019-01-31, 2024-09-30, 2025-09-15, 2025-09-30, 2025-10-15
 
 ## Constant or degenerate refits
 
 | h | refits | probability constant | all zero | cut-off flags nothing | cut-off flags every day | days at probability 0 | distinct probabilities |
 |---|---|---|---|---|---|---|---|
-| 1 | 90 | 0 | 0 | 7 | 0 | 0 of 1873 | 1229 |
-| 2 | 90 | 1 | 0 | 7 | 1 | 0 of 1872 | 1212 |
-| 3 | 90 | 1 | 0 | 7 | 1 | 0 of 1871 | 1199 |
-| 4 | 90 | 2 | 0 | 8 | 1 | 0 of 1870 | 1206 |
-| 5 | 89 | 0 | 0 | 9 | 1 | 0 of 1869 | 1221 |
+| 1 | 90 | 0 | 0 | 7 | 0 | 0 of 1873 | 1215 |
+| 2 | 90 | 1 | 0 | 6 | 1 | 0 of 1872 | 1247 |
+| 3 | 90 | 1 | 0 | 6 | 0 | 0 of 1871 | 1234 |
+| 4 | 90 | 2 | 0 | 7 | 0 | 0 of 1870 | 1242 |
+| 5 | 89 | 0 | 0 | 8 | 0 | 0 of 1869 | 1257 |
 
 ## risk_gbm+structural against risk_gbm
 
@@ -455,28 +457,28 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | 0.007 [-0.002, 0.017] |
-| 2 | 0.005 [-0.005, 0.016] |
-| 3 | 0.003 [-0.009, 0.014] |
-| 4 | 0.001 [-0.009, 0.010] |
-| 5 | -0.001 [-0.011, 0.009] |
+| 1 | 0.008 [-0.000, 0.017] |
+| 2 | 0.004 [-0.007, 0.016] |
+| 3 | 0.002 [-0.011, 0.014] |
+| 4 | -0.000 [-0.012, 0.011] |
+| 5 | -0.003 [-0.015, 0.010] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.034 [-0.007, 0.079] | 0.022 [-0.033, 0.077] | -0.002 [-0.051, 0.050] |
-| 2020 | 251 | -0.011 [-0.016, -0.007] | -0.014 [-0.021, -0.006] | -0.011 [-0.017, -0.005] |
-| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.002 [-0.003, -0.002] | -0.001 [-0.002, -0.001] |
-| 2024 | 250 | -0.001 [-0.003, -0.000] | -0.001 [-0.001, 0.000] | -0.000 [-0.001, 0.001] |
-| 2025-26 | 249 | 0.013 [-0.002, 0.034] | 0.009 [-0.000, 0.022] | 0.011 [-0.002, 0.028] |
+| 2018-19 | 375 | 0.038 [-0.000, 0.080] | 0.014 [-0.050, 0.074] | -0.012 [-0.074, 0.054] |
+| 2020 | 251 | -0.011 [-0.017, -0.006] | -0.013 [-0.021, -0.005] | -0.010 [-0.017, -0.004] |
+| 2021-23 | 748 | -0.000 [-0.001, -0.000] | -0.002 [-0.002, -0.002] | -0.001 [-0.001, -0.001] |
+| 2024 | 250 | -0.001 [-0.002, -0.000] | -0.000 [-0.001, 0.000] | -0.000 [-0.001, 0.001] |
+| 2025-26 | 249 | 0.013 [-0.001, 0.033] | 0.010 [-0.000, 0.022] | 0.011 [-0.001, 0.026] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.004 [-0.001, 0.009] | -0.004 [-0.017, 0.006] | -0.003 [-0.013, 0.004] |
-| ordinary | 1603 | 0.008 [-0.002, 0.019] | 0.004 [-0.009, 0.016] | -0.001 [-0.012, 0.011] |
+| month_end | 150 | 0.003 [-0.002, 0.008] | -0.002 [-0.016, 0.010] | -0.003 [-0.013, 0.003] |
+| ordinary | 1603 | 0.009 [-0.000, 0.020] | 0.002 [-0.013, 0.016] | -0.003 [-0.018, 0.012] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -484,34 +486,34 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | -0.001 [-0.001, -0.000] | -0.001 [-0.002, -0.001] | -0.001 [-0.001, -0.001] |
-| 1 | 324 | -0.006 [-0.007, -0.004] | -0.010 [-0.011, -0.008] | -0.007 [-0.009, -0.006] |
-| 2 | 41 | 0.066 [–] | 0.041 [–] | 0.061 [–] |
-| 3 | 473 | 0.026 [-0.007, 0.063] | 0.017 [-0.027, 0.062] | -0.003 [-0.041, 0.038] |
+| 0 | 1035 | -0.000 [-0.001, -0.000] | -0.001 [-0.001, -0.001] | -0.001 [-0.001, -0.000] |
+| 1 | 324 | -0.004 [-0.005, -0.003] | -0.008 [-0.010, -0.007] | -0.006 [-0.007, -0.004] |
+| 2 | 41 | 0.065 [–] | 0.042 [–] | 0.063 [–] |
+| 3 | 473 | 0.028 [-0.002, 0.063] | 0.011 [-0.039, 0.059] | -0.012 [-0.062, 0.040] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.000 [-0.138, 0.143] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.208, 0.048] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | 0.000 [-0.214, 0.222] |
+| 2018-19 | 17 | -0.059 [-0.250, 0.125] |
 | 2020 | 2 | 0.000 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
-| 2025-26 | 5 | 0.000 [–] |
+| 2025-26 | 5 | -0.200 [–] |
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
 | month_end | 6 | -0.167 [–] |
-| ordinary | 12 | 0.083 [-0.154, 0.333] |
-| quarter_end | 3 | 0.000 [–] |
+| ordinary | 12 | 0.000 [-0.200, 0.200] |
+| quarter_end | 3 | -0.333 [–] |
 | tax_date | 5 | 0.000 [–] |
 
 | scarcity_state | onsets | recall difference [90%] |
 |---|---|---|
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | 0.000 [–] |
-| 2 | 2 | 0.000 [–] |
-| 3 | 21 | 0.000 [-0.172, 0.182] |
+| 2 | 2 | -0.500 [–] |
+| 3 | 21 | -0.048 [-0.200, 0.100] |
 
 ## risk_gbm+structural against ngboost_laplace
 
@@ -519,28 +521,28 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | -0.005 [-0.011, 0.001] |
-| 2 | -0.007 [-0.014, -0.000] |
-| 3 | -0.004 [-0.014, 0.005] |
-| 4 | -0.004 [-0.012, 0.003] |
-| 5 | -0.007 [-0.014, 0.000] |
+| 1 | -0.004 [-0.009, 0.001] |
+| 2 | -0.008 [-0.016, -0.000] |
+| 3 | -0.006 [-0.016, 0.004] |
+| 4 | -0.005 [-0.016, 0.004] |
+| 5 | -0.009 [-0.017, -0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.018 [-0.046, 0.009] | -0.016 [-0.062, 0.030] | -0.027 [-0.062, 0.007] |
-| 2020 | 251 | -0.005 [-0.010, 0.001] | -0.015 [-0.018, -0.012] | -0.010 [-0.014, -0.007] |
-| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.002 [-0.003, -0.002] | -0.001 [-0.002, -0.001] |
-| 2024 | 250 | -0.002 [-0.004, -0.000] | -0.001 [-0.004, 0.003] | -0.000 [-0.002, 0.001] |
-| 2025-26 | 249 | 0.000 [-0.013, 0.015] | 0.013 [-0.003, 0.031] | 0.002 [-0.016, 0.020] |
+| 2018-19 | 375 | -0.015 [-0.041, 0.012] | -0.024 [-0.076, 0.025] | -0.037 [-0.075, 0.001] |
+| 2020 | 251 | -0.004 [-0.011, 0.001] | -0.014 [-0.019, -0.010] | -0.009 [-0.014, -0.005] |
+| 2021-23 | 748 | -0.000 [-0.001, -0.000] | -0.002 [-0.002, -0.001] | -0.001 [-0.001, -0.001] |
+| 2024 | 250 | -0.001 [-0.003, -0.000] | -0.000 [-0.004, 0.003] | -0.000 [-0.001, 0.001] |
+| 2025-26 | 249 | 0.000 [-0.012, 0.014] | 0.014 [-0.002, 0.032] | 0.002 [-0.016, 0.019] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.010 [-0.002, 0.022] | 0.011 [-0.007, 0.032] | 0.002 [-0.012, 0.017] |
-| ordinary | 1603 | -0.006 [-0.012, -0.001] | -0.007 [-0.017, 0.003] | -0.008 [-0.015, -0.000] |
+| month_end | 150 | 0.009 [-0.003, 0.022] | 0.013 [-0.006, 0.034] | 0.002 [-0.012, 0.017] |
+| ordinary | 1603 | -0.005 [-0.011, 0.000] | -0.008 [-0.020, 0.002] | -0.010 [-0.019, -0.002] |
 | quarter_end | 31 | -0.015 [-0.063, 0.029] | -0.010 [-0.075, 0.052] | -0.026 [-0.083, 0.027] |
 | tax_date | 89 | 0.002 [-0.030, 0.031] | 0.015 [-0.011, 0.042] | -0.001 [-0.042, 0.038] |
 
@@ -548,34 +550,34 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | -0.001 [-0.002, -0.001] | -0.002 [-0.003, -0.001] | -0.001 [-0.001, -0.000] |
-| 1 | 324 | -0.004 [-0.009, -0.001] | -0.010 [-0.012, -0.008] | -0.007 [-0.009, -0.005] |
-| 2 | 41 | 0.018 [–] | 0.028 [–] | 0.047 [–] |
-| 3 | 473 | -0.014 [-0.037, 0.008] | -0.009 [-0.046, 0.027] | -0.025 [-0.053, 0.002] |
+| 0 | 1035 | -0.001 [-0.002, -0.000] | -0.001 [-0.003, -0.000] | -0.001 [-0.001, -0.000] |
+| 1 | 324 | -0.003 [-0.007, -0.000] | -0.009 [-0.010, -0.007] | -0.005 [-0.007, -0.004] |
+| 2 | 41 | 0.016 [–] | 0.029 [–] | 0.049 [–] |
+| 3 | 473 | -0.012 [-0.032, 0.009] | -0.016 [-0.057, 0.024] | -0.034 [-0.065, -0.004] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.154 [-0.304, 0.000] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.417, -0.048] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | -0.118 [-0.316, 0.091] |
+| 2018-19 | 17 | -0.176 [-0.400, 0.053] |
 | 2020 | 2 | 0.000 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
-| 2025-26 | 5 | -0.400 [–] |
+| 2025-26 | 5 | -0.600 [–] |
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
 | month_end | 6 | -0.167 [–] |
-| ordinary | 12 | -0.167 [-0.444, 0.111] |
-| quarter_end | 3 | 0.000 [–] |
+| ordinary | 12 | -0.250 [-0.571, 0.003] |
+| quarter_end | 3 | -0.333 [–] |
 | tax_date | 5 | -0.200 [–] |
 
 | scarcity_state | onsets | recall difference [90%] |
 |---|---|---|
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | -1.000 [–] |
-| 2 | 2 | -0.500 [–] |
-| 3 | 21 | -0.095 [-0.261, 0.067] |
+| 2 | 2 | -1.000 [–] |
+| 3 | 21 | -0.143 [-0.320, 0.042] |
 
 ## risk_gbm+structural against calendar_climatology
 
@@ -583,28 +585,28 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | 0.020 [0.012, 0.030] |
-| 2 | 0.007 [-0.001, 0.015] |
-| 3 | 0.007 [-0.002, 0.016] |
-| 4 | 0.005 [-0.003, 0.013] |
-| 5 | 0.000 [-0.009, 0.008] |
+| 1 | 0.021 [0.013, 0.030] |
+| 2 | 0.006 [-0.003, 0.015] |
+| 3 | 0.006 [-0.005, 0.016] |
+| 4 | 0.004 [-0.007, 0.014] |
+| 5 | -0.002 [-0.014, 0.008] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.036 [-0.001, 0.077] | -0.014 [-0.058, 0.032] | -0.040 [-0.079, -0.004] |
-| 2020 | 251 | 0.028 [0.019, 0.038] | 0.024 [0.016, 0.032] | 0.025 [0.018, 0.032] |
-| 2021-23 | 748 | 0.013 [0.012, 0.015] | 0.012 [0.010, 0.013] | 0.013 [0.011, 0.014] |
-| 2024 | 250 | 0.002 [-0.003, 0.006] | 0.003 [-0.000, 0.006] | 0.001 [-0.003, 0.005] |
-| 2025-26 | 249 | 0.029 [0.002, 0.060] | 0.011 [-0.001, 0.026] | -0.004 [-0.021, 0.009] |
+| 2018-19 | 375 | 0.040 [0.004, 0.078] | -0.022 [-0.075, 0.030] | -0.050 [-0.104, -0.002] |
+| 2020 | 251 | 0.029 [0.018, 0.039] | 0.025 [0.016, 0.033] | 0.026 [0.018, 0.034] |
+| 2021-23 | 748 | 0.013 [0.012, 0.015] | 0.012 [0.010, 0.013] | 0.013 [0.011, 0.015] |
+| 2024 | 250 | 0.003 [-0.002, 0.006] | 0.003 [-0.000, 0.006] | 0.001 [-0.003, 0.005] |
+| 2025-26 | 249 | 0.029 [0.003, 0.061] | 0.011 [-0.000, 0.026] | -0.004 [-0.021, 0.008] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.058 [0.033, 0.085] | 0.023 [0.005, 0.041] | 0.010 [-0.001, 0.020] |
-| ordinary | 1603 | 0.012 [0.004, 0.021] | 0.001 [-0.009, 0.012] | -0.003 [-0.013, 0.005] |
+| month_end | 150 | 0.057 [0.032, 0.084] | 0.025 [0.007, 0.044] | 0.011 [-0.001, 0.020] |
+| ordinary | 1603 | 0.014 [0.006, 0.022] | -0.000 [-0.013, 0.011] | -0.005 [-0.019, 0.006] |
 | quarter_end | 31 | 0.116 [0.034, 0.196] | 0.078 [-0.010, 0.160] | 0.063 [-0.024, 0.149] |
 | tax_date | 89 | 0.069 [0.042, 0.096] | 0.053 [0.025, 0.081] | 0.026 [-0.016, 0.060] |
 
@@ -612,34 +614,34 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | 0.008 [0.006, 0.010] | 0.008 [0.006, 0.009] | 0.008 [0.006, 0.010] |
-| 1 | 324 | 0.024 [0.017, 0.031] | 0.019 [0.014, 0.025] | 0.020 [0.015, 0.025] |
-| 2 | 41 | 0.059 [–] | 0.010 [–] | 0.020 [–] |
-| 3 | 473 | 0.041 [0.010, 0.076] | -0.004 [-0.040, 0.033] | -0.033 [-0.066, -0.004] |
+| 0 | 1035 | 0.008 [0.006, 0.010] | 0.008 [0.006, 0.009] | 0.008 [0.007, 0.010] |
+| 1 | 324 | 0.025 [0.019, 0.032] | 0.021 [0.015, 0.026] | 0.022 [0.016, 0.027] |
+| 2 | 41 | 0.057 [–] | 0.011 [–] | 0.022 [–] |
+| 3 | 473 | 0.044 [0.014, 0.077] | -0.010 [-0.051, 0.031] | -0.042 [-0.087, -0.004] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.038 [-0.148, 0.231] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.222, 0.158] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | -0.118 [-0.333, 0.087] |
+| 2018-19 | 17 | -0.176 [-0.400, 0.048] |
 | 2020 | 2 | 0.000 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
-| 2025-26 | 5 | 0.600 [–] |
+| 2025-26 | 5 | 0.400 [–] |
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
 | month_end | 6 | -0.167 [–] |
-| ordinary | 12 | 0.000 [-0.286, 0.300] |
-| quarter_end | 3 | 0.333 [–] |
+| ordinary | 12 | -0.083 [-0.400, 0.250] |
+| quarter_end | 3 | 0.000 [–] |
 | tax_date | 5 | 0.200 [–] |
 
 | scarcity_state | onsets | recall difference [90%] |
 |---|---|---|
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | 0.000 [–] |
-| 2 | 2 | 0.500 [–] |
-| 3 | 21 | 0.000 [-0.211, 0.227] |
+| 2 | 2 | 0.000 [–] |
+| 3 | 21 | -0.048 [-0.280, 0.194] |
 
 ## risk_gbm+structural against persistence_logistic
 
@@ -647,28 +649,28 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 
 | h | pooled |
 |---|---|
-| 1 | 0.005 [-0.001, 0.013] |
-| 2 | -0.003 [-0.011, 0.004] |
-| 3 | 0.001 [-0.008, 0.009] |
-| 4 | -0.004 [-0.011, 0.003] |
-| 5 | -0.007 [-0.015, -0.000] |
+| 1 | 0.006 [0.000, 0.013] |
+| 2 | -0.004 [-0.013, 0.005] |
+| 3 | -0.001 [-0.012, 0.009] |
+| 4 | -0.005 [-0.015, 0.005] |
+| 5 | -0.009 [-0.020, -0.000] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.019 [-0.012, 0.052] | -0.014 [-0.058, 0.027] | -0.037 [-0.072, -0.002] |
-| 2020 | 251 | 0.005 [0.001, 0.009] | 0.012 [0.009, 0.014] | 0.007 [0.003, 0.010] |
-| 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.002 [0.001, 0.002] | 0.001 [0.001, 0.001] |
-| 2024 | 250 | 0.003 [0.000, 0.007] | 0.003 [0.000, 0.008] | 0.001 [0.000, 0.002] |
-| 2025-26 | 249 | 0.003 [-0.013, 0.020] | 0.005 [-0.011, 0.023] | -0.011 [-0.027, 0.001] |
+| 2018-19 | 375 | 0.023 [-0.006, 0.052] | -0.022 [-0.073, 0.026] | -0.047 [-0.093, -0.004] |
+| 2020 | 251 | 0.005 [-0.001, 0.010] | 0.013 [0.009, 0.016] | 0.008 [0.003, 0.012] |
+| 2021-23 | 748 | 0.000 [0.000, 0.001] | 0.002 [0.002, 0.003] | 0.001 [0.001, 0.002] |
+| 2024 | 250 | 0.003 [0.000, 0.007] | 0.003 [0.001, 0.008] | 0.001 [0.000, 0.003] |
+| 2025-26 | 249 | 0.003 [-0.014, 0.021] | 0.005 [-0.011, 0.024] | -0.011 [-0.027, 0.002] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.037 [0.014, 0.062] | 0.013 [-0.005, 0.031] | 0.001 [-0.014, 0.016] |
-| ordinary | 1603 | -0.000 [-0.006, 0.006] | -0.003 [-0.013, 0.006] | -0.009 [-0.018, -0.002] |
+| month_end | 150 | 0.036 [0.012, 0.061] | 0.015 [-0.003, 0.034] | 0.001 [-0.013, 0.016] |
+| ordinary | 1603 | 0.001 [-0.004, 0.007] | -0.005 [-0.016, 0.006] | -0.011 [-0.023, -0.002] |
 | quarter_end | 31 | 0.055 [-0.017, 0.129] | 0.044 [-0.013, 0.105] | 0.038 [-0.018, 0.097] |
 | tax_date | 89 | 0.033 [-0.002, 0.067] | 0.026 [-0.006, 0.061] | 0.000 [-0.046, 0.041] |
 
@@ -676,34 +678,34 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1035 | 0.000 [-0.001, 0.001] | 0.001 [0.000, 0.003] | 0.001 [0.001, 0.001] |
-| 1 | 324 | 0.004 [0.002, 0.005] | 0.010 [0.007, 0.011] | 0.007 [0.005, 0.009] |
-| 2 | 41 | -0.031 [-0.089, 0.029] | -0.036 [-0.075, 0.009] | -0.056 [-0.099, -0.013] |
-| 3 | 473 | 0.021 [-0.004, 0.048] | -0.004 [-0.039, 0.029] | -0.031 [-0.059, -0.003] |
+| 0 | 1035 | 0.000 [-0.001, 0.001] | 0.002 [0.000, 0.003] | 0.001 [0.001, 0.001] |
+| 1 | 324 | 0.005 [0.003, 0.007] | 0.011 [0.008, 0.013] | 0.008 [0.006, 0.011] |
+| 2 | 41 | -0.033 [-0.095, 0.032] | -0.035 [-0.076, 0.013] | -0.054 [-0.097, -0.004] |
+| 3 | 473 | 0.024 [0.000, 0.048] | -0.011 [-0.053, 0.028] | -0.039 [-0.077, -0.005] |
 
-Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.038 [-0.111, 0.192] on 26 onsets.
+Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.185, 0.125] on 26 onsets.
 
 | regime | onsets | recall difference [90%] |
 |---|---|---|
-| 2018-19 | 17 | -0.059 [-0.167, 0.000] |
+| 2018-19 | 17 | -0.118 [-0.267, 0.000] |
 | 2020 | 2 | -0.500 [–] |
 | 2021-23 | 0 | – [–] |
 | 2024 | 2 | 0.000 [–] |
-| 2025-26 | 5 | 0.600 [–] |
+| 2025-26 | 5 | 0.400 [–] |
 
 | day_type | onsets | recall difference [90%] |
 |---|---|---|
 | month_end | 6 | 0.000 [–] |
-| ordinary | 12 | -0.083 [-0.312, 0.167] |
-| quarter_end | 3 | 0.333 [–] |
+| ordinary | 12 | -0.167 [-0.417, 0.111] |
+| quarter_end | 3 | 0.000 [–] |
 | tax_date | 5 | 0.200 [–] |
 
 | scarcity_state | onsets | recall difference [90%] |
 |---|---|---|
 | 0 | 2 | 0.000 [–] |
 | 1 | 1 | 0.000 [–] |
-| 2 | 2 | 0.500 [–] |
-| 3 | 21 | 0.000 [-0.167, 0.190] |
+| 2 | 2 | 0.000 [–] |
+| 3 | 21 | -0.048 [-0.235, 0.160] |
 
 
 ## Fitted coefficients by refit (+5 bp, in the columns' own units)
@@ -714,53 +716,53 @@ h = 1: 90 refits with both classes of the label, of 90.
 
 | coefficient | first refit | median | last refit | min | max | refits positive | standardized (last) |
 |---|---|---|---|---|---|---|---|
-| intercept | -4.934 | -2.507 | -2.564 | -4.934 | -1.62 | 0% | -3.332 |
-| spread_bps | -0.06033 | 0.1469 | 0.1824 | -0.07718 | 0.1834 | 96% | 1.882 |
-| e_x_shortfall | 0.1959 | 0.001359 | 0.00139 | 0.0005537 | 0.1959 | 100% | 0.165 |
-| e_x_tga_up | -0.006532 | 3.254e-05 | -5.694e-05 | -0.006532 | 0.02875 | 76% | -0.019 |
-| e_x_tax_date | -1.207 | 0.1218 | 0.122 | -1.207 | 0.8065 | 93% | 0.230 |
-| e_x_window | 3.941 | 0.06659 | 0.06782 | 0.04014 | 3.941 | 100% | 0.208 |
+| intercept | -3.808 | -2.663 | -2.686 | -4.509 | -1.75 | 0% | -3.390 |
+| spread_bps | -0.0192 | 0.1431 | 0.1796 | -0.08098 | 0.1803 | 94% | 1.854 |
+| e_x_shortfall | 0.07788 | 0.004152 | 0.004286 | 0.003068 | 0.07788 | 100% | 0.604 |
+| e_x_tga_up | -0.01694 | 5.716e-05 | -5.588e-05 | -0.01694 | 0.02932 | 97% | -0.018 |
+| e_x_tax_date | -1.747 | 0.1084 | 0.105 | -1.747 | 0.8037 | 93% | 0.198 |
+| e_x_window | 2.16 | 0.01538 | 0.01378 | -0.09222 | 2.16 | 96% | 0.042 |
 
 h = 2: 90 refits with both classes of the label, of 90.
 
 | coefficient | first refit | median | last refit | min | max | refits positive | standardized (last) |
 |---|---|---|---|---|---|---|---|
-| intercept | -4.159 | -2.548 | -2.587 | -4.831 | -1.554 | 0% | -3.158 |
-| spread_bps | 0.135 | 0.1116 | 0.1452 | -0.1217 | 0.1475 | 96% | 1.499 |
-| e_x_shortfall | 0.08236 | 0.0009395 | 0.0009293 | 0.0003202 | 0.08236 | 100% | 0.284 |
-| e_x_tga_up | -0.01002 | 6.53e-06 | -9.6e-05 | -0.01002 | 0.02921 | 51% | -0.032 |
-| e_x_tax_date | -0.5229 | 0.1308 | 0.1325 | -0.9423 | 0.8706 | 93% | 0.249 |
-| e_x_window | 1.522 | 0.03103 | 0.03148 | -0.09736 | 1.522 | 99% | 0.095 |
+| intercept | -4.054 | -2.628 | -2.655 | -4.692 | -1.613 | 0% | -3.191 |
+| spread_bps | 0.1113 | 0.1106 | 0.1434 | -0.1247 | 0.1455 | 96% | 1.480 |
+| e_x_shortfall | 0.06171 | 0.0009746 | 0.001004 | 0.0005191 | 0.06171 | 100% | 0.353 |
+| e_x_tga_up | -0.01942 | -4.451e-05 | -0.0001814 | -0.01942 | 0.02911 | 40% | -0.060 |
+| e_x_tax_date | -0.7761 | 0.1227 | 0.1228 | -0.9344 | 0.8433 | 93% | 0.231 |
+| e_x_window | 2.048 | 0.03233 | 0.03109 | -0.07646 | 2.048 | 98% | 0.094 |
 
 h = 3: 90 refits with both classes of the label, of 90.
 
 | coefficient | first refit | median | last refit | min | max | refits positive | standardized (last) |
 |---|---|---|---|---|---|---|---|
-| intercept | -3.864 | -2.613 | -2.63 | -4.707 | -1.472 | 0% | -2.946 |
-| spread_bps | 0.2307 | 0.05868 | 0.09452 | -0.07327 | 0.2307 | 96% | 0.976 |
-| e_x_shortfall | 0.08796 | 0.001198 | 0.001198 | 0.0006451 | 0.08796 | 100% | 0.367 |
-| e_x_tga_up | -0.01148 | 0.0001415 | -2.735e-05 | -0.01148 | 0.03031 | 94% | -0.009 |
-| e_x_tax_date | -0.3859 | 0.1342 | 0.1346 | -0.8239 | 0.8503 | 93% | 0.254 |
-| e_x_window | 1.501 | 0.03205 | 0.0308 | 0.01438 | 2.165 | 100% | 0.089 |
+| intercept | -3.737 | -2.689 | -2.705 | -4.603 | -1.543 | 0% | -2.981 |
+| spread_bps | 0.2073 | 0.05803 | 0.09273 | -0.07822 | 0.2073 | 96% | 0.957 |
+| e_x_shortfall | 0.06062 | 0.001231 | 0.001274 | 0.0006454 | 0.06062 | 100% | 0.448 |
+| e_x_tga_up | -0.02019 | 8.283e-05 | -0.0001314 | -0.02019 | 0.03076 | 93% | -0.044 |
+| e_x_tax_date | -0.7404 | 0.1159 | 0.1146 | -0.7725 | 0.818 | 93% | 0.217 |
+| e_x_window | 2.343 | 0.03339 | 0.03016 | 0.01622 | 2.545 | 100% | 0.087 |
 
 h = 4: 90 refits with both classes of the label, of 90.
 
 | coefficient | first refit | median | last refit | min | max | refits positive | standardized (last) |
 |---|---|---|---|---|---|---|---|
-| intercept | -4.072 | -2.605 | -2.618 | -4.376 | -1.591 | 0% | -3.116 |
-| spread_bps | 0.07968 | 0.101 | 0.1307 | -0.09163 | 0.1331 | 94% | 1.350 |
-| e_x_shortfall | 0.08504 | 0.001379 | 0.001379 | 0.0009026 | 0.08504 | 100% | 0.422 |
-| e_x_tga_up | -0.01077 | -0.0003669 | -0.0005026 | -0.01077 | 0.01257 | 10% | -0.166 |
-| e_x_tax_date | -0.5895 | 0.1282 | 0.1284 | -0.917 | 0.8494 | 93% | 0.243 |
-| e_x_window | 0.9521 | 0.04018 | 0.03966 | 0.0175 | 2.606 | 100% | 0.113 |
+| intercept | -3.936 | -2.698 | -2.701 | -4.484 | -1.683 | 0% | -3.157 |
+| spread_bps | 0.06692 | 0.1004 | 0.1287 | -0.09361 | 0.1309 | 94% | 1.329 |
+| e_x_shortfall | 0.06074 | 0.001383 | 0.001392 | 0.0008705 | 0.06341 | 100% | 0.490 |
+| e_x_tga_up | -0.02116 | -0.0004236 | -0.0005911 | -0.02116 | 0.01461 | 13% | -0.196 |
+| e_x_tax_date | -1.251 | 0.111 | 0.1096 | -1.251 | 0.7957 | 93% | 0.207 |
+| e_x_window | 1.758 | 0.04442 | 0.0427 | 0.02146 | 3.263 | 100% | 0.121 |
 
 h = 5: 89 refits with both classes of the label, of 89.
 
 | coefficient | first refit | median | last refit | min | max | refits positive | standardized (last) |
 |---|---|---|---|---|---|---|---|
-| intercept | -6.07 | -2.603 | -2.657 | -6.07 | -1.566 | 0% | -3.169 |
-| spread_bps | -0.2396 | 0.09286 | 0.131 | -0.3312 | 0.131 | 89% | 1.348 |
-| e_x_shortfall | 0.109 | 0.001228 | 0.001239 | 0.0007545 | 0.109 | 100% | 0.382 |
-| e_x_tga_up | -0.003437 | -0.0002669 | -0.0004024 | -0.02979 | 0.005241 | 9% | -0.134 |
-| e_x_tax_date | -0.5047 | 0.1271 | 0.1272 | -1.443 | 0.9384 | 93% | 0.242 |
-| e_x_window | 0.4828 | 0.0622 | 0.06171 | 0.03387 | 2.198 | 100% | 0.168 |
+| intercept | -5.955 | -2.724 | -2.763 | -5.955 | -1.697 | 0% | -3.223 |
+| spread_bps | -0.2678 | 0.09246 | 0.1284 | -0.3442 | 0.1284 | 89% | 1.321 |
+| e_x_shortfall | 0.08093 | 0.001365 | 0.001378 | 0.0001388 | 0.08093 | 100% | 0.488 |
+| e_x_tga_up | -0.01567 | -0.0003796 | -0.0005376 | -0.02932 | 0.003409 | 9% | -0.179 |
+| e_x_tax_date | -1.323 | 0.1144 | 0.1125 | -1.655 | 0.8136 | 93% | 0.214 |
+| e_x_window | 1.068 | 0.06577 | 0.06436 | 0.03691 | 2.452 | 100% | 0.176 |

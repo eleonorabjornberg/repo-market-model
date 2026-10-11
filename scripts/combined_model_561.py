@@ -292,7 +292,7 @@ def candidate_entry(name: str, spec: dict) -> dict:
     blocks = spec["blocks"]
     extra: List[str] = []
     if "structural" in blocks:
-        extra += ["bank_total_assets", "net_settlement"]
+        extra += ["bank_total_assets", "net_settlement_ahead_1d"]
     if "projected" in blocks:
         extra += ["proj_dist_h1"]
     if "factor" in blocks:
@@ -303,7 +303,7 @@ def candidate_entry(name: str, spec: dict) -> dict:
     entry["features"] = list(dict.fromkeys(list(base["features"]) + extra))
     entry["features_at_horizon_2_or_more"] = (
         "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads net_settlement_due_5d in place of "
-        "net_settlement and proj_dist_h{h} for the horizon h"
+        "net_settlement_ahead_1d and proj_dist_h{h} for the horizon h"
     )
     dropped = spec.get("dropped")
     entry["calibration"] = (

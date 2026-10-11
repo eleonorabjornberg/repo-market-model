@@ -107,8 +107,10 @@ class FeatureTests(unittest.TestCase):
         self.assertFalse(set(ml.LATENT_FACTOR_COLUMNS) - {"on_rrp"} & set(design))
 
     def test_at_horizon_one_the_scored_days_own_settlement_is_read(self):
+        # #568: the scored day's own settlement is the one-day-ahead announced net, not the decision day's net_settlement
         design, _backtest = SCRIPT.component_features(1, ("structural",))
-        self.assertIn("net_settlement", design)
+        self.assertIn("net_settlement_ahead_1d", design)
+        self.assertNotIn("net_settlement", design)
         self.assertNotIn("net_settlement_due_5d", design)
 
     def test_dropping_a_block_drops_its_columns_and_only_its_columns(self):

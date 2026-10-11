@@ -1,5 +1,7 @@
 # The combined model: a passer, a calibrated ordinary-day logistic and a gate (#561, of #374)
 
+> **Correction of 11 October 2026 (#578).** The tables and prose below are the first scoring of 11 October. The model was re-scored after net settlement was fixed (#566), the structural block read the scored day's settlement at h = 1 (#568), and the shared judge table printed both false-alarm counts (#577). The re-score is in `docs/pivot/evidence/combined-model/`; the figures below are not updated. The before-and-after figures are in [`audit-fixes-578-result.md`](audit-fixes-578-result.md).
+
 A scratch measurement under the pressure-day judge. It writes nothing into `docs/runs/`, publishes nothing, moves no published
 figure, scores no day of 2026 and reads no day after 2025-12-31 (`docs/decisions/lockbox.md`; the script refuses a later panel).
 No rule, threshold, onset definition, cut-off rule or availability time changes. The combination was declared in

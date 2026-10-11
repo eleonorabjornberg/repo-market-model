@@ -42,7 +42,7 @@ from pathlib import Path
 from types import MappingProxyType
 from unittest import mock
 
-from repo_model import contract, measurement_fields, net_settlement as ns, scarcity, structural_liquidity as sl
+from repo_model import contract, measurement_fields, net_settlement as ns, projected_reserves as pr, scarcity, structural_liquidity as sl
 from repo_model.asof import InformationRule
 from repo_model.data import CALENDAR_COLUMN_RULES, DailyObservation, next_business_day
 from repo_model.evaluation_splits import load_split_declaration
@@ -56,7 +56,7 @@ REQUIRE_ML = "REPO_MODEL_REQUIRE_ML"
 def _values(**kw):
     base = {
         "sofr": 4.0, "iorb": 4.0, "reserve_balances": 3200.0, "bank_total_assets": 26000.0, "on_rrp": 50.0,
-        "tga": 700.0, "net_settlement": 80.0, "net_settlement_due_5d": 150.0,
+        "tga": 700.0, "net_settlement": 80.0, "net_settlement_ahead_1d": 30.0 + 80.0, "net_settlement_due_5d": 150.0,
         "days_to_month_end": 12.0, "quarter_end": 0.0, "tax_date": 0.0,
     }
     base.update(kw)
@@ -127,7 +127,7 @@ class DesignTests(unittest.TestCase):
         e = sl.elasticity(3200.0 / 26000.0)
         row = design.row(_obs(), 12.0)
         self.assertAlmostEqual(row[0], 0.0)
-        self.assertAlmostEqual(row[1], e * 30.0)
+        self.assertAlmostEqual(row[1], e * 60.0)  # the scored day's announced 110 less the 50 ON RRP, not the decision day's 80
         self.assertAlmostEqual(row[2], e * 12.0)
         self.assertEqual(row[3:], [0.0, 0.0])
 
@@ -146,7 +146,10 @@ class DesignTests(unittest.TestCase):
         far = sl.StructuralDesign(sl.features_at_horizon(3), SPLITS)
         self.assertEqual(far.drain_column, "net_settlement_due_5d")
         near = sl.StructuralDesign(sl.features_at_horizon(1), SPLITS)
-        self.assertEqual(near.drain_column, "net_settlement")
+        # #568: at h = 1 the scored day is the next row, whose settlement is public at the decision only as
+        # the one-day-ahead announced net (`net_settlement` on the decision row is the decision day's own)
+        self.assertEqual(near.drain_column, "net_settlement_ahead_1d")
+        self.assertNotIn("net_settlement", sl.features_at_horizon(1))
         e = sl.elasticity(3200.0 / 26000.0)
         self.assertAlmostEqual(far.row(_obs(), 0.0)[1], e * 100.0)
 
@@ -200,7 +203,7 @@ def _panel(count=330):
             "sofr": 4.0 + spread / 100.0, "iorb": 4.0, "sofr_volume": 2100.0 + index % 11,
             "reserve_balances": 3000.0, "bank_total_assets": 26000.0,
             "on_rrp": 20.0, "tga": 700.0 + 25.0 * ((week * 7) % 5),
-            "net_settlement": settle, "net_settlement_due_5d": settle, **calendar,
+            "net_settlement": settle, "net_settlement_ahead_1d": settle, "net_settlement_due_5d": settle, **calendar,
         }))
     return rows
 
@@ -211,7 +214,7 @@ class PredictorTests(unittest.TestCase):
     def setUp(self):
         _require_extra(self)
         self.rows = _panel()
-        fields = ns.COLUMN_FIELDS
+        fields = {**ns.COLUMN_FIELDS, **pr.COLUMN_FIELDS}
         patch = mock.patch.multiple(
             contract,
             FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),

@@ -13821,6 +13821,53 @@ class LatentFactorPredictorTests(unittest.TestCase):
             self.assertGreaterEqual(curve[0], curve[1])
             self.assertTrue(all(0.0 <= p <= 1.0 for p in curve))
 
+    def test_the_served_lead_is_the_rows_from_the_anchor_to_the_scored_day(self):
+        for horizon in (1, 2, 3, 5):
+            rule = ml.InformationRule(_PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0), horizon=horizon)
+            self.assertEqual(ml.served_lead(rule), horizon + 1)
+
+    def test_a_target_whose_lead_depends_on_the_weekday_has_no_single_served_lead(self):
+        import copy
+
+        registry = copy.deepcopy(_PRESSURE_REGISTRY)
+        for name in ("IORB", "IOER"):
+            registry["fred_macro_latest_vintage"]["field_release_lags"][name]["days"] = 1
+        rule = ml.InformationRule(registry, ("spread_bps",), decision_time=time(16, 0), horizon=1)
+        with self.assertRaises(ValueError):
+            ml.served_lead(rule)
+
+    def test_the_factor_is_carried_from_the_anchor_to_the_scored_day_not_one_row_short(self):
+        """#575: the anchor is `horizon + 1` rows before the scored day, so that many steps are carried.
+
+        `information.horizon` alone left the Gaussian rows forecasting the day before the scored day and trained
+        the logistic link at a lead one row shorter than the one it serves (the lag of #449 again).
+        """
+
+        steps = ml.served_lead(self.rule)
+        self.assertEqual(steps, self.rule.horizon + 1)
+        for link in ("gaussian", "logit"):
+            predictor = ml.latent_factor_exceedance(minimum_history=40, link=link)
+            result = self.call(predictor, self.rows[:150], self.rows[150:151], [self.rows[:151]])
+            self.assertEqual(result.model_settings["served_steps"], steps, link)
+        logit = ml.latent_factor_exceedance(minimum_history=40, link="logit")
+        pairs = self.call(logit, self.rows[:150], self.rows[150:151], [self.rows[:151]]).model_settings["logit_training_pairs"]
+        self.assertLessEqual(pairs, 150 - steps)
+        self.assertGreater(pairs, 150 - steps - 10)
+
+    def test_the_gaussian_forecast_carries_the_filtered_factor_the_served_lead_steps(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40)
+        train, feature_rows = self.rows[:150], self.rows[150:151]
+        history = self.rows[:151]
+        result = self.call(predictor, train, feature_rows, [history])
+        fitted = ml.fit_latent_factor([ml.latent_factor_observation(r) for r in train])
+        now_mean, now_var = ml.filter_latent_factor(fitted, [ml.latent_factor_observation(r) for r in history])[-1]
+        ahead, _ = ml.latent_factor_forecast(fitted, now_mean, now_var, ml.served_lead(self.rule))
+        short, _ = ml.latent_factor_forecast(fitted, now_mean, now_var, self.rule.horizon)
+        self.assertNotAlmostEqual(ahead, short)
+        # the carried mean sets the probability: the same history carried one step fewer gives another curve
+        self.assertEqual(len(result.curves[0]), 2)
+        self.assertAlmostEqual(result.model_settings["carried_factor_mean"][0], ahead)
+
     def test_a_stressed_history_raises_the_logistic_probability(self):
         predictor = ml.latent_factor_exceedance(minimum_history=40, link="logit")
         train, feature_rows = self.rows[:150], self.rows[150:151]

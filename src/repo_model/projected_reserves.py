@@ -8,11 +8,13 @@ it before any score.
 
 **The roll-forward** for the scored day `T = d + h` (decision row `d`, 16:00):
 
-* the start is the reserve level the as-of rule reads at `d`, the H.4.1 Wednesday level observed on
-  the Wednesday `O` on or before its read row;
+* the start is the reserve level the as-of rule reads at `d`, the H.4.1 weekly average (Thursday to
+  Wednesday `O`, the Wednesday on or before its read row);
 * to `d`: the Treasury General Account and the overnight reverse repo facility gain what reserves lose
-  (the Fed liability identity), so `R_d = R_O - (TGA_read - TGA_O) - (RRP_read - RRP_O)`, less the net
-  settlement announced for the rows after the TGA's read row up to `d`;
+  (the Fed liability identity), so `R_d = A_O - (TGA_read - mean TGA over the week) - (RRP_read - mean RRP
+  over the week)` (`week_average`, #574: the level is an average, so the flows are measured from averages
+  over the same seven days), less the net settlement announced for the rows after the TGA's read row up
+  to `d`;
 * after `d`: the net Treasury settlement announced for the next `h` business days, plus the expected
   tax receipts on tax dates (the previous year's rise on the same position of the same month's window,
   less that day's settlement). The ON RRP balance absorbs a net drain before reserves do.
@@ -72,6 +74,7 @@ __all__ = [
     "features_at_horizon",
     "reserve_change",
     "roll_forward",
+    "week_average",
     "tax_window",
     "window_tax",
 ]
@@ -96,6 +99,8 @@ READ_FEATURES = ("reserve_balances", "bank_total_assets", "tga_daily", "on_rrp")
 #: Business days appended to the dates handed to the rule, so a business-day lag at the last real row is
 #: dated the same whatever follows it.
 _EXTRA_DATES = 15
+#: Rows searched backwards for the days of a week: a week has seven days, so this reaches past any holiday run.
+_WEEK_ROWS = 40
 
 
 def reserve_change(flow: float, rrp_level: float) -> float:
@@ -224,6 +229,32 @@ def extended_dates(dates: Sequence[date], i: int) -> List[date]:
     return out
 
 
+def week_average(rows: Sequence[DailyObservation], observed: date, column: str) -> float:
+    """The average of the daily series `column` over the seven calendar days ending `observed`, USD billions.
+
+    The H.4.1 reserve level (`reserve_balances`, WRESBAL) is the average of the daily levels from the Thursday
+    to the Wednesday `observed`, a weekend or holiday carrying the last business day's level (#574). The
+    Treasury account and the facility are measured from their own averages over the same days, so the roll-forward
+    subtracts like from like. Only rows dated on or before `observed` are read.
+
+    Raises:
+        ValueError: no row is dated on or before the first day of the week, or a row that sets the level of one
+            of its days has no value for `column`.
+    """
+
+    total = 0.0
+    for back in range(7):
+        day = observed - timedelta(days=back)
+        level = [row for row in rows if row.date <= day]
+        if not level:
+            raise ValueError(f"no {column} row on or before {day.isoformat()}")
+        value = level[-1].values.get(column)
+        if value is None:
+            raise ValueError(f"{column} has no value on {level[-1].date.isoformat()}")
+        total += float(value)
+    return total / 7.0
+
+
 def _value(rows: Sequence[DailyObservation], position: int, column: str) -> Optional[float]:
     value = rows[position].values.get(column)
     return None if value is None else float(value)
@@ -265,8 +296,11 @@ def build_row(
     if then < 0 or then > min(read["tga_daily"], read["on_rrp"]):
         # the level on the Wednesday was not public when the TGA and the facility were read
         return empty
-    tga_then = _value(rows, then, "tga_daily")
-    rrp_then = _value(rows, then, "on_rrp")
+    try:
+        tga_then = week_average(rows[max(0, then - _WEEK_ROWS + 1): then + 1], observed, "tga_daily")
+        rrp_then = week_average(rows[max(0, then - _WEEK_ROWS + 1): then + 1], observed, "on_rrp")
+    except ValueError:
+        return empty
     gap_rows = [_value(rows, q, "net_settlement") for q in range(read["tga_daily"] + 1, i + 1)]
     if None in (tga_then, rrp_then) or None in gap_rows:
         return empty
