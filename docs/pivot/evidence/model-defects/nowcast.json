@@ -1,0 +1,314 @@
+{
+ "bootstrap": {
+  "block": 10.0,
+  "draws": 2000,
+  "level": 0.9
+ },
+ "cap_bp": 5.0,
+ "rows": {
+  "naive": {
+   "mae": {
+    "all days": 1.8248798718633206,
+    "pressure days (> 5 bp)": 10.80379746835443,
+    "quarter-end days": 8.12903225806452
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 0.0,
+     "mean": 0.0,
+     "upper": 0.0
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": 0.0,
+     "mean": 0.0,
+     "upper": 0.0
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": 0.0,
+     "mean": 0.0,
+     "upper": 0.0
+    }
+   }
+  },
+  "published_only, target capped at 10 bp": {
+   "mae": {
+    "all days": 1.9439011508487065,
+    "pressure days (> 5 bp)": 10.44798604433901,
+    "quarter-end days": 8.33980585657697
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 0.03813276048570621,
+     "mean": 0.11902127898538305,
+     "upper": 0.18694430408949905
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.040114834937881,
+     "mean": -0.3558114240154269,
+     "upper": 0.22015467977842285
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": 0.02552616386865687,
+     "mean": 0.21077359851244987,
+     "upper": 0.4081512089753604
+    }
+   }
+  },
+  "published_only, target capped at 20 bp": {
+   "mae": {
+    "all days": 2.0751502247009728,
+    "pressure days (> 5 bp)": 10.38237567507911,
+    "quarter-end days": 8.41903178779921
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 0.13105844246305023,
+     "mean": 0.25027035283765037,
+     "upper": 0.35197446561155926
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.3734073095000443,
+     "mean": -0.4214217932753148,
+     "upper": 0.36751326015725067
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": 0.019079235443010625,
+     "mean": 0.2899995297346876,
+     "upper": 0.5610134186008835
+    }
+   }
+  },
+  "published_only, target capped at 5 bp": {
+   "mae": {
+    "all days": 1.8720018721466942,
+    "pressure days (> 5 bp)": 10.531946588967752,
+    "quarter-end days": 8.292610577516092
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": -0.007123292398237421,
+     "mean": 0.047122000283372385,
+     "upper": 0.09357047526336926
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -0.7425528498692102,
+     "mean": -0.2718508793866812,
+     "upper": 0.13379528195317295
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": 0.033293382446730684,
+     "mean": 0.16357831945157136,
+     "upper": 0.32154096352729655
+    }
+   }
+  },
+  "published_only, uncapped (declared)": {
+   "mae": {
+    "all days": 3.612796021617594,
+    "pressure days (> 5 bp)": 11.153643935339305,
+    "quarter-end days": 9.661432211524504
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 1.4598128431409394,
+     "mean": 1.7879161497542833,
+     "upper": 2.116901938565026
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -0.8008647222720124,
+     "mean": 0.3498464669848724,
+     "upper": 1.369352944864346
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": 0.7675945487763304,
+     "mean": 1.5323999534599817,
+     "upper": 2.3118233452335613
+    }
+   }
+  },
+  "rrp_settlement, target capped at 10 bp": {
+   "mae": {
+    "all days": 2.0160157257247135,
+    "pressure days (> 5 bp)": 9.986898522725498,
+    "quarter-end days": 8.184342051779577
+   },
+   "minus_declared_uncapped": {
+    "all days": {
+     "days": 1873,
+     "lower": -1.7240460110576592,
+     "mean": -1.44682784537246,
+     "upper": -1.2085723426288206
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.2039758942880794,
+     "mean": -0.5874521138163026,
+     "upper": -0.045016454718828994
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": -3.761468494356772,
+     "mean": -1.8918200281721318,
+     "upper": -0.469311004406961
+    }
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 0.07914044185686063,
+     "mean": 0.1911358538613907,
+     "upper": 0.2983951799494213
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.5039752814956329,
+     "mean": -0.8168989456289355,
+     "upper": -0.20123553269657535
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": -1.224526858156476,
+     "mean": 0.055309793715057134,
+     "upper": 1.3281983947012668
+    }
+   }
+  },
+  "rrp_settlement, target capped at 20 bp": {
+   "mae": {
+    "all days": 2.2005573792803066,
+    "pressure days (> 5 bp)": 9.872259012109536,
+    "quarter-end days": 8.66645018972431
+   },
+   "minus_declared_uncapped": {
+    "all days": {
+     "days": 1873,
+     "lower": -1.477641124075612,
+     "mean": -1.2622861918168713,
+     "upper": -1.0646308195703171
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.2156510571945656,
+     "mean": -0.7020916244322668,
+     "upper": -0.2602981356257941
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": -2.5259679062917173,
+     "mean": -1.4097118902273995,
+     "upper": -0.5755343291873743
+    }
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 0.2105593663235949,
+     "mean": 0.37567750741698275,
+     "upper": 0.5365049327918582
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.8905707042579016,
+     "mean": -0.9315384562449002,
+     "upper": -0.11135071567464709
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": -1.2507424458160592,
+     "mean": 0.5374179316597892,
+     "upper": 2.544937275646114
+    }
+   }
+  },
+  "rrp_settlement, target capped at 5 bp": {
+   "mae": {
+    "all days": 1.920102470117347,
+    "pressure days (> 5 bp)": 10.172674826627057,
+    "quarter-end days": 8.081089034370274
+   },
+   "minus_declared_uncapped": {
+    "all days": {
+     "days": 1873,
+     "lower": -1.8534661041116776,
+     "mean": -1.5427411009798342,
+     "upper": -1.2712331933203247
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.1056783222925533,
+     "mean": -0.40167580991474094,
+     "upper": 0.29360906093974787
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": -4.4375399437527285,
+     "mean": -1.995073045581433,
+     "upper": -0.06789011451416457
+    }
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 0.016894799888513935,
+     "mean": 0.09522259825401866,
+     "upper": 0.16922995358961976
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.109808192736466,
+     "mean": -0.6311226417273742,
+     "upper": -0.21182658956143033
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": -0.6993221728643517,
+     "mean": -0.047943223694244815,
+     "upper": 0.5834229993341814
+    }
+   }
+  },
+  "rrp_settlement, uncapped (declared)": {
+   "mae": {
+    "all days": 3.4628435710971766,
+    "pressure days (> 5 bp)": 10.574350636541796,
+    "quarter-end days": 10.076162079951713
+   },
+   "minus_naive": {
+    "all days": {
+     "days": 1873,
+     "lower": 1.3060169747835575,
+     "mean": 1.637963699233855,
+     "upper": 1.9944154245042036
+    },
+    "pressure days (> 5 bp)": {
+     "days": 158,
+     "lower": -1.328992997478104,
+     "mean": -0.22944683181263312,
+     "upper": 0.7472004328924496
+    },
+    "quarter-end days": {
+     "days": 31,
+     "lower": -0.4668033448435311,
+     "mean": 1.9471298218871893,
+     "upper": 4.95921585904176
+    }
+   }
+  }
+ },
+ "scored_days": 1873
+}
