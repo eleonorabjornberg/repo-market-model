@@ -335,6 +335,11 @@ NOT_ENTRY_POINTS = {
         "scores no forecast, its caller drops every row after the declared last scored day, refuses a later "
         "one (setup_diagnostic.require_window) and calls require_unlocked on it before the first read"
     ),
+    "projected_reserves.build_row": (
+        "builds one row's projected-reserves columns from the as-of reads of its own decision (#545); scores "
+        "nothing, `build_columns` builds no row after the declared last scored day, and `scripts/projected_reserves.py "
+        "panel` calls require_unlocked on that day before it builds anything"
+    ),
     "scripts/pressure_track_m.states_command": (
         "tabulates the filtered state against #115's state on the fold grid (#384); scores "
         "nothing, it ends at the declared last scored day through _as_of_folds, which calls "
