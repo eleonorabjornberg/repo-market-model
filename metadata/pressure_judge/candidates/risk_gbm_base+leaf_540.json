@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "M (#540)",
+  "parent": "risk_gbm_base",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+  ],
+  "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
+  "calibration": "none: the parent's risk-date forecast (fitted on risk-date label days only and exactly 0 on every other day), changed by one thing: the gradient-boosted classifier's min_samples_leaf scales with the fit's training pairs, min(20, max(1, pairs // 4)); metadata/model_defects_540.json"
+}

@@ -1,0 +1,56 @@
+{
+  "status": "declared by the pull request that closes #540 before any score; the four changes, the way each is built and the numbers in them are fixed here and nothing is tuned on a scored day. A measurement only: nothing is published, no information-set rule changes, no scored day is after 2025-12-31 (docs/decisions/lockbox.md)",
+  "directive": "#540",
+  "sources": "docs/pivot/desk-standard-result.md (section 6, the nowcast), docs/pivot/construction-gaps-result.md (gaps 2, 3, 4 and 6), docs/pivot/evidence/construction-gaps/",
+  "scoring": {"last_day": "2025-12-31", "minimum_history": 61, "refit_every": 21, "decision_time": "16:00"},
+  "parent": "metadata/risk_date_severity.json: the five risk-date passers (risk_gbm, risk_gbm_base, risk_logistic, risk_logistic_base, risk_quantile_skewt_base), unchanged except for the one change in each variant",
+  "changes": {
+    "nowcast_target_cap": {
+      "criterion": 1,
+      "what": "the nowcast's training target, the spread's one-day change, is clipped to +/- target_cap_bp before the ridge is fitted (nowcast.walk_forward, target_cap_bp). Scoring is against the unclipped spread and the nowcast is still the day-before spread plus the predicted change",
+      "target_cap_bp": 5.0,
+      "why_this_cap": "desk-standard-result.md section 6 tried caps of 20, 10 and 5 bp on the scored days and read 5 bp as the one that removes most of the loss; the cap is therefore not an independent choice and is declared here as the one tried, with the other two reported beside it. It is not selected on this run's result",
+      "candidates": ["rrp_settlement (the declared primary of metadata/nowcast.json)", "published_only (the control with no same-day input)"],
+      "reported": "mean absolute error of the nowcast against the spread of the same row, over the scored days, on all days, on pressure days (spread > 5 bp) and on quarter-end days; the paired difference from the naive nowcast (the day-before spread) and from the uncapped declared nowcast, each with a stationary-bootstrap 90% interval (the judge's block length)",
+      "not_a_model_input": "the nowcast is not an input of the five risk-date models, so it is scored on its own error and does not enter the risk-date variants below"
+    },
+    "early_fit_leaf_floor": {
+      "criterion": 2,
+      "what": "the gradient-boosted classifier's min_samples_leaf scales with the fit's training pairs: min(20, max(1, pairs // 4)). The declared model has 20 on every fit, so it cannot split fewer than 40 pairs and is a constant there. The logistic and the skew-t quantile model have no leaf floor, so this change leaves them exactly as they are (reported as such, not re-run)",
+      "min_samples_leaf": "min(20, max(1, pairs // 4)), where pairs is the number of risk-date training pairs of that fit",
+      "applies_to": ["risk_gbm", "risk_gbm_base"],
+      "reported": "refits through 2019 at h = 1 and at h >= 2 whose gradient-boosted fit is constant (one distinct probability on its own training pairs), declared against changed",
+      "why_not_a_later_first_fit": "the prior tried in #525 changed nothing; a later first fit would drop scored days from the comparison, and a leaf floor keeps the same scored days"
+    },
+    "announced_iorb_input": {
+      "criterion": 3,
+      "what": "iorb_announced_change_bps is added to every candidate's inputs at h = 1 only, as the FOMC point-in-time rule allows (the change that takes effect after the decision instant and on or before the scored day, from the notes announced at or before the decision instant: announced_iorb.py, docs/decisions/fomc-point-in-time.md)",
+      "horizons": [1],
+      "applies_to": ["risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"],
+      "why_only_bps": "iorb_days_to_announced_change is missing (None) when no note is announced, and a missing input drops the pair; the change itself is 0.0 when none is announced",
+      "risk_dates_unchanged": "the risk-date set is unchanged: the input is read on the declared risk dates only"
+    },
+    "added_risk_dates_modelled_apart": {
+      "criterion": 4,
+      "what": "the risk-date set is widened by the added dates and the added dates are fitted and served by a separate model, trained on added-date pairs alone, with the same estimator and the same inputs as the original risk dates' model. The original risk dates keep their own fit, trained on original risk-date pairs alone, which is the declared model. A flag input would let the added dates dilute the original fit through the shared coefficients; a separate fit does not",
+      "added_dates": {
+        "bill_settlement_days": "at h = 1 a day with any Treasury settlement (treasury_settlement > 0), not already a declared risk date. A settlement is public one business day ahead (docs/decisions/information-set.md as it stands), so nothing is added at h >= 2",
+        "business_day_calendar": "at every horizon a day that is one of the month's last two business days (EvaluationSplits.reporting_day_type) or inside the quarter-end window (data.quarter_end_window), not already a declared risk date. This is construction_gaps_485's calendar_bd; the wider calendar_wide of that sizing was a size chosen after the onsets were listed and is not used"
+      },
+      "added_dates_with_no_training_pair": "a forecast of exactly 0 (the day is not served), counted and reported",
+      "unserved_input": "an added date whose input was not public is forecast 0, as construction_gaps_485 does",
+      "reported": "the number of original and added risk dates, the onsets on each, and the onsets warned on each"
+    },
+    "all_together": {
+      "what": "early_fit_leaf_floor, announced_iorb_input and added_risk_dates_modelled_apart in one model (the nowcast does not enter)"
+    }
+  },
+  "variants": {
+    "leaf": ["early_fit_leaf_floor"],
+    "iorb": ["announced_iorb_input"],
+    "added": ["added_risk_dates_modelled_apart"],
+    "all": ["early_fit_leaf_floor", "announced_iorb_input", "added_risk_dates_modelled_apart"]
+  },
+  "judge": "scored by scripts/pressure_judge.py as it stands in the commit the run starts from, each variant as a candidate named <parent>+<variant>_540 (metadata/pressure_judge/candidates/), with the published benchmarks of the same run. Tier 1 pooled and per lead, tiers 3 and 5, recall by year with 2018, 2020 and 2024 called out, paired against the parent, 90% stationary-bootstrap interval, split by regime and pressure-day type",
+  "not_decided_here": "settlements dated from the announcement and the H.4.1 per-release timing are Eleonora's ruling of 10 October (#541) and are not in this declaration"
+}
