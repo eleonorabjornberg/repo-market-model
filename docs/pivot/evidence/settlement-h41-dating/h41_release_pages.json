@@ -199,7 +199,19 @@
    "http": 200,
    "release_date": "2023-08-31",
    "wednesday": "2023-08-30"
+  },
+  {
+   "path": "20260101",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20260102",
+   "http": 200,
+   "release_date": "2026-01-02",
+   "wednesday": "2025-12-31"
   }
  ],
- "also": "20201228 and 20251128 were established earlier (docs/pivot/construction-gaps-result.md, tests/test_registry.py) and are re-fetched here."
+ "also": "20201228 and 20251128 were established earlier (docs/pivot/construction-gaps-result.md, tests/test_registry.py) and are re-fetched here. 20260101 and 20260102 were fetched on 11 October 2026 by the run that closes #583 (#576), one plain GET each."
 }

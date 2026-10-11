@@ -360,5 +360,69 @@ class H41ReleaseTests(unittest.TestCase):
         self.assertEqual(variant["release_calendar"]["fields"], ["WLRRAOL", "WRESBAL", "WTREGEN"])
 
 
+class H41CoverageTests(unittest.TestCase):
+    """`release_instant` refuses a week the declaration does not cover (#576).
+
+    The calendar assumed a Thursday print for every week not in `exceptions`, so a week past the
+    declared `covers` (the week ended 31 December 2025, released Friday 2 January 2026; Thanksgiving
+    week 2026) was dated one release early. Now a week whose Wednesday is outside
+    `first_wednesday` .. `last_wednesday` raises `ValueError`; the two weeks the Board's pages verified
+    are declared.
+
+    Red first: written before the guard, the out-of-range weeks returned an instant and
+    `ValueError not raised` failed these tests.
+
+    Mutation record. In a `git archive` copy of the tree under /tmp, CPython 3.11 (`/opt/rmm-venv`),
+    this class run alone, unmutated control green. In `h41_release.release_instant` the guard line
+    `if not (first <= observed <= last):` was mutated to `if False:`. Killed:
+    `test_a_week_after_the_last_declared_wednesday_is_refused`,
+    `test_a_week_before_the_first_declared_wednesday_is_refused` and
+    `test_thanksgiving_week_2026_is_refused_until_it_is_covered` failed with
+    `AssertionError: ValueError not raised`.
+    """
+
+    def setUp(self):
+        self.declaration = h41.load_release_dating(H41)
+        registry = h41.release_dated_registry(load_source_registry(REGISTRY), self.declaration)
+        self.calendar = registry["fred_macro_latest_vintage"]["release_calendar"]
+
+    def test_the_week_ended_31_december_2025_is_released_on_friday_2_january(self):
+        # Thursday 1 January 2026 is a federal holiday; the Board's page for it is 404.
+        for row in (date(2025, 12, 31), date(2026, 1, 1), date(2026, 1, 2)):
+            self.assertEqual(h41.release_instant(self.calendar, row), datetime(2026, 1, 2, 16, 30))
+
+    def test_the_declaration_covers_exactly_as_far_as_its_evidence(self):
+        self.assertEqual(self.declaration["covers"], {"first_wednesday": "2018-03-28", "last_wednesday": "2025-12-31"})
+
+    def test_a_week_after_the_last_declared_wednesday_is_refused(self):
+        with self.assertRaises(ValueError) as caught:
+            h41.release_instant(self.calendar, date(2026, 1, 7))
+        self.assertIn("2026-01-07", str(caught.exception))
+
+    def test_a_week_before_the_first_declared_wednesday_is_refused(self):
+        with self.assertRaises(ValueError):
+            h41.release_instant(self.calendar, date(2018, 3, 27))
+        h41.release_instant(self.calendar, date(2018, 3, 28))
+
+    def test_thanksgiving_week_2026_is_refused_until_it_is_covered(self):
+        self.assertEqual(self.declaration["exceptions"]["2026-11-25"], "2026-11-27")
+        with self.assertRaises(ValueError):
+            h41.release_instant(self.calendar, date(2026, 11, 25))
+
+    def test_every_exception_inside_coverage_is_still_dated_as_declared(self):
+        self.assertEqual(h41.release_instant(self.calendar, date(2025, 11, 26)), datetime(2025, 11, 28, 16, 30))
+        self.assertEqual(h41.release_instant(self.calendar, date(2025, 12, 24)), datetime(2025, 12, 29, 16, 30))
+
+    def test_a_declaration_without_ordered_coverage_is_refused(self):
+        import tempfile
+
+        bad = dict(self.declaration, covers={"first_wednesday": "2025-12-31", "last_wednesday": "2018-03-28"})
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "d.json"
+            path.write_text(json.dumps(bad), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                h41.load_release_dating(path)
+
+
 if __name__ == "__main__":
     unittest.main()
