@@ -12895,6 +12895,152 @@ class RiskDateVariantTests(unittest.TestCase):
             ml.pressure_risk_date_variant_exceedance("probit", _PRESSURE_CALENDAR, self.splits)
 
 
+class RiskDateHurdleTests(unittest.TestCase):
+    """The hurdle model of #539: the risk-date model on a risk date, a calibrated every-day hazard elsewhere.
+
+    A risk date keeps the parent's forecast exactly. Any other day is served a ridge logistic of `spread > tau`
+    mapped through a Platt or isotonic curve fitted walk-forward, and a day missing an input is served the hazard
+    fitted without that input rather than 0.
+
+    Recorded mutations:
+
+    * `_walk_forward_calibrator`, `xs[: edges[block]]` changed to `xs` in the `_fit_classifier` call (the hazard
+      that forecasts a block was fitted on that block's own labels): `test_each_calibration_forecast_is_made_by_a_hazard_fitted_on_earlier_pairs`
+      fails with `AssertionError`.
+    * `pressure_risk_date_hurdle_exceedance`, `served = [day for day, row in enumerate(feature_rows) if not design.member(row)]`
+      changed to serve every day (the hazard overwrites the parent on a risk date):
+      `test_a_risk_date_keeps_the_risk_date_models_forecast` fails with `AssertionError`.
+    * `pressure_risk_date_hurdle_exceedance`, `subset = public_inputs(feature_rows[day])` changed to `inputs` (a
+      missing input is not dropped, so the design row raises): `test_a_day_missing_an_input_is_served_the_model_fitted_without_it`
+      fails with `ValueError`.
+    """
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _every_day_frame()
+        self.splits = _pressure_splits()
+
+    def predict(self, scored, variant="+hurdle_platt", kind="logistic"):
+        features = _PRESSURE_CALENDAR + ml.EVERY_DAY_COMPONENT_INPUTS[1:]
+        from types import MappingProxyType
+        from unittest import mock
+
+        from repo_model import contract, measurement_fields
+
+        fields = dict(measurement_fields.COLUMN_FIELDS)
+        patched = mock.patch.multiple(
+            contract,
+            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+            FEATURE_SOURCES=MappingProxyType(
+                {
+                    **contract.FEATURE_SOURCES,
+                    **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()},
+                }
+            ),
+        )
+        with patched:
+            rule = ml.InformationRule(_PRESSURE_REGISTRY, features, decision_time=time(16, 0))
+            info = rule.information_set([r.date for r in self.rows], scored)
+            observation = rule.observation(self.rows, info)
+            predictor = ml.pressure_risk_date_hurdle_exceedance(
+                kind, _PRESSURE_CALENDAR, self.splits, 20, variant=variant
+            )
+            return predictor(self.rows[:scored], (observation,), (5.0, 10.0), information=rule)
+
+    def parent(self, scored, kind="logistic"):
+        features = _PRESSURE_CALENDAR
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, features, decision_time=time(16, 0))
+        info = rule.information_set([r.date for r in self.rows], scored)
+        observation = rule.observation(self.rows, info)
+        predictor = ml.pressure_risk_date_exceedance(kind, features, self.splits, 20)
+        return predictor(self.rows[:scored], (observation,), (5.0, 10.0), information=rule)
+
+    def days(self, risk, start=90):
+        return [k for k in range(start, len(self.rows) - 1) if _is_risk(self.rows[k]) is risk]
+
+    def test_a_risk_date_keeps_the_risk_date_models_forecast(self):
+        for variant in ml.HURDLE_VARIANTS:
+            for scored in self.days(True)[:3]:
+                self.assertEqual(self.predict(scored, variant).curves, self.parent(scored).curves)
+
+    def test_an_ordinary_day_is_served_a_positive_non_increasing_hazard(self):
+        scored = self.days(False)[0]
+        for variant in ml.HURDLE_VARIANTS:
+            curve = self.predict(scored, variant).curves[0]
+            self.assertGreater(curve[0], 0.0)
+            self.assertGreaterEqual(curve[0], curve[1])
+
+    def test_a_day_missing_an_input_is_served_the_model_fitted_without_it(self):
+        scored = self.days(False)[0]
+        for k in range(scored - 4, scored + 1):  # whichever of these rows the as-of read lands on
+            self.rows[k] = DailyObservation(self.rows[k].date, {**self.rows[k].values, "sofr_p99_iorb_bps": None})
+        result = self.predict(scored)
+        self.assertGreater(result.curves[0][0], 0.0)
+        self.assertEqual(list(result.model_settings["hurdle_training_pairs"]), ["spread_bps+sofr_p75_iorb_bps"])
+
+    def test_the_hazard_reads_its_inputs_through_the_information_rule(self):
+        read = self.predict(self.days(False)[0]).features_read
+        self.assertTrue({"sofr_p75_iorb_bps", "sofr_p99_iorb_bps"} <= set(read))
+
+    def test_the_state_variants_add_the_scarcity_state_and_the_others_do_not(self):
+        names = {
+            variant: set(inputs) for variant, (inputs, _method) in ml.HURDLE_VARIANTS.items()
+        }
+        for variant, inputs in names.items():
+            self.assertEqual("state" in variant, "reserve_scarcity_state" in inputs, variant)
+        self.assertLessEqual(len(names), 4)
+
+    def test_a_variant_and_a_kind_must_be_declared(self):
+        with self.assertRaises(ValueError):
+            ml.pressure_risk_date_hurdle_exceedance("logistic", _PRESSURE_CALENDAR, self.splits, variant="+nothing")
+        with self.assertRaises(ValueError):
+            ml.pressure_risk_date_hurdle_exceedance("probit", _PRESSURE_CALENDAR, self.splits)
+
+    def calibration_data(self, count=400):
+        import random
+
+        rng = random.Random(7)
+        xs, labels = [], []
+        for k in range(count):
+            level = rng.gauss(0.0, 1.0)
+            xs.append([level, rng.gauss(0.0, 1.0)])
+            labels.append(1 if rng.random() < 1.0 / (1.0 + math.exp(-(level - 1.5))) else 0)
+        return xs, labels
+
+    def test_the_calibrator_is_the_identity_until_the_out_of_sample_forecasts_are_enough(self):
+        xs, labels = self.calibration_data(60)
+        self.assertIsNone(ml._walk_forward_calibrator("platt", xs, labels))
+
+    def test_the_calibrator_maps_a_probability_to_a_probability_for_both_methods(self):
+        xs, labels = self.calibration_data()
+        for method in ("platt", "isotonic"):
+            curve = ml._walk_forward_calibrator(method, xs, labels)
+            self.assertIsNotNone(curve)
+            values = [curve(p / 20.0) for p in range(21)]
+            self.assertTrue(all(0.0 <= v <= 1.0 for v in values))
+            self.assertEqual(values, sorted(values))
+
+    def test_each_calibration_forecast_is_made_by_a_hazard_fitted_on_earlier_pairs(self):
+        from unittest import mock
+
+        xs, labels = self.calibration_data()
+        seen = []
+        real = ml._fit_classifier
+
+        def spy(kind, train, y, served, *args, **kwargs):
+            seen.append((len(train), [list(row) for row in train], [list(row) for row in served]))
+            return real(kind, train, y, served, *args, **kwargs)
+
+        with mock.patch.object(ml, "_fit_classifier", spy):
+            ml._walk_forward_calibrator("platt", xs, labels)
+        self.assertEqual(len(seen), ml.HURDLE_CALIBRATION_BLOCKS - 1)
+        for size, train, served in seen:
+            self.assertLess(size, len(xs))
+            self.assertEqual(train, [list(row) for row in xs[:size]])
+            self.assertEqual(served[0], list(xs[size]))
+            self.assertEqual(served, [list(row) for row in xs[size : size + len(served)]])
+
+
 def _is_risk(row):
     values = row.values
     return (
