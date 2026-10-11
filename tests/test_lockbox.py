@@ -422,6 +422,11 @@ NOT_ENTRY_POINTS = {
         "post-mortem (#474); compares nothing, and walks _as_of_folds, which "
         "refuses a locked day (tests/test_episode_post_mortem.py)"
     ),
+    "scripts/unwarned_onsets.as_of_at_lead": (
+        "reads each scored day's as-of inputs at a lead for the descriptive "
+        "diagnostic of the unwarned onsets (#560); compares nothing, and walks "
+        "_as_of_folds, which refuses a locked day (tests/test_unwarned_onsets.py)"
+    ),
     "scripts/final_test_opening.distribution_walk": (
         "the final test opening's walk of the published distribution and as-of "
         "persistence at h = 2 to 5 (#151), reported only; it refuses a locked "
