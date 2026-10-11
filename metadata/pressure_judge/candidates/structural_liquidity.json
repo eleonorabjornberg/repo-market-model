@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "S (#542)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "bank_total_assets",
+    "on_rrp",
+    "tga",
+    "net_settlement"
+  ],
+  "features_at_horizon_2_or_more": "net_settlement_due_5d in place of net_settlement (the scored day's own settlement is not yet public)",
+  "calibration": "none: a logistic of six declared terms, metadata/structural_liquidity.json",
+  "inputs_note": "drain x reserve-demand elasticity, with the ON RRP balance as a buffer; six fitted coefficients; forecasts every day"
+}
