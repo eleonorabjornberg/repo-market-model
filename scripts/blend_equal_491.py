@@ -183,7 +183,7 @@ def render(record) -> str:
         f"in `{record['declaration']}` and scored in #455; the approval is {record['approval']}. Days: {record['first']} "
         f"to {record['last']} only; the 2026 days and the frozen final test are not scored. The live record and the live "
         "pin are untouched. The published model's own record stays in `docs/runs/published_distribution_daily_h1.json`.", "",
-        "Gain is CRPS(published) - CRPS(blend) per day in bp, so a positive mean favours the blend; intervals are 90% "
+        "Gain is CRPS(published) - CRPS(blend) per day in bp, so a positive mean favours the blend; intervals are 90%% "
         "stationary bootstraps (block length %d, %d replications). Intervals of the cells are not adjusted for several "
         "comparisons; only the first row is the declared test." % (
             record["bootstrap"]["block_length"], record["bootstrap"]["replications"]), "",
