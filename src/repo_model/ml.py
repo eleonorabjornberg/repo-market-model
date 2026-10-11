@@ -6947,6 +6947,303 @@ def pressure_risk_date_hurdle_exceedance(
     return fit_predict
 
 
+#: The blocks of the combined model's ordinary-day logistic (#561), in the order their columns follow the spread:
+#: the latent stress factor (#543), the structural terms (#542) and the projected-reserves distance (#545).
+#: Declared in `metadata/combined_model_561.json` before any score, not tuned.
+COMBINED_BLOCKS = ("factor", "structural", "projected")
+#: The ordinary-day logistic's walk-forward calibration (`_walk_forward_calibrator`): Platt, as the hurdle's headline.
+COMBINED_CALIBRATION = "platt"
+#: The factor's change is its filtered level at the anchor less its level this many rows earlier.
+COMBINED_FACTOR_CHANGE_ROWS = 5
+_COMBINED_FACTOR_NAMES = ("factor_level", f"factor_change_{COMBINED_FACTOR_CHANGE_ROWS}")
+
+
+def _combined_factor_columns(means: Sequence[float], anchor: int) -> Optional[Tuple[float, float]]:
+    """The filtered factor's level at row `anchor` and its change over `COMBINED_FACTOR_CHANGE_ROWS` rows, or None.
+
+    Row `anchor` reads rows `0..anchor` of the filter and nothing after it. `None` when the frame is too short
+    for the change.
+    """
+
+    earlier = anchor - COMBINED_FACTOR_CHANGE_ROWS
+    if earlier < 0:
+        return None
+    return means[anchor], means[anchor] - means[earlier]
+
+
+class _CombinedDesign:
+    """The columns of the ordinary-day logistic that one as-of observation carries (#561).
+
+    The spread; with `structural` the four terms of `structural_liquidity.StructuralDesign` (elasticity times the
+    unabsorbed drain, the TGA rise, the tax date and the window); with `projected` the one declared
+    `proj_dist_h{h}` column. The factor's two columns are not here: they come from the filter
+    (`_combined_training_matrix`, and the served rows' own histories).
+    """
+
+    scarcity = False
+    products: Tuple[Tuple[str, str], ...] = ()
+    monotone = None
+    pooling = None
+
+    def __init__(self, features: Sequence[str], declaration: Any, blocks: Sequence[str]) -> None:
+        declared = tuple(dict.fromkeys(str(name) for name in features))
+        if "spread_bps" not in declared:
+            raise ValueError("the combined model reads the latest public spread; declare spread_bps")
+        self.features = declared
+        self.structural = None
+        self.projected_column: Optional[str] = None
+        names = ["spread_bps"]
+        read = ["spread_bps"]
+        if "structural" in blocks:
+            from .structural_liquidity import COLUMN_NAMES, StructuralDesign
+
+            self.structural = StructuralDesign(declared, declaration)
+            names += list(COLUMN_NAMES[1:])
+            read += [name for name in self.structural.features if name not in read]
+        if "projected" in blocks:
+            columns = [name for name in declared if name.startswith("proj_dist_h")]
+            if len(columns) != 1:
+                raise ValueError(f"declare exactly one proj_dist_h column for the projected block, got {columns}")
+            self.projected_column = columns[0]
+            names.append(columns[0])
+            read.append(columns[0])
+        self.names = tuple(names)
+        self.features_read = tuple(read)
+        self.tga = self.structural is not None
+
+    def needs_history(self) -> bool:
+        return self.tga
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        values = [float(observation.spread_bps)]
+        if self.structural is not None:
+            values += self.structural.row(observation, tga_change)[1:]
+        if self.projected_column is not None:
+            value = observation.values.get(self.projected_column)
+            if value is None or not math.isfinite(float(value)):
+                raise ValueError(
+                    f"{observation.date}: the as-of read of {self.projected_column!r} is missing; "
+                    f"the combined model is not fitted or served on an unobserved input"
+                )
+            values.append(float(value))
+        return values
+
+
+def _combined_pairs(
+    design: _CombinedDesign,
+    information: InformationRule,
+    train_rows: Sequence[DailyObservation],
+    cache: dict,
+) -> List[Tuple[int, List[float], float]]:
+    """Direct training pairs under the as-of rule, each with its anchor row: `(anchor, design row, label spread)`.
+
+    The pairing is `_pressure_pairs`': each label is paired with the design row a forecast of it would have read
+    at its own decision instant, checked by both guards, and a label with a missing read trains no pair. The
+    anchor is the row of the latest spread public at that instant, which is where the factor is read.
+    """
+
+    dates = [row.date for row in train_rows]
+    out: List[Tuple[int, List[float], float]] = []
+    key_base = (information.horizon, information.features)
+    for target in range(1, len(train_rows)):
+        key = (key_base, dates[target])
+        if key not in cache:
+            cache[key] = None
+            try:
+                info = information.information_set(dates, target)
+            except SplitError:
+                continue
+            information.check(dates, info)
+            tga_change: Optional[float] = None
+            if design.tga:
+                (read,) = [r for r in info.reads if r.feature == "tga"]
+                tga_change = _tga_change_at(train_rows, read.row)
+                if tga_change is None:
+                    continue
+            try:
+                features = design.row(information.observation(train_rows, info), tga_change)
+            except ValueError:
+                continue
+            cache[key] = (info.anchor, features, float(train_rows[target].spread_bps))
+        if cache[key] is not None:
+            out.append(cache[key])
+    return out
+
+
+def _combined_training_matrix(
+    pairs: Sequence[Tuple[int, List[float], float]], means: Sequence[float], factor: bool
+) -> Tuple[List[List[float]], List[float]]:
+    """The training design and labels. With `factor`, each row gets the filtered factor at its pair's anchor.
+
+    A pair whose anchor is too early for the factor's change trains nothing.
+    """
+
+    xs: List[List[float]] = []
+    spreads: List[float] = []
+    for anchor, row, spread in pairs:
+        if factor:
+            columns = _combined_factor_columns(means, anchor)
+            if columns is None:
+                continue
+            xs.append(list(row) + list(columns))
+        else:
+            xs.append(list(row))
+        spreads.append(spread)
+    return xs, spreads
+
+
+def pressure_combined_ordinary_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    blocks: Sequence[str] = COMBINED_BLOCKS,
+    calibration: str = COMBINED_CALIBRATION,
+) -> ExceedancePredictor:
+    """The ordinary-day component of the combined model (#561): one calibrated logistic on the declared blocks.
+
+    A ridge logistic (`PRESSURE_LOGISTIC_SETTINGS`) of `spread > tau`, one per threshold, on the spread and the
+    columns of `blocks`: the latent stress factor's filtered level and five-row change (#543; fitted on the
+    refit's training frame, read at each pair's anchor and filtered forward through each forecast's own as-of
+    history), the structural terms (#542) and the projected-reserves distance (#545). The fitted probability is
+    mapped through a Platt or isotonic curve fitted walk-forward (`_walk_forward_calibrator`), conditioned on
+    nothing but the columns above; no regime label is an input.
+
+    `features`: the spread and, for `structural`, the structural features at the horizon, and for `projected`
+    one `proj_dist_h{h}`; the factor's nine columns are read in addition when `factor` is declared, so the caller
+    declares them to the backtest.
+
+    Raises:
+        ValueError: on an unknown block or calibration, a short frame, a call without the as-of rule or without
+            each row's history (when the factor or the structural block reads it), or a served row with a
+            missing input.
+        LookAheadError: if a history runs past its forecast's anchor.
+    """
+
+    blocks = tuple(blocks)
+    if not blocks:
+        raise ValueError("declare at least one block")
+    unknown = [name for name in blocks if name not in COMBINED_BLOCKS]
+    if unknown:
+        raise ValueError(f"a block is one of {list(COMBINED_BLOCKS)}, got {unknown}")
+    if calibration not in ("platt", "isotonic"):
+        raise ValueError(f"the calibration is 'platt' or 'isotonic', got {calibration!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    use_factor = "factor" in blocks
+    design = _CombinedDesign(features, declaration, tuple(name for name in blocks if name != "factor"))
+    settings = LATENT_FACTOR_SETTINGS
+    pair_cache: dict = {}
+    observation_cache: dict = {}
+
+    def observed(row: DailyObservation) -> Tuple[Optional[float], ...]:
+        hit = observation_cache.get(id(row))
+        if hit is None or hit[0] is not row:
+            hit = (row, latent_factor_observation(row))
+            observation_cache[id(row)] = hit
+        return hit[1]
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None or histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "the combined model pairs each training label with what was public at its own decision "
+                "instant and filters the factor through each forecast's own as-of history; it was called "
+                "without the rule or without one history per feature row"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"the combined model needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        means: List[float] = []
+        fitted = None
+        if use_factor:
+            training = [observed(row) for row in train_rows]
+            fitted = fit_latent_factor(training)
+            means = [mean for mean, _var in filter_latent_factor(fitted, training)]
+        pairs = _combined_pairs(design, information, train_rows, pair_cache)
+        xs, spreads = _combined_training_matrix(pairs, means, use_factor)
+        if len(xs) < settings["minimum_mapping_days"]:
+            raise ValueError(
+                f"{len(xs)} training days carry a complete as-of read; "
+                f"at least {settings['minimum_mapping_days']} are needed"
+            )
+        served: List[List[float]] = []
+        factor_levels: List[float] = []
+        for feature_row, history in zip(feature_rows, histories):
+            if not history:
+                raise ValueError("a forecast's as-of history is empty")
+            if history[-1].date > feature_row.date:
+                raise LookAheadError(
+                    f"the filter for the forecast anchored {feature_row.date} was handed "
+                    f"history through {history[-1].date}"
+                )
+            tga_change = _served_tga_change(history, feature_row) if design.tga else None
+            row = design.row(feature_row, tga_change)
+            if use_factor:
+                path = [mean for mean, _var in filter_latent_factor(fitted, [observed(r) for r in history])]
+                columns = _combined_factor_columns(path, len(path) - 1)
+                if columns is None:
+                    raise ValueError(
+                        f"{feature_row.date}: fewer than {COMBINED_FACTOR_CHANGE_ROWS + 1} rows of history "
+                        f"for the factor's change"
+                    )
+                row = row + list(columns)
+                factor_levels.append(columns[0])
+            served.append(row)
+        calibrated, uncalibrated = 0, 0
+        columns_out: List[List[float]] = []
+        for tau in taus:
+            labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+            if len(set(labels)) < 2:
+                columns_out.append([float(labels[0])] * len(served))
+                continue
+            fit = _fit_classifier("logistic", xs, labels, served)
+            curve = _walk_forward_calibrator(calibration, xs, labels)
+            if curve is None:
+                uncalibrated += 1
+            else:
+                calibrated += 1
+                fit = [curve(float(p)) for p in fit]
+            columns_out.append(fit)
+        curves = []
+        for day in range(len(feature_rows)):
+            curve_values: List[float] = []
+            for column in columns_out:
+                value = min(1.0, max(0.0, column[day]))
+                curve_values.append(value if not curve_values else min(curve_values[-1], value))
+            curves.append(tuple(curve_values))
+        names = list(design.names) + (list(_COMBINED_FACTOR_NAMES) if use_factor else [])
+        read = tuple(design.features_read) + (LATENT_FACTOR_COLUMNS if use_factor else ())
+        report = {
+            "combined_blocks": list(blocks),
+            "combined_columns": names,
+            "combined_calibration": calibration,
+            "combined_training_pairs": len(xs),
+            "combined_calibrated_fits": calibrated,
+            "combined_uncalibrated_fits": uncalibrated,
+            "filtered_factor": factor_levels,
+        }
+        if fitted is not None:
+            report.update({"persistence": fitted.persistence, "loadings": list(fitted.loadings)})
+        return _combined_result(curves, read, report, histories)
+
+    def _combined_result(curves, read, report, histories):
+        return ExceedanceCurves(
+            tuple(curves),
+            tuple(dict.fromkeys(read)),
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(report),
+            history_ends=tuple(history[-1].date for history in histories),
+        )
+
+    return fit_predict
+
+
 def pressure_probit_exceedance(
     features: Sequence[str], declaration: Any, minimum_history: int = 20
 ) -> ExceedancePredictor:
