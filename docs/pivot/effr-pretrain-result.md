@@ -24,7 +24,10 @@ throughout 2008-12-16 to 2018-04-02, so the source has no +5 bp event at all.
   pre-trained slopes (same `C` = 1, free intercept). A refit whose SOFR window holds no event is served the pre-trained model.
 * **Control.** `effr_sofr_only`: the same design and estimator on the SOFR-era pairs alone.
 * **Combined rows.** `risk_gbm+effr_*`: the rule of #506 — on a risk date the passer's forecast, on any other day the model's. The hurdle
-  of #539 had not merged, so its code is not used; all three (control and both variants) are combined, so no row is chosen on a score.
+  of #539 had not merged when this was declared and merged while the runs were made. Its weights are the same (a risk date keeps the passer's forecast
+  exactly, any other day is served the hazard), but its hazard is its own ridge logistic on the SOFR-percentile inputs with a walk-forward calibration
+  curve, and is not pluggable, so its code (`ml.pressure_risk_date_hurdle_exceedance`) is not run with these models as the hazard and no calibration
+  curve is applied to them. All three (control and both variants) are combined, so no row is chosen on a score.
 
 Scored as the judge declares: tiers 1, 3 and 5, h = 1 to 5, +5 and +10 bp, flat and weighted rule, the cut-off rule unchanged. Paired against
 the control (or the passer), `risk_gbm`, calendar climatology and persistence-logistic, 90% stationary-bootstrap intervals.
@@ -99,5 +102,5 @@ limit of 2; the passer's 13 of 26 comes at 1.38.
   rate-matched to the pre-2026 published panel (a rate, not a model choice); a different matching rule was not scored.
 * The GBM form was not declared, so was not run. The settlement columns and the post-2018 inputs are left out of both markets' design.
 * Source labels at a threshold other than the rate-matched one, other down-weights, and a 2008-2018 source with the period before 2012 dropped.
-* The hurdle of #539 as the combining rule (not merged). The combined rows use #506's rule.
+* The models as the hazard inside `ml.pressure_risk_date_hurdle_exceedance`, and with its walk-forward calibration curve applied to them. The combined rows use the hurdle's weights without the curve.
 * No day on or after 2026-01-01 was scored.
