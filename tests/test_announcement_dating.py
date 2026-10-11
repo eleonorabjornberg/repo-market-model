@@ -334,6 +334,11 @@ class H41ReleaseTests(unittest.TestCase):
             raise RuntimeError("raised inside")
         self.assertIs(asof.declared_availability, patched)
 
+    def test_the_decision_relative_guard_reads_the_same_instants(self):
+        from repo_model import baseline
+
+        self.assertIs(baseline._declared_availability, asof.declared_availability)
+
     def test_a_registry_with_no_calendar_is_read_as_before(self):
         published = load_source_registry(REGISTRY)
         dates = self.dates

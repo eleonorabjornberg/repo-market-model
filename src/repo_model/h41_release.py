@@ -24,7 +24,7 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Iterator, Mapping, Optional, Sequence
 
-from . import asof
+from . import asof, baseline
 from .asof import InformationRule
 
 __all__ = ["RELEASE_CALENDAR_KEY", "load_release_dating", "release_dated_registry", "release_instant", "release_dating"]
@@ -126,12 +126,13 @@ def _calendar(registry: Mapping[str, Mapping[str, object]], source_id: str, fiel
 def release_dating() -> Iterator[None]:
     """The as-of rule reading a `release_calendar` block, for one measurement run.
 
-    Swaps `asof.declared_availability` and `InformationRule._observation_available` and restores both on the
+    Swaps `asof.declared_availability`, its alias `baseline._declared_availability` (the decision-relative guard reads it) and `InformationRule._observation_available` and restores both on the
     way out, raise or return. A field no block lists is dated by the original functions, so a registry with
     no block is read exactly as before.
     """
 
     original_availability = asof.declared_availability
+    original_baseline = baseline._declared_availability
     original_observation = InformationRule._observation_available
 
     def declared_availability(registry, source_id, field, dates, position):
@@ -148,9 +149,11 @@ def release_dating() -> Iterator[None]:
         return original_observation(self, dates, fields, row, available)
 
     asof.declared_availability = declared_availability
+    baseline._declared_availability = declared_availability
     InformationRule._observation_available = observation_available
     try:
         yield
     finally:
         asof.declared_availability = original_availability
+        baseline._declared_availability = original_baseline
         InformationRule._observation_available = original_observation
