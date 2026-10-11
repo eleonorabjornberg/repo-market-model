@@ -12568,6 +12568,35 @@ class PressureRiskDateVariantQuantileConformanceTests(_PressureConformance, unit
     IMPLEMENTATION = staticmethod(ml.pressure_risk_date_variant_exceedance)
 
 
+def _risk_hurdle_factory(kind):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_risk_date_hurdle_exceedance(kind, features, declaration, minimum_history)
+
+    factory.__name__ = f"pressure_risk_date_hurdle_{kind}"
+    return factory
+
+
+class PressureRiskDateHurdleLogisticConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date logistic with the calibrated every-day hazard (#539)."""
+
+    FACTORY = staticmethod(_risk_hurdle_factory("logistic"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_hurdle_exceedance)
+
+
+class PressureRiskDateHurdleClassifierConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date classifier with the calibrated every-day hazard (#539)."""
+
+    FACTORY = staticmethod(_risk_hurdle_factory("gbm_classifier"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_hurdle_exceedance)
+
+
+class PressureRiskDateHurdleQuantileConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the risk-date skew-t quantile regression with the calibrated every-day hazard (#539)."""
+
+    FACTORY = staticmethod(_risk_hurdle_factory("quantile_skewt"))
+    IMPLEMENTATION = staticmethod(ml.pressure_risk_date_hurdle_exceedance)
+
+
 class RiskDateModelTests(unittest.TestCase):
     """The risk-date severity model (#428) is trained and served on declared risk dates only.
 

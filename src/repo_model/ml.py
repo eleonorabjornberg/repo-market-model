@@ -6626,7 +6626,7 @@ def pressure_risk_date_hurdle_exceedance(
         settings["hurdle_training_pairs"] = dict(pairs_used)
         settings["hurdle_calibrated_fits"] = sum(calibrated.values())
         settings["hurdle_uncalibrated_fits"] = len(calibrated) - sum(calibrated.values())
-        read = tuple(dict.fromkeys(base.features_read + inputs))
+        read = tuple(dict.fromkeys(base.features_read + tuple(name for subset in by_subset for name in subset)))
         return ExceedanceCurves(
             tuple(curves),
             read,
