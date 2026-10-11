@@ -13358,7 +13358,7 @@ def _factor_frame(count=170, seed=9, phi=0.9):
             "effr": iorb - 0.1 + 0.1 * body + rng.gauss(0.0, 0.002),
             "on_rrp": 100.0 * math.exp(-0.2 * level) + rng.gauss(0.0, 1.0) ** 2,
         }
-        values["spread_bps"] = 1.0 + 1.8 * level + rng.gauss(0.0, 1.0)
+        values["spread_bps"] = 3.0 + 3.0 * level + rng.gauss(0.0, 1.0)
         values["sofr"] = iorb + values["spread_bps"] / 100.0
         rows.append(DailyObservation(when, values))
         when += timedelta(days=1)
@@ -13462,6 +13462,48 @@ class LatentFactorPredictorTests(unittest.TestCase):
         self.assertEqual(b.model_settings["residual"], True)
         self.assertEqual(a.features_read, b.features_read)
         self.assertNotEqual(a.curves, b.curves)
+
+    def test_the_logistic_link_maps_the_carried_factor_to_each_threshold_by_a_ridge_logistic(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40, link="logit")
+        train, feature_rows = self.rows[:150], self.rows[150:152]
+        result = self.call(predictor, train, feature_rows, [self.rows[:151], self.rows[:152]])
+        self.assertEqual(result.model_settings["link"], "logit")
+        self.assertEqual(result.history_ends, (feature_rows[0].date, feature_rows[1].date))
+        for curve in result.curves:
+            self.assertEqual(len(curve), 2)
+            self.assertGreaterEqual(curve[0], curve[1])
+            self.assertTrue(all(0.0 <= p <= 1.0 for p in curve))
+
+    def test_a_stressed_history_raises_the_logistic_probability(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40, link="logit")
+        train, feature_rows = self.rows[:150], self.rows[150:151]
+        calm = list(self.rows[:151])
+        hot = calm[:-4] + [
+            DailyObservation(
+                r.date,
+                dict(
+                    r.values,
+                    sofr_p1=r.values["iorb"] + 0.1, sofr_p25=r.values["iorb"] + 0.15,
+                    sofr_p75=r.values["iorb"] + 0.2, sofr_p99=r.values["iorb"] + 0.4,
+                    tgcr=r.values["iorb"] + 0.15, bgcr=r.values["iorb"] + 0.15, on_rrp=0.0,
+                ),
+            )
+            for r in calm[-4:]
+        ]
+        low = self.call(predictor, train, feature_rows, [calm]).curves[0][0]
+        high = self.call(predictor, train, feature_rows, [hot]).curves[0][0]
+        self.assertGreater(high, low)
+
+    def test_a_history_past_its_forecast_is_refused_under_the_logistic_link_too(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40, link="logit")
+        with self.assertRaises(LookAheadError):
+            self.call(predictor, self.rows[:120], self.rows[120:122], [self.rows[:121], self.rows[:123]])
+
+    def test_the_link_is_one_of_two_and_the_residual_belongs_to_the_gaussian_one(self):
+        with self.assertRaises(ValueError):
+            ml.latent_factor_exceedance(minimum_history=40, link="probit")
+        with self.assertRaises(ValueError):
+            ml.latent_factor_exceedance(minimum_history=40, residual=True, link="logit")
 
     def test_a_mapping_that_does_not_rise_with_the_factor_falls_back_to_the_training_rate(self):
         flat = [DailyObservation(r.date, dict(r.values, spread_bps=2.0, sofr=4.02)) for r in self.rows]

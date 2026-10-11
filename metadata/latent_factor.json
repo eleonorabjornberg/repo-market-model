@@ -59,10 +59,11 @@
     "pressure_probability": "P(spread at T+h > tau), the spread read on whole basis points so the point is tau + 1/2: the carried factor's tail above the level the mapping puts at tau + 1/2. The factor is carried h rows ahead of the history's last row (h = the horizon) by its AR(1): mean phi^h m, variance phi^(2h) V + (1 - phi^(2h)) / (1 - phi^2)",
     "variants": {
       "latent_factor": "the row of the directive: the factor's own predictive uncertainty only (the tail of the factor above the level)",
-      "latent_factor_resid": "the same, with the mapping's OLS residual variance added to the spread's predictive variance (the full predictive law of the spread, Gaussian)"
+      "latent_factor_resid": "the same, with the mapping's OLS residual variance added to the spread's predictive variance (the full predictive law of the spread, Gaussian)",
+      "latent_factor_logit": "added by the pull request after the first two rows were run once at h = 1 and their Brier score was seen to be worse than a constant's (the Gaussian mapping is over-dispersed: with the factor's innovation variance at 1 its one-day spread is wide): a ridge logistic (ml.PRESSURE_LOGISTIC_SETTINGS) of spread > tau on the factor mean carried h rows ahead, fitted per threshold on the training days whose factor was carried h rows to a label inside the frame; the calibration is by construction, not by the factor's law. The only change from the first two rows is this link; nothing else was changed after that look"
     },
     "fallback": "a mapping slope at or below 1e-9 bp per factor unit does not rise with the factor: the forecast is then the training rate of spread > tau, constant, and the fit records it. The fallback is counted by refit and reported",
-    "same_curve": "one curve per threshold from the same factor, +5 and +10 bp; no calibration step, no recalibration, no tuned shrinkage"
+    "same_curve": "one curve per threshold from the same factor, +5 and +10 bp; no recalibration and no tuned shrinkage beyond the logistic link of the third row"
   },
   "settings": {
     "innovation_variance": 1.0,
@@ -85,9 +86,11 @@
       "rule": "the model as the every-day component under a risk-date passer (#506): on a risk date the forecast is the passer's, unchanged; on any other day it is the model's. Risk dates are the days whose pressure-day type is not ordinary (quarter-end, month-end, tax date) and, at h = 1, a coupon-settlement day. The curve across thresholds is made non-increasing afterwards. The passer is risk_gbm (the passer #506 and #532 build on); the hurdle of #539 has not merged, so it is not used",
       "names": [
         "risk_gbm+latent_factor",
-        "risk_gbm+latent_factor_resid"
+        "risk_gbm+latent_factor_resid",
+        "risk_gbm+latent_factor_logit"
       ]
-    }
+    },
+    "latent_factor_logit": "the factor carried h rows ahead, mapped to each threshold by a ridge logistic; every day"
   },
   "references": {
     "pair_against": [

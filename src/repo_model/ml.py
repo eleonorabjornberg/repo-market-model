@@ -8799,25 +8799,37 @@ def _normal_tail(location: float, scale: float, point: float) -> float:
     return 0.5 * math.erfc((point - location) / (scale * math.sqrt(2.0)))
 
 
-def latent_factor_exceedance(minimum_history: int = 20, residual: bool = False) -> ExceedancePredictor:
+def latent_factor_exceedance(
+    minimum_history: int = 20, residual: bool = False, link: str = "gaussian"
+) -> ExceedancePredictor:
     """Pressure probabilities from a latent funding-stress factor (#543).
 
     Fitted on each refit block's training frame, filtered forward through each forecast's own as-of
-    history, carried `information.horizon` rows ahead. The spread is mapped to the filtered factor by an
-    OLS over the training days; the probability of `spread > tau` (read on whole basis points, so the
-    point is `tau + 1/2`) is the tail of the carried factor above the level the mapping puts there. With
-    `residual`, the mapping's residual variance is added to the spread's predictive variance. A mapping
-    that does not rise with the factor (slope at or below `mapping_slope_floor_bp`) gives the training
-    rate of `spread > tau` instead, and the fit says so (`fallback`).
+    history, carried `information.horizon` rows ahead. How the carried factor becomes a probability of
+    `spread > tau` (the spread read on whole basis points, so the point is `tau + 1/2`) is the `link`:
+
+    * `"gaussian"`: the spread is mapped to the filtered factor by an OLS over the training days, and
+      the probability is the tail of the carried factor above the level the mapping puts at the point.
+      With `residual`, the mapping's residual variance is added to the spread's predictive variance. A
+      mapping that does not rise with the factor (slope at or below `mapping_slope_floor_bp`) gives the
+      training rate of `spread > tau` instead, and the fit says so (`fallback`).
+    * `"logit"`: a ridge logistic (`PRESSURE_LOGISTIC_SETTINGS`) of `spread > tau` on the carried factor
+      mean, fitted on the training days whose factor was carried `information.horizon` rows to a label
+      inside the frame, one fit per threshold. Calibration is by construction, not by the factor's law.
 
     Raises:
-        ValueError: on a short frame, a call without the as-of rule or without each row's history, or
-            too few training days with both a filtered factor and a spread.
+        ValueError: on a short frame, a call without the as-of rule or without each row's history, an
+            unknown link, `residual` with the logistic link, or too few training days with both a
+            filtered factor and a spread.
         LookAheadError: if a history runs past its forecast's anchor.
     """
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if link not in ("gaussian", "logit"):
+        raise ValueError(f"the link is 'gaussian' or 'logit', got {link!r}")
+    if residual and link != "gaussian":
+        raise ValueError("the mapping residual belongs to the gaussian link")
     settings = LATENT_FACTOR_SETTINGS
     cache: dict = {}
 
@@ -8849,11 +8861,8 @@ def latent_factor_exceedance(minimum_history: int = 20, residual: bool = False) 
         training = [observed(row) for row in train_rows]
         fitted = fit_latent_factor(training)
         filtered = filter_latent_factor(fitted, training)
-        pairs = []
-        for (mean, _var), row in zip(filtered, train_rows):
-            spread = _observed_spread(row, "latent_factor")
-            if spread is not None:
-                pairs.append((mean, spread))
+        spreads = [_observed_spread(row, "latent_factor") for row in train_rows]
+        pairs = [(mean, spread) for (mean, _var), spread in zip(filtered, spreads) if spread is not None]
         if len(pairs) < settings["minimum_mapping_days"]:
             raise ValueError(
                 f"{len(pairs)} training days carry both a filtered factor and a spread; "
@@ -8866,10 +8875,9 @@ def latent_factor_exceedance(minimum_history: int = 20, residual: bool = False) 
         slope = sum((f - mean_f) * (s - mean_s) for f, s in pairs) / var_f if var_f > 0.0 else 0.0
         intercept = mean_s - slope * mean_f
         residual_var = sum((s - intercept - slope * f) ** 2 for f, s in pairs) / max(count - 2, 1)
-        fallback = not slope > float(settings["mapping_slope_floor_bp"])
+        fallback = link == "gaussian" and not slope > float(settings["mapping_slope_floor_bp"])
         rates = [sum(1 for _, s in pairs if exceeds_bp(s, float(tau))) / count for tau in taus]
-        curves = []
-        factor_means: List[Optional[float]] = []
+        carried: List[Optional[Tuple[float, float, float]]] = []
         for feature_row, history in zip(feature_rows, histories):
             if not history:
                 raise ValueError("a forecast's as-of history is empty")
@@ -8879,22 +8887,61 @@ def latent_factor_exceedance(minimum_history: int = 20, residual: bool = False) 
                     f"history through {history[-1].date}"
                 )
             if fallback:
-                curves.append(tuple(rates))
-                factor_means.append(None)
+                carried.append(None)
                 continue
             now_mean, now_var = filter_latent_factor(fitted, [observed(row) for row in history])[-1]
-            factor_means.append(now_mean)
             ahead_mean, ahead_var = latent_factor_forecast(fitted, now_mean, now_var, information.horizon)
-            location = intercept + slope * ahead_mean
-            spread_var = slope * slope * ahead_var + (residual_var if residual else 0.0)
-            scale = math.sqrt(spread_var)
-            curves.append(
-                tuple(min(1.0, max(0.0, _normal_tail(location, scale, float(tau) + 0.5))) for tau in taus)
-            )
+            carried.append((now_mean, ahead_mean, ahead_var))
+        logit_pairs = 0
+        if link == "gaussian":
+            curves = []
+            for item in carried:
+                if item is None:
+                    curves.append(tuple(rates))
+                    continue
+                _now, ahead_mean, ahead_var = item
+                location = intercept + slope * ahead_mean
+                scale = math.sqrt(slope * slope * ahead_var + (residual_var if residual else 0.0))
+                curves.append(
+                    tuple(min(1.0, max(0.0, _normal_tail(location, scale, float(tau) + 0.5))) for tau in taus)
+                )
+        else:
+            steps = information.horizon
+            carry = fitted.persistence ** steps
+            xs, labelled = [], []
+            for k in range(len(train_rows) - steps):
+                spread = spreads[k + steps]
+                if spread is not None:
+                    xs.append([carry * filtered[k][0]])
+                    labelled.append(spread)
+            logit_pairs = len(xs)
+            if logit_pairs < settings["minimum_mapping_days"]:
+                raise ValueError(
+                    f"{logit_pairs} training days carry a factor to a spread {steps} rows on; "
+                    f"at least {settings['minimum_mapping_days']} are needed"
+                )
+            served = [[item[1]] for item in carried]
+            columns = []
+            for tau in taus:
+                labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in labelled]
+                columns.append(
+                    [float(labels[0])] * len(served)
+                    if len(set(labels)) < 2
+                    else _fit_classifier("logistic", xs, labels, served)
+                )
+            curves = []
+            for day in range(len(feature_rows)):
+                curve: List[float] = []
+                for column in columns:
+                    value = min(1.0, max(0.0, column[day]))
+                    curve.append(value if not curve else min(curve[-1], value))
+                curves.append(tuple(curve))
+        factor_means = [None if item is None else item[0] for item in carried]
         read = ("spread_bps",) + LATENT_FACTOR_COLUMNS
         report = dict(settings)
         report.update(
             {
+                "link": link,
                 "residual": bool(residual),
                 "fallback": bool(fallback),
                 "persistence": fitted.persistence,
@@ -8902,6 +8949,7 @@ def latent_factor_exceedance(minimum_history: int = 20, residual: bool = False) 
                 "mapping_intercept_bp": intercept,
                 "mapping_slope_bp": slope,
                 "mapping_residual_variance": residual_var,
+                "logit_training_pairs": logit_pairs,
                 "filtered_factor": factor_means,
                 "em_iterations": fitted.iterations,
                 "log_likelihood": fitted.log_likelihood,
