@@ -1,0 +1,7 @@
+{
+  "directive": "#583",
+  "status": "unknown. The date and time the New York Fed first posted the back-filled repo-rate workbook (#430) is not established: the workbook's own file properties say only that it was created on 2018-05-01 (docs/pivot/backfilled-history-result.md), which is not a posting date. Eleonora establishes it (docs/decisions/information-set.md, draft amendment 'back-filled repo-rate history is training history only'); until she does, posting_instant is null and repo_model.backfill.require_posting_established refuses every fit that trains on a back-filled value.",
+  "posting_instant": null,
+  "format": "null, or an ISO date-time without a zone, in New York time, e.g. 2018-05-01T12:00:00. A fit is allowed only when its training-end day starts at or after the instant.",
+  "guard": "repo_model.backfill.require_posting_established, called by scripts/backfill_history.py run after every backtest (#572)"
+}

@@ -31,7 +31,8 @@ records the ruling (drafted by the pull request that closes #430, for her to mer
   raised by the number of back-filled rows, so the first scored origin, every refit block and every
   scored day are the ones the script scores without the history, and each fit's training frame also
   holds the back-filled rows. After each backtest the report's folds go through
-  `backfill.require_training_only`.
+  `backfill.require_training_only` and `backfill.require_posting_established` (#572: refused while
+  `metadata/backfill_posting.json` declares no posting instant).
 """
 
 from __future__ import annotations
@@ -252,6 +253,7 @@ def run_command(args) -> int:
     script = args.script.resolve()
     if script.parent != REPO / "scripts":
         raise SystemExit("the script must be one of scripts/*.py")
+    posting = backfill.load_posting_instant(REPO / "metadata" / "backfill_posting.json")
     original = baseline.rolling_exceedance_backtest
     original_pairs = ml._pressure_pairs
 
@@ -264,6 +266,7 @@ def run_command(args) -> int:
         shift = backfill.prefix_length(dates)
         report = original(observations, minimum_history=minimum_history + shift, **kwargs)
         backfill.require_training_only(report.folds, where=script.name)
+        backfill.require_posting_established(report.folds, posting, where=script.name)
         calls.append((shift, len(report.folds)))
         for fold in report.folds:
             key = (fold.train_start.isoformat(), fold.train_end.isoformat(), fold.train_rows)
