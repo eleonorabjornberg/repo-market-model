@@ -25,6 +25,8 @@ that is not committed. Scored days are 2018-06-29 to 2025-12-31; no day of the 2
         --markdown OUT/compare_RULE.md OUT/bench_h?.json OUT/both_h?.json OUT/iorb_h?.json
     PYTHONPATH=src python3 scripts/iorb_every_day_579.py days --rule RULE --panel PUBLISHED.csv --scratch AUG2.csv \\
         --output OUT/days_RULE.json OUT/bench_h?.json OUT/both_h?.json OUT/iorb_h?.json
+    PYTHONPATH=src python3 scripts/iorb_every_day_579.py summary --flat OUT/judge_unweighted.json --weighted OUT/judge_weighted.json \\
+        --output OUT/summary.md
 """
 
 from __future__ import annotations
@@ -320,6 +322,37 @@ def days_command(args) -> int:
     return 0
 
 
+def summary_rows(judged: dict) -> list:
+    """The judge's tier 1 (pooled over leads 1 to 5, and leads 3 to 5), tier 3 and tier 5 rows for the parent and the new row, per rule."""
+
+    yes = lambda x: "yes" if x else "no"
+    lines = [
+        "| row | rule | tier 1, leads 1 to 5: onsets flagged, recall [90%], worst false alarms per onset (limit 2) | tier 1 | tier 1, leads 3 to 5: onsets flagged, recall [90%] | tier 3 | tier 5 | passes |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for name in (PARENT, NEW):
+        for rule, candidates in judged.items():
+            entry = candidates[name]
+            tier, late = entry["tiers"]["onset_warning"]["lead_at_least_1"], entry["tiers"]["onset_warning"]["lead_at_least_3"]
+            key = "worst_weighted_false_alarms_per_onset" if rule == "weighted" else "worst_false_alarms_per_onset"
+            worst = tier.get(key, tier["worst_false_alarms_per_onset"])
+            cell = lambda t: f"{t['onsets_flagged']:g} of {t['onsets']} , {t['recall']['mean']:.3f} [{t['recall']['interval']['lower']:.3f}, {t['recall']['interval']['upper']:.3f}]"
+            verdict = entry["verdict"]
+            lines.append(
+                f"| {name} | {rule} | {cell(tier)} , {worst:.2f} | {yes(verdict['tier_1_onset_warning'])} | {cell(late)} | {yes(verdict['tier_3_no_crying_wolf'])} | "
+                f"{yes(verdict['tier_5_week_ahead'])} | {yes(verdict['passes'])} |"
+            )
+    return lines
+
+
+def summary_command(args) -> int:
+    judged = {rule: json.loads(Path(path).read_text())["candidates"] for rule, path in (("flat", args.flat), ("weighted", args.weighted))}
+    text = "\n".join(summary_rows(judged)) + "\n"
+    args.output.write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -345,6 +378,11 @@ def main(argv=None) -> int:
     days.add_argument("--output", type=Path, required=True)
     days.add_argument("inputs", nargs="+", type=Path)
     days.set_defaults(func=days_command)
+    summary = sub.add_parser("summary")
+    summary.add_argument("--flat", type=Path, required=True)
+    summary.add_argument("--weighted", type=Path, required=True)
+    summary.add_argument("--output", type=Path, required=True)
+    summary.set_defaults(func=summary_command)
     args = parser.parse_args(argv)
     return args.func(args)
 

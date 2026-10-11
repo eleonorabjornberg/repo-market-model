@@ -103,5 +103,21 @@ class RunGuardTests(unittest.TestCase):
                 SCRIPT.run_command(self.args(horizon=9))
 
 
+class SummaryTests(unittest.TestCase):
+    def judged(self, flagged, passes):
+        tier = {"onsets_flagged": flagged, "onsets": 26, "recall": {"mean": flagged / 26.0, "interval": {"lower": 0.1, "upper": 0.9}},
+                "worst_false_alarms_per_onset": 2.5, "worst_weighted_false_alarms_per_onset": 1.5}
+        verdict = {"tier_1_onset_warning": True, "tier_3_no_crying_wolf": False, "tier_5_week_ahead": False, "passes": passes}
+        return {"tiers": {"onset_warning": {"lead_at_least_1": tier, "lead_at_least_3": tier}}, "verdict": verdict}
+
+    def test_a_row_for_the_parent_and_the_new_row_under_each_rule_and_the_weighted_false_alarms_under_the_weighted_rule(self):
+        judged = {rule: {SCRIPT.PARENT: self.judged(18, False), SCRIPT.NEW: self.judged(19, False)} for rule in ("flat", "weighted")}
+        lines = SCRIPT.summary_rows(judged)
+        self.assertEqual(len(lines), 2 + 4)
+        self.assertIn("19 of 26", [l for l in lines if l.startswith(f"| {SCRIPT.NEW} | weighted")][0])
+        self.assertIn("1.50", [l for l in lines if l.startswith(f"| {SCRIPT.NEW} | weighted")][0])
+        self.assertIn("2.50", [l for l in lines if l.startswith(f"| {SCRIPT.NEW} | flat")][0])
+
+
 if __name__ == "__main__":
     unittest.main()
