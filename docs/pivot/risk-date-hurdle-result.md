@@ -229,7 +229,7 @@ Table 2. Detail for the gradient-boosted and logistic passers, flat rule.
   0.096 against a realised 0.272 in 2018-19; `+hurdle_platt` forecasts 0.283 (realised 0.272). In 2025-26 the parent forecasts 0.039
   against 0.117 and the variants 0.067 to 0.070. In 2020 the variants forecast 0.14 to 0.20 against 0.016 and in 2021-23 0.009 to
   0.036 against 0 (for `risk_gbm`; the other parents are alike, Table 2). The hazard is calibrated to the pooled history, which is
-  dominated by 2018-19, so it carries that regime's rate into the quiet ones. This is why tier 3, which tests calibration by regime, still
+  dominated by 2018-19, so it carries that regime's rate into the quiet ones. This is why tier 3, the calibration-by-regime tier, still
   fails: 3 of 4 tested regimes are calibrated for 12 of the 20 variants at h = 1 against at most 2 of 4 for the parents, and 4 of 4 for none.
 * **Recall by year: 2018, 2020 and 2024 are not recovered.** Under the flat rule no variant, on any parent, warns any of the 4 onsets of 2018,
   the 2 of 2020 or the 2 of 2024. (Under the weighted rule, `risk_gbm+hurdle_isotonic` and `+hurdle_state_isotonic` warn one of the two of 2020.)
