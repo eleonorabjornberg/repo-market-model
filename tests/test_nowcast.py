@@ -382,6 +382,42 @@ class WalkForwardTests(unittest.TestCase):
         self.assertEqual(result.status[101], "naive: input missing")  # its change needs the day before
         self.assertEqual(result.status[102], "model")
 
+    def test_a_training_target_cap_clips_the_change_a_fit_learns_from_and_nothing_else(self):
+        """The cap (#540) bounds the spread's one-day change used as the training target, ridge-fitted by squared error.
+
+        A change of +60 bp at row 100 is a training pair for every refit after it. With the cap at 5 bp the
+        fit is nearer the clean series' fit than without it, and the walk before the spike is unchanged (the
+        cap acts on the training target and on nothing else; the naive base of the nowcast, the spread of
+        the day before, is read unclipped). Not a leakage guard: no mutation record.
+        """
+
+        rows = synthetic_rows()
+        spiked = with_values(rows, 100, sofr=lambda i, v: v + 0.60)
+        kwargs = dict(penalty=1.0, min_pairs=40, refit_every=21)
+        features = self.SPEC.features
+        uncapped = nowcast.walk_forward(spiked, features, **kwargs)
+        capped = nowcast.walk_forward(spiked, features, target_cap_bp=5.0, **kwargs)
+        plain = nowcast.walk_forward(rows, features, **kwargs)
+        self.assertEqual(capped.values[:101], uncapped.values[:101])
+        after = [r for r in range(len(rows)) if r > 101 and capped.status[r] == "model"]
+        self.assertTrue(after)
+        self.assertTrue(any(capped.values[r] != uncapped.values[r] for r in after))
+
+        def change(walk, series, r):
+            return walk.values[r] - series[r - 1].spread_bps
+
+        r = max(after)
+        self.assertLess(
+            abs(change(capped, spiked, r) - change(plain, rows, r)),
+            abs(change(uncapped, spiked, r) - change(plain, rows, r)),
+        )
+
+    def test_a_cap_must_be_positive(self):
+        with self.assertRaises(ValueError):
+            nowcast.walk_forward(
+                synthetic_rows(), self.SPEC.features, penalty=1.0, min_pairs=40, refit_every=21, target_cap_bp=0.0
+            )
+
     def test_the_calendar_columns_are_read_from_the_nowcast_row(self):
         rows = synthetic_rows()
         spec = DECLARATION.candidates["rrp_settlement_calendar"]
