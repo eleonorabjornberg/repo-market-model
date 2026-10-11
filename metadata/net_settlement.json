@@ -5,7 +5,7 @@
   "snapshot": "tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions",
   "inputs": {
     "offering": "offering_amt, the announced public offering, in USD billions, summed over the auctions of an (issue_date, security_type) group announced by the instant",
-    "maturing": "est_pub_held_mat_by_type_amt, the announced estimate of the publicly held securities of that security type maturing on the issue date, in USD billions; one figure per (issue_date, security_type), taken as the largest non-null figure among the group's auctions announced by the instant; 0.0 when none announced by the instant carries a figure (a cash management bill alone, mostly), counted and reported",
+    "maturing": "est_pub_held_mat_by_type_amt, the announced estimate of the publicly held securities of that security type maturing on the issue date, in USD billions; one figure per (issue_date, class), the class being the bill types or the coupon types (#566: the figure is one total for every coupon security maturing that day, repeated on each coupon record, so Notes and Bonds share it and subtract it once), taken as the largest non-null figure among the group's auctions announced by the instant; 0.0 when none announced by the instant carries a figure (a cash management bill alone, mostly), counted and reported",
     "soma": "soma_accepted, the Federal Reserve's rollover add-on, is an auction result. It is not in the net: the add-on is sized by the SOMA's own maturing holdings, which the publicly held maturing estimate excludes, so the SOMA leg cancels and the net is the cash the public leg drains. Reported beside the net and reconciled in scripts/net_settlement.py reconcile; dated at the result instant"
   },
   "columns": {

@@ -1,0 +1,68 @@
+{
+  "status": "declared by the pull request that closes #545 before any score was computed; the projection rule, its flows, the fixed constants and the logistic below are the directive's mechanism, written down once. Only the logistic's coefficients are fitted. Nothing here is tuned on a scored day.",
+  "candidate": "projected_reserves",
+  "combined_candidate": "risk_gbm+projected",
+  "mechanism": "Roll the latest as-of reserves forward to the scored day T = d + h through every flow public at the decision row d, then place the projected level on the demand curve of NY Fed Staff Report 1019 and forecast P(pressure on T) with a logistic in the projected distance to satiation and its change over the window. It forecasts every day.",
+  "source": "projected_reserves_columns",
+  "columns": {
+    "net_settlement_ahead_{k}d": "k = 1 to 5: the announced net Treasury cash settlement (metadata/net_settlement.json, repo_model.net_settlement) of the k business days after row d, summed, each auction counted from its announcement as at the declared instant on d. Built by repo_model.projected_reserves.ahead_columns.",
+    "proj_reserves_h{h}": "h = 1 to 5: reserves projected to the scored day d + h, USD billions (below)",
+    "proj_dist_h{h}": "h = 1 to 5: 100 * (proj_reserves_h / bank_total_assets - satiation), percentage points of bank assets above the satiation level; negative is below the steep part's start",
+    "proj_change_h{h}": "h = 1 to 5: 100 * (proj_reserves_h - the as-of reserve level) / bank_total_assets, percentage points, the projected change over the window from the reserves observation to the scored day"
+  },
+  "availability": "Every column is a function of the as-of reads at row d's own 16:00 decision and of nothing later: the reserve level, the daily TGA, the ON RRP balance and bank assets are read through the as-of rule (asof.InformationRule at horizon 1, scored row d + 1), and the flows ahead are announcements dated on or before d. repo_model.projected_reserves.check_no_future rebuilds a row from the panel cut at d and refuses (LookAheadError) a column that differs. The columns are declared as a source of their own with a zero lag (metadata/sources_measurement.json, projected_reserves_columns), and are off in every published declaration.",
+  "projection": {
+    "start": "A_O: reserve_balances as read at row d, the H.4.1 weekly average (WRESBAL, Thursday to Wednesday), observed on the Wednesday O on or before the read row; bank_total_assets as read at d. Corrected on 11 October 2026 (#574): the first scoring called this the Wednesday level and measured the flows from Wednesday levels.",
+    "to_decision_row": "R_d = A_O - (TGA_read - mean TGA over the week ending O) - (RRP_read - mean RRP over the week ending O) - the net settlement announced for the rows after the TGA's read row up to d. The Fed liability identity: what the Treasury account or the facility gains, reserves lose. TGA is tga_daily (Daily Treasury Statement), RRP is on_rrp; the means are the seven-calendar-day averages of the same series over the days the H.4.1 week averages (repo_model.projected_reserves.week_average; a weekend or holiday carries the last business day's value), so the flows are measured from averages as the level is an average. Every day of the week is on or before O and was public by the time the later read was.",
+    "flows_after_d": [
+      "net Treasury settlements as announced: net_settlement_ahead_{h}d",
+      "expected tax receipts on tax dates: for a day x with tax_date = 1, the TGA's rise on the same position in the previous year's window (the deadline of the same month a year earlier, data.corporate_tax_deadline, plus the same number of business days) less that day's net settlement, floored at 0, scale 1; 0 when that row has no TGA change",
+      "SOMA runoff: not added. The Treasury leg is already inside the announced net settlement, because the Treasury finances what the Federal Reserve redeems under its caps with a larger public offering (offering_amt) while the maturing estimate excludes the SOMA's holdings (metadata/net_settlement.json, inputs.soma); adding the cap again would count it twice. Agency MBS paydowns are in no tracked series and are not projected.",
+      "TGA path: no announced path (refunding or borrowing estimate) is tracked, so the declared persistence rule applies: no flow beyond the settlements and the tax receipts above."
+    ],
+    "buffer": "ON RRP absorbs a net drain before reserves do: F = the sum of the flows after d; reserves fall by F - min(max(F, 0), on_rrp_read), and rise by -F when F is negative.",
+    "satiation": 0.12,
+    "satiation_source": "scarcity.SATIATION_BAND, its lower end (about 12 percent of bank assets)",
+    "horizons": [1, 2, 3, 4, 5]
+  },
+  "model": {
+    "form": "ml.pressure_logistic_exceedance: a logistic of spread > tau on the as-of spread, proj_dist_h{h}, proj_change_h{h} and the three pressure-day-type indicators (quarter_end, month_end, tax_date), standardized, with ml.PRESSURE_LOGISTIC_SETTINGS. Six slopes and an intercept, fitted walk-forward on the judge's cadence.",
+    "features": ["spread_bps", "days_to_month_end", "quarter_end", "tax_date", "proj_dist_h{h}", "proj_change_h{h}"],
+    "calibration": "none beyond the logistic itself",
+    "expected_signs": "proj_dist negative (less reserve, more pressure); proj_change negative (a larger projected fall, more pressure)"
+  },
+  "combined_row": "risk_gbm+projected: the risk-date passer risk_gbm's forecast on every day it is nonzero (a risk date), this model's probability on every day the passer leaves at 0. A measurement beside #539's hurdle; #539 has not merged, so risk_gbm is the passer, and the row can be re-run on #539's code once it has.",
+  "inputs_off_in_every_published_declaration": [
+    "net_settlement",
+    "net_settlement_ahead_{k}d",
+    "bank_total_assets",
+    "on_rrp",
+    "tga_daily",
+    "proj_reserves_h{h}",
+    "proj_dist_h{h}",
+    "proj_change_h{h}"
+  ],
+  "projection_error": "For every scored day that is a Wednesday (the H.4.1 level is observed on Wednesdays), the projected level of the day, proj_reserves_h{h}, against the reserve level the H.4.1 reports for that Wednesday, by horizon: mean error, mean absolute error and root mean square error in USD billions, beside the error of carrying the as-of level forward unchanged. The realised level is a label read after the fact, as every score reads its labels; it is not a feature.",
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "issue": 545,
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5,
+    "horizons": [1, 2, 3, 4, 5],
+    "lead_at_least": 1
+  },
+  "rows": ["projected_reserves", "risk_gbm+projected"],
+  "risk_date_passers": ["risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"],
+  "pair_against": ["risk_gbm", "ngboost_laplace", "calendar_climatology", "persistence_logistic"],
+  "ceiling": "12 of 26 onsets at any single horizon of 2 or more, the risk-date passers' best (docs/pivot/desk-standard.md section 4): the recall of each row at h = 2 to 5 is reported against it",
+  "reports": {
+    "judge": "the judge as declared under the weighted rule in force: tier 1 pooled and per lead, tiers 3 and 5, for the two rows beside the five risk-date passers, ngboost_laplace and the two benchmarks; Brier score and log loss; onset recall by calendar year (2018, 2020 and 2024 called out) from the 26 onsets; onsets warned at each horizon",
+    "paired": "each row against risk_gbm, ngboost_laplace, calendar_climatology and persistence_logistic at +5 bp: the Brier difference at h = 1 to 5 and the onset recall difference, pooled and by regime and pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed"
+  },
+  "unchanged": "the judge, its bar, its cut-off rule, the weighted miss rule in force, the bootstrap, every published declaration, the information set and the lockbox. A measurement only: nothing is published and no day after 2025-12-31 is read (docs/decisions/lockbox.md); the columns are built for scored days to 2025-12-31 only."
+}

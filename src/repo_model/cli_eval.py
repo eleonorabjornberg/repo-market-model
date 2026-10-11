@@ -166,6 +166,9 @@ class _ModelChoice:
     #: Needs the split declaration (`--splits`) that defines the pressure-day
     #: types: the calendar-type climatology.
     takes_splits: bool = False
+    #: Reads columns that are measurement fields (`repo_model.measurement_fields`): off in every published
+    #: declaration and absent from the published panel, so the model runs only on a scratch panel (#543).
+    needs_measurement_fields: bool = False
 
     @property
     def factory(self) -> Callable[..., ExceedancePredictor]:
@@ -356,6 +359,30 @@ MODEL_FACTORIES = MappingProxyType(
                 minimum_history=minimum_history
             ),
             needs_regime_variable=False,
+        ),
+        # The latent funding-stress factor (#543): one AR(1) factor over nine money-market series,
+        # filtered forward through each forecast's as-of history. No regressor and no splits.
+        "latent_factor": _ModelChoice(
+            declared=_DeferredFactory("latent_factor_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                minimum_history=minimum_history
+            ),
+            needs_regime_variable=False,
+            needs_measurement_fields=True,
+        ),
+        # The ordinary-day component of the combined model (#561) with its factor block only: the structural
+        # and projected blocks read scratch-panel columns (#542, #545) that no `--model` run carries.
+        "combined_ordinary": _ModelChoice(
+            declared=_DeferredFactory("pressure_combined_ordinary_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                ("spread_bps",),
+                settings["splits"],
+                minimum_history=minimum_history,
+                blocks=("factor",),
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+            needs_measurement_fields=True,
         ),
         # The rare-event treatments of the direct pressure classifiers (#381): class weights, a
         # focal-loss classifier and event-balanced bootstraps, on the same direct design.

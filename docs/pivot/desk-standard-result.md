@@ -234,6 +234,8 @@ is a new declaration.
 
 ## For Eleonora: changes to availability declarations this points to, not made
 
+> *Ruled, 10 October 2026 (#541).* Eleonora ruled that a settlement is dated from the auction announcement and that the H.4.1 is read per release. Both are measured, and off in the published declaration, in `docs/pivot/settlement-h41-dating-result.md`; the amendment to `docs/decisions/information-set.md` is a draft for her to merge.
+
 1. **Date a Treasury settlement from its announcement** (`treasury_auctions.scheduled_availability`): bills 4 to 5 panel days
    ahead, coupons 5 to 14. This would let the settlement features and the coupon clause of the risk-date models be read at h of
    2 to 5. The announcement's clock time is not shown by any document read; the next-day reading is the safe one. The SOMA

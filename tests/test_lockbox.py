@@ -335,6 +335,11 @@ NOT_ENTRY_POINTS = {
         "scores no forecast, its caller drops every row after the declared last scored day, refuses a later "
         "one (setup_diagnostic.require_window) and calls require_unlocked on it before the first read"
     ),
+    "projected_reserves.build_row": (
+        "builds one row's projected-reserves columns from the as-of reads of its own decision (#545); scores "
+        "nothing, `build_columns` builds no row after the declared last scored day, and `scripts/projected_reserves.py "
+        "panel` calls require_unlocked on that day before it builds anything"
+    ),
     "scripts/pressure_track_m.states_command": (
         "tabulates the filtered state against #115's state on the fold grid (#384); scores "
         "nothing, it ends at the declared last scored day through _as_of_folds, which calls "
@@ -354,6 +359,11 @@ NOT_ENTRY_POINTS = {
         "builds the direct pressure models' training pairs inside a fit's own "
         "training frame (#114); scores nothing, the backtest that calls the "
         "predictor guards the scored days"
+    ),
+    "ml._combined_pairs": (
+        "builds the combined model's training pairs, with their anchors, inside a fit's own "
+        "training frame (#561), as ml._pressure_pairs does; scores nothing, the backtest that "
+        "calls the predictor guards the scored days"
     ),
     "ml._dynamic_rows": (
         "builds the dynamic pressure models' design rows and anchors inside a "
@@ -416,6 +426,11 @@ NOT_ENTRY_POINTS = {
         "reads each scored day's as-of inputs for the descriptive episode "
         "post-mortem (#474); compares nothing, and walks _as_of_folds, which "
         "refuses a locked day (tests/test_episode_post_mortem.py)"
+    ),
+    "scripts/unwarned_onsets.as_of_at_lead": (
+        "reads each scored day's as-of inputs at a lead for the descriptive "
+        "diagnostic of the unwarned onsets (#560); compares nothing, and walks "
+        "_as_of_folds, which refuses a locked day (tests/test_unwarned_onsets.py)"
     ),
     "scripts/final_test_opening.distribution_walk": (
         "the final test opening's walk of the published distribution and as-of "

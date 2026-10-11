@@ -1,0 +1,26 @@
+{
+  "role": "candidate",
+  "track": "S2 (#545)",
+  "parent": "risk_gbm",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps",
+    "bank_total_assets",
+    "proj_dist_h1",
+    "proj_change_h1"
+  ],
+  "features_at_horizon_2_or_more": "as the two parts: proj_dist_h{h} and proj_change_h{h} for the horizon h, and no treasury_settlement or treasury_settlement_coupons",
+  "calibration": "none: the parent's risk-date forecast on risk dates, projected_reserves' probability on every day the parent leaves at 0; metadata/projected_reserves.json"
+}

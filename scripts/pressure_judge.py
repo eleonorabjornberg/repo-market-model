@@ -513,11 +513,28 @@ def markdown(result) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _false_alarm_cell(onset) -> str:
+    """The false alarms per onset, both counts labelled and the one tier 1 is decided on named (#577).
+
+    Tier 1 counts a day flagged at any horizon once (#509), so the pooled count is shown when the result has it and the
+    worst single horizon otherwise (a result written before the ruling). Under the weighted miss rule in force the limit
+    applies to the weighted count; the flat count is printed beside it. A run with no weighted rule has the flat count alone.
+    """
+
+    pooled = "pooled_false_alarms_per_onset" in onset
+    flat = f"{_f(onset.get('pooled_false_alarms_per_onset' if pooled else 'worst_false_alarms_per_onset'), 2)} flat"
+    weighted = onset.get("pooled_weighted_false_alarms_per_onset" if pooled else "worst_weighted_false_alarms_per_onset")
+    if weighted is None:
+        return f"{flat} (tier 1 on the flat count)"
+    basis = "weighted" if onset.get("weighted_miss_applied") else "flat"
+    return f"{flat} / {_f(weighted, 2)} weighted (tier 1 on the {basis} count)"
+
+
 def summary_tables(result, horizon="1") -> str:
     """The judge's verdicts in one row per model, then the same models split by regime and pressure-day type.
 
     Table 1: tier 1 (recall with its interval, climatology's recall at the same false alarms, the worst
-    false alarms per onset), tier 3 (the worst alarm rate in the abundant stretches over the leads, and the
+    false alarms per onset, as the flat and the weighted count with the one tier 1 is decided on named), tier 3 (the worst alarm rate in the abundant stretches over the leads, and the
     regimes with a pressure day that are calibrated at the first lead), tier 5, the pass, and the pass
     within the scarce regime alone (reported, not part of the rule). Tables 2 and 3: at `horizon`, the
     share of pressure days flagged and the Brier difference against calendar climatology (positive: the model is better,
@@ -531,7 +548,8 @@ def summary_tables(result, horizon="1") -> str:
         f"Table 1. Tiers at +{primary} bp, h = 1 to 5; 90% stationary-bootstrap intervals. "
         f"The pass rule is tier 1 at lead >= 1, tier 3 at every lead and tier 5.",
         "",
-        "| model | onsets flagged | recall [90%] | clim. recall, same false alarms | false alarms per onset, pooled across horizons (limit 2) "
+        "| model | onsets flagged | recall [90%] | clim. recall, same false alarms | false alarms per onset, pooled across horizons (limit 2), "
+        "flat count / weighted count (tier 1 is decided on the one named) "
         "| tier 3: worst flags per 252 days, state 0 / 2021-23 | calibrated regimes tested, h = 1 | tier 5: calibrated, beats clim. "
         "| pass | scarce regime alone (tiers 1 / 3 / 5) |",
         "|---|---|---|---|---|---|---|---|---|---|",
@@ -565,7 +583,7 @@ def summary_tables(result, horizon="1") -> str:
         )
         lines.append(
             f"| {name} | {onset.get('onsets_flagged', '–')} of {onset.get('onsets', '–')} | {shown} | "
-            f"{_f(onset.get('climatology_recall'))} | {_pooled_alarms(onset)} | "
+            f"{_f(onset.get('climatology_recall'))} | {_false_alarm_cell(onset)} | "
             f"{_f(state0, 1)} / {_f(regime, 1)} | {sum(tested.values())} of {len(tested)} | {week_cell} | "
             f"{'PASS' if verdict['passes'] else 'fail'} (tiers {_yes(verdict['tier_1_onset_warning'])} / "
             f"{_yes(verdict['tier_3_no_crying_wolf'])} / {_yes(verdict['tier_5_week_ahead'])}) | {scarce_cell} |"

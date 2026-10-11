@@ -139,3 +139,14 @@ wording that brings a page in line with a ruling, a record's path after it moves
 text. The directive cites the ruling by link. Recording that ruling in `docs/decisions/` counts as recording a
 decision she has made. The reviewer escalates such a pull request if it changes code, a record in `docs/runs/`, or
 what the project claims beyond what the cited ruling says.
+
+## Forensic audit
+
+Decided by Eleonora, 9 October 2026 (#483). A "Forensic auditor" routine runs once a day at 7:45 am ET, in its own
+Claude Code session with the repository attached. It does not run after merges. It audits everything merged since its
+previous run and files one `finding` issue per gap, with file and line evidence. It also posts a daily digest as a
+comment on the issue "Forensic audit digest".
+
+The auditor never edits code, opens pull requests, changes a rule, or queues a directive. The orchestrating session
+triages its findings into directives under the usual rules. A finding that touches the bar, a threshold, a data
+meaning or a decision record goes to Eleonora.

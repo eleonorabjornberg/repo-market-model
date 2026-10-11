@@ -570,7 +570,7 @@ import math
 import random
 from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from fractions import Fraction
 from types import MappingProxyType
 from typing import Any, Callable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
@@ -602,6 +602,16 @@ __all__ = [
     "PRESSURE_DISTRIBUTION_SELECTION",
     "pressure_qrf_exceedance",
     "pressure_natural_gradient_exceedance",
+    "LATENT_FACTOR_SETTINGS",
+    "LATENT_FACTOR_COLUMNS",
+    "LATENT_FACTOR_SERIES",
+    "LATENT_FACTOR_ANCHOR",
+    "FittedLatentFactor",
+    "latent_factor_observation",
+    "fit_latent_factor",
+    "filter_latent_factor",
+    "latent_factor_forecast",
+    "latent_factor_exceedance",
     "MARKOV_SWITCHING_SETTINGS",
     "FittedMarkovSwitching",
     "fit_markov_switching",
@@ -5382,8 +5392,14 @@ def _quantile_exceedance(
     taus: Sequence[float],
     smoother: str = "linear",
     weights: Optional[Sequence[float]] = None,
+    scaling: str = "standardize",
 ) -> List[Tuple[float, ...]]:
     """Linear quantile regressions of the spread, read as P(spread > tau) per day.
+
+    `scaling` (#537): `"standardize"` (the default, the estimator every earlier record was scored
+    with) or `"minmax"` (`_scale_inputs`): how the columns are scaled on `xs` before the linear
+    programs. The fit is equivariant to either, but the solver is not: the median's program on a
+    standardized design can return no solution.
 
     `weights` (#518): one positive weight per training pair, passed to each `QuantileRegressor` as
     `sample_weight`; the standardiser stays unweighted. `None` passes nothing.
@@ -5409,9 +5425,7 @@ def _quantile_exceedance(
         if len(weights) != len(y) or any(not w > 0 for w in weights):
             raise ValueError("a weighted fit needs one positive weight per training pair")
         fit_weight = {"sample_weight": numpy.asarray(weights, dtype=float)}
-    centre, scale = _standardizer(x)
-    train = (x - centre) / scale
-    given = (numpy.asarray(served, dtype=float) - centre) / scale
+    train, given = _scale_inputs(x, numpy.asarray(served, dtype=float), scaling)
     grid = PRESSURE_QUANTILE_SETTINGS["quantile_grid"]
     predicted = numpy.column_stack(
         [
@@ -6151,8 +6165,13 @@ def pressure_risk_date_exceedance(
     declaration: Any,
     minimum_history: int = 20,
     train_weight: Optional[Callable[[Sequence[date]], Sequence[float]]] = None,
+    input_scaling: str = "standardize",
 ) -> ExceedancePredictor:
     """A model fitted and served on the declared risk dates only (#428).
+
+    `input_scaling` (#537): how the quantile regression's columns are scaled, `"standardize"` (the
+    default; every earlier record) or `"minmax"` (`_scale_inputs`). Only the `quantile_skewt` form
+    takes anything but the default; the others refuse it rather than ignore it.
 
     `train_weight` (#518): given the label days of a fit's risk-date training pairs, one positive weight
     per pair, applied to the fit as `sample_weight`. It sees the dates of pairs the as-of rule has already
@@ -6173,6 +6192,10 @@ def pressure_risk_date_exceedance(
         raise ValueError(f"a risk-date model is one of {list(RISK_DATE_KINDS)}, got {kind!r}")
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if input_scaling not in QUANTILE_INPUT_SCALINGS:
+        raise ValueError(f"an input scaling is one of {list(QUANTILE_INPUT_SCALINGS)}, got {input_scaling!r}")
+    if input_scaling != "standardize" and kind != "quantile_skewt":
+        raise ValueError(f"the {kind!r} form takes no input scaling; only the quantile form does")
     design = _RiskDateDesign(features, declaration)
     cache: dict = {}
 
@@ -6223,7 +6246,8 @@ def pressure_risk_date_exceedance(
             fitted: dict = {}
             if kind == "quantile_skewt":
                 law = _quantile_exceedance(
-                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t", weights=weights
+                    xs, spreads, served, [float(tau) for tau in taus], smoother="skew_t", weights=weights,
+                    scaling=input_scaling,
                 )
                 fits = [[curve[k] for curve in law] for k in range(len(taus))]
             else:
@@ -6259,6 +6283,8 @@ def pressure_risk_date_exceedance(
             + (", or a coupon settlement" if "treasury_settlement_coupons" in design.settlements else "")
         )
         settings["risk_date_training_pairs"] = len(xs)
+        if input_scaling != "standardize":
+            settings["input_scaling"] = input_scaling
         if weights is not None:
             settings["training_weights"] = "applied (#518)"
         if design.scarcity:
@@ -6303,6 +6329,7 @@ def pressure_risk_date_variant_exceedance(
     minimum_history: int = 20,
     every_day: bool = False,
     early_prior: bool = False,
+    component_inputs: Sequence[str] = EVERY_DAY_COMPONENT_INPUTS,
 ) -> ExceedancePredictor:
     """The risk-date model of #428 with the two changes of #506, each off by default.
 
@@ -6316,6 +6343,10 @@ def pressure_risk_date_variant_exceedance(
     all public is left at 0. The component's inputs are read through the same information rule and
     both of its guards, so `features` handed to the backtest must contain them.
 
+    `component_inputs` (#579): the component's inputs, `EVERY_DAY_COMPONENT_INPUTS` by default, which is the
+    component of #506 exactly. A measurement may name one more; it changes the component only, never the
+    risk-date model.
+
     `early_prior`: on a refit whose risk-date training window holds fewer than
     `EARLY_FIT_MINIMUM_PAIRS` pairs, the risk-date forecast is the day-type prior instead of the
     estimator: the training rate of `spread > tau` among the window's pairs of the same day type
@@ -6328,7 +6359,7 @@ def pressure_risk_date_variant_exceedance(
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
     design = _RiskDateDesign(features, declaration)
-    component = _PressureDesign(EVERY_DAY_COMPONENT_INPUTS, declaration) if every_day else None
+    component = _PressureDesign(component_inputs, declaration) if every_day else None
     type_columns = [design.names.index(name) for name in _PRESSURE_DAY_TYPES]
     cache: dict = {}
     component_cache: dict = {}
@@ -6479,6 +6510,305 @@ def pressure_risk_date_variant_exceedance(
             ),
         )
 
+    return fit_predict
+
+
+#: The pre-2018 transfer study (#544). Two ways to let the SOFR-era fit learn from the 2008-2018
+#: EFFR - IOER history (`effr_history`): `pooled`, one fit on the SOFR pairs and the source pairs
+#: behind a source indicator, each source pair carrying `PRESSURE_TRANSFER_SOURCE_WEIGHT`; and
+#: `pretrain_finetune`, a fit on the source alone whose slopes are the prior of an L2 penalty in the
+#: SOFR-era fit. Declared in `metadata/effr_pretrain.json` before any score, not tuned.
+PRESSURE_TRANSFER_VARIANTS = ("pooled", "pretrain_finetune")
+PRESSURE_TRANSFER_SOURCE_WEIGHT = 0.25
+
+
+class _LogitFit(NamedTuple):
+    """A weighted ridge logistic fit on columns standardized on its own training rows."""
+
+    probabilities: Tuple[float, ...]
+    intercept: float
+    slopes: Any
+    centre: Any
+    scale: Any
+
+
+def _fit_logit_toward(
+    x: Any,
+    y: Any,
+    z: Any,
+    prior_slopes: Any = None,
+    weights: Any = None,
+    c: float = None,
+    standardize_on: Optional[int] = None,
+) -> _LogitFit:
+    """A ridge logistic by Newton's method whose penalty is centred on `prior_slopes` (#544).
+
+    Columns are standardized on `x`. The loss is the weighted summed negative log-likelihood
+    plus `|b - prior|^2 / (2c)` on the standardized slopes, `c` defaulting to
+    `PRESSURE_LOGISTIC_SETTINGS["C"]`; the intercept is free. With no prior and no weights it is
+    scikit-learn's `LogisticRegression` with that `C`. `prior_slopes` are in this fit's
+    standardized units. Both classes must be present in `y`. Deterministic.
+    """
+
+    import numpy
+
+    x = numpy.asarray(x, dtype=float)
+    y = numpy.asarray(y, dtype=float)
+    z = numpy.asarray(z, dtype=float)
+    if len(set(y.tolist())) < 2:
+        raise ValueError("a logistic fit needs both classes in its training labels")
+    weight = numpy.ones(len(y)) if weights is None else numpy.asarray(weights, dtype=float)
+    if len(weight) != len(y) or not numpy.all(weight > 0):
+        raise ValueError("a weighted fit needs one positive weight per training pair")
+    c = PRESSURE_LOGISTIC_SETTINGS["C"] if c is None else c
+    centre, scale = _standardizer(x if standardize_on is None else x[:standardize_on])
+    a = numpy.hstack([numpy.ones((len(x), 1)), (x - centre) / scale])
+    prior = numpy.zeros(a.shape[1])
+    if prior_slopes is not None:
+        prior[1:] = numpy.asarray(prior_slopes, dtype=float)
+    penalty = numpy.full(a.shape[1], 1.0 / c)
+    penalty[0] = 0.0
+    rate = min(max(float(numpy.sum(weight * y) / numpy.sum(weight)), 1e-6), 1 - 1e-6)
+    w = prior.copy()
+    w[0] = math.log(rate / (1 - rate))
+
+    def objective(coefficients: Any) -> float:
+        eta = a @ coefficients
+        loss = numpy.sum(weight * (numpy.logaddexp(0.0, eta) - y * eta))
+        return float(loss + 0.5 * numpy.sum(penalty * (coefficients - prior) ** 2))
+
+    current = objective(w)
+    for _ in range(_NEWTON_ITERATIONS):
+        p = _expit(a @ w)
+        gradient = a.T @ (weight * (p - y)) + penalty * (w - prior)
+        hessian = (a * (weight * p * (1 - p))[:, None]).T @ a + numpy.diag(penalty) + 1e-10 * numpy.eye(len(w))
+        step = numpy.linalg.solve(hessian, gradient)
+        size = 1.0
+        while True:
+            candidate = w - size * step
+            value = objective(candidate)
+            if value <= current or size < 1e-8:
+                break
+            size /= 2.0
+        if current - value < 1e-12 * max(1.0, abs(current)):
+            w, current = (candidate, value) if value <= current else (w, current)
+            break
+        w, current = candidate, value
+    probabilities = _expit(w[0] + ((z - centre) / scale) @ w[1:])
+    return _LogitFit(tuple(float(p) for p in probabilities), float(w[0]), w[1:], centre, scale)
+
+
+def _raw_coefficients(fit: _LogitFit) -> Tuple[float, Any]:
+    """The fit's intercept and slopes in the units of its columns, not standardized."""
+
+    slopes = fit.slopes / fit.scale
+    return float(fit.intercept - (slopes * fit.centre).sum()), slopes
+
+
+def pressure_transfer_exceedance(
+    variant: str,
+    features: Sequence[str],
+    declaration: Any,
+    history: Tuple[Sequence[Any], Any],
+    source_thresholds: Mapping[float, float],
+    minimum_history: int = 20,
+    source_weight: float = PRESSURE_TRANSFER_SOURCE_WEIGHT,
+) -> Any:
+    """The every-day logistic of the pressure label, helped by the 2008-2018 EFFR - IOER history (#544).
+
+    The design, the direct pairs and the as-of rule are `pressure_logistic_exceedance`'s. The
+    history is `(rows, rule)`, the `effr_history` rows and their rule: their direct pairs are built
+    with the same design, each label labelled `spread > source_thresholds[tau]` (EFFR - IOER traded
+    below IOER throughout, so the source has its own, declared, threshold for each SOFR threshold).
+    Every fit refuses a source label not public before its last training day
+    (`effr_history.require_pool_public`) and a rule whose horizon is not the run's. The source rows
+    are training data only; a served row is the SOFR market.
+
+    `pooled`: one ridge logistic on the SOFR pairs (weight 1) and the source pairs (weight
+    `source_weight`), with a source indicator as the design's last column, 0 on every served row;
+    columns are standardized on the SOFR pairs alone.
+
+    `pretrain_finetune`: a ridge logistic on the source pairs alone, then the SOFR-era fit with its
+    L2 penalty centred on the pre-trained slopes (in raw units, so the two standardizations
+    differ freely) and a free intercept. When the source has no event at the threshold the
+    SOFR-era fit has no prior; when the SOFR window has no event the pre-trained model is served.
+
+    Annotated `Any`, like `_direct_pressure_predictor`, its pooling sibling: it takes the history rows, which
+    no `--model` name can supply, so it is a study candidate (`scripts/effr_pretrain.py`), not a declared model
+    the command line constructs.
+
+    `fit_predict.coefficients` collects, per fit and per threshold, the coefficients in the SOFR
+    window's standardized units: `sofr_era` (no help), `pretrained` and `fine_tuned`, or `pooled`.
+    """
+
+    if variant not in PRESSURE_TRANSFER_VARIANTS:
+        raise ValueError(f"a transfer variant is one of {list(PRESSURE_TRANSFER_VARIANTS)}, got {variant!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if not source_weight > 0:
+        raise ValueError(f"the source weight must be positive, got {source_weight}")
+    from . import effr_history
+
+    history_rows, history_rule = history
+    thresholds = {float(tau): float(value) for tau, value in source_thresholds.items()}
+    design = _PressureDesign(features, declaration)
+    cache: dict = {}
+    pooled: dict = {}
+    trace: List[dict] = []
+    without_events: List[bool] = []
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        import numpy
+
+        if information is None:
+            raise ValueError(
+                "a transfer model pairs each training label with what was public at that label's "
+                "own decision instant, which only the as-of rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a transfer model needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        if history_rule.horizon != information.horizon:
+            raise ValueError(
+                f"the history is read at horizon {history_rule.horizon}, the run at {information.horizon}"
+            )
+        for tau in taus:
+            if float(tau) not in thresholds:
+                raise ValueError(f"no source threshold is declared for the {float(tau):g} bp threshold")
+        xs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(
+                row,
+                _served_tga_change(histories[day], row) if design.needs_history() else None,
+            )
+            for day, row in enumerate(feature_rows)
+        ]
+        if "pool" not in pooled:
+            pooled["pool"] = effr_history.history_pairs(design, history_rule, history_rows)
+        pool = pooled["pool"]
+        effr_history.require_pool_public(pool.available_at, train_rows[-1].date)
+        x = numpy.asarray(xs, dtype=float)
+        z = numpy.asarray(served, dtype=float)
+        source_x = numpy.asarray(pool.xs, dtype=float).reshape(len(pool.xs), x.shape[1])
+        names = list(design.names)
+        columns: List[List[float]] = []
+        record = {"train_end": train_rows[-1].date.isoformat(), "sofr_pairs": len(xs), "columns": names, "fits": {}}
+        for tau in taus:
+            labels = numpy.asarray([1 if exceeds_bp(v, float(tau)) else 0 for v in spreads], dtype=float)
+            source_labels = numpy.asarray(
+                [1 if exceeds_bp(v, thresholds[float(tau)]) else 0 for v in pool.spreads], dtype=float
+            )
+            source_has_events = len(set(source_labels.tolist())) == 2 and len(source_labels) > 0
+            sofr_has_events = len(set(labels.tolist())) == 2
+            fits: dict = {}
+
+            def units(fit: _LogitFit, reference: _LogitFit) -> dict:
+                """`fit`'s coefficients in `reference`'s standardized units, by column."""
+
+                intercept, slopes = _raw_coefficients(fit)
+                shifted = intercept + float((slopes * reference.centre).sum())
+                out = {"intercept": shifted}
+                out.update({name: float(v) for name, v in zip(names, slopes * reference.scale)})
+                return out
+
+            if variant == "pooled":
+                joint = _fit_logit_toward(
+                    numpy.vstack([numpy.hstack([x, numpy.zeros((len(x), 1))]), numpy.hstack([source_x, numpy.ones((len(source_x), 1))])]),
+                    numpy.concatenate([labels, source_labels]),
+                    numpy.hstack([z, numpy.zeros((len(z), 1))]),
+                    weights=numpy.concatenate([numpy.ones(len(x)), numpy.full(len(source_x), float(source_weight))]),
+                    standardize_on=len(x),
+                ) if (sofr_has_events or source_has_events) else None
+                if joint is None:
+                    column = [float(labels[0])] * len(served)
+                else:
+                    column = list(joint.probabilities)
+                alone = _fit_logit_toward(x, labels, z) if sofr_has_events else None
+                if joint is not None:
+                    names_joint = names + [HISTORY_MARKET_COLUMN]
+                    fits[f"{tau:g}"] = {
+                        "sofr_era": None if alone is None else units(alone, alone),
+                        "pooled": {
+                            "intercept": float(joint.intercept),
+                            **{n: float(v) for n, v in zip(names_joint, joint.slopes)},
+                        },
+                    }
+            else:
+                pretrained = _fit_logit_toward(source_x, source_labels, z) if source_has_events else None
+                alone = _fit_logit_toward(x, labels, z) if sofr_has_events else None
+                if not source_has_events:
+                    without_events.append(True)
+                if alone is None and pretrained is None:
+                    column = [float(labels[0])] * len(served)
+                elif alone is None:
+                    column = list(pretrained.probabilities)
+                    fits[f"{tau:g}"] = {"sofr_era": None, "pretrained": None, "fine_tuned": None, "served": "pretrained"}
+                elif pretrained is None:
+                    column = list(alone.probabilities)
+                else:
+                    _, raw = _raw_coefficients(pretrained)
+                    _, sofr_scale = _standardizer(x)
+                    tuned = _fit_logit_toward(x, labels, z, prior_slopes=raw * sofr_scale)
+                    column = list(tuned.probabilities)
+                    fits[f"{tau:g}"] = {
+                        "sofr_era": units(alone, alone),
+                        "pretrained": units(pretrained, alone),
+                        "fine_tuned": units(tuned, alone),
+                    }
+            columns.append(column)
+            record["fits"].update(fits)
+        trace.append(record)
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = min(1.0, max(0.0, column[day]))
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = dict(PRESSURE_LOGISTIC_SETTINGS)
+        settings["design"] = names + ([HISTORY_MARKET_COLUMN] if variant == "pooled" else [])
+        settings["transfer"] = {
+            "variant": variant,
+            "source_weight": float(source_weight) if variant == "pooled" else None,
+            "source_thresholds_bp": {f"{tau:g}": value for tau, value in sorted(thresholds.items())},
+            "source_without_events": bool(without_events),
+        }
+        settings["pooled_history"] = {
+            "pairs": len(pool.xs),
+            "first": pool.dates[0].isoformat() if pool.dates else None,
+            "last": pool.dates[-1].isoformat() if pool.dates else None,
+            "horizon": pool.horizon,
+        }
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    #: What each fit learned, one entry per fit (`fit_predict.coefficients`).
+    fit_predict.coefficients = trace  # type: ignore[attr-defined]
     return fit_predict
 
 
@@ -6633,6 +6963,303 @@ def pressure_risk_date_hurdle_exceedance(
             ml_libraries=_library_versions(),
             model_settings=MappingProxyType(settings),
             history_ends=base.history_ends,
+        )
+
+    return fit_predict
+
+
+#: The blocks of the combined model's ordinary-day logistic (#561), in the order their columns follow the spread:
+#: the latent stress factor (#543), the structural terms (#542) and the projected-reserves distance (#545).
+#: Declared in `metadata/combined_model_561.json` before any score, not tuned.
+COMBINED_BLOCKS = ("factor", "structural", "projected")
+#: The ordinary-day logistic's walk-forward calibration (`_walk_forward_calibrator`): Platt, as the hurdle's headline.
+COMBINED_CALIBRATION = "platt"
+#: The factor's change is its filtered level at the anchor less its level this many rows earlier.
+COMBINED_FACTOR_CHANGE_ROWS = 5
+_COMBINED_FACTOR_NAMES = ("factor_level", f"factor_change_{COMBINED_FACTOR_CHANGE_ROWS}")
+
+
+def _combined_factor_columns(means: Sequence[float], anchor: int) -> Optional[Tuple[float, float]]:
+    """The filtered factor's level at row `anchor` and its change over `COMBINED_FACTOR_CHANGE_ROWS` rows, or None.
+
+    Row `anchor` reads rows `0..anchor` of the filter and nothing after it. `None` when the frame is too short
+    for the change.
+    """
+
+    earlier = anchor - COMBINED_FACTOR_CHANGE_ROWS
+    if earlier < 0:
+        return None
+    return means[anchor], means[anchor] - means[earlier]
+
+
+class _CombinedDesign:
+    """The columns of the ordinary-day logistic that one as-of observation carries (#561).
+
+    The spread; with `structural` the four terms of `structural_liquidity.StructuralDesign` (elasticity times the
+    unabsorbed drain, the TGA rise, the tax date and the window); with `projected` the one declared
+    `proj_dist_h{h}` column. The factor's two columns are not here: they come from the filter
+    (`_combined_training_matrix`, and the served rows' own histories).
+    """
+
+    scarcity = False
+    products: Tuple[Tuple[str, str], ...] = ()
+    monotone = None
+    pooling = None
+
+    def __init__(self, features: Sequence[str], declaration: Any, blocks: Sequence[str]) -> None:
+        declared = tuple(dict.fromkeys(str(name) for name in features))
+        if "spread_bps" not in declared:
+            raise ValueError("the combined model reads the latest public spread; declare spread_bps")
+        self.features = declared
+        self.structural = None
+        self.projected_column: Optional[str] = None
+        names = ["spread_bps"]
+        read = ["spread_bps"]
+        if "structural" in blocks:
+            from .structural_liquidity import COLUMN_NAMES, StructuralDesign
+
+            self.structural = StructuralDesign(declared, declaration)
+            names += list(COLUMN_NAMES[1:])
+            read += [name for name in self.structural.features if name not in read]
+        if "projected" in blocks:
+            columns = [name for name in declared if name.startswith("proj_dist_h")]
+            if len(columns) != 1:
+                raise ValueError(f"declare exactly one proj_dist_h column for the projected block, got {columns}")
+            self.projected_column = columns[0]
+            names.append(columns[0])
+            read.append(columns[0])
+        self.names = tuple(names)
+        self.features_read = tuple(read)
+        self.tga = self.structural is not None
+
+    def needs_history(self) -> bool:
+        return self.tga
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        values = [float(observation.spread_bps)]
+        if self.structural is not None:
+            values += self.structural.row(observation, tga_change)[1:]
+        if self.projected_column is not None:
+            value = observation.values.get(self.projected_column)
+            if value is None or not math.isfinite(float(value)):
+                raise ValueError(
+                    f"{observation.date}: the as-of read of {self.projected_column!r} is missing; "
+                    f"the combined model is not fitted or served on an unobserved input"
+                )
+            values.append(float(value))
+        return values
+
+
+def _combined_pairs(
+    design: _CombinedDesign,
+    information: InformationRule,
+    train_rows: Sequence[DailyObservation],
+    cache: dict,
+) -> List[Tuple[int, List[float], float]]:
+    """Direct training pairs under the as-of rule, each with its anchor row: `(anchor, design row, label spread)`.
+
+    The pairing is `_pressure_pairs`': each label is paired with the design row a forecast of it would have read
+    at its own decision instant, checked by both guards, and a label with a missing read trains no pair. The
+    anchor is the row of the latest spread public at that instant, which is where the factor is read.
+    """
+
+    dates = [row.date for row in train_rows]
+    out: List[Tuple[int, List[float], float]] = []
+    key_base = (information.horizon, information.features)
+    for target in range(1, len(train_rows)):
+        key = (key_base, dates[target])
+        if key not in cache:
+            cache[key] = None
+            try:
+                info = information.information_set(dates, target)
+            except SplitError:
+                continue
+            information.check(dates, info)
+            tga_change: Optional[float] = None
+            if design.tga:
+                (read,) = [r for r in info.reads if r.feature == "tga"]
+                tga_change = _tga_change_at(train_rows, read.row)
+                if tga_change is None:
+                    continue
+            try:
+                features = design.row(information.observation(train_rows, info), tga_change)
+            except ValueError:
+                continue
+            cache[key] = (info.anchor, features, float(train_rows[target].spread_bps))
+        if cache[key] is not None:
+            out.append(cache[key])
+    return out
+
+
+def _combined_training_matrix(
+    pairs: Sequence[Tuple[int, List[float], float]], means: Sequence[float], factor: bool
+) -> Tuple[List[List[float]], List[float]]:
+    """The training design and labels. With `factor`, each row gets the filtered factor at its pair's anchor.
+
+    A pair whose anchor is too early for the factor's change trains nothing.
+    """
+
+    xs: List[List[float]] = []
+    spreads: List[float] = []
+    for anchor, row, spread in pairs:
+        if factor:
+            columns = _combined_factor_columns(means, anchor)
+            if columns is None:
+                continue
+            xs.append(list(row) + list(columns))
+        else:
+            xs.append(list(row))
+        spreads.append(spread)
+    return xs, spreads
+
+
+def pressure_combined_ordinary_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    blocks: Sequence[str] = COMBINED_BLOCKS,
+    calibration: str = COMBINED_CALIBRATION,
+) -> ExceedancePredictor:
+    """The ordinary-day component of the combined model (#561): one calibrated logistic on the declared blocks.
+
+    A ridge logistic (`PRESSURE_LOGISTIC_SETTINGS`) of `spread > tau`, one per threshold, on the spread and the
+    columns of `blocks`: the latent stress factor's filtered level and five-row change (#543; fitted on the
+    refit's training frame, read at each pair's anchor and filtered forward through each forecast's own as-of
+    history), the structural terms (#542) and the projected-reserves distance (#545). The fitted probability is
+    mapped through a Platt or isotonic curve fitted walk-forward (`_walk_forward_calibrator`), conditioned on
+    nothing but the columns above; no regime label is an input.
+
+    `features`: the spread and, for `structural`, the structural features at the horizon, and for `projected`
+    one `proj_dist_h{h}`; the factor's nine columns are read in addition when `factor` is declared, so the caller
+    declares them to the backtest.
+
+    Raises:
+        ValueError: on an unknown block or calibration, a short frame, a call without the as-of rule or without
+            each row's history (when the factor or the structural block reads it), or a served row with a
+            missing input.
+        LookAheadError: if a history runs past its forecast's anchor.
+    """
+
+    blocks = tuple(blocks)
+    if not blocks:
+        raise ValueError("declare at least one block")
+    unknown = [name for name in blocks if name not in COMBINED_BLOCKS]
+    if unknown:
+        raise ValueError(f"a block is one of {list(COMBINED_BLOCKS)}, got {unknown}")
+    if calibration not in ("platt", "isotonic"):
+        raise ValueError(f"the calibration is 'platt' or 'isotonic', got {calibration!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    use_factor = "factor" in blocks
+    design = _CombinedDesign(features, declaration, tuple(name for name in blocks if name != "factor"))
+    settings = LATENT_FACTOR_SETTINGS
+    pair_cache: dict = {}
+    observation_cache: dict = {}
+
+    def observed(row: DailyObservation) -> Tuple[Optional[float], ...]:
+        hit = observation_cache.get(id(row))
+        if hit is None or hit[0] is not row:
+            hit = (row, latent_factor_observation(row))
+            observation_cache[id(row)] = hit
+        return hit[1]
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None or histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "the combined model pairs each training label with what was public at its own decision "
+                "instant and filters the factor through each forecast's own as-of history; it was called "
+                "without the rule or without one history per feature row"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"the combined model needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        means: List[float] = []
+        fitted = None
+        if use_factor:
+            training = [observed(row) for row in train_rows]
+            fitted = fit_latent_factor(training)
+            means = [mean for mean, _var in filter_latent_factor(fitted, training)]
+        pairs = _combined_pairs(design, information, train_rows, pair_cache)
+        xs, spreads = _combined_training_matrix(pairs, means, use_factor)
+        if len(xs) < settings["minimum_mapping_days"]:
+            raise ValueError(
+                f"{len(xs)} training days carry a complete as-of read; "
+                f"at least {settings['minimum_mapping_days']} are needed"
+            )
+        served: List[List[float]] = []
+        factor_levels: List[float] = []
+        for feature_row, history in zip(feature_rows, histories):
+            if not history:
+                raise ValueError("a forecast's as-of history is empty")
+            if history[-1].date > feature_row.date:
+                raise LookAheadError(
+                    f"the filter for the forecast anchored {feature_row.date} was handed "
+                    f"history through {history[-1].date}"
+                )
+            tga_change = _served_tga_change(history, feature_row) if design.tga else None
+            row = design.row(feature_row, tga_change)
+            if use_factor:
+                path = [mean for mean, _var in filter_latent_factor(fitted, [observed(r) for r in history])]
+                columns = _combined_factor_columns(path, len(path) - 1)
+                if columns is None:
+                    raise ValueError(
+                        f"{feature_row.date}: fewer than {COMBINED_FACTOR_CHANGE_ROWS + 1} rows of history "
+                        f"for the factor's change"
+                    )
+                row = row + list(columns)
+                factor_levels.append(columns[0])
+            served.append(row)
+        calibrated, uncalibrated = 0, 0
+        columns_out: List[List[float]] = []
+        for tau in taus:
+            labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+            if len(set(labels)) < 2:
+                columns_out.append([float(labels[0])] * len(served))
+                continue
+            fit = _fit_classifier("logistic", xs, labels, served)
+            curve = _walk_forward_calibrator(calibration, xs, labels)
+            if curve is None:
+                uncalibrated += 1
+            else:
+                calibrated += 1
+                fit = [curve(float(p)) for p in fit]
+            columns_out.append(fit)
+        curves = []
+        for day in range(len(feature_rows)):
+            curve_values: List[float] = []
+            for column in columns_out:
+                value = min(1.0, max(0.0, column[day]))
+                curve_values.append(value if not curve_values else min(curve_values[-1], value))
+            curves.append(tuple(curve_values))
+        names = list(design.names) + (list(_COMBINED_FACTOR_NAMES) if use_factor else [])
+        read = tuple(design.features_read) + (LATENT_FACTOR_COLUMNS if use_factor else ())
+        report = {
+            "combined_blocks": list(blocks),
+            "combined_columns": names,
+            "combined_calibration": calibration,
+            "combined_training_pairs": len(xs),
+            "combined_calibrated_fits": calibrated,
+            "combined_uncalibrated_fits": uncalibrated,
+            "filtered_factor": factor_levels,
+        }
+        if fitted is not None:
+            report.update({"persistence": fitted.persistence, "loadings": list(fitted.loadings)})
+        return _combined_result(curves, read, report, histories)
+
+    def _combined_result(curves, read, report, histories):
+        return ExceedanceCurves(
+            tuple(curves),
+            tuple(dict.fromkeys(read)),
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(report),
+            history_ends=tuple(history[-1].date for history in histories),
         )
 
     return fit_predict
@@ -7708,6 +8335,30 @@ def _standardizer(x: Any) -> Tuple[Any, Any]:
     return centre, scale
 
 
+#: The input scalings a quantile regression may be fitted with (#537).
+QUANTILE_INPUT_SCALINGS = ("standardize", "minmax")
+
+
+def _scale_inputs(x: Any, other: Any, scaling: str) -> Tuple[Any, Any]:
+    """`x` and `other` scaled by `x`'s own statistics (#537).
+
+    `"standardize"`: zero mean and unit standard deviation (a constant column keeps scale 1).
+    `"minmax"`: each column to [0, 1] on `x`, so `x`'s smallest value is 0 and its largest 1 (a
+    constant column is left at 0). `other` is not clipped: a served value outside `x`'s range lies
+    outside [0, 1], as a standardized one lies outside a few standard deviations.
+    """
+
+    if scaling == "standardize":
+        centre, scale = _standardizer(x)
+    elif scaling == "minmax":
+        centre = x.min(axis=0)
+        scale = x.max(axis=0) - centre
+        scale[scale == 0.0] = 1.0
+    else:
+        raise ValueError(f"an input scaling is one of {list(QUANTILE_INPUT_SCALINGS)}, got {scaling!r}")
+    return (x - centre) / scale, (other - centre) / scale
+
+
 def _fit_logit(x: Any, y: Any, c: float = 1.0) -> _Logit:
     """Penalized logistic regression by Newton's method, numpy only.
 
@@ -8661,6 +9312,479 @@ def markov_switching_exceedance(
             read,
             ml_libraries=_library_versions(),
             model_settings=MappingProxyType(settings),
+            history_ends=tuple(history[-1].date for history in histories),
+        )
+
+    return fit_predict
+
+
+# -- a latent funding-stress factor (#543, a model variant under #374) ----------------------------
+#
+# One hidden factor drives the co-movement of nine money-market series (the SOFR 1st, 25th, 75th
+# and 99th percentiles, TGCR, BGCR and EFFR above IORB, the SOFR 99th-minus-1st dispersion, and the
+# log of ON RRP take-up). The factor is an AR(1) with unit innovation variance (the scale
+# identification); each series loads on it with its own mean, loading and noise. Fitted by EM
+# (Kalman smoother, scalar state) on each refit block's training frame, then *forward-filtered*
+# through each forecast's own as-of history: the filter never smooths, and a series missing on a day
+# informs nothing that day -- it is neither filled nor carried. The factor is mapped to the spread by
+# an OLS of the spread on the filtered factor over the training days, and the probability of a
+# pressure day `h` panel days ahead is the tail of the carried factor above the level that mapping
+# puts at the threshold.
+
+#: What the fit is built with. Declared in `metadata/latent_factor.json` before any score; a test pins
+#: the two together.
+LATENT_FACTOR_SETTINGS = MappingProxyType(
+    {
+        "innovation_variance": 1.0,
+        "max_iterations": 100,
+        "tolerance": 1e-6,
+        "noise_variance_floor": 0.01,
+        "persistence_ceiling": 0.995,
+        "initial_loading": 0.7,
+        "initial_noise_variance": 0.5,
+        "initial_persistence": 0.9,
+        "minimum_rows": 20,
+        "minimum_observed_per_series": 10,
+        "minimum_mapping_days": 20,
+        "mapping_slope_floor_bp": 1e-9,
+    }
+)
+
+#: The panel columns the series are built from (percent, except `on_rrp` in USD billions).
+LATENT_FACTOR_COLUMNS = (
+    "sofr_p1", "sofr_p25", "sofr_p75", "sofr_p99", "tgcr", "bgcr", "effr", "iorb", "on_rrp",
+)
+
+#: The series, in the order of an observation: spreads over IORB in basis points, the SOFR dispersion
+#: in basis points, and the log of one plus ON RRP take-up in USD billions.
+LATENT_FACTOR_SERIES = (
+    "sofr_p1_iorb_bps", "sofr_p25_iorb_bps", "sofr_p75_iorb_bps", "sofr_p99_iorb_bps",
+    "tgcr_iorb_bps", "bgcr_iorb_bps", "effr_iorb_bps", "sofr_p99_minus_p1_bps", "log1p_on_rrp_bn",
+)
+
+#: The series whose loading is oriented positive (the SOFR 99th percentile above IORB: higher is
+#: more stress). The factor's sign is otherwise free; this fixes it, the same way for every refit.
+LATENT_FACTOR_ANCHOR = 3
+
+_LATENT_FACTOR_OVER_IORB = ("sofr_p1", "sofr_p25", "sofr_p75", "sofr_p99", "tgcr", "bgcr", "effr")
+
+
+class FittedLatentFactor(NamedTuple):
+    """A one-factor dynamic model: standardised series, a loading and a noise variance each."""
+
+    #: the training mean and standard deviation each series was standardised with
+    means: Tuple[float, ...]
+    scales: Tuple[float, ...]
+    #: per standardised series: intercept-free loading on the factor, and idiosyncratic variance
+    loadings: Tuple[float, ...]
+    noise_variances: Tuple[float, ...]
+    #: the AR(1) coefficient of the factor (innovation variance fixed at 1)
+    persistence: float
+    log_likelihood: float
+    iterations: int
+
+
+def latent_factor_observation(row: DailyObservation) -> Tuple[Optional[float], ...]:
+    """The nine series on one row, `None` where a constituent is a hole.
+
+    Every constituent is read off the one row, so the as-of rule's per-field reads stay per field and a
+    derived value never joins two days. An absent column is `MissingRegressorError`, as for any model.
+    """
+
+    values = {name: _raw_regressor(row, name, "latent_factor", role="a series of the latent factor")
+              for name in LATENT_FACTOR_COLUMNS}
+    iorb = values["iorb"]
+    out: List[Optional[float]] = []
+    for name in _LATENT_FACTOR_OVER_IORB:
+        value = values[name]
+        out.append(None if value is None or iorb is None else (value - iorb) * 100.0)
+    p99, p1 = values["sofr_p99"], values["sofr_p1"]
+    out.append(None if p99 is None or p1 is None else (p99 - p1) * 100.0)
+    take_up = values["on_rrp"]
+    out.append(None if take_up is None else math.log1p(max(take_up, 0.0)))
+    return tuple(out)
+
+
+def _latent_matrix(observations: Sequence[Sequence[Optional[float]]], width: int) -> Any:
+    import numpy
+
+    if not len(observations):
+        raise ValueError("a latent-factor model needs at least one row")
+    if any(len(row) != width for row in observations):
+        raise ValueError(f"every row of a latent-factor model must carry {width} series")
+    return numpy.array(
+        [[numpy.nan if v is None else float(v) for v in row] for row in observations], dtype=float
+    )
+
+
+def _latent_forward(z: Any, mask: Any, intercepts: Any, loadings: Any, noise: Any, phi: float) -> Tuple[Any, ...]:
+    """The scalar-state Kalman filter on standardised series: predicted and filtered moments, and the likelihood.
+
+    Information form: with a diagonal noise, the update of a scalar state from the series seen on a day
+    is its precision `A` and its precision-weighted residual `B`; an unseen series adds nothing.
+    """
+
+    import numpy
+
+    clean = numpy.where(mask, z - intercepts[None, :], 0.0)
+    weight = loadings / noise
+    precision = (mask * (loadings ** 2 / noise)[None, :]).sum(axis=1).tolist()
+    pull = (clean @ weight).tolist()
+    length = len(precision)
+    predicted_mean, predicted_var = [0.0] * length, [0.0] * length
+    mean, var = [0.0] * length, [0.0] * length
+    for t in range(length):
+        if t:
+            a = phi * mean[t - 1]
+            p = phi * phi * var[t - 1] + 1.0
+        else:
+            a = 0.0
+            p = 1.0 / (1.0 - phi * phi)
+        predicted_mean[t], predicted_var[t] = a, p
+        v = 1.0 / (1.0 / p + precision[t])
+        var[t] = v
+        mean[t] = v * (a / p + pull[t])
+    a = numpy.array(predicted_mean)
+    p = numpy.array(predicted_var)
+    big_a = numpy.array(precision)
+    resid = numpy.where(mask, clean - loadings[None, :] * a[:, None], 0.0)
+    s_term = (resid ** 2 / noise[None, :]).sum(axis=1)
+    c_term = (resid * weight[None, :]).sum(axis=1)
+    gain = 1.0 + p * big_a
+    quad = s_term - p * c_term ** 2 / gain
+    logdet = (mask * numpy.log(noise)[None, :]).sum(axis=1) + numpy.log(gain)
+    seen = mask.sum(axis=1)
+    likelihood = float(-0.5 * (seen * math.log(2.0 * math.pi) + logdet + quad).sum())
+    return predicted_mean, predicted_var, mean, var, likelihood
+
+
+def fit_latent_factor(
+    observations: Sequence[Sequence[Optional[float]]], max_iterations: Optional[int] = None
+) -> FittedLatentFactor:
+    """EM for a one-factor AR(1) dynamic factor model with missing observations, deterministic.
+
+    Args:
+        observations: one row per day, one value (or `None`) per series.
+        max_iterations: overrides `LATENT_FACTOR_SETTINGS["max_iterations"]`.
+
+    Raises:
+        ValueError: on too few rows, a series with too few observations, rows of unequal length, or
+            an anchor index outside the rows.
+    """
+
+    import numpy
+
+    settings = LATENT_FACTOR_SETTINGS
+    if not len(observations):
+        raise ValueError("a latent-factor model needs at least one row")
+    width = len(observations[0])
+    if width <= LATENT_FACTOR_ANCHOR:
+        raise ValueError(f"a latent-factor model needs more than {LATENT_FACTOR_ANCHOR} series, got {width}")
+    y = _latent_matrix(observations, width)
+    if len(y) < settings["minimum_rows"]:
+        raise ValueError(f"{len(y)} rows cannot fit a latent factor; at least {settings['minimum_rows']} are needed")
+    mask = ~numpy.isnan(y)
+    counts = mask.sum(axis=0)
+    if int(counts.min()) < settings["minimum_observed_per_series"]:
+        raise ValueError(
+            f"a series has {int(counts.min())} observations; at least "
+            f"{settings['minimum_observed_per_series']} are needed"
+        )
+    clean = numpy.where(mask, y, 0.0)
+    means = clean.sum(axis=0) / counts
+    scales = numpy.sqrt((numpy.where(mask, y - means[None, :], 0.0) ** 2).sum(axis=0) / counts)
+    scales = numpy.maximum(scales, 1e-6)
+    z = numpy.where(mask, (y - means[None, :]) / scales[None, :], 0.0)
+    length = len(z)
+    floor = float(settings["noise_variance_floor"])
+    ceiling = float(settings["persistence_ceiling"])
+    intercepts = numpy.zeros(width)
+    loadings = numpy.full(width, float(settings["initial_loading"]))
+    noise = numpy.full(width, float(settings["initial_noise_variance"]))
+    phi = float(settings["initial_persistence"])
+    iterations = 0
+    previous = -math.inf
+    limit = int(settings["max_iterations"] if max_iterations is None else max_iterations)
+    for iterations in range(1, limit + 1):
+        a, p, m, v, likelihood = _latent_forward(z, mask, intercepts, loadings, noise, phi)
+        # Rauch-Tung-Striebel smoother, scalar state
+        smooth_mean, smooth_var = m[:], v[:]
+        lag_gain = [0.0] * length
+        for t in range(length - 2, -1, -1):
+            j = v[t] * phi / p[t + 1]
+            lag_gain[t] = j
+            smooth_mean[t] = m[t] + j * (smooth_mean[t + 1] - a[t + 1])
+            smooth_var[t] = v[t] + j * j * (smooth_var[t + 1] - p[t + 1])
+        ef = numpy.array(smooth_mean)
+        ef2 = numpy.array(smooth_var) + ef ** 2
+        cross = numpy.array([lag_gain[t - 1] * smooth_var[t] + smooth_mean[t] * smooth_mean[t - 1] for t in range(1, length)])
+        phi = float(min(ceiling, max(-ceiling, cross.sum() / ef2[:-1].sum())))
+        n = counts.astype(float)
+        s1 = (mask * ef[:, None]).sum(axis=0)
+        s2 = (mask * ef2[:, None]).sum(axis=0)
+        sz = (mask * z).sum(axis=0)
+        szf = (mask * z * ef[:, None]).sum(axis=0)
+        szz = (mask * z * z).sum(axis=0)
+        det = n * s2 - s1 * s1
+        intercepts = (s2 * sz - s1 * szf) / det
+        loadings = (n * szf - s1 * sz) / det
+        resid = szz - 2 * intercepts * sz - 2 * loadings * szf + n * intercepts ** 2 + 2 * intercepts * loadings * s1 + loadings ** 2 * s2
+        noise = numpy.maximum(resid / n, floor)
+        # Parameter expansion: estimate the innovation variance freely, then fold it into the loadings so
+        # it is 1 again. The observation law is unchanged by the rescaling; EM along the scale direction,
+        # which the fixed unit variance leaves nearly flat, converges in a few iterations instead of many.
+        innovation = float(
+            (ef2[1:] - 2.0 * phi * cross + phi * phi * ef2[:-1]).sum() / (length - 1)
+        )
+        loadings = loadings * math.sqrt(max(innovation, 1e-12))
+        if abs(likelihood - previous) < float(settings["tolerance"]) * max(1.0, abs(likelihood)):
+            break
+        previous = likelihood
+    if loadings[LATENT_FACTOR_ANCHOR] < 0:
+        loadings = -loadings
+    final = _latent_forward(z, mask, intercepts, loadings, noise, phi)[4]
+    # the series means move by the fitted intercepts, so the model is stated in raw-mean terms
+    return FittedLatentFactor(
+        means=tuple(float(x) for x in means + intercepts * scales),
+        scales=tuple(float(x) for x in scales),
+        loadings=tuple(float(x) for x in loadings),
+        noise_variances=tuple(float(x) for x in noise),
+        persistence=phi,
+        log_likelihood=final,
+        iterations=iterations,
+    )
+
+
+def filter_latent_factor(
+    fitted: FittedLatentFactor, observations: Sequence[Sequence[Optional[float]]]
+) -> Tuple[Tuple[float, float], ...]:
+    """The filtered mean and variance of the factor at every row: forward pass only.
+
+    Row t reads rows 0..t and nothing after it, so this is what a forecaster at row t could have
+    computed. A series absent on a row informs nothing on it.
+    """
+
+    import numpy
+
+    width = len(fitted.loadings)
+    y = _latent_matrix(observations, width)
+    mask = ~numpy.isnan(y)
+    means, scales = numpy.array(fitted.means), numpy.array(fitted.scales)
+    z = numpy.where(mask, (y - means[None, :]) / scales[None, :], 0.0)
+    _, _, mean, var, _ = _latent_forward(
+        z, mask, numpy.zeros(width), numpy.array(fitted.loadings), numpy.array(fitted.noise_variances),
+        fitted.persistence,
+    )
+    return tuple(zip(mean, var))
+
+
+def latent_factor_forecast(
+    fitted: FittedLatentFactor, mean: float, variance: float, steps: int
+) -> Tuple[float, float]:
+    """The factor's mean and variance `steps` rows after a filtered one."""
+
+    if steps < 0:
+        raise ValueError(f"steps must not be negative, got {steps}")
+    phi = fitted.persistence
+    decay = phi ** (2 * steps)
+    return phi ** steps * mean, decay * variance + (1.0 - decay) / (1.0 - phi * phi)
+
+
+def _normal_tail(location: float, scale: float, point: float) -> float:
+    """`P(X > point)` for `X ~ N(location, scale^2)`."""
+
+    return 0.5 * math.erfc((point - location) / (scale * math.sqrt(2.0)))
+
+
+def served_lead(information: InformationRule, dates: Optional[Sequence[date]] = None) -> int:
+    """The panel rows from the anchor to the scored day: what a model carrying a state from the anchor must step.
+
+    `horizon` plus the rows the target lags (one under the tracked declarations), so the anchor is `horizon + 1`
+    rows before the scored day, not `horizon` (#575, the same lag as #449). Read off the rule over `dates`, by
+    default a run of weekdays with no market holiday, and the same for every scored day in it.
+
+    Raises:
+        ValueError: the lead is not the same on every scored day of `dates`, so no single step count serves the
+            forecast.
+    """
+
+    if dates is None:
+        dates = [date(2026, 4, 6) + timedelta(days=7 * (n // 5) + n % 5) for n in range(30)]
+    leads = {index - information.anchor(dates, index) for index in range(information.horizon + 10, len(dates))}
+    if len(leads) != 1:
+        raise ValueError(
+            f"the target's lead to the scored day is {sorted(leads)} rows, depending on the day; "
+            f"a state carried from the anchor has no single number of steps"
+        )
+    return leads.pop()
+
+
+def latent_factor_exceedance(
+    minimum_history: int = 20, residual: bool = False, link: str = "gaussian"
+) -> ExceedancePredictor:
+    """Pressure probabilities from a latent funding-stress factor (#543).
+
+    Fitted on each refit block's training frame, filtered forward through each forecast's own as-of
+    history, carried `served_lead(information)` rows ahead (the anchor to the scored day, `horizon + 1`). How the carried factor becomes a probability of
+    `spread > tau` (the spread read on whole basis points, so the point is `tau + 1/2`) is the `link`:
+
+    * `"gaussian"`: the spread is mapped to the filtered factor by an OLS over the training days, and
+      the probability is the tail of the carried factor above the level the mapping puts at the point.
+      With `residual`, the mapping's residual variance is added to the spread's predictive variance. A
+      mapping that does not rise with the factor (slope at or below `mapping_slope_floor_bp`) gives the
+      training rate of `spread > tau` instead, and the fit says so (`fallback`).
+    * `"logit"`: a ridge logistic (`PRESSURE_LOGISTIC_SETTINGS`) of `spread > tau` on the carried factor
+      mean, fitted on the training days whose factor was carried `served_lead(information)` rows to a label
+      inside the frame, one fit per threshold. Calibration is by construction, not by the factor's law.
+
+    Raises:
+        ValueError: on a short frame, a call without the as-of rule or without each row's history, an
+            unknown link, `residual` with the logistic link, or too few training days with both a
+            filtered factor and a spread.
+        LookAheadError: if a history runs past its forecast's anchor.
+    """
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    if link not in ("gaussian", "logit"):
+        raise ValueError(f"the link is 'gaussian' or 'logit', got {link!r}")
+    if residual and link != "gaussian":
+        raise ValueError("the mapping residual belongs to the gaussian link")
+    settings = LATENT_FACTOR_SETTINGS
+    cache: dict = {}
+
+    def observed(row: DailyObservation) -> Tuple[Optional[float], ...]:
+        # Histories are mostly the same row objects; the cache keeps the row alive so its id is not reused.
+        hit = cache.get(id(row))
+        if hit is None or hit[0] is not row:
+            hit = (row, latent_factor_observation(row))
+            cache[id(row)] = hit
+        return hit[1]
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None or histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "a latent-factor forecast is filtered through its own as-of history; "
+                "it was called without the rule or without one history per feature row"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a latent-factor model needs at least {minimum_history} training "
+                f"rows, got {len(train_rows)}"
+            )
+        # The anchor is `horizon + 1` rows before the scored day under the tracked declarations (#575): carry the
+        # factor that many steps, the lead the forecast is served at, not `information.horizon`.
+        steps = served_lead(information)
+        training = [observed(row) for row in train_rows]
+        fitted = fit_latent_factor(training)
+        filtered = filter_latent_factor(fitted, training)
+        spreads = [_observed_spread(row, "latent_factor") for row in train_rows]
+        pairs = [(mean, spread) for (mean, _var), spread in zip(filtered, spreads) if spread is not None]
+        if len(pairs) < settings["minimum_mapping_days"]:
+            raise ValueError(
+                f"{len(pairs)} training days carry both a filtered factor and a spread; "
+                f"at least {settings['minimum_mapping_days']} are needed to map the factor to the spread"
+            )
+        count = len(pairs)
+        mean_f = sum(f for f, _ in pairs) / count
+        mean_s = sum(s for _, s in pairs) / count
+        var_f = sum((f - mean_f) ** 2 for f, _ in pairs)
+        slope = sum((f - mean_f) * (s - mean_s) for f, s in pairs) / var_f if var_f > 0.0 else 0.0
+        intercept = mean_s - slope * mean_f
+        residual_var = sum((s - intercept - slope * f) ** 2 for f, s in pairs) / max(count - 2, 1)
+        fallback = link == "gaussian" and not slope > float(settings["mapping_slope_floor_bp"])
+        rates = [sum(1 for _, s in pairs if exceeds_bp(s, float(tau))) / count for tau in taus]
+        carried: List[Optional[Tuple[float, float, float]]] = []
+        for feature_row, history in zip(feature_rows, histories):
+            if not history:
+                raise ValueError("a forecast's as-of history is empty")
+            if history[-1].date > feature_row.date:
+                raise LookAheadError(
+                    f"the filter for the forecast anchored {feature_row.date} was handed "
+                    f"history through {history[-1].date}"
+                )
+            if fallback:
+                carried.append(None)
+                continue
+            now_mean, now_var = filter_latent_factor(fitted, [observed(row) for row in history])[-1]
+            ahead_mean, ahead_var = latent_factor_forecast(fitted, now_mean, now_var, steps)
+            carried.append((now_mean, ahead_mean, ahead_var))
+        logit_pairs = 0
+        if link == "gaussian":
+            curves = []
+            for item in carried:
+                if item is None:
+                    curves.append(tuple(rates))
+                    continue
+                _now, ahead_mean, ahead_var = item
+                location = intercept + slope * ahead_mean
+                scale = math.sqrt(slope * slope * ahead_var + (residual_var if residual else 0.0))
+                curves.append(
+                    tuple(min(1.0, max(0.0, _normal_tail(location, scale, float(tau) + 0.5))) for tau in taus)
+                )
+        else:
+            carry = fitted.persistence ** steps
+            xs, labelled = [], []
+            for k in range(len(train_rows) - steps):
+                spread = spreads[k + steps]
+                if spread is not None:
+                    xs.append([carry * filtered[k][0]])
+                    labelled.append(spread)
+            logit_pairs = len(xs)
+            if logit_pairs < settings["minimum_mapping_days"]:
+                raise ValueError(
+                    f"{logit_pairs} training days carry a factor to a spread {steps} rows on; "
+                    f"at least {settings['minimum_mapping_days']} are needed"
+                )
+            served = [[item[1]] for item in carried]
+            columns = []
+            for tau in taus:
+                labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in labelled]
+                columns.append(
+                    [float(labels[0])] * len(served)
+                    if len(set(labels)) < 2
+                    else _fit_classifier("logistic", xs, labels, served)
+                )
+            curves = []
+            for day in range(len(feature_rows)):
+                curve: List[float] = []
+                for column in columns:
+                    value = min(1.0, max(0.0, column[day]))
+                    curve.append(value if not curve else min(curve[-1], value))
+                curves.append(tuple(curve))
+        factor_means = [None if item is None else item[0] for item in carried]
+        carried_means = [None if item is None else item[1] for item in carried]
+        read = ("spread_bps",) + LATENT_FACTOR_COLUMNS
+        report = dict(settings)
+        report.update(
+            {
+                "link": link,
+                "residual": bool(residual),
+                "fallback": bool(fallback),
+                "persistence": fitted.persistence,
+                "loadings": list(fitted.loadings),
+                "mapping_intercept_bp": intercept,
+                "mapping_slope_bp": slope,
+                "mapping_residual_variance": residual_var,
+                "logit_training_pairs": logit_pairs,
+                "filtered_factor": factor_means,
+                "served_steps": steps,
+                "carried_factor_mean": carried_means,
+                "em_iterations": fitted.iterations,
+                "log_likelihood": fitted.log_likelihood,
+            }
+        )
+        return ExceedanceCurves(
+            tuple(curves),
+            read,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(report),
             history_ends=tuple(history[-1].date for history in histories),
         )
 

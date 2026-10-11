@@ -1,0 +1,386 @@
+{
+ "added": {
+  "risk_gbm": {
+   "1": {
+    "constant_at_5bp": 7,
+    "first_non_constant_served": "2019-01-31",
+    "pairs_at_first_refit": {
+     "added": 10,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  },
+  "risk_gbm_base": {
+   "1": {
+    "constant_at_5bp": 7,
+    "first_non_constant_served": "2019-01-31",
+    "pairs_at_first_refit": {
+     "added": 10,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 14,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  }
+ },
+ "all": {
+  "risk_gbm": {
+   "1": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 10,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  },
+  "risk_gbm_base": {
+   "1": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 10,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 2,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  }
+ },
+ "iorb": {
+  "risk_gbm": {
+   "1": {
+    "constant_at_5bp": 6,
+    "first_non_constant_served": "2018-12-31",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  },
+  "risk_gbm_base": {
+   "1": {
+    "constant_at_5bp": 6,
+    "first_non_constant_served": "2018-12-31",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 10,
+    "first_non_constant_served": "2019-05-02",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  }
+ },
+ "leaf": {
+  "risk_gbm": {
+   "1": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  },
+  "risk_gbm_base": {
+   "1": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 12
+    },
+    "refits_through_2019": 18
+   },
+   "2": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 9
+    },
+    "refits_through_2019": 18
+   },
+   "3": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 8
+    },
+    "refits_through_2019": 18
+   },
+   "4": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   },
+   "5": {
+    "constant_at_5bp": 0,
+    "first_non_constant_served": "2018-06-27",
+    "pairs_at_first_refit": {
+     "added": 0,
+     "original": 7
+    },
+    "refits_through_2019": 18
+   }
+  }
+ }
+}
