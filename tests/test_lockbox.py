@@ -284,6 +284,27 @@ def _scarcity_pressure_days(rows, end=None):
     return counter.calls
 
 
+def _own_leg_days(rows, end=None):
+    from repo_model.scarcity import LEGS, measurement_declaration, own_leg_states
+
+    counter = CountingDays()
+    with measurement_declaration():
+        registry = record_date_registry(0, ("spread_bps",) + LEGS)
+        rows = [
+            DailyObservation(
+                row.date,
+                {**row.values, "reserve_balances": 3000.0, "bank_total_assets": 24000.0, "on_rrp": 50.0},
+            )
+            for row in rows
+        ]
+        scored = own_leg_states(
+            rows, registry=registry, decision_time=DECISION_TIME,
+            minimum_history=MINIMUM_HISTORY, end=end,
+        )
+    counter.calls = len(scored)
+    return counter.calls
+
+
 #: Every library entry point that scores days, by its qualified name.
 LIBRARY_ENTRY_POINTS = {
     "baseline.rolling_persistence_backtest": _persistence,
@@ -292,6 +313,7 @@ LIBRARY_ENTRY_POINTS = {
     "event_eval.evaluate_event_window": _event_window,
     "tail_diagnostics.refit_knots": _refit_knots,
     "scarcity.pressure_days_by_state": _scarcity_pressure_days,
+    "scarcity.own_leg_states": _own_leg_days,
 }
 
 #: Every tracked script function that walks the fold grid to score, as
@@ -318,11 +340,10 @@ NON_SCORING_COMMANDS = {
 NOT_ENTRY_POINTS = {
     # Holds the guard itself: every entry point above reaches it.
     "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
-    "scripts/pressure_judge._scarcity_states": (
-        "reads the reserve-scarcity state on the fold grid, to label the judge's groups "
-        "(#375); scores nothing, it ends at the declared last scored day through "
-        "_as_of_folds, which calls require_unlocked, and pressure_judge.judge guards the "
-        "scored days itself"
+    "scripts/pressure_judge._same_row_scarcity_states": (
+        "reads the reserve-scarcity state the pre-#586 way (one row for all three legs) on the fold grid, "
+        "to count the days the own-leg read changes (#586); scores nothing, it ends at the declared last "
+        "scored day through _as_of_folds, which calls require_unlocked"
     ),
     "scripts/pressure_audit.inputs_command": (
         "tabulates what each input reads at the 16:00 decision and how the value read ranks the +5 bp "
