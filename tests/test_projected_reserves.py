@@ -15,6 +15,8 @@ decision, placed on the SR 1019 demand curve, and fed to a logistic. What is cov
 * `NoFutureTests` -- a column that depends on a row after its own decision is refused.
 * `DeclarationTests` -- `metadata/projected_reserves.json`, the source registry entry and the judge's
   candidate files say what the module computes.
+* `CombinedRowTests` -- the combined row keeps the passer's forecast on a risk date, as #539's hurdle does, and
+  serves the model elsewhere.
 * `PredictorTests` -- the logistic on the projected columns under the fold loop's guards finds pressure
   planted at a projected shortfall, and forecasts every day.
 
@@ -307,6 +309,40 @@ class DeclarationTests(unittest.TestCase):
         self.assertNotIn("proj_dist_h1", pr.features_at_horizon(4))
         with self.assertRaises(ValueError):
             pr.features_at_horizon(6)
+
+
+def _script():
+    spec = importlib.util.spec_from_file_location("projected_reserves_script", REPO / "scripts" / "projected_reserves.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class CombinedRowTests(unittest.TestCase):
+    """The combined row is #539's hurdle with this model as the every-day hazard."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.script = _script()
+
+    def test_a_risk_date_is_a_non_ordinary_day_or_at_h1_a_coupon_settlement(self):
+        ordinary = {"days_to_month_end": 12.0, "quarter_end": 0.0, "tax_date": 0.0, "treasury_settlement_coupons": 0.0}
+        self.assertFalse(self.script.is_risk_date(ordinary, 1, SPLITS))
+        self.assertTrue(self.script.is_risk_date({**ordinary, "tax_date": 1.0}, 3, SPLITS))
+        coupons = {**ordinary, "treasury_settlement_coupons": 40.0}
+        self.assertTrue(self.script.is_risk_date(coupons, 1, SPLITS))
+        # the scored day's own settlement is not public at h >= 2, so the passer does not serve it
+        self.assertFalse(self.script.is_risk_date(coupons, 2, SPLITS))
+
+    def test_the_passers_forecast_is_kept_on_a_risk_date_even_at_zero_and_the_model_serves_the_rest(self):
+        parent = {"5": {"a": 0.3, "b": 0.0, "c": 0.0}}
+        mine = {"5": {"a": 0.1, "b": 0.2, "c": 0.4}}
+        out = self.script.combine(parent, mine, {"a": True, "b": True, "c": False})
+        self.assertEqual(out["5"], {"a": 0.3, "b": 0.0, "c": 0.4})
+
+    def test_a_passer_forecasting_above_zero_off_a_risk_date_is_refused(self):
+        with self.assertRaises(SystemExit):
+            self.script.combine({"5": {"a": 0.3}}, {"5": {"a": 0.1}}, {"a": False})
 
 
 def _require_extra(case):
