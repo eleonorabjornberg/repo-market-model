@@ -19,6 +19,12 @@ JUDGE_CANDIDATES = dict(pj.load_declaration().candidates)
 SPLITS = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
 
 
+def _have_ml():
+    """`find_spec`, not an import: `tests/test_dependency_boundary.py` forbids one here."""
+
+    return all(importlib.util.find_spec(name) is not None for name in ("numpy", "sklearn"))
+
+
 def _script():
     sys.path.insert(0, str(ROOT / "src"))
     spec = importlib.util.spec_from_file_location("model_defects_540_script", ROOT / "scripts" / "model_defects_540.py")
@@ -69,6 +75,7 @@ class LeafFloorTests(unittest.TestCase):
     def test_the_floor_scales_with_the_pairs_and_stops_at_the_declared_twenty(self):
         self.assertEqual([SCRIPT.leaf_floor(n) for n in (1, 3, 4, 12, 39, 40, 79, 80, 500)], [1, 1, 1, 3, 9, 10, 19, 20, 20])
 
+    @unittest.skipUnless(_have_ml(), "the fit needs the ml extra")
     def test_a_fit_with_fewer_than_forty_pairs_is_not_a_constant_with_the_floor_and_is_without_it(self):
         import random
 
