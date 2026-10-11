@@ -1,0 +1,15 @@
+{
+  "role": "candidate",
+  "track": "S2 (#545)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "proj_dist_h1",
+    "proj_change_h1"
+  ],
+  "features_at_horizon_2_or_more": "proj_dist_h{h} and proj_change_h{h} for the horizon h, in place of the h = 1 columns",
+  "calibration": "none: a logistic of six declared terms, metadata/projected_reserves.json",
+  "inputs_note": "reserves projected to the scored day through every public flow, placed on the SR 1019 demand curve; forecasts every day"
+}
