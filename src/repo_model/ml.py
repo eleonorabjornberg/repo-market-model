@@ -6582,7 +6582,7 @@ def pressure_transfer_exceedance(
     source_thresholds: Mapping[float, float],
     minimum_history: int = 20,
     source_weight: float = PRESSURE_TRANSFER_SOURCE_WEIGHT,
-) -> ExceedancePredictor:
+) -> Any:
     """The every-day logistic of the pressure label, helped by the 2008-2018 EFFR - IOER history (#544).
 
     The design, the direct pairs and the as-of rule are `pressure_logistic_exceedance`'s. The
@@ -6601,6 +6601,10 @@ def pressure_transfer_exceedance(
     L2 penalty centred on the pre-trained slopes (in raw units, so the two standardizations
     differ freely) and a free intercept. When the source has no event at the threshold the
     SOFR-era fit has no prior; when the SOFR window has no event the pre-trained model is served.
+
+    Annotated `Any`, like `_direct_pressure_predictor`, its pooling sibling: it takes the history rows, which
+    no `--model` name can supply, so it is a study candidate (`scripts/effr_pretrain.py`), not a declared model
+    the command line constructs.
 
     `fit_predict.coefficients` collects, per fit and per threshold, the coefficients in the SOFR
     window's standardized units: `sofr_era` (no help), `pretrained` and `fine_tuned`, or `pooled`.
