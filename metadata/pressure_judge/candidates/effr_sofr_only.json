@@ -1,0 +1,14 @@
+{
+  "role": "candidate",
+  "track": "T (#544)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "tga"
+  ],
+  "features_at_horizon_2_or_more": "unchanged: the design has no settlement column",
+  "calibration": "none: the parent: the same design and estimator on the SOFR-era pairs alone (ml.pressure_logistic_exceedance), no source rows; metadata/effr_pretrain.json"
+}

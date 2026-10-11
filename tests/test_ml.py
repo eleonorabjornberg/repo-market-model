@@ -241,6 +241,7 @@ from repo_model.event_eval import (
 )
 from repo_model.metrics import crps_from_quantiles
 from repo_model.asof import StaleReadError
+from repo_model.baseline import MissingRegressorError
 from repo_model.splits import LookAheadError, SplitError
 
 from test_baseline import (
@@ -10897,6 +10898,178 @@ class PooledHistoryTests(unittest.TestCase):
             self.backtest((history, rule))
 
 
+class TransferTests(unittest.TestCase):
+    """The pre-2018 transfer models (#544): pooled with a source weight, and pre-train then fine-tune.
+
+    Written red first, before `ml.pressure_transfer_exceedance` existed (`AttributeError`).
+
+    Recorded mutation for the leakage guard: in `pressure_transfer_exceedance`'s `fit_predict`, the call
+    `effr_history.require_pool_public(pool.available_at, train_rows[-1].date)` mutated to `pass`. Applied in
+    a scratch copy, `test_a_source_label_not_yet_public_is_refused` failed with `AssertionError`
+    ("LookAheadError not raised").
+    """
+
+    SOURCE_THRESHOLDS = {5.0: 2.0, 10.0: 6.0}
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = _pressure_panel()
+
+    def history(self, end=date(2025, 12, 31), horizon=1):
+        from repo_model import effr_history
+
+        rule = effr_history.HistoryRule(_PRESSURE_REGISTRY, decision_time=time(16, 0), horizon=horizon)
+        return _history_rows(date(2025, 6, 2), end), rule
+
+    def predictor(self, variant, history, **options):
+        options.setdefault("source_thresholds", self.SOURCE_THRESHOLDS)
+        return ml.pressure_transfer_exceedance(
+            variant, _PRESSURE_FULL, _pressure_splits(), history, minimum_history=60, **options
+        )
+
+    def backtest(self, predictor, horizon=1):
+        return baseline.rolling_exceedance_backtest(
+            self.rows,
+            predictor=predictor,
+            model_name="transfer",
+            features=_PRESSURE_FULL,
+            registry=_PRESSURE_REGISTRY,
+            decision_time=time(16, 0),
+            taus=(5.0, 10.0),
+            minimum_history=60,
+            refit_every=21,
+            horizon=horizon,
+        )
+
+    def plain(self):
+        return self.backtest(ml.pressure_logistic_exceedance(_PRESSURE_FULL, _pressure_splits(), minimum_history=60))
+
+    def test_the_prior_fit_without_a_prior_is_the_ridge_logistic(self):
+        import numpy
+
+        rng = numpy.random.default_rng(3)
+        x = rng.normal(size=(300, 3))
+        y = (x[:, 0] + 0.5 * rng.normal(size=300) > 0.8).astype(float)
+        z = rng.normal(size=(20, 3))
+        got = ml._fit_logit_toward(x, y, z)
+        want = ml._fit_classifier("logistic", x.tolist(), y.astype(int).tolist(), z.tolist())
+        for a, b in zip(got.probabilities, want):
+            self.assertAlmostEqual(a, b, delta=1e-3)
+
+    def test_a_weighted_prior_fit_is_the_weighted_ridge_logistic(self):
+        import numpy
+
+        rng = numpy.random.default_rng(4)
+        x = rng.normal(size=(300, 3))
+        y = (x[:, 1] + 0.5 * rng.normal(size=300) > 0.5).astype(float)
+        weights = numpy.where(numpy.arange(300) < 150, 0.25, 1.0)
+        z = rng.normal(size=(20, 3))
+        got = ml._fit_logit_toward(x, y, z, weights=weights)
+        want = ml._fit_classifier("logistic", x.tolist(), y.astype(int).tolist(), z.tolist(), weights=weights.tolist())
+        for a, b in zip(got.probabilities, want):
+            self.assertAlmostEqual(a, b, delta=1e-3)
+
+    def test_the_prior_pulls_the_slopes_toward_it_and_a_stiff_one_lands_on_it(self):
+        import numpy
+
+        rng = numpy.random.default_rng(5)
+        x = rng.normal(size=(200, 2))
+        y = (x[:, 0] > 0.7).astype(float)
+        z = x[:5]
+        prior = numpy.array([-2.0, 3.0])  # standardized-slope prior, far from the data
+        free = ml._fit_logit_toward(x, y, z)
+        pulled = ml._fit_logit_toward(x, y, z, prior_slopes=prior)
+        stiff = ml._fit_logit_toward(x, y, z, prior_slopes=prior, c=1e-9)
+        self.assertLess(abs(pulled.slopes[1] - prior[1]), abs(free.slopes[1] - prior[1]))
+        for a, b in zip(stiff.slopes, prior):
+            self.assertAlmostEqual(a, b, places=4)
+
+    def test_both_variants_run_under_every_guard_and_record_their_pool(self):
+        history = self.history()
+        plain = self.plain()
+        for variant in ml.PRESSURE_TRANSFER_VARIANTS:
+            report = self.backtest(self.predictor(variant, history))
+            self.assertEqual(report.scored_dates, plain.scored_dates)
+            self.assertNotEqual(report.forecast, plain.forecast)
+            self.assertEqual(report.model_settings["transfer"]["variant"], variant)
+            self.assertEqual(report.model_settings["transfer"]["source_thresholds_bp"], {"5": 2.0, "10": 6.0})
+            self.assertGreater(report.model_settings["pooled_history"]["pairs"], 100)
+            for curve in report.forecast:
+                self.assertTrue(all(0.0 <= p <= 1.0 for p in curve))
+                self.assertEqual(list(curve), sorted(curve, reverse=True))
+
+    def test_a_near_zero_source_weight_is_the_sofr_era_fit(self):
+        history = self.history()
+        plain = self.plain()
+        report = self.backtest(self.predictor("pooled", history, source_weight=1e-9))
+        for got, want in zip(report.forecast, plain.forecast):
+            for a, b in zip(got, want):
+                self.assertAlmostEqual(a, b, delta=0.02)
+
+    def test_the_source_is_labelled_at_its_own_threshold_not_the_sofr_one(self):
+        history = self.history()
+        # No source row is above 50 bp, so the pre-training has one class and the fine-tune has no prior.
+        report = self.backtest(self.predictor("pretrain_finetune", history, source_thresholds={5.0: 50.0, 10.0: 50.0}))
+        plain = self.plain()
+        for got, want in zip(report.forecast, plain.forecast):
+            for a, b in zip(got, want):
+                self.assertAlmostEqual(a, b, delta=1e-2)
+        self.assertTrue(report.model_settings["transfer"]["source_without_events"])
+
+    def test_the_fine_tune_records_the_pretrained_and_the_sofr_era_coefficients(self):
+        history = self.history()
+        predictor = self.predictor("pretrain_finetune", history)
+        self.backtest(predictor)
+        self.assertTrue(predictor.coefficients)
+        tuned = [
+            (entry, fit)
+            for entry in predictor.coefficients
+            for fit in entry["fits"].values()
+            if fit.get("fine_tuned")
+        ]
+        self.assertTrue(tuned)
+        for entry, fit in tuned:
+            for key in ("pretrained", "sofr_era", "fine_tuned"):
+                self.assertEqual(set(fit[key]), set(entry["columns"]) | {"intercept"})
+
+    def test_a_sofr_window_without_events_is_served_the_pretrained_model(self):
+        history = self.history()
+        quiet = [
+            DailyObservation(row.date, {**row.values, "sofr": 4.0 - 0.2, "iorb": 4.0}) for row in self.rows
+        ]  # SOFR 20 bp under IORB throughout
+        self.rows, saved = quiet, self.rows
+        try:
+            report = self.backtest(self.predictor("pretrain_finetune", history))
+            plain = self.plain()
+        finally:
+            self.rows = saved
+        self.assertTrue(all(p == 0.0 for curve in plain.forecast for p in curve))
+        self.assertTrue(any(p > 0.0 for curve in report.forecast for p in curve))
+
+    def test_a_source_label_not_yet_public_is_refused(self):
+        history = self.history(end=date(2026, 6, 30))
+        for variant in ml.PRESSURE_TRANSFER_VARIANTS:
+            with self.assertRaises(LookAheadError):
+                self.backtest(self.predictor(variant, history))
+
+    def test_a_history_read_at_another_horizon_is_refused(self):
+        history = self.history(horizon=2)
+        with self.assertRaisesRegex(ValueError, "horizon"):
+            self.backtest(self.predictor("pooled", history))
+
+    def test_a_threshold_without_a_source_threshold_is_refused(self):
+        history = self.history()
+        with self.assertRaisesRegex(ValueError, "source threshold"):
+            self.backtest(self.predictor("pooled", history, source_thresholds={5.0: 2.0}))
+
+    def test_an_unknown_variant_or_weight_is_refused(self):
+        history = self.history()
+        with self.assertRaisesRegex(ValueError, "variant"):
+            self.predictor("both", history)
+        with self.assertRaisesRegex(ValueError, "weight"):
+            self.predictor("pooled", history, source_weight=0.0)
+
+
 class RecalibrationPartsTests(unittest.TestCase):
     """`cross_conformal_parts` and `law_from_band`: CV+ taken apart, and put back (#116).
 
@@ -13382,6 +13555,361 @@ class RecencyTrainingTests(unittest.TestCase):
         import json
 
         json.dumps(dict(curves.model_settings))
+
+
+
+def _factor_series(count=500, seed=7, phi=0.85, hole=0.0):
+    """Five series that load on one AR(1) factor (the fourth, the anchor, positively); returns (truth, rows)."""
+
+    rng = random.Random(seed)
+    loadings = (0.8, 1.0, 0.6, 1.2, -0.7)
+    means = (1.0, 2.0, 3.0, 4.0, 5.0)
+    noise = (0.5, 0.4, 0.6, 0.3, 0.5)
+    level, truth, rows = 0.0, [], []
+    for _ in range(count):
+        level = phi * level + rng.gauss(0.0, 1.0)
+        truth.append(level)
+        rows.append(
+            tuple(
+                None if rng.random() < hole else means[i] + loadings[i] * level + rng.gauss(0.0, noise[i])
+                for i in range(5)
+            )
+        )
+    return truth, rows
+
+
+class LatentFactorFilterTests(unittest.TestCase):
+    def setUp(self):
+        require_extra(self)
+
+    def test_em_recovers_the_loadings_the_persistence_and_the_factor(self):
+        truth, rows = _factor_series(count=1500)
+        fitted = ml.fit_latent_factor(rows)
+        self.assertAlmostEqual(fitted.persistence, 0.85, delta=0.05)
+        for got, sd, want in zip(fitted.loadings, fitted.scales, (0.8, 1.0, 0.6, 1.2, -0.7)):
+            self.assertAlmostEqual(got * sd, want, delta=0.12)
+        means = [m for m, _ in ml.filter_latent_factor(fitted, rows)]
+        mean_t, mean_f = sum(truth) / len(truth), sum(means) / len(means)
+        cov = sum((a - mean_t) * (b - mean_f) for a, b in zip(truth, means))
+        var_t = sum((a - mean_t) ** 2 for a in truth)
+        var_f = sum((b - mean_f) ** 2 for b in means)
+        self.assertGreater(cov / math.sqrt(var_t * var_f), 0.95)
+
+    def test_the_anchor_series_loads_positively_whatever_the_sign_of_the_data(self):
+        _, rows = _factor_series(count=600, seed=3)
+        flipped = [tuple(None if v is None else -v for v in row) for row in rows]
+        for data in (rows, flipped):
+            fitted = ml.fit_latent_factor(data)
+            self.assertGreater(fitted.loadings[ml.LATENT_FACTOR_ANCHOR], 0.0)
+        a, b = ml.fit_latent_factor(rows), ml.fit_latent_factor(flipped)
+        for x, y in zip(a.loadings, b.loadings):
+            self.assertAlmostEqual(abs(x), abs(y), delta=0.05)
+
+    def test_the_fit_is_deterministic_and_its_likelihood_never_falls_with_more_iterations(self):
+        _, rows = _factor_series(count=400, seed=11)
+        self.assertEqual(ml.fit_latent_factor(rows), ml.fit_latent_factor(rows))
+        previous = -math.inf
+        for iterations in (1, 2, 4, 8, 16):
+            fitted = ml.fit_latent_factor(rows, max_iterations=iterations)
+            self.assertGreaterEqual(fitted.log_likelihood, previous - 1e-9)
+            previous = fitted.log_likelihood
+
+    def test_a_missing_observation_is_handled_by_the_filter_not_filled(self):
+        """A series left out of a day informs nothing: the filter on the rest is the filter with its loading at 0."""
+
+        _, rows = _factor_series(count=300, seed=5)
+        fitted = ml.fit_latent_factor(rows)
+        cut = 200
+        holed = [(None, r[1], None, r[3], r[4]) for r in rows[:cut]]
+        got = ml.filter_latent_factor(fitted, holed)
+        dropped = ml.FittedLatentFactor(
+            means=fitted.means,
+            scales=fitted.scales,
+            loadings=tuple(0.0 if i in (0, 2) else v for i, v in enumerate(fitted.loadings)),
+            noise_variances=fitted.noise_variances,
+            persistence=fitted.persistence,
+            log_likelihood=fitted.log_likelihood,
+            iterations=fitted.iterations,
+        )
+        want = ml.filter_latent_factor(dropped, rows[:cut])
+        for (gm, gv), (wm, wv) in zip(got, want):
+            self.assertAlmostEqual(gm, wm, places=9)
+            self.assertAlmostEqual(gv, wv, places=9)
+        empty = list(rows[:cut]) + [(None,) * 5]
+        before = ml.filter_latent_factor(fitted, rows[:cut])[-1]
+        after = ml.filter_latent_factor(fitted, empty)[-1]
+        self.assertAlmostEqual(after[0], fitted.persistence * before[0], places=9)
+        self.assertAlmostEqual(after[1], fitted.persistence ** 2 * before[1] + 1.0, places=9)
+
+    def test_the_filter_reads_each_row_and_none_after_it(self):
+        """Row t's filtered factor is the same whatever follows t.
+
+        The filter is forward-only: changing every row after t leaves the distribution at t unchanged. A
+        smoother would move it.
+        """
+
+        _, rows = _factor_series(count=400, seed=2)
+        fitted = ml.fit_latent_factor(rows)
+        cut = 250
+        base = ml.filter_latent_factor(fitted, rows[:cut])
+        changed = ml.filter_latent_factor(fitted, rows[:cut] + [(50.0,) * 5] * 30)
+        self.assertEqual(base, changed[:cut])
+        self.assertNotEqual(base[-1], changed[-1])
+
+    def test_the_forecast_widens_with_the_horizon_to_the_stationary_variance(self):
+        _, rows = _factor_series(count=300, seed=4)
+        fitted = ml.fit_latent_factor(rows)
+        phi = fitted.persistence
+        mean0, var0 = 1.5, 0.2
+        one = ml.latent_factor_forecast(fitted, mean0, var0, 1)
+        self.assertAlmostEqual(one[0], phi * mean0)
+        self.assertAlmostEqual(one[1], phi ** 2 * var0 + 1.0)
+        self.assertEqual(ml.latent_factor_forecast(fitted, mean0, var0, 0), (mean0, var0))
+        far = ml.latent_factor_forecast(fitted, mean0, var0, 400)
+        self.assertAlmostEqual(far[0], 0.0, places=6)
+        self.assertAlmostEqual(far[1], 1.0 / (1.0 - phi ** 2), places=6)
+        with self.assertRaises(ValueError):
+            ml.latent_factor_forecast(fitted, mean0, var0, -1)
+
+    def test_a_short_or_ragged_or_empty_series_is_refused(self):
+        _, rows = _factor_series(count=100, seed=6)
+        with self.assertRaises(ValueError):
+            ml.fit_latent_factor(rows[:10])
+        with self.assertRaises(ValueError):
+            ml.fit_latent_factor(rows[:50] + [rows[50][:4]] + rows[51:])
+        with self.assertRaises(ValueError):
+            ml.fit_latent_factor([(None,) * 5] * 80)
+        with self.assertRaises(ValueError):
+            ml.filter_latent_factor(ml.fit_latent_factor(rows), [])
+
+
+def _factor_frame(count=170, seed=9, phi=0.9):
+    """A panel-shaped frame whose money-market columns load on one AR(1) factor."""
+
+    rng = random.Random(seed)
+    level, rows, when = 0.0, [], date(2024, 1, 1)
+    for _ in range(count):
+        while when.weekday() >= 5:
+            when += timedelta(days=1)
+        level = phi * level + rng.gauss(0.0, 1.0)
+        iorb = 4.0
+        body = 0.02 * level
+        values = {
+            "iorb": iorb,
+            "sofr_p1": iorb - 0.01 + 0.5 * body + rng.gauss(0.0, 0.004),
+            "sofr_p25": iorb + body + rng.gauss(0.0, 0.004),
+            "sofr_p75": iorb + 1.2 * body + rng.gauss(0.0, 0.004),
+            "sofr_p99": iorb + 2.0 * body + 0.02 + rng.gauss(0.0, 0.006),
+            "tgcr": iorb + 0.9 * body + rng.gauss(0.0, 0.004),
+            "bgcr": iorb + body + rng.gauss(0.0, 0.004),
+            "effr": iorb - 0.1 + 0.1 * body + rng.gauss(0.0, 0.002),
+            "on_rrp": 100.0 * math.exp(-0.2 * level) + rng.gauss(0.0, 1.0) ** 2,
+        }
+        values["spread_bps"] = 3.0 + 3.0 * level + rng.gauss(0.0, 1.0)
+        values["sofr"] = iorb + values["spread_bps"] / 100.0
+        rows.append(DailyObservation(when, values))
+        when += timedelta(days=1)
+    return rows
+
+
+class LatentFactorPredictorTests(unittest.TestCase):
+    def setUp(self):
+        require_extra(self)
+        self.rows = _factor_frame()
+        self.rule = ml.InformationRule(
+            _PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0), horizon=2
+        )
+
+    def call(self, predictor, train, feature_rows, histories, taus=(5.0, 10.0)):
+        return predictor(train, feature_rows, taus, information=self.rule, histories=histories)
+
+    def test_a_series_is_a_spread_over_iorb_in_basis_points_and_the_log_of_take_up(self):
+        row = self.rows[10]
+        got = ml.latent_factor_observation(row)
+        values = row.values
+        self.assertEqual(len(got), len(ml.LATENT_FACTOR_SERIES))
+        self.assertAlmostEqual(got[0], (values["sofr_p1"] - values["iorb"]) * 100.0)
+        self.assertAlmostEqual(got[3], (values["sofr_p99"] - values["iorb"]) * 100.0)
+        self.assertAlmostEqual(got[7], (values["sofr_p99"] - values["sofr_p1"]) * 100.0)
+        self.assertAlmostEqual(got[8], math.log1p(values["on_rrp"]))
+        seen = ml.latent_factor_observation(DailyObservation(row.date, dict(values, sofr_p99=None)))
+        self.assertIsNone(seen[3])
+        self.assertIsNone(seen[7])
+        self.assertIsNotNone(seen[0])
+        with self.assertRaises(MissingRegressorError):
+            ml.latent_factor_observation(DailyObservation(row.date, {"iorb": 4.0}))
+
+    def test_a_history_past_its_forecast_is_refused(self):
+        """The filter is told its anchor and refuses a history that runs past it.
+
+        Recorded mutation (#543): replacing the condition `history[-1].date > feature_row.date` in
+        `latent_factor_exceedance`'s `fit_predict` with `False` (so the filter reads the row after the
+        anchor) made this test fail with `AssertionError: LookAheadError not raised`; restored, it passes.
+        """
+
+        predictor = ml.latent_factor_exceedance(minimum_history=40)
+        train, feature_rows = self.rows[:120], self.rows[120:122]
+        histories = [self.rows[:121], self.rows[:123]]
+        with self.assertRaises(LookAheadError):
+            self.call(predictor, train, feature_rows, histories)
+
+    def test_it_will_not_forecast_without_the_rule_or_the_histories(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40)
+        with self.assertRaises(ValueError):
+            predictor(self.rows[:120], self.rows[120:121], (5.0,))
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:120], self.rows[120:122], [self.rows[:121]])
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:120], self.rows[120:121], [[]])
+
+    def test_a_short_frame_is_refused(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=80)
+        with self.assertRaises(ValueError):
+            self.call(predictor, self.rows[:79], self.rows[79:80], [self.rows[:80]])
+
+    def test_the_curve_ends_at_the_anchor_is_monotone_and_names_what_it_read(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40)
+        train, feature_rows = self.rows[:120], self.rows[120:122]
+        result = self.call(predictor, train, feature_rows, [self.rows[:121], self.rows[:122]])
+        self.assertEqual(result.history_ends, (feature_rows[0].date, feature_rows[1].date))
+        self.assertEqual(set(result.features_read), set(ml.LATENT_FACTOR_COLUMNS) | {"spread_bps"})
+        self.assertEqual(result.model_settings["residual"], False)
+        self.assertEqual(len(result.model_settings["filtered_factor"]), 2)
+        for curve in result.curves:
+            self.assertEqual(len(curve), 2)
+            self.assertGreaterEqual(curve[0], curve[1])
+            self.assertTrue(all(0.0 <= p <= 1.0 for p in curve))
+
+    def test_a_stressed_history_raises_the_probability(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40)
+        train, feature_rows = self.rows[:120], self.rows[120:121]
+        calm = list(self.rows[:121])
+        hot = calm[:-4] + [
+            DailyObservation(
+                r.date,
+                dict(
+                    r.values,
+                    sofr_p1=r.values["iorb"] + 0.1, sofr_p25=r.values["iorb"] + 0.15,
+                    sofr_p75=r.values["iorb"] + 0.2, sofr_p99=r.values["iorb"] + 0.4,
+                    tgcr=r.values["iorb"] + 0.15, bgcr=r.values["iorb"] + 0.15, on_rrp=0.0,
+                ),
+            )
+            for r in calm[-4:]
+        ]
+        low = self.call(predictor, train, feature_rows, [calm]).curves[0][0]
+        high = self.call(predictor, train, feature_rows, [hot]).curves[0][0]
+        self.assertGreater(high, low)
+
+    def test_the_residual_variant_adds_the_mapping_residual_and_no_more(self):
+        literal = ml.latent_factor_exceedance(minimum_history=40)
+        wide = ml.latent_factor_exceedance(minimum_history=40, residual=True)
+        train, feature_rows = self.rows[:120], self.rows[120:121]
+        a = self.call(literal, train, feature_rows, [self.rows[:121]])
+        b = self.call(wide, train, feature_rows, [self.rows[:121]])
+        self.assertEqual(b.model_settings["residual"], True)
+        self.assertEqual(a.features_read, b.features_read)
+        self.assertNotEqual(a.curves, b.curves)
+
+    def test_the_logistic_link_maps_the_carried_factor_to_each_threshold_by_a_ridge_logistic(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40, link="logit")
+        train, feature_rows = self.rows[:150], self.rows[150:152]
+        result = self.call(predictor, train, feature_rows, [self.rows[:151], self.rows[:152]])
+        self.assertEqual(result.model_settings["link"], "logit")
+        self.assertEqual(result.history_ends, (feature_rows[0].date, feature_rows[1].date))
+        for curve in result.curves:
+            self.assertEqual(len(curve), 2)
+            self.assertGreaterEqual(curve[0], curve[1])
+            self.assertTrue(all(0.0 <= p <= 1.0 for p in curve))
+
+    def test_a_stressed_history_raises_the_logistic_probability(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40, link="logit")
+        train, feature_rows = self.rows[:150], self.rows[150:151]
+        calm = list(self.rows[:151])
+        hot = calm[:-4] + [
+            DailyObservation(
+                r.date,
+                dict(
+                    r.values,
+                    sofr_p1=r.values["iorb"] + 0.1, sofr_p25=r.values["iorb"] + 0.15,
+                    sofr_p75=r.values["iorb"] + 0.2, sofr_p99=r.values["iorb"] + 0.4,
+                    tgcr=r.values["iorb"] + 0.15, bgcr=r.values["iorb"] + 0.15, on_rrp=0.0,
+                ),
+            )
+            for r in calm[-4:]
+        ]
+        low = self.call(predictor, train, feature_rows, [calm]).curves[0][0]
+        high = self.call(predictor, train, feature_rows, [hot]).curves[0][0]
+        self.assertGreater(high, low)
+
+    def test_a_history_past_its_forecast_is_refused_under_the_logistic_link_too(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=40, link="logit")
+        with self.assertRaises(LookAheadError):
+            self.call(predictor, self.rows[:120], self.rows[120:122], [self.rows[:121], self.rows[:123]])
+
+    def test_the_link_is_one_of_two_and_the_residual_belongs_to_the_gaussian_one(self):
+        with self.assertRaises(ValueError):
+            ml.latent_factor_exceedance(minimum_history=40, link="probit")
+        with self.assertRaises(ValueError):
+            ml.latent_factor_exceedance(minimum_history=40, residual=True, link="logit")
+
+    def test_a_mapping_that_does_not_rise_with_the_factor_falls_back_to_the_training_rate(self):
+        flat = [DailyObservation(r.date, dict(r.values, spread_bps=2.0, sofr=4.02)) for r in self.rows]
+        predictor = ml.latent_factor_exceedance(minimum_history=40)
+        result = self.call(predictor, flat[:120], flat[120:121], [flat[:121]])
+        self.assertEqual(result.curves[0], (0.0, 0.0))
+        self.assertTrue(result.model_settings["fallback"])
+
+    def test_the_declaration_pins_the_settings_and_the_series(self):
+        path = Path(__file__).resolve().parents[1] / "metadata" / "latent_factor.json"
+        document = json.loads(path.read_text())
+        self.assertEqual(document["settings"], dict(ml.LATENT_FACTOR_SETTINGS))
+        self.assertEqual(document["series"], list(ml.LATENT_FACTOR_SERIES))
+        self.assertEqual(document["columns"], list(ml.LATENT_FACTOR_COLUMNS))
+        self.assertEqual(document["horizons"], [1, 2, 3, 4, 5])
+        self.assertEqual(document["thresholds_bp"], [5, 10])
+        self.assertLess(document["scoring"]["last_day"], "2026-01-01")
+
+
+class LatentFactorConformanceTests(ExceedancePredictorConformance, unittest.TestCase):
+    """The conformance suite against `ml.latent_factor_exceedance` (#543)."""
+
+    IMPLEMENTATION = staticmethod(ml.latent_factor_exceedance)
+    MINIMUM_HISTORY = 40
+
+    def setUp(self):
+        require_extra(self)
+        # sofr_p1 and sofr_p99 are measurement fields, off in every published declaration: switch them on
+        # for this case only, as the scoring script does (`risk_date_severity.switched_on`).
+        from types import MappingProxyType
+        from repo_model import contract, measurement_fields
+
+        fields = dict(measurement_fields.COLUMN_FIELDS)
+        patch = mock.patch.multiple(
+            contract,
+            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+            FEATURE_SOURCES=MappingProxyType(
+                {
+                    **contract.FEATURE_SOURCES,
+                    **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()},
+                }
+            ),
+        )
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def frame(self):
+        return _factor_frame(count=100)
+
+    def make_predictor(self):
+        predictor = ml.latent_factor_exceedance(minimum_history=self.MINIMUM_HISTORY)
+        rule = ml.InformationRule(_PRESSURE_REGISTRY, ("spread_bps",), decision_time=time(16, 0))
+        full = self.frame()
+
+        def bound(train_rows, feature_rows, taus):
+            histories = [[r for r in full if r.date <= f.date] for f in feature_rows]
+            return predictor(train_rows, feature_rows, taus, information=rule, histories=histories)
+
+        return bound
 
 
 if __name__ == "__main__":

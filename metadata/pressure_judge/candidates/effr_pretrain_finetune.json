@@ -1,0 +1,14 @@
+{
+  "role": "candidate",
+  "track": "T (#544)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "tga"
+  ],
+  "features_at_horizon_2_or_more": "unchanged: the design has no settlement column",
+  "calibration": "none: (b) a ridge logistic on the source pairs alone; then the SOFR-era refit, walk-forward, whose L2 penalty is centred on the pre-trained slopes (converted between the two standardisations through raw units) with the same C = 1 and a free intercept. A threshold whose source labels hold one class has no prior (the SOFR-era fit). A refit whose SOFR window holds one class is served the pre-trained model: the source thresholds are rate-matched, so its intercept is a base rate; metadata/effr_pretrain.json"
+}

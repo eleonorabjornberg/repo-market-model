@@ -3639,6 +3639,10 @@ class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
                     # `REPO_MODEL_REQUIRE_ML` is set, which is where the
                     # extra's absence is turned into a red build on purpose.
                     self.skipTest(f"--model {name} needs the optional ml extra")
+                if cli_eval.MODEL_FACTORIES[name].needs_measurement_fields:
+                    # Its columns (SOFR percentiles) are off in every published declaration and absent
+                    # from this fixture panel; `tests/test_ml.py` runs it on a frame that carries them.
+                    self.skipTest(f"--model {name} reads measurement fields this panel does not carry")
                 features = [FEATURE, "sofr_volume"]
                 extra = []
                 if cli_eval.MODEL_FACTORIES[name].needs_regime_variable:

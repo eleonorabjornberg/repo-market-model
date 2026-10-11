@@ -1,0 +1,73 @@
+{
+  "status": "declared by the pull request that closes #544 before any score was computed; nothing here is tuned on a scored day; the choices below (the design, the source labels, the source weight, the prior, the combination with the risk-date passer) are the pull request's, listed there for Eleonora's review",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "design": {
+    "features": [
+      "spread_bps",
+      "days_to_month_end",
+      "quarter_end",
+      "tax_date",
+      "reserve_balances",
+      "tga"
+    ],
+    "estimator": "a ridge logistic of spread > tau (ml.PRESSURE_LOGISTIC_SETTINGS: L2, C = 1, standardised), one per threshold, the logistic form of risk_logistic, on every day",
+    "left_out": "the Treasury settlement columns and every input built after 2018 (the SOFR percentiles, ON RRP, the daily TGA): the pre-2018 history does not carry them, so the two markets share one design",
+    "pairs": "the direct pairs of every training day (ml._pressure_pairs); the source's pairs are built by effr_history.history_pairs with the same design, each label paired with what was public at its own decision instant, both under the as-of rule and its independent check"
+  },
+  "source": {
+    "series": "fed funds (EFFR) - IOER, 2008-12-16 to 2018-04-02 (effr_history.HISTORY_START, HISTORY_END)",
+    "snapshots": "tests/fixtures/snapshots/frb_ddp and tests/fixtures/snapshots/funding_inputs/fred-macro-latest-vintage (tracked)",
+    "role": "training data only; no pre-2018 row is ever scored",
+    "caveat": "the fed funds series is the unsecured market and SOFR is secured Treasury repo: only the pattern transfers",
+    "thresholds_bp": {
+      "5": -7.0,
+      "10": -5.0
+    },
+    "threshold_rule": "for each SOFR threshold the whole-basis-point source threshold whose share of source rows strictly above it is closest to the share of the published panel's days before 2026-01-01 strictly above the SOFR threshold (a tie to the higher one; only thresholds below the highest source print are tried): scripts/effr_pretrain.py derive_source_thresholds, re-derived by `run`, which refuses other numbers. Fed funds traded below IOER throughout, so the +5 bp event does not exist in the source"
+  },
+  "variants": {
+    "effr_pooled": {
+      "variant": "pooled",
+      "rule": "(a) one fit on the SOFR pairs (weight 1) and the source pairs (weight source_weight), with a source indicator as the design's last column (0 on every served row); columns standardised on the SOFR pairs alone",
+      "source_weight": 0.25,
+      "why_this_weight": "stated, not tuned: one source row counts a quarter of a SOFR row"
+    },
+    "effr_pretrain_finetune": {
+      "variant": "pretrain_finetune",
+      "rule": "(b) a ridge logistic on the source pairs alone; then the SOFR-era refit, walk-forward, whose L2 penalty is centred on the pre-trained slopes (converted between the two standardisations through raw units) with the same C = 1 and a free intercept. A threshold whose source labels hold one class has no prior (the SOFR-era fit). A refit whose SOFR window holds one class is served the pre-trained model: the source thresholds are rate-matched, so its intercept is a base rate"
+    },
+    "effr_sofr_only": {
+      "variant": "none",
+      "rule": "the parent: the same design and estimator on the SOFR-era pairs alone (ml.pressure_logistic_exceedance), no source rows"
+    }
+  },
+  "combined": {
+    "parent": "risk_gbm",
+    "rows": {
+      "risk_gbm+effr_sofr_only": "effr_sofr_only",
+      "risk_gbm+effr_pooled": "effr_pooled",
+      "risk_gbm+effr_pretrain_finetune": "effr_pretrain_finetune"
+    },
+    "rule": "the rule of #506: on a risk date (metadata/risk_date_severity.json) the passer's forecast, unchanged; on any other day the transfer model's. The hurdle of #539 is not used: its code had not merged. Both transfer variants and the control are combined, so the row is not chosen on a score"
+  },
+  "cutoffs": "the judge's cutoff_rule, from each model's own training window; one cut-off per threshold and horizon",
+  "judging": "the judge as declared (metadata/pressure_judge.json): tiers 1, 3 and 5, h = 1 to 5, +5 and +10 bp, under the flat and the weighted rule; the cut-off rule unchanged",
+  "log_loss_clip": 1e-06,
+  "published": "nothing: the models and the source are off in every published declaration"
+}
