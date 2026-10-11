@@ -13630,7 +13630,6 @@ class QuantileInputScalingTests(unittest.TestCase):
             ml.pressure_risk_date_exceedance("quantile_skewt", _PRESSURE_CALENDAR, splits, 20, input_scaling="log")
 
 
-
 def _factor_series(count=500, seed=7, phi=0.85, hole=0.0):
     """Five series that load on one AR(1) factor (the fourth, the anchor, positively); returns (truth, rows)."""
 
