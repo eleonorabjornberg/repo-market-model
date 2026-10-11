@@ -38,12 +38,27 @@ _REQUIRED = {
 }
 
 
+def _covers(covers: Mapping[str, object], where: object) -> tuple:
+    """The declared range of covered Wednesdays, both ends Wednesdays."""
+
+    try:
+        first = date.fromisoformat(str(covers["first_wednesday"]))
+        last = date.fromisoformat(str(covers["last_wednesday"]))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"{where}: covers needs ISO first_wednesday and last_wednesday: {covers!r}") from exc
+    for end in (first, last):
+        if end.weekday() != asof.WEEKLY_OBSERVATION_WEEKDAY:
+            raise ValueError(f"{where}: covers end {end} is not a Wednesday")
+    return first, last
+
+
 def load_release_dating(path: Path) -> dict:
     """The declaration, checked for the keys this module reads.
 
     Raises:
-        ValueError: a key is missing, the instant is not an HH:MM time, or an exception is not a
-            Wednesday released on a later weekday than the default.
+        ValueError: a key is missing, the instant is not an HH:MM time, `covers` is not an ordered
+            range of Wednesdays, or an exception is not a Wednesday released on a later weekday than
+            the default.
     """
 
     declaration = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -53,6 +68,9 @@ def load_release_dating(path: Path) -> dict:
     if declaration["observation_weekday"] != "Wednesday":
         raise ValueError(f"{path}: the H.4.1 is observed on Wednesdays, got {declaration['observation_weekday']!r}")
     time.fromisoformat(declaration["available_time"])
+    first, last = _covers(declaration["covers"], path)
+    if first > last:
+        raise ValueError(f"{path}: covers.first_wednesday {first} is after last_wednesday {last}")
     offset = declaration["offset_days"]
     if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
         raise ValueError(f"{path}: offset_days must be a non-negative integer, got {offset!r}")
@@ -94,6 +112,7 @@ def release_dated_registry(
         "offset_days": declaration["offset_days"],
         "available_time": declaration["available_time"],
         "timezone": declaration["timezone"],
+        "covers": dict(declaration["covers"]),
         "exceptions": dict(declaration["exceptions"]),
         "note": "A measurement variant, read by no published record (#541).",
     }
@@ -106,10 +125,21 @@ def release_instant(calendar: Mapping[str, object], row_date: date) -> datetime:
     A panel row carries the latest Wednesday level on or before it (`docs/decisions/weekly-carry.md`), so
     the instant is the same for every row of a week: the Wednesday plus `offset_days` at `available_time`,
     or the date in `exceptions` when the Board moved the release.
+
+    Raises:
+        ValueError: the week's Wednesday is outside the declared `covers` range (#576). A week the
+            declaration does not cover is not assumed to print on its Thursday.
     """
 
     behind = (row_date.weekday() - asof.WEEKLY_OBSERVATION_WEEKDAY) % 7
     observed = row_date - timedelta(days=behind)
+    first, last = _covers(calendar["covers"], "release calendar")
+    if not (first <= observed <= last):
+        raise ValueError(
+            f"the H.4.1 week of Wednesday {observed.isoformat()} (row {row_date.isoformat()}) is outside the "
+            f"declared coverage {first.isoformat()} to {last.isoformat()}: its release date is not declared "
+            f"(metadata/h41_release_dating.json)"
+        )
     moved = (calendar.get("exceptions") or {}).get(observed.isoformat())
     printed = date.fromisoformat(str(moved)) if moved else observed + timedelta(days=int(calendar["offset_days"]))
     return datetime.combine(printed, time.fromisoformat(str(calendar["available_time"])))

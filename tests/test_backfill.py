@@ -188,6 +188,87 @@ class RefusesBackfilledDays(unittest.TestCase):
         backfill.require_training_only([_fold(backfill.FIRST_PUBLISHED, backfill.FIRST_PUBLISHED)], where="test")
 
 
+class RefusesFitsBeforeThePostingInstant(unittest.TestCase):
+    """A fit that trains on back-filled values needs the workbook's posting instant declared (#572).
+
+    `docs/decisions/information-set.md` (draft amendment): no back-filled value is used as training
+    history before the Bank's first posting of the workbook is established. The posting instant is
+    declared in `metadata/backfill_posting.json`, `null` today, so every fit whose training window
+    reaches before `FIRST_PUBLISHED` is refused. Once it is declared, a fit is refused when its
+    training end is before the start of the day of that instant.
+
+    Red first: written before `require_posting_established` existed (`AttributeError`).
+
+    Mutation record. In a `git archive` copy of the tree under /tmp, CPython 3.11 (`/opt/rmm-venv`),
+    this class run alone, unmutated control green before and after, the mutated line confirmed
+    applied by grep. In `backfill.require_posting_established` the refusal condition
+    `if posting_instant is None or posting_instant > start:` was mutated to `if False:`. Killed, 4 failures, all
+    `AssertionError: LookAheadError not raised`: `test_an_undeclared_posting_instant_refuses_every_back_filled_fit`,
+    `test_a_fit_ending_before_the_posting_instant_is_refused`,
+    `test_a_fit_ending_on_the_day_of_the_posting_is_refused` and `test_one_early_fit_among_many_is_refused`.
+    """
+
+    POSTED = datetime(2018, 5, 1, 12, 0)
+
+    def test_an_undeclared_posting_instant_refuses_every_back_filled_fit(self):
+        with self.assertRaises(LookAheadError) as caught:
+            backfill.require_posting_established(
+                [_fold(date(2018, 6, 29), date(2018, 6, 27))], None, where="test"
+            )
+        self.assertIn("posting instant", str(caught.exception))
+        self.assertIn("2018-06-27", str(caught.exception))
+
+    def test_a_fit_ending_before_the_posting_instant_is_refused(self):
+        with self.assertRaises(LookAheadError):
+            backfill.require_posting_established(
+                [_fold(date(2018, 5, 1), date(2018, 4, 30))], self.POSTED, where="test"
+            )
+
+    def test_a_fit_ending_on_the_day_of_the_posting_is_refused(self):
+        # The instant may fall after that day's decision, so the day itself is not enough.
+        with self.assertRaises(LookAheadError):
+            backfill.require_posting_established(
+                [_fold(date(2018, 5, 2), date(2018, 5, 1))], self.POSTED, where="test"
+            )
+        backfill.require_posting_established(
+            [_fold(date(2018, 5, 2), date(2018, 5, 1))], datetime(2018, 5, 1, 0, 0), where="test"
+        )
+
+    def test_a_fit_ending_after_the_posting_day_passes(self):
+        backfill.require_posting_established(
+            [_fold(date(2018, 6, 29), date(2018, 6, 27))], self.POSTED, where="test"
+        )
+
+    def test_one_early_fit_among_many_is_refused(self):
+        folds = [_fold(date(2018, 6, 29), date(2018, 6, 27)), _fold(date(2018, 4, 5), date(2018, 4, 4))]
+        with self.assertRaises(LookAheadError):
+            backfill.require_posting_established(folds, self.POSTED, where="test")
+
+    def test_a_fit_on_published_days_only_needs_no_posting_instant(self):
+        published = _fold(date(2018, 6, 29), date(2018, 6, 27), start=backfill.FIRST_PUBLISHED)
+        backfill.require_posting_established([published], None, where="test")
+
+    def test_the_declaration_is_unknown_today_and_is_read(self):
+        declared = backfill.load_posting_instant(ROOT / "metadata" / "backfill_posting.json")
+        self.assertIsNone(declared)
+
+    def test_a_declared_instant_is_read_and_a_malformed_one_refused(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "p.json"
+            path.write_text(json.dumps({"posting_instant": "2018-05-01T12:00:00"}), encoding="utf-8")
+            self.assertEqual(backfill.load_posting_instant(path), self.POSTED)
+            for bad in ({}, {"posting_instant": "May 2018"}, {"posting_instant": 5}):
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    backfill.load_posting_instant(path)
+
+    def test_the_run_script_applies_it(self):
+        text = (ROOT / "scripts" / "backfill_history.py").read_text(encoding="utf-8")
+        self.assertIn("backfill.require_posting_established(report.folds", text)
+
+
 class TheShiftKeepsTheScoredDays(unittest.TestCase):
     """Raising `minimum_history` by the prefix scores the very days the published rows score."""
 
