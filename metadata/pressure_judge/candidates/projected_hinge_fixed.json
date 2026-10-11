@@ -1,0 +1,15 @@
+{
+  "role": "candidate",
+  "track": "M (#587)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "proj_dist_h1",
+    "proj_change_h1"
+  ],
+  "features_at_horizon_2_or_more": "proj_dist_h{h} and proj_change_h{h} for the horizon h, in place of the h = 1 columns",
+  "calibration": "none: the projected-reserves logistic with its distance replaced by a hinge at the fixed 0.12; metadata/satiation_587.json",
+  "inputs_note": "projected_reserves with the linear distance replaced by a hinge at the fixed 0.12, so the kink survives standardisation (#569); forecasts every day"
+}

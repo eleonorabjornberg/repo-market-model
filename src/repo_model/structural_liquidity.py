@@ -26,6 +26,12 @@ The probability is never 0: it is a logistic on every day, risk date or not. Dec
 constant, in `metadata/structural_liquidity.json` before any score. The inputs are off in every
 published declaration.
 
+**Time-varying satiation (#587).** `StructuralDesign` takes a satiation form (`satiation.FORMS`): `fixed` (this
+page's model), `rolling` (the level at a decision is the panel column `satiation_roll`, built from as-of reads
+only) or `fitted` (one level per refit, fitted on that refit's training pairs by `satiation.fit_level`). The
+terms are unchanged; only the `SATIATION` in the elasticity moves. Declared in `metadata/satiation_587.json`;
+a measurement, off in every published declaration.
+
 Standard library only: the six-coefficient ridge logistic is fitted here by Newton's method; the
 as-of pairing of labels with what was public at their own decision instant is `ml._pressure_pairs`,
 imported inside the function that needs it (`tests/test_dependency_boundary.py`).
@@ -41,9 +47,12 @@ from types import MappingProxyType
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from .data import DailyObservation, exceeds_bp
+from .satiation import FIXED, ROLLING_COLUMN, fit_level
 
 __all__ = [
     "COLUMN_NAMES",
+    "RAW_NAMES",
+    "STRUCTURAL_FORMS",
     "DEFAULT_DECLARATION",
     "LENGTH",
     "RIDGE_C",
@@ -67,6 +76,11 @@ LENGTH = 0.01
 RIDGE_C = 1.0
 
 COLUMN_NAMES = ("spread_bps", "e_x_shortfall", "e_x_tga_up", "e_x_tax_date", "e_x_window")
+#: The `fitted` satiation form's design row before its level is known: the ratio and the four terms before the
+#: elasticity multiplies them (`StructuralDesign.finish`).
+RAW_NAMES = ("spread_bps", "ratio", "shortfall", "tga_up", "tax_date", "window")
+#: The satiation forms the structural model reads (`satiation.FORMS` less the projected model's hinge control).
+STRUCTURAL_FORMS = ("fixed", "rolling", "fitted")
 
 _CALENDAR = ("days_to_month_end", "quarter_end", "tax_date")
 _BASE = ("spread_bps",) + _CALENDAR + ("reserve_balances", "bank_total_assets", "on_rrp", "tga")
@@ -77,10 +91,10 @@ _DRAIN_COLUMNS = ("net_settlement_ahead_1d", "net_settlement_due_5d")
 _EPSILON = 1e-6
 
 
-def elasticity(ratio: float) -> float:
-    """The reserve demand curve's slope at reserves over bank assets `ratio`: 1 at satiation."""
+def elasticity(ratio: float, satiation: float = SATIATION) -> float:
+    """The reserve demand curve's slope at reserves over bank assets `ratio`: 1 at the satiation level (0.12 by default)."""
 
-    return math.exp(-(float(ratio) - SATIATION) / LENGTH)
+    return math.exp(-(float(ratio) - float(satiation)) / LENGTH)
 
 
 def shortfall(net_settlement_bn: float, on_rrp_bn: float) -> float:
@@ -89,12 +103,18 @@ def shortfall(net_settlement_bn: float, on_rrp_bn: float) -> float:
     return max(0.0, max(0.0, float(net_settlement_bn)) - float(on_rrp_bn))
 
 
-def features_at_horizon(horizon: int) -> Tuple[str, ...]:
-    """The declared features at `horizon`: the scored day's own announced settlement alone at horizon 1 (#568)."""
+def features_at_horizon(horizon: int, satiation: str = "fixed") -> Tuple[str, ...]:
+    """The declared features at `horizon`: the scored day's own announced settlement alone at horizon 1 (#568).
+
+    Under the `rolling` satiation form (#587) the level column is read too.
+    """
 
     if horizon < 1:
         raise ValueError(f"horizon must be positive, got {horizon}")
-    return _BASE + (_DRAIN_COLUMNS[0] if horizon == 1 else _DRAIN_COLUMNS[1],)
+    if satiation not in STRUCTURAL_FORMS:
+        raise ValueError(f"the satiation form is one of {list(STRUCTURAL_FORMS)}, got {satiation!r}")
+    extra = (ROLLING_COLUMN,) if satiation == "rolling" else ()
+    return _BASE + (_DRAIN_COLUMNS[0] if horizon == 1 else _DRAIN_COLUMNS[1],) + extra
 
 
 class StructuralDesign:
@@ -107,9 +127,12 @@ class StructuralDesign:
     pooling = None
     names = COLUMN_NAMES
 
-    def __init__(self, features: Sequence[str], declaration: Any) -> None:
+    def __init__(self, features: Sequence[str], declaration: Any, satiation: str = "fixed") -> None:
+        if satiation not in STRUCTURAL_FORMS:
+            raise ValueError(f"the satiation form is one of {list(STRUCTURAL_FORMS)}, got {satiation!r}")
         declared = tuple(dict.fromkeys(str(name) for name in features))
-        for required in _BASE:
+        required_columns = _BASE + ((ROLLING_COLUMN,) if satiation == "rolling" else ())
+        for required in required_columns:
             if required not in declared:
                 raise ValueError(f"the structural liquidity model reads {required!r}; declare it")
         drain = [name for name in _DRAIN_COLUMNS if name in declared]
@@ -120,6 +143,7 @@ class StructuralDesign:
         self.features = declared
         self.declaration = declaration
         self.drain_column = drain[0]
+        self.satiation = satiation
 
     def needs_history(self) -> bool:
         return True
@@ -134,6 +158,8 @@ class StructuralDesign:
         return float(value)
 
     def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        """The five columns; under `fitted`, the raw row (`RAW_NAMES`) that `finish` completes once the level is fitted."""
+
         if tga_change is None:
             raise ValueError("the TGA change is required")
         from .scarcity import reserves_ratio
@@ -141,16 +167,26 @@ class StructuralDesign:
         ratio = reserves_ratio(
             self._value(observation, "reserve_balances"), self._value(observation, "bank_total_assets")
         )
-        e = elasticity(ratio)
         short = shortfall(self._value(observation, self.drain_column), self._value(observation, "on_rrp"))
         kind = self.declaration.day_type(observation.values)
-        return [
+        raw = [
             float(observation.spread_bps),
-            e * short,
-            e * max(0.0, float(tga_change)),
-            e * (1.0 if kind == "tax_date" else 0.0),
-            e * (1.0 if kind in ("quarter_end", "month_end") else 0.0),
+            ratio,
+            short,
+            max(0.0, float(tga_change)),
+            1.0 if kind == "tax_date" else 0.0,
+            1.0 if kind in ("quarter_end", "month_end") else 0.0,
         ]
+        if self.satiation == "fitted":
+            return raw
+        level = self._value(observation, ROLLING_COLUMN) if self.satiation == "rolling" else SATIATION
+        return self.finish(raw, level)
+
+    def finish(self, raw: Sequence[float], level: float) -> List[float]:
+        """The five columns from a raw row (`RAW_NAMES`) at satiation `level`: the elasticity multiplies four terms."""
+
+        e = elasticity(raw[1], level)
+        return [raw[0], e * raw[2], e * raw[3], e * raw[4], e * raw[5]]
 
 
 @dataclass(frozen=True)
@@ -268,18 +304,21 @@ def fit_ridge_logistic(
     return RidgeFit(tuple(centre), tuple(scale), tuple(w))
 
 
-def structural_exceedance(features: Sequence[str], declaration: Any, *, minimum_history: int) -> Any:
+def structural_exceedance(
+    features: Sequence[str], declaration: Any, *, minimum_history: int, satiation: str = "fixed"
+) -> Any:
     """The model in the `ExceedancePredictor` shape: P(spread > tau) on every day, per threshold.
 
     `fit_predict.fits` collects, for every refit, each threshold's coefficients (standardized and in
-    the columns' own units) and the training pairs it was fitted on.
+    the columns' own units) and the training pairs it was fitted on. With `satiation="fitted"` (#587) each
+    refit also records the level it fitted on its training pairs.
     """
 
     from .baseline import ExceedanceCurves
 
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
-    design = StructuralDesign(features, declaration)
+    design = StructuralDesign(features, declaration, satiation)
     cache: dict = {}
     fits: List[Dict[str, Any]] = []
 
@@ -314,8 +353,18 @@ def structural_exceedance(features: Sequence[str], declaration: Any, *, minimum_
         served = [
             design.row(row, ml._served_tga_change(histories[day], row)) for day, row in enumerate(feature_rows)
         ]
+        level_record: Dict[str, Any] = {}
+        if satiation == "fitted":
+            # one level for the refit, from its training pairs alone; the pairs' ratios were public at their own
+            # decisions and their spreads are labels the training frame covers
+            level, level_record = fit_level([x[1] for x in xs], spreads)
+            level_record = {"satiation_level": level, **level_record}
+            xs = [design.finish(x, level) for x in xs]
+            served = [design.finish(x, level) for x in served]
         columns: List[List[float]] = []
-        record: Dict[str, Any] = {"pairs": len(xs), "last_training_row": train_rows[-1].date.isoformat()}
+        record: Dict[str, Any] = {
+            "pairs": len(xs), "last_training_row": train_rows[-1].date.isoformat(), **level_record
+        }
         for tau in taus:
             labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
             events = sum(labels)
@@ -345,7 +394,7 @@ def structural_exceedance(features: Sequence[str], declaration: Any, *, minimum_
             "C": RIDGE_C,
             "design": ["intercept", *COLUMN_NAMES],
             "drain": design.drain_column,
-            "satiation": SATIATION,
+            "satiation": SATIATION if satiation == "fixed" else satiation,
             "length": LENGTH,
         }
         return ExceedanceCurves(
