@@ -1,0 +1,357 @@
+"""A structural liquidity model of the pressure day (#542, track S of #374).
+
+Twelve model families have been scored on the same inputs and a flexible learner cannot discover
+the mechanism from 26 onsets. This model fixes the mechanism's form in advance and fits six
+coefficients, as a funding desk would:
+
+    P(pressure on T) = logistic(b0 + b1 * spread_bps
+                                   + b2 * e * shortfall + b3 * e * tga_up
+                                   + b4 * e * tax_date + b5 * e * window)
+
+a logistic of the expected spread move. Its terms, all public at the decision instant:
+
+* the **elasticity** `e` of the reserve demand curve at the current reserve level, the exponential
+  curve of NY Fed Staff Report 1019 (Afonso, Giannone, La Spada and Williams):
+  `e = exp(-(reserves / bank_total_assets - SATIATION) / LENGTH)`. It is 1 at satiation
+  (`scarcity.SATIATION_BAND`, the lower end), flat-ish above and steep below. Neither constant is
+  fitted;
+* the **drain**: the announced net Treasury cash settlement (`net_settlement` at horizon 1,
+  `net_settlement_due_5d` beyond, where the scored day's own settlement is not yet public), less the
+  ON RRP balance, which absorbs it before reserves do: `shortfall = max(0, max(0, net) - on_rrp)`;
+  the TGA's rise over the last five rows; the tax date, whose inflow raises the TGA; and the
+  quarter-end and month-end window (balance-sheet window-dressing);
+* the as-of spread.
+
+The probability is never 0: it is a logistic on every day, risk date or not. Declared, with every
+constant, in `metadata/structural_liquidity.json` before any score. The inputs are off in every
+published declaration.
+
+Standard library only: the six-coefficient ridge logistic is fitted here by Newton's method; the
+as-of pairing of labels with what was public at their own decision instant is `ml._pressure_pairs`,
+imported inside the function that needs it (`tests/test_dependency_boundary.py`).
+"""
+
+from __future__ import annotations
+
+import json
+import math
+from dataclasses import dataclass
+from pathlib import Path
+from types import MappingProxyType
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+
+from .data import DailyObservation, exceeds_bp
+
+__all__ = [
+    "COLUMN_NAMES",
+    "DEFAULT_DECLARATION",
+    "LENGTH",
+    "RIDGE_C",
+    "SATIATION",
+    "StructuralDesign",
+    "elasticity",
+    "features_at_horizon",
+    "fit_ridge_logistic",
+    "shortfall",
+    "structural_exceedance",
+]
+
+DEFAULT_DECLARATION = Path(__file__).resolve().parents[2] / "metadata" / "structural_liquidity.json"
+
+#: The reserve-demand curve's reference level and length: the lower end of
+#: `scarcity.SATIATION_BAND`, and one percentage point of bank assets. Declared, not fitted.
+SATIATION = 0.12
+LENGTH = 0.01
+
+#: The ridge logistic's penalty, the direct logistic's (`ml.PRESSURE_LOGISTIC_SETTINGS`).
+RIDGE_C = 1.0
+
+COLUMN_NAMES = ("spread_bps", "e_x_shortfall", "e_x_tga_up", "e_x_tax_date", "e_x_window")
+
+_CALENDAR = ("days_to_month_end", "quarter_end", "tax_date")
+_BASE = ("spread_bps",) + _CALENDAR + ("reserve_balances", "bank_total_assets", "on_rrp", "tga")
+_DRAIN_COLUMNS = ("net_settlement", "net_settlement_due_5d")
+_EPSILON = 1e-6
+
+
+def elasticity(ratio: float) -> float:
+    """The reserve demand curve's slope at reserves over bank assets `ratio`: 1 at satiation."""
+
+    return math.exp(-(float(ratio) - SATIATION) / LENGTH)
+
+
+def shortfall(net_settlement_bn: float, on_rrp_bn: float) -> float:
+    """The announced drain the ON RRP balance has not absorbed, USD billions."""
+
+    return max(0.0, max(0.0, float(net_settlement_bn)) - float(on_rrp_bn))
+
+
+def features_at_horizon(horizon: int) -> Tuple[str, ...]:
+    """The declared features at `horizon`: the scored day's own settlement exists only at horizon 1."""
+
+    if horizon < 1:
+        raise ValueError(f"horizon must be positive, got {horizon}")
+    return _BASE + (_DRAIN_COLUMNS[0] if horizon == 1 else _DRAIN_COLUMNS[1],)
+
+
+class StructuralDesign:
+    """The five non-constant columns of the mechanism, from one as-of observation."""
+
+    tga = True
+    scarcity = False
+    products: Tuple[Tuple[str, str], ...] = ()
+    monotone = None
+    pooling = None
+    names = COLUMN_NAMES
+
+    def __init__(self, features: Sequence[str], declaration: Any) -> None:
+        declared = tuple(dict.fromkeys(str(name) for name in features))
+        for required in _BASE:
+            if required not in declared:
+                raise ValueError(f"the structural liquidity model reads {required!r}; declare it")
+        drain = [name for name in _DRAIN_COLUMNS if name in declared]
+        if len(drain) != 1:
+            raise ValueError(f"declare exactly one of {list(_DRAIN_COLUMNS)} as the drain, got {drain}")
+        if not hasattr(declaration, "day_type"):
+            raise ValueError("the pressure-day type needs the split declaration that defines it")
+        self.features = declared
+        self.declaration = declaration
+        self.drain_column = drain[0]
+
+    def needs_history(self) -> bool:
+        return True
+
+    def _value(self, row: DailyObservation, column: str) -> float:
+        value = row.values.get(column)
+        if value is None or not math.isfinite(float(value)):
+            raise ValueError(
+                f"{row.date}: the as-of read of {column!r} is missing; the structural model is not "
+                f"fitted or served on an unobserved input"
+            )
+        return float(value)
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        if tga_change is None:
+            raise ValueError("the TGA change is required")
+        from .scarcity import reserves_ratio
+
+        ratio = reserves_ratio(
+            self._value(observation, "reserve_balances"), self._value(observation, "bank_total_assets")
+        )
+        e = elasticity(ratio)
+        short = shortfall(self._value(observation, self.drain_column), self._value(observation, "on_rrp"))
+        kind = self.declaration.day_type(observation.values)
+        return [
+            float(observation.spread_bps),
+            e * short,
+            e * max(0.0, float(tga_change)),
+            e * (1.0 if kind == "tax_date" else 0.0),
+            e * (1.0 if kind in ("quarter_end", "month_end") else 0.0),
+        ]
+
+
+@dataclass(frozen=True)
+class RidgeFit:
+    """A ridge logistic on standardized columns: `coefficients` = intercept, then one per column."""
+
+    centre: Tuple[float, ...]
+    scale: Tuple[float, ...]
+    coefficients: Tuple[float, ...]
+
+    def predict(self, xs: Sequence[Sequence[float]]) -> List[float]:
+        out = []
+        for x in xs:
+            z = self.coefficients[0] + sum(
+                b * (v - c) / s for b, v, c, s in zip(self.coefficients[1:], x, self.centre, self.scale)
+            )
+            out.append(_sigmoid(z))
+        return out
+
+    def raw_coefficients(self) -> Tuple[float, ...]:
+        """The same logistic in the columns' own units (intercept first)."""
+
+        slopes = [b / s for b, s in zip(self.coefficients[1:], self.scale)]
+        intercept = self.coefficients[0] - sum(m * c for m, c in zip(slopes, self.centre))
+        return (intercept, *slopes)
+
+
+def _sigmoid(z: float) -> float:
+    if z >= 0:
+        return 1.0 / (1.0 + math.exp(-z))
+    t = math.exp(z)
+    return t / (1.0 + t)
+
+
+def _solve(a: List[List[float]], b: List[float]) -> List[float]:
+    """Solve a small symmetric positive-definite system by Gaussian elimination with pivoting."""
+
+    n = len(b)
+    m = [row[:] + [b[i]] for i, row in enumerate(a)]
+    for col in range(n):
+        pivot = max(range(col, n), key=lambda r: abs(m[r][col]))
+        m[col], m[pivot] = m[pivot], m[col]
+        if abs(m[col][col]) < 1e-14:
+            raise ValueError("the Newton system is singular")
+        for r in range(col + 1, n):
+            f = m[r][col] / m[col][col]
+            for k in range(col, n + 1):
+                m[r][k] -= f * m[col][k]
+    x = [0.0] * n
+    for i in range(n - 1, -1, -1):
+        x[i] = (m[i][n] - sum(m[i][k] * x[k] for k in range(i + 1, n))) / m[i][i]
+    return x
+
+
+def fit_ridge_logistic(
+    xs: Sequence[Sequence[float]], ys: Sequence[int], c: float = RIDGE_C, iterations: int = 100
+) -> RidgeFit:
+    """Minimise sum of log loss + (1 / 2c) * ||w||^2 on standardized columns; the intercept is free."""
+
+    if not xs or len(xs) != len(ys):
+        raise ValueError("fit_ridge_logistic needs one label per row, and at least one row")
+    if c <= 0:
+        raise ValueError(f"the penalty strength must be positive, got {c}")
+    n, d = len(xs), len(xs[0])
+    centre = [sum(x[j] for x in xs) / n for j in range(d)]
+    scale = []
+    for j in range(d):
+        var = sum((x[j] - centre[j]) ** 2 for x in xs) / n
+        scale.append(math.sqrt(var) if var > 0 else 1.0)
+    z = [[(x[j] - centre[j]) / scale[j] for j in range(d)] for x in xs]
+    w = [0.0] * (d + 1)
+    lam = 1.0 / c
+
+    def objective(weights: List[float]) -> float:
+        total = 0.0
+        for row, y in zip(z, ys):
+            s = weights[0] + sum(weights[j + 1] * row[j] for j in range(d))
+            total += max(s, 0.0) - y * s + math.log1p(math.exp(-abs(s)))
+        return total + 0.5 * lam * sum(v * v for v in weights[1:])
+
+    current = objective(w)
+    for _ in range(iterations):
+        grad = [0.0] * (d + 1)
+        hess = [[0.0] * (d + 1) for _ in range(d + 1)]
+        for row, y in zip(z, ys):
+            aug = [1.0] + row
+            p = _sigmoid(sum(w[k] * aug[k] for k in range(d + 1)))
+            r = p - y
+            q = p * (1.0 - p)
+            for a_ in range(d + 1):
+                grad[a_] += r * aug[a_]
+                for b_ in range(a_, d + 1):
+                    hess[a_][b_] += q * aug[a_] * aug[b_]
+        for k in range(1, d + 1):
+            grad[k] += lam * w[k]
+            hess[k][k] += lam
+        for a_ in range(d + 1):
+            for b_ in range(a_):
+                hess[a_][b_] = hess[b_][a_]
+        hess[0][0] += 1e-9
+        step = _solve(hess, grad)
+        scale_step = 1.0
+        while scale_step > 1e-8:
+            trial = [wi - scale_step * si for wi, si in zip(w, step)]
+            value = objective(trial)
+            if value <= current + 1e-12:
+                break
+            scale_step /= 2.0
+        else:
+            break
+        improved = current - value
+        w, current = trial, value
+        if improved < 1e-10:
+            break
+    return RidgeFit(tuple(centre), tuple(scale), tuple(w))
+
+
+def structural_exceedance(features: Sequence[str], declaration: Any, *, minimum_history: int) -> Any:
+    """The model in the `ExceedancePredictor` shape: P(spread > tau) on every day, per threshold.
+
+    `fit_predict.fits` collects, for every refit, each threshold's coefficients (standardized and in
+    the columns' own units) and the training pairs it was fitted on.
+    """
+
+    from .baseline import ExceedanceCurves
+
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = StructuralDesign(features, declaration)
+    cache: dict = {}
+    fits: List[Dict[str, Any]] = []
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[Any] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> Any:
+        from . import ml
+
+        if information is None:
+            raise ValueError(
+                "the structural liquidity model pairs each training label with what was public at "
+                "that label's own decision instant, which only the as-of rule can say; it was called "
+                "without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"the structural liquidity model needs at least {minimum_history} training rows, "
+                f"got {len(train_rows)}"
+            )
+        if histories is None or len(histories) != len(feature_rows):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        xs, spreads = ml._pressure_pairs(design, information, train_rows, cache)
+        if not xs:
+            raise ValueError("no training label has a complete as-of read")
+        served = [
+            design.row(row, ml._served_tga_change(histories[day], row)) for day, row in enumerate(feature_rows)
+        ]
+        columns: List[List[float]] = []
+        record: Dict[str, Any] = {"pairs": len(xs), "last_training_row": train_rows[-1].date.isoformat()}
+        for tau in taus:
+            labels = [1 if exceeds_bp(value, float(tau)) else 0 for value in spreads]
+            events = sum(labels)
+            if events == 0 or events == len(labels):
+                # One class: a smoothed rate, never exactly 0 or 1 (the model forecasts every day).
+                rate = (events + 0.5) / (len(labels) + 1.0)
+                columns.append([rate] * len(served))
+                record[f"{tau:g}"] = {"events": events, "coefficients": None, "raw_coefficients": None}
+                continue
+            fit = fit_ridge_logistic(xs, labels)
+            columns.append([min(1.0 - _EPSILON, max(_EPSILON, p)) for p in fit.predict(served)])
+            record[f"{tau:g}"] = {
+                "events": events,
+                "coefficients": list(fit.coefficients),
+                "raw_coefficients": list(fit.raw_coefficients()),
+            }
+        fits.append(record)
+        curves = []
+        for day in range(len(served)):
+            curve: List[float] = []
+            for column in columns:
+                value = column[day]
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+        settings = {
+            "estimator": "ridge logistic, Newton's method, standardized columns",
+            "C": RIDGE_C,
+            "design": ["intercept", *COLUMN_NAMES],
+            "drain": design.drain_column,
+            "satiation": SATIATION,
+            "length": LENGTH,
+        }
+        return ExceedanceCurves(
+            tuple(curves),
+            design.features,
+            ml_libraries=None,
+            model_settings=MappingProxyType(settings),
+            history_ends=tuple(history[-1].date if history else None for history in histories),
+        )
+
+    fit_predict.fits = fits  # type: ignore[attr-defined]
+    return fit_predict

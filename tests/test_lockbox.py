@@ -926,6 +926,7 @@ CRPS_SCORERS = {
     "scripts/settlement_flag_candidate.crps_side": ("delegates", _WALK),
     "scripts/forecast_daily.reproduction_check": ("delegates", "compares the published series with " + _WALK),
     "scripts/forecast_daily.reproduction_check_horizon": ("delegates", "compares the final test's cell with " + _WALK),
+    "scripts/blend_equal_491.score_command": ("guard", "scores the blend walk's CRPS after `require_unlocked` on the last scored day (2025-12-31) and on every day of the walk, and `check_days` refuses a walk that is not on the published record's days to 2025-12-31 (#491)"),
     "scripts/calendar_bands_418.mean_crps": ("delegates", "the mean loss of a published daily record's days, which `score` builds from `_WALK`'s records and refuses after the panel end"),
     "scripts/interior_diagnosis._crps": ("delegates", "one loss; " + _WALK),
     "scripts/pressure_model_v2._crps": ("delegates", "one loss; " + _WALK),
