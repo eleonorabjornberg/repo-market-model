@@ -61,7 +61,8 @@ Nothing here changes a verdict of #532 or #525.
 `metadata/tax_date_market_days.json`.
 
 ```
-PYTHONPATH=src python3 scripts/tax_date_market_days.py -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs --output NEW/PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
+# the build command of REPRODUCIBILITY.md, run inside the wrapper: `python3 scripts/tax_date_market_days.py -m <the cli module> build ...`
+# (the exact line is the "build" field of metadata/tax_date_market_days.json)
 # then, for D in OLD (plain `python3`) and NEW (prefix every command with `python3 scripts/tax_date_market_days.py`), the pipeline of
 # docs/pivot/risk-date-false-alarm-controls-result.md, "Reproduce", on D/PUB.csv
 PYTHONPATH=src python3 scripts/tax_date_market_days_delta.py OLD/out/summary.md NEW/out/summary.md --output delta.md
