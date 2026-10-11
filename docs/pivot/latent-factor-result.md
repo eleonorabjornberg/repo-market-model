@@ -27,8 +27,9 @@ The probability of a pressure day at T+h comes from the factor carried h rows ah
 The third row was added because the first two, run once at h = 1, had a Brier score worse than a constant's: with the innovation
 variance fixed at 1 the one-day factor move is wide, so the Gaussian mapping is over-dispersed. That look at h = 1, and no other, led to
 the third row; nothing else changed after it, and all three rows are reported. Each also appears as the every-day component under the
-risk-date passer `risk_gbm`, by the rule of #506 (the passer's forecast on a risk date, the model's on any other day). The hurdle of
-#539 has not merged, so it is not used.
+risk-date passer `risk_gbm`, by the rule of #506 (the passer's forecast on a risk date, the model's on any other day). That is
+the structure of the hurdle of #539 with this model in place of its every-day hazard, but without the hurdle's Platt or isotonic
+calibration of the hazard: #539 merged while this was being scored, after the declaration was committed, and its code was not used.
 
 ## Result
 
@@ -105,7 +106,8 @@ a request to publish; no `needs-eleonora` question is raised.
 
 ## Not checked
 
-* The hurdle of #539 as the every-day component under the passers (it has not merged); the rule of #506 is used.
+* The factor model passed through the calibration step of #539's hurdle (`ml.pressure_risk_date_hurdle_exceedance`), which merged
+  after this was declared and scored. The combined rows here have the hurdle's structure but not its calibration.
 * A second factor, a factor with the spread among its series, and an innovation variance that is not fixed; none was declared.
 * The settlement and H.4.1 timing of #541 (it has not merged); the inputs are read as the information-set rules read them today.
 * Any day after 2025-12-31.
