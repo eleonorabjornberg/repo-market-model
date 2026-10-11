@@ -170,19 +170,23 @@ def run_command(args) -> int:
             onsets_in = {cell: int(sum(m * o for m, o in zip(inside, onset))) for cell, inside in cells_for.items()}
             caught_in = {cell: int(sum(m * c for m, c in zip(inside, caught))) for cell, inside in cells_for.items()}
             # the flags this rule adds against the declared judge, by horizon and year (the cut-off was infinite there)
-            added = {}
-            blocks = {}
+            added, added_days, blocks = {}, {}, {}
             for h in horizons:
                 f, r, g = by_name[name][h], ref_by[name][h], grids[h]
                 outcomes, onsets = g.outcomes[tau], g.onset_at(tau, tau)
-                per_year = {}
+                per_year, days_added = {}, []
                 for k, day in enumerate(g.dates):
                     if f.probabilities[tau][k] >= f.cutoffs[tau][k] and not r.probabilities[tau][k] >= r.cutoffs[tau][k]:
                         cell = per_year.setdefault(str(day.year), {"flags": 0, "false_alarms": 0, "onsets": 0})
                         cell["flags"] += 1
                         cell["false_alarms"] += 0 if outcomes[k] else 1
                         cell["onsets"] += 1 if onsets[k] else 0
+                        days_added.append(
+                            {"date": day.isoformat(), "pressure_day": bool(outcomes[k]), "onset": bool(onsets[k]),
+                             "probability": f.probabilities[tau][k], "cutoff": f.cutoffs[tau][k]}
+                        )
                 added[str(h)] = per_year
+                added_days[str(h)] = days_added
                 served, start = [], 0
                 while start < len(g.dates):
                     end = start
@@ -193,26 +197,51 @@ def run_command(args) -> int:
                     start = end + 1
                 blocks[str(h)] = served
             per_lead = {}
+            tier_one = judged["candidates"][name]["tiers"]["onset_warning"]["lead_at_least_1"] if name in judged["candidates"] else {}
             for h in horizons:
-                f, g = by_name[name][h], grids[h]
-                outcomes, onsets = g.outcomes[tau], g.onset_at(tau, tau)
+                caught_h = [(1.0 if flagged(name, h, d) else 0.0) * onset[i] for i, d in enumerate(common)]
+                cells = {
+                    "all": [onset, caught_h],
+                    "year 2018": [[m * o for m, o in zip(cells_for["year 2018"], onset)], [m * c for m, c in zip(cells_for["year 2018"], caught_h)]],
+                }
+                lead_stats = {"recall": pj._ratio(1, 0)}
+                interval = pj._bootstrap(declaration, cells, lead_stats, count, seed=pj._seed(seed, "lead", name, label, h))
+                g, f = grids[h], by_name[name][h]
                 raised = [k for k in range(len(g.dates)) if f.probabilities[tau][k] >= f.cutoffs[tau][k]]
-                n_onsets = int(sum(onsets))
                 per_lead[str(h)] = {
-                    "onsets": n_onsets,
-                    "onsets_flagged": sum(1 for k in raised if onsets[k]),
+                    "onsets": int(sum(onset)),
+                    "onsets_flagged": int(sum(caught_h)),
+                    "recall": interval["all"]["recall"],
+                    "onsets_2018": int(sum(cells["year 2018"][0])),
+                    "onsets_flagged_2018": int(sum(cells["year 2018"][1])),
                     "flags": len(raised),
-                    "false_alarms": sum(1 for k in raised if not outcomes[k]),
-                    "false_alarms_per_onset": sum(1 for k in raised if not outcomes[k]) / n_onsets if n_onsets else None,
+                    "false_alarms_per_onset": tier_one.get("false_alarms_by_horizon", {}).get(str(h), {}).get("per_onset"),
+                    "weighted_false_alarms_per_onset": tier_one.get("weighted_false_alarms_by_horizon", {}).get(str(h), {}).get("per_onset"),
                     "days_never_flag": sum(1 for c in f.cutoffs[tau] if math.isinf(c)),
                 }
+            # the row against each benchmark under the same rule: onsets flagged at some lead
+            against = {}
+            for bench in BENCHMARKS:
+                bench_caught = [(1.0 if any(flagged(bench, h, d) for h in horizons) else 0.0) * onset[i] for i, d in enumerate(common)]
+                pair_cells = {
+                    cell: [
+                        [m * o for m, o in zip(inside, onset)],
+                        [m * c for m, c in zip(inside, caught)],
+                        [m * c for m, c in zip(inside, bench_caught)],
+                    ]
+                    for cell, inside in cells_for.items()
+                }
+                result = pj._bootstrap(declaration, pair_cells, stats, count, seed=pj._seed(seed, "bench", name, bench, label))
+                against[bench] = {cell: result[cell]["recall_difference"] for cell in ("all", "year 2018")}
             entry["rows"][name] = {
                 "judge": judged["candidates"][name],
                 "per_lead": per_lead,
                 "onsets_in_cell": onsets_in,
                 "caught_at_some_lead": caught_in,
                 "recall_versus_declared": versus,
+                "recall_versus_benchmarks": against,
                 "flags_added_against_declared": added,
+                "flag_days_added_against_declared": added_days,
                 "blocks_served": blocks,
             }
         document["runs"][f"{weighting} | {label}"] = entry
@@ -256,7 +285,8 @@ def markdown(document: dict) -> str:
                     f"{yes(verdict['tier_1_onset_warning'])} | {lcell} | {yes(verdict['tier_3_no_crying_wolf'])} | "
                     f"{yes(verdict['tier_5_week_ahead'])} | {yes(verdict['passes'])} |"
                 )
-        out.append(f"\n### Tier 1 per lead, +5 bp, {weighting} cut-offs (flat false-alarm count): onsets flagged of onsets; false alarms per onset\n")
+        key = "weighted_false_alarms_per_onset" if weighting == "weighted" else "false_alarms_per_onset"
+        out.append(f"\n### Tier 1 per lead, +5 bp, {weighting} rule: onsets flagged of the 26 and recall [90%]; 2018 onsets flagged of 4; {weighting} false alarms per onset (limit 2)\n")
         out.append("| row | start-up rule | " + " | ".join(f"h = {h}" for h in (1, 2, 3, 4, 5)) + " |")
         out.append("|---|---|" + "---|" * 5)
         for name in document["rows"]:
@@ -265,10 +295,19 @@ def markdown(document: dict) -> str:
                 out.append(
                     f"| {name} | {label} | "
                     + " | ".join(
-                        f"{lead[str(h)]['onsets_flagged']}/{lead[str(h)]['onsets']}; {_f(lead[str(h)]['false_alarms_per_onset'], 2)}"
+                        f"{lead[str(h)]['onsets_flagged']}/{lead[str(h)]['onsets']} {_recall(lead[str(h)]['recall'])}; 2018 {lead[str(h)]['onsets_flagged_2018']}/{lead[str(h)]['onsets_2018']}; {_f(lead[str(h)][key], 2)}"
                         for h in (1, 2, 3, 4, 5)
                     )
                     + " |"
+                )
+        out.append(f"\n### The rows against the benchmarks under the same start-up rule, {weighting} rule: onsets flagged at some lead, difference in recall (90% interval); all and 2018\n")
+        out.append("| row | start-up rule | vs calendar_climatology: all | 2018 | vs persistence_logistic: all | 2018 |")
+        out.append("|---|---|---|---|---|---|")
+        for name in document["rows"]:
+            for label, _ in RULES:
+                a = document["runs"][f"{weighting} | {label}"]["rows"][name]["recall_versus_benchmarks"]
+                out.append(
+                    f"| {name} | {label} | " + " | ".join(_interval(a[b][c]) for b in BENCHMARKS for c in ("all", "year 2018")) + " |"
                 )
         out.append(f"\n### Onsets flagged at some lead, by year (of the onsets of the year), {weighting} rule; difference from the declared judge with its 90% interval\n")
         years = [c for c in next(iter(document["runs"].values()))["rows"][FROZEN[0]]["onsets_in_cell"] if c.startswith("year ")]
