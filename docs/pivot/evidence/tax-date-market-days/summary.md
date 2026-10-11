@@ -1,0 +1,32 @@
+| model | onsets flagged, flat / weighted rule | recall, flat [90%] | recall, weighted [90%] | worst false alarms per onset, flat | worst weighted false alarms per onset, weighted rule | tiers 1 / 3 / 5, flat | tiers 1 / 3 / 5, weighted | passes the full rule, flat / weighted |
+|---|---|---|---|---|---|---|---|---|
+| risk_gbm | 13/26 / 13/26 | 0.500 [0.310, 0.667] | 0.500 [0.310, 0.667] | 1.38 | 0.88 | yes / no / no | yes / no / no | no / no |
+| risk_gbm+every_day | 15/26 / 16/26 | 0.577 [0.385, 0.760] | 0.615 [0.429, 0.789] | 3.00 | 2.19 | no / no / yes | no / no / yes | no / no |
+| risk_gbm+every_day+shrunk | 12/26 / 16/26 | 0.462 [0.286, 0.650] | 0.615 [0.438, 0.800] | 1.27 | 2.03 | no / no / no | no / no / no | no / no |
+| risk_gbm+every_day+scarce | 15/26 / 16/26 | 0.577 [0.389, 0.760] | 0.615 [0.435, 0.800] | 3.12 | 2.18 | no / no / no | no / no / no | no / no |
+| risk_gbm+every_day+persist | 14/26 / 15/26 | 0.538 [0.360, 0.715] | 0.577 [0.387, 0.762] | 2.96 | 2.19 | no / no / yes | no / no / yes | no / no |
+| risk_gbm+every_day+gate | 15/26 / 17/26 | 0.577 [0.400, 0.750] | 0.654 [0.481, 0.818] | 2.92 | 1.67 | no / no / no | yes / no / no | no / no |
+| risk_gbm_base | 14/26 / 15/26 | 0.538 [0.360, 0.719] | 0.577 [0.391, 0.762] | 1.50 | 0.97 | yes / no / no | yes / no / no | no / no |
+| risk_gbm_base+every_day | 15/26 / 17/26 | 0.577 [0.389, 0.769] | 0.654 [0.478, 0.826] | 2.96 | 2.42 | no / no / yes | no / no / yes | no / no |
+| risk_gbm_base+every_day+shrunk | 13/26 / 16/26 | 0.500 [0.333, 0.684] | 0.615 [0.433, 0.800] | 2.42 | 2.11 | no / no / no | no / no / no | no / no |
+| risk_gbm_base+every_day+scarce | 15/26 / 17/26 | 0.577 [0.385, 0.769] | 0.654 [0.474, 0.826] | 3.00 | 2.41 | no / no / no | no / no / no | no / no |
+| risk_gbm_base+every_day+persist | 14/26 / 16/26 | 0.538 [0.353, 0.737] | 0.615 [0.428, 0.800] | 2.88 | 2.21 | no / no / yes | no / no / yes | no / no |
+| risk_gbm_base+every_day+gate | 15/26 / 17/26 | 0.577 [0.393, 0.750] | 0.654 [0.481, 0.824] | 2.88 | 1.68 | no / no / no | yes / no / no | no / no |
+| risk_logistic | 14/26 / 16/26 | 0.538 [0.350, 0.724] | 0.615 [0.435, 0.800] | 1.85 | 1.78 | yes / no / no | yes / no / no | no / no |
+| risk_logistic+every_day | 14/26 / 17/26 | 0.538 [0.375, 0.707] | 0.654 [0.480, 0.826] | 2.62 | 2.28 | no / no / yes | no / no / yes | no / no |
+| risk_logistic+every_day+shrunk | 15/26 / 18/26 | 0.577 [0.407, 0.750] | 0.692 [0.522, 0.852] | 2.85 | 2.42 | no / no / no | no / no / no | no / no |
+| risk_logistic+every_day+scarce | 14/26 / 17/26 | 0.538 [0.375, 0.700] | 0.654 [0.476, 0.818] | 2.54 | 2.27 | no / no / yes | no / no / yes | no / no |
+| risk_logistic+every_day+persist | 15/26 / 16/26 | 0.577 [0.400, 0.750] | 0.615 [0.429, 0.790] | 3.50 | 2.42 | no / no / yes | no / no / yes | no / no |
+| risk_logistic+every_day+gate | 15/26 / 18/26 | 0.577 [0.414, 0.742] | 0.692 [0.520, 0.857] | 2.96 | 2.07 | no / no / no | no / no / no | no / no |
+| risk_logistic_base | 13/26 / 15/26 | 0.500 [0.333, 0.680] | 0.577 [0.391, 0.762] | 1.81 | 1.65 | yes / no / no | yes / no / no | no / no |
+| risk_logistic_base+every_day | 11/26 / 13/26 | 0.423 [0.259, 0.593] | 0.500 [0.321, 0.679] | 2.31 | 2.26 | no / no / yes | no / no / yes | no / no |
+| risk_logistic_base+every_day+shrunk | 13/26 / 17/26 | 0.500 [0.333, 0.667] | 0.654 [0.480, 0.821] | 2.50 | 2.34 | no / no / no | no / no / no | no / no |
+| risk_logistic_base+every_day+scarce | 11/26 / 13/26 | 0.423 [0.250, 0.600] | 0.500 [0.321, 0.667] | 2.23 | 2.18 | no / no / yes | no / no / yes | no / no |
+| risk_logistic_base+every_day+persist | 13/26 / 14/26 | 0.500 [0.333, 0.679] | 0.538 [0.364, 0.719] | 1.81 | 2.31 | yes / no / yes | no / no / yes | no / no |
+| risk_logistic_base+every_day+gate | 14/26 / 17/26 | 0.538 [0.368, 0.714] | 0.654 [0.476, 0.815] | 2.88 | 2.03 | no / no / no | no / no / no | no / no |
+| risk_quantile_skewt_base | 14/26 / 15/26 | 0.538 [0.360, 0.714] | 0.577 [0.391, 0.750] | 1.81 | 1.61 | yes / no / no | yes / no / no | no / no |
+| risk_quantile_skewt_base+every_day | 15/26 / 16/26 | 0.577 [0.409, 0.750] | 0.615 [0.444, 0.792] | 2.46 | 2.70 | no / no / yes | no / no / yes | no / no |
+| risk_quantile_skewt_base+every_day+shrunk | 14/26 / 19/26 | 0.538 [0.375, 0.722] | 0.731 [0.560, 0.882] | 2.62 | 2.98 | no / no / yes | no / no / yes | no / no |
+| risk_quantile_skewt_base+every_day+scarce | 15/26 / 16/26 | 0.577 [0.400, 0.739] | 0.615 [0.429, 0.781] | 2.38 | 2.71 | no / no / yes | no / no / yes | no / no |
+| risk_quantile_skewt_base+every_day+persist | 14/26 / 15/26 | 0.538 [0.368, 0.706] | 0.577 [0.400, 0.750] | 2.85 | 2.56 | no / no / yes | no / no / yes | no / no |
+| risk_quantile_skewt_base+every_day+gate | 15/26 / 17/26 | 0.577 [0.407, 0.741] | 0.654 [0.467, 0.824] | 3.15 | 2.00 | no / no / yes | yes / no / yes | no / no |

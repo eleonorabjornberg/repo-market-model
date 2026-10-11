@@ -40,6 +40,27 @@ The text above is this rule; nothing in this section changes it.
 **Why it waits.** `tax_date` feeds the scorecaster, which is part of the frozen model. Changing the rule changes
 the model's inputs, so the change belongs to the next version and is not made here.
 
+## Draft: the tax-date window counts market days (#538; Eleonora's ruling of 10 October 2026, #521)
+
+**Drafted by the pull request that closes #538, for Eleonora to review. It is in force only once she has merged it.**
+Decided by Eleonora, 10 October 2026, on #521: the tax-date window counts market days, so DC Emancipation Day no
+longer pushes 16 April out of it.
+
+- **The rule.** The deadline stays on the DC rule (26 USC 7503), as in version 1. The two payment days after it are
+  the next two weekdays not in `metadata/market_holidays.json`, the same table `quarter_end` reads, and not the DC
+  holidays. The code is `data.tax_date_market_days`. It differs from version 1 only around 16 April: 16 April 2019
+  is in the window, and so are the same day in 2020, 2021, 2024, 2025 and 2026, with the window ending a day earlier
+  where the DC rule had pushed it out. A deadline moved by Emancipation Day (2018, 2022, 2023) and the window after
+  Juneteenth (2024) are as before, since the market was closed on Juneteenth.
+- **Why.** The cash drain after a tax deadline falls on days repo trades, and repo trades on Emancipation Day.
+  2019-04-16 was a pressure day that the risk-date passers could not flag at any horizon, because `tax_date` read 0.
+- **What stays as it was.** The published panel keeps version 1's `tax_date` and its digest until a publish pull
+  request rebuilds it, because the column is in the panel the published records are scored on. The announced
+  postponements part of her intended rule above is not part of this change.
+- **What the change moves.** `scripts/tax_date_market_days.py` builds and scores with the market-day column for one
+  run; the declared panel and the 11 panel days that differ are in `metadata/tax_date_market_days.json`. The
+  re-score is in `docs/pivot/evidence/tax-date-market-days/`.
+
 ## Why a countdown and not a signed distance
 
 The first design measured a signed distance to the *nearer* month boundary, clipped at five days. It
