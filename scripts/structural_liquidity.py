@@ -10,10 +10,11 @@ on for these runs only. No rule, threshold, onset definition or availability tim
     PYTHONPATH=src python3 scripts/pressure_v1_1.py panel --output AUG.csv
     PYTHONPATH=src python3 scripts/measurement_fields.py panel --panel AUG.csv --output AUG2.csv
     PYTHONPATH=src python3 scripts/net_settlement.py panel --panel AUG2.csv --output AUG3.csv
+    PYTHONPATH=src python3 scripts/projected_reserves.py panel --panel AUG3.csv --output AUG4.csv
     PYTHONPATH=src python3 scripts/pressure_judge.py forecasts --panel PUBLISHED.csv --horizon H --published --output OUT/bench_hH.json
     PYTHONPATH=src python3 scripts/risk_date_severity.py run --panel AUG2.csv --published PUBLISHED.csv --horizon H --output OUT/risk_hH.json
     PYTHONPATH=src python3 scripts/pressure_track_q.py forecasts --panel PUBLISHED.csv --horizon H --output OUT/q_hH.json --distribution OUT/qdist_hH.json
-    PYTHONPATH=src python3 scripts/structural_liquidity.py run --panel AUG3.csv --published PUBLISHED.csv \\
+    PYTHONPATH=src python3 scripts/structural_liquidity.py run --panel AUG4.csv --published PUBLISHED.csv \\
         --risk OUT/risk_hH.json --horizon H --output OUT/sl_hH.json
     PYTHONPATH=src python3 scripts/structural_liquidity.py score --panel PUBLISHED.csv --bench 'OUT/bench_h{h}.json' \\
         --risk 'OUT/risk_h{h}.json' --ngboost 'OUT/q_h{h}.json' --row 'OUT/sl_h{h}.json' --output OUT/sl.json --markdown OUT/sl.md
@@ -78,7 +79,7 @@ def combine(parent: Dict[str, Dict[str, float]], structural: Dict[str, Dict[str,
 
 def run_command(args) -> int:
     jr = _script("judge_readings")
-    ns_script = _script("net_settlement")
+    pr_script = _script("projected_reserves")  # the one-day-ahead announced net settlement is its column (#568)
     declared = jr.committed_declaration(DECLARATION)
     judge_script = _script("pressure_judge")
     judge_commit = judge_script.require_committed_declaration(pj.DEFAULT_DECLARATION)
@@ -94,7 +95,7 @@ def run_command(args) -> int:
     registry = measurement_fields.load_registry()
     features = sl.features_at_horizon(h)
     predictor = sl.structural_exceedance(features, splits, minimum_history=scoring["minimum_history"])
-    with ns_script.switched_on():
+    with pr_script.switched_on():
         report = rolling_exceedance_backtest(
             rows, predictor=predictor, model_name=declared["rows"][0], features=features, registry=registry,
             decision_time=time.fromisoformat(scoring["decision_time"]), taus=tuple(float(t) for t in declared["thresholds_bp"]),

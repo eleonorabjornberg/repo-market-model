@@ -1276,5 +1276,68 @@ class InputTests(unittest.TestCase):
             )
 
 
+class SummaryTableTests(unittest.TestCase):
+    """Table 1 prints the false-alarm count tier 1 is decided on, and labels both counts (#577)."""
+
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "pressure_judge_table_script", Path(__file__).parents[1] / "scripts" / "pressure_judge.py"
+        )
+        cls.script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.script)
+
+    @staticmethod
+    def result(flat, weighted, applied):
+        near = {
+            "onsets": 26, "onsets_flagged": 20, "climatology_recall": 0.5, "worst_false_alarms_per_onset": flat,
+            "recall": {"mean": 0.77, "interval": {"lower": 0.6, "upper": 0.9}},
+        }
+        if weighted is not None:
+            near.update(worst_weighted_false_alarms_per_onset=weighted, weighted_miss_applied=applied)
+        candidate = {
+            "tiers": {
+                "onset_warning": {"lead_at_least_1": near},
+                "no_crying_wolf": {"1": {"abundant_stretches": {"scarcity_state_0": {"flags_per_year": 3.0}}, "calibrated_by_regime": {"a": True}}},
+                "week_ahead": {},
+            },
+            "verdict": {
+                "passes": False, "tier_1_onset_warning": False, "tier_3_no_crying_wolf": True, "tier_5_week_ahead": True,
+                "scarce_regime": {"unavailable": "x"},
+            },
+            "horizons": {},
+        }
+        return {
+            "declaration": {
+                "primary_threshold_bp": 5.0,
+                "tiers": {
+                    "onset_warning": {"lead_at_least": 1},
+                    "no_crying_wolf": {"abundant_scarcity_state": 0, "abundant_regime": "2021-23"},
+                },
+            },
+            "candidates": {"model": candidate},
+        }
+
+    def test_the_weighted_count_is_printed_and_marked_as_the_one_tier_1_is_decided_on(self):
+        text = self.script.summary_tables(self.result(5.10, 3.42, True))
+        self.assertIn("flat count", text)
+        self.assertIn("weighted count", text)
+        row = [line for line in text.splitlines() if line.startswith("| model |") and "5.10" in line][0]
+        self.assertIn("5.10 flat", row)
+        self.assertIn("3.42 weighted", row)
+        self.assertIn("tier 1 on the weighted count", row)
+
+    def test_under_the_flat_rule_the_flat_count_is_the_one_marked(self):
+        text = self.script.summary_tables(self.result(5.10, 3.42, False))
+        row = [line for line in text.splitlines() if "5.10" in line and line.startswith("| model |")][0]
+        self.assertIn("tier 1 on the flat count", row)
+
+    def test_a_judge_run_with_no_weighted_rule_prints_the_flat_count_alone(self):
+        text = self.script.summary_tables(self.result(5.10, None, False))
+        row = [line for line in text.splitlines() if "5.10" in line and line.startswith("| model |")][0]
+        self.assertIn("5.10 flat", row)
+        self.assertNotIn("weighted", row)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -8,6 +8,8 @@ decision, placed on the SR 1019 demand curve, and fed to a logistic. What is cov
   reserves, and the distance and change columns are the declared percentage points of bank assets.
 * `TaxRuleTests` -- an expected tax receipt is the previous year's rise on the same position of the
   same month's window, less that day's settlement, floored at zero, and nothing off a tax date.
+* `WeekAverageTests` -- the average of a daily series over the Thursday-to-Wednesday week, weekends and
+  holidays carrying the last business day's value, and nothing read after the Wednesday (#574).
 * `AheadColumnTests` -- the announced net settlement of the next k business days counts an auction
   only from its announcement.
 * `BuildTests` -- the columns on a panel read through the as-of rule: the reserve level is the
@@ -32,6 +34,10 @@ killing test run alone, each confirmed applied by `grep` and restored before the
    by `ns.net_for_day(by_day.get(day, ()), datetime.max)`. An auction announced after the instant is
    counted; `AheadColumnTests.test_an_auction_counts_only_from_its_announcement` fails with
    `AssertionError: 30.0 != 0.0` (the figure as announced at the instant).
+3. `week_average` (#574): replace `level = [row for row in rows if row.date <= day]` by
+   `level = [row for row in rows]`. A row after the observation day then sets the level of every day;
+   `WeekAverageTests.test_a_row_after_the_observation_day_is_not_read` fails with
+   `AssertionError: 9999.0 != 27.142857142857142` (the three other `WeekAverageTests` fail too).
 """
 
 from __future__ import annotations
@@ -110,6 +116,34 @@ class TaxRuleTests(unittest.TestCase):
 
     def test_no_row_a_year_earlier_is_no_receipt(self):
         self.assertEqual(pr.expected_tax(corporate_tax_deadline(2023, 4), {}), 0.0)
+
+
+class WeekAverageTests(unittest.TestCase):
+    """`week_average`: the calendar-day average of a daily series over the Thursday-to-Wednesday week (#574)."""
+
+    def rows(self, values):
+        # Thu 2023-01-05, Fri 06, Mon 09, Tue 10, Wed 11
+        days = [date(2023, 1, 5), date(2023, 1, 6), date(2023, 1, 9), date(2023, 1, 10), date(2023, 1, 11)]
+        return [DailyObservation(d, {"x": v}) for d, v in zip(days, values)]
+
+    def test_a_value_is_held_over_the_weekend_and_each_day_counts_once(self):
+        # Thu 10, Fri 20 held Fri/Sat/Sun, Mon 30, Tue 40, Wed 50: (10 + 3*20 + 30 + 40 + 50) / 7
+        rows = self.rows([10.0, 20.0, 30.0, 40.0, 50.0])
+        self.assertAlmostEqual(pr.week_average(rows, date(2023, 1, 11), "x"), (10 + 60 + 30 + 40 + 50) / 7)
+
+    def test_a_row_after_the_observation_day_is_not_read(self):
+        rows = self.rows([10.0, 20.0, 30.0, 40.0, 50.0]) + [DailyObservation(date(2023, 1, 12), {"x": 9999.0})]
+        self.assertAlmostEqual(pr.week_average(rows, date(2023, 1, 11), "x"), (10 + 60 + 30 + 40 + 50) / 7)
+
+    def test_a_holiday_carries_the_earlier_value(self):
+        # no row on Mon 09 (a holiday): Fri's value is held through Mon as well
+        rows = [r for r in self.rows([10.0, 20.0, 30.0, 40.0, 50.0]) if r.date != date(2023, 1, 9)]
+        self.assertAlmostEqual(pr.week_average(rows, date(2023, 1, 11), "x"), (10 + 4 * 20 + 40 + 50) / 7)
+
+    def test_a_missing_value_in_the_week_is_refused(self):
+        rows = self.rows([10.0, None, 30.0, 40.0, 50.0])
+        with self.assertRaises(ValueError):
+            pr.week_average(rows, date(2023, 1, 11), "x")
 
 
 def _auction(settles, offering, maturing, announced, kind="Note"):
@@ -208,8 +242,11 @@ class BuildTests(_Measured):
         self.assertIsNotNone(row["proj_reserves_h1"])
         wednesday = self.rows[read["reserve_balances"]].date
         wednesday -= timedelta(days=(wednesday.weekday() - 2) % 7)
-        tga_then = [r for r in self.rows if r.date <= wednesday][-1].values["tga_daily"]
-        rrp_then = [r for r in self.rows if r.date <= wednesday][-1].values["on_rrp"]
+        # #574: reserve_balances is the Thursday-to-Wednesday average, so the Treasury account and the facility are
+        # measured from their own averages over that week, not from their Wednesday levels
+        tga_then = pr.week_average(self.rows, wednesday, "tga_daily")
+        rrp_then = pr.week_average(self.rows, wednesday, "on_rrp")
+        self.assertNotAlmostEqual(tga_then, [r for r in self.rows if r.date <= wednesday][-1].values["tga_daily"])
         gap = sum(r.values["net_settlement"] for r in self.rows[read["tga_daily"] + 1: 101])
         expected = pr.roll_forward(
             start,

@@ -17,7 +17,7 @@
     "sofr_p75_iorb_bps",
     "sofr_p99_iorb_bps",
     "bank_total_assets",
-    "net_settlement",
+    "net_settlement_ahead_1d",
     "sofr_p1",
     "sofr_p25",
     "sofr_p75",
@@ -27,7 +27,7 @@
     "effr",
     "iorb"
   ],
-  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads net_settlement_due_5d in place of net_settlement and proj_dist_h{h} for the horizon h",
+  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads net_settlement_due_5d in place of net_settlement_ahead_1d and proj_dist_h{h} for the horizon h",
   "calibration": "the passer's forecast on a risk date, unchanged; on any other day the ordinary-day logistic on factor, structural (the projected block dropped), platt-calibrated walk-forward, then the 'gate' false-alarm control of #532; the passer scored with settlements dated from the announcement and the H.4.1 read per release; metadata/combined_model_561.json",
   "parent": "risk_gbm+settle+h41"
 }

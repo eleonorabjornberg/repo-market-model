@@ -15,8 +15,8 @@ a logistic of the expected spread move. Its terms, all public at the decision in
   `e = exp(-(reserves / bank_total_assets - SATIATION) / LENGTH)`. It is 1 at satiation
   (`scarcity.SATIATION_BAND`, the lower end), flat-ish above and steep below. Neither constant is
   fitted;
-* the **drain**: the announced net Treasury cash settlement (`net_settlement` at horizon 1,
-  `net_settlement_due_5d` beyond, where the scored day's own settlement is not yet public), less the
+* the **drain**: the announced net Treasury cash settlement (`net_settlement_ahead_1d`, the scored day's own
+  settlement as announced by the decision instant, at horizon 1; `net_settlement_due_5d` beyond), less the
   ON RRP balance, which absorbs it before reserves do: `shortfall = max(0, max(0, net) - on_rrp)`;
   the TGA's rise over the last five rows; the tax date, whose inflow raises the TGA; and the
   quarter-end and month-end window (balance-sheet window-dressing);
@@ -70,7 +70,10 @@ COLUMN_NAMES = ("spread_bps", "e_x_shortfall", "e_x_tga_up", "e_x_tax_date", "e_
 
 _CALENDAR = ("days_to_month_end", "quarter_end", "tax_date")
 _BASE = ("spread_bps",) + _CALENDAR + ("reserve_balances", "bank_total_assets", "on_rrp", "tga")
-_DRAIN_COLUMNS = ("net_settlement", "net_settlement_due_5d")
+#: The drain column at horizon 1 and beyond. At horizon 1 the scored day is the row after the decision row, so its
+#: own settlement is the net announced for the next business day by the decision row's instant
+#: (`projected_reserves.AHEAD_COLUMNS[0]`), not `net_settlement`, which is the decision day's own (#568).
+_DRAIN_COLUMNS = ("net_settlement_ahead_1d", "net_settlement_due_5d")
 _EPSILON = 1e-6
 
 
@@ -87,7 +90,7 @@ def shortfall(net_settlement_bn: float, on_rrp_bn: float) -> float:
 
 
 def features_at_horizon(horizon: int) -> Tuple[str, ...]:
-    """The declared features at `horizon`: the scored day's own settlement exists only at horizon 1."""
+    """The declared features at `horizon`: the scored day's own announced settlement alone at horizon 1 (#568)."""
 
     if horizon < 1:
         raise ValueError(f"horizon must be positive, got {horizon}")

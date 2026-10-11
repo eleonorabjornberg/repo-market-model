@@ -8,7 +8,7 @@ it is built from Fiscal Data auction records, each figure read at its announceme
 * the **offering** (`offering_amt`), the announced public offering;
 * the **maturing amount** (`est_pub_held_mat_by_type_amt`), the announced estimate of
   the publicly held securities of that type maturing on the settlement date, one
-  figure for every auction of a security type settling that day;
+  figure for every auction of a class (bill types, coupon types) settling that day;
 * the **SOMA add-on** (`soma_accepted`), an auction result. The Federal Reserve rolls
   its maturing holdings into add-ons the publicly held estimate excludes, so the
   SOMA leg cancels and is not in the net. It is carried and reconciled, not read.
@@ -206,23 +206,26 @@ def known_auctions(auctions: Sequence[Auction], instant: datetime) -> List[Aucti
 def net_for_day(auctions: Sequence[Auction], instant: datetime) -> Tuple[float, float, int]:
     """`(net, net of the bill types, groups with no maturing figure)` of one settlement day's auctions.
 
-    The auctions announced by `instant` are grouped by security type. A group's net is
-    its summed offerings less its maturing amount, which is the largest figure any of
-    its announced auctions carries, and 0.0 when none carries one (counted).
+    The auctions announced by `instant` are grouped into the bill types and the coupon
+    types (#566). A group's net is its summed offerings less its maturing amount, which
+    is the largest figure any of its announced auctions carries, and 0.0 when none
+    carries one (counted). The maturing figure is one total for every security of the
+    class maturing that day, repeated on each of its records, so Notes and Bonds
+    settling together subtract it once.
     """
 
-    groups: Dict[str, List[Auction]] = {}
+    groups: Dict[bool, List[Auction]] = {}
     for auction in known_auctions(auctions, instant):
-        groups.setdefault(auction.kind, []).append(auction)
+        groups.setdefault(auction.is_bill, []).append(auction)
     net = bills = 0.0
     unknown = 0
-    for members in groups.values():
+    for is_bill, members in groups.items():
         figures = [a.maturing for a in members if a.maturing is not None]
         maturing = max(figures) if figures else 0.0
         unknown += not figures
         value = sum(a.offering for a in members) - maturing
         net += value
-        if members[0].is_bill:
+        if is_bill:
             bills += value
     return net, bills, unknown
 

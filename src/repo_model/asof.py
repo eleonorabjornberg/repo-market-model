@@ -563,6 +563,31 @@ class InformationRule:
         deadline = self.decision_instant(dates, scored_index)
         return self._latest(dates, self._target_fields(), scored_index, deadline)
 
+    def served_lead(self, dates: Optional[Sequence[date]] = None) -> int:
+        """The panel rows from the anchor to the scored day: what a model carrying a state from the anchor must step.
+
+        `horizon` plus the rows the target lags (one under the tracked declarations), so the anchor is
+        `horizon + 1` rows before the scored day, not `horizon` (#575, the same lag as #449). Read off the
+        rule over `dates`, by default a run of weekdays with no market holiday, and the same for every scored
+        day in it.
+
+        Raises:
+            ValueError: the lead is not the same on every scored day of `dates`, so no single step count
+                serves the forecast.
+        """
+
+        if dates is None:
+            dates = [date(2026, 4, 6) + timedelta(days=7 * (n // 5) + n % 5) for n in range(30)]
+        leads = {
+            index - self.anchor(dates, index) for index in range(self.horizon + 10, len(dates))
+        }
+        if len(leads) != 1:
+            raise ValueError(
+                f"the target's lead to the scored day is {sorted(leads)} rows, depending on the day; "
+                f"a state carried from the anchor has no single number of steps"
+            )
+        return leads.pop()
+
     # -- reads ------------------------------------------------------------
 
     def _observation_available(

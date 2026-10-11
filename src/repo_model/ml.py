@@ -9557,7 +9557,7 @@ def latent_factor_exceedance(
     """Pressure probabilities from a latent funding-stress factor (#543).
 
     Fitted on each refit block's training frame, filtered forward through each forecast's own as-of
-    history, carried `information.horizon` rows ahead. How the carried factor becomes a probability of
+    history, carried `information.served_lead()` rows ahead (the anchor to the scored day, `horizon + 1`). How the carried factor becomes a probability of
     `spread > tau` (the spread read on whole basis points, so the point is `tau + 1/2`) is the `link`:
 
     * `"gaussian"`: the spread is mapped to the filtered factor by an OLS over the training days, and
@@ -9566,7 +9566,7 @@ def latent_factor_exceedance(
       mapping that does not rise with the factor (slope at or below `mapping_slope_floor_bp`) gives the
       training rate of `spread > tau` instead, and the fit says so (`fallback`).
     * `"logit"`: a ridge logistic (`PRESSURE_LOGISTIC_SETTINGS`) of `spread > tau` on the carried factor
-      mean, fitted on the training days whose factor was carried `information.horizon` rows to a label
+      mean, fitted on the training days whose factor was carried `information.served_lead()` rows to a label
       inside the frame, one fit per threshold. Calibration is by construction, not by the factor's law.
 
     Raises:
@@ -9610,6 +9610,9 @@ def latent_factor_exceedance(
                 f"a latent-factor model needs at least {minimum_history} training "
                 f"rows, got {len(train_rows)}"
             )
+        # The anchor is `horizon + 1` rows before the scored day under the tracked declarations (#575): carry the
+        # factor that many steps, the lead the forecast is served at, not `information.horizon`.
+        steps = information.served_lead()
         training = [observed(row) for row in train_rows]
         fitted = fit_latent_factor(training)
         filtered = filter_latent_factor(fitted, training)
@@ -9642,7 +9645,7 @@ def latent_factor_exceedance(
                 carried.append(None)
                 continue
             now_mean, now_var = filter_latent_factor(fitted, [observed(row) for row in history])[-1]
-            ahead_mean, ahead_var = latent_factor_forecast(fitted, now_mean, now_var, information.horizon)
+            ahead_mean, ahead_var = latent_factor_forecast(fitted, now_mean, now_var, steps)
             carried.append((now_mean, ahead_mean, ahead_var))
         logit_pairs = 0
         if link == "gaussian":
@@ -9658,7 +9661,6 @@ def latent_factor_exceedance(
                     tuple(min(1.0, max(0.0, _normal_tail(location, scale, float(tau) + 0.5))) for tau in taus)
                 )
         else:
-            steps = information.horizon
             carry = fitted.persistence ** steps
             xs, labelled = [], []
             for k in range(len(train_rows) - steps):
@@ -9689,6 +9691,7 @@ def latent_factor_exceedance(
                     curve.append(value if not curve else min(curve[-1], value))
                 curves.append(tuple(curve))
         factor_means = [None if item is None else item[0] for item in carried]
+        carried_means = [None if item is None else item[1] for item in carried]
         read = ("spread_bps",) + LATENT_FACTOR_COLUMNS
         report = dict(settings)
         report.update(
@@ -9703,6 +9706,8 @@ def latent_factor_exceedance(
                 "mapping_residual_variance": residual_var,
                 "logit_training_pairs": logit_pairs,
                 "filtered_factor": factor_means,
+                "served_steps": steps,
+                "carried_factor_mean": carried_means,
                 "em_iterations": fitted.iterations,
                 "log_likelihood": fitted.log_likelihood,
             }

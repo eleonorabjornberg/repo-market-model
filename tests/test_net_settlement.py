@@ -147,6 +147,27 @@ class AnnouncementTests(unittest.TestCase):
         self.assertAlmostEqual(values["net_settlement"], (50 - 40) + (60 - 25))
         self.assertAlmostEqual(values["net_settlement_bills"], 50 - 40)
 
+    def test_notes_and_bonds_settling_together_share_one_maturing_figure(self):
+        # #566: est_pub_held_mat_by_type_amt is one total for every coupon security maturing that day, repeated on
+        # each coupon record; Notes and Bonds of one settlement day are one group and subtract it once.
+        records = [
+            record(kind="Note", offering=60e9, maturing="25000000000", term="2-Year"),
+            record(kind="Note", offering=70e9, maturing="25000000000", term="5-Year"),
+            record(kind="Bond", offering=20e9, maturing="25000000000", term="19-Year 10-Month"),
+        ]
+        values = self.columns(records)
+        self.assertAlmostEqual(values["net_settlement"], 60.0 + 70.0 + 20.0 - 25.0)
+        self.assertAlmostEqual(values["net_settlement_bills"], 0.0)
+
+    def test_a_bill_and_a_cash_management_bill_settling_together_share_the_bill_figure(self):
+        records = [
+            record(offering=50e9, maturing="40000000000"),
+            record(kind="CMB", offering=30e9, maturing="null", cmb="Yes", term="6-Week"),
+        ]
+        values = self.columns(records)
+        self.assertAlmostEqual(values["net_settlement"], 50.0 + 30.0 - 40.0)
+        self.assertAlmostEqual(values["net_settlement_bills"], 50.0 + 30.0 - 40.0)
+
     def test_a_group_with_no_maturing_figure_reads_zero_maturing(self):
         values = self.columns([record(offering=30e9, maturing="null", kind="CMB", cmb="Yes")])
         self.assertAlmostEqual(values["net_settlement"], 30.0)
