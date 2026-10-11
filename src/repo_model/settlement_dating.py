@@ -1,4 +1,4 @@
-"""A Treasury settlement dated from its auction result (#175), measured and off.
+"""A Treasury settlement dated from its auction result (#175) or its announcement (#541), measured and off.
 
 `metadata/sources.json` declares a settlement public one panel business day
 before it settles (`treasury_auctions`, `scheduled_availability`), so at a
@@ -21,6 +21,14 @@ result was not yet public raises `LookAheadError`; one that leaves out an
 auction whose result was public raises `StaleReadError`. The published panel's
 own columns pass it at `h = 1` and are refused at `h = 2`.
 
+`metadata/settlement_announcement_dating.json` (#541, Eleonora's ruling of 10 October 2026) declares
+the second basis, `auction_announcement`: an auction's settlement date and offering amount are public from
+its announcement, at the declared instant on its `announcemt_date`. Everything above applies unchanged
+with "announced" for "result": a column that counts an auction not yet announced raises
+`LookAheadError`, one that leaves out an announced auction raises `StaleReadError`. The announcement
+carries no closing-time guard (it precedes the auction); a record announced after its auction or its
+settlement is refused instead. Neither declaration is read by a published record.
+
 Stdlib only, like the rest of `src/` outside `ml.py`.
 """
 
@@ -39,7 +47,9 @@ from .splits import LookAheadError
 
 __all__ = [
     "AGGREGATE",
+    "ANNOUNCEMENT",
     "AuctionResult",
+    "RESULT",
     "COLUMNS",
     "auction_results",
     "check_known_columns",
@@ -62,16 +72,21 @@ WITHHELD = "null"
 #: How far two sums of the same amounts may differ by summation order alone.
 TOLERANCE = 1e-9
 
+#: The two bases a declaration may carry, and the keys each reads besides the common ones.
+RESULT = "auction_result"
+ANNOUNCEMENT = "auction_announcement"
+_COMMON = {"source", "basis", "columns", "available_time", "timezone", "rule", "missing", "evidence"}
 _REQUIRED = {
-    "source", "basis", "columns", "result_date_field", "result_held_field",
-    "available_time", "timezone", "rule", "missing", "evidence",
+    RESULT: _COMMON | {"result_date_field", "result_held_field"},
+    ANNOUNCEMENT: _COMMON | {"announcement_date_field"},
 }
 
 
 class AuctionResult(NamedTuple):
     """One auction: the day it settles, its leg, its offering, and when its result was public.
 
-    `public_at` is `None` when the snapshot carries no result for it.
+    `public_at` is `None` when the snapshot carries no result for it (a result-dated declaration;
+    an announcement-dated one always has an instant).
     """
 
     settles: date
@@ -89,11 +104,12 @@ def load_result_dating(path: Path) -> dict:
     """
 
     declaration = json.loads(Path(path).read_text(encoding="utf-8"))
-    missing = sorted(_REQUIRED - set(declaration))
+    basis = declaration.get("basis")
+    if basis not in _REQUIRED:
+        raise ValueError(f"{path}: basis must be one of {sorted(_REQUIRED)}, got {basis!r}")
+    missing = sorted(_REQUIRED[basis] - set(declaration))
     if missing:
-        raise ValueError(f"{path}: the settlement result dating declaration lacks {missing}")
-    if declaration["basis"] != "auction_result":
-        raise ValueError(f"{path}: basis must be 'auction_result', got {declaration['basis']!r}")
+        raise ValueError(f"{path}: the settlement dating declaration lacks {missing}")
     if tuple(declaration["columns"]) != COLUMNS:
         raise ValueError(f"{path}: columns must be {list(COLUMNS)}, got {list(declaration['columns'])}")
     time.fromisoformat(declaration["available_time"])
@@ -113,43 +129,61 @@ def auction_results(
 ) -> Tuple[AuctionResult, ...]:
     """Each Fiscal Data auction record as an `AuctionResult`, in record order.
 
+    Under a result-dated declaration `public_at` is the declared instant on the
+    auction date, and `None` for an auction with no result on file. Under an
+    announcement-dated one it is the declared instant on the announcement date,
+    for every record.
+
     Raises:
         ValueError: a record lacks a field read here, has a security type in
-            neither declared set, or closed for competitive bids after the
-            declared instant, which would date its result before the auction
-            ended.
+            neither declared set, closed for competitive bids after the
+            declared result instant (which would date its result before the
+            auction ended), or was announced after its auction or its
+            settlement (which would date it from after it happened).
     """
 
     moment = _instant(declaration)
-    date_field = str(declaration["result_date_field"])
-    held_field = str(declaration["result_held_field"])
+    announced_basis = declaration["basis"] == ANNOUNCEMENT
+    date_field = str(declaration["announcement_date_field" if announced_basis else "result_date_field"])
+    held_field = None if announced_basis else str(declaration["result_held_field"])
     out = []
     for number, record in enumerate(records, start=1):
         try:
             settles = date.fromisoformat(str(record["issue_date"]))
-            auctioned = date.fromisoformat(str(record[date_field]))
+            dated = date.fromisoformat(str(record[date_field]))
             kind = str(record["security_type"])
             amount = float(str(record["offering_amt"]).replace(",", "")) / 1_000_000_000
-            held = str(record[held_field]) != WITHHELD
-            closing = str(record["closing_time_comp"])
+            if announced_basis:
+                held, closing = True, WITHHELD
+                held_on = date.fromisoformat(str(record["auction_date"]))
+            else:
+                held, closing = str(record[held_field]) != WITHHELD, str(record["closing_time_comp"])
+                held_on = dated
         except (KeyError, ValueError) as exc:
-            raise ValueError(
-                f"auction record {number} lacks issue_date, {date_field}, security_type, "
-                f"offering_amt, {held_field} or closing_time_comp"
-            ) from exc
+            needs = (
+                f"issue_date, auction_date, {date_field}, security_type or offering_amt"
+                if announced_basis
+                else f"issue_date, {date_field}, security_type, offering_amt, {held_field} or closing_time_comp"
+            )
+            raise ValueError(f"auction record {number} lacks {needs}") from exc
         if kind in TREASURY_BILL_SECURITY_TYPES:
             column = "treasury_settlement_bills"
         elif kind in TREASURY_COUPON_SECURITY_TYPES:
             column = "treasury_settlement_coupons"
         else:
             raise ValueError(f"auction record {number} has security_type {kind!r}, in neither declared set")
-        if held and closing != WITHHELD and _closing(closing) > moment:
+        if announced_basis and (dated > held_on or dated > settles):
             raise ValueError(
-                f"auction record {number} ({auctioned}) closed at {closing}, after the declared "
+                f"auction record {number} was announced on {dated}, after its auction ({held_on}) or "
+                f"its settlement ({settles}); the declaration would date it from after it happened"
+            )
+        if not announced_basis and held and closing != WITHHELD and _closing(closing) > moment:
+            raise ValueError(
+                f"auction record {number} ({dated}) closed at {closing}, after the declared "
                 f"result instant {moment.strftime('%H:%M')}; the declaration would date its result "
                 f"before the auction ended"
             )
-        public_at = datetime.combine(auctioned, moment) if held else None
+        public_at = datetime.combine(dated, moment) if held else None
         out.append(AuctionResult(settles, column, amount, public_at))
     return tuple(out)
 
@@ -276,7 +310,7 @@ def result_dated_registry(
     declaration: Mapping[str, object],
     horizon: int,
 ) -> dict:
-    """A copy of `registry` declaring the result-dated columns public `horizon` days ahead.
+    """A copy of `registry` declaring the dated columns public `horizon` days ahead.
 
     The `treasury_auctions` scheduled block keeps its fields, instant and
     timezone; its `days` becomes `horizon`, and its evidence names this
@@ -290,19 +324,25 @@ def result_dated_registry(
     out = copy.deepcopy(dict(registry))
     source = str(declaration["source"])
     block = dict(out[source][SCHEDULED_AVAILABILITY_KEY])
-    if block["available_time"] != declaration["available_time"] or block["timezone"] != declaration["timezone"]:
+    announced = declaration["basis"] == ANNOUNCEMENT
+    if block["timezone"] != declaration["timezone"] or (
+        not announced and block["available_time"] != declaration["available_time"]
+    ):
         raise ValueError(
-            f"the result-dating instant {declaration['available_time']} {declaration['timezone']} is not "
+            f"the settlement dating instant {declaration['available_time']} {declaration['timezone']} is not "
             f"the published block's {block['available_time']} {block['timezone']}"
         )
     block["days"] = horizon
+    block["available_time"] = str(declaration["available_time"])
+    what = "announced" if announced else "whose results were public"
+    where = "metadata/settlement_announcement_dating.json (#541)" if announced else "metadata/settlement_result_dating.json (#175)"
     block["evidence"] = (
-        f"metadata/settlement_result_dating.json (#175), at horizon {horizon}: each column is the "
-        f"sum of the auctions whose results were public at {declaration['available_time']} on the "
+        f"{where}, at horizon {horizon}: each column is the "
+        f"sum of the auctions {what} by {declaration['available_time']} on the "
         f"decision day, made by settlement_dating.known_columns and checked by "
         f"settlement_dating.check_known_columns. " + str(declaration["evidence"])
     )
-    block["note"] = "A measurement variant, read by no published record (#175)."
+    block["note"] = f"A measurement variant, read by no published record ({where.split('(')[1]}"
     out[source] = dict(out[source])
     out[source][SCHEDULED_AVAILABILITY_KEY] = block
     return out

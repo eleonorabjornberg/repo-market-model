@@ -1,0 +1,205 @@
+{
+ "fetched": "11 October 2026, one plain GET of www.federalreserve.gov per row, by curl, in the run that closes #541; 'release' is the page's own 'Release Date:' line and 'week' the Wednesday its table covers. A 404 means the Board has no release page at that path. The page bytes are not tracked: they change between fetches (a rendered timestamp), so no checksum is recorded.",
+ "url_pattern": "https://www.federalreserve.gov/releases/h41/<path>/",
+ "pages": [
+  {
+   "path": "20181122",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20181123",
+   "http": 200,
+   "release_date": "2018-11-23",
+   "wednesday": "2018-11-21"
+  },
+  {
+   "path": "20190704",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20190705",
+   "http": 200,
+   "release_date": "2019-07-05",
+   "wednesday": "2019-07-03"
+  },
+  {
+   "path": "20191128",
+   "http": 200,
+   "release_date": "2019-11-29",
+   "wednesday": "2019-11-27"
+  },
+  {
+   "path": "20191129",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20201126",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20201127",
+   "http": 200,
+   "release_date": "2020-11-27",
+   "wednesday": "2020-11-25"
+  },
+  {
+   "path": "20201224",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20201228",
+   "http": 200,
+   "release_date": "2020-12-28",
+   "wednesday": "2020-12-23"
+  },
+  {
+   "path": "20211111",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20211112",
+   "http": 200,
+   "release_date": "2021-11-12",
+   "wednesday": "2021-11-10"
+  },
+  {
+   "path": "20211125",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20211126",
+   "http": 200,
+   "release_date": "2021-11-26",
+   "wednesday": "2021-11-24"
+  },
+  {
+   "path": "20221124",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20221125",
+   "http": 200,
+   "release_date": "2022-11-25",
+   "wednesday": "2022-11-23"
+  },
+  {
+   "path": "20231123",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20231124",
+   "http": 200,
+   "release_date": "2023-11-24",
+   "wednesday": "2023-11-22"
+  },
+  {
+   "path": "20240704",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20240705",
+   "http": 200,
+   "release_date": "2024-07-05",
+   "wednesday": "2024-07-03"
+  },
+  {
+   "path": "20241128",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20241129",
+   "http": 200,
+   "release_date": "2024-11-29",
+   "wednesday": "2024-11-27"
+  },
+  {
+   "path": "20250109",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20250110",
+   "http": 200,
+   "release_date": "2025-01-10",
+   "wednesday": "2025-01-08"
+  },
+  {
+   "path": "20250619",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20250620",
+   "http": 200,
+   "release_date": "2025-06-20",
+   "wednesday": "2025-06-18"
+  },
+  {
+   "path": "20251128",
+   "http": 200,
+   "release_date": "2025-11-28",
+   "wednesday": "2025-11-26"
+  },
+  {
+   "path": "20251225",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20251226",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20251229",
+   "http": 200,
+   "release_date": "2025-12-29",
+   "wednesday": "2025-12-24"
+  },
+  {
+   "path": "20251230",
+   "http": 404,
+   "release_date": null,
+   "wednesday": null
+  },
+  {
+   "path": "20181206",
+   "http": 200,
+   "release_date": "2018-12-06",
+   "wednesday": "2018-12-05"
+  },
+  {
+   "path": "20230831",
+   "http": 200,
+   "release_date": "2023-08-31",
+   "wednesday": "2023-08-30"
+  }
+ ],
+ "also": "20201228 and 20251128 were established earlier (docs/pivot/construction-gaps-result.md, tests/test_registry.py) and are re-fetched here."
+}

@@ -1,0 +1,38 @@
+{
+  "directive": "#541",
+  "status": "measured and off: no published declaration reads this file. metadata/sources.json (fred_macro_latest_vintage, field_release_lags: five calendar days at 16:30) stays the declaration every published record is scored under, because the final-test pre-registration freezes it by its bytes. Eleonora ruled on 10 October 2026 (relayed by the orchestrating session on #541) that the H.4.1 is read per release; turning it on in the published declaration is a later pull request, made once she has merged the amendment to docs/decisions/information-set.md that this pull request drafts.",
+  "source": "fred_macro_latest_vintage",
+  "fields": [
+    "WLRRAOL",
+    "WRESBAL",
+    "WTREGEN"
+  ],
+  "observation_weekday": "Wednesday",
+  "offset_days": 1,
+  "available_time": "16:30",
+  "timezone": "America/New_York",
+  "covers": {
+    "first_wednesday": "2018-03-28",
+    "last_wednesday": "2025-12-24"
+  },
+  "rule": "A Wednesday level of a listed field is public at the print of its release: the Thursday after the Wednesday (offset_days) at 16:30 New York time, or the date in exceptions when the Board moved the release. A panel row carries the latest Wednesday level on or before it (docs/decisions/weekly-carry.md), so a row's declared instant is the print of that Wednesday's release, whatever the row's own date. A forecast reads the latest row whose declared instant is at or before its decision instant, so a level printed on Thursday at 16:30 is read from Friday's decision and not from Thursday's. The five-calendar-day release_lag the published registry declares (days: 5 from the Wednesday, 16:30) is kept in the variant for the purge and is not the instant any read is dated by.",
+  "evidence": "The Board's own release pages, www.federalreserve.gov/releases/h41/<date>/, fetched on 11 October 2026 (one plain GET each, listed in docs/pivot/evidence/settlement-h41-dating/h41_release_pages.json; each page states its 'Release Date:' and the Wednesday it covers) for every week from 2018 to 2025 in which the nominal Thursday print falls on a federal holiday, on the day after one, or on a day the Board did not publish. In each of the fifteen weeks in exceptions the release was made on the later date given, and the page for the nominal Thursday either does not exist (404) or, for 28 November 2019 only, exists at the nominal path while stating the actual release date, 29 November. Ordinary weeks were spot-checked (6 December 2018 and 31 August 2023: released on the Thursday). The weeks in between were not each fetched: an unlisted week is assumed to print on its Thursday, so a week the Board moved for a reason this search did not look for would be missed (a limit stated in the pull request). The reason for a move is read from the calendar (a federal holiday), not from the Board, except where the Board's page shows only the move. The 16:30 instant is the registry's own (metadata/sources.json, fred_macro_latest_vintage.WRESBAL note: the H.4.1 is published Thursdays, generally at 16:30 New York time); the pages state a date and no clock time.",
+  "exceptions": {
+    "2018-11-21": "2018-11-23",
+    "2019-07-03": "2019-07-05",
+    "2019-11-27": "2019-11-29",
+    "2020-11-25": "2020-11-27",
+    "2020-12-23": "2020-12-28",
+    "2021-11-10": "2021-11-12",
+    "2021-11-24": "2021-11-26",
+    "2022-11-23": "2022-11-25",
+    "2023-11-22": "2023-11-24",
+    "2024-07-03": "2024-07-05",
+    "2024-11-27": "2024-11-29",
+    "2025-01-08": "2025-01-10",
+    "2025-06-18": "2025-06-20",
+    "2025-11-26": "2025-11-28",
+    "2025-12-24": "2025-12-29"
+  },
+  "evidence_file": "docs/pivot/evidence/settlement-h41-dating/h41_release_pages.json"
+}

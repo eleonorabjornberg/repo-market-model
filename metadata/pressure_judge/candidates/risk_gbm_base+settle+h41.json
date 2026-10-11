@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "G (#541)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+  ],
+  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons",
+  "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; scored under settlements dated from the auction announcement (metadata/settlement_announcement_dating.json), the settlement columns kept at every horizon and the coupon clause of the risk-date rule applied at h >= 2 and the H.4.1 weeklies read per release (metadata/h41_release_dating.json); metadata/announcement_dating.json",
+  "parent": "risk_gbm_base"
+}

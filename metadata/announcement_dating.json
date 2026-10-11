@@ -1,0 +1,66 @@
+{
+  "status": "declared by the pull request that closes #541 before any score was computed; a measurement, not a record. Nothing here is published: the settlement and H.4.1 declarations it reads are off in every published declaration, no 2026 day is scored, and the live record and pin do not move. The rulings are Eleonora's of 10 October 2026, relayed by the orchestrating session on #541",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "models": {
+    "risk_gbm": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_gbm_base": {
+      "kind": "gbm_classifier",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_logistic": {
+      "kind": "logistic",
+      "inputs": [
+        "base",
+        "new"
+      ]
+    },
+    "risk_logistic_base": {
+      "kind": "logistic",
+      "inputs": [
+        "base"
+      ]
+    },
+    "risk_quantile_skewt_base": {
+      "kind": "quantile_skewt",
+      "inputs": [
+        "base"
+      ]
+    }
+  },
+  "models_declaration": "metadata/risk_date_severity.json (unchanged: the risk dates, the features, the estimators); the gate row of each is the 'gate' control of metadata/risk_date_false_alarm_controls.json on the +every_day variant of metadata/risk_date_every_day.json (unchanged)",
+  "arms": {
+    "published": "the published registry and panel columns: the control of every pairing, re-run here by the same code as the other arms",
+    "settle": "metadata/settlement_announcement_dating.json: the settlement columns are those known h panel days ahead from the auction announcements (settlement_dating.known_columns, checked by check_known_columns) and the registry declares them public then (result_dated_registry)",
+    "h41": "metadata/h41_release_dating.json: reserve_balances, tga and reserve_scarcity_state's reserve read are dated by the print of their own Wednesday's release (h41_release.release_dated_registry)",
+    "both": "both of the above"
+  },
+  "features": "each model's features as declared, except that under settle and both the settlement columns stay in the features at every horizon (risk_date_severity.SETTLEMENT_COLUMNS are dropped at h >= 2 only under the published arm)",
+  "risk_dates": "a scored day whose pressure-day type is not ordinary, or whose treasury_settlement_coupons, as known at the horizon, is positive: at h = 1 under every arm, and at h >= 2 under settle and both (the coupon clause the announcement makes known); the published arm's rule is unchanged",
+  "judge": "the judge as declared (metadata/pressure_judge.json), unchanged, under the flat and the weighted rule; the benchmarks and the evaluation days, tiers and onsets do not depend on an arm",
+  "pairing": "each arm's model against the same model under the published arm, with 90% stationary-bootstrap intervals (the judge's bootstrap), split by regime and pressure-day type and by year",
+  "published": "nothing; no rule, threshold, definition or availability time changes in a published declaration"
+}

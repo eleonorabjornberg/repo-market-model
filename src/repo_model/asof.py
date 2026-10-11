@@ -99,6 +99,11 @@ TARGET_COLUMNS = tuple(DERIVED_FEATURES[TARGET])
 #: forecast-time declaration was added.
 SCHEDULED_AVAILABILITY_KEY = "scheduled_availability"
 
+#: A measurement-only source-level block dating a weekly field by its release's own instant
+#: (#541): `fields`, `offset_days`, `available_time` and `exceptions` (Wednesday -> actual release date).
+#: Absent from every published registry.
+RELEASE_CALENDAR_KEY = "release_calendar"
+
 _SCHEDULED_KEYS = {
     "basis",
     "unit",
@@ -213,6 +218,23 @@ def _scheduled_blocks(
     return found
 
 
+def release_instant(calendar: Mapping[str, object], row_date: date) -> datetime:
+    """The print of the release that first carries the weekly level `row_date` holds (#541).
+
+    A panel row carries the latest Wednesday level on or before it, so the instant is the same for
+    every row of a week: the Wednesday plus `offset_days` at `available_time`, or the date in
+    `exceptions` when the Board moved the release.
+    """
+
+    behind = (row_date.weekday() - WEEKLY_OBSERVATION_WEEKDAY) % 7
+    observed = row_date - timedelta(days=behind)
+    moved = (calendar.get("exceptions") or {}).get(observed.isoformat())
+    printed = (
+        date.fromisoformat(str(moved)) if moved else observed + timedelta(days=int(calendar["offset_days"]))
+    )
+    return datetime.combine(printed, time.fromisoformat(str(calendar["available_time"])))
+
+
 def declared_availability(
     registry: Mapping[str, Mapping[str, object]],
     source_id: str,
@@ -232,11 +254,17 @@ def declared_availability(
     whose announcement day precedes the panel is dated to the panel's first
     midnight, which is later than the truth and so the safe side.
 
+    A field the source lists in a `release_calendar` block (#541, measurement only) is dated by the
+    print of its own Wednesday's release (`release_instant`), whatever row carries the level.
+
     `baseline._declared_availability` is this function; the name there is kept
     for the callers and the audit script that mirror it.
     """
 
     source = registry[source_id]
+    calendar = source.get(RELEASE_CALENDAR_KEY)
+    if isinstance(calendar, Mapping) and field in (calendar.get("fields") or ()):
+        return release_instant(calendar, dates[position])
     scheduled = source.get(SCHEDULED_AVAILABILITY_KEY)
     if isinstance(scheduled, Mapping) and field in (scheduled.get("fields") or ()):
         moment = time.fromisoformat(str(scheduled["available_time"]))
@@ -581,6 +609,10 @@ class InformationRule:
         for source_id, field in fields:
             frequencies = self.registry[source_id].get("field_frequencies") or {}
             if frequencies.get(field) != "weekly":
+                return available
+            calendar = self.registry[source_id].get(RELEASE_CALENDAR_KEY)
+            if isinstance(calendar, Mapping) and field in (calendar.get("fields") or ()):
+                # Dated by the release of its own Wednesday: the row's instant is the observation's.
                 return available
             lag = (self.registry[source_id].get("field_release_lags") or {}).get(
                 field
