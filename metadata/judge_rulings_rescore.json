@@ -1,0 +1,28 @@
+{
+  "status": "declared by the pull request that closes #536 before any score; the rows and what is reported are fixed here and are not tuned on a scored day. The judge's amended rules are those of docs/decisions/judge-rulings-10-october.md (a draft for Eleonora); nothing is published into docs/runs/ and no 2026 day is read (docs/decisions/lockbox.md).",
+  "issue": 536,
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "primary_threshold_bp": 5,
+    "horizons": [1, 2, 3, 4, 5]
+  },
+  "rows": {
+    "risk_date_passers": ["risk_gbm", "risk_gbm_base", "risk_logistic", "risk_logistic_base", "risk_quantile_skewt_base"],
+    "best_recall_rows": ["two_part_gbm", "ngboost_laplace", "hierarchical_logistic", "settlement_quantile_timing", "scarcity_logistic_interactions", "scarcity_logistic"],
+    "gate_rows": ["risk_gbm+every_day+gate", "risk_gbm_base+every_day+gate", "risk_logistic+every_day+gate", "risk_logistic_base+every_day+gate", "risk_quantile_skewt_base+every_day+gate"],
+    "references": ["calendar_climatology", "persistence_logistic"],
+    "reading": "the rows of docs/pivot/judge-readings-result.md (#523: the five risk-date passers, the six best-recall rows of #461, among them ngboost_laplace, and the two benchmarks) and the +gate rows of docs/pivot/risk-date-false-alarm-controls-result.md (#534)"
+  },
+  "rules": ["weighted", "unweighted"],
+  "reported": [
+    "tier 1 at lead of at least 1, pooled: onsets warned, recall with its interval, false alarms per onset with each day flagged at any horizon counted once, flat and weighted, and the verdict",
+    "tier 1 at each lead alone: onsets warned and false alarms at that horizon, and the verdict",
+    "recall and false alarms per onset inside and outside 2018-19, with intervals where the onset count allows",
+    "the recall with equal weight per regime",
+    "tier 3 under the rule that tests calibration only in regimes with at least 20 pressure days, with the regimes tested and not tested and their pressure days",
+    "tier 5 and the full pass rule",
+    "a cross-check against readings (b) and (e) of docs/pivot/judge-readings-result.md: where the new rules coincide with them the figures must reproduce"
+  ],
+  "unchanged": "the thresholds, horizons, bootstrap (90%, stationary, the judge's seed), cut-off rule and its limit, the weights and bands of metadata/weighted_miss.json (the weighted rule stays as adopted, #514), tiers 2, 4 and 5."
+}
