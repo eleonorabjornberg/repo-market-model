@@ -42,6 +42,8 @@ from repo_model.splits import LookAheadError  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "every_day_separation_601.json"
 LEADS = (1, 2, 3, 4, 5)
+#: a cell with fewer onset warnings than this is reported and never called a separation
+MINIMUM_ONSET_WARNINGS = 5
 #: the columns a "days to the next risk date" count may read: the calendar columns, always known in advance
 CALENDAR_COLUMNS = tuple(DAY_TYPE_COLUMNS)
 
@@ -134,6 +136,16 @@ def declaration_document() -> dict:
             "resampling": "the two groups apart: onset warnings one by one (each is a separate episode), false alarms by the judge's stationary bootstrap over their date order, block length as the judge's",
         },
         "second_look": "the same comparison with the false alarms restricted to the calendar years that hold an onset warning, so a difference of year does not pass for a difference of days",
+        "minimum_onset_warnings": MINIMUM_ONSET_WARNINGS,
+        "minimum_rule": (
+            "a table cell with fewer onset warnings than this is reported and never called a separation. Added by amendment after the first run of the "
+            "comparison, which printed intervals for per-lead cells of one to four onset warnings: with one onset warning the interval carries the false alarms' "
+            "variability only. The rule can only turn a 'yes' into a 'no'; the declared separation, bootstrap and populations are unchanged"
+        ),
+        "step_2_trigger": (
+            "an input triggers step 2 if it separates in the pooled comparison (Table 1) and again in the same direction in the comparison with the false "
+            "alarms of the years that hold an onset warning (Table 2). Added by the same amendment, before any step 2 declaration"
+        ),
         "multiplicity": "the number of inputs examined is stated beside the result; at a 90% interval about one in ten inputs that do not separate would show an interval that excludes 0.5 by chance",
         "published": "nothing; no variant, input or setting joins any published declaration",
     }
@@ -330,8 +342,26 @@ def separation(onset: Sequence[Optional[float]], alarm: Sequence[Optional[float]
 
 
 def separates(result: Mapping) -> bool:
+    """The interval excludes 0.5, on at least the declared minimum of onset warnings (fewer are reported, never called a separation)."""
+
     interval = result.get("interval")
-    return interval is not None and (interval[0] > 0.5 or interval[1] < 0.5)
+    if interval is None or result.get("onset_n", MINIMUM_ONSET_WARNINGS) < MINIMUM_ONSET_WARNINGS:
+        return False
+    return interval[0] > 0.5 or interval[1] < 0.5
+
+
+def direction(result: Mapping) -> str:
+    return "higher" if result["interval"][0] > 0.5 else "lower"
+
+
+def triggering_inputs(pooled: Mapping[str, dict], same_years: Mapping[str, dict]) -> Dict[str, str]:
+    """The inputs that separate in the pooled comparison and again, in the same direction, with the false alarms of the onset years only."""
+
+    return {
+        name: direction(result)
+        for name, result in pooled.items()
+        if separates(result) and separates(same_years[name]) and direction(result) == direction(same_years[name])
+    }
 
 
 # -- the measurement ---------------------------------------------------------------------------------------
@@ -390,9 +420,9 @@ def read_units(units: Sequence[dict], rows, registry, last: date, horizons: Sequ
         dates = [row.date for row in timed_rows]
         in_window = [row for row in timed_rows if row.date <= last]
         day_types = [splits.day_type(row.values) for row in in_window]
-        rule = InformationRule(timed_registry, READ, decision_time=time(16, 0), horizon=h)
         out[h] = {}
         with sd.switched_on(), h41_release.release_dating():
+            rule = InformationRule(timed_registry, READ, decision_time=time(16, 0), horizon=h)
             for fold in _as_of_folds(
                 timed_rows, rule, minimum_history=61, refit_every=len(timed_rows), entry="every_day_separation_601", end=last
             ):
@@ -491,6 +521,7 @@ def run_command(args) -> int:
         "onset_warning_dates": [{"date": u["date"], "leads": u["every_day_leads"], "decision_lead": u["decision_lead"], "regime": u["regime"]} for u in warnings],
         "pooled": pooled,
         "same_years": second,
+        "triggering_inputs": triggering_inputs(pooled, second),
         "per_lead": per_lead,
         "units": warnings + alarms,
     }
@@ -504,11 +535,13 @@ def run_command(args) -> int:
 
 def markdown(document: Mapping) -> str:
     c = document["counts"]
+    triggers = document["triggering_inputs"]
     out = [
         f"Every-day part of `{document['row']}`: {c['onset_warnings']} onset warnings and {c['false_alarms']} false alarms "
         f"(left out and counted: {c['flagged_pressure_days_not_onsets']} flagged pressure days that are not onsets; "
         f"{c['onsets_warned_by_the_risk_date_part_only']} onsets warned by the risk-date part only; {c['risk_date_false_alarms']} false alarms of the risk-date part). "
         f"{document['inputs_examined']} inputs examined; at a 90% interval about one in ten that do not separate would show one that excludes 0.5 by chance.\n",
+        "Inputs that separate in Table 1 and again, in the same direction, in Table 2 (the trigger for step 2): " + (", ".join(f"`{n}` ({d})" for n, d in triggers.items()) if triggers else "none") + ".\n",
         "Onset warnings: " + "; ".join(f"{u['date']} (leads {u['leads']}, read at lead {u['decision_lead']})" for u in document["onset_warning_dates"]) + ".\n",
         table_markdown("Table 1. Pooled: each input at the decision instant of the farthest lead that flags the day.", document["pooled"]),
         table_markdown(

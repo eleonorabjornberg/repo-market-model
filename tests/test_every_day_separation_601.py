@@ -147,6 +147,30 @@ class SeparationTests(unittest.TestCase):
         self.assertFalse(SCRIPT.separates({"interval": None}))
 
 
+class MinimumTests(unittest.TestCase):
+    def test_a_cell_with_fewer_than_the_declared_minimum_of_onset_warnings_never_separates(self):
+        self.assertEqual(DECLARED["minimum_onset_warnings"], SCRIPT.MINIMUM_ONSET_WARNINGS)
+        few = {"interval": (0.01, 0.07), "onset_n": SCRIPT.MINIMUM_ONSET_WARNINGS - 1}
+        enough = {"interval": (0.01, 0.07), "onset_n": SCRIPT.MINIMUM_ONSET_WARNINGS}
+        self.assertFalse(SCRIPT.separates(few))
+        self.assertTrue(SCRIPT.separates(enough))
+
+    def test_an_input_triggers_step_2_only_if_it_separates_in_both_looks_in_the_same_direction(self):
+        pooled = {
+            "a": {"interval": (0.1, 0.4), "onset_n": 5},
+            "b": {"interval": (0.1, 0.4), "onset_n": 5},
+            "c": {"interval": (0.6, 0.9), "onset_n": 5},
+            "d": {"interval": (0.6, 0.9), "onset_n": 5},
+        }
+        same = {
+            "a": {"interval": (0.1, 0.45), "onset_n": 5},
+            "b": {"interval": (0.2, 0.6), "onset_n": 5},
+            "c": {"interval": (0.1, 0.4), "onset_n": 5},
+            "d": {"interval": (0.55, 0.8), "onset_n": 5},
+        }
+        self.assertEqual(SCRIPT.triggering_inputs(pooled, same), {"a": "lower", "d": "higher"})
+
+
 class UnitTests(unittest.TestCase):
     def test_an_every_day_flag_is_a_flag_at_a_lead_where_the_day_is_not_a_risk_date(self):
         self.assertEqual(SCRIPT.every_day_leads([1, 2, 5], [2]), [1, 5])

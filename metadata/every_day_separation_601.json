@@ -112,6 +112,9 @@
     "resampling": "the two groups apart: onset warnings one by one (each is a separate episode), false alarms by the judge's stationary bootstrap over their date order, block length as the judge's"
   },
   "second_look": "the same comparison with the false alarms restricted to the calendar years that hold an onset warning, so a difference of year does not pass for a difference of days",
+  "minimum_onset_warnings": 5,
+  "minimum_rule": "a table cell with fewer onset warnings than this is reported and never called a separation. Added by amendment after the first run of the comparison, which printed intervals for per-lead cells of one to four onset warnings: with one onset warning the interval carries the false alarms' variability only. The rule can only turn a 'yes' into a 'no'; the declared separation, bootstrap and populations are unchanged",
+  "step_2_trigger": "an input triggers step 2 if it separates in the pooled comparison (Table 1) and again in the same direction in the comparison with the false alarms of the years that hold an onset warning (Table 2). Added by the same amendment, before any step 2 declaration",
   "multiplicity": "the number of inputs examined is stated beside the result; at a 90% interval about one in ten inputs that do not separate would show an interval that excludes 0.5 by chance",
   "published": "nothing; no variant, input or setting joins any published declaration"
 }
