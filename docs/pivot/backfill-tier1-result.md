@@ -1,5 +1,14 @@
 # Back-filled 2014–2018 history on the five tier-1 passers (#484)
 
+> **Note, 11 October 2026 (#583, finding #572).** The page stands as published. A new guard,
+> `repo_model.backfill.require_posting_established`, now refuses any fit that trains on back-filled values while the
+> workbook's posting instant is undeclared (`metadata/backfill_posting.json`, `null` today) or later than the start of
+> the fit's training-end day; `scripts/backfill_history.py run` applies it after every backtest. **Every `+history` arm of this page would now be refused**
+> (the five `<model>+history` candidates: `risk_gbm`, `risk_gbm_base`, `risk_logistic`, `risk_logistic_base`,
+> `risk_quantile_skewt_base`; the first fit's training ends 2018-06-27). The 2018 gains of `risk_gbm_base` and
+> `risk_quantile_skewt_base` (0 of 4 onsets rising to 1 of 4) rest on those early fits and are not evidence until the
+> posting date is established. The arm without history is unaffected. Nothing is re-scored and no figure changes.
+
 A scratch measurement. It writes nothing into `docs/runs/` and moves no published figure. No comparison scores a locked day
 (`docs/decisions/lockbox.md`): scored days are 2018-06-29 to 2025-12-31, and the back-filled rows (2014-08-22 to 2018-04-02)
 are training history only, under the guard of `repo_model.backfill` (#430; the amendment of `information-set.md` that
