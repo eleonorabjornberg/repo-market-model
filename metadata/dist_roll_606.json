@@ -1,0 +1,108 @@
+{
+  "status": "declared by the pull request that closes #606 before any score of a variant was computed; a measurement, not a record. Nothing is published: no variant joins any published declaration, no day after 2025-12-31 is scored, no rule changes and the live record and pin do not move. The variants were built after seeing 2018-2025, so a pass here is not a confirmation (ruling on #567)",
+  "issue": 606,
+  "ruling": "Eleonora, directive #606: at most 3 variants, chosen from the diagnosis of step 1 (docs/pivot/dist-roll-tier3-tier5-result.md); no hindsight regime labels (ruling on #515)",
+  "diagnosis": "step 1, committed before this file: tier 3 fails in 2018-19 and 2025-26 at every lead and tier 5 fails on its calibration condition, all as under-forecast; about nine tenths of the shortfall is carried by pressure days on days that are not risk dates, where the row forecasts exactly 0 (82 of 140 pressure days at the first lead). The variants therefore put mass on those days, or recalibrate by state as #602 did",
+  "parent": {
+    "row": "risk_gbm+settle+h41+dist_roll",
+    "from": "metadata/satiation_distance_598.json, variant (a); its forecasts are not changed, only recalibrated"
+  },
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5,
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "lead_at_least": 1
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "variants": {
+    "risk_gbm+settle+h41+dist_roll+floor": {
+      "label": "(a) floor",
+      "parent": "risk_gbm+settle+h41+dist_roll",
+      "rule": "on a day that is not a risk date the forecast is raised from 0 to the walk-forward rate of pressure days among the earlier days that were not risk dates and whose outcome was observable at the block's fit (group_calibration.walk_forward_floor); nothing is floored until those days number 60; risk dates keep the forecast",
+      "implementation": "group_calibration.walk_forward_floor, per threshold, made non-increasing in tau (probability_calibration.monotone_curves)"
+    },
+    "risk_gbm+settle+h41+dist_roll+state_floor": {
+      "label": "(b) floor by state",
+      "parent": "risk_gbm+settle+h41+dist_roll",
+      "rule": "as (a), with the rate taken per as-of reserve-scarcity state (0 to 3, or unknown; each leg at its own latest public row, #586) once the state holds 60 such days and 3 pressure days, the pooled rate before",
+      "implementation": "group_calibration.walk_forward_floor with the state label as the group"
+    },
+    "risk_gbm+settle+h41+dist_roll+state_platt": {
+      "label": "(c) state Platt",
+      "parent": "risk_gbm+settle+h41+dist_roll",
+      "rule": "Platt fitted per as-of scarcity state on the state's earlier observable pairs, the pooled Platt curve while the state holds fewer than 60 pairs or 3 events; the form that took tier 5 from no to yes in #602 (state_recalibration_589 variant a), applied to this row. Fitted on every scored day, so a day that is not a risk date takes the state's curve at the clipped zero",
+      "implementation": "group_calibration.walk_forward('group') with the state label as the group, per threshold, made non-increasing in tau"
+    }
+  },
+  "conditioning_variable": "the reserve-scarcity state (0 to 3, or unknown) as of the decision instant of each forecast at its own horizon (pressure_judge._scarcity_states), for the pair a rate or curve is fitted on as for the day it is applied to; group_calibration.scarcity_state_label refuses any other value. No hindsight regime label (ruling on #515)",
+  "off_risk_rule": "a scored day for which announcement_dating_rescore.risk_flag(splits, values, True) is false: its pressure-day type is ordinary and the day settles no coupon, as the row's own risk-date rule reads it",
+  "cadence": "the judge's: a refit every 21 scored days from 61 days of history; a block's rate or curve is fitted on the pairs whose scored day is at or before its last training label (probability_calibration.past_positions)",
+  "constants": {
+    "group_minimum_pairs": 60,
+    "group_minimum_events": 3,
+    "pooled_gate_for_platt": "250 pairs and 5 events (probability_calibration)",
+    "searched": "none: every constant is #380's or #589's, declared before any scoring"
+  },
+  "rows": {
+    "controls": [
+      "risk_gbm+settle+h41",
+      "risk_gbm+settle+h41+dist_roll"
+    ],
+    "controls_reading": "the parent and the best row as scored on main (the best row is recalibrated, not refitted), re-run in this measurement so that the pairs are on one run",
+    "new": [
+      "risk_gbm+settle+h41+dist_roll+floor",
+      "risk_gbm+settle+h41+dist_roll+state_floor",
+      "risk_gbm+settle+h41+dist_roll+state_platt"
+    ],
+    "pairs": {
+      "risk_gbm+settle+h41+dist_roll+floor": "risk_gbm+settle+h41+dist_roll",
+      "risk_gbm+settle+h41+dist_roll+state_floor": "risk_gbm+settle+h41+dist_roll",
+      "risk_gbm+settle+h41+dist_roll+state_platt": "risk_gbm+settle+h41+dist_roll"
+    },
+    "pairs_reading": "each variant is paired with the best row it recalibrates"
+  },
+  "references": {
+    "pair_against": [
+      "risk_gbm",
+      "ngboost_laplace",
+      "calendar_climatology",
+      "persistence_logistic"
+    ],
+    "controls": [],
+    "controls_reading": "the parents are the rows.controls; none is listed twice",
+    "risk_date_passers": [
+      "risk_gbm",
+      "risk_logistic",
+      "risk_gbm_base",
+      "risk_logistic_base",
+      "risk_quantile_skewt_base"
+    ]
+  },
+  "reports": {
+    "judge": "the judge as declared under the weighted rule in force: tier 1 pooled and per lead, tiers 3 and 5, for every row beside the five risk-date passers, ngboost_laplace and the two benchmarks; each variant paired with the best row at +5 bp: the Brier difference at h = 1 to 5 and the onset recall difference, pooled and by regime and pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed",
+    "calibration": "predicted against realised rate of a pressure day at +5 bp, by regime and pressure-day type, pooled over h = 1 to 5",
+    "recall_by_year": "onset recall by calendar year",
+    "gained_and_lost": "the onsets a variant warns and the best row does not, and the reverse, by date"
+  },
+  "unchanged": "the judge, its bar, its cut-off rule, the weighted miss rule in force, the bootstrap, every published declaration, the information set, the published scarcity indicator, the frozen shortlist of #567 and the lockbox. A measurement only: nothing is published and no day after 2025-12-31 is read (docs/decisions/lockbox.md)."
+}
