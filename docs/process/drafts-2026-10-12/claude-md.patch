@@ -1,0 +1,29 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index c840552..fba0916 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -4,6 +4,17 @@ Read this first. **This file summarises; the tracked decision documents decide.*
+ disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
+ `docs/DATA_QUALITY_DECISIONS.md` or `REPRODUCIBILITY.md`, they win and this file is the bug.
+ 
++## Direction
++
++The current direction is the top block of the "Directive queue" issue (#46); where an older document or directive text
++conflicts with it or with a later ruling comment on your directive, the block and the ruling win, and the conflict is a
++`finding`. In short, as of 12 October 2026: the primary goal is H5, the SOFR − IORB spread distribution in bp; the
++secondary goal is H9, richer targets; the research plan is H1–H10 (`docs/research/plan.md` once #638 has merged); the
++scoring protocol (#640) gates all new scoring; new +5 bp classification variants are paused. Every pull request names the
++hypothesis and step it serves and, once `docs/research/log.md` exists, adds a research-log entry. This repository owns
++H1–H6, H8 and H9, H7's nested forecast test, all data ingestion, the scorer, the lockbox and the live record;
++`eleonorabjornberg/repo-market-liquidity` owns H7's estimator and H10 (#643).
++
+ ## How work happens
+ 
+ `docs/decisions/workflow.md` decides this.
+@@ -97,5 +108,5 @@ Nothing here is changed without her review.
+ 
+ ## Delegated review
+ 
+-Until Eleonora revokes it in writing, queued pull requests are reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), under "Delegated review" in `docs/decisions/workflow.md`. Everything else in
++Until Eleonora revokes it in writing, queued pull requests are reviewed and merged by the "Directive loop" routine (a Claude Code cloud session in the `rmm` environment, which reviews first and then implements the next directive), under "Delegated review" in `docs/decisions/workflow.md`. Everything else in
+ this file still applies.

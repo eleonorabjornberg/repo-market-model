@@ -1,0 +1,51 @@
+diff --git a/docs/decisions/workflow.md b/docs/decisions/workflow.md
+index 146a05d..7adef35 100644
+--- a/docs/decisions/workflow.md
++++ b/docs/decisions/workflow.md
+@@ -5,8 +5,8 @@
+ ## The rule
+ 
+ - **Work starts from a directive**: a GitHub issue labelled `directive`, whose body names a goal, acceptance
+-  criteria, constraints and the files to read. Longer briefs live in `docs/pivot/directives/`, and the issue points
+-  to one.
++  criteria, constraints and the files to read. It names the hypothesis (H1–H10) and the step it serves. A long brief
++  lives in the issue, or under `docs/research/` once the research plan (#638) has merged.
+ - **One cloud session works one directive** on its own branch from `origin/main`, and ends in one pull request.
+   Nothing is pushed to `main` directly.
+ - **The pull request is the report.** Its template asks for the change, the evidence (base SHA, panel digest, paired
+@@ -58,8 +58,9 @@ gh issue list --repo eleonorabjornberg/repo-market-model --label finding
+ gh issue list --repo eleonorabjornberg/repo-market-model --label needs-eleonora
+ ```
+ 
+-**Keep the roadmap honest.** `docs/pivot/plan.md` §7 is the sequence. A pull request that completes a step updates
+-that step's line in the same pull request, so the plan never lags the tree.
++**Keep the roadmap honest.** The research plan H1–H10 (the top block of the "Directive queue" issue, and
++`docs/research/plan.md` once #638 has merged) is the sequence. A pull request that completes a step updates that step's
++line, and the research log, in the same pull request, so the plan never lags the tree.
+ 
+ ## Confirmed exceptions to "never merges"
+ 
+@@ -92,7 +93,7 @@ The ownership gate, its CI job and its Claude Code hook are retired, by directiv
+ ## Delegated review (in force until Eleonora revokes it)
+ 
+ Decided by Eleonora, 30 September 2026, and extended on 2 October 2026 (#112). Until Eleonora revokes it in writing (a comment on the "Directive queue" issue, or a change to this record), a pull request that closes an
+-issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), not by her. The review session is a separate Claude Code session from the one that implemented the change, and does not change code. It merges only when CI is green and the directive's acceptance criteria are met. It
++issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive loop" routine (a Claude Code cloud session in the `rmm` environment), not by her. Each run of the routine reviews first and then implements the next directive; it never reviews a pull request its own session opened, and in review it does not change code (apart from a merge of `main` that clears a generated-file conflict). It merges only when CI is green and the directive's acceptance criteria are met. It
+ escalates instead of merging (the pull request labelled `needs-eleonora`) when the pull request:
+ 
+ - asks her a question, or its session opened a `needs-eleonora` issue (other than a publishing question under the rule
+@@ -140,6 +141,14 @@ text. The directive cites the ruling by link. Recording that ruling in `docs/dec
+ decision she has made. The reviewer escalates such a pull request if it changes code, a record in `docs/runs/`, or
+ what the project claims beyond what the cited ruling says.
+ 
++## Split by aim
++
++Decided by Eleonora, 12 October 2026 (#643). `eleonorabjornberg/repo-market-liquidity` owns H7's estimator (deployable
++liquidity and the scarcity state) and H10 (attribution), with its own queue and orchestrating session. This repository
++owns H1–H6, H8 and H9, H7's nested forecast test, all data ingestion, the scorer and the scoring protocol, the lockbox and
++the live record. The liquidity repository reads this one at a pinned commit and publishes its estimates as snapshots named
++by digest. The directive loop and the auditor are shared.
++
+ ## Forensic audit
+ 
+ Decided by Eleonora, 9 October 2026 (#483). A "Forensic auditor" routine runs once a day at 7:45 am ET, in its own
