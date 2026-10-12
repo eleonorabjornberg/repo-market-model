@@ -1,0 +1,120 @@
+{
+  "status": "declared by the pull request that closes #601 before any score; a measurement, not a record. Step 1 only: a comparison of two groups of days on inputs public at each decision instant. Nothing here is published: no rule, threshold, onset definition or availability time changes, no 2026 day is scored, and the live record and pin do not move. The comparison reads 2018-2025, so a result is a description of that history and not a confirmation (ruling of 11 October 2026 on #567)",
+  "issue": 601,
+  "row": "risk_gbm+every_day+gate+settle+h41+iorb",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), under the weighted rule in force; the flag cut-offs are the judge's own for the row",
+  "population": "every day of 2018-06-29 to 2025-12-31 scored at all leads 1 to 5 on which the row flags at some lead at which the day is not a risk date (a lead's flag is the every-day part's when the day is not a risk date at that lead: pooled_gate_595.py's `risk_date_at`)",
+  "groups": {
+    "onset_warnings": "such a day that is a +5 bp onset day (the judge's onset definition)",
+    "false_alarms": "such a day that is not a pressure day at +5 bp",
+    "left_out_and_counted": "such a day that is a pressure day but not an onset; onsets warned by the risk-date part only; false alarms of the risk-date part"
+  },
+  "unit": "the day. Its inputs are read at the decision instant of the farthest lead at which the every-day part flags it, the first instant at which the part could have warned. A per-lead table beside it takes each flag at a lead as a unit, read at that lead's decision instant",
+  "information": "each input is read at its latest public row through asof.InformationRule at the unit's horizon, on the 'both' arm of #541 (settlements dated from the auction announcement, the H.4.1 weeklies read per release), with the measurement columns and the distance columns switched on for the run only. A change over k market days is the latest public value less the value k panel rows earlier in the decision's masked frame. The days to the next risk date read the calendar columns only (always known in advance)",
+  "inputs": {
+    "tail_spread_level": {
+      "family": "tail_spread",
+      "reads": "the SOFR 99th percentile less IORB (bp), at its latest public row"
+    },
+    "tail_spread_change_1": {
+      "family": "tail_spread",
+      "reads": "that level less its value 1 market day earlier"
+    },
+    "tail_spread_change_5": {
+      "family": "tail_spread",
+      "reads": "that level less its value 5 market days earlier"
+    },
+    "tail_spread_change_10": {
+      "family": "tail_spread",
+      "reads": "that level less its value 10 market days earlier"
+    },
+    "satiation_distance": {
+      "family": "satiation_distance",
+      "reads": "the rolling satiation distance of #587 (PR #596), at its latest public row"
+    },
+    "reserve_level": {
+      "family": "reserve_trend",
+      "reads": "reserve balances (USD bn), as the row reads them (H.4.1 per release)"
+    },
+    "reserve_change_5": {
+      "family": "reserve_trend",
+      "reads": "reserve balances less their value 5 market days earlier"
+    },
+    "reserve_change_20": {
+      "family": "reserve_trend",
+      "reads": "reserve balances less their value 20 market days earlier"
+    },
+    "rows_to_risk_date": {
+      "family": "days_to_risk_date",
+      "reads": "market days from the decision row to the next calendar risk date (quarter-end, month-end window, tax date)"
+    },
+    "tga_level": {
+      "family": "tga_path",
+      "reads": "the Treasury General Account (USD bn), at its latest public row"
+    },
+    "tga_change_5": {
+      "family": "tga_path",
+      "reads": "the TGA less its value 5 market days earlier"
+    },
+    "tga_change_10": {
+      "family": "tga_path",
+      "reads": "the TGA less its value 10 market days earlier"
+    },
+    "dispersion_p99_p1": {
+      "family": "percentile_dispersion",
+      "reads": "the SOFR 99th percentile less the 1st (percentage points)"
+    },
+    "dispersion_p99_p75": {
+      "family": "percentile_dispersion",
+      "reads": "the SOFR 99th percentile less the 75th (percentage points)"
+    }
+  },
+  "input_families": {
+    "tail_spread": [
+      "tail_spread_level",
+      "tail_spread_change_1",
+      "tail_spread_change_5",
+      "tail_spread_change_10"
+    ],
+    "satiation_distance": [
+      "satiation_distance"
+    ],
+    "reserve_trend": [
+      "reserve_level",
+      "reserve_change_5",
+      "reserve_change_20"
+    ],
+    "days_to_risk_date": [
+      "rows_to_risk_date"
+    ],
+    "tga_path": [
+      "tga_level",
+      "tga_change_5",
+      "tga_change_10"
+    ],
+    "percentile_dispersion": [
+      "dispersion_p99_p1",
+      "dispersion_p99_p75"
+    ]
+  },
+  "separation": "the area under the ROC curve of the input for onset warnings against false alarms (the chance that an onset warning's value is above a false alarm's, ties half): 0.5 is no separation, above 0.5 the onset warnings read higher. An input separates when the interval excludes 0.5",
+  "bootstrap": {
+    "level": 0.9,
+    "replications": 2000,
+    "block_length": 10,
+    "seed": 601,
+    "resampling": "the two groups apart: onset warnings one by one (each is a separate episode), false alarms by the judge's stationary bootstrap over their date order, block length as the judge's"
+  },
+  "second_look": "the same comparison with the false alarms restricted to the calendar years that hold an onset warning, so a difference of year does not pass for a difference of days",
+  "minimum_onset_warnings": 5,
+  "minimum_rule": "a table cell with fewer onset warnings than this is reported and never called a separation. Added by amendment after the first run of the comparison, which printed intervals for per-lead cells of one to four onset warnings: with one onset warning the interval carries the false alarms' variability only. The rule can only turn a 'yes' into a 'no'; the declared separation, bootstrap and populations are unchanged",
+  "step_2_trigger": "an input triggers step 2 if it separates in the pooled comparison (Table 1) and again in the same direction in the comparison with the false alarms of the years that hold an onset warning (Table 2). Added by the same amendment, before any step 2 declaration",
+  "multiplicity": "the number of inputs examined is stated beside the result; at a 90% interval about one in ten inputs that do not separate would show an interval that excludes 0.5 by chance",
+  "published": "nothing; no variant, input or setting joins any published declaration"
+}
