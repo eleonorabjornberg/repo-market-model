@@ -1,0 +1,84 @@
+{
+ "read": "own_leg",
+ "rows": {
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 2,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 16,
+   "onsets": 26
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+state_platt": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "flagged": 14,
+   "onsets": 26
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+state_shrunk": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "flagged": 14,
+   "onsets": 26
+  }
+ },
+ "rule": "unweighted"
+}
