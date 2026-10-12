@@ -39,9 +39,7 @@ class QuantileReadingTests(unittest.TestCase):
     GRID = [0.01, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
 
     def setUp(self):
-        try:
-            import numpy  # noqa: F401
-        except ImportError:  # pragma: no cover - the ml extra is optional
+        if importlib.util.find_spec("numpy") is None:  # pragma: no cover - the ml extra is optional
             self.skipTest("the ml extra is not installed")
         self.quantiles = [-4.0 + 0.8 * k for k in range(len(self.GRID))]
 

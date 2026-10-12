@@ -602,6 +602,30 @@ MODEL_FACTORIES = MappingProxyType(
             needs_regime_variable=False,
             takes_splits=True,
         ),
+        # The spread-level distribution (#632): gradient-boosted quantiles of the spread read as P(spread > tau). The two-part
+        # structure's every-day inputs are beyond a --regressors declaration; scripts/spread_distribution_632.py runs it with them.
+        "pressure_spread_distribution_risk_date": _ModelChoice(
+            declared=_DeferredFactory("pressure_spread_distribution_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+                structure="risk_date",
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
+        "pressure_spread_distribution_two_part": _ModelChoice(
+            declared=_DeferredFactory("pressure_spread_distribution_exceedance"),
+            build=lambda factory, regressors, regime, minimum_history, settings: factory(
+                (_AUTOREGRESSIVE_TERM, *regressors),
+                settings["splits"],
+                minimum_history=minimum_history,
+                structure="two_part",
+            ),
+            needs_regime_variable=False,
+            takes_splits=True,
+        ),
         "pressure_logistic_bootstrap": _ModelChoice(
             declared=_DeferredFactory("pressure_rare_event_exceedance"),
             build=lambda factory, regressors, regime, minimum_history, settings: factory(

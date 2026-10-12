@@ -98,16 +98,18 @@ class SpreadDistributionTests(unittest.TestCase):
         self.assertEqual(below[0], below[1])
 
     def test_a_days_quantiles_are_ordered(self):
-        import numpy
+        import random
 
         # noisy, heteroscedastic pairs: the per-level fits cross on most served rows until the crossing fix sorts them
-        rng = numpy.random.default_rng(0)
-        x = rng.normal(size=(60, 3))
-        y = x[:, 0] + rng.normal(size=60) * (1.0 + numpy.abs(x[:, 1]))
-        served = rng.normal(size=(40, 3))
-        matrix = ml._gbm_quantile_matrix(x.tolist(), y.tolist(), served.tolist())
-        self.assertEqual(matrix.shape, (40, len(ml.PRESSURE_SPREAD_DISTRIBUTION_SETTINGS["quantile_grid"])))
-        self.assertTrue((numpy.diff(matrix, axis=1) >= 0).all())
+        rng = random.Random(0)
+        x = [[rng.gauss(0, 1) for _ in range(3)] for _ in range(60)]
+        y = [row[0] + rng.gauss(0, 1) * (1.0 + abs(row[1])) for row in x]
+        served = [[rng.gauss(0, 1) for _ in range(3)] for _ in range(40)]
+        matrix = ml._gbm_quantile_matrix(x, y, served).tolist()
+        self.assertEqual(len(matrix), 40)
+        self.assertEqual(len(matrix[0]), len(ml.PRESSURE_SPREAD_DISTRIBUTION_SETTINGS["quantile_grid"]))
+        for row in matrix:
+            self.assertEqual(row, sorted(row))
         for scored in self.days(True)[:2]:
             quantiles = self.predict(scored)[1][0][1]
             self.assertEqual(list(quantiles), sorted(quantiles))

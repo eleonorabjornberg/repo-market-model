@@ -982,6 +982,7 @@ CRPS_SCORERS = {
     "scripts/pressure_model_v2.assemble_command": ("delegates", "assembles blocks over days " + _WALK),
     "scripts/quarter_end_remedy._crps": ("delegates", "one loss; " + _WALK),
     "scripts/desk_outputs.check_against_published": ("delegates", "compares the days `history_command` chose, after its `require_unlocked`"),
+    "scripts/spread_distribution_632.crps_contract": ("delegates", "one loss on the contract's levels; `distribution_command` calls `require_unlocked` on the last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the published daily file is read to that day only (#632)"),
     "scripts/desk_outputs._series": ("delegates", "the series of days `history_command` chose, after its `require_unlocked`"),
 }
 

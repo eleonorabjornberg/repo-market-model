@@ -12741,6 +12741,23 @@ class PressureRiskDateVariantQuantileConformanceTests(_PressureConformance, unit
     IMPLEMENTATION = staticmethod(ml.pressure_risk_date_variant_exceedance)
 
 
+def _spread_distribution_factory(structure):
+    def factory(features, declaration, minimum_history=20):
+        return ml.pressure_spread_distribution_exceedance(
+            features, declaration, minimum_history, structure=structure
+        )
+
+    factory.__name__ = f"pressure_spread_distribution_{structure}"
+    return factory
+
+
+class PressureSpreadDistributionRiskDateConformanceTests(_PressureConformance, unittest.TestCase):
+    """The conformance suite against the gradient-boosted spread distribution on the risk dates (#632)."""
+
+    FACTORY = staticmethod(_spread_distribution_factory("risk_date"))
+    IMPLEMENTATION = staticmethod(ml.pressure_spread_distribution_exceedance)
+
+
 def _risk_hurdle_factory(kind):
     def factory(features, declaration, minimum_history=20):
         return ml.pressure_risk_date_hurdle_exceedance(kind, features, declaration, minimum_history)
