@@ -1,7 +1,13 @@
+> **Archived 12 October 2026 (#641). Not binding.** This was the project's plan from 30 September 2026. It is
+> superseded by the research plan H1–H10 (the top block of the "Directive queue" issue #46, and `docs/research/` once
+> #638 has merged), by the scoring protocol (#640), and by `docs/pivot/next-session.md`. Its headline target, the
+> probability of a +5 bp spread, is no longer the primary goal: H5, the SOFR − IORB spread distribution in bp, is, and
+> new +5 bp classification variants are paused. The sequence in §7 is kept as history.
+
 # Redesign plan — the pivot
 
 The project's current plan. The evidence for §1 is in
-[`lag-assessment.md`](lag-assessment.md). The next session starts at [`next-session.md`](next-session.md). The rulings
+[`lag-assessment.md`](../pivot/lag-assessment.md). The next session starts at [`next-session.md`](../pivot/next-session.md). The rulings
 are in `docs/decisions/` (`information-set.md`, `workflow.md`, `publish-rule.md`).
 
 ## Decided (Eleonora, 30 September 2026)
@@ -80,7 +86,7 @@ are in `docs/decisions/` (`information-set.md`, `workflow.md`, `publish-rule.md`
 - **Publish runs** follow the publish rule.
 - **Branch protection** goes on `main` once the first pull request shows its check names.
 
-## 5. What we can borrow (verified links in [`literature.md`](literature.md))
+## 5. What we can borrow (verified links in [`literature.md`](../pivot/literature.md))
 
 1. **The ragged-edge information set from nowcasting** (Giannone, Reichlin & Small 2008; Bańbura et al. 2013). This is
    the fix itself.
@@ -114,20 +120,20 @@ Done in PR #24: the README lead with the plain-English overview and figure, the 
 
 ## 7. Sequence
 
-Each step is one directive. Briefs are in [`directives/`](directives).
+Each step is one directive. Briefs are in [`directives/`](directives-2026-09).
 
-1. **The as-of information set:** [`01`](directives/01-as-of-information-set.md).
+1. **The as-of information set:** [`01`](directives-2026-09/01-as-of-information-set.md).
 2. **Streamline the front door:** done, PR #24.
-3. **Re-score and publish:** [`03`](directives/03-rescore-publish.md): done in the directive 03 pull request (#27). Records refit every 21 scored days, the two pressure-probability benchmarks scored and paired, every result split by regime and pressure-day type (`metadata/evaluation_splits.json`, provisional), the purge-rule records archived in `docs/runs/archive/pre-asof/`.
-4. **Retire the legacy ownership gates:** [`04`](directives/04-retire-legacy-gates.md): done, PR #30.
-5. **Review CI and the test suite:** [`05`](directives/05-review-ci-and-tests.md), after 04.
+3. **Re-score and publish:** [`03`](directives-2026-09/03-rescore-publish.md): done in the directive 03 pull request (#27). Records refit every 21 scored days, the two pressure-probability benchmarks scored and paired, every result split by regime and pressure-day type (`metadata/evaluation_splits.json`, provisional), the purge-rule records archived in `docs/runs/archive/pre-asof/`.
+4. **Retire the legacy ownership gates:** [`04`](directives-2026-09/04-retire-legacy-gates.md): done, PR #30.
+5. **Review CI and the test suite:** [`05`](directives-2026-09/05-review-ci-and-tests.md), after 04.
 6. **Pressure model v1 and the scarcity indicator**, after step 3. Pressure model v1 measured for #114 by `scripts/pressure_model_v1.py` (the distributional exceedance and two direct models, `ml.pressure_logistic_exceedance` and `ml.pressure_classifier_exceedance`, at horizons 1–5 under `asof.InformationRule`'s `horizon`; `src/repo_model/pressure.py`). Eleonora ruled on #134 that `distributional_gbm+recalibrated`, read from the published funding declaration's distribution, is published; it is published for #124 at horizons 1–5 (`docs/runs/pressure_model_v1_h*.json`), on whole-bp labels (#155), scored only before 2026-01-01. The scarcity indicator is measured for #115: a declared regime state from SR 1019's 12–13% satiation band and the $100bn ON RRP buffer (`src/repo_model/scarcity.py`), with H.8 bank assets as first prints from the Board's archive, validated on pressure-day frequency by `scripts/scarcity_validation.py`. It is off in every published declaration; whether it is published is Eleonora's.
 7. **Calibration re-diagnosis:** CV+ against online conformal: measured for #116 by `scripts/calibration_rediagnosis.py` (CV+, conformal PID with a calendar scorecaster, Mondrian CV+ over calendar type × regime; `src/repo_model/recalibration.py`). Eleonora ruled on #123 that conformal PID replaces CV+ in the published funding declaration, and on #136 that its constants are chosen by nested walk-forward selection (#125). Republished for #124 (`--calibration conformal_pid_nested`), scored only before 2026-01-01.
 8. **Data additions** (§2), each priced as-of.
 9. **Model documentation and validation report,** in a model-risk structure: purpose and use, data, methodology,
    assumptions and limitations, performance by regime, outcomes analysis, monitoring. The lag finding goes in as a
    validation result.
-10. **Plain-language results page** on the site, generated from records. The descriptive half (the plumbing, the history, why it happens, the publication clock, how it was built) is directive 06 ([`06`](directives/06-visual-layer.md), #40): `site/index.html`, generated by `scripts/emit_visual.py`. The model half (#118) draws chapters 5 and 6 from the exceedance records in `docs/runs/`, through a reader that refuses a figure no published record carries; lead time is a generated placeholder until a published record carries it. The scarcity state has no chapter on this page: Eleonora's ruling of 2 October 2026 (#181) treats that item as superseded by #157, so the state appears on the site only as the explorer band (#148). Above the chapters sits the newcomer layer (plan #141, approved 2 October 2026): a "Start here" block of views (N1 what pressure is, N2 why it is hard, N3 when it happens, N4 who lends to whom, N5 a quarter-end step by step), generated by the same `scripts/emit_visual.py` and checked by its `--check`, with locked days shown greyed and held out. The README links to it under the overview figure (#149).
+10. **Plain-language results page** on the site, generated from records. The descriptive half (the plumbing, the history, why it happens, the publication clock, how it was built) is directive 06 ([`06`](directives-2026-09/06-visual-layer.md), #40): `site/index.html`, generated by `scripts/emit_visual.py`. The model half (#118) draws chapters 5 and 6 from the exceedance records in `docs/runs/`, through a reader that refuses a figure no published record carries; lead time is a generated placeholder until a published record carries it. The scarcity state has no chapter on this page: Eleonora's ruling of 2 October 2026 (#181) treats that item as superseded by #157, so the state appears on the site only as the explorer band (#148). Above the chapters sits the newcomer layer (plan #141, approved 2 October 2026): a "Start here" block of views (N1 what pressure is, N2 why it is hard, N3 when it happens, N4 who lends to whom, N5 a quarter-end step by step), generated by the same `scripts/emit_visual.py` and checked by its `--check`, with locked days shown greyed and held out. The README links to it under the overview figure (#149).
 
 ## Decision records
 
