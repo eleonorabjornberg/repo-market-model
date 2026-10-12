@@ -74,6 +74,12 @@ class ReaderTests(unittest.TestCase):
         # a day exactly on the threshold is not a pressure day
         self.assertIsNone(df.days_since_pressure(df.Causal([5.0, 5.0], 1), 5.0))
 
+    def test_change_is_the_value_less_the_earlier_one(self):
+        view = df.Causal([1.0, 2.0, 4.0, 7.0], 3)
+        self.assertEqual(df.change(view, 2), 5.0)
+        self.assertIsNone(df.change(view, 4))
+        self.assertIsNone(df.change(df.Causal([1.0, None, 4.0], 2), 1))
+
     def test_lag_and_range_statistics(self):
         view = df.Causal([1.0, 2.0, 4.0, 3.0], 3)
         self.assertEqual(df.lagged(view, 0), 3.0)

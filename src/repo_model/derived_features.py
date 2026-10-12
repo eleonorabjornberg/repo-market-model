@@ -28,6 +28,7 @@ __all__ = [
     "Causal",
     "MAINTENANCE_ANCHOR",
     "above_median_run",
+    "change",
     "bday_of_month",
     "build_columns",
     "check_columns_causal",
@@ -137,6 +138,13 @@ def lagged(view: Causal, lag: int) -> Optional[float]:
     return None if index < 0 else view[index]
 
 
+def change(view: Causal, days: int) -> Optional[float]:
+    """The value less its value `days` rows earlier."""
+
+    now, before = lagged(view, 0), lagged(view, days)
+    return None if now is None or before is None else now - before
+
+
 def range_stats(view: Causal, window: int, scale: float = 1.0) -> Optional[Dict[str, float]]:
     """The series against its own trailing `window` values, this row's included.
 
@@ -195,6 +203,7 @@ def columns_for(
     lags: Sequence[int],
     threshold_bp: float,
     bp_scale: float = 100.0,
+    changes: Mapping[str, "tuple[str, int]"] = {},
 ) -> Dict[str, "tuple[str, Reader]"]:
     """Every causal column: name -> (the panel column it reads, its reader)."""
 
@@ -210,6 +219,8 @@ def columns_for(
                     rate,
                     lambda v, w=w, stat=stat: (lambda r: None if r is None else r[stat])(range_stats(v, w, bp_scale)),
                 )
+    for name, (source, days) in changes.items():
+        out[name] = (source, lambda v, days=days: change(v, days))
     out["pressure_last"] = (
         "spread_bps",
         lambda v: None if v[v.end] is None else float(exceeds_bp(v[v.end], threshold_bp)),
