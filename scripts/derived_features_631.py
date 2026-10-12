@@ -1042,6 +1042,13 @@ def report_command(args) -> int:
         failed = [n for n, ok in item["checks"].items() if not ok]
         extra = f"; also in its cluster: {', '.join(item['also_in_cluster'])}" if item.get("also_in_cluster") else ""
         lines.append(f"| {k} | `{item['name']}` | {'higher series, more pressure' if item['direction'] == 1 else 'lower series, more pressure'} | {item['best_lead']} | {item['auroc']:.3f} | {item['leads_excluding']} | {item['passed']} of 4 | {item['noise_risk']} | passes {', '.join(passed) or 'none'}; fails {', '.join(failed) or 'none'}{extra} |")
+    lines += ["", "## Splits of the ranked leads, and the persistence reference, at lead 1 (AUROC; 90% interval where the declared trigger fired)", "",
+              "| series | pooled | 2018-19 | 2025-26 | scarce state | ample state |", "|---|---|---|---|---|---|"]
+    for name in [item["name"] for item in leads] + [SPREAD, "spread_lag1"]:
+        cells = doc["series"][name]["leads"]["1"]
+        lines.append(f"| `{name}` | " + " | ".join(_auc(cells.get(k)) for k in ("pooled", "regime:2018-19", "regime:2025-26", "state:scarce", "state:ample")) + " |")
+    lines += ["", "Pressure days on ordinary days by split: " + ", ".join(
+        f"{k} {v['pressure_days']} of {v['n']}" for k, v in doc["series"][SPREAD]["leads"]["1"].items()) + ".", ""]
     lines += ["", "## Every series: AUROC for pressure days on ordinary days (pooled, 90% interval), by lead", "",
               "| series | " + " | ".join(f"lead {l}" for l in LEADS) + " | Spearman with the indicator, lead 1 | pre-onset AUC, lead 1 |", "|---|" + "---|" * (len(LEADS) + 2)]
     for name, series in doc["series"].items():
