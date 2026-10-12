@@ -18,6 +18,11 @@ under the previous rule was re-scored or archived.
 > records her ruling of 8 October 2026 (#374) on the New York Fed's back-filled repo-rate history.
 > It was drafted by the pull request that closes #430. A decision is in force only once she merges it.
 
+> **Proposed in #586, for Eleonora to review:** the amendment at the end of this record, which records her
+> ruling of 11 October 2026 on #571 (relayed by the orchestrating session): the reserve-scarcity state reads each
+> of its legs at its own latest public row. It was drafted by the pull request that closes #586 and is **not in
+> force** until she merges it.
+
 ## The rule
 
 A forecast for scored day `T` is made at the declared decision time on the last panel day before
@@ -106,3 +111,29 @@ are in `docs/pivot/backfilled-history-result.md`.
    those months use the workbook's own publication days as the business-day schedule, because the market
    holiday table begins on 2018-01-01.
 
+## Amendment: the scarcity state reads each leg at its own latest public row (#571, #586)
+
+**Proposed, for Eleonora to review. Not in force until she has merged it.** Eleonora ruled on 11 October 2026
+(#571; the ruling was relayed by the orchestrating session) that the reserve-scarcity state
+(`repo_model.scarcity`, #115) may be assembled from more than one row.
+
+1. **Each leg is read at its own latest public row.** The state's three legs are the reserves (the H.4.1's
+   WRESBAL), the H.8's total assets and the day's ON RRP. As of a forecast's decision instant, each is read
+   at the latest row whose own declared first-observable instant is at or before it (rule 1 above, per
+   field), and the state is formed from the three reads. The ratio's legs may then belong to different
+   weeks, and the ON RRP leg is no older than the Desk's declared lag; the H.8's lag no longer sets the row
+   the other two are read at.
+2. **Each read passes the usual guards.** Every leg passes the availability check (`LookAheadError` for a read
+   newer than the decision instant) and the staleness check (`StaleReadError` for a read older than the
+   latest admissible row), through `InformationRule` (rule 5 above), and `scarcity._require_public_legs`
+   restates the first for the three legs. A leg that is a hole at its row leaves the state a hole.
+3. **The scope is this indicator only.** This replaces the rule that an indicator is "never assembled from two
+   rows" for the scarcity state, and for no other feature. No other input, threshold, cut-point, onset
+   definition or availability time changes.
+4. **Where it is in force.** `scarcity.own_leg_states` is the state the judge reads (`pressure_judge.py`,
+   `_scarcity_states`), and `scarcity.own_leg_composition` reads it as a composed feature in a measurement run,
+   which is how a model that takes the state as an input is fed it. `asof.py` and `contract.py` are not edited:
+   they are in the final test's pipeline checksum, and the published declaration, the published panel and the
+   pre-registered model are unchanged. The same-row read (`with_reserve_scarcity_state`, the column) is kept
+   for the published map's off declaration and for the before-and-after count. Whether the own-leg read
+   replaces it in `contract.py`, which would move that checksum, is not decided here.

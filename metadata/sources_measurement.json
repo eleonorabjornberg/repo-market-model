@@ -410,5 +410,73 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/projected_reserves.json"
+  },
+  "satiation_columns": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 11 October 2026 for #587. Not a fetched series: the column is computed per panel row by repo_model.satiation. satiation_roll is the declared low quantile of the reserves-to-assets ratios that the as-of rule reads at each of the last 504 panel rows' own 16:00 decisions, up to and including the row's own; each leg of the ratio (reserve_balances, H.4.1; bank_total_assets, H.8) is read at its own latest public row through asof.InformationRule with the scored row one after the decision row, and repo_model.satiation.check_no_future rebuilds a row from the panel cut at it and refuses a level that differs. A row's value is therefore public at 16:00 on its own date.",
+      "publication": "metadata/satiation_587.json declares the rule; its inputs are the registry's reserve_balances (H.4.1 WRESBAL) and bank_total_assets (H.8), each under its own lag."
+    },
+    "coverage": [
+      "one value per panel day to 2025-12-31, from the first day on which the as-of rule reads both legs of the ratio"
+    ],
+    "field_frequencies": {
+      "satiation_roll": "business_daily"
+    },
+    "fields": [
+      "satiation_roll"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#587), declared here and not in metadata/sources.json for the reason projected_reserves_columns gives. Read only by a track that switches the column on (repo_model.satiation.COLUMN_FIELDS). The published scarcity indicator and its 0.12 band are unchanged. The level is a low quantile of a step series (the ratio changes only when a weekly release lands), so each week's ratio counts for as many panel rows as it is the latest public one.",
+    "provider": "Board of Governors of the Federal Reserve System (H.4.1, H.8), as read through the registry",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 11 October 2026 (#587). The value on the row of day t uses only reads the as-of rule allows at 16:00 ET on t (availability_provenance), so the 16:00 ET decision of t reads it.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Derived column: no structural zeros. A hole is a row where the rule has no read of a leg.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/satiation_587.json"
+  },
+  "satiation_distance_columns": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 12 October 2026 for #598. Not a fetched series: the columns are computed per panel row by repo_model.satiation.build_distance_columns. satiation_dist_roll is the reserves-to-assets ratio that the as-of rule reads at the row's own 16:00 decision minus satiation_roll's level at that row (the rolling level of #587, constants unchanged); satiation_hinge_roll is the percentage points by which that ratio is below the level, 0 at or above it. Each leg of the ratio (reserve_balances, H.4.1 WRESBAL; bank_total_assets, H.8) is read at its own latest public row through asof.InformationRule with the scored row one after the decision row, and repo_model.satiation.check_distance_no_future rebuilds a row from the panel cut at it and refuses a value that differs. A row's value is therefore public at 16:00 on its own date.",
+      "publication": "metadata/satiation_distance_598.json declares the rule; its inputs are the registry's reserve_balances (H.4.1 WRESBAL) and bank_total_assets (H.8), each under its own lag, and the rolling level of metadata/satiation_587.json."
+    },
+    "coverage": [
+      "one value per panel day to 2025-12-31, from the first day on which the as-of rule reads both legs of the ratio"
+    ],
+    "field_frequencies": {
+      "satiation_dist_roll": "business_daily",
+      "satiation_hinge_roll": "business_daily"
+    },
+    "fields": [
+      "satiation_dist_roll",
+      "satiation_hinge_roll"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#598), declared here and not in metadata/sources.json for the reason satiation_columns gives. Read only by a track that switches the columns on (repo_model.satiation.DISTANCE_COLUMN_FIELDS). The published scarcity indicator and its 0.12 band are unchanged. The ratio is a step series (it changes only when a weekly release lands), so a value repeats until the next release moves the ratio or the level.",
+    "provider": "Board of Governors of the Federal Reserve System (H.4.1, H.8), as read through the registry",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 12 October 2026 (#598). The value on the row of day t uses only reads the as-of rule allows at 16:00 ET on t (availability_provenance), so the 16:00 ET decision of t reads it.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Derived column: no structural zeros. A hole is a row where the rule has no read of a leg.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/satiation_distance_598.json"
   }
 }

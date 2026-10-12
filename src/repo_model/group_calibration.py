@@ -37,6 +37,7 @@ from datetime import date
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 from . import probability_calibration as pc
+from .baseline import _logistic_fit
 from .splits import LookAheadError
 
 __all__ = [
@@ -44,14 +45,17 @@ __all__ = [
     "GROUP_MINIMUM_PAIRS",
     "MODES",
     "OTHER_GROUP_WEIGHT",
+    "SHRINKAGE_PRECISION",
     "declaration",
     "fit",
+    "fit_shrunk",
     "group_label",
     "regime_walk_forward",
     "require_observable",
     "scarcity_state_label",
     "require_regimes_asof",
     "walk_forward",
+    "walk_forward_shrunk",
 ]
 
 MODES = ("group", "weighted")
@@ -62,6 +66,10 @@ GROUP_MINIMUM_PAIRS = 60
 GROUP_MINIMUM_EVENTS = 3
 #: The weight of a pair outside the target group in `weighted` mode.
 OTHER_GROUP_WEIGHT = 0.25
+
+#: The ridge precision on a group's intercept offset in `fit_shrunk` (#589): a prior of standard deviation 1 on the
+#: log-odds scale, declared before any scoring and not searched.
+SHRINKAGE_PRECISION = 1.0
 
 _STATE_BANDS = {0: "ample", 1: "ample", 2: "scarce", 3: "scarce"}
 
@@ -242,3 +250,73 @@ def regime_walk_forward(
 
     require_regimes_asof(scored_dates, regimes, splits)
     return walk_forward("group", forecasts, outcomes, scored_dates, train_ends, regimes)
+
+
+def fit_shrunk(
+    pairs: Sequence[Tuple[date, float, int, str]],
+    fitted_at: date,
+    *,
+    precision: float = SHRINKAGE_PRECISION,
+) -> Callable[[float, str], float]:
+    """A pooled Platt curve with one shrunk intercept offset per group (#589), fitted on `(day, forecast, outcome, group)`.
+
+    The slope and intercept are the pooled Platt fit on every pair. Each group then gets an offset `u` on the log-odds scale,
+    the maximiser of its own log likelihood minus `precision * u**2 / 2`, so a group with few pairs or events keeps an offset
+    near zero (the pooled curve) and a group with many may depart from it: a hierarchical intercept with a normal prior,
+    after Gelman and Hill (2007). A group with no pair gets the pooled curve.
+
+    Raises:
+        LookAheadError: if a pair's scored day is after `fitted_at`.
+        ValueError: if `precision` is not positive.
+    """
+
+    if not precision > 0.0:
+        raise ValueError(f"the shrinkage precision must be positive, got {precision!r}")
+    require_observable(pairs, fitted_at)
+    b0, b1 = _logistic_fit([pc._logit(p) for _, p, _, _ in pairs], [y for _, _, y, _ in pairs])
+    scores: Dict[str, List[Tuple[float, int]]] = {}
+    for _, p, y, g in pairs:
+        scores.setdefault(g, []).append((b0 + b1 * pc._logit(p), y))
+    offsets: Dict[str, float] = {}
+    for group, items in scores.items():
+        u = 0.0
+        for _ in range(100):
+            probabilities = [pc._sigmoid(z + u) for z, _ in items]
+            gradient = sum(y - q for (_, y), q in zip(items, probabilities)) - precision * u
+            curvature = sum(q * (1.0 - q) for q in probabilities) + precision
+            step = gradient / curvature
+            u += step
+            if abs(step) < 1e-12:
+                break
+        offsets[group] = u
+    return lambda p, group: pc._sigmoid(b0 + b1 * pc._logit(p) + offsets.get(group, 0.0))
+
+
+def walk_forward_shrunk(
+    forecasts: Sequence[float],
+    outcomes: Sequence[int],
+    scored_dates: Sequence[date],
+    train_ends: Sequence[date],
+    groups: Sequence[str],
+    *,
+    precision: float = SHRINKAGE_PRECISION,
+) -> Tuple[float, ...]:
+    """Every forecast through `fit_shrunk`, each refit block from its observable past, identity before the pooled gate.
+
+    Raises:
+        ValueError: for a `groups` column (or another) of another length.
+    """
+
+    if not len(forecasts) == len(outcomes) == len(scored_dates) == len(train_ends) == len(groups):
+        raise ValueError("forecasts, outcomes, dates, train ends and groups must be one per scored day")
+    column = [float(p) for p in forecasts]
+    for start, stop, end in pc.blocks(scored_dates, train_ends):
+        past = pc.past_positions(scored_dates, train_ends, start)
+        if not pc._ready(outcomes, past):
+            continue
+        curve = fit_shrunk(
+            [(scored_dates[i], forecasts[i], outcomes[i], groups[i]) for i in past], end, precision=precision
+        )
+        for index in range(start, stop):
+            column[index] = curve(forecasts[index], groups[index])
+    return tuple(column)
