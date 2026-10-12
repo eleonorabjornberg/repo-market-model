@@ -1,0 +1,66 @@
+{
+  "status": "declared by the pull request that closes #601 after step 1 was committed and before any step 2 score; a measurement, not a record. Nothing here is published: no variant joins any published declaration, no 2026 day is scored, no rule changes and the live record and pin do not move. The variants condition on an input found by reading 2018-2025, so a pass is not a confirmation (ruling of 11 October 2026 on #567)",
+  "issue": 601,
+  "step": 2,
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parent": {
+    "row": "risk_gbm+every_day+gate+settle+h41+iorb",
+    "declaration": "metadata/iorb_every_day_579.json (PR #582) and metadata/pooled_gate_595.json: the row as scored, unchanged"
+  },
+  "second_parent": "risk_gbm+settle+h41 (the row that passes tier 1 under the pooled count), the pairing reference",
+  "trigger": {
+    "inputs": [
+      "tail_spread_level"
+    ],
+    "direction": {
+      "tail_spread_level": "lower"
+    },
+    "evidence": "docs/pivot/evidence/every-day-separation/separation.json (committed before this declaration)",
+    "rule": "step 1's rule (metadata/every_day_separation_601.json, step_2_trigger): an input that separates in the pooled comparison and again, in the same direction, with the false alarms of the onset years only"
+  },
+  "variants": {
+    "cap75": {
+      "name": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+      "cap": {
+        "quantile": 0.75,
+        "window": 250,
+        "minimum_earlier": 60
+      },
+      "rule": "on a day that is not a risk date at the lead, the row's forecast is kept only if the tail spread (sofr_p99_iorb_bps) read at the lead's decision instant is at or below the quantile (nearest rank) of the tail spread read on the days that were not risk dates among the previous window scored days, each at its own decision instant; with fewer than minimum_earlier such readings, or when the tail spread is not public, the forecast is 0. A risk date keeps the row's forecast. The curve across thresholds is made non-increasing afterwards, as the row's is",
+      "reads": "the tail spread at the decision instants of earlier scored days and of this one (asof.InformationRule, per field), and nothing later",
+      "fit": "none: a rule on the row's own gated forecasts at each lead"
+    },
+    "cap50": {
+      "name": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50",
+      "cap": {
+        "quantile": 0.5,
+        "window": 250,
+        "minimum_earlier": 60
+      },
+      "rule": "on a day that is not a risk date at the lead, the row's forecast is kept only if the tail spread (sofr_p99_iorb_bps) read at the lead's decision instant is at or below the quantile (nearest rank) of the tail spread read on the days that were not risk dates among the previous window scored days, each at its own decision instant; with fewer than minimum_earlier such readings, or when the tail spread is not public, the forecast is 0. A risk date keeps the row's forecast. The curve across thresholds is made non-increasing afterwards, as the row's is",
+      "reads": "the tail spread at the decision instants of earlier scored days and of this one (asof.InformationRule, per field), and nothing later",
+      "fit": "none: a rule on the row's own gated forecasts at each lead"
+    }
+  },
+  "why_a_cap_and_not_a_fitted_term": "step 1 found that the onset warnings sit at a lower tail spread than the false alarms. A term fitted for the probability of a pressure day cannot learn that: the likelihood rises with the tail spread. The input conditions the part as a gate, as the gate of #532 conditions it on its own forecast. Two strengths of one rule are declared (the upper quartile and the median of the trailing readings); no other quantile, input or form",
+  "variants_declared": "these two, the row and its parent; no other variant, quantile, input or parent",
+  "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), under the weighted rule in force and the flat rule beside it",
+  "pairing": "each variant against the row and against risk_gbm+settle+h41, with 90% stationary-bootstrap intervals, split by regime and pressure-day type",
+  "published": "nothing; no variant joins any published declaration"
+}
