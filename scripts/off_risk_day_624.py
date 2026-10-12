@@ -382,6 +382,7 @@ def walk_forward_day_model(
     minimum_pairs: int,
     minimum_events: int,
     fit,
+    extra: Optional[Mapping[float, Sequence[Optional[float]]]] = None,
 ) -> Dict[float, List[float]]:
     """The forecast of a day-level model for each threshold on the days that are not risk dates; 0 everywhere else.
 
@@ -390,30 +391,75 @@ def walk_forward_day_model(
     dates and have a complete design. Nothing is fitted until those pairs number `minimum_pairs` and hold `minimum_events` pressure days
     at the threshold, or when every pair is a pressure day; the block is then left at 0.
 
+    `extra[tau]`, when given, is one more column of the design at that threshold (the trailing rate of pressure days, whose own reading is
+    observable at each day's block); a day for which it is None has no complete design at that threshold.
+
     Raises:
         ValueError: for columns of different lengths.
         LookAheadError: if a training pair is of a day after the block's fit.
     """
 
     n = len(scored)
-    if len({len(designs), len(train_ends), len(off_risk), *(len(v) for v in outcomes.values())} | {n}) != 1:
+    lengths = {len(designs), len(train_ends), len(off_risk), n, *(len(v) for v in outcomes.values())}
+    if extra is not None:
+        lengths |= {len(v) for v in extra.values()}
+    if len(lengths) != 1:
         raise ValueError("designs, outcomes, dates, train ends and risk flags must be one per scored day")
     columns = {tau: [0.0] * n for tau in outcomes}
     for start, stop, end in pc.blocks(scored, train_ends):
-        past = [i for i in pc.past_positions(scored, train_ends, start) if off_risk[i] and designs[i] is not None]
-        served = [i for i in range(start, stop) if off_risk[i] and designs[i] is not None]
-        if not served:
-            continue
         for tau, outcome in outcomes.items():
+            column = None if extra is None else extra[tau]
+
+            def row(i):
+                if designs[i] is None or (column is not None and column[i] is None):
+                    return None
+                return list(designs[i]) + ([] if column is None else [column[i]])
+
+            past = [i for i in pc.past_positions(scored, train_ends, start) if off_risk[i] and row(i) is not None]
+            served = [i for i in range(start, stop) if off_risk[i] and row(i) is not None]
+            if not served:
+                continue
             pairs = [(scored[i], 0.0, outcome[i], "") for i in past]
             require_observable_pairs(pairs, end)
             events = sum(outcome[i] for i in past)
             if len(past) < minimum_pairs or events < minimum_events or events == len(past):
                 continue
-            fitted = fit(kind, [list(designs[i]) for i in past], [outcome[i] for i in past], [list(designs[i]) for i in served], monotone)
+            fitted = fit(kind, [row(i) for i in past], [outcome[i] for i in past], [row(i) for i in served], monotone)
             for i, value in zip(served, fitted):
                 columns[tau][i] = float(value)
     return columns
+
+
+def trailing_rate_column(
+    outcomes: Sequence[int],
+    scored: Sequence[date],
+    train_ends: Sequence[date],
+    off_risk: Sequence[bool],
+    *,
+    window: int = gc.GROUP_MINIMUM_PAIRS,
+) -> List[Optional[float]]:
+    """The rate of pressure days over the `window` most recent earlier scored days that were not risk dates and whose outcome was
+    observable at each refit block's fit, for the days of that block; None until `window` such days exist.
+
+    This is the rate #610's `+recent_floor` forecasts, read here as an input to a model and not as the forecast.
+
+    Raises:
+        ValueError: for columns of different lengths.
+        LookAheadError: if a day read for a block is after the block's fit.
+    """
+
+    if len({len(outcomes), len(scored), len(train_ends), len(off_risk)}) != 1:
+        raise ValueError("outcomes, dates, train ends and risk flags must be one per scored day")
+    column: List[Optional[float]] = [None] * len(outcomes)
+    for start, stop, end in pc.blocks(scored, train_ends):
+        past = [i for i in pc.past_positions(scored, train_ends, start) if off_risk[i]][-window:]
+        require_observable_pairs([(scored[i], 0.0, outcomes[i], "") for i in past], end)
+        if len(past) < window:
+            continue
+        rate = sum(outcomes[i] for i in past) / len(past)
+        for index in range(start, stop):
+            column[index] = rate
+    return column
 
 
 def monotone_across_thresholds(columns: Mapping[float, Sequence[float]], taus: Sequence[float]) -> Dict[float, List[float]]:

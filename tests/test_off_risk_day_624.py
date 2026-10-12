@@ -18,6 +18,9 @@ Step 2 (the day-level model), same protocol:
 6. in `design_rows`, the earlier read `reads[k - CHANGE_DAYS]` replaced by `reads[min(k + 1, len(reads) - 1)]` (the change is formed against the next
    scored day's read, a later decision). `test_the_change_is_the_read_less_the_read_five_scored_days_earlier` then fails with
    `AssertionError: -1.0 != 5.0`.
+7. in `trailing_rate_column`, `pc.past_positions(scored, train_ends, start)` replaced by `range(stop)` (a block's rate is read from days whose outcome
+   was not observable at its fit). `test_the_rate_reads_only_outcomes_observable_at_the_fit` and the other trailing-rate tests then error with
+   `repo_model.splits.LookAheadError` (raised by `require_observable_pairs`).
 """
 
 import importlib.util
@@ -267,6 +270,73 @@ class DayModelTests(unittest.TestCase):
         self.designs = self.designs[:-1]
         with self.assertRaises(ValueError):
             self.run_it()
+
+
+class TrailingRateTests(unittest.TestCase):
+    def setUp(self):
+        self.scored = days(12)
+        self.train_ends = [self.scored[0]] * 4 + [self.scored[3]] * 4 + [self.scored[7]] * 4
+
+    def test_the_rate_is_over_the_most_recent_observable_days_that_are_not_risk_dates(self):
+        outcomes = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        off_risk = [True, True, True, True] + [True] * 8
+        column = SCRIPT.trailing_rate_column(outcomes, self.scored, self.train_ends, off_risk, window=3)
+        # block 2 sees days 0 to 3: the last three are days 1, 2, 3 (rate 1/3); block 3 sees days 0 to 7: days 5, 6, 7 (rate 0)
+        self.assertEqual(column[:4], [None] * 4)
+        self.assertEqual(column[4:8], [1 / 3] * 4)
+        self.assertEqual(column[8:], [0.0] * 4)
+
+    def test_a_risk_date_is_not_one_of_the_days_the_rate_is_over(self):
+        outcomes = [1, 1, 0, 0] + [0] * 8
+        off_risk = [True, True, False, True] + [True] * 8
+        column = SCRIPT.trailing_rate_column(outcomes, self.scored, self.train_ends, off_risk, window=3)
+        self.assertEqual(column[4], 2 / 3)
+
+    def test_nothing_is_read_until_the_window_is_full(self):
+        column = SCRIPT.trailing_rate_column([0] * 12, self.scored, self.train_ends, [True] * 12, window=5)
+        self.assertEqual(column[4:8], [None] * 4)
+        self.assertEqual(column[8:], [0.0] * 4)
+
+    def test_the_rate_reads_only_outcomes_observable_at_the_fit(self):
+        outcomes = [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0]
+        column = SCRIPT.trailing_rate_column(outcomes, self.scored, self.train_ends, [True] * 12, window=4)
+        # block 3 is fitted at the end of day 7: days 4 to 7 are observable, so its rate is 1
+        self.assertEqual(column[8], 1.0)
+        # block 2 is fitted at the end of day 3 and block 1 had no past: day 4 is not in what block 2 read
+        self.assertEqual(column[4], 0.0)
+
+
+class ExtraColumnTests(unittest.TestCase):
+    def setUp(self):
+        rate_fit.seen = []
+        self.scored = days(12)
+        self.train_ends = [self.scored[0]] * 4 + [self.scored[3]] * 4 + [self.scored[7]] * 4
+        self.designs = [[float(k)] for k in range(12)]
+        self.outcomes = {5.0: [0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1]}
+        self.seen_vectors = []
+
+    def fit(self, kind, xs, labels, served, monotone=None):
+        self.seen_vectors.append((xs, served))
+        return [0.25] * len(served)
+
+    def test_the_threshold_s_column_is_appended_to_each_design_row(self):
+        extra = {5.0: [None] * 4 + [0.1 * k for k in range(8)]}
+        SCRIPT.walk_forward_day_model(
+            self.designs, self.outcomes, self.scored, self.train_ends, [True] * 12, kind="logistic", monotone=None,
+            minimum_pairs=1, minimum_events=1, fit=self.fit, extra=extra,
+        )
+        # the first fit is block 2: it trains on days 0 to 3, none of which has the column, so nothing is fitted; block 3 trains on days 4 to 7
+        xs, served = self.seen_vectors[0]
+        self.assertEqual(xs, [[4.0, 0.0], [5.0, 0.1], [6.0, 0.2], [7.0, 0.30000000000000004]])
+        self.assertEqual(served[0], [8.0, 0.4])
+        self.assertEqual(len(self.seen_vectors), 1)
+
+    def test_an_extra_column_of_the_wrong_length_is_refused(self):
+        with self.assertRaises(ValueError):
+            SCRIPT.walk_forward_day_model(
+                self.designs, self.outcomes, self.scored, self.train_ends, [True] * 12, kind="logistic", monotone=None,
+                minimum_pairs=1, minimum_events=1, fit=self.fit, extra={5.0: [0.1]},
+            )
 
 
 class CombineTests(unittest.TestCase):
