@@ -693,6 +693,29 @@ def markdown(document: Mapping, title: str = "Step 1: skill on the days that are
     return "\n".join(out)
 
 
+def summary_markdown(document: Mapping, within: str = "regime 2018-19") -> str:
+    """One table over the rows: per lead, the pooled cell and the cell of one regime, each as AUROC and Brier skill with 90% intervals."""
+
+    out = [f"| row | lead | AUROC, all days [90%] | Brier skill, all days [90%] | slope, all days [90%] | AUROC, {within} [90%] | Brier skill, {within} [90%] |", "|---|---|---|---|---|---|---|"]
+    for name, by_lead in document["rows"].items():
+        for h, entry in by_lead.items():
+            c, w = entry["cells"]["all"], entry["cells"].get(within)
+            ci, wi = c["intervals"], (w or {}).get("intervals", {})
+            out.append(
+                f"| `{name.replace(ROW, 'ROW')}` | {h} | {_iv(c['auroc'], ci['auroc'])} | {_iv(c['brier_skill'], ci['brier_skill'])} | {_iv(c['slope'], ci['slope'])} | "
+                f"{_iv(w and w['auroc'], wi.get('auroc'))} | {_iv(w and w['brier_skill'], wi.get('brier_skill'))} |"
+            )
+    return "\n".join(out) + "\n"
+
+
+def summary_command(args) -> int:
+    document = json.loads(args.input.read_text(encoding="utf-8"))
+    text = summary_markdown(document, args.within)
+    args.output.write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -723,6 +746,11 @@ def main(argv=None) -> int:
     t = sub.add_parser("pg")
     t.add_argument("rest", nargs=argparse.REMAINDER)
     t.set_defaults(func=passthrough_command)
+    sm = sub.add_parser("summary")
+    sm.add_argument("--input", type=Path, required=True)
+    sm.add_argument("--within", default="regime 2018-19")
+    sm.add_argument("--output", type=Path, required=True)
+    sm.set_defaults(func=summary_command)
     pn = sub.add_parser("panel", help="the scratch panel with the satiation distance built per H.4.1 release")
     pn.add_argument("--panel", type=Path, required=True, help="AUG2.csv")
     pn.add_argument("--output", type=Path, required=True)
