@@ -15,7 +15,7 @@ on #567). A variant can replace a shortlist slot only by Eleonora's decision, be
 > "negative favours the row". After #604 the statistic is the reference's squared error less the row's, so **positive favours the row** and negative favours the
 > reference. `scripts/pooled_gate_595.py` now prints that header. This page draws no conclusion from a Table 3 sign (its readings are on onsets flagged, pooled false
 > alarms and the recall differences of Table 2), so no reading on it inverts. The tables are not regenerated; read their Table 3 with the corrected sign.
-> The same inversion is in `every-day-separation-result.md` (PR #609, not yet on main): its note belongs on that branch. Nothing below is edited.
+> The same inversion is in `every-day-separation-result.md` (#601), which carries its own dated note. Nothing below is edited.
 
 ## Result in one paragraph
 
