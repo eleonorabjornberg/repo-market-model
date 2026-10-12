@@ -1,0 +1,28 @@
+{
+  "status": "declared by the pull request that closes #588 before any score; the rows, the rules and everything reported are fixed here and are not tuned on a scored day; the judge in force, its bar, its cut-off rule, the weighted miss rule and every published declaration are unchanged. A scratch measurement: it chooses nothing and decides nothing.",
+  "issue": 588,
+  "ruling": "Eleonora's owner-attested ruling on #570 (comment 6113212773, 11 October 2026, performed_via_github_app null, #256): a flag from a 21-day block whose chosen cut-off is at or below every probability in it does not count as a warning in tier 1; it applies once the amendment drafted under #588 is merged.",
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "primary_threshold_bp": 5,
+    "horizons": [1, 2, 3, 4, 5],
+    "leads": [1, 2, 3, 4, 5]
+  },
+  "rows": {
+    "frozen_candidates": ["risk_gbm+every_day+gate+settle+h41+iorb", "risk_gbm+settle+h41", "ngboost_laplace"],
+    "parent": ["risk_gbm"],
+    "benchmarks": ["calendar_climatology", "persistence_logistic", "published_v1"],
+    "reading": "the three candidates the ruling of 11 October 2026 on #567 froze for the 2026 confirmation window; risk_gbm, their common parent; the two declared benchmarks and the published baseline"
+  },
+  "rules": {
+    "weighted": "the rule in force: cut-offs chosen on the weighted count and tier 1's limit reads the weighted count",
+    "unweighted": "the flat count in both places, shown beside it"
+  },
+  "options": {
+    "off": "the judge in force",
+    "on": "Declaration.always_flag_not_warning: a refit block of cutoff_rule.refit_every scored days whose cut-off (on its first day) is at or below every probability in it is always-flag; a flag in it is counted neither as a warning nor as a false alarm, and the blocks, the flags dropped and the onsets only they warned are listed. Tier 1 only: tiers 2 to 5 are unchanged."
+  },
+  "reported": "tier 1 at lead of at least 1 (the pooled verdict) and at least 2, 3, 4 and 5, option off and on: onsets warned, recall with its 90% interval, pooled false alarms per onset (flat and weighted; the count the judge's limit reads since the rulings of 10 October 2026), the three criteria and the pass; the always-flag blocks per row and horizon; the onsets lost.",
+  "unchanged": "the bar (recall at least 0.5 with the interval above climatology, false alarms per onset at most 2), the cut-off rule, the bootstrap, the weights and bands of metadata/weighted_miss.json. The cut-offs are chosen once per rule and shared by both options. No day after 2025-12-31 is read (docs/decisions/lockbox.md)."
+}
