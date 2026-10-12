@@ -1,8 +1,13 @@
 # Implementation plan
 
 > **Status:** re-based. This page's phases and horizons predate the as-of information rule
-> ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)). The current sequence is
-> [`docs/pivot/plan.md`](docs/pivot/plan.md), and this page is revised once the re-score lands.
+> ([`docs/decisions/information-set.md`](docs/decisions/information-set.md)). The September plan
+> (`docs/archive/pivot-plan-2026-09-30.md`) is archived and not binding.
+>
+> **Direction (Eleonora, 12 October 2026, #641):** the primary goal is H5, the SOFR − IORB spread distribution in bp;
+> the secondary goal is H9, richer targets. The research plan is H1–H10, in the top block of the "Directive queue"
+> issue (#46). The scoring protocol (#640) gates all new scoring, and new +5 bp classification variants are paused.
+> Phases 1 and 2 stay closed for now, and Phase 3 below continues under that plan.
 
 ## Objective and scope
 
@@ -260,6 +265,15 @@ lending, rate spreads, payment timing, and facility usage.
 
 Exit criterion: stable posterior intervals for aggregate effective liquidity, with
 clear sensitivity to unobserved bank-level reserve distribution.
+
+Split by aim (#643, decided by Eleonora, 12 October 2026):
+
+- `eleonorabjornberg/repo-market-liquidity` owns H7's estimator (deployable liquidity and the scarcity state) and
+  H10 (attribution of pressure episodes to drivers).
+- This repository owns H1–H6, H8 and H9, H7's nested forecast test, all data ingestion, the scorer and the scoring
+  protocol, the lockbox and the live record.
+- The liquidity repository reads this one at a pinned commit and publishes its estimates as snapshots named by digest.
+  Each repository has its own orchestrating session; the directive loop and the auditor are shared.
 
 ## Phase 4 — Repo supply, demand, and market clearing
 
