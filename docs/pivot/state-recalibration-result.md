@@ -127,3 +127,9 @@ docstring of `scripts/state_recalibration_589.py`. The parent's forecasts are th
 - The paired-Brier table header in `scripts/iorb_every_day_579.py` says negative favours the row; the statistic is the reference's squared
   error minus the candidate's, so positive does. The same header is in `docs/pivot/iorb-every-day-result.md` and the compare tables of `docs/pivot/evidence/iorb-every-day/` and
   `docs/pivot/evidence/announcement-dating/` (same `announcement_dating_rescore.py compare` statistic); those pages are not edited here (a finding).
+
+## Note of 12 October 2026 (#604): the header finding is fixed
+
+The item above on the paired-Brier table header, that the header in `scripts/iorb_every_day_579.py` and in the compare tables of the iorb and
+announcement-dating evidence says "negative favours", is corrected by #604: the headers now say that positive favours the candidate, and a test
+(`tests/test_paired_brier_sign.py`) pins the statistic and the headers. The sign stated on this page was right and stands.

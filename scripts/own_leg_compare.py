@@ -44,10 +44,14 @@ def _cell(tier):
 def _row(candidate):
     tiers, verdict = candidate["tiers"], candidate["verdict"]
     one, far = tiers["onset_warning"]["lead_at_least_1"], tiers["onset_warning"].get("lead_at_least_3")
-    worst = one.get("worst_weighted_false_alarms_per_onset") if one.get("weighted_miss_applied") else one.get("worst_false_alarms_per_onset")
+    weighted = one.get("weighted_miss_applied")
+    worst = one.get("worst_weighted_false_alarms_per_onset") if weighted else one.get("worst_false_alarms_per_onset")
+    # the count tier 1's limit is read on (pooled over the leads, ruling of 10 October 2026, #509); the worst lead is only reported
+    pooled = one.get("pooled_weighted_false_alarms_per_onset") if weighted else one.get("pooled_false_alarms_per_onset")
     scarce = verdict.get("scarce_regime", {})
     return {
         "tier1_pooled": _cell(one),
+        "tier1_pooled_false_alarms": None if pooled is None else round(pooled, 2),
         "tier1_worst_false_alarms": None if worst is None else round(worst, 2),
         "tier1_leads_3_to_5": _cell(far),
         "tier1": verdict["tier_1_onset_warning"],
@@ -65,8 +69,8 @@ def table_command(args) -> int:
     after = json.loads(args.after.read_text())["candidates"]
     before = json.loads(args.before.read_text())["candidates"]
     lines = [
-        "| row | read | tier 1 pooled: onsets flagged, recall [90%] | worst false alarms per onset | tier 1 leads 3 to 5 | tier 1 | tier 3 | tier 5 | passes | scarce regime alone (1 / 3 / 5) |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| row | read | tier 1 pooled: onsets flagged, recall [90%] | pooled false alarms per onset (the count tier 1 reads) | worst single lead (earlier counting) | tier 1 leads 3 to 5 | tier 1 | tier 3 | tier 5 | passes | scarce regime alone (1 / 3 / 5) |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     out, changed = {}, []
     yes = lambda v: "–" if v is None else ("yes" if v else "no")
@@ -78,7 +82,7 @@ def table_command(args) -> int:
             scarce = row["scarce_regime"]
             s = "–" if not scarce else " / ".join(yes(v) for v in scarce["tiers"])
             lines.append(
-                f"| {name} | {label} | {row['tier1_pooled']} | {row['tier1_worst_false_alarms']} | {row['tier1_leads_3_to_5']} | "
+                f"| {name} | {label} | {row['tier1_pooled']} | {row['tier1_pooled_false_alarms']} | {row['tier1_worst_false_alarms']} | {row['tier1_leads_3_to_5']} | "
                 f"{yes(row['tier1'])} | {yes(row['tier3'])} | {yes(row['tier5'])} | {yes(row['passes'])} | {s} |"
             )
         b, a = out[name]["before"], out[name]["after"]
