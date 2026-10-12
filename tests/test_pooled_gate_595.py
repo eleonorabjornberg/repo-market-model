@@ -1,10 +1,11 @@
 """Where the best row's pooled false alarms come from, and three declared gates on its every-day part (#595): the declaration, the candidate files and the lead gate.
 
-Recorded mutation, 12 October 2026, in a disposable copy: `scripts/pooled_gate_595.py`, in `lead_gate`, the line
-`farther = [x for x in leads if x > lead]` replaced by `farther = [x for x in leads if x != lead]` (a forecast now reads the same day's
-forecast at a nearer lead, which is issued after its decision instant). `LeadGateTests.test_a_forecast_never_reads_a_nearer_lead` then
-fails with `LookAheadError` raised by `_read_only_farther`; the second recorded mutation, the guard call `_read_only_farther(lead, farther)`
-deleted from `lead_gate` together with that change, fails `LeadGateTests.test_changing_a_nearer_lead_changes_nothing_farther` with `AssertionError`.
+Recorded mutations, 12 October 2026, in a disposable copy of `scripts/pooled_gate_595.py`, both in `lead_gate`:
+1. the line `farther = [x for x in leads if x > lead]` replaced by `farther = [x for x in leads if x != lead]` (a forecast now reads the same day's
+   forecast at a nearer lead, which is issued after its decision instant). Five `LeadGateTests`, among them `test_changing_a_nearer_lead_changes_nothing_farther`
+   and `test_a_day_is_kept_at_a_lead_only_if_every_farther_lead_cleared_it`, then error with `LookAheadError` raised by `_read_only_farther`.
+2. the same line, with the call `_read_only_farther(lead, farther)` also deleted: `test_a_day_is_kept_at_a_lead_only_if_every_farther_lead_cleared_it`
+   and `test_changing_a_nearer_lead_changes_nothing_farther` then fail with `AssertionError` (a nearer lead's forecast changes a farther lead's output).
 """
 
 import importlib.util
