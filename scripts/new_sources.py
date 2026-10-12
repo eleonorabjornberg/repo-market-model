@@ -42,6 +42,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import importlib.util
 import io
 import json
 import random
@@ -119,9 +120,10 @@ def fetch_dts_command(args) -> int:
 
 # -- step 3: the scratch panel and the screen of the ordinary days -----------------------------
 
-SCREEN_DIR = REPO / "scripts"
-sys.path.insert(0, str(SCREEN_DIR))
-import source_screen as screen  # noqa: E402
+_spec = importlib.util.spec_from_file_location("source_screen", REPO / "scripts" / "source_screen.py")
+screen = importlib.util.module_from_spec(_spec)
+sys.modules["source_screen"] = screen
+_spec.loader.exec_module(screen)
 
 from unittest import mock  # noqa: E402
 
@@ -586,7 +588,7 @@ def report_command(args) -> int:
     lines.append(f"Series whose ordinary-day AUROC interval excludes 0.5 at lead 1 or 5: {len(flagged)} of {len(ranked)}; of the new series: "
                  f"{', '.join('`%s`' % n for n in flagged if n in new) or 'none'}.")
     lines.append("")
-    lines.append("Table 3. Redundant groups (pooled lead-1 Spearman, |rho| >= %.1f, linked transitively) that hold a new series." % scope["cluster_threshold"])
+    lines.append("Table 3. Redundant groups (pooled lead-1 Spearman, |rho| >= %.1f, each member within the threshold of the representative) that hold a new series." % scope["cluster_threshold"])
     lines.append("")
     lines.append("| representative | members |")
     lines.append("|---|---|")
