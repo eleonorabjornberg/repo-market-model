@@ -147,6 +147,45 @@ def floor_warmup_blocks(
     return out
 
 
+# -- step 2: the recent floor ----------------------------------------------------------------------------
+
+
+def walk_forward_recent_floor(
+    forecasts: Sequence[float],
+    outcomes: Sequence[int],
+    scored_dates: Sequence[date],
+    train_ends: Sequence[date],
+    off_risk: Sequence[bool],
+    *,
+    window: int = gc.GROUP_MINIMUM_PAIRS,
+) -> Tuple[float, ...]:
+    """Variant (c): a floor under the days that are not risk dates from the rate over the most recent `window` earlier such days.
+
+    As `gc.walk_forward_floor`, with the pooled rate over every earlier pair replaced by the rate over the last `window` earlier
+    off-risk-date pairs observable at the block's fit; nothing is floored until `window` such pairs exist. A forecast is raised to the
+    floor, never lowered, and a risk date keeps its forecast.
+
+    Raises:
+        ValueError: for columns of different lengths.
+        LookAheadError: if a pair is not observable at the block's fit (`gc.require_observable`).
+    """
+
+    if len({len(forecasts), len(outcomes), len(scored_dates), len(train_ends), len(off_risk)}) != 1:
+        raise ValueError("forecasts, outcomes, dates, train ends and risk flags must be one per scored day")
+    column = [float(p) for p in forecasts]
+    for start, stop, end in pc.blocks(scored_dates, train_ends):
+        past = [i for i in pc.past_positions(scored_dates, train_ends, start) if off_risk[i]]
+        recent = past[-window:]
+        gc.require_observable([(scored_dates[i], forecasts[i], outcomes[i], "") for i in recent], end)
+        if len(recent) < window:
+            continue
+        rate = sum(outcomes[i] for i in recent) / window
+        for index in range(start, stop):
+            if off_risk[index]:
+                column[index] = max(column[index], rate)
+    return tuple(column)
+
+
 # -- the shortfall -----------------------------------------------------------------------------------------
 
 
@@ -410,6 +449,206 @@ def slice_command(args) -> int:
     return 0
 
 
+# -- step 2: the declaration, the variants and the comparisons --------------------------------------------
+
+DECLARATION = REPO / "metadata" / "tailcap_floor_610.json"
+DIST = "risk_gbm+settle+h41+dist_roll"
+SETTLE = "risk_gbm+settle+h41"
+VARIANT_NAMES = {"floor": BEST + "+floor", "state_floor": BEST + "+state_floor", "recent_floor": BEST + "+recent_floor"}
+STEP_ONE = REPO / "docs" / "pivot" / "evidence" / "tailcap-floor-diagnosis" / "diagnosis.json"
+
+
+def declaration_document() -> dict:
+    parents = json.loads(edc.DECLARATION.read_text(encoding="utf-8"))
+    return {
+        "status": (
+            "declared by the pull request that closes #610 after step 1 was committed (docs/pivot/evidence/tailcap-floor-diagnosis/) and before any "
+            "step 2 score; a measurement, not a record. Nothing here is published: no variant joins any published declaration, no day after 2025-12-31 "
+            "is scored, no rule changes and the live record and pin do not move. The variants were built after seeing 2018-2025, so a pass here is not a "
+            "confirmation (ruling of 11 October 2026 on #567)"
+        ),
+        "issue": 610,
+        "diagnosis": (
+            "step 1 (docs/pivot/evidence/tailcap-floor-diagnosis/diagnosis.json): the 2018-19 shortfall of +tailcap75 at h = 1 is +0.1649, 94% of it on "
+            "days that are not risk dates; the floor's start-up carries none of it (no pressure day falls before the floor can be fitted); a short "
+            "training window accounts for about a third (the same row on a later stretch of equal length: +0.0570); every 2018-19 day is in scarcity "
+            "state 3; the pooled floor lags a rate that rises within the year"
+        ),
+        "parent": {"row": BEST, "from": "metadata/every_day_conditioning_601.json, variant cap75; its forecasts are not changed, only floored"},
+        "second_parent": DIST,
+        "scoring": parents["scoring"],
+        "thresholds_bp": parents["thresholds_bp"],
+        "horizons": parents["horizons"],
+        "variants": {
+            VARIANT_NAMES["floor"]: {
+                "label": "(a) floor",
+                "parent": BEST,
+                "rule": "on a day that is not a risk date the forecast is raised to the walk-forward rate of pressure days among the earlier days that were not risk dates and whose outcome was observable at the block's fit (group_calibration.walk_forward_floor, #606); nothing is floored until those days number 60; a risk date keeps the forecast",
+                "implementation": "group_calibration.walk_forward_floor on the row's forecasts at each threshold, made non-increasing in tau (probability_calibration.monotone_curves)",
+            },
+            VARIANT_NAMES["state_floor"]: {
+                "label": "(b) floor by state",
+                "parent": BEST,
+                "rule": "as (a), the rate taken per as-of reserve-scarcity state (0 to 3, or unknown; each leg at its own latest public row, #586) once the state holds 60 such days and 3 pressure days, the pooled rate before",
+                "implementation": "group_calibration.walk_forward_floor with the state label as the group",
+            },
+            VARIANT_NAMES["recent_floor"]: {
+                "label": "(c) recent floor, chosen from step 1",
+                "parent": BEST,
+                "rule": "as (a), with the rate taken over the most recent 60 earlier days that were not risk dates and whose outcome was observable at the block's fit, instead of over all of them; nothing is floored until 60 such days exist. Chosen from step 1: the pooled floor lags a rate that rises within the year, the warm-up and the state carry none of the shortfall",
+                "implementation": "scripts/tailcap_floor_610.py walk_forward_recent_floor, the window being group_calibration.GROUP_MINIMUM_PAIRS (60), declared and not searched",
+            },
+        },
+        "conditioning_variable": (
+            "the reserve-scarcity state as of the decision instant of each forecast at its own horizon (pressure_judge._scarcity_states); "
+            "group_calibration.scarcity_state_label refuses any other value. No hindsight regime label (ruling on #515). The back-filled 2014-2018 "
+            "history is not used (the guard of #572)"
+        ),
+        "off_risk_rule": "a scored day for which announcement_dating_rescore.risk_flag(splits, values, True) is false, as in #606",
+        "cadence": "the judge's: a refit every 21 scored days from 61 days of history; a block's rate is fitted on the pairs whose scored day is at or before its last training label (probability_calibration.past_positions)",
+        "constants": {"group_minimum_pairs": gc.GROUP_MINIMUM_PAIRS, "group_minimum_events": gc.GROUP_MINIMUM_EVENTS, "recent_window": gc.GROUP_MINIMUM_PAIRS, "searched": "none"},
+        "variants_declared": "these three, on +tailcap75; no other variant, window, quantile or input",
+        "rows": {
+            "controls": [SETTLE, DIST, BEST],
+            "new": list(VARIANT_NAMES.values()),
+            "pairs": {name: BEST for name in VARIANT_NAMES.values()},
+        },
+        "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), under the weighted rule in force and the flat rule beside it",
+        "pairing": "each variant against +tailcap75 and against risk_gbm+settle+h41+dist_roll, with 90% stationary-bootstrap intervals, split by regime and pressure-day type",
+        "published": "nothing; no variant joins any published declaration",
+    }
+
+
+def candidate_entries() -> dict:
+    base = json.loads((CANDIDATES / f"{BEST}.json").read_text(encoding="utf-8"))
+    added = {
+        VARIANT_NAMES["floor"]: "then a floor on the days that are not risk dates: the walk-forward rate of pressure days among the earlier such days, observable at the block's fit (group_calibration.walk_forward_floor)",
+        VARIANT_NAMES["state_floor"]: "then that floor per as-of reserve-scarcity state (each leg at its own latest public row, #586), the pooled floor while the state holds too few such days",
+        VARIANT_NAMES["recent_floor"]: "then a floor on the days that are not risk dates: the rate of pressure days over the most recent 60 earlier such days observable at the block's fit",
+    }
+    entries = {}
+    for name, text in added.items():
+        entry = dict(base)
+        entry["track"] = "#610"
+        entry["parent"] = BEST
+        entry["calibration"] = base["calibration"] + "; " + text + "; metadata/tailcap_floor_610.json"
+        entries[name] = entry
+    return entries
+
+
+def declare_command(args) -> int:
+    if not STEP_ONE.exists():
+        raise SystemExit("step 1 is not committed: docs/pivot/evidence/tailcap-floor-diagnosis/diagnosis.json is missing")
+    DECLARATION.write_text(json.dumps(declaration_document(), indent=2) + "\n", encoding="utf-8")
+    for name, entry in candidate_entries().items():
+        (CANDIDATES / f"{name}.json").write_text(json.dumps(entry, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"declaration": str(DECLARATION), "candidates": [str(CANDIDATES / f"{n}.json") for n in VARIANT_NAMES.values()]}))
+    return 0
+
+
+def declared_document() -> dict:
+    return rds.committed_declaration(DECLARATION)
+
+
+def floored_columns(variant: str, forecasts_by_tau, outcomes_by_tau, scored, train_ends, off_risk, labels, taus) -> Dict[float, List[float]]:
+    columns = []
+    for tau in taus:
+        forecast, outcomes = list(forecasts_by_tau[tau]), list(outcomes_by_tau[tau])
+        if variant == "floor":
+            columns.append(gc.walk_forward_floor(forecast, outcomes, scored, train_ends, off_risk))
+        elif variant == "state_floor":
+            columns.append(gc.walk_forward_floor(forecast, outcomes, scored, train_ends, off_risk, labels))
+        elif variant == "recent_floor":
+            columns.append(walk_forward_recent_floor(forecast, outcomes, scored, train_ends, off_risk))
+        else:
+            raise ValueError(f"variant {variant!r} is not one of {tuple(VARIANT_NAMES)}")
+    curves = pc.monotone_curves(list(zip(*columns)))
+    return {tau: [curve[k] for curve in curves] for k, tau in enumerate(taus)}
+
+
+def run_command(args) -> int:
+    declared = declared_document()
+    for name in VARIANT_NAMES.values():
+        rds.committed_declaration(CANDIDATES / f"{name}.json")
+    h = args.horizon
+    if h not in declared["horizons"]:
+        raise SystemExit(f"horizon {h} is not declared")
+    last = date.fromisoformat(declared["scoring"]["last_day"])
+    require_unlocked([last], where="tailcap_floor_610")
+    dr.require_scored_window(last)
+    document = json.loads(args.cap.read_text(encoding="utf-8"))
+    if document["horizon"] != h or document["panel_sha256"] != panel_sha256(args.published):
+        raise SystemExit(f"{args.cap} is not the row's forecasts at h = {h} on this panel")
+    best = document["forecasts"][BEST]
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(SPLITS)
+    by_date = {row.date: row for row in rows}
+    taus = tuple(float(t) for t in declared["thresholds_bp"])
+    scoring = declared["scoring"]
+    registry = measurement_fields.load_registry()
+    report = rolling_exceedance_backtest(
+        rows, predictor=climatology_exceedance(scoring["minimum_history"]), model_name="grid", features=("spread_bps",), registry=registry,
+        decision_time=time.fromisoformat(scoring["decision_time"]), taus=taus, minimum_history=scoring["minimum_history"],
+        refit_every=scoring["refit_every"], end=last, horizon=h,
+    )
+    scored = list(report.scored_dates)
+    train_ends = [fold.train_end for fold in report.folds]
+    days = [day.isoformat() for day in scored]
+    for tau in taus:
+        if sorted(best[f"{tau:g}"]) != days:
+            raise SystemExit(f"the row's scored days at +{tau:g} bp are not the grid's at h = {h}")
+    outcomes_by_tau = {tau: report.at_tau(report.taus.index(tau))[2] for tau in taus}
+    forecasts_by_tau = {tau: [best[f"{tau:g}"][day] for day in days] for tau in taus}
+    off_risk = [not ann.risk_flag(splits, by_date[day].values, True) for day in scored]
+    states = dr._load("pressure_judge")._scarcity_states(h, last)
+    labels = [gc.scarcity_state_label(states.get(day)) for day in scored]
+    forecasts = {BEST: best}
+    for variant, name in VARIANT_NAMES.items():
+        column = floored_columns(variant, forecasts_by_tau, outcomes_by_tau, scored, train_ends, off_risk, labels, taus)
+        forecasts[name] = {f"{tau:g}": {day: column[tau][k] for k, day in enumerate(days)} for tau in taus}
+    out = {
+        "horizon": h,
+        "panel_sha256": panel_sha256(args.published),
+        "scratch_panel_sha256": panel_sha256(args.panel),
+        "declaration": declared,
+        "calibration": gc.declaration(),
+        "declarations": {name: {"parent": BEST, "state_counts": {label: labels.count(label) for label in sorted(set(labels))}, "off_risk_days": sum(off_risk)} for name in VARIANT_NAMES.values()},
+        "forecasts": forecasts,
+    }
+    args.output.write_text(json.dumps(out, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    print(json.dumps({"horizon": h, "output": str(args.output)}))
+    return 0
+
+
+def _patch_pg():
+    pg = edc.pg
+    pg.DECLARATION = DECLARATION
+    pg.VARIANTS = dict(VARIANT_NAMES)
+    pg.ROW = BEST
+    pg.PARENT = DIST
+    return pg
+
+
+def compare_command(args) -> int:
+    pg = _patch_pg()
+    reference = BEST if args.reference == "tailcap" else DIST
+    pairs = [("variant", name, reference) for name in VARIANT_NAMES.values()]
+    if args.reference == "distroll":
+        pairs.append(("row", BEST, reference))
+    ann.DECLARATION = DECLARATION
+    ann.rows_of_pairs = lambda: pairs
+    ann.markdown = lambda document, p: pg.comparison_markdown(document, p)
+    return ann.compare_command(args)
+
+
+def passthrough_command(args) -> int:
+    """`pooled_gate_595.py`'s onsets and summary, over these rows (the reference of onsets is +tailcap75)."""
+
+    pg = _patch_pg()
+    return pg.main(args.rest)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -427,6 +666,25 @@ def main(argv=None) -> int:
     d.add_argument("--output", type=Path, required=True)
     d.add_argument("--markdown", type=Path)
     d.set_defaults(func=diagnose_command)
+    sub.add_parser("declare").set_defaults(func=declare_command)
+    r = sub.add_parser("run")
+    r.add_argument("--panel", type=Path, required=True, help="the scratch panel")
+    r.add_argument("--published", type=Path, required=True)
+    r.add_argument("--horizon", type=int, required=True)
+    r.add_argument("--cap", type=Path, required=True, help="the cap file of scripts/every_day_conditioning_601.py at this horizon")
+    r.add_argument("--output", type=Path, required=True)
+    r.set_defaults(func=run_command)
+    c = sub.add_parser("compare")
+    c.add_argument("--rule", choices=("unweighted", "weighted"), default="weighted")
+    c.add_argument("--reference", choices=("tailcap", "distroll"), default="tailcap")
+    c.add_argument("--panel", type=Path, required=True)
+    c.add_argument("--output", type=Path, required=True)
+    c.add_argument("--markdown", type=Path)
+    c.add_argument("inputs", nargs="+", type=Path)
+    c.set_defaults(func=compare_command)
+    t = sub.add_parser("pg")
+    t.add_argument("rest", nargs=argparse.REMAINDER)
+    t.set_defaults(func=passthrough_command)
     args = parser.parse_args(argv)
     return args.func(args)
 

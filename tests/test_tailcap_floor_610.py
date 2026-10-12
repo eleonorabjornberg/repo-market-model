@@ -1,8 +1,15 @@
-"""The 2018-19 shortfall of `+tailcap75`, step 1 of #610: the later window, the floor's warm-up and the shortfall.
+"""The 2018-19 shortfall of `+tailcap75` (step 1 of #610) and the three floors on it (step 2): the later window, the floor's warm-up and the shortfall.
+
+Step 1's readers were written before their tests (the tests passed at once; the mutation below is what shows they bite). The recent floor's
+tests were written first and failed with `AttributeError` before the function existed.
 
 Recorded mutation, 12 October 2026, in a disposable copy of `scripts/tailcap_floor_610.py`: in `_training_days_at` the comparison `day <= train_end`
 replaced by `day <= train_end + timedelta(days=5)` (a refit is credited with days it was not trained on).
 `FloorWarmupTests.test_a_block_counts_only_the_days_it_trained_on` then fails with `AssertionError`.
+
+Recorded mutation, 12 October 2026, in `walk_forward_recent_floor`: the line `past = [i for i in pc.past_positions(scored_dates, train_ends, start) if off_risk[i]]`
+replaced by `past = [i for i in range(start) if off_risk[i]]` (a block reads pairs whose outcome is not yet observable at its fit).
+`RecentFloorTests.test_the_block_reads_only_pairs_observable_at_its_fit` then errors with `LookAheadError` raised by `group_calibration.require_observable`.
 """
 
 import importlib.util
@@ -120,6 +127,90 @@ class FloorWarmupTests(unittest.TestCase):
         for b in blocks:
             self.assertLessEqual(b["earlier_off_risk_pairs"], sum(off))
         self.assertEqual(sum(b["off_risk_days"] for b in blocks), sum(off))
+
+
+class RecentFloorTests(unittest.TestCase):
+    """Variant (c): the floor is the rate over the most recent `window` earlier observable off-risk days."""
+
+    def _case(self, outcomes, refit_every=21, first=61, off=None):
+        panel = _days(len(outcomes) + first)
+        scored = panel[first:]
+        ends = [panel[first - 1 + (k // refit_every) * refit_every] for k in range(len(scored))]
+        return scored, ends, [0.0] * len(scored), list(outcomes), off if off is not None else [True] * len(scored)
+
+    def test_the_floor_is_the_rate_over_the_most_recent_window_only(self):
+        # 120 quiet days, then 120 days all pressure: a pooled rate would be at most 0.5; the recent rate reaches 1
+        scored, ends, f, y, off = self._case([0] * 120 + [1] * 120)
+        column = SCRIPT.walk_forward_recent_floor(f, y, scored, ends, off, window=60)
+        self.assertEqual(column[-1], 1.0)
+        pooled = SCRIPT.gc.walk_forward_floor(f, y, scored, ends, off)
+        self.assertLess(pooled[-1], 1.0)
+
+    def test_nothing_is_floored_before_a_full_window_of_earlier_days(self):
+        scored, ends, f, y, off = self._case([1] * 200)
+        column = SCRIPT.walk_forward_recent_floor(f, y, scored, ends, off, window=60)
+        self.assertEqual(column[:60], tuple([0.0] * 60))
+        self.assertGreater(column[-1], 0.0)
+
+    def test_a_risk_date_keeps_its_forecast_and_is_not_a_pair(self):
+        scored, ends, f, y, off = self._case([1] * 200, off=[k % 2 == 0 for k in range(200)])
+        f = [0.3] * 200
+        column = SCRIPT.walk_forward_recent_floor(f, y, scored, ends, off, window=20)
+        for k in range(200):
+            if not off[k]:
+                self.assertEqual(column[k], 0.3)
+
+    def test_a_forecast_is_raised_never_lowered(self):
+        scored, ends, f, y, off = self._case([0] * 200)
+        f = [0.4] * 200
+        column = SCRIPT.walk_forward_recent_floor(f, y, scored, ends, off, window=20)
+        self.assertEqual(set(column), {0.4})
+
+    def test_columns_of_different_lengths_are_refused(self):
+        scored, ends, f, y, off = self._case([0] * 100)
+        with self.assertRaises(ValueError):
+            SCRIPT.walk_forward_recent_floor(f[:-1], y, scored, ends, off, window=20)
+
+    def test_the_block_reads_only_pairs_observable_at_its_fit(self):
+        # the outcomes of the last days before a refit are not yet observable (their labels end after the training end)
+        scored, ends, f, y, off = self._case([0] * 100 + [1] * 100)
+        ends = [min(end, scored[(k // 21) * 21] - timedelta(days=3)) for k, end in enumerate(ends)]
+        column = SCRIPT.walk_forward_recent_floor(f, y, scored, ends, off, window=20)
+        for start, stop, end in SCRIPT.pc.blocks(scored, ends):
+            observable = [i for i in SCRIPT.pc.past_positions(scored, ends, start) if off[i]]
+            if len(observable) >= 20:
+                expected = sum(y[i] for i in observable[-20:]) / 20
+                self.assertEqual(column[start], max(f[start], expected))
+
+
+class DeclarationTests(unittest.TestCase):
+    DECLARED = __import__("json").loads((ROOT / "metadata" / "tailcap_floor_610.json").read_text())
+
+    def test_the_declaration_is_what_the_script_declares(self):
+        self.assertEqual(SCRIPT.declaration_document(), self.DECLARED)
+
+    def test_three_variants_on_tailcap75_and_no_more(self):
+        self.assertEqual(list(self.DECLARED["variants"]), list(SCRIPT.VARIANT_NAMES.values()))
+        self.assertEqual(len(self.DECLARED["variants"]), 3)
+        for name in SCRIPT.VARIANT_NAMES.values():
+            self.assertTrue(name.startswith(SCRIPT.BEST + "+"))
+
+    def test_the_candidate_files_are_what_the_script_declares(self):
+        candidates = ROOT / "metadata" / "pressure_judge" / "candidates"
+        for name, entry in SCRIPT.candidate_entries().items():
+            self.assertEqual(__import__("json").loads((candidates / f"{name}.json").read_text()), entry)
+            self.assertEqual(entry["parent"], SCRIPT.BEST)
+
+    def test_the_window_is_the_minimum_of_pairs_not_a_searched_value(self):
+        self.assertEqual(self.DECLARED["constants"]["recent_window"], SCRIPT.gc.GROUP_MINIMUM_PAIRS)
+        self.assertEqual(self.DECLARED["constants"]["searched"], "none")
+
+    def test_the_scoring_ends_before_the_lockbox_and_nothing_is_published(self):
+        self.assertLess(self.DECLARED["scoring"]["last_day"], "2026-01-01")
+        self.assertIn("nothing", self.DECLARED["published"])
+
+    def test_step_one_is_committed_before_the_declaration(self):
+        self.assertTrue(SCRIPT.STEP_ONE.exists())
 
 
 if __name__ == "__main__":
