@@ -448,6 +448,19 @@ NOT_ENTRY_POINTS = {
         "asks the as-of rule, on the one middle row of the panel, whether a column has a "
         "row-relative availability; reads one row, scores and selects nothing (#478)"
     ),
+    "scripts/source_matrix_629.scored_grid": (
+        "the lead-1 fold grid of the exploratory source matrix (#629); scores and selects no model, and "
+        "calls lockbox.require_unlocked on every day before it returns one (tests/test_source_matrix_629.py)"
+    ),
+    "scripts/source_matrix_629.read_lead": (
+        "reads each series as of the decision instant at one lead on days scored_grid has already "
+        "passed through lockbox.require_unlocked (#629); selects no model and scores no forecast, and "
+        "the screen's `run` refuses a panel past 2025-12-31 (tests/test_source_matrix_629.py)"
+    ),
+    "scripts/source_matrix_629.read_derived": (
+        "forms the every-day inputs of #601 from the masked frames of the decisions on the screen's "
+        "scored days (#629); scores nothing, and walks _as_of_folds, which refuses a locked day"
+    ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
         "nothing, and leaves locked days out of every count through `counted` "
