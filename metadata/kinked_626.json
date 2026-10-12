@@ -1,0 +1,105 @@
+{
+  "status": "declared by the pull request that closes #626 before any score was computed; a measurement, not a record. Nothing is published: the published scarcity indicator and its 0.12 band are unchanged, every input is off in every published declaration, no day after 2025-12-31 is scored, and these rows are not added to the frozen shortlist of #567. The elasticity's form and every constant below are the directive's, written down once; only the logistic coefficients and (variant a) the fitted level are fitted, on the judge's cadence.",
+  "issue": 626,
+  "ruling": "Eleonora, 12 October 2026, on #626 (ruling on #597): give the structural model a kinked elasticity so that the fitted satiation level can be measured there. Model work; at most two variants plus the current form as control.",
+  "fixed_level": 0.12,
+  "fixed_level_source": "scarcity.SATIATION_BAND, its lower end; the control, unchanged",
+  "elasticity": {
+    "control": "e = exp(-(ratio - level) / 0.01), exponential everywhere (structural_liquidity.elasticity), level 0.12 (metadata/structural_liquidity.json)",
+    "kinked": "e = exp(max(0, level - ratio) / 0.01): 1 at and above the level, the control's growth below it (structural_liquidity.elasticity with kinked=True)",
+    "length": 0.01,
+    "sign_note": "The directive writes the kinked curve as exp(-max(0, level - ratio) / 0.01). Read literally that is at most 1 and falls as reserves fall below satiation, the reverse of the exponential curve below the level that the directive calls 'exponential below it' and of the demand curve's meaning (steeper as reserves become scarcer). The declared curve is the one with the positive exponent below the level, which equals max(1, the control's e). The literal sign is not scored. This is a reading of the directive, flagged in the pull request for Eleonora.",
+    "every_other_term": "unchanged (metadata/structural_liquidity.json): the drain, the TGA rise, the tax-date and window terms and the ridge logistic"
+  },
+  "variants": {
+    "structural_kinked_fitted": {
+      "label": "(a) kinked, fitted level",
+      "level": "the fitted kink of #587 (form b): at each refit, the kink of a hinge regression of the label day's spread on the as-of ratio, satiation.fit_level with the constants of metadata/satiation_587.json, fitted on that refit's training pairs alone; 0.12 on fewer than 250 pairs",
+      "form": "kinked_fitted"
+    },
+    "structural_kinked_rolling": {
+      "label": "(b) kinked, rolling level",
+      "level": "the rolling level of #587 (form a): the 10th percentile of the last 504 as-of ratios, 0.12 until 63 exist (satiation_roll), built per H.4.1 release as #622 requires (see dating)",
+      "form": "kinked_rolling",
+      "reading": "that level behaves as a two-year reserves low (#621); it is scored as #587 defined it, constants unchanged"
+    }
+  },
+  "dating": {
+    "reserves_leg": "per H.4.1 release (metadata/h41_release_dating.json), as the +h41 rows read it (ruling on #541; #622). The satiation_roll column, the ratios the structural variants read and the ratios of the fitted level are all read this way. #623 (which re-scores #587's and #598's columns this way) had not merged when this was written; the construction here is the directive's own and does not depend on it.",
+    "settlements": "the structural model's drain as on main (#568 for h = 1; #618 and #620, still open in #623, are not applied)",
+    "comparator_columns": "the satiation_dist_roll column of risk_gbm+settle+h41+dist_roll built the same way, per H.4.1 release"
+  },
+  "rows": {
+    "controls": [
+      "structural_liquidity",
+      "structural_liquidity+h41"
+    ],
+    "controls_reading": "structural_liquidity: the structural model as it stands on main (the reserves read on the earlier weekly lag), re-run here so the pairs are on one run. structural_liquidity+h41: the same model with the reserves read per H.4.1 release, the dating the two variants use; the like-for-like control",
+    "new": [
+      "structural_kinked_fitted",
+      "structural_kinked_rolling"
+    ],
+    "comparator": "risk_gbm+settle+h41+dist_roll",
+    "comparator_reading": "the tier-1 candidate of #598 with its distance column built per release; scored beside the variants and not a row of theirs (it is a risk-date passer; it warns on risk dates only)",
+    "pairs": {
+      "structural_kinked_fitted": "structural_liquidity+h41",
+      "structural_kinked_rolling": "structural_liquidity+h41",
+      "structural_liquidity+h41": "structural_liquidity"
+    },
+    "pairs_reading": "each kinked variant is paired with the like-for-like control (structural_liquidity+h41), which is paired with the structural model as it stands (structural_liquidity); all rows are also paired with the references, which include the passer risk_gbm+settle+h41 and its per-release distance variant risk_gbm+settle+h41+dist_roll (the comparator)"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5,
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "lead_at_least": 1
+  },
+  "references": {
+    "pair_against": [
+      "risk_gbm",
+      "ngboost_laplace",
+      "calendar_climatology",
+      "persistence_logistic"
+    ],
+    "controls": [
+      "risk_gbm+settle+h41",
+      "risk_gbm+settle+h41+dist_roll"
+    ],
+    "controls_reading": "the passer with settlement and H.4.1 timing on and the same with the per-release rolling distance as one extra input (#598's candidate), both scored in this run",
+    "risk_date_passers": [
+      "risk_gbm",
+      "risk_logistic",
+      "risk_gbm_base",
+      "risk_logistic_base",
+      "risk_quantile_skewt_base"
+    ]
+  },
+  "reports": {
+    "judge": "the judge as declared under the weighted rule in force: tier 1 pooled and per lead, tiers 3 and 5 for every row; onset recall by calendar year with 2025 called out; each row paired at +5 bp with the structural model as it stands, with the like-for-like control and with risk_gbm+settle+h41+dist_roll: the Brier difference at h = 1 to 5 and the onset recall difference, pooled and by regime and pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed",
+    "hinge_on_share": "the share of scored days on which the ratio is below the level (the kink is active), by calendar year, for each variant and the control's fixed 0.12 (scripts/kinked_626.py extras)",
+    "off_risk_dates": "on days that are not risk dates (the risk-date rule of the passers): the AUROC of each row at +5 bp, and the reliability slope and intercept of the outcome on the logit of the forecast (#616), by horizon, pooled over those days",
+    "scarcity_state": "#571 is not merged on main at the time of this measurement; the scarcity state the judge's tiers use is the one in force on main"
+  },
+  "unchanged": "the judge, its bar, its cut-off rule, the weighted miss rule in force, the bootstrap, every published declaration, the information set, the published scarcity indicator and its 0.12 band, the frozen shortlist of #567 and the lockbox. A measurement only: nothing is published and no day after 2025-12-31 is read (docs/decisions/lockbox.md). A pass here is not a confirmation (ruling on #567)."
+}

@@ -35,6 +35,12 @@ four elasticity terms by the constant `exp((level - 0.12) / LENGTH)`, which the 
 the model. Declared in `metadata/satiation_587.json`;
 a measurement, off in every published declaration.
 
+**Kinked elasticity (#626, ruling on #597).** `kinked_fitted` and `kinked_rolling` take their level as `fitted` and
+`rolling` do, but replace the exponential-everywhere curve by `e = exp(max(0, level - ratio) / LENGTH)`: 1 at and above the
+level, the unkinked curve's growth below it. Above the level `e` no longer decays, so a constant level is no longer a
+constant factor on the four terms and the fitted level can move the forecast. Declared in `metadata/kinked_626.json`; a
+measurement, off in every published declaration.
+
 Standard library only: the six-coefficient ridge logistic is fitted here by Newton's method; the
 as-of pairing of labels with what was public at their own decision instant is `ml._pressure_pairs`,
 imported inside the function that needs it (`tests/test_dependency_boundary.py`).
@@ -54,6 +60,7 @@ from .satiation import FIXED, ROLLING_COLUMN, fit_level
 
 __all__ = [
     "COLUMN_NAMES",
+    "KINKED_FORMS",
     "RAW_NAMES",
     "STRUCTURAL_FORMS",
     "DEFAULT_DECLARATION",
@@ -83,7 +90,9 @@ COLUMN_NAMES = ("spread_bps", "e_x_shortfall", "e_x_tga_up", "e_x_tax_date", "e_
 #: elasticity multiplies them (`StructuralDesign.finish`).
 RAW_NAMES = ("spread_bps", "ratio", "shortfall", "tga_up", "tax_date", "window")
 #: The satiation forms the structural model reads (`satiation.FORMS` less the projected model's hinge control).
-STRUCTURAL_FORMS = ("fixed", "rolling", "fitted")
+STRUCTURAL_FORMS = ("fixed", "rolling", "fitted", "kinked_rolling", "kinked_fitted")
+#: The forms whose elasticity is kinked (#626), with the level source each reads (`rolling` or `fitted`).
+KINKED_FORMS = {"kinked_rolling": "rolling", "kinked_fitted": "fitted"}
 
 _CALENDAR = ("days_to_month_end", "quarter_end", "tax_date")
 _BASE = ("spread_bps",) + _CALENDAR + ("reserve_balances", "bank_total_assets", "on_rrp", "tga")
@@ -94,9 +103,15 @@ _DRAIN_COLUMNS = ("net_settlement_ahead_1d", "net_settlement_due_5d")
 _EPSILON = 1e-6
 
 
-def elasticity(ratio: float, satiation: float = SATIATION) -> float:
-    """The reserve demand curve's slope at reserves over bank assets `ratio`: 1 at the satiation level (0.12 by default)."""
+def elasticity(ratio: float, satiation: float = SATIATION, kinked: bool = False) -> float:
+    """The reserve demand curve's slope at reserves over bank assets `ratio`: 1 at the satiation level (0.12 by default).
 
+    Unkinked it is `exp(-(ratio - satiation) / LENGTH)`, falling toward 0 above the level. With `kinked` (#626) it is
+    `exp(max(0, satiation - ratio) / LENGTH)`: flat at 1 at and above the level, the same growth below it.
+    """
+
+    if kinked:
+        return math.exp(max(0.0, float(satiation) - float(ratio)) / LENGTH)
     return math.exp(-(float(ratio) - float(satiation)) / LENGTH)
 
 
@@ -104,6 +119,12 @@ def shortfall(net_settlement_bn: float, on_rrp_bn: float) -> float:
     """The announced drain the ON RRP balance has not absorbed, USD billions."""
 
     return max(0.0, max(0.0, float(net_settlement_bn)) - float(on_rrp_bn))
+
+
+def _level_source(satiation: str) -> str:
+    """Where a form's level comes from: `fixed`, `rolling` (the panel column) or `fitted` (one level per refit)."""
+
+    return KINKED_FORMS.get(satiation, satiation)
 
 
 def features_at_horizon(horizon: int, satiation: str = "fixed") -> Tuple[str, ...]:
@@ -116,7 +137,7 @@ def features_at_horizon(horizon: int, satiation: str = "fixed") -> Tuple[str, ..
         raise ValueError(f"horizon must be positive, got {horizon}")
     if satiation not in STRUCTURAL_FORMS:
         raise ValueError(f"the satiation form is one of {list(STRUCTURAL_FORMS)}, got {satiation!r}")
-    extra = (ROLLING_COLUMN,) if satiation == "rolling" else ()
+    extra = (ROLLING_COLUMN,) if _level_source(satiation) == "rolling" else ()
     return _BASE + (_DRAIN_COLUMNS[0] if horizon == 1 else _DRAIN_COLUMNS[1],) + extra
 
 
@@ -134,7 +155,9 @@ class StructuralDesign:
         if satiation not in STRUCTURAL_FORMS:
             raise ValueError(f"the satiation form is one of {list(STRUCTURAL_FORMS)}, got {satiation!r}")
         declared = tuple(dict.fromkeys(str(name) for name in features))
-        required_columns = _BASE + ((ROLLING_COLUMN,) if satiation == "rolling" else ())
+        self.level_source = _level_source(satiation)
+        self.kinked = satiation in KINKED_FORMS
+        required_columns = _BASE + ((ROLLING_COLUMN,) if self.level_source == "rolling" else ())
         for required in required_columns:
             if required not in declared:
                 raise ValueError(f"the structural liquidity model reads {required!r}; declare it")
@@ -180,15 +203,15 @@ class StructuralDesign:
             1.0 if kind == "tax_date" else 0.0,
             1.0 if kind in ("quarter_end", "month_end") else 0.0,
         ]
-        if self.satiation == "fitted":
+        if self.level_source == "fitted":
             return raw
-        level = self._value(observation, ROLLING_COLUMN) if self.satiation == "rolling" else SATIATION
+        level = self._value(observation, ROLLING_COLUMN) if self.level_source == "rolling" else SATIATION
         return self.finish(raw, level)
 
     def finish(self, raw: Sequence[float], level: float) -> List[float]:
         """The five columns from a raw row (`RAW_NAMES`) at satiation `level`: the elasticity multiplies four terms."""
 
-        e = elasticity(raw[1], level)
+        e = elasticity(raw[1], level, self.kinked)
         return [raw[0], e * raw[2], e * raw[3], e * raw[4], e * raw[5]]
 
 
@@ -357,7 +380,7 @@ def structural_exceedance(
             design.row(row, ml._served_tga_change(histories[day], row)) for day, row in enumerate(feature_rows)
         ]
         level_record: Dict[str, Any] = {}
-        if satiation == "fitted":
+        if design.level_source == "fitted":
             # one level for the refit, from its training pairs alone; the pairs' ratios were public at their own
             # decisions and their spreads are labels the training frame covers
             level, level_record = fit_level([x[1] for x in xs], spreads)
