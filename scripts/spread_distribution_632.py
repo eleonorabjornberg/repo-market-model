@@ -22,7 +22,7 @@ P(spread > tau). Scored days are 2018-06-29 to 2025-12-31; no day of the 2026 ti
         --risk 'OUT/risk_h{h}.json' --reference 'OUT/ql_h{h}.json' --parents 'OUT/refs_h{h}.json' --rows 'OUT/sd_h{h}.json' \\
         --output OUT/compare.json --markdown OUT/compare.md
     PYTHONPATH=src python3 scripts/spread_distribution_632.py ordinary --panel PUBLISHED.csv --bench 'OUT/bench_h{h}.json' \\
-        --parents 'OUT/refs_h{h}.json' --rows 'OUT/sd_h{h}.json' --output OUT/ordinary.json
+        --risk 'OUT/risk_h{h}.json' --reference 'OUT/ql_h{h}.json' --parents 'OUT/refs_h{h}.json' --rows 'OUT/sd_h{h}.json' --output OUT/ordinary.json
     PYTHONPATH=src python3 scripts/spread_distribution_632.py report --compare OUT/compare.json --distribution OUT/distribution.json \\
         --ordinary OUT/ordinary.json --output OUT/report.md
 
@@ -168,6 +168,11 @@ def auroc(probabilities: Sequence[float], outcomes: Sequence[int]) -> Optional[f
     return (rank_sum - positives * (positives + 1) / 2.0) / (positives * negatives)
 
 
+def _sigmoid(x: float) -> float:
+    x = max(-40.0, min(40.0, x))
+    return 1.0 / (1.0 + math.exp(-x))
+
+
 def reliability(probabilities: Sequence[float], outcomes: Sequence[int], clip: float = 1e-6) -> Optional[Tuple[float, float]]:
     """The slope and intercept of the logistic fit of the outcome on logit(p), `(slope, intercept)`.
 
@@ -185,7 +190,7 @@ def reliability(probabilities: Sequence[float], outcomes: Sequence[int], clip: f
     for _ in range(50):
         g0 = g1 = h00 = h01 = h11 = 0.0
         for zi, yi in zip(z, outcomes):
-            mu = 1.0 / (1.0 + math.exp(-(a + b * zi)))
+            mu = _sigmoid(a + b * zi)
             w = mu * (1.0 - mu)
             g0 += yi - mu
             g1 += (yi - mu) * zi
@@ -199,6 +204,9 @@ def reliability(probabilities: Sequence[float], outcomes: Sequence[int], clip: f
             return None
         da = (h11 * g0 - h01 * g1) / det
         db = (h00 * g1 - h01 * g0) / det
+        step = max(abs(da), abs(db))
+        if step > 5.0:  # damp a runaway step (near-separated data)
+            da, db = da * 5.0 / step, db * 5.0 / step
         a, b = a + da, b + db
         if abs(da) + abs(db) < 1e-9:
             break
@@ -553,7 +561,7 @@ def ordinary_command(args) -> int:
     pooled: Dict[str, Tuple[List[float], List[int]]] = {n: ([], []) for n in names}
     for h in declared["horizons"]:
         forecasts = {}
-        for label, template in (("bench", args.bench), ("parents", args.parents), ("rows", args.rows)):
+        for label, template in (("bench", args.bench), ("risk", args.risk), ("reference", args.reference), ("parents", args.parents), ("rows", args.rows)):
             for f in pj.forecasts_from_horizon_document(jr._load(template, h)):
                 if f.name in names:
                     forecasts.setdefault(f.name, f)
@@ -759,7 +767,7 @@ def main(argv=None) -> int:
     p.add_argument("--markdown", type=Path)
     p = sub.add_parser("ordinary")
     p.add_argument("--panel", type=Path, required=True)
-    for name in ("bench", "parents", "rows"):
+    for name in ("bench", "risk", "reference", "parents", "rows"):
         p.add_argument(f"--{name}", required=True)
     p.add_argument("--output", type=Path, required=True)
     p = sub.add_parser("report")
