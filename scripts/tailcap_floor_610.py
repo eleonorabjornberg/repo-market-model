@@ -603,7 +603,7 @@ def run_command(args) -> int:
     off_risk = [not ann.risk_flag(splits, by_date[day].values, True) for day in scored]
     states = dr._load("pressure_judge")._scarcity_states(h, last)
     labels = [gc.scarcity_state_label(states.get(day)) for day in scored]
-    forecasts = {BEST: best}
+    forecasts = {}  # the row itself is in the cap file; the judge takes each name once
     for variant, name in VARIANT_NAMES.items():
         column = floored_columns(variant, forecasts_by_tau, outcomes_by_tau, scored, train_ends, off_risk, labels, taus)
         forecasts[name] = {f"{tau:g}": {day: column[tau][k] for k, day in enumerate(days)} for tau in taus}
