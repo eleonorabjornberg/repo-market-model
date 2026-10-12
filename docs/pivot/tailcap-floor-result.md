@@ -83,10 +83,11 @@ variant floors the forecasts of `+tailcap75` (no refit), walk-forward on the jud
   (-0.0342 and -0.0367, intervals below zero) and calibrated by (c) (+0.0046 [-0.0139, +0.0252]).
 - **Tier 5.** Realised minus predicted: `+tailcap75` +0.0537 [+0.0225, +0.0854]; (a) -0.0144 [-0.0480, +0.0190]; (b) -0.0157 [-0.0459, +0.0190]; (c) +0.0347
   [+0.0062, +0.0665]. Every row beats climatology on Brier. Full tables: [`evidence/tailcap-floor/calibration.md`](evidence/tailcap-floor/calibration.md).
-- **Brier against `+tailcap75`** (positive: the row is worse), h = 1, all days: (a) +0.0008 [-0.0035, +0.0059]; (b) +0.0015 [-0.0031, +0.0069]; (c) +0.0068
-  [-0.0002, +0.0151]. In 2018-19, where calibration improves, the Brier score worsens: (a) +0.0289 [+0.0109, +0.0494]; (c) +0.0340 [+0.0001, +0.0720]. The
-  floors move the mean forecast and lose sharpness on the days they raise. Against `risk_gbm+settle+h41+dist_roll`: (a) +0.0010 [-0.0036, +0.0065];
-  (c) +0.0069 [-0.0007, +0.0153]. All pairings by regime and pressure-day type are in `evidence/tailcap-floor/compare-*.md`.
+- **Paired Brier difference** (the reference's squared error less the row's, so positive favours the row, #604), h = 1, +5 bp, 90% interval, all days, against
+  `+tailcap75`: (a) +0.0008 [-0.0035, +0.0059]; (b) +0.0015 [-0.0031, +0.0069]; (c) +0.0068 [-0.0002, +0.0151]. All three cover zero over all days. By regime
+  the floors help in 2018-19, where calibration improves: (a) +0.0289 [+0.0109, +0.0494], (c) +0.0340 [+0.0001, +0.0720]; and hurt in the quiet years: (a) in 2020
+  -0.0201 [-0.0245, -0.0150] and 2021-23 -0.0064 [-0.0073, -0.0056]; (c) in 2020 -0.0057 [-0.0119, -0.0012]. Against `risk_gbm+settle+h41+dist_roll`: (a) +0.0010
+  [-0.0036, +0.0065]; (c) +0.0069 [-0.0007, +0.0153]. All pairings by regime and pressure-day type are in `evidence/tailcap-floor/compare-*.md`.
 
 ### What this says, and does not
 

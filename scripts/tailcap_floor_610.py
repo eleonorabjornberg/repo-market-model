@@ -653,7 +653,10 @@ def compare_command(args) -> int:
         pairs.append(("row", BEST, reference))
     ann.DECLARATION = DECLARATION
     ann.rows_of_pairs = lambda: pairs
-    ann.markdown = lambda document, p: pg.comparison_markdown(document, p)
+    # the table's header in pooled_gate_595.py reads the sign the other way (#604): the difference is the reference's loss less the row's
+    ann.markdown = lambda document, p: pg.comparison_markdown(document, p).replace(
+        "(negative favours the row)", "(the reference's squared error less the row's, so positive favours the row, #604)"
+    )
     return ann.compare_command(args)
 
 
