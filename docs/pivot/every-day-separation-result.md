@@ -15,7 +15,7 @@ Step 1: the row's every-day part flags 5 onset days and 131 false-alarm days. On
 IORB), which is **lower** at the onset warnings (median 18 bp against 23 bp), AUROC 0.30 [0.16, 0.47]. It is the only one of 14 that does so both in the pooled comparison and in the comparison with the
 false alarms of the onset years only (0.28 [0.09, 0.49]). The evidence is thin: the 5 warnings are onset days in 2019 and 2020 only, 14 inputs were examined, and both intervals end just below 0.5.
 Step 2 conditions the part on that input with a cap. The cap at the upper quartile of the tail spread's trailing readings (`+tailcap75`) keeps 18 of the row's 19 onsets and brings the pooled weighted false alarms
-per onset from 3.46 to 1.88, which passes tier 1 under the weighted rule in force (limit 2); under the flat rule it is 2.62 and does not. Tiers 3 and 5 still fail. The cap at the median
+per onset from 3.46 to 1.88: tier 1 is met under the weighted rule in force (limit 2); under the flat rule it is 2.62 and does not. Tiers 3 and 5 still fail. The cap at the median
 (`+tailcap50`) passes tier 1 under both rules, but it switches the part off: it keeps the same 14 onsets as `risk_gbm+settle+h41`.
 
 ## Step 1: what separates the onset warnings from the false alarms
