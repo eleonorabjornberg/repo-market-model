@@ -49,10 +49,10 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(DECLARED["variants"]["gate95"]["gate"], dict(SCRIPT.GATE, quantile=0.95))
         self.assertEqual(SCRIPT.GATE, {"quantile": 0.9, "window": 250, "minimum_earlier": 60})
 
-    def test_the_tail_variant_reads_the_tail_signal_and_the_announced_change_at_h1_only(self):
-        self.assertEqual(SCRIPT.tail_inputs(1), ("sofr_p99_iorb_bps", "iorb_announced_change_bps"))
+    def test_the_tail_variant_drops_the_75th_percentile_and_reads_the_announced_change_at_h1_only(self):
+        self.assertEqual(SCRIPT.tail_inputs(1), ("spread_bps", "sofr_p99_iorb_bps", "iorb_announced_change_bps"))
         for h in (2, 3, 4, 5):
-            self.assertEqual(SCRIPT.tail_inputs(h), ("sofr_p99_iorb_bps",))
+            self.assertEqual(SCRIPT.tail_inputs(h), ("spread_bps", "sofr_p99_iorb_bps"))
         self.assertEqual(SCRIPT.row_inputs(1), ml.EVERY_DAY_COMPONENT_INPUTS + ("iorb_announced_change_bps",))
         self.assertEqual(SCRIPT.row_inputs(3), ml.EVERY_DAY_COMPONENT_INPUTS)
 

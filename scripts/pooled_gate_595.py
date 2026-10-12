@@ -95,9 +95,10 @@ def judged_forecasts(pj, declaration, rows, splits, panel, inputs):
 
 
 def tail_inputs(horizon: int) -> tuple:
-    """Variant (c)'s every-day inputs: the tail signal, and the announced IORB change where it is public."""
+    """Variant (c)'s every-day inputs: the spread (a direct pressure model always reads the latest public spread), the tail signal,
+    and the announced IORB change where it is public."""
 
-    return (TAIL, ANNOUNCED) if horizon in READ_AT else (TAIL,)
+    return ("spread_bps", TAIL, ANNOUNCED) if horizon in READ_AT else ("spread_bps", TAIL)
 
 
 def row_inputs(horizon: int) -> tuple:
@@ -150,8 +151,9 @@ def declaration_document(parents: dict) -> dict:
                 "issue_text": "(c) the every-day part restricted to the signal that warned the onsets it added (the 2019 onsets and 2020-03-04), with the IORB term kept to announced-change days only",
                 "reading": (
                     "the diagnosis (docs/pivot/pooled-gate-result.md) lists the onsets the every-day part adds: 2019-05-28, 2019-06-25, 2019-08-13, 2020-03-04 and 2020-03-12. "
-                    f"What sets them apart from the median day is the SOFR 99th percentile above IORB ({TAIL}), not the spread or the 75th percentile. The component is "
-                    f"the ridge logistic on {TAIL} alone, and on {ANNOUNCED} where that is public (h = 1); the announced change is 0 on every day but an announced-change day, "
+                    f"What sets them apart from the median day is the SOFR 99th percentile above IORB ({TAIL}), not the 75th percentile. The component is "
+                    f"the ridge logistic on spread_bps (a direct pressure model always reads the latest public spread; ml._PressureDesign refuses a design without it) and {TAIL}, "
+                    f"and on {ANNOUNCED} where that is public (h = 1); it drops sofr_p75_iorb_bps. The announced change is 0 on every day but an announced-change day, "
                     "so its term acts on those days only. The gate, the risk-date model and the timing arm are the row's"
                 ),
                 "every_day_inputs": {"h=1": list(tail_inputs(1)), "h>=2": list(tail_inputs(2))},
@@ -181,11 +183,11 @@ def candidate_entries() -> dict:
         else:
             head = head.replace(
                 "a ridge logistic on spread_bps, sofr_p75_iorb_bps, sofr_p99_iorb_bps and iorb_announced_change_bps serves",
-                "a ridge logistic on sofr_p99_iorb_bps and iorb_announced_change_bps (at h = 1; on sofr_p99_iorb_bps alone at h >= 2) serves",
+                "a ridge logistic on spread_bps, sofr_p99_iorb_bps and iorb_announced_change_bps (at h = 1; without it at h >= 2) serves",
             )
             entry["features_at_horizon_2_or_more"] = base["features_at_horizon_2_or_more"].replace(
                 "; without iorb_announced_change_bps (read at h = 1 only; the row's forecasts are the parent's)",
-                "; the every-day component reads sofr_p99_iorb_bps alone (iorb_announced_change_bps at h = 1 only); the risk-date model's inputs are the row's",
+                "; the every-day component reads spread_bps and sofr_p99_iorb_bps (iorb_announced_change_bps at h = 1 only), not sofr_p75_iorb_bps; the risk-date model's inputs are the row's",
             )
         entry["calibration"] = head + tail_text
         entries[name] = entry

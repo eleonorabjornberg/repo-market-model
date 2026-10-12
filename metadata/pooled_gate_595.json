@@ -51,13 +51,15 @@
     "tail": {
       "name": "risk_gbm+every_day+gate+settle+h41+iorb+tail",
       "issue_text": "(c) the every-day part restricted to the signal that warned the onsets it added (the 2019 onsets and 2020-03-04), with the IORB term kept to announced-change days only",
-      "reading": "the diagnosis (docs/pivot/pooled-gate-result.md) lists the onsets the every-day part adds: 2019-05-28, 2019-06-25, 2019-08-13, 2020-03-04 and 2020-03-12. What sets them apart from the median day is the SOFR 99th percentile above IORB (sofr_p99_iorb_bps), not the spread or the 75th percentile. The component is the ridge logistic on sofr_p99_iorb_bps alone, and on iorb_announced_change_bps where that is public (h = 1); the announced change is 0 on every day but an announced-change day, so its term acts on those days only. The gate, the risk-date model and the timing arm are the row's",
+      "reading": "the diagnosis (docs/pivot/pooled-gate-result.md) lists the onsets the every-day part adds: 2019-05-28, 2019-06-25, 2019-08-13, 2020-03-04 and 2020-03-12. What sets them apart from the median day is the SOFR 99th percentile above IORB (sofr_p99_iorb_bps), not the 75th percentile. The component is the ridge logistic on spread_bps (a direct pressure model always reads the latest public spread; ml._PressureDesign refuses a design without it) and sofr_p99_iorb_bps, and on iorb_announced_change_bps where that is public (h = 1); it drops sofr_p75_iorb_bps. The announced change is 0 on every day but an announced-change day, so its term acts on those days only. The gate, the risk-date model and the timing arm are the row's",
       "every_day_inputs": {
         "h=1": [
+          "spread_bps",
           "sofr_p99_iorb_bps",
           "iorb_announced_change_bps"
         ],
         "h>=2": [
+          "spread_bps",
           "sofr_p99_iorb_bps"
         ]
       }
