@@ -356,6 +356,16 @@ NOT_ENTRY_POINTS = {
         "scores no forecast, its caller drops every row after the declared last scored day, refuses a later "
         "one (setup_diagnostic.require_window) and calls require_unlocked on it before the first read"
     ),
+    "scripts/every_day_separation_601.read_units": (
+        "reads the inputs of the days the every-day part flags at each lead's decision (#601); scores no forecast, "
+        "it ends at the declared last scored day through _as_of_folds, which calls require_unlocked, and `run` "
+        "calls require_unlocked on that day before it reads anything"
+    ),
+    "scripts/every_day_conditioning_601.read_levels": (
+        "reads the tail spread at each scored day's decision (#601); scores no forecast, it ends at the declared "
+        "last scored day through _as_of_folds, which calls require_unlocked, and `cap` calls require_unlocked on "
+        "that day before it reads anything"
+    ),
     "satiation._ratio_at": (
         "reads the reserves-to-assets ratio the as-of rule gives one panel row's decision (#587); scores nothing, "
         "`asof_ratios` and `build_columns` build no row after the declared last scored day, and "
