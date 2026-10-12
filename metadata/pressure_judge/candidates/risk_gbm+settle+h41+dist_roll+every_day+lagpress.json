@@ -1,0 +1,29 @@
+{
+  "role": "candidate",
+  "track": "#631",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps",
+    "satiation_dist_roll",
+    "pressure_last",
+    "pressure_lag1",
+    "pressure_lag2",
+    "pressure_lag5"
+  ],
+  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons; every-day component inputs as at h = 1 (all public at every lead)",
+  "calibration": "the parent with the last public pressure indicator and its lags 1, 2 and 5 added to the every-day component; on a risk date the control's forecast, on any other day the component's; metadata/derived_features_631.json",
+  "parent": "risk_gbm+settle+h41+dist_roll+every_day",
+  "inputs_note": "the passer risk_gbm+settle+h41 with the rolling distance as one extra input; everything else (the risk dates, the other features, the estimator, the settlement and H.4.1 timing) is the parent's"
+}
