@@ -53,3 +53,75 @@ shortfall (64%). The input does not touch this: on a day that is not a risk date
 
 So the remedy has to put mass on the days the risk-date part does not model; a better risk-date forecast cannot. Step 2 is chosen
 from this.
+
+## Step 2: three recalibrations of the best row
+
+**These variants were built after seeing 2018-2025, including the failures they are meant to cure. A pass here is not a confirmation
+(ruling on #567). A variant can replace a shortlist slot only by Eleonora's decision, before the 2026 window opens.** Nothing is
+published, no row joins the frozen shortlist, and no day of 2026 is scored.
+
+Declared in [`metadata/dist_roll_606.json`](../../metadata/dist_roll_606.json) and the three judge candidates in
+`metadata/pressure_judge/candidates/`, all committed after the step-1 page and before the first variant was scored;
+`scripts/dist_roll_606.py` refuses an uncommitted declaration. Each variant recalibrates the best row's own forecasts (no refit of
+the model) walk-forward on the judge's cadence, from the earlier pairs observable at each block's fit. The scarcity state is read as
+of the decision instant; no hindsight regime label is used (ruling on #515).
+
+| variant | row | rule |
+|---|---|---|
+| (a) floor | `risk_gbm+settle+h41+dist_roll+floor` | on a day that is not a risk date the forecast 0 is raised to the walk-forward rate of pressure days among the earlier such days (60 of them first) |
+| (b) floor by state | `risk_gbm+settle+h41+dist_roll+state_floor` | as (a), the rate per as-of scarcity state once the state holds 60 such days and 3 pressure days |
+| (c) state Platt | `risk_gbm+settle+h41+dist_roll+state_platt` | Platt per as-of scarcity state, the form that took tier 5 from no to yes in #602 |
+
+### Result (weighted rule in force, +5 bp, h = 1 to 5)
+
+| row | tier 1: onsets flagged / weighted false alarms per onset (limit 2) | tier 3: regimes calibrated (of the two tested), h = 1 | tier 5 | 2025 onsets warned | pass |
+|---|---|---|---|---|---|
+| best row (`+dist_roll`) | 15 of 26 / 1.27 | 0 of 2 | not met | 5 of 5 | no |
+| (a) `+floor` | 18 of 26 / 2.94 | 1 of 2 (2025-26) | **met** | 5 of 5 | no |
+| (b) `+state_floor` | 18 of 26 / 2.94 | 1 of 2 (2025-26) | **met** | 5 of 5 | no |
+| (c) `+state_platt` | 14 of 26 / 3.22 | 1 of 2 (2025-26) | **met** | 3 of 5 | no |
+
+- **No variant passes.** Each trades tier 1 for tier 5: the weighted false alarms per onset go from 1.27 to 2.94, 2.94 and 3.22, past the limit of 2, while
+  tier 5's calibration condition now holds. The same gain does not reach tier 3's other regime.
+- **Tier 5 is met by all three.** Week-ahead realised minus predicted, best row +0.0617 [+0.0342, +0.0931]; (a) -0.0114
+  [-0.0436, +0.0225]; (b) -0.0125 [-0.0434, +0.0191]; (c) -0.0270 [-0.0633, +0.0125]. All three now over-forecast, mean forecast
+  0.163 to 0.179 against a base rate of 0.152. Beating climatology on Brier holds for every row.
+- **Tier 3 is calibrated in 2025-26 and still fails in 2018-19.** Realised minus predicted in 2025-26 at h = 1: (a) +0.0288
+  [-0.0348, +0.1095]; (b) +0.0120 [-0.0435, +0.0837]; (c) +0.0365 [-0.0178, +0.1072], each covering zero (the best row: +0.0684
+  [+0.0051, +0.1500]). In 2018-19 the interval still excludes zero for every variant: (a) +0.1059 [+0.0301, +0.1791]; (b) +0.1059
+  [+0.0327, +0.1773]; (c) +0.1307 [+0.0552, +0.2078], against +0.1793 for the best row. 2018-19 is the first two years of the scored window, where a walk-forward rate has the least
+  history; this measurement does not separate that from a model defect.
+- **Where tier 1 fails.** The false alarms rise at every lead alone (Table 1b, lead 1 alone, weighted: 0.875 for the best row,
+  2.587 for (a) and (b), 1.702 for (c)). It is a reading, not tested here, that a probability on every non-risk day moves more
+  days over the judge's cut-off. Recall rises (15 to 18 of 26 for (a) and (b)), driven by 2019 (10 of 13
+  to 13 of 13); (c) loses two 2025 onsets (3 of 5) and 14 of 26 overall.
+- **Calibration over-corrects outside the failing regimes.** Predicted against realised at +5 bp, pooled over h = 1 to 5, 2021-23:
+  best row 0.0007 against 0.0000; (a) and (b) 0.0703, (c) 0.0918: the high rate of the early years is carried into quiet ones. This does not
+  matter for tier 3 (that regime has no pressure day and is not tested); it is a reading, not tested here, that it contributes to tier 1's false alarms.
+- **Brier against the best row** (reference minus row, positive when the row is better), pooled, h = 1 / 5: (a) +0.0011 [-0.0032,
+  +0.0065] / +0.0008 [-0.0036, +0.0058]; (b) +0.0018 [-0.0028, +0.0071] / +0.0014 [-0.0030, +0.0065]; (c) -0.0043 [-0.0095, +0.0013]
+  / -0.0059 [-0.0098, -0.0015]. For (a) and (b) every interval includes zero; (c) is worse at h = 3 to 5, with intervals below zero.
+  Onset recall difference against the best row, pooled: (a) and (b) +0.115 [0.000, 0.231]; (c) -0.038 [-0.158, +0.071] on 26 onsets.
+- The three variants, one of which is a Platt curve, lose tier 1 alike. It is a reading, not tested here, that a remedy has to tell
+  the non-risk days that are likely pressure days from the rest, which a constant per state cannot.
+
+## Not checked, or for Eleonora
+
+- **Whether any variant replaces a shortlist slot** (#567) is her decision, before the 2026 window opens. None passes the pass rule,
+  and nothing here is a confirmation. No "Publish?" issue is raised: no input joins a published declaration.
+- The 26 onsets are 17 in 2018-19, 2 in 2020, 2 in 2024 and 5 in 2025: a difference of one or two onsets is inside every interval.
+- Only these three settings were tried; nothing was tuned on a scored day. The 2018-19 shortfall
+  is a start-up problem (no earlier history for any as-of rule), which this measurement cannot separate from a model defect.
+- Hindsight regime labels are not used, per the ruling on #515. The state is the as-of one in force on main (#586).
+
+## Reproduce
+
+Published panel `4ddc3882…` (`verify-panel` clean, unchanged); scratch panels `AUG`, `AUG2` and `AUG2D` as in
+[`satiation-distance-result.md`](satiation-distance-result.md). `/opt/rmm-venv` (numpy 2.4.6, scikit-learn 1.9.1),
+`OMP_NUM_THREADS=OPENBLAS_NUM_THREADS=MKL_NUM_THREADS=1`. The commands are the module docstring of `scripts/dist_roll_606.py`:
+`diagnose` for step 1; `declare`, `run`, the judge under both rules, `compare` and `report` for step 2. The best row's forecasts are
+those of `scripts/satiation_distance_598.py run`.
+
+Evidence: [`evidence/dist-roll-diagnosis/`](evidence/dist-roll-diagnosis/) (`diagnosis.md`, `diagnosis.json`) and
+[`evidence/dist-roll-recalibration/`](evidence/dist-roll-recalibration/) (`report.md`; `compare.json` and `compare.md`;
+`judge-weighted.md` and `judge-unweighted.md`).
