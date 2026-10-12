@@ -1,0 +1,124 @@
+{
+  "status": "declared by the pull request that closes #587 before any score was computed; a measurement, not a record. Nothing is published: the published scarcity indicator and its 0.12 band are unchanged, every input is off in every published declaration, no day after 2025-12-31 is scored, and these rows are not added to the frozen shortlist of #567. The two forms and every constant below are the directive's, written down once; only the logistic coefficients, the factor's parameters, the calibration curve and (form b) the fitted level are fitted, on the judge's cadence.",
+  "issue": 587,
+  "ruling": "Eleonora, 11 October 2026, on #569 (relayed by the orchestrating session): measure a time-varying satiation level for the reserve-demand terms, set from past data only as of each decision. Any change to the published indicator is a later decision.",
+  "fixed_level": 0.12,
+  "fixed_level_source": "scarcity.SATIATION_BAND, its lower end; the control, unchanged",
+  "forms_scored": [
+    "rolling",
+    "fitted"
+  ],
+  "forms": {
+    "rolling": {
+      "label": "(a) a rolling level",
+      "rule": "the satiation level at a decision is the quantile of the reserves-to-assets ratios that the as-of rule reads at each of the last window_rows panel rows' own 16:00 decisions, up to and including the decision row's own. Each leg of a ratio (reserve_balances, bank_total_assets) is read at its own latest public row. Only values public at the decision are used; satiation.check_no_future rebuilds a row from the panel cut at it and refuses (LookAheadError) a level that differs.",
+      "quantile": 0.1,
+      "window_rows": 504,
+      "minimum_rows": 63,
+      "before_minimum": "the fixed 0.12, until 63 ratios exist in the window",
+      "column": "satiation_roll (source satiation_columns, metadata/sources_measurement.json; zero lag; off in every published declaration)",
+      "choice": "a 10th percentile of two years of panel rows (504 business days), a low quantile of the recent range, written down before any score and not tuned"
+    },
+    "fitted": {
+      "label": "(b) a fitted kink",
+      "rule": "at each refit the level is the kink k of a hinge regression of the label day's spread on the reserves ratio, fitted on that refit's training pairs only: spread = a + b * max(0, k - ratio), b >= 0, least squares, k searched on the grid. Each pair's ratio is the one the as-of rule reads at that label's own decision; each spread is the label of a day the training frame covers, so no row after the refit's training end is read. The refit's one level serves its training pairs and the days it forecasts.",
+      "grid": [
+        0.08,
+        0.2,
+        0.0025
+      ],
+      "minimum_pairs": 250,
+      "fallback": "the fixed 0.12 when fewer than 250 pairs exist or no grid point has a non-negative slope",
+      "ratio_fitted_on": "the structural model: the as-of ratio of the pair's decision; the projected model: the projected ratio at the scored day (proj_dist_h / 100 + 0.12); the combined model: the structural block's as-of ratio, one level for both terms",
+      "choice": "a squared-error hinge on the spread, a grid of 0.0025 over 0.08 to 0.20, a year of pairs at least; written down before any score and not tuned"
+    }
+  },
+  "terms": {
+    "structural": "the elasticity e = exp(-(ratio - level) / 0.01) of structural_liquidity.py, with the level of the form in place of 0.12; the length 0.01 is unchanged. Every other term is unchanged (metadata/structural_liquidity.json).",
+    "projected": "the linear proj_dist_h of #545 is replaced by hinge(projected ratio, level) = max(0, 100 * (level - projected ratio)), percentage points below the level, so the kink survives standardisation (the second half of #569). proj_change_h is unchanged. The model is the same logistic (ml.PRESSURE_LOGISTIC_SETTINGS) on the same direct pairs.",
+    "combined": "the combined model of #563 (metadata/combined_model_561.json) with the structural terms and the projected term as above, the factor block unchanged, the same Platt calibration, passer (risk_gbm with settlements dated from the announcement and the H.4.1 read per release) and gate of #532."
+  },
+  "rows": {
+    "controls": [
+      "structural_liquidity",
+      "projected_reserves",
+      "risk_gbm+combined"
+    ],
+    "controls_reading": "the three models as scored on main (satiation 0.12 fixed; the projected model linear in the distance), re-run in this measurement so that the pairs are on one run",
+    "new": [
+      "structural_rolling",
+      "structural_fitted",
+      "projected_hinge_fixed",
+      "projected_rolling",
+      "projected_fitted",
+      "risk_gbm+combined_hinge_fixed",
+      "risk_gbm+combined_rolling",
+      "risk_gbm+combined_fitted"
+    ],
+    "hinge_fixed_reading": "projected_hinge_fixed and risk_gbm+combined_hinge_fixed keep the kink at 0.12 (satiation.hinge with the fixed level). They separate what the kink's shape adds from what a moving level adds. They are controls, not one of the two forms.",
+    "pairs": {
+      "structural_rolling": "structural_liquidity",
+      "structural_fitted": "structural_liquidity",
+      "projected_hinge_fixed": "projected_reserves",
+      "projected_rolling": "projected_hinge_fixed",
+      "projected_fitted": "projected_hinge_fixed",
+      "risk_gbm+combined_hinge_fixed": "risk_gbm+combined",
+      "risk_gbm+combined_rolling": "risk_gbm+combined",
+      "risk_gbm+combined_fitted": "risk_gbm+combined"
+    },
+    "pairs_reading": "each row is paired with its fixed-0.12 version (the model as scored, or for the two time-varying projected rows the fixed hinge, then also the linear model as scored)"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5,
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "lead_at_least": 1
+  },
+  "references": {
+    "pair_against": [
+      "risk_gbm",
+      "ngboost_laplace",
+      "calendar_climatology",
+      "persistence_logistic"
+    ],
+    "controls": [
+      "risk_gbm+settle+h41",
+      "risk_gbm+every_day+gate+settle+h41"
+    ],
+    "controls_reading": "the passer with settlement and H.4.1 timing on (the base the combination is built on), and the same with the three-input every-day component and the gate of #541's table",
+    "risk_date_passers": [
+      "risk_gbm",
+      "risk_logistic",
+      "risk_gbm_base",
+      "risk_logistic_base",
+      "risk_quantile_skewt_base"
+    ]
+  },
+  "reports": {
+    "judge": "the judge as declared under the weighted rule in force: tier 1 pooled and per lead, tiers 3 and 5, for every row beside the five risk-date passers, ngboost_laplace and the two benchmarks; onset recall by calendar year with 2025 called out; each row paired against its fixed-0.12 version and against risk_gbm, ngboost_laplace, calendar_climatology and persistence_logistic at +5 bp: the Brier difference at h = 1 to 5 and the onset recall difference, pooled and by regime and pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed",
+    "level_over_time": "the satiation level each form sets over time, plotted against the reserves ratio (scripts/satiation_587.py levels)",
+    "scarcity_state": "#571's PR (the scarcity state read at each leg's own row) is not merged on main at the time of this measurement; the scarcity state the judge's tiers use is the one in force on main"
+  },
+  "unchanged": "the judge, its bar, its cut-off rule, the weighted miss rule in force, the bootstrap, every published declaration, the information set, the published scarcity indicator and its 0.12 band, the frozen shortlist of #567 and the lockbox. A measurement only: nothing is published and no day after 2025-12-31 is read (docs/decisions/lockbox.md)."
+}

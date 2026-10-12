@@ -4555,6 +4555,10 @@ def _direct_pressure_predictor(
             )
             for day, row in enumerate(feature_rows)
         ]
+        satiation_fit = None
+        if getattr(design, "late_level", False):
+            # the satiation level of this refit, fitted on its training pairs alone (#587)
+            xs, served, satiation_fit = design.bind(xs, spreads, served)
         if history is not None:
             from . import effr_history
 
@@ -4667,6 +4671,10 @@ def _direct_pressure_predictor(
                 "last": pool.dates[-1].isoformat() if pool.dates else None,
                 "horizon": pool.horizon,
             }
+        if getattr(design, "satiation", None):
+            settings["satiation"] = design.satiation
+            if satiation_fit is not None:
+                settings["satiation_fit"] = satiation_fit
         if design.scarcity:
             settings["scarcity_state"] = SCARCITY_STATE
         if design.tga:
@@ -7006,11 +7014,18 @@ class _CombinedDesign:
     monotone = None
     pooling = None
 
-    def __init__(self, features: Sequence[str], declaration: Any, blocks: Sequence[str]) -> None:
+    def __init__(
+        self, features: Sequence[str], declaration: Any, blocks: Sequence[str], satiation: str = "fixed"
+    ) -> None:
+        from .satiation import FORMS, ROLLING_COLUMN
+
+        if satiation not in FORMS:
+            raise ValueError(f"the satiation form is one of {list(FORMS)}, got {satiation!r}")
         declared = tuple(dict.fromkeys(str(name) for name in features))
         if "spread_bps" not in declared:
             raise ValueError("the combined model reads the latest public spread; declare spread_bps")
         self.features = declared
+        self.satiation = satiation
         self.structural = None
         self.projected_column: Optional[str] = None
         names = ["spread_bps"]
@@ -7018,7 +7033,10 @@ class _CombinedDesign:
         if "structural" in blocks:
             from .structural_liquidity import COLUMN_NAMES, StructuralDesign
 
-            self.structural = StructuralDesign(declared, declaration)
+            # the elasticity's form: the control forms keep it at the fixed 0.12
+            self.structural = StructuralDesign(
+                declared, declaration, satiation if satiation in ("rolling", "fitted") else "fixed"
+            )
             names += list(COLUMN_NAMES[1:])
             read += [name for name in self.structural.features if name not in read]
         if "projected" in blocks:
@@ -7026,28 +7044,177 @@ class _CombinedDesign:
             if len(columns) != 1:
                 raise ValueError(f"declare exactly one proj_dist_h column for the projected block, got {columns}")
             self.projected_column = columns[0]
-            names.append(columns[0])
+            names.append(columns[0] if satiation == "fixed" else columns[0].replace("proj_dist_", "proj_hinge_"))
             read.append(columns[0])
+        if satiation == "rolling":
+            if ROLLING_COLUMN not in declared:
+                raise ValueError(f"the rolling satiation form reads {ROLLING_COLUMN!r}; declare it")
+            if ROLLING_COLUMN not in read:
+                read.append(ROLLING_COLUMN)
         self.names = tuple(names)
         self.features_read = tuple(read)
         self.tga = self.structural is not None
+        #: The `fitted` form: `row` is raw until `finish` is given the refit's fitted level.
+        self.late_level = satiation == "fitted"
 
     def needs_history(self) -> bool:
         return self.tga
 
+    def _projected(self, observation: DailyObservation) -> float:
+        value = observation.values.get(self.projected_column)
+        if value is None or not math.isfinite(float(value)):
+            raise ValueError(
+                f"{observation.date}: the as-of read of {self.projected_column!r} is missing; "
+                f"the combined model is not fitted or served on an unobserved input"
+            )
+        return float(value)
+
     def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        from .satiation import FIXED, ROLLING_COLUMN, hinge
+
         values = [float(observation.spread_bps)]
         if self.structural is not None:
             values += self.structural.row(observation, tga_change)[1:]
         if self.projected_column is not None:
-            value = observation.values.get(self.projected_column)
-            if value is None or not math.isfinite(float(value)):
-                raise ValueError(
-                    f"{observation.date}: the as-of read of {self.projected_column!r} is missing; "
-                    f"the combined model is not fitted or served on an unobserved input"
-                )
-            values.append(float(value))
+            value = self._projected(observation)
+            ratio = value / 100.0 + FIXED
+            if self.satiation == "fixed":
+                values.append(value)
+            elif self.satiation == "fitted":
+                values.append(ratio)
+            elif self.satiation == "rolling":
+                level = observation.values.get(ROLLING_COLUMN)
+                if level is None or not math.isfinite(float(level)):
+                    raise ValueError(f"{observation.date}: the as-of read of {ROLLING_COLUMN!r} is missing")
+                values.append(hinge(ratio, float(level)))
+            else:
+                values.append(hinge(ratio, FIXED))
         return values
+
+    def ratio(self, raw: Sequence[float]) -> float:
+        """The reserves ratio a fitted level is fitted on: the as-of ratio of the structural terms, else the projected one."""
+
+        return float(raw[1])
+
+    def finish(self, raw: Sequence[float], level: float) -> List[float]:
+        """A `fitted` raw row at the refit's `level`: the elasticity and the projected hinge, both at it."""
+
+        from .satiation import hinge
+
+        out = [raw[0]]
+        k = 1
+        if self.structural is not None:
+            out += self.structural.finish(list(raw[:6]), level)[1:]
+            k = 6
+        if self.projected_column is not None:
+            out.append(hinge(raw[k], level))
+        return out
+
+
+class _ProjectedHingeDesign:
+    """The projected-reserves model's design with its kink kept after standardisation (#587, ruling on #569).
+
+    The spread, the pressure-day type (one indicator each for the quarter end, the month end and a tax date),
+    `hinge(projected ratio, level)` and the projected change `proj_change_h{h}`. `proj_dist_h{h}` is linear in the
+    projected ratio, so the logistic's standardisation removes the satiation level from it (#569); the hinge is zero at
+    and above the level and so keeps it in the forecast. The projected ratio is `proj_dist_h / 100 + 0.12`
+    (`projected_reserves.distance_and_change`).
+
+    `satiation` (`satiation.FORMS` less `fixed`, which is the model as scored): `fixed_kink`, the level 0.12;
+    `rolling`, the level the panel column `satiation_roll` carries; `fitted`, a design row that is raw until `bind` fits
+    the refit's level on its training pairs and completes the pairs and the served rows with it.
+    """
+
+    tga = False
+    scarcity = False
+    products: Tuple[Tuple[str, str], ...] = ()
+    monotone = None
+    pooling = None
+
+    def __init__(self, features: Sequence[str], declaration: Any, horizon: int, satiation: str) -> None:
+        from .satiation import FORMS, ROLLING_COLUMN
+
+        if satiation not in FORMS or satiation == "fixed":
+            raise ValueError(f"the hinge model's satiation form is one of {list(FORMS[1:])}, got {satiation!r}")
+        if not hasattr(declaration, "day_type"):
+            raise ValueError("the pressure-day type needs the split declaration that defines it")
+        declared = tuple(dict.fromkeys(str(name) for name in features))
+        self.dist_column = f"proj_dist_h{horizon}"
+        self.change_column = f"proj_change_h{horizon}"
+        required = ("spread_bps", self.dist_column, self.change_column) + ((ROLLING_COLUMN,) if satiation == "rolling" else ())
+        for name in required:
+            if name not in declared:
+                raise ValueError(f"the projected hinge model reads {name!r}; declare it")
+        self.features = declared
+        self.declaration = declaration
+        self.satiation = satiation
+        self.names = ("spread_bps",) + _PRESSURE_DAY_TYPES + (f"proj_hinge_h{horizon}", self.change_column)
+        self.late_level = satiation == "fitted"
+
+    def needs_history(self) -> bool:
+        return False
+
+    def _value(self, observation: DailyObservation, column: str) -> float:
+        value = observation.values.get(column)
+        if value is None or not math.isfinite(float(value)):
+            raise ValueError(
+                f"{observation.date}: the as-of read of {column!r} is missing; the projected hinge model is not "
+                f"fitted or served on an unobserved input"
+            )
+        return float(value)
+
+    def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
+        from .satiation import FIXED, ROLLING_COLUMN, hinge
+
+        ratio = self._value(observation, self.dist_column) / 100.0 + FIXED
+        kind = self.declaration.day_type(observation.values)
+        head = [float(observation.spread_bps)] + [1.0 if kind == name else 0.0 for name in _PRESSURE_DAY_TYPES]
+        change = self._value(observation, self.change_column)
+        if self.satiation == "fitted":
+            return head + [ratio, change]
+        level = self._value(observation, ROLLING_COLUMN) if self.satiation == "rolling" else FIXED
+        return head + [hinge(ratio, level), change]
+
+    def finish(self, raw: Sequence[float], level: float) -> List[float]:
+        from .satiation import hinge
+
+        return list(raw[:4]) + [hinge(raw[4], level), raw[5]]
+
+    def bind(
+        self, xs: Sequence[Sequence[float]], spreads: Sequence[float], served: Sequence[Sequence[float]]
+    ) -> Tuple[List[List[float]], List[List[float]], dict]:
+        """Fit the refit's level on its training pairs and complete the pairs and the served rows with it."""
+
+        from .satiation import fit_level
+
+        level, record = fit_level([x[4] for x in xs], spreads)
+        return (
+            [self.finish(x, level) for x in xs],
+            [self.finish(x, level) for x in served],
+            {"satiation_level": level, **record},
+        )
+
+
+def pressure_projected_hinge_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    *,
+    horizon: int,
+    satiation: str = "fixed_kink",
+) -> Any:
+    """The projected-reserves logistic (#545) with its kink kept after standardisation (#587).
+
+    Returns an `ExceedancePredictor`, declared `Any` as `structural_liquidity.structural_exceedance` is: it reads the
+    scratch-panel columns `proj_dist_h` and `proj_change_h` (and `satiation_roll`), so no `--model` run can construct it.
+
+    `pressure_logistic_exceedance` on `_ProjectedHingeDesign`: the same estimator (`PRESSURE_LOGISTIC_SETTINGS`), the same
+    direct pairs under the as-of rule, with the linear distance to satiation replaced by a hinge at the satiation
+    level of the declared form. A measurement: off in every published declaration.
+    """
+
+    design = _ProjectedHingeDesign(features, declaration, horizon, satiation)
+    return _direct_pressure_predictor("logistic", features, declaration, minimum_history, design=design)
 
 
 def _combined_pairs(
@@ -7119,6 +7286,7 @@ def pressure_combined_ordinary_exceedance(
     minimum_history: int = 20,
     blocks: Sequence[str] = COMBINED_BLOCKS,
     calibration: str = COMBINED_CALIBRATION,
+    satiation: str = "fixed",
 ) -> ExceedancePredictor:
     """The ordinary-day component of the combined model (#561): one calibrated logistic on the declared blocks.
 
@@ -7132,6 +7300,12 @@ def pressure_combined_ordinary_exceedance(
     `features`: the spread and, for `structural`, the structural features at the horizon, and for `projected`
     one `proj_dist_h{h}`; the factor's nine columns are read in addition when `factor` is declared, so the caller
     declares them to the backtest.
+
+    `satiation` (#587, `satiation.FORMS`): `fixed`, the model as scored (the elasticity at 0.12 and the projected
+    distance linear in the ratio); `fixed_kink`, the projected block a hinge at 0.12; `rolling`, both terms at the
+    level of the panel column `satiation_roll` (declare it in `features`); `fitted`, both at one level fitted on
+    each refit's training pairs alone (`satiation.fit_level`). A measurement: the published declaration never
+    names a form.
 
     Raises:
         ValueError: on an unknown block or calibration, a short frame, a call without the as-of rule or without
@@ -7151,7 +7325,7 @@ def pressure_combined_ordinary_exceedance(
     if minimum_history < 1:
         raise ValueError(f"minimum_history must be positive, got {minimum_history}")
     use_factor = "factor" in blocks
-    design = _CombinedDesign(features, declaration, tuple(name for name in blocks if name != "factor"))
+    design = _CombinedDesign(features, declaration, tuple(name for name in blocks if name != "factor"), satiation)
     settings = LATENT_FACTOR_SETTINGS
     pair_cache: dict = {}
     observation_cache: dict = {}
@@ -7187,6 +7361,14 @@ def pressure_combined_ordinary_exceedance(
             fitted = fit_latent_factor(training)
             means = [mean for mean, _var in filter_latent_factor(fitted, training)]
         pairs = _combined_pairs(design, information, train_rows, pair_cache)
+        level_record: dict = {}
+        level = None
+        if design.late_level:
+            from .satiation import fit_level
+
+            # one level for the refit, from its training pairs alone
+            level, level_record = fit_level([design.ratio(row) for _a, row, _s in pairs], [s for _a, _r, s in pairs])
+            pairs = [(anchor, design.finish(row, level), spread) for anchor, row, spread in pairs]
         xs, spreads = _combined_training_matrix(pairs, means, use_factor)
         if len(xs) < settings["minimum_mapping_days"]:
             raise ValueError(
@@ -7205,6 +7387,8 @@ def pressure_combined_ordinary_exceedance(
                 )
             tga_change = _served_tga_change(history, feature_row) if design.tga else None
             row = design.row(feature_row, tga_change)
+            if level is not None:
+                row = design.finish(row, level)
             if use_factor:
                 path = [mean for mean, _var in filter_latent_factor(fitted, [observed(r) for r in history])]
                 columns = _combined_factor_columns(path, len(path) - 1)
@@ -7249,6 +7433,11 @@ def pressure_combined_ordinary_exceedance(
             "combined_uncalibrated_fits": uncalibrated,
             "filtered_factor": factor_levels,
         }
+        if satiation != "fixed":
+            report["combined_satiation"] = satiation
+            if level_record:
+                report["combined_satiation_level"] = level
+                report["combined_satiation_fit"] = level_record
         if fitted is not None:
             report.update({"persistence": fitted.persistence, "loadings": list(fitted.loadings)})
         return _combined_result(curves, read, report, histories)
