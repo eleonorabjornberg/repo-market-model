@@ -1,0 +1,1952 @@
+{
+ "by_lead": {
+  "1": {
+   "flags": 36,
+   "weighted": 19.5
+  },
+  "2": {
+   "flags": 25,
+   "weighted": 15.0
+  },
+  "3": {
+   "flags": 36,
+   "weighted": 23.0
+  },
+  "4": {
+   "flags": 30,
+   "weighted": 17.75
+  },
+  "5": {
+   "flags": 29,
+   "weighted": 19.75
+  }
+ },
+ "by_number_of_leads_flagging": {
+  "1": {
+   "days": 17,
+   "weighted": 13.0
+  },
+  "2": {
+   "days": 12,
+   "weighted": 9.75
+  },
+  "3": {
+   "days": 5,
+   "weighted": 4.25
+  },
+  "4": {
+   "days": 10,
+   "weighted": 2.75
+  },
+  "5": {
+   "days": 12,
+   "weighted": 7.75
+  }
+ },
+ "by_source": {
+  "risk date at every lead that flags it": {
+   "days": 56,
+   "weighted": 37.5
+  }
+ },
+ "by_year": {
+  "2018": {
+   "days": 2,
+   "weighted": 2.0
+  },
+  "2019": {
+   "days": 22,
+   "weighted": 9.0
+  },
+  "2020": {
+   "days": 21,
+   "weighted": 19.25
+  },
+  "2021": {
+   "days": 2,
+   "weighted": 2.0
+  },
+  "2023": {
+   "days": 1,
+   "weighted": 1.0
+  },
+  "2024": {
+   "days": 1,
+   "weighted": 1.0
+  },
+  "2025": {
+   "days": 7,
+   "weighted": 3.25
+  }
+ },
+ "false_alarm_days": [
+  {
+   "date": "2018-07-31",
+   "day_type": "month_end",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.1875,
+    "2": 0.09090909090909093,
+    "3": 0.10000000000000002,
+    "4": 0.11111111111111113,
+    "5": 0.11111111111111113
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2018
+  },
+  {
+   "date": "2018-08-15",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.1875,
+    "2": 0.2,
+    "3": 0.21428571428571427,
+    "4": 0.23076923076923078,
+    "5": 0.23076923076923078
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2018
+  },
+  {
+   "date": "2019-01-29",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.1953818061413944,
+    "2": 0.2564102564102564,
+    "3": 0.2631578947368421,
+    "4": 0.2702702702702703,
+    "5": 0.2702702702702703
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-01-30",
+   "day_type": "month_end",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.1953818061413944,
+    "2": 0.2564102564102564,
+    "3": 0.2631578947368421,
+    "4": 0.2702702702702703,
+    "5": 0.2702702702702703
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-02-15",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.4537673786563436,
+    "2": 0.5850117177574318,
+    "3": 0.6189667243747893,
+    "4": 0.7078749902310945,
+    "5": 0.8328309959040262
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2019
+  },
+  {
+   "date": "2019-02-22",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.8631050218576325,
+    "2": 0.872450574990114,
+    "3": 0.7726765891246417,
+    "4": 0.4528816432237686,
+    "5": 0.4532284371934454
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.5,
+   "year": 2019
+  },
+  {
+   "date": "2019-02-26",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.17202966882269027,
+    "2": 0.16451618590109945,
+    "3": 0.2521049334252974,
+    "4": 0.34669904858440215,
+    "5": 0.18656279483303212
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-02-27",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.25778765247699437,
+    "2": 0.18678147524479202,
+    "3": 0.2537993171887253,
+    "4": 0.3378366108638754,
+    "5": 0.19514460964759145
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-05-29",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.40477979946741827,
+    "2": 0.33806079469425687,
+    "3": 0.45755961161270775,
+    "4": 0.5804505365432633,
+    "5": 0.4830952319263735
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-05-30",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.3672118488087083,
+    "2": 0.33806079469425687,
+    "3": 0.5810191766695091,
+    "4": 0.7611617680503437,
+    "5": 0.5224074941094641
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-06-18",
+   "day_type": "tax_date",
+   "flagged_at": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.03814021497824435,
+    "2": 0.18341922562980795,
+    "3": 0.5957210521427232,
+    "4": 0.5431276776250992,
+    "5": 0.2287533499974466
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-06-19",
+   "day_type": "tax_date",
+   "flagged_at": [
+    1,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.2864178481377824,
+    "2": 0.06617639489504197,
+    "3": 0.5957210521427232,
+    "4": 0.7039027718332659,
+    "5": 0.6350803321499263
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-07-29",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.17906005084237128,
+    "2": 0.2856224187774809,
+    "3": 0.5527059558970103,
+    "4": 0.17286713736726972,
+    "5": 0.11491553812793605
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-07-30",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.23839140578263063,
+    "2": 0.4302635632946895,
+    "3": 0.5698287096920982,
+    "4": 0.17286713736726972,
+    "5": 0.11491553812793605
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-08-29",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.17673085398813312,
+    "2": 0.008681010680220662,
+    "3": 0.6624515275790387,
+    "4": 0.5780640794583021,
+    "5": 0.5381515609238446
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-09-27",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.9651786177832455,
+    "2": 0.985055378247482,
+    "3": 0.8719023532940354,
+    "4": 0.5311385453744405,
+    "5": 0.6598961435280606
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-10-29",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.8466525648091372,
+    "2": 0.5165202727569125,
+    "3": 0.5843968924116422,
+    "4": 0.3610316436462448,
+    "5": 0.11425601698847099
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-10-30",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.3995545818492239,
+    "2": 0.5098713363874633,
+    "3": 0.8259501873050287,
+    "4": 0.2966739867839121,
+    "5": 0.07981954497042146
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-11-15",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.9840475480572953,
+    "2": 0.9589519642441304,
+    "3": 0.9462944643184676,
+    "4": 0.6668115683295953,
+    "5": 0.9903449439041673
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2019
+  },
+  {
+   "date": "2019-12-09",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.08438001579312032,
+    "2": 0.0,
+    "3": 0.0,
+    "4": 0.0,
+    "5": 0.0
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.5,
+   "year": 2019
+  },
+  {
+   "date": "2019-12-17",
+   "day_type": "tax_date",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.3998192696815913,
+    "2": 0.7806431906781618,
+    "3": 0.5585543529360966,
+    "4": 0.10863926731509048,
+    "5": 0.18160647510466058
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-12-18",
+   "day_type": "tax_date",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.4373812180617409,
+    "2": 0.8261183861316653,
+    "3": 0.5585543529360966,
+    "4": 0.12702733830017449,
+    "5": 0.23698491126241522
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2019
+  },
+  {
+   "date": "2019-12-27",
+   "day_type": "ordinary",
+   "flagged_at": [
+    3,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.023301085774173096,
+    "2": 0.06428218870248978,
+    "3": 0.4126571274524196,
+    "4": 0.20922412472670962,
+    "5": 0.011736912151000077
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2019
+  },
+  {
+   "date": "2019-12-31",
+   "day_type": "quarter_end",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.5690467088281568,
+    "2": 0.7662861421343881,
+    "3": 0.9608521766467899,
+    "4": 0.9602535591386335,
+    "5": 0.7827173045124043
+   },
+   "regime": "2018-19",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2019
+  },
+  {
+   "date": "2020-01-15",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.4807768872582955,
+    "2": 0.14235274045845156,
+    "3": 0.8552641431927451,
+    "4": 0.7796933658363087,
+    "5": 0.8429565150142546
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-01-30",
+   "day_type": "month_end",
+   "flagged_at": [
+    3,
+    4
+   ],
+   "iorb_announced_change_bps": 5.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.01883735183779904,
+    "2": 0.04663082070227703,
+    "3": 0.18190190919662805,
+    "4": 0.12294918502035504,
+    "5": 0.04200191682530216
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-01-31",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.3197636298769237,
+    "2": 0.7085023998272253,
+    "3": 0.4983508003920545,
+    "4": 0.8284555711727919,
+    "5": 0.13398390609219418
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-02-18",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.5783743525705922,
+    "2": 0.387534126376108,
+    "3": 0.3304506131191476,
+    "4": 0.28101472537795613,
+    "5": 0.20089176156959024
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-02-27",
+   "day_type": "month_end",
+   "flagged_at": [
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.011842495892987255,
+    "2": 0.01303968369769493,
+    "3": 0.021389422414315247,
+    "4": 0.18657697459844377,
+    "5": 0.09352686160668601
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.5,
+   "year": 2020
+  },
+  {
+   "date": "2020-02-28",
+   "day_type": "month_end",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.1827284133100746,
+    "2": 0.262691872204854,
+    "3": 0.13440959685907242,
+    "4": 0.06040238289383855,
+    "5": 0.2485700446693086
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.5,
+   "year": 2020
+  },
+  {
+   "date": "2020-03-02",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.5247956794535479,
+    "2": 0.2702586926540067,
+    "3": 0.5073257348694112,
+    "4": 0.3591493515471719,
+    "5": 0.35291745966946964
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2020
+  },
+  {
+   "date": "2020-03-27",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.42354008634268336,
+    "2": 0.05363234967621073,
+    "3": 0.0421523329295931,
+    "4": 0.03253575972319542,
+    "5": 0.801008230718446
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-03-31",
+   "day_type": "quarter_end",
+   "flagged_at": [
+    2,
+    3,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.0798896781619532,
+    "2": 0.9680660880948764,
+    "3": 0.32231201117856334,
+    "4": 0.07122711264996771,
+    "5": 0.17935675031233123
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-04-15",
+   "day_type": "tax_date",
+   "flagged_at": [
+    1,
+    3
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.13019103947978664,
+    "2": 0.10776778380237106,
+    "3": 0.7521374438571894,
+    "4": 0.04032300458555121,
+    "5": 0.037567129483814014
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-04-17",
+   "day_type": "tax_date",
+   "flagged_at": [
+    2,
+    3
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.010870503999091142,
+    "2": 0.19604170202817925,
+    "3": 0.5540426654043688,
+    "4": 0.006958487545944322,
+    "5": 0.0059656915988443035
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-04-20",
+   "day_type": "tax_date",
+   "flagged_at": [
+    3
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.026796334138180777,
+    "2": 0.02023420298688201,
+    "3": 0.32308291315827475,
+    "4": 0.006958487545944322,
+    "5": 0.0059656915988443035
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-04-28",
+   "day_type": "ordinary",
+   "flagged_at": [
+    3
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.0022952420935320526,
+    "2": 0.0011770522589686487,
+    "3": 0.12056757044734565,
+    "4": 0.019595944099443787,
+    "5": 0.009118150533669964
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-04-30",
+   "day_type": "month_end",
+   "flagged_at": [
+    2,
+    3
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.055209012229746494,
+    "2": 0.15340606441546822,
+    "3": 0.1662657231826449,
+    "4": 0.037380808240226424,
+    "5": 0.11637014785835252
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-05-15",
+   "day_type": "ordinary",
+   "flagged_at": [
+    2,
+    3,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.04563043135844918,
+    "2": 0.14008214315990186,
+    "3": 0.15616294329211008,
+    "4": 0.08616042366588429,
+    "5": 0.2922959129551818
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-06-01",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    3,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.08468919730182375,
+    "2": 0.09603721461059117,
+    "3": 0.17316343909542767,
+    "4": 0.06026743661182866,
+    "5": 0.2093013351925668
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-06-15",
+   "day_type": "tax_date",
+   "flagged_at": [
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.0141226266281592,
+    "2": 0.034501038287499265,
+    "3": 0.014025215507052503,
+    "4": 0.28548346283191706,
+    "5": 0.25317515396173257
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-06-16",
+   "day_type": "tax_date",
+   "flagged_at": [
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.004505478110395539,
+    "2": 0.015030998236721839,
+    "3": 0.015082784638807148,
+    "4": 0.1346381657327573,
+    "5": 0.394343380363261
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-06-17",
+   "day_type": "tax_date",
+   "flagged_at": [
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.005062635102278745,
+    "2": 0.03087720779764924,
+    "3": 0.014927295234733138,
+    "4": 0.09800614592659476,
+    "5": 0.2828909536685062
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-06-29",
+   "day_type": "month_end",
+   "flagged_at": [
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.001877706726546221,
+    "2": 0.002982245538340859,
+    "3": 0.003377662578139227,
+    "4": 0.023192812483268654,
+    "5": 0.14727069405179022
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2020-06-30",
+   "day_type": "quarter_end",
+   "flagged_at": [
+    2,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.012995176610550734,
+    "2": 0.31541188097177014,
+    "3": 0.024025625523053557,
+    "4": 0.4540927667058621,
+    "5": 0.3662276469899207
+   },
+   "regime": "2020",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2020
+  },
+  {
+   "date": "2021-08-31",
+   "day_type": "month_end",
+   "flagged_at": [
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.04011971931919015,
+    "2": 0.004150879720637757,
+    "3": 0.032038747409256184,
+    "4": 0.028325740817551934,
+    "5": 0.2525982223993174
+   },
+   "regime": "2021-23",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2021
+  },
+  {
+   "date": "2021-09-30",
+   "day_type": "quarter_end",
+   "flagged_at": [
+    3,
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.014329790198250284,
+    "2": 0.07034589529488539,
+    "3": 0.19056433463849515,
+    "4": 0.2055211263675887,
+    "5": 0.004267084122367894
+   },
+   "regime": "2021-23",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2021
+  },
+  {
+   "date": "2023-12-29",
+   "day_type": "quarter_end",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.13425128865048103,
+    "2": 0.04028319037812653,
+    "3": 0.002196619041556182,
+    "4": 0.0016673425276944064,
+    "5": 1.3761391802167662e-05
+   },
+   "regime": "2021-23",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2023
+  },
+  {
+   "date": "2024-10-31",
+   "day_type": "month_end",
+   "flagged_at": [
+    4
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.0006209421677338846,
+    "2": 0.004959265952823559,
+    "3": 0.001044096863751297,
+    "4": 0.2309453911462601,
+    "5": 0.0006195706160328965
+   },
+   "regime": "2024",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2024
+  },
+  {
+   "date": "2025-04-15",
+   "day_type": "tax_date",
+   "flagged_at": [
+    3
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.003021654024367711,
+    "2": 0.006907978459110472,
+    "3": 0.6530371369393532,
+    "4": 0.02619593612032151,
+    "5": 0.003419922481538623
+   },
+   "regime": "2025-26",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2025
+  },
+  {
+   "date": "2025-06-30",
+   "day_type": "quarter_end",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.6911710378527492,
+    "2": 0.007644188775312952,
+    "3": 0.001996652862312251,
+    "4": 0.0030479141008799763,
+    "5": 0.03728342966058328
+   },
+   "regime": "2025-26",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 1.0,
+   "year": 2025
+  },
+  {
+   "date": "2025-09-16",
+   "day_type": "tax_date",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.23739046061444963,
+    "2": 0.004009624628121406,
+    "3": 0.00040730520210662457,
+    "4": 0.0008552230108028223,
+    "5": 0.0026934111896962723
+   },
+   "regime": "2025-26",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2025
+  },
+  {
+   "date": "2025-09-17",
+   "day_type": "tax_date",
+   "flagged_at": [
+    1
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.5359327617785139,
+    "2": 0.037666599323763164,
+    "3": 0.008298721721991956,
+    "4": 0.00028261684700673983,
+    "5": 0.0005933765143835079
+   },
+   "regime": "2025-26",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2025
+  },
+  {
+   "date": "2025-09-26",
+   "day_type": "ordinary",
+   "flagged_at": [
+    1,
+    3
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.1240237983165556,
+    "2": 0.030841095678310778,
+    "3": 0.23660097236142813,
+    "4": 0.0020571815434784722,
+    "5": 0.05268649117051616
+   },
+   "regime": "2025-26",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2025
+  },
+  {
+   "date": "2025-12-16",
+   "day_type": "tax_date",
+   "flagged_at": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.06886423982922618,
+    "2": 0.510633216563308,
+    "3": 0.46079488936796253,
+    "4": 0.8174280396237713,
+    "5": 0.7976875780510968
+   },
+   "regime": "2025-26",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2025
+  },
+  {
+   "date": "2025-12-17",
+   "day_type": "tax_date",
+   "flagged_at": [
+    1,
+    3,
+    5
+   ],
+   "iorb_announced_change_bps": 0.0,
+   "onset": false,
+   "pressure_day": false,
+   "probability": {
+    "1": 0.14364053363999793,
+    "2": 0.05464739801944021,
+    "3": 0.21891037579304662,
+    "4": 0.020844165124603097,
+    "5": 0.38444951221128293
+   },
+   "regime": "2025-26",
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "weight": 0.25,
+   "year": 2025
+  }
+ ],
+ "flagged_at_one_lead_only": {
+  "1": 9,
+  "3": 3,
+  "4": 2,
+  "5": 3
+ },
+ "leads": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "on_an_iorb_announcement_day": {
+  "days": 1,
+  "weighted": 1.0
+ },
+ "onsets": 26,
+ "onsets_caught": {
+  "2019-01-15": {
+   "flagged_at": [
+    1
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-01-31": {
+   "flagged_at": [
+    1
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-02-28": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-03-15": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-03-29": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-06-17": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-08-30": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-10-15": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-11-29": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2019-12-16": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2025-09-15": {
+   "flagged_at": [
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2025-09-30": {
+   "flagged_at": [
+    1,
+    2
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2025-12-15": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "2025-12-26": {
+   "flagged_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "iorb": 0.0,
+   "risk_date_at": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  }
+ },
+ "onsets_flagged": 14,
+ "pooled_false_alarms": {
+  "days": 56,
+  "weighted": 37.5
+ },
+ "pooled_false_alarms_per_onset": {
+  "flat": 2.1538461538461537,
+  "weighted": 1.4423076923076923
+ },
+ "row": "risk_gbm+settle+h41",
+ "rule": "weighted",
+ "scored_days": 1869,
+ "tau_bp": 5.0
+}

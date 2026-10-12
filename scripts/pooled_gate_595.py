@@ -510,6 +510,118 @@ def diagnose_command(args) -> int:
     return 0
 
 
+# -- compare, onsets, summary --------------------------------------------------------------------------------
+
+
+def comparison_markdown(document: dict, pairs) -> str:
+    out = []
+    for _arm, name, ref in pairs:
+        out.append(f"Table 1. +5 bp onsets flagged at some lead 1 to 5, by cell: the reference `{ref}` and `{name}`.\n")
+        out.append("| cell | onsets | reference | row | recall difference (90% interval) |")
+        out.append("|---|---|---|---|---|")
+        for cell, n_onsets in document["onsets_in_cell"].items():
+            difference = ann._interval(document["recall_at_some_lead"][name][cell]["recall_difference"])
+            out.append(f"| {cell} | {n_onsets} | {document['caught_at_some_lead'][ref][cell]} | {document['caught_at_some_lead'][name][cell]} | {difference} |")
+        out.append("")
+    out.append("Table 2. Flags at +5 bp, by horizon: flags (false alarms); onsets flagged of onsets; false alarms per onset.\n")
+    out.append("| row | " + " | ".join(f"h = {h}" for h in (1, 2, 3, 4, 5)) + " |")
+    out.append("|---|" + "---|" * 5)
+    for label in document["flags"]:
+        cells = []
+        for h in ("1", "2", "3", "4", "5"):
+            c = document["flags"][label][h]
+            cells.append(f"{c['flags']}({c['false_alarms']}); {c['onsets_flagged']}/{c['onsets']}; {ann._f(c['false_alarms_per_onset'], 2)}")
+        out.append(f"| {label} | " + " | ".join(cells) + " |")
+    for _arm, name, ref in pairs:
+        out.append(f"\nTable 3. Paired Brier difference of `{name}` against `{ref}`, +5 bp (negative favours the row), 90% interval, h = 1: all days, by regime and by pressure-day type.\n")
+        out.append("| cell | days | difference |")
+        out.append("|---|---|---|")
+        for cell, c in document["brier"][name]["1"].items():
+            out.append(f"| {cell} | {int(c['days'])} | {ann._interval(c['vs_published'])} |")
+    return "\n".join(out)
+
+
+def compare_command(args) -> int:
+    """`announcement_dating_rescore.py compare` with each variant against one reference row."""
+
+    reference = ROW if args.reference == "row" else "risk_gbm+settle+h41"
+    pairs = [("variant", name, reference) for name in VARIANTS.values()]
+    if args.reference == "settle":
+        pairs.append(("row", ROW, reference))
+    ann.DECLARATION = DECLARATION
+    ann.rows_of_pairs = lambda: pairs
+    ann.markdown = lambda document, p: comparison_markdown(document, p)
+    return ann.compare_command(args)
+
+
+def onsets_command(args) -> int:
+    """Each +5 bp onset: the leads at which the row and each variant flag it, so the onsets kept and lost by date are listed."""
+
+    from repo_model import pressure_judge as pj
+
+    declaration = replace(pj.load_declaration(), weighted_miss=pj.load_weighted_miss(applied=(args.rule == "weighted")))
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(rds.SPLITS)
+    by_name, grids, _calendar = judged_forecasts(pj, declaration, rows, splits, args.panel, args.inputs)
+    tau = declaration.primary
+    names = [ROW, *VARIANTS.values(), "risk_gbm+settle+h41"]
+    leads = [h for h in LEADS if h in declaration.horizons]
+    common = sorted(set.intersection(*(set(grids[h].dates) for h in leads)))
+    place = {h: {day: k for k, day in enumerate(grids[h].dates)} for h in leads}
+    table = []
+    for day in common:
+        k1 = place[1][day]
+        if not grids[1].onset_at(tau, tau)[k1]:
+            continue
+        entry = {"date": day.isoformat(), "regime": grids[1].groups["regime"][k1], "day_type": grids[1].groups["day_type"][k1]}
+        for name in names:
+            entry[name] = [
+                h
+                for h in leads
+                if by_name[name][h].probabilities[tau][place[h][day]] >= by_name[name][h].cutoffs[tau][place[h][day]]
+            ]
+        table.append(entry)
+    lines = ["| onset | regime | day type | " + " | ".join(n.replace(ROW, "row") for n in names) + " |", "|---|---|---|" + "---|" * len(names)]
+    for entry in table:
+        lines.append(f"| {entry['date']} | {entry['regime']} | {entry['day_type']} | " + " | ".join(("-" if not entry[n] else ",".join(str(h) for h in entry[n])) for n in names) + " |")
+    kept = {n: sum(1 for e in table if e[n]) for n in names}
+    lines.append("| flagged | | | " + " | ".join(f"{kept[n]} of {len(table)}" for n in names) + " |")
+    lost = {n: [e["date"] for e in table if e[ROW] and not e[n]] for n in names if n != ROW}
+    gained = {n: [e["date"] for e in table if e[n] and not e[ROW]] for n in names if n != ROW}
+    document = {"rule": args.rule, "onsets": table, "lost_against_row": lost, "gained_against_row": gained}
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    text = "\n".join(lines) + "\n\nLeads 1 to 5 at which each row flags the onset (a dash: none). Lost against the row: " + json.dumps(lost) + ". Gained: " + json.dumps(gained) + ".\n"
+    if args.markdown:
+        args.markdown.write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
+def summary_command(args) -> int:
+    judged = {rule: json.loads(Path(path).read_text())["candidates"] for rule, path in (("flat", args.flat), ("weighted", args.weighted))}
+    yes = lambda x: "yes" if x else "no"
+    lines = [
+        "| row | rule | tier 1, leads 1 to 5: onsets flagged, recall [90%], pooled false alarms per onset (limit 2) | tier 1 | tier 1, leads 3 to 5: onsets flagged, recall [90%], pooled false alarms per onset | tier 3 | tier 5 | passes |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for name in ("risk_gbm+settle+h41", PARENT, ROW, *VARIANTS.values()):
+        for rule, candidates in judged.items():
+            entry = candidates[name]
+            tier, late = entry["tiers"]["onset_warning"]["lead_at_least_1"], entry["tiers"]["onset_warning"]["lead_at_least_3"]
+            key = "pooled_weighted_false_alarms_per_onset" if rule == "weighted" else "pooled_false_alarms_per_onset"
+            cell = lambda t: f"{t['onsets_flagged']:g} of {t['onsets']}, {t['recall']['mean']:.3f} [{t['recall']['interval']['lower']:.3f}, {t['recall']['interval']['upper']:.3f}], {t[key]:.2f}"
+            verdict = entry["verdict"]
+            lines.append(
+                f"| {name} | {rule} | {cell(tier)} | {yes(verdict['tier_1_onset_warning'])} | {cell(late)} | {yes(verdict['tier_3_no_crying_wolf'])} | "
+                f"{yes(verdict['tier_5_week_ahead'])} | {yes(verdict['passes'])} |"
+            )
+    text = "\n".join(lines) + "\n"
+    args.output.write_text(text, encoding="utf-8")
+    print(text)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -536,6 +648,26 @@ def main(argv=None) -> int:
     lead.add_argument("--output-dir", type=Path, required=True)
     lead.add_argument("inputs", nargs="+", type=Path)
     lead.set_defaults(func=leadgate_command)
+    compare = sub.add_parser("compare")
+    compare.add_argument("--rule", choices=("unweighted", "weighted"), default="weighted")
+    compare.add_argument("--reference", choices=("row", "settle"), default="row")
+    compare.add_argument("--panel", type=Path, required=True)
+    compare.add_argument("--output", type=Path, required=True)
+    compare.add_argument("--markdown", type=Path)
+    compare.add_argument("inputs", nargs="+", type=Path)
+    compare.set_defaults(func=compare_command)
+    onsets = sub.add_parser("onsets")
+    onsets.add_argument("--rule", choices=("unweighted", "weighted"), default="weighted")
+    onsets.add_argument("--panel", type=Path, required=True)
+    onsets.add_argument("--output", type=Path, required=True)
+    onsets.add_argument("--markdown", type=Path)
+    onsets.add_argument("inputs", nargs="+", type=Path)
+    onsets.set_defaults(func=onsets_command)
+    summary = sub.add_parser("summary")
+    summary.add_argument("--flat", type=Path, required=True)
+    summary.add_argument("--weighted", type=Path, required=True)
+    summary.add_argument("--output", type=Path, required=True)
+    summary.set_defaults(func=summary_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
