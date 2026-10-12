@@ -35,6 +35,8 @@ that is not committed. Scored days are 2018-06-29 to 2025-12-31; no day of the 2
         --rows ROW... -- OUT/bench_h?.json OUT/iorb_h?.json OUT/state_h?.json
     PYTHONPATH=src python3 scripts/state_recalibration_589.py summary --flat OUT/judge_unweighted.json \\
         --weighted OUT/judge_weighted.json --output OUT/summary.md
+    PYTHONPATH=src python3 scripts/state_recalibration_589.py tables --flat OUT/judge_unweighted.json \\
+        --weighted OUT/judge_weighted.json --output OUT/tables.md
 
 The parent's forecasts are read from the `iorb_every_day_579.py run` output of the same horizon; the grid, the training
 ends and the outcomes come from `baseline.rolling_exceedance_backtest` on the same panel with the climatology as the
@@ -297,7 +299,7 @@ def markdown(document: dict, pairs) -> str:
             cells.append(f"{c['flags']}({c['false_alarms']}); {c['onsets_flagged']}/{c['onsets']}; {ann._f(c['false_alarms_per_onset'], 2)}")
         out.append(f"| {label} | " + " | ".join(cells) + " |")
     for name in names:
-        out.append(f"\nTable 3 ({name.split('+')[-1]}). Paired Brier difference against the parent, +5 bp (negative favours the variant), 90% interval, h = 1: all days, by regime and by pressure-day type.\n")
+        out.append(f"\nTable 3 ({name.split('+')[-1]}). Paired Brier difference against the parent, +5 bp (positive favours the variant: the parent's squared error minus the variant's), 90% interval, h = 1: all days, by regime and by pressure-day type.\n")
         out.append("| cell | days | difference |")
         out.append("|---|---|---|")
         for cell, c in document["brier"][name]["1"].items():
@@ -315,24 +317,29 @@ def compare_command(args) -> int:
 
 
 def summary_rows(judged: dict) -> list:
-    """The judge's tier 1 (pooled over leads 1 to 5, and leads 3 to 5), tier 3 and tier 5 rows for the parent and the variants, per rule."""
+    """Tier 1 (pooled over leads 1 to 5, and leads 3 to 5), tier 3 and tier 5 for the parent and the variants, per rule.
+
+    The false-alarm figure first is the one in force (pooled across the horizons, the ruling of 10 October 2026, #509), the one
+    tier 1 is decided on; the figure of the earlier counting (the worst single lead) follows it.
+    """
 
     yes = lambda x: "yes" if x else "no"
     lines = [
-        "| row | rule | tier 1, leads 1 to 5: onsets flagged, recall [90%], worst false alarms per onset (limit 2) | tier 1 | tier 1, leads 3 to 5: onsets flagged, recall [90%] | tier 3 | tier 5 | passes |",
-        "|---|---|---|---|---|---|---|---|",
+        "| row | rule | tier 1, leads 1 to 5: onsets flagged, recall [90%] | false alarms per onset, pooled across horizons (in force; limit 2) | worst single lead (earlier counting) | tier 1 | tier 1, leads 3 to 5: onsets flagged, recall [90%] | tier 3 | tier 5 | passes |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for name in [PARENT] + [VARIANT_NAMES[v] for v in RUN_VARIANTS]:
         for rule, candidates in judged.items():
             entry = candidates[name]
             tier, late = entry["tiers"]["onset_warning"]["lead_at_least_1"], entry["tiers"]["onset_warning"]["lead_at_least_3"]
-            key = "worst_weighted_false_alarms_per_onset" if rule == "weighted" else "worst_false_alarms_per_onset"
-            worst = tier.get(key, tier["worst_false_alarms_per_onset"])
-            cell = lambda t: f"{t['onsets_flagged']:g} of {t['onsets']} , {t['recall']['mean']:.3f} [{t['recall']['interval']['lower']:.3f}, {t['recall']['interval']['upper']:.3f}]"
+            weighted = rule == "weighted"
+            pooled = tier["pooled_weighted_false_alarms_per_onset" if weighted else "pooled_false_alarms_per_onset"]
+            worst = tier["worst_weighted_false_alarms_per_onset" if weighted else "worst_false_alarms_per_onset"]
+            cell = lambda t: f"{t['onsets_flagged']:g} of {t['onsets']}, {t['recall']['mean']:.3f} [{t['recall']['interval']['lower']:.3f}, {t['recall']['interval']['upper']:.3f}]"
             verdict = entry["verdict"]
             lines.append(
-                f"| {name} | {rule} | {cell(tier)} , {worst:.2f} | {yes(verdict['tier_1_onset_warning'])} | {cell(late)} | {yes(verdict['tier_3_no_crying_wolf'])} | "
-                f"{yes(verdict['tier_5_week_ahead'])} | {yes(verdict['passes'])} |"
+                f"| {name} | {rule} | {cell(tier)} | {pooled:.2f} | {worst:.2f} | {yes(verdict['tier_1_onset_warning'])} | {cell(late)} | "
+                f"{yes(verdict['tier_3_no_crying_wolf'])} | {yes(verdict['tier_5_week_ahead'])} | {yes(verdict['passes'])} |"
             )
     return lines
 
@@ -342,6 +349,41 @@ def summary_command(args) -> int:
     text = "\n".join(summary_rows(judged)) + "\n"
     args.output.write_text(text, encoding="utf-8")
     print(text)
+    return 0
+
+
+def tables_command(args) -> int:
+    """Predicted against realised rate per regime (tier 3's cells, +5 bp, every horizon) and recall by regime, for the parent and the variants."""
+
+    regime = _load("regime_recalibration")
+    names = [PARENT] + [VARIANT_NAMES[v] for v in RUN_VARIANTS]
+    flat, weighted = regime._read(args.flat), regime._read(args.weighted)
+    parts = [
+        f"Scored days {flat['scored_window']['first']} to {flat['scored_window']['last']}; +5 bp primary; h = 1 to 5; 90% stationary-bootstrap intervals.",
+        "",
+        "Table A. Predicted against realised pressure-day rate per regime (tier 3), flat rule. Observed minus predicted; positive = the model under-forecasts.",
+        "",
+        regime.diagnosis(flat, names),
+        "",
+        "Table B. Tier 1 by regime: onsets flagged of onsets (lead 1 or more), both rules.",
+        "",
+        regime.onsets_by_regime(flat, weighted, names),
+        "",
+    ]
+    horizons = sorted(next(iter(flat["candidates"].values()))["horizons"], key=int)
+    for h in horizons:
+        parts += [
+            f"Table C, h = {h}. Tier 3 by pressure-day type: observed minus predicted rate [90% interval] (pressure days in the group), flat rule.",
+            "",
+            regime.split_gap(flat, names, "day_type", h),
+            "",
+            f"Table D, h = {h}. Tier 5's form by regime and pressure-day type: Brier difference against calendar climatology [90% interval] (positive = better).",
+            "",
+            regime.split_brier(flat, names, h),
+            "",
+        ]
+    args.output.write_text("\n".join(parts), encoding="utf-8")
+    print(json.dumps({"output": str(args.output)}))
     return 0
 
 
@@ -368,6 +410,11 @@ def main(argv=None) -> int:
     summary.add_argument("--weighted", type=Path, required=True)
     summary.add_argument("--output", type=Path, required=True)
     summary.set_defaults(func=summary_command)
+    tables = sub.add_parser("tables")
+    tables.add_argument("--flat", type=Path, required=True)
+    tables.add_argument("--weighted", type=Path, required=True)
+    tables.add_argument("--output", type=Path, required=True)
+    tables.set_defaults(func=tables_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
