@@ -10,7 +10,7 @@
       "number": 2
     }
   ],
-  "commit": "39f93fc",
+  "commit": "540f99c",
   "figures": {
     "dependencies": 0,
     "event_windows": 2,
@@ -18,7 +18,7 @@
     "panel_rows": 2104,
     "panel_start": "2018-04-03"
   },
-  "generated_at": "2026-10-11",
+  "generated_at": "2026-10-12",
   "next": {
     "exit": "coherent rate and volume predictions plus transparent counterfactual scenarios",
     "name": "Repo supply, demand, and market clearing",
