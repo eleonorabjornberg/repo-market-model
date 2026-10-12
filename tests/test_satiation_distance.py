@@ -151,6 +151,26 @@ class ReleaseDatedReadTests(_Distance):
         self.assertAlmostEqual(built[300].values[sat.DISTANCE_COLUMN], new[300] - level)
 
 
+class HingeShareTests(unittest.TestCase):
+    """The share of days the hinge is on, by year (#621)."""
+
+    def rows(self, *cells):
+        return [DailyObservation(date.fromisoformat(day), {sat.HINGE_COLUMN: value}) for day, value in cells]
+
+    def test_the_share_counts_days_with_a_positive_hinge_by_calendar_year(self):
+        built = self.rows(("2022-01-03", 0.4), ("2022-01-04", 0.0), ("2022-06-01", 1.2), ("2023-01-03", 0.0))
+        self.assertEqual(SCRIPT.hinge_share_by_year(built), {"2022": [2, 3], "2023": [0, 1]})
+
+    def test_a_day_without_a_value_is_not_a_day(self):
+        built = self.rows(("2022-01-03", None), ("2022-01-04", 0.3))
+        self.assertEqual(SCRIPT.hinge_share_by_year(built), {"2022": [1, 1]})
+
+    def test_the_table_prints_percent_and_counts(self):
+        text = SCRIPT.hinge_share_markdown({"weekly lag": {"2022": [1, 4]}, "per release": {"2022": [2, 4], "2023": [0, 2]}})
+        self.assertIn("| weekly lag | 25% (1 of 4) | – |", text)
+        self.assertIn("| per release | 50% (2 of 4) | 0% (0 of 2) |", text)
+
+
 class BuildDistanceTests(_Distance):
     def test_the_columns_are_the_ratio_the_rule_reads_against_the_rolling_level(self):
         ratios = sat.asof_ratios(self.rows, self.rule(), last_day=LAST)

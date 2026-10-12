@@ -23,6 +23,7 @@ Scored days are 2018-06-29 to 2025-12-31; no day of the 2026 tiers is read (`doc
         --risk 'OUT/risk_h{h}.json' --reference 'OUT/ql_h{h}.json' --parents 'OUT/both_h{h}.json' --rows 'OUT/dist_h{h}.json' \\
         --output OUT/compare.json --markdown OUT/compare.md
     PYTHONPATH=src python3 scripts/satiation_distance_598.py report --compare OUT/compare.json --output OUT/report.md
+    PYTHONPATH=src python3 scripts/satiation_distance_598.py hinge-share --panel AUG2.csv --output OUT/hinge-share.md
 
 `run` scores the three variants of the declaration, each the parent passer (settlements dated from the announcement, the H.4.1 read per
 release: the "both" arm of #541) with one extra input, walk-forward at +5 and +10 bp on the shared fold grid. The parents are the
@@ -35,6 +36,7 @@ and loses against its parent by date. `report` writes the tables.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import hashlib
 import importlib.util
@@ -164,16 +166,70 @@ def distance_rule() -> InformationRule:
     return InformationRule(registry, sat.READ_FEATURES, decision_time=time(16, 0), horizon=1)
 
 
-def distance_rows(rows, end: date, check_every: int, rule: InformationRule = None):
-    """`rows` with the two distance columns, built on the release-dated rule and checked for look-ahead (#622)."""
+def distance_rows(rows, end: date, check_every: int, rule: InformationRule = None, release: bool = True):
+    """`rows` with the two distance columns, built on the release-dated rule and checked for look-ahead (#622).
+
+    `release=False` with a `rule` reads the earlier weekly lag, for the comparison of #621 only.
+    """
 
     rolling = rolling_constants()
     kw = dict(q=rolling["quantile"], window=rolling["window_rows"], minimum=rolling["minimum_rows"])
-    with switched_on(), h41_release.release_dating():
+    with switched_on(), (h41_release.release_dating() if release else contextlib.nullcontext()):
         rule = rule or distance_rule()
         built = sat.build_distance_columns(rows, rule, last_day=end, **kw)
         sat.check_distance_no_future(rows, built, rule, last_day=end, indices=range(0, len(built), check_every), **kw)
     return built
+
+
+def hinge_share_by_year(built) -> Dict[str, List[int]]:
+    """`{year: [days the hinge is on, days with a value]}`: the share of days the ratio is below the rolling level (#621)."""
+
+    out: Dict[str, List[int]] = {}
+    for row in built:
+        value = row.values.get(sat.HINGE_COLUMN)
+        if value is None:
+            continue
+        cell = out.setdefault(str(row.date.year), [0, 0])
+        cell[0] += 1 if value > 0.0 else 0
+        cell[1] += 1
+    return out
+
+
+def hinge_share_markdown(shares: Dict[str, Dict[str, List[int]]]) -> str:
+    """Markdown table of the shares, one row per way of reading the reserves leg, from `{label: hinge_share_by_year}`."""
+
+    years = sorted({year for share in shares.values() for year in share})
+    lines = [
+        "| reserves read | " + " | ".join(years) + " |",
+        "|---|" + "---|" * len(years),
+    ]
+    for label, share in shares.items():
+        cells = []
+        for year in years:
+            on, days = share.get(year, [0, 0])
+            cells.append(f"{100.0 * on / days:.0f}% ({on} of {days})" if days else "–")
+        lines.append(f"| {label} | " + " | ".join(cells) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def hinge_share_command(args) -> int:
+    """The share of days the rolling level's hinge is on, by year, on the weekly lag and on the per-release read (#621)."""
+
+    declared = declared_document()
+    end = date.fromisoformat(declared["scoring"]["last_day"])
+    require_unlocked([end], where="satiation_distance_598")
+    rows = [row for row in load_daily_panel(args.panel) if row.date <= end]
+    old_rule = None
+    with switched_on():
+        old_rule = InformationRule(measurement_fields.load_registry(), sat.READ_FEATURES, decision_time=time(16, 0), horizon=1)
+    shares = {
+        "weekly lag (the first build, #598)": hinge_share_by_year(distance_rows(rows, end, args.check_every, rule=old_rule, release=False)),
+        "per H.4.1 release (#622, in force)": hinge_share_by_year(distance_rows(rows, end, args.check_every)),
+    }
+    text = hinge_share_markdown(shares)
+    args.output.write_text(text, encoding="utf-8")
+    print(text)
+    return 0
 
 
 def panel_command(args) -> int:
@@ -409,6 +465,10 @@ def main(argv=None) -> int:
     p.add_argument("--panel", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--check-every", type=int, default=40)
+    p = sub.add_parser("hinge-share")
+    p.add_argument("--panel", type=Path, required=True)
+    p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--check-every", type=int, default=40)
     p = sub.add_parser("run")
     p.add_argument("--panel", type=Path, required=True)
     p.add_argument("--published", type=Path, required=True)
@@ -424,7 +484,7 @@ def main(argv=None) -> int:
     p.add_argument("--compare", required=True)
     p.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    return {"panel": panel_command, "run": run_command, "compare": compare_command, "report": report_command}[args.command](args)
+    return {"panel": panel_command, "hinge-share": hinge_share_command, "run": run_command, "compare": compare_command, "report": report_command}[args.command](args)
 
 
 if __name__ == "__main__":
