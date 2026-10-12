@@ -270,14 +270,20 @@ class AddColumnsTests(unittest.TestCase):
     def rows(self):
         return [DailyObservation(day, {"spread_bps": 1.0}) for day in self.DAYS]
 
-    def test_a_weekly_value_sits_on_the_last_panel_day_at_or_before_its_as_of_date(self):
+    def test_a_weekly_value_starts_on_the_first_panel_day_at_or_after_its_date_and_is_carried(self):
         holiday = date(2024, 5, 8)
         rows = [r for r in self.rows() if r.date != holiday]
         series = {"pd_repo_ust": {date(2024, 5, 1): 10.0, holiday: 11.0}}
         out = {r.date: r.values for r in new_sources.add_columns(rows, series)}
         self.assertEqual(out[date(2024, 5, 1)]["pd_repo_ust"], 10.0)
-        self.assertEqual(out[date(2024, 5, 7)]["pd_repo_ust"], 11.0)
-        self.assertIsNone(out[date(2024, 5, 9)]["pd_repo_ust"])
+        self.assertEqual(out[date(2024, 5, 7)]["pd_repo_ust"], 10.0)
+        self.assertEqual(out[date(2024, 5, 9)]["pd_repo_ust"], 11.0)
+        self.assertEqual(out[date(2024, 5, 14)]["pd_repo_ust"], 11.0)
+
+    def test_a_weekly_column_is_empty_before_its_first_value(self):
+        out = {r.date: r.values for r in new_sources.add_columns(self.rows(), {"pd_repo_ust": {date(2024, 5, 8): 1.0}})}
+        self.assertIsNone(out[date(2024, 5, 7)]["pd_repo_ust"])
+        self.assertEqual(out[date(2024, 5, 8)]["pd_repo_ust"], 1.0)
 
     def test_a_daily_value_sits_on_its_own_day_and_other_days_are_empty(self):
         series = {"auc_accepted_bn": {date(2024, 5, 7): 100.0}}

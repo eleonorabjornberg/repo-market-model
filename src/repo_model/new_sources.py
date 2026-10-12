@@ -42,7 +42,6 @@ from __future__ import annotations
 import csv
 import io
 import json
-from bisect import bisect_right
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
@@ -373,8 +372,9 @@ def add_columns(
 ) -> List[DailyObservation]:
     """`rows` with the columns of `series` added; the input is not changed.
 
-    A weekly column (`WEEKLY_COLUMNS`) places each as-of date's value on the last panel day at or
-    before it (older, never newer). Any other column is placed on its own day. A day with no value
+    A weekly column (`WEEKLY_COLUMNS`) is carried forward as the panel carries its weekly columns: an
+    as-of date's value starts on the first panel day at or after that date and stays until the next
+    value. Any other column is placed on its own day. A day with no value
     is `None`. Raises `LookAheadError` for a panel day after `END`.
     """
 
@@ -387,10 +387,18 @@ def add_columns(
     for column, values in series.items():
         target: Dict[date, float] = {}
         if column in WEEKLY_COLUMNS:
-            for as_of in sorted(values):
-                position = bisect_right(dates, as_of) - 1
-                if position >= 0:
-                    target[dates[position]] = values[as_of]
+            # Carried forward as the panel carries every weekly column: a value starts on the first
+            # panel day at or after its as-of date (later, never earlier, so the as-of rule's lag
+            # counted from the row never makes it public before it was) and stays until the next.
+            starts = sorted(values)
+            current: Optional[float] = None
+            cursor = 0
+            for day in dates:
+                while cursor < len(starts) and starts[cursor] <= day:
+                    current = values[starts[cursor]]
+                    cursor += 1
+                if current is not None:
+                    target[day] = current
         else:
             target = {day: value for day, value in values.items() if day in present}
         placed[column] = target

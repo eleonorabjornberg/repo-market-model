@@ -47,3 +47,35 @@ established from this session; reported, not worked around).
 * Rows 8 and 14 are reported as blocked.
 * Every reader refuses, with `LookAheadError`, a value that would be read before its publication instant, and every guard has a
   recorded mutation.
+
+## What step 2 found (written after the snapshots)
+
+The table above is unchanged: it is the record of what was decided before any fetch. Step 2 changed the following, each with the
+reason.
+
+* **Row 2, ON RRP counterparties: narrowed.** The tracked records carry the amount accepted by counterparty type (`propositions`), but
+  the Desk's FAQ says those are added each month with data lagged by one month (`tests/test_registry.py`, A45, item 3), so the split was
+  not public on the operation date: it fails the publication-instant test and is **not read**. What is read is `participatingCpty`,
+  the number of counterparties, which sits in the record the held amount accepted already reads, and only for a record the Desk did
+  not rewrite on a later day (`lastUpdated`). The award rate was dropped: it is the facility's offering rate, fixed by policy, and
+  repeats the policy register.
+* **Row 3, EFFR volume: not taken.** The tracked EFFR snapshots are the rate responses (`type=rate`), which do not carry the volume;
+  a snapshot would need a further request for each of nine years. It was judged not worth that for an unsecured-market volume that
+  the secured volumes already held cover, and it is left as a lead for a later directive, not a verdict against the source.
+* **Row 4, primary dealer financing and fails: confirmed.** The full export (`api/pd/get/all/timeseries.csv`) carries the financing
+  (`PDSORA`, `PDSIRRA`) and fails (`PDFTD`, `PDFTR`) series weekly from 2013-04-03 with no gap in the five series read. The tri-party and
+  GCF financing sub-series start only in 2022; they are not read.
+* **Row 5, OFR collateral breakdown: not taken.** The metadata endpoint lists the tri-party series by collateral (`REPO-TRI_AR_T-F`,
+  `REPO-TRI_TV_T-F` and the agency, corporate and other siblings), so the series exist. Their real-time start was not read from the
+  metadata endpoint in this PR, and the existing fetch function takes the held mnemonics only; the series are not used until that
+  start is established, as the verdict required.
+* **Row 11, Daily Treasury Statement detail: narrowed to the debt cash lines.** The deposits-and-withdrawals table has the
+  same release as the held balance, but its line names changed between 2018 and 2024 for taxes and agencies (`(Table III-B)` became
+  `(Table IIIB)` for the debt lines in 2022; the tax lines were renamed more widely). Only the two debt lines
+  (`Public Debt Cash Issues`, `Public Debt Cash Redemp.`) are stable across the sample, and only those are read.
+* **Row 12, H.4.1 detail: not taken.** The held H.4.1 lines each carry first-print revision evidence from ALFRED vintages
+  (`metadata/sources.json`, `WLRRAOL`). The foreign official and discount window lines would need the same before they can be declared,
+  and fetching those vintages is a task of its own. Left as a lead.
+* **Rows 8 and 14, blocked,** as stated: DTCC and the SIFMA settlement tables were not requested.
+* **Row 9, auction results: confirmed on the tracked bytes.** 3,557 of the 3,562 rows in the tracked table carry a result. Every
+  auction with a result closes its competitive bids at 14:30 ET or earlier (two bills at 14:30, most at 11:30 or 13:00).
