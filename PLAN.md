@@ -270,10 +270,12 @@ Split by aim (#643, decided by Eleonora, 12 October 2026):
 
 - `eleonorabjornberg/repo-market-liquidity` owns H7's estimator (deployable liquidity and the scarcity state) and
   H10 (attribution of pressure episodes to drivers).
-- This repository owns H1–H6, H8 and H9, H7's nested forecast test, all data ingestion, the scorer and the scoring
-  protocol, the lockbox and the live record.
+- This repository owns H1–H6, H8 and H9, H7's nested forecast test, all data ingestion except the H.8 bank groups, the
+  ON RRP offering rate, the SRF rate, the runoff caps and SLR headroom, the scorer and the scoring protocol, the lockbox
+  and the live record. The liquidity repository ingests those five series and publishes them as snapshots by digest;
+  this repository never ingests them itself.
 - The liquidity repository reads this one at a pinned commit and publishes its estimates as snapshots named by digest.
-  Each repository has its own orchestrating session; the directive loop and the auditor are shared.
+  Each repository has its own orchestrating session; the directive loop and the auditor are shared. Once the liquidity repository's delegated-review change is merged, the loop works both queues.
 
 ## Phase 4 — Repo supply, demand, and market clearing
 
