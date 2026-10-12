@@ -1,0 +1,70 @@
+{
+  "status": "declared by the pull request that closes #595 before any variant was scored; a measurement, not a record. Nothing here is published: no variant joins any published declaration, no 2026 day is scored, no rule changes and the live record and pin do not move. The variants were chosen after seeing 2018-2025 (the diagnosis of the row's false alarms), so a pass is not a confirmation (ruling of 11 October 2026 on #567)",
+  "issue": 595,
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parent": {
+    "row": "risk_gbm+every_day+gate+settle+h41+iorb",
+    "declaration": "metadata/iorb_every_day_579.json (PR #582): the risk-date model of metadata/risk_date_severity.json on a risk date; on any other day the ridge logistic of the every-day component, then the gate of #532; settlements dated from the auction announcement, the H.4.1 weeklies read per release; the announced IORB change in the component at h = 1 only",
+    "second_parent": "risk_gbm+settle+h41 (the row that passes tier 1 under the pooled count), the pairing reference"
+  },
+  "gate": {
+    "quantile": 0.9,
+    "window": 250,
+    "minimum_earlier": 60,
+    "rule": "the gate of #532 as the parent serves it (metadata/risk_date_false_alarm_controls.json)"
+  },
+  "variants": {
+    "leadgate": {
+      "name": "risk_gbm+every_day+gate+settle+h41+iorb+leadgate",
+      "issue_text": "(a) one gate across leads: the every-day part may flag a day only if it clears the gate at the day's own nearest lead, so a day's flag is consistent across leads",
+      "reading": "the literal text reads lead 1's forecast of a day when issuing that day's forecast at leads 2 to 5, and lead 1's forecast is issued one panel day before the day, after the decision instant of every farther lead: a forecast may not read it (docs/decisions/information-set.md). The variant is therefore run in the form no forecast contradicts: on a day that is not a risk date, the forecast at lead h is kept only if the gate was also cleared at every farther lead h' > h at which the day is scored (each of those forecasts was issued before the lead-h decision instant); otherwise it is 0. A risk date keeps the row's forecast, and so does a day at lead 5. Whether the nearest-lead text was meant otherwise is Eleonora's to say",
+      "fit": "none: a rule on the row's own gated forecasts at the five leads",
+      "reads": "the row's forecasts at the same day and at farther leads, each issued before this lead's decision instant, and nothing else"
+    },
+    "gate95": {
+      "name": "risk_gbm+every_day+gate+settle+h41+iorb+gate95",
+      "issue_text": "(b) a stricter declared gate on the every-day part (one value, declared, read from nothing scored)",
+      "gate": {
+        "quantile": 0.95,
+        "window": 250,
+        "minimum_earlier": 60
+      },
+      "reading": "the row with the gate's quantile 0.95 in place of 0.9, window and minimum_earlier unchanged; the value is declared here, the next round number above the gate in force, and was not chosen on a score",
+      "fit": "the row's fits, unchanged; only the gate changes"
+    },
+    "tail": {
+      "name": "risk_gbm+every_day+gate+settle+h41+iorb+tail",
+      "issue_text": "(c) the every-day part restricted to the signal that warned the onsets it added (the 2019 onsets and 2020-03-04), with the IORB term kept to announced-change days only",
+      "reading": "the diagnosis (docs/pivot/pooled-gate-result.md) lists the onsets the every-day part adds: 2019-05-28, 2019-06-25, 2019-08-13, 2020-03-04 and 2020-03-12. What sets them apart from the median day is the SOFR 99th percentile above IORB (sofr_p99_iorb_bps), not the spread or the 75th percentile. The component is the ridge logistic on sofr_p99_iorb_bps alone, and on iorb_announced_change_bps where that is public (h = 1); the announced change is 0 on every day but an announced-change day, so its term acts on those days only. The gate, the risk-date model and the timing arm are the row's",
+      "every_day_inputs": {
+        "h=1": [
+          "sofr_p99_iorb_bps",
+          "iorb_announced_change_bps"
+        ],
+        "h>=2": [
+          "sofr_p99_iorb_bps"
+        ]
+      }
+    }
+  },
+  "variants_declared": "these three and the row and its parent; no other variant, parent or input",
+  "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), under the weighted rule in force and the flat rule beside it; the benchmarks and the evaluation days, tiers and onsets do not depend on the row",
+  "pairing": "each variant against the row and against risk_gbm+settle+h41, with 90% stationary-bootstrap intervals (the judge's bootstrap), split by regime and pressure-day type and by year",
+  "published": "nothing; no variant joins any published declaration"
+}
