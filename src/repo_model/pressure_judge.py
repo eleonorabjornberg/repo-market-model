@@ -125,6 +125,7 @@ __all__ = [
     "Declaration",
     "Forecast",
     "Grid",
+    "StartupRule",
     "WeightedMiss",
     "auroc",
     "benchmark_forecasts",
@@ -142,6 +143,7 @@ __all__ = [
     "restrict_forecast",
     "require_scored_days",
     "select_cutoff",
+    "startup_cutoff",
     "usefulness",
 ]
 
@@ -216,6 +218,8 @@ class Declaration:
     persistence: str
     candidates: Mapping[str, Mapping[str, Any]]
     weighted_miss: Optional["WeightedMiss"] = None
+    #: tier 1 reading of #588: a flag from a refit block whose cut-off flags every day in it is no warning (off in force)
+    always_flag_not_warning: bool = False
 
     @property
     def weighting_applied(self) -> bool:
@@ -229,6 +233,11 @@ class Declaration:
         document = self._document()
         if self.weighted_miss is not None:
             document["weighted_miss"] = self.weighted_miss.document()
+        if self.always_flag_not_warning:
+            document["tiers"]["onset_warning"]["always_flag_blocks"] = (
+                "a flag from a refit block whose cut-off is at or below every probability in it counts neither as a "
+                "warning nor as a false alarm; the blocks are listed (#588)"
+            )
         return document
 
     def _document(self) -> dict:
@@ -869,6 +878,26 @@ def _check_alarm_rule(path: Path, name: str, rule: object) -> None:
     _integer(rule.get("trading_days"), f"candidate {name!r} alarm_rule.trading_days")
 
 
+def always_flag_blocks(probabilities: Sequence[float], cutoffs: Sequence[float], step: int) -> List[bool]:
+    """Which refit blocks of `step` days are always-flag (#588): the cut-off is at or below every probability in the block.
+
+    The cut-off of a block is the one on its first day; an infinite cut-off (never flag) is at or below nothing. Every day
+    of an always-flag block flags, whatever the model says.
+
+    Raises:
+        ValueError: if the series differ in length or `step` is below 1.
+    """
+
+    if len(probabilities) != len(cutoffs):
+        raise ValueError("probabilities and cutoffs must have one entry per day")
+    if step < 1:
+        raise ValueError("a refit block needs at least one day")
+    return [
+        cutoffs[start] != float("inf") and cutoffs[start] <= min(probabilities[start : start + step])
+        for start in range(0, len(probabilities), step)
+    ]
+
+
 def cooldown_flags(
     flags: Sequence[int],
     onset: Sequence[int],
@@ -919,6 +948,21 @@ def _alarm_flags(declaration: "Declaration", name: str, flags: Sequence[int], on
     )
 
 
+def _require_training_only(days: Sequence[date], training_end: Optional[date]) -> None:
+    """Refuse a cut-off window that reaches past the refit's training end.
+
+    Raises:
+        LookAheadError: if a day is after `training_end`, or there is a day and no training end.
+    """
+
+    late = [day for day in days if training_end is None or day > training_end]
+    if late:
+        raise LookAheadError(
+            f"cut-off chosen from {len(late)} day(s) from {min(late)} on, after the refit's "
+            f"training end ({training_end}); a flag cut-off is chosen on training data only"
+        )
+
+
 def select_cutoff(
     declaration: Declaration,
     *,
@@ -953,13 +997,7 @@ def select_cutoff(
         raise ValueError("the cut-off window needs one probability, outcome and onset flag per day")
     if false_alarm_weights is not None and len(false_alarm_weights) != len(days):
         raise ValueError("the cut-off window needs one false-alarm weight per day")
-    if days:
-        late = [day for day in days if training_end is None or day > training_end]
-        if late:
-            raise LookAheadError(
-                f"cut-off chosen from {len(late)} day(s) from {min(late)} on, after the refit's "
-                f"training end ({training_end}); a flag cut-off is chosen on training data only"
-            )
+    _require_training_only(days, training_end)
     onsets = sum(onset)
     if not onsets:
         return math.inf
@@ -990,12 +1028,71 @@ def _state_at_least(label: str, at_least: int) -> bool:
         return False
 
 
+_STARTUP_KINDS = ("climatology_rate", "fixed_probability")
+
+
+@dataclass(frozen=True)
+class StartupRule:
+    """A start-up cut-off (#584): what a refit block flags with while its training window holds no onset.
+
+    Not part of the declared judge: `choose_cutoffs` uses one only when it is passed one, and a comparison that
+    does so is a scratch measurement. `climatology_rate` is the pressure-day rate of the training window (the
+    probability climatology gives), read from days known at the refit; `fixed_probability` is a probability fixed
+    in advance that reads no outcome.
+    """
+
+    kind: str
+    probability: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        if self.kind not in _STARTUP_KINDS:
+            raise ValueError(f"unknown start-up rule {self.kind!r}; the kinds are {', '.join(_STARTUP_KINDS)}")
+        if self.kind == "fixed_probability":
+            p = self.probability
+            if isinstance(p, bool) or not isinstance(p, (int, float)) or not 0.0 < p <= 1.0:
+                raise ValueError(f"a fixed start-up probability is a number in (0, 1], not {p!r}")
+        elif self.probability is not None:
+            raise ValueError("the climatology-rate start-up rule takes no probability")
+
+    def document(self) -> dict:
+        return {"kind": self.kind, "probability": self.probability}
+
+
+def startup_cutoff(
+    rule: StartupRule,
+    *,
+    days: Sequence[date],
+    pressure: Sequence[int],
+    training_end: Optional[date],
+) -> float:
+    """The cut-off of a block whose training window holds no onset, under `rule`.
+
+    `fixed_probability` is its probability and reads nothing. `climatology_rate` is the share of the window's days
+    that are pressure days, or `math.inf` (flag nothing) when the window has no day or no pressure day: there is
+    nothing to match.
+
+    Raises:
+        LookAheadError: if a day of the window is after `training_end`, or the window has a day and no training end.
+        ValueError: if the series differ in length.
+    """
+
+    if len(days) != len(pressure):
+        raise ValueError("the start-up window needs one outcome per day")
+    _require_training_only(days, training_end)
+    if rule.kind == "fixed_probability":
+        return float(rule.probability)
+    if not days or not sum(pressure):
+        return math.inf
+    return sum(pressure) / len(days)
+
+
 def choose_cutoffs(
     declaration: Declaration,
     grids: Mapping[int, Grid],
     forecasts: Sequence[Forecast],
     calendar: Sequence[date],
     scarce_at_least: Optional[int] = None,
+    startup: Optional[StartupRule] = None,
 ) -> List[Forecast]:
     """Each forecast with the flag cut-off in force on every day, chosen refit by refit.
 
@@ -1017,6 +1114,10 @@ def choose_cutoffs(
     the training days of that block that are in such a state, and on those alone.
     Other days, and days with an unknown state, keep the cut-off chosen on all
     training days.
+
+    With `startup` (#584, a scratch measurement; the declared judge passes none) a block whose training window
+    holds no onset takes `startup_cutoff` instead of flagging nothing. A window with an onset is the declared
+    rule's, whatever it returns.
 
     Raises:
         LookAheadError: if a window reaches past its training end.
@@ -1061,6 +1162,13 @@ def choose_cutoffs(
                             positions=[position[forecast.dates[k]] for k in rows],
                             pressure=[grid.outcomes[tau][k] for k in rows],
                             known_through=position[training_end],
+                        )
+                    if startup is not None and not any(grid.onset_at(tau, declaration.primary)[k] for k in rows):
+                        return startup_cutoff(
+                            startup,
+                            days=[forecast.dates[k] for k in rows],
+                            pressure=[grid.outcomes[tau][k] for k in rows],
+                            training_end=training_end,
                         )
                     return select_cutoff(
                         declaration,
@@ -1446,6 +1554,11 @@ def judge(
             is scored in the look without being named for it.
     """
 
+    if declaration.always_flag_not_warning and confirmation:
+        raise ValueError(
+            "the always-flag reading (#588) reads the refit blocks of the development days; "
+            "the single look is cut to its window and cannot be read that way"
+        )
     _check_grid(declaration, grids, confirmation=confirmation)
     by_name = _check_forecasts(declaration, grids, forecasts, confirmation=confirmation)
     if list(calendar) != sorted(set(calendar)):
@@ -1876,6 +1989,9 @@ def _onset_tier(
     onset = [float(grids[first].onset[position[first][day]]) for day in common]
     onsets = int(sum(onset))
     count = len(common)
+    always_flag: Dict[str, dict] = {}
+    dropped: Dict[str, int] = {}
+    flags_anyway: Dict[int, List[int]] = {}
     rule = declaration.weighted_miss
     regime_column = grids[first].groups.get("regime")
     regimes = [regime_column[position[first][day]] for day in common] if regime_column is not None else None
@@ -1898,9 +2014,20 @@ def _onset_tier(
         if [grids[h].outcomes[tau][k] for k in at] != pressure:
             raise ValueError(f"{name}: the outcome of a scored day differs between horizons {first} and {h}")
         chosen = by_name[name][h]
-        flags[h] = _alarm_flags(
-            declaration, name, [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at], onset
-        )
+        raw = [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at]
+        if declaration.always_flag_not_warning:
+            # #588: a flag from a block whose cut-off flags every day in it counts as nothing; it is listed instead.
+            step = declaration.cutoff_refit_every
+            blocks = always_flag_blocks(chosen.probabilities[tau], chosen.cutoffs[tau], step)
+            blanket = [blocks[k // step] for k in at]
+            always_flag[str(h)] = {
+                "count": sum(blocks),
+                "first_days": [grids[h].dates[b * step].isoformat() for b, x in enumerate(blocks) if x],
+            }
+            dropped[str(h)] = sum(r for r, b in zip(raw, blanket) if b)
+            flags_anyway[h] = _alarm_flags(declaration, name, raw, onset)
+            raw = [0 if b else r for r, b in zip(raw, blanket)]
+        flags[h] = _alarm_flags(declaration, name, raw, onset)
         raised = sum(1 for f, y in zip(flags[h], pressure) if f and not y)
         false_alarms[str(h)] = {"false_alarms": raised, "per_onset": raised / onsets if onsets else None}
     if rule is not None:
@@ -1977,6 +2104,17 @@ def _onset_tier(
         "false_alarm_count": "pooled across the horizons that count the warnings (ruling of 10 October 2026, #509)",
         "pooled_false_alarms": pooled["false_alarms"]["flat"] if onsets else 0,
     }
+    if declaration.always_flag_not_warning:
+        caught_by_anyway = [float(any(flags_anyway[h][k] for h in horizons)) for k in range(count)]
+        out["always_flag"] = {
+            "blocks_by_horizon": always_flag,
+            "flags_dropped_by_horizon": dropped,
+            "onsets_lost": [
+                day.isoformat()
+                for day, o, c, a in zip(common, onset, caught_by(horizons), caught_by_anyway)
+                if o and a and not c
+            ],
+        }
     if rule is not None:
         out["weighted_miss_applied"] = rule.applied
         out["weighted_false_alarms_by_horizon"] = weighted_alarms

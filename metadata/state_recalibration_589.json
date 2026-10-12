@@ -1,0 +1,63 @@
+{
+  "status": "declared by the pull request that closes #589 before any score was computed; a measurement, not a record. Nothing here is published: no variant joins any published declaration, no 2026 day is scored, no rule changes and the live record and pin do not move",
+  "issue": 589,
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parent": {
+    "row": "risk_gbm+every_day+gate+settle+h41+iorb",
+    "declaration": "metadata/iorb_every_day_579.json (PR #582), refitted with the own-leg scarcity state of #586 (scripts/own_leg_rescore.py own_leg); its forecasts are not changed, only recalibrated"
+  },
+  "conditioning_variable": "the reserve-scarcity state (0 to 3, or unknown), each of its three legs read at its own latest public row as of the decision instant (scarcity.own_leg_states, #586; pressure_judge._scarcity_states). It is read as of the decision instant of each forecast at its own horizon, for the pair a curve is fitted on as for the day it is applied to. No hindsight regime label (ruling on #515) is used, and group_calibration.scarcity_state_label refuses any other value",
+  "cadence": "the judge's: a refit every 21 scored days from 61 days of history; a block's curve is fitted on the pairs whose scored day is at or before its last training label (probability_calibration.past_positions), and is the identity until those pairs number 250 and hold 5 events",
+  "variants": [
+    {
+      "id": "a",
+      "row": "risk_gbm+every_day+gate+settle+h41+iorb+state_platt",
+      "run": true,
+      "what": "state-conditioned recalibration: a Platt curve (the published recalibration's family, declared in place of isotonic, which overfits 70 to 160 positive days) per state, per threshold and horizon, on that state's own earlier observable pairs; the pooled Platt curve while the state holds fewer than 60 pairs or 3 events",
+      "implementation": "group_calibration.walk_forward('group') with the state label as the group"
+    },
+    {
+      "id": "b",
+      "row": "risk_gbm+every_day+gate+settle+h41+iorb+state_satiation",
+      "run": false,
+      "what": "variant (a) plus the time-varying satiation distance of #587 as a calibration covariate, if #587 has merged",
+      "why_not_run": "#587 had not merged when this was declared (its pull request was open); the variant is not scored here and no result is reported for it"
+    },
+    {
+      "id": "c",
+      "row": "risk_gbm+every_day+gate+settle+h41+iorb+state_shrunk",
+      "run": true,
+      "what": "a shrinkage form: the pooled Platt slope with one intercept offset per state, each offset the maximiser of the state's own log likelihood minus (precision / 2) * offset squared, so a thin state keeps the pooled curve and a rich one may depart from it; a state with no pair gets the pooled curve",
+      "implementation": "group_calibration.walk_forward_shrunk"
+    }
+  ],
+  "constants": {
+    "group_minimum_pairs": 60,
+    "group_minimum_events": 3,
+    "shrinkage_precision": 1.0,
+    "pooled_gate": "250 pairs and 5 events (probability_calibration)",
+    "searched": "none: the first three are #380's, declared before any scoring, and the shrinkage precision (a prior of standard deviation 1 on the log-odds scale) is declared here before any score; no constant was tuned on a scored day"
+  },
+  "non_risk_days": "the parent's forecast is exactly 0 on a day the gate does not pass; the curve is fitted on all scored days, so a state's curve gives such a day the state's own rate for it, as in metadata/regime_recalibration.json; this is part of the declared remedy",
+  "monotone": "the two thresholds' recalibrated columns are made non-increasing in tau (probability_calibration.monotone_curves), as in #471",
+  "judge": "the judge as declared (metadata/pressure_judge.json), unchanged, under the flat and the weighted rule in force on main (pooled-horizon false-alarm count for tier 1, tier 3 from 20 pressure days, the split-years line); the benchmarks and the evaluation days, tiers and onsets do not depend on the row",
+  "pairing": "each variant against its parent, with 90% stationary-bootstrap intervals (the judge's bootstrap), split by regime and pressure-day type and by year",
+  "ruling_567": "these variants were built after seeing 2018 to 2025, so a pass here is not a confirmation; a variant can replace a shortlist slot only by Eleonora's decision, before the 2026 window opens",
+  "published": "nothing; no variant joins any published declaration"
+}

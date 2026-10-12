@@ -554,7 +554,7 @@ Table 4. The seven coupon-settlement onsets of docs/pivot/desk-standard-result.m
 | risk_quantile_skewt_base+every_day+gate+h41 | - | - | h 1,3 | - | h 1 | - | - |
 | risk_quantile_skewt_base+every_day+gate+settle+h41 | - | - | h 1,2,3,4,5 | - | h 1,2,3,4,5 | - | h 2,5 |
 
-Table 5. Paired Brier difference against the published row, +5 bp (negative favours the arm), 90% interval, by horizon: all days and by pressure-day type.
+Table 5. Paired Brier difference against the published row, +5 bp (the published row's squared error minus the arm's, so positive favours the arm), 90% interval, by horizon: all days and by pressure-day type.
 
 
 h = 1

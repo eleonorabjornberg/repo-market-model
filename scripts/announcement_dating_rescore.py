@@ -52,6 +52,11 @@ SNAPSHOT = (
 )
 EPISODES = REPO / "docs" / "pivot" / "evidence" / "episode-post-mortem" / "episodes.json"
 GATE = "+every_day+gate"
+#: Table 5's header. The statistic is the judge's (`pressure_judge._paired_vectors`): the published row's squared error minus the arm's.
+PAIRED_BRIER_HEADER = (
+    "Table 5. Paired Brier difference against the published row, +5 bp (the published row's squared error minus the arm's, "
+    "so positive favours the arm), 90% interval, by horizon: all days and by pressure-day type."
+)
 #: arm -> (settlements dated from the announcement, H.4.1 read per release, suffix of the forecast name)
 ARMS = {
     "published": (False, False, ""),
@@ -470,7 +475,7 @@ def markdown(document: dict, pairs) -> str:
                 c = document["coupon_onsets"][name][day]
                 cells.append(("h " + ",".join(str(h) for h in c["leads_flagged"])) if c["leads_flagged"] else "-")
             out.append(f"| {name} | " + " | ".join(cells) + " |")
-    out.append("\nTable 5. Paired Brier difference against the published row, +5 bp (negative favours the arm), 90% interval, by horizon: all days and by pressure-day type.\n")
+    out.append("\n" + PAIRED_BRIER_HEADER + "\n")
     for h in ("1", "2", "3", "4", "5"):
         out.append(f"\nh = {h}\n")
         out.append("| row | cell | days | difference |")

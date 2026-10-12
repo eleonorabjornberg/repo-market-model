@@ -56,6 +56,11 @@ ANNOUNCED = "iorb_announced_change_bps"
 ARM = "both"
 PARENT = "risk_gbm+every_day+gate+settle+h41"
 NEW = PARENT + "+iorb"
+#: Table 3's header. The statistic is the judge's (`pressure_judge._paired_vectors`): the parent's squared error minus the row's.
+PAIRED_BRIER_HEADER = (
+    "Table 3. Paired Brier difference against the parent, +5 bp (the parent's squared error minus the row's, so positive favours "
+    "the row), 90% interval, h = 1: all days, by regime and by pressure-day type."
+)
 #: the horizons at which the input is public (one panel day ahead); at the others the row is the control's
 READ_AT = (1,)
 
@@ -230,7 +235,7 @@ def markdown(document: dict, pairs) -> str:
             c = document["flags"][label][h]
             cells.append(f"{c['flags']}({c['false_alarms']}); {c['onsets_flagged']}/{c['onsets']}; {ann._f(c['false_alarms_per_onset'], 2)}")
         out.append(f"| {label} | " + " | ".join(cells) + " |")
-    out.append("\nTable 3. Paired Brier difference against the parent, +5 bp (negative favours the row), 90% interval, h = 1: all days, by regime and by pressure-day type.\n")
+    out.append("\n" + PAIRED_BRIER_HEADER + "\n")
     out.append("| cell | days | difference |")
     out.append("|---|---|---|")
     for cell, c in document["brier"][name]["1"].items():

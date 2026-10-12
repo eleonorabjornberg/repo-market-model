@@ -592,6 +592,7 @@ GitHub herself (`docs/decisions/drafts/owner-attestation.md`).
 | `docs/decisions/pressure-probability.md` | Decision: the pressure probability comes from the best model | Status: decided by Eleonora, 1 October 2026. |
 | `docs/decisions/final-test-preregistration.md` | Decision: the final test, pre-registered | Status: in force: merged in PR #216, 3 October 2026 (#150). |
 | `docs/decisions/live-scoring-declaration.md` | Decision: how the live record is scored | Status: in force: merged in PR #286, 6 October 2026 (#276). |
+| `docs/decisions/always-flag-blocks.md` | Decision (draft): a flag from an always-flag block is not a warning in tier 1 | Status: DRAFT, for Eleonora's own attested action. |
 | `docs/decisions/calendar-columns.md` | Decision: the calendar columns | Status: decided and declared; the columns build. |
 | `docs/decisions/confirmation-preregistration.md` | Decision: the 2026 confirmation window, pre-registered for the three frozen candidates | Status: DRAFT, for Eleonora to review and merge. |
 | `docs/decisions/fomc-point-in-time.md` | Decision: what a cancelled FOMC meeting contributes, and when it stops | Status: decided, and prospective. |

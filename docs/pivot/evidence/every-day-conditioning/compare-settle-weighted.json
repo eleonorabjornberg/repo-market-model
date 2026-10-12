@@ -1,0 +1,4268 @@
+{
+ "brier": {
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "1": {
+    "all": {
+     "days": 1873,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0015355840660233571,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.016170853247877266
+      },
+      "mean": 0.0082107537080404
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -4.392585313203426e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.012639164307572521
+      },
+      "mean": 0.005666264919863491
+     }
+    },
+    "day_type ordinary": {
+     "days": 1603,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0013812765657995013,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.018102955242644023
+      },
+      "mean": 0.009063507147336334
+     }
+    },
+    "day_type quarter_end": {
+     "days": 31,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 375,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.01405864238901647,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.07514917621514189
+      },
+      "mean": 0.042286444191666425
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.015517314602446309,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.007018779225514499
+      },
+      "mean": -0.0031958265396427737
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00022762680929339023,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": -8.010891003274255e-05
+      },
+      "mean": -0.00014918581639969934
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.016267111566563266,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": -0.0009096135128754657
+      },
+      "mean": -0.00719629902479862
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.005720620053229993,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 893666303,
+       "upper": 0.028524627517405997
+      },
+      "mean": 0.008972463179123388
+     }
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1872,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00047951014808618773,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.011220456104194575
+      },
+      "mean": 0.0048698785338295945
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.007715321692112011
+      },
+      "mean": 0.0026052015664769566
+     }
+    },
+    "day_type ordinary": {
+     "days": 1603,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0007406325375136524,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.012704357195375694
+      },
+      "mean": 0.005443314023928543
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 374,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.007216017395750712,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.05586243509792328
+      },
+      "mean": 0.029714694993269408
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.010345013203671585,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.0
+      },
+      "mean": -0.0038223571384533904
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0002600327405506057,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": -9.338875705538291e-05
+      },
+      "mean": -0.0001687956303663403
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.005205061872477365,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": -0.0006165036483972861
+      },
+      "mean": -0.0024827917390785365
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.016557585458802357,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2031267306,
+       "upper": 0.016651374535313193
+      },
+      "mean": -0.0011667253177441844
+     }
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1871,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00039977059082989985,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.00986661756228376
+      },
+      "mean": 0.004189740743077276
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1602,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00046320466564130856,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.011480121453282586
+      },
+      "mean": 0.004893261504555295
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 373,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0031319811146973656,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.049896150411301354
+      },
+      "mean": 0.02410573151586889
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0023346742401555683,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.0
+      },
+      "mean": -0.0007904711301608557
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0009591673168765002,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": -0.0003246593673192556
+      },
+      "mean": -0.0006200950909473679
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.004369797317551374,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": -0.000849199243927205
+      },
+      "mean": -0.002431600641055434
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.01392215671366664,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 607710012,
+       "upper": 0.017958708126625283
+      },
+      "mean": 0.0004727173367122188
+     }
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1870,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0001429965244954234,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.01219003229623468
+      },
+      "mean": 0.005706821174701352
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1601,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0001664041076816264,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.014227025095612746
+      },
+      "mean": 0.006665681197183966
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 372,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.011373025566150148,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.060130903903423204
+      },
+      "mean": 0.0339725346269766
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.009398555760516469,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.0
+      },
+      "mean": -0.0034695276503127434
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0004929334632500267,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": -0.00015995246654836625
+      },
+      "mean": -0.0003117951182419805
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.005483230910223658,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": -0.0007524263482091123
+      },
+      "mean": -0.002896616402410014
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.02095074846262292,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 622959896,
+       "upper": 0.02301354564088866
+      },
+      "mean": -0.0005534096195492406
+     }
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1869,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00035135910868954536,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.01148558761702322
+      },
+      "mean": 0.005408977726884801
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.006485309842597933
+      },
+      "mean": 0.0021617699475326444
+     }
+    },
+    "day_type ordinary": {
+     "days": 1600,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0004935921597528955,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.013091664055194595
+      },
+      "mean": 0.006115696174636125
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 371,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.004906064244750097,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.05405241612468127
+      },
+      "mean": 0.027980838138116176
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.004871550944567829,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.004128832242725985
+      },
+      "mean": -0.0002868273983060848
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0003615341304283194,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": -0.00012831816556963156
+      },
+      "mean": -0.00023824062348132893
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.004517208203857673,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": -0.000617446889348293
+      },
+      "mean": -0.002305799655816416
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.018680689213100975,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 330843630,
+       "upper": 0.026313274167554898
+      },
+      "mean": 0.002229461845781325
+     }
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": {
+   "1": {
+    "all": {
+     "days": 1873,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -4.267392283348858e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": -1.2594612924623165e-05
+      },
+      "mean": -2.655008392315096e-05
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1603,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -4.993221825591244e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": -1.4747765481120707e-05
+      },
+      "mean": -3.1022025694361666e-05
+     }
+    },
+    "day_type quarter_end": {
+     "days": 31,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 375,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -8.148001235595216e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": -2.4936272629071214e-05
+      },
+      "mean": -5.271532074992942e-05
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0001188143915436293,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": 0.0
+      },
+      "mean": -4.1188989068458156e-05
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1664677116,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1872,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -7.247650081684266e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": -2.3311335592034123e-05
+      },
+      "mean": -4.5824280211600485e-05
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1603,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -8.488163612465058e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": -2.723360190660632e-05
+      },
+      "mean": -5.3514068968257086e-05
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 374,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00017831568723495294,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": 0.0
+      },
+      "mean": -7.669311766750724e-05
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00011849491830740463,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": -3.88467546628087e-05
+      },
+      "mean": -7.633666650864764e-05
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 816609619,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1871,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0002524129348281968,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": -8.271544865904231e-05
+      },
+      "mean": -0.00016048250273277673
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1602,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00029535421005247824,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": -9.670432614660046e-05
+      },
+      "mean": -0.00018742993920912938
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 373,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00044245188493480405,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": 0.0
+      },
+      "mean": -0.00018114588553512132
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0004882186173119923,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": -0.0001549808801009888
+      },
+      "mean": -0.0003110900365085895
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975844432,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1870,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00012901447559222705,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.00040626645449216544
+      },
+      "mean": 8.264494749553909e-05
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1601,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0001514387462424991,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.0004721793696453971
+      },
+      "mean": 9.653095054132298e-05
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 372,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00037046110796162227,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.002217352244594695
+      },
+      "mean": 0.0006727404263603156
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00020027654657205649,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": -6.114718495361311e-05
+      },
+      "mean": -0.0001279590732478331
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1191084227,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1869,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0002044220352188325,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0004243917988897256
+      },
+      "mean": 4.787414307683091e-05
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1600,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00023942968305705117,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0004975080746708651
+      },
+      "mean": 5.5922983381623105e-05
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 371,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0008294170967673825,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.002344674541476104
+      },
+      "mean": 0.00045231451896408486
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00016727800238701542,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": -4.911479413168595e-05
+      },
+      "mean": -0.00010472180899074667
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1978557439,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+   "1": {
+    "all": {
+     "days": 1873,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00015871856887618007,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.002417830547158498
+      },
+      "mean": 0.0009514267462148758
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1603,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00018513143204720262,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.0028233288144349383
+      },
+      "mean": 0.0011116795356584295
+     }
+    },
+    "day_type quarter_end": {
+     "days": 31,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 375,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.001423932258703368,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.007489936997773445
+      },
+      "mean": 0.002244434973330413
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.011812188220021296
+      },
+      "mean": 0.003984063678488956
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -9.873923235508715e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": -3.5736475648592254e-05
+      },
+      "mean": -6.596732001611905e-05
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00011747028088209644,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.0
+      },
+      "mean": -4.1188989068458156e-05
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 975414172,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1872,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -1.2106489785578798e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.0024136057221884537
+      },
+      "mean": 0.0010619274490411528
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.007715321692112011
+      },
+      "mean": 0.0026052015664769566
+     }
+    },
+    "day_type ordinary": {
+     "days": 1603,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00020869796777371407,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.0024697141318159206
+      },
+      "mean": 0.0009963493135580108
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 374,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 9.531190062227744e-05,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.012202673255731484
+      },
+      "mean": 0.005492236653237002
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0001368919906588143,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": -4.767859154065113e-05
+      },
+      "mean": -8.846032580963119e-05
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 1484840422,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1871,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0003741155221828548,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0013200681634205048
+      },
+      "mean": 0.00036575385505035904
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1602,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00043609141228492115,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0015427896002360314
+      },
+      "mean": 0.0004271694524339712
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 373,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0012824488965866034,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.007534370782037095
+      },
+      "mean": 0.0025175366160289543
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.0005235369823123036,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": -0.0001865771342560269
+      },
+      "mean": -0.0003405290039833933
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 156745652,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1870,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -5.251876244019704e-06,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.002079193462140621
+      },
+      "mean": 0.0009462579215752097
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type ordinary": {
+     "days": 1601,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -6.131253863510952e-06,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.00243294534366885
+      },
+      "mean": 0.0011052481657374406
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 372,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.00035103331706699587,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.010470266185827344
+      },
+      "mean": 0.005066456468250959
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00023023775942503447,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": -8.563430604438164e-05
+      },
+      "mean": -0.00015403675513865636
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 2076352060,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1869,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0001699953916037177,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.002823420253710168
+      },
+      "mean": 0.0013780112316338652
+     }
+    },
+    "day_type month_end": {
+     "days": 150,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.006358146904507777
+      },
+      "mean": 0.0021617699475326444
+     }
+    },
+    "day_type ordinary": {
+     "days": 1600,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.00018879235760118986,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.0028819356831020103
+      },
+      "mean": 0.0014070234373711236
+     }
+    },
+    "day_type quarter_end": {
+     "days": 30,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "day_type tax_date": {
+     "days": 89,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2018-19": {
+     "days": 371,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0012061891925522388,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.014220068055698705
+      },
+      "mean": 0.007224388487163948
+     }
+    },
+    "regime 2020": {
+     "days": 251,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2021-23": {
+     "days": 748,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00018638431088607193,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": -6.364448599010946e-05
+      },
+      "mean": -0.00012216634531442785
+     }
+    },
+    "regime 2024": {
+     "days": 250,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": 0.0,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     }
+    },
+    "regime 2025-26": {
+     "days": 249,
+     "vs_published": {
+      "interval": {
+       "block_length": 10,
+       "level": 0.9,
+       "lower": -0.00012548367848148564,
+       "method": "stationary_bootstrap",
+       "replications": 2000,
+       "seed": 795851594,
+       "upper": 0.0
+      },
+      "mean": -5.3673536220635554e-05
+     }
+    }
+   }
+  }
+ },
+ "caught_at_some_lead": {
+  "calendar_climatology": {
+   "all": 12,
+   "day type month_end": 4,
+   "day type ordinary": 5,
+   "day type quarter_end": 1,
+   "day type tax_date": 2,
+   "regime 2018-19": 12,
+   "regime 2020": 0,
+   "regime 2021-23": 0,
+   "regime 2024": 0,
+   "regime 2025-26": 0,
+   "year 2018": 0,
+   "year 2019": 12,
+   "year 2020": 0,
+   "year 2021": 0,
+   "year 2022": 0,
+   "year 2023": 0,
+   "year 2024": 0,
+   "year 2025": 0
+  },
+  "persistence_logistic": {
+   "all": 12,
+   "day type month_end": 3,
+   "day type ordinary": 6,
+   "day type quarter_end": 1,
+   "day type tax_date": 2,
+   "regime 2018-19": 11,
+   "regime 2020": 1,
+   "regime 2021-23": 0,
+   "regime 2024": 0,
+   "regime 2025-26": 0,
+   "year 2018": 0,
+   "year 2019": 11,
+   "year 2020": 1,
+   "year 2021": 0,
+   "year 2022": 0,
+   "year 2023": 0,
+   "year 2024": 0,
+   "year 2025": 0
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "all": 19,
+   "day type month_end": 4,
+   "day type ordinary": 9,
+   "day type quarter_end": 2,
+   "day type tax_date": 4,
+   "regime 2018-19": 13,
+   "regime 2020": 2,
+   "regime 2021-23": 0,
+   "regime 2024": 0,
+   "regime 2025-26": 4,
+   "year 2018": 0,
+   "year 2019": 13,
+   "year 2020": 2,
+   "year 2021": 0,
+   "year 2022": 0,
+   "year 2023": 0,
+   "year 2024": 0,
+   "year 2025": 4
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": {
+   "all": 14,
+   "day type month_end": 4,
+   "day type ordinary": 4,
+   "day type quarter_end": 2,
+   "day type tax_date": 4,
+   "regime 2018-19": 10,
+   "regime 2020": 0,
+   "regime 2021-23": 0,
+   "regime 2024": 0,
+   "regime 2025-26": 4,
+   "year 2018": 0,
+   "year 2019": 10,
+   "year 2020": 0,
+   "year 2021": 0,
+   "year 2022": 0,
+   "year 2023": 0,
+   "year 2024": 0,
+   "year 2025": 4
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+   "all": 18,
+   "day type month_end": 4,
+   "day type ordinary": 8,
+   "day type quarter_end": 2,
+   "day type tax_date": 4,
+   "regime 2018-19": 13,
+   "regime 2020": 1,
+   "regime 2021-23": 0,
+   "regime 2024": 0,
+   "regime 2025-26": 4,
+   "year 2018": 0,
+   "year 2019": 13,
+   "year 2020": 1,
+   "year 2021": 0,
+   "year 2022": 0,
+   "year 2023": 0,
+   "year 2024": 0,
+   "year 2025": 4
+  },
+  "risk_gbm+settle+h41": {
+   "all": 14,
+   "day type month_end": 4,
+   "day type ordinary": 4,
+   "day type quarter_end": 2,
+   "day type tax_date": 4,
+   "regime 2018-19": 10,
+   "regime 2020": 0,
+   "regime 2021-23": 0,
+   "regime 2024": 0,
+   "regime 2025-26": 4,
+   "year 2018": 0,
+   "year 2019": 10,
+   "year 2020": 0,
+   "year 2021": 0,
+   "year 2022": 0,
+   "year 2023": 0,
+   "year 2024": 0,
+   "year 2025": 4
+  }
+ },
+ "coupon_onsets": {
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "2018-11-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2018-12-28": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2019-01-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1
+    ]
+   },
+   "2019-03-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2019-10-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2025-10-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2025-12-26": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": {
+   "2018-11-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2018-12-28": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2019-01-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1
+    ]
+   },
+   "2019-03-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2019-10-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2025-10-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2025-12-26": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+   "2018-11-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2018-12-28": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2019-01-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1
+    ]
+   },
+   "2019-03-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2019-10-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2025-10-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2025-12-26": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   }
+  },
+  "risk_gbm+settle+h41": {
+   "2018-11-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2018-12-28": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2019-01-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1
+    ]
+   },
+   "2019-03-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2019-10-15": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "2025-10-15": {
+    "is_onset": true,
+    "leads_flagged": []
+   },
+   "2025-12-26": {
+    "is_onset": true,
+    "leads_flagged": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   }
+  }
+ },
+ "declaration": {
+  "horizons": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "issue": 601,
+  "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), under the weighted rule in force and the flat rule beside it",
+  "pairing": "each variant against the row and against risk_gbm+settle+h41, with 90% stationary-bootstrap intervals, split by regime and pressure-day type",
+  "parent": {
+   "declaration": "metadata/iorb_every_day_579.json (PR #582) and metadata/pooled_gate_595.json: the row as scored, unchanged",
+   "row": "risk_gbm+every_day+gate+settle+h41+iorb"
+  },
+  "published": "nothing; no variant joins any published declaration",
+  "scoring": {
+   "decision_time": "16:00",
+   "last_day": "2025-12-31",
+   "minimum_history": 61,
+   "refit_every": 21
+  },
+  "second_parent": "risk_gbm+settle+h41 (the row that passes tier 1 under the pooled count), the pairing reference",
+  "status": "declared by the pull request that closes #601 after step 1 was committed and before any step 2 score; a measurement, not a record. Nothing here is published: no variant joins any published declaration, no 2026 day is scored, no rule changes and the live record and pin do not move. The variants condition on an input found by reading 2018-2025, so a pass is not a confirmation (ruling of 11 October 2026 on #567)",
+  "step": 2,
+  "thresholds_bp": [
+   5,
+   10
+  ],
+  "trigger": {
+   "direction": {
+    "tail_spread_level": "lower"
+   },
+   "evidence": "docs/pivot/evidence/every-day-separation/separation.json (committed before this declaration)",
+   "inputs": [
+    "tail_spread_level"
+   ],
+   "rule": "step 1's rule (metadata/every_day_separation_601.json, step_2_trigger): an input that separates in the pooled comparison and again, in the same direction, with the false alarms of the onset years only"
+  },
+  "variants": {
+   "cap50": {
+    "cap": {
+     "minimum_earlier": 60,
+     "quantile": 0.5,
+     "window": 250
+    },
+    "fit": "none: a rule on the row's own gated forecasts at each lead",
+    "name": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50",
+    "reads": "the tail spread at the decision instants of earlier scored days and of this one (asof.InformationRule, per field), and nothing later",
+    "rule": "on a day that is not a risk date at the lead, the row's forecast is kept only if the tail spread (sofr_p99_iorb_bps) read at the lead's decision instant is at or below the quantile (nearest rank) of the tail spread read on the days that were not risk dates among the previous window scored days, each at its own decision instant; with fewer than minimum_earlier such readings, or when the tail spread is not public, the forecast is 0. A risk date keeps the row's forecast. The curve across thresholds is made non-increasing afterwards, as the row's is"
+   },
+   "cap75": {
+    "cap": {
+     "minimum_earlier": 60,
+     "quantile": 0.75,
+     "window": 250
+    },
+    "fit": "none: a rule on the row's own gated forecasts at each lead",
+    "name": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+    "reads": "the tail spread at the decision instants of earlier scored days and of this one (asof.InformationRule, per field), and nothing later",
+    "rule": "on a day that is not a risk date at the lead, the row's forecast is kept only if the tail spread (sofr_p99_iorb_bps) read at the lead's decision instant is at or below the quantile (nearest rank) of the tail spread read on the days that were not risk dates among the previous window scored days, each at its own decision instant; with fewer than minimum_earlier such readings, or when the tail spread is not public, the forecast is 0. A risk date keeps the row's forecast. The curve across thresholds is made non-increasing afterwards, as the row's is"
+   }
+  },
+  "variants_declared": "these two, the row and its parent; no other variant, quantile, input or parent",
+  "why_a_cap_and_not_a_fitted_term": "step 1 found that the onset warnings sit at a lower tail spread than the false alarms. A term fitted for the probability of a pressure day cannot learn that: the likelihood rises with the tail spread. The input conditions the part as a gate, as the gate of #532 conditions it on its own forecast. Two strengths of one rule are declared (the upper quartile and the median of the trailing readings); no other quantile, input or form"
+ },
+ "episodes": [
+  {
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2018-11-15"
+  },
+  {
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2018-11-30"
+  },
+  {
+   "day_type": "tax_date",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2018-12-17"
+  },
+  {
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2018-12-28"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-01-15"
+  },
+  {
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-01-31"
+  },
+  {
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-02-28"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-03-15"
+  },
+  {
+   "day_type": "quarter_end",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-03-29"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": false,
+   "start": "2019-05-28"
+  },
+  {
+   "day_type": "tax_date",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-06-17"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": false,
+   "start": "2019-06-25"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": false,
+   "start": "2019-08-13"
+  },
+  {
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-08-30"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-10-15"
+  },
+  {
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-11-29"
+  },
+  {
+   "day_type": "tax_date",
+   "regime": "2018-19",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2019-12-16"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2020",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": false,
+   "start": "2020-03-04"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2020",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2020-03-12"
+  },
+  {
+   "day_type": "quarter_end",
+   "regime": "2024",
+   "risk_gbm+every_day+gate+settle+h41+iorb": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2024-09-30"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2024",
+   "risk_gbm+every_day+gate+settle+h41+iorb": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2024-12-26"
+  },
+  {
+   "day_type": "tax_date",
+   "regime": "2025-26",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2025-09-15"
+  },
+  {
+   "day_type": "quarter_end",
+   "regime": "2025-26",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2025-09-30"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2025-26",
+   "risk_gbm+every_day+gate+settle+h41+iorb": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": false,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": false,
+   "risk_gbm+settle+h41": false,
+   "start": "2025-10-15"
+  },
+  {
+   "day_type": "tax_date",
+   "regime": "2025-26",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2025-12-15"
+  },
+  {
+   "day_type": "ordinary",
+   "regime": "2025-26",
+   "risk_gbm+every_day+gate+settle+h41+iorb": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": true,
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": true,
+   "risk_gbm+settle+h41": true,
+   "start": "2025-12-26"
+  }
+ ],
+ "flags": {
+  "calendar_climatology": {
+   "1": {
+    "false_alarms": 174,
+    "false_alarms_per_onset": 6.444444444444445,
+    "flags": 258,
+    "onsets": 27,
+    "onsets_flagged": 12
+   },
+   "2": {
+    "false_alarms": 144,
+    "false_alarms_per_onset": 5.538461538461538,
+    "flags": 213,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "3": {
+    "false_alarms": 145,
+    "false_alarms_per_onset": 5.576923076923077,
+    "flags": 213,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "4": {
+    "false_alarms": 146,
+    "false_alarms_per_onset": 5.615384615384615,
+    "flags": 213,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "5": {
+    "false_alarms": 147,
+    "false_alarms_per_onset": 5.653846153846154,
+    "flags": 213,
+    "onsets": 26,
+    "onsets_flagged": 10
+   }
+  },
+  "persistence_logistic": {
+   "1": {
+    "false_alarms": 183,
+    "false_alarms_per_onset": 6.777777777777778,
+    "flags": 286,
+    "onsets": 27,
+    "onsets_flagged": 11
+   },
+   "2": {
+    "false_alarms": 124,
+    "false_alarms_per_onset": 4.769230769230769,
+    "flags": 215,
+    "onsets": 26,
+    "onsets_flagged": 7
+   },
+   "3": {
+    "false_alarms": 154,
+    "false_alarms_per_onset": 5.923076923076923,
+    "flags": 243,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "4": {
+    "false_alarms": 140,
+    "false_alarms_per_onset": 5.384615384615385,
+    "flags": 222,
+    "onsets": 26,
+    "onsets_flagged": 8
+   },
+   "5": {
+    "false_alarms": 118,
+    "false_alarms_per_onset": 4.538461538461538,
+    "flags": 199,
+    "onsets": 26,
+    "onsets_flagged": 8
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "1": {
+    "false_alarms": 96,
+    "false_alarms_per_onset": 3.5555555555555554,
+    "flags": 178,
+    "onsets": 27,
+    "onsets_flagged": 14
+   },
+   "2": {
+    "false_alarms": 85,
+    "false_alarms_per_onset": 3.269230769230769,
+    "flags": 163,
+    "onsets": 26,
+    "onsets_flagged": 12
+   },
+   "3": {
+    "false_alarms": 89,
+    "false_alarms_per_onset": 3.423076923076923,
+    "flags": 163,
+    "onsets": 26,
+    "onsets_flagged": 11
+   },
+   "4": {
+    "false_alarms": 90,
+    "false_alarms_per_onset": 3.4615384615384617,
+    "flags": 165,
+    "onsets": 26,
+    "onsets_flagged": 12
+   },
+   "5": {
+    "false_alarms": 91,
+    "false_alarms_per_onset": 3.5,
+    "flags": 165,
+    "onsets": 26,
+    "onsets_flagged": 15
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": {
+   "1": {
+    "false_alarms": 37,
+    "false_alarms_per_onset": 1.3703703703703705,
+    "flags": 78,
+    "onsets": 27,
+    "onsets_flagged": 13
+   },
+   "2": {
+    "false_alarms": 25,
+    "false_alarms_per_onset": 0.9615384615384616,
+    "flags": 63,
+    "onsets": 26,
+    "onsets_flagged": 11
+   },
+   "3": {
+    "false_alarms": 36,
+    "false_alarms_per_onset": 1.3846153846153846,
+    "flags": 75,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "4": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flags": 68,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "5": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flags": 67,
+    "onsets": 26,
+    "onsets_flagged": 11
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+   "1": {
+    "false_alarms": 48,
+    "false_alarms_per_onset": 1.7777777777777777,
+    "flags": 92,
+    "onsets": 27,
+    "onsets_flagged": 14
+   },
+   "2": {
+    "false_alarms": 39,
+    "false_alarms_per_onset": 1.5,
+    "flags": 84,
+    "onsets": 26,
+    "onsets_flagged": 12
+   },
+   "3": {
+    "false_alarms": 51,
+    "false_alarms_per_onset": 1.9615384615384615,
+    "flags": 95,
+    "onsets": 26,
+    "onsets_flagged": 11
+   },
+   "4": {
+    "false_alarms": 46,
+    "false_alarms_per_onset": 1.7692307692307692,
+    "flags": 89,
+    "onsets": 26,
+    "onsets_flagged": 12
+   },
+   "5": {
+    "false_alarms": 48,
+    "false_alarms_per_onset": 1.8461538461538463,
+    "flags": 93,
+    "onsets": 26,
+    "onsets_flagged": 14
+   }
+  },
+  "risk_gbm+settle+h41": {
+   "1": {
+    "false_alarms": 36,
+    "false_alarms_per_onset": 1.3333333333333333,
+    "flags": 77,
+    "onsets": 27,
+    "onsets_flagged": 13
+   },
+   "2": {
+    "false_alarms": 25,
+    "false_alarms_per_onset": 0.9615384615384616,
+    "flags": 63,
+    "onsets": 26,
+    "onsets_flagged": 11
+   },
+   "3": {
+    "false_alarms": 36,
+    "false_alarms_per_onset": 1.3846153846153846,
+    "flags": 76,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "4": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flags": 67,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "5": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flags": 65,
+    "onsets": 26,
+    "onsets_flagged": 11
+   }
+  }
+ },
+ "onsets": 26,
+ "onsets_in_cell": {
+  "all": 26,
+  "day type month_end": 6,
+  "day type ordinary": 12,
+  "day type quarter_end": 3,
+  "day type tax_date": 5,
+  "regime 2018-19": 17,
+  "regime 2020": 2,
+  "regime 2021-23": 0,
+  "regime 2024": 2,
+  "regime 2025-26": 5,
+  "year 2018": 4,
+  "year 2019": 13,
+  "year 2020": 2,
+  "year 2021": 0,
+  "year 2022": 0,
+  "year 2023": 0,
+  "year 2024": 2,
+  "year 2025": 5
+ },
+ "recall_at_some_lead": {
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "all": {
+    "days": 26,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5516379310344827,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.8888888888888888
+     },
+     "mean": 0.7307692307692307
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.05263157894736842,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.34615384615384615
+     },
+     "mean": 0.19230769230769232
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.36363636363636365,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.7142857142857143
+     },
+     "mean": 0.5384615384615384
+    }
+   },
+   "day type month_end": {
+    "days": 6,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 5 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 5 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 5 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    }
+   },
+   "day type ordinary": {
+    "days": 12,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.9444444444444444
+     },
+     "mean": 0.75
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.14285714285714285,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.6875
+     },
+     "mean": 0.4166666666666667
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.1,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.6
+     },
+     "mean": 0.3333333333333333
+    }
+   },
+   "day type quarter_end": {
+    "days": 3,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 101 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 101 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 101 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    }
+   },
+   "day type tax_date": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 14 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 14 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 14 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   },
+   "regime 2018-19": {
+    "days": 17,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5416666666666666,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 1.0
+     },
+     "mean": 0.7647058823529411
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.35714285714285715
+     },
+     "mean": 0.17647058823529413
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.36363636363636365,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.8
+     },
+     "mean": 0.5882352941176471
+    }
+   },
+   "regime 2020": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 475 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 1.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 475 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 1.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 475 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "regime 2021-23": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "regime 2024": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 268 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 268 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 268 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "regime 2025-26": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 32 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 32 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 32 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   },
+   "year 2018": {
+    "days": 4,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 105 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 105 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 105 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2019": {
+    "days": 13,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 1.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 1.0
+     },
+     "mean": 1.0
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 0.45022727272727253
+     },
+     "mean": 0.23076923076923078
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5497727272727272,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1759833067,
+      "upper": 1.0
+     },
+     "mean": 0.7692307692307693
+    }
+   },
+   "year 2020": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 475 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 1.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 475 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 1.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 475 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2021": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2022": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2023": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2024": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 268 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 268 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 268 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2025": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 32 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 32 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 32 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap50": {
+   "all": {
+    "days": 26,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.3548387096774194,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.7142857142857143
+     },
+     "mean": 0.5384615384615384
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.0
+     },
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.3548387096774194,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.7142857142857143
+     },
+     "mean": 0.5384615384615384
+    }
+   },
+   "day type month_end": {
+    "days": 6,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 4 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 4 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 4 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    }
+   },
+   "day type ordinary": {
+    "days": 12,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.1,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.5714285714285714
+     },
+     "mean": 0.3333333333333333
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.0
+     },
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.1,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.5714285714285714
+     },
+     "mean": 0.3333333333333333
+    }
+   },
+   "day type quarter_end": {
+    "days": 3,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 105 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 105 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 105 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    }
+   },
+   "day type tax_date": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 7 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 7 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 7 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   },
+   "regime 2018-19": {
+    "days": 17,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.3684210526315789,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.8
+     },
+     "mean": 0.5882352941176471
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.0
+     },
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.3684210526315789,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.8
+     },
+     "mean": 0.5882352941176471
+    }
+   },
+   "regime 2020": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 485 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 485 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 485 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "regime 2021-23": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "regime 2024": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 280 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 280 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 280 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "regime 2025-26": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 56 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 56 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 56 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   },
+   "year 2018": {
+    "days": 4,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 107 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 107 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 107 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2019": {
+    "days": 13,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5555555555555556,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 1.0
+     },
+     "mean": 0.7692307692307693
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 0.0
+     },
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5555555555555556,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 986470137,
+      "upper": 1.0
+     },
+     "mean": 0.7692307692307693
+    }
+   },
+   "year 2020": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 485 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 485 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 485 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2021": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2022": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2023": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2024": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 280 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 280 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 280 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2025": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 56 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 56 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 56 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+   "all": {
+    "days": 26,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5110465116279067,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.8571428571428571
+     },
+     "mean": 0.6923076923076923
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.041666666666666664,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.2777777777777778
+     },
+     "mean": 0.15384615384615385
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.35294117647058826,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.7272727272727273
+     },
+     "mean": 0.5384615384615384
+    }
+   },
+   "day type month_end": {
+    "days": 6,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 7 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 7 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 7 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    }
+   },
+   "day type ordinary": {
+    "days": 12,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.42857142857142855,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.8888888888888888
+     },
+     "mean": 0.6666666666666666
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.1111111111111111,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.5555555555555556
+     },
+     "mean": 0.3333333333333333
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.1,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.6
+     },
+     "mean": 0.3333333333333333
+    }
+   },
+   "day type quarter_end": {
+    "days": 3,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 71 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 71 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 71 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.6666666666666666
+    }
+   },
+   "day type tax_date": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 14 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 14 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 14 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   },
+   "regime 2018-19": {
+    "days": 17,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5452651515151514,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 1.0
+     },
+     "mean": 0.7647058823529411
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.35714285714285715
+     },
+     "mean": 0.17647058823529413
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.36363636363636365,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.8181818181818182
+     },
+     "mean": 0.5882352941176471
+    }
+   },
+   "regime 2020": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 451 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.5
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 451 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.5
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 451 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "regime 2021-23": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "regime 2024": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 277 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 277 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 277 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "regime 2025-26": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 34 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 34 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 34 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   },
+   "year 2018": {
+    "days": 4,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 111 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 111 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 111 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2019": {
+    "days": 13,
+    "recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 1.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 1.0
+     },
+     "mean": 1.0
+    },
+    "recall_difference": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.0,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 0.4449494949494945
+     },
+     "mean": 0.23076923076923078
+    },
+    "reference_recall": {
+     "interval": {
+      "block_length": 10,
+      "level": 0.9,
+      "lower": 0.5550505050505048,
+      "method": "stationary_bootstrap",
+      "replications": 2000,
+      "seed": 1854708193,
+      "upper": 1.0
+     },
+     "mean": 0.7692307692307693
+    }
+   },
+   "year 2020": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 451 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.5
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 451 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.5
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 451 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2021": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2022": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2023": {
+    "days": 0,
+    "recall": {
+     "interval_unavailable": "recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on the scored days (no alarm or no event)",
+     "mean": null
+    }
+   },
+   "year 2024": {
+    "days": 2,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 277 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 277 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 277 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    }
+   },
+   "year 2025": {
+    "days": 5,
+    "recall": {
+     "interval_unavailable": "recall is undefined on 34 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    },
+    "recall_difference": {
+     "interval_unavailable": "recall_difference is undefined on 34 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.0
+    },
+    "reference_recall": {
+     "interval_unavailable": "reference_recall is undefined on 34 of 2000 resamples (no alarm or no event drawn); replicates are not dropped",
+     "mean": 0.8
+    }
+   }
+  }
+ },
+ "rule": "weighted"
+}

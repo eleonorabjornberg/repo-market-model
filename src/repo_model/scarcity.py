@@ -26,6 +26,17 @@ Board releases a week's bank assets on the second Friday after it, at 16:15,
 after the 16:00 decision. The ratio's two legs are the same week's: both are
 weekly, dated to the Wednesday, and carried from it.
 
+**Own-leg read (#586, Eleonora's ruling on #571).** The judge's as-of state is not that
+same-row read. `own_leg_states` reads each leg -- the reserves, the H.8 total assets and the
+day's ON RRP -- at its own latest row public at the decision instant, each through
+`InformationRule` on its own declaration, and forms the state from the three reads. So the
+daily ON RRP leg is no older than the Desk's lag, and the H.8 lag no longer sets the row the
+other two are read at. The legs can then belong to different weeks; the ruling accepts that, for
+this indicator only (`docs/decisions/information-set.md`, "Amendment: the scarcity state reads
+each leg at its own latest public row"). `with_reserve_scarcity_state` and the column are
+unchanged: `asof.py` and `contract.py` are in the final test's frozen pipeline, so the
+published and pre-registered reads are untouched.
+
 **Off.** `BANK_TOTAL_ASSETS_FIELDS` and `RESERVE_SCARCITY_STATE_FIELDS` are not
 in the published `contract.FEATURE_FIELDS`, so no published declaration, panel
 or record reads the state. `measurement_feature_fields` is the map a
@@ -63,10 +74,14 @@ __all__ = [
     "SATIATION_BAND",
     "SENSITIVITY_VARIANTS",
     "STATE_LABELS",
+    "LEGS",
+    "OwnLegDay",
     "ScoredDay",
     "buffer_level",
     "measurement_declaration",
     "measurement_feature_fields",
+    "own_leg_composition",
+    "own_leg_states",
     "pressure_days_by_state",
     "ratio_level",
     "reserve_scarcity_state",
@@ -276,6 +291,141 @@ def measurement_declaration() -> Iterator[None]:
         yield
     finally:
         contract.FEATURE_FIELDS, contract.FEATURE_SOURCES = saved
+
+
+#: The state's three legs, as the panel columns the rule reads each of. `reserve_balances` is the H.4.1's
+#: WRESBAL, `bank_total_assets` the H.8's total assets and `on_rrp` the Desk's operation results (under
+#: `measurement_declaration`).
+LEGS = ("reserve_balances", "bank_total_assets", "on_rrp")
+
+
+class OwnLegDay(NamedTuple):
+    """One scored day: its own-leg state, and the date of the row each leg was read at."""
+
+    day: date
+    state: Optional[float]
+    read_dates: Mapping[str, date]
+
+
+def _require_public_legs(info) -> None:
+    """Every leg read was public at the decision instant.
+
+    `InformationRule.check` already refuses a read newer than the decision; this restates it for the
+    three legs on their own, so the own-leg state fails closed if the rule's declaration ever stops
+    covering one of them.
+
+    Raises:
+        LookAheadError: for a leg whose read is not public by the decision instant, or a missing leg.
+    """
+
+    from .splits import LookAheadError
+
+    seen = set()
+    for read in info.reads:
+        if read.feature in LEGS:
+            seen.add(read.feature)
+            if read.available_at is None or read.available_at > info.decision_instant:
+                raise LookAheadError(
+                    f"the {read.feature!r} leg of the scarcity state is read at a row public at "
+                    f"{read.available_at}, after the {info.decision_instant} decision"
+                )
+    missing = set(LEGS) - seen
+    if missing:
+        raise LookAheadError(f"the scarcity state's legs {sorted(missing)} were not read")
+
+
+def own_leg_states(
+    rows: Sequence[DailyObservation],
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    minimum_history: int,
+    horizon: int = 1,
+    end: Optional[date] = None,
+    band: Tuple[float, float] = SATIATION_BAND,
+    buffer_bn: float = ON_RRP_BUFFER_BN,
+) -> List[OwnLegDay]:
+    """The state of every scored day, each leg read at its own latest public row (#586).
+
+    The grid and the reads are `baseline._as_of_folds`'s, so the lockbox is checked before anything is
+    read and every read passes both guards (leakage and staleness); `_require_public_legs` then checks
+    the three legs again. A day is `None` when a leg is a hole at its read row.
+    """
+
+    from .asof import InformationRule
+    from .baseline import _as_of_folds
+
+    rule = InformationRule(
+        registry, ("spread_bps",) + LEGS, decision_time=decision_time, horizon=horizon
+    )
+    dates = [row.date for row in rows]
+    out = []
+    for fold in _as_of_folds(
+        rows,
+        rule,
+        minimum_history=minimum_history,
+        refit_every=len(rows),
+        entry="scarcity.own_leg_states",
+        end=end,
+    ):
+        _require_public_legs(fold.info)
+        values = fold.feature_row.values
+        state = reserve_scarcity_state(
+            values.get("reserve_balances"),
+            values.get("bank_total_assets"),
+            values.get("on_rrp"),
+            band=band,
+            buffer_bn=buffer_bn,
+        )
+        out.append(
+            OwnLegDay(
+                day=dates[fold.index],
+                state=None if state is None else float(state),
+                read_dates={
+                    read.feature: dates[read.row]
+                    for read in fold.info.reads
+                    if read.feature in LEGS
+                },
+            )
+        )
+    return out
+
+
+def _composed_state(values: Mapping[str, Optional[float]]) -> Optional[float]:
+    """The state formed from the three legs' own reads; a hole when a leg is one."""
+
+    state = reserve_scarcity_state(
+        values["reserve_balances"], values["bank_total_assets"], values["on_rrp"]
+    )
+    return None if state is None else float(state)
+
+
+@contextmanager
+def own_leg_composition() -> Iterator[None]:
+    """`reserve_scarcity_state` read as a composed feature, for one measurement run (#586).
+
+    Inside the block `InformationRule` reads the state's three legs each on its own declaration and
+    forms the state from those reads, exactly as it does for the composed features of #88 and #97
+    (`contract.COMPOSED_FEATURES`, `asof.COMPOSERS`), instead of reading the `reserve_scarcity_state`
+    column at the one row where all three are public. It swaps those module bindings and restores them
+    on the way out, raise or return, as `measurement_declaration` does for the feature map; nothing is
+    written to `asof.py` or `contract.py`, which the final test's pipeline checksum covers. Use it with
+    `measurement_declaration`, which declares the legs. A model that reads the state as an input (the
+    hurdle's `state` variants, #539) is then fed the own-leg state, in its training frame and at its
+    forecast. The block does not change the published declaration.
+    """
+
+    from . import asof
+
+    saved = contract.COMPOSED_FEATURES, asof.COMPOSED_FEATURES, asof.COMPOSERS
+    composed = MappingProxyType({**contract.COMPOSED_FEATURES, RESERVE_SCARCITY_STATE: LEGS})
+    contract.COMPOSED_FEATURES = composed
+    asof.COMPOSED_FEATURES = composed
+    asof.COMPOSERS = {**asof.COMPOSERS, RESERVE_SCARCITY_STATE: _composed_state}
+    try:
+        yield
+    finally:
+        contract.COMPOSED_FEATURES, asof.COMPOSED_FEATURES, asof.COMPOSERS = saved
 
 
 class ScoredDay(NamedTuple):
