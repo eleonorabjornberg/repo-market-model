@@ -6,7 +6,7 @@ reader drops a later day. The due diligence is in `docs/pivot/new-sources-due-di
 found). The code is `scripts/new_sources.py` and `src/repo_model/new_sources.py`; the evidence is in `docs/pivot/evidence/new-sources/`
 (`screen.json`, `tables.md`, `inter_source_{pooled,ample,scarce}.csv`, `heatmap.svg`).
 
-**Caution: this is a screen across many series, so every number is exploratory.** The tests run are 16,522 in all (4,022 Spearman correlations, 996 AUROCs,
+**Caution: this is a screen across many series, so every number is exploratory.** The statistical comparisons run are 16,522 in all (4,022 Spearman correlations, 996 AUROCs,
 257 pre-onset contrasts, 170 partial rank correlations, 11,077 inter-source correlations). **None is corrected for multiplicity.** The intervals are
 90 % percentile bootstraps that resample days independently, so serial dependence is ignored and they are too narrow. Only six onsets fall on ordinary
 days, so every pre-onset interval rests on six events.
@@ -72,7 +72,7 @@ Not leads: `auc_accepted_bn`, `auc_cover`, `auc_indirect_share`, `dts_debt_issue
 * A model test: nothing here is a paired comparison against the stated benchmark, split by regime and pressure-day type; it is a screen.
 * Changes rather than levels: the matrices and correlations are of levels (and the targets' level, change and indicator). A first-difference matrix would
   separate shared trend from shared movement.
-* Dependence-respecting intervals (a block bootstrap), and any correction for the 16,522 tests.
+* Dependence-respecting intervals (a block bootstrap), and any correction for the 16,522 comparisons.
 * The sources listed as not taken or blocked.
 * The primary dealer export is not revised in vintage form; a restated figure cannot be seen.
 * The six `nowcast_*` variants are unreadable by the as-of rule in this screen exactly as in #478 (undeclared in the contract); they are listed in `screen.json`.
