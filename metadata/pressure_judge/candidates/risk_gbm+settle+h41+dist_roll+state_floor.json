@@ -1,0 +1,24 @@
+{
+  "role": "candidate",
+  "track": "M (#606)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps",
+    "satiation_dist_roll"
+  ],
+  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons",
+  "calibration": "none: fitted on risk-date label days only and exactly 0 on every other day; unweighted gbm_classifier; scored under settlements dated from the auction announcement (metadata/settlement_announcement_dating.json), the settlement columns kept at every horizon and the coupon clause of the risk-date rule applied at h >= 2 and the H.4.1 weeklies read per release (metadata/h41_release_dating.json); with the rolling satiation level's distance as one extra input (satiation_dist_roll, variant (a) input); metadata/satiation_distance_598.json; then that floor per as-of reserve-scarcity state (each leg at its own latest public row, #586), the pooled floor while the state holds too few such days (group_calibration.walk_forward_floor with the state as the group); metadata/dist_roll_606.json",
+  "parent": "risk_gbm+settle+h41+dist_roll"
+}

@@ -48,6 +48,7 @@ __all__ = [
     "SHRINKAGE_PRECISION",
     "declaration",
     "fit",
+    "fit_floor",
     "fit_shrunk",
     "group_label",
     "regime_walk_forward",
@@ -55,6 +56,7 @@ __all__ = [
     "scarcity_state_label",
     "require_regimes_asof",
     "walk_forward",
+    "walk_forward_floor",
     "walk_forward_shrunk",
 ]
 
@@ -319,4 +321,78 @@ def walk_forward_shrunk(
         )
         for index in range(start, stop):
             column[index] = curve(forecasts[index], groups[index])
+    return tuple(column)
+
+
+def fit_floor(
+    pairs: Sequence[Tuple[date, float, int, str]],
+    fitted_at: date,
+    *,
+    target_group: Optional[str] = None,
+    minimum_pairs: int = GROUP_MINIMUM_PAIRS,
+    minimum_events: int = GROUP_MINIMUM_EVENTS,
+) -> Optional[float]:
+    """The floor for a day that is not a risk date, from `(day, forecast, outcome, group)` pairs of such days (#606).
+
+    The pooled rate of pressure days among the pairs; with a `target_group`, that group's own rate once it holds
+    `minimum_pairs` pairs and `minimum_events` events, the pooled rate before. None while the pooled pairs number fewer than
+    `minimum_pairs`.
+
+    Raises:
+        LookAheadError: if a pair's scored day is after `fitted_at`.
+    """
+
+    require_observable(pairs, fitted_at)
+    if len(pairs) < minimum_pairs:
+        return None
+    pooled = sum(y for _, _, y, _ in pairs) / len(pairs)
+    if target_group is None:
+        return pooled
+    own = [y for _, _, y, g in pairs if g == target_group]
+    return sum(own) / len(own) if len(own) >= minimum_pairs and sum(own) >= minimum_events else pooled
+
+
+def walk_forward_floor(
+    forecasts: Sequence[float],
+    outcomes: Sequence[int],
+    scored_dates: Sequence[date],
+    train_ends: Sequence[date],
+    off_risk: Sequence[bool],
+    groups: Optional[Sequence[str]] = None,
+    *,
+    minimum_pairs: int = GROUP_MINIMUM_PAIRS,
+    minimum_events: int = GROUP_MINIMUM_EVENTS,
+) -> Tuple[float, ...]:
+    """A floor under the forecasts of the days that are not risk dates (#606), each refit block from its observable past.
+
+    A risk-date row forecasts exactly 0 on a day that is not a risk date, and a pressure day on such a day is then a pure
+    miss. The floor of a block is `fit_floor` on the earlier pairs that were off the risk dates and observable when the
+    block was fitted (`pc.past_positions`). A forecast is raised to the floor, never lowered, and a risk date keeps its
+    forecast.
+
+    Raises:
+        ValueError: for columns of different lengths.
+    """
+
+    lengths = [len(forecasts), len(outcomes), len(scored_dates), len(train_ends), len(off_risk)]
+    if groups is not None:
+        lengths.append(len(groups))
+    if len(set(lengths)) != 1:
+        raise ValueError("forecasts, outcomes, dates, train ends, risk flags and groups must be one per scored day")
+    column = [float(p) for p in forecasts]
+    for start, stop, end in pc.blocks(scored_dates, train_ends):
+        past = [i for i in pc.past_positions(scored_dates, train_ends, start) if off_risk[i]]
+        pairs = [(scored_dates[i], forecasts[i], outcomes[i], groups[i] if groups is not None else "") for i in past]
+        floors: Dict[str, Optional[float]] = {}
+        for index in range(start, stop):
+            if not off_risk[index]:
+                continue
+            group = groups[index] if groups is not None else ""
+            if group not in floors:
+                floors[group] = fit_floor(
+                    pairs, end, target_group=group if groups is not None else None,
+                    minimum_pairs=minimum_pairs, minimum_events=minimum_events,
+                )
+            if floors[group] is not None:
+                column[index] = max(column[index], floors[group])
     return tuple(column)
