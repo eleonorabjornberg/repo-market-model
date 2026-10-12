@@ -879,7 +879,7 @@ DILIGENCE: Tuple[dict, ...] = (
         "registry": ("nyfed_sofr",),
         "columns": ("sofr_volume", "sofr_p1", "sofr_p25", "sofr_p75", "sofr_p99", "sofr_p75_iorb_bps", "sofr_p99_iorb_bps", "sofr_p99_iorb_sd15_bps", "sofr_p99_p75_bps"),
         "vintages": "first published about 08:00 ET on the next business day and may be revised about 14:30 ET that day; the registry dates a value at the finalized 15:00 ET. The snapshot is one retrieval, so a later revision is not tracked",
-        "caveats": "panel history starts at the first publication, 2018-04-03; the back-filled 2014-18 history is not read while its posting instant is null (#572)",
+        "caveats": "panel history starts at the first publication, 2018-04-03; the back-filled 2014-18 history is not read while its posting instant is null (#572, guarded by PR #590; the posting dates are now #633)",
     },
     {
         "name": "NY Fed TGCR and BGCR, with percentiles and volume",
@@ -900,7 +900,7 @@ DILIGENCE: Tuple[dict, ...] = (
         "registry": ("fred_macro_latest_vintage",),
         "columns": ("reserve_balances", "tga", "tga_change_x_reserves", "tga_change_5d"),
         "vintages": "FRED serves the latest revised vintage only; observations inherit the snapshot's retrieval instant, so a re-fetch does not reproduce an old snapshot's bytes. The published reading applies a declared weekly lag; the `@per_release` reading dates each Wednesday level at its H.4.1 release (#541)",
-        "caveats": "the per-release calendar assumes a Thursday print for any week not in its exception list and never checks its declared coverage (#576); ALFRED pulls exist at a few dates as revision studies, not as a daily series",
+        "caveats": "the per-release calendar assumed a Thursday print for any week not in its exception list and ignored its declared coverage (#576, guarded by PR #590; coverage now runs through 2026-09-03, #625); ALFRED pulls exist at a few dates as revision studies, not as a daily series",
     },
     {
         "name": "H.8 total assets and the reserve-scarcity state",
@@ -996,7 +996,7 @@ NOT_READ = {
     "sec_nmfp": "monthly as-filed bulk extracts with the extract's retrieval instant as availability; no panel column is built from it (`metadata/sec_nmfp_archives.json`)",
     "frb_ddp": "not a panel source: read only by the pre-SOFR history study (#129)",
     "treasury_bill_rates_sameday": "excluded: no publication time before 16:00 ET is evidenced (#445)",
-    "back-filled 2014-18 history": "stamped as public in real time from 2014 although its posting instant is null; not read (#572)",
+    "back-filled 2014-18 history": "stamped as public in real time from 2014 although its posting instant is null; not read (#572, guarded by PR #590; the posting dates are now #633)",
 }
 
 
