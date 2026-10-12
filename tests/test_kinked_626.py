@@ -14,10 +14,11 @@ confirmed applied by `grep` and restored before the next):
 
 1. `run_command`: replace `require_unlocked([last], where="kinked_626")` by `pass`; `RunGuardTests.test_run_refuses_a_locked_last_day`
    fails with `FileNotFoundError` (the guard is skipped and the run goes on to read the panel).
-2. `panel_command`: the same replacement; `RunGuardTests.test_panel_refuses_a_locked_last_day` fails with `AssertionError: LookAheadError
-   not raised`... recorded in the pull request with the observed message.
+2. `panel_command`: replace `require_unlocked([end], where="kinked_626")` by `pass`; `RunGuardTests.test_panel_refuses_a_locked_last_day`
+   fails with `FileNotFoundError` (the guard is skipped and the build goes on to read the panel).
 3. `structural_liquidity.elasticity`: replace `max(0.0, float(satiation) - float(ratio))` by `float(satiation) - float(ratio)` (the kink
-   removed); `tests/test_satiation.py` `DesignTests.test_the_kinked_elasticity_is_flat_above_the_level_and_exponential_below_it` fails.
+   removed); `tests/test_satiation.py` `DesignTests.test_the_kinked_elasticity_is_flat_above_the_level_and_exponential_below_it` fails with
+   `AssertionError: 0.049787068367863944 != 1.0`.
 """
 
 from __future__ import annotations

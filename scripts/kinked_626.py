@@ -479,7 +479,7 @@ def report_text(compare: dict, extras: Optional[dict]) -> str:
     s587.FAMILIES = FAMILIES
     s587.paired_with_model = paired_with_model
     s587._fixed_of = lambda name: declared_document()["rows"]["pairs"].get(name, "")
-    text = s587.report_text(compare, None).replace("# Time-varying satiation level (#587)", "# Kinked elasticity in the structural model (#626)", 1)
+    text = s587.report_text(compare, None).replace("# Time-varying satiation level (#587)", "# Kinked elasticity in the structural model (#626)", 1).replace("scripts/satiation_587.py report", "scripts/kinked_626.py report", 1)
     if extras:
         text += "\n" + extras_text(extras).split("\n", 3)[3]
     return text
