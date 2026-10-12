@@ -11,7 +11,7 @@
     "satiation_source": "scarcity.SATIATION_BAND, its lower end (about 12 percent of bank assets); the length is one percentage point of bank assets, fixed, not fitted"
   },
   "drain": {
-    "settlement": "net_settlement_ahead_1d (USD billions, the net settlement of the next business day, the scored day, as announced by the decision instant; metadata/net_settlement.json and projected_reserves.ahead_columns) at horizon 1; net_settlement_due_5d at horizons 2 to 5. Corrected on 11 October 2026 (#568): the first scoring read net_settlement at horizon 1, the decision day's own settlement, one day before the scored day. Net settlement itself is built with one maturing figure per class (#566)",
+    "settlement": "the scored day's own net settlement as announced by the decision instant (USD billions; metadata/net_settlement.json and projected_reserves.ahead_columns): net_settlement_ahead_1d at horizon 1, and net_settlement_ahead_{h}d less net_settlement_ahead_{h-1}d at horizons 2 to 5 (#618, 12 October 2026: the first correction read the five-day sum net_settlement_due_5d at horizons 2 to 5, which fired on about 63 percent of days and could not single out the settlement day), a partly announced class netting its announced offerings alone (#620). Corrected on 11 October 2026 (#568): the first scoring read net_settlement at horizon 1, the decision day's own settlement, one day before the scored day. Net settlement itself is built with one maturing figure per class (#566)",
     "buffer": "on_rrp (USD billions): the ON RRP balance absorbs the drain before reserves do; shortfall = max(0, max(0, net settlement) - on_rrp), absorbed one for one",
     "tga_up": "max(0, the five-row change in tga, USD billions), from the forecast's own as-of history, as the direct models read it (ml.TGA_CHANGE_ROWS)",
     "tax_date": "1 on a tax date (the split declaration's day type), the expected tax-date inflow to the TGA",
@@ -42,6 +42,10 @@
   "inputs_off_in_every_published_declaration": [
     "net_settlement",
     "net_settlement_ahead_1d",
+    "net_settlement_ahead_2d",
+    "net_settlement_ahead_3d",
+    "net_settlement_ahead_4d",
+    "net_settlement_ahead_5d",
     "net_settlement_due_5d",
     "bank_total_assets",
     "on_rrp"

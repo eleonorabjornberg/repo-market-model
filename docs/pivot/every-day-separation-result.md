@@ -9,6 +9,13 @@ was scored. Both scripts refuse an uncommitted declaration.
 **Both steps read 2018-2025, and step 2 conditions on an input found there, so a pass is not a confirmation (ruling of 11 October 2026 on #567). A variant can replace a shortlist slot only by
 Eleonora's decision, before the 2026 window opens. Nothing here joins a published declaration.**
 
+> **Note of 12 October 2026 (#613): the sign of the paired Brier difference under "Step 2".** The statistic is the reference's squared error less the row's (#604), so
+> **positive favours the variant** and negative favours the reference; the header "(negative favours the variant)" on that line, and in `evidence/every-day-conditioning/compare-*.md`
+> Table 3, is inverted. Read on #604's convention, against the row `risk_gbm+every_day+gate+settle+h41+iorb`: `+tailcap75` at -0.0073 [-0.0150, -0.0005] over all days and
+> -0.0400 [-0.0716, -0.0116] in 2018-19 is **worse** than the row (over all days and in 2018-19), and the +0.0072 in 2020 [0.0000, +0.0204] and +0.0072 in 2024 [+0.0009, +0.0162] is **better** than the row.
+> "Better in 2018-19, worse in 2020 and 2024" is therefore the wrong way round. Against `risk_gbm+settle+h41` the +0.0010 [-0.0002, +0.0024] reads the right way (positive favours the variant,
+> and the interval holds 0), so "indistinguishable from that row's" stands. The onsets flagged, false alarms and recall figures do not depend on the sign. Nothing below is edited.
+
 ## Result in one paragraph
 
 Step 1: the row's every-day part flags 5 onset days and 131 false-alarm days. One input separates the two groups in the declared sense: the tail spread's level (the SOFR 99th percentile less
