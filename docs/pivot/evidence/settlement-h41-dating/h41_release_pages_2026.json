@@ -1,0 +1,217 @@
+{
+ "fetched": "12 October 2026, one plain GET of www.federalreserve.gov per row, by curl, in the run that closes #625 (ruling on #614); 'release_date' is the page's own 'Release Date:' line and 'wednesday' the Wednesday its table covers. The page bytes are not tracked: they change between fetches, so no checksum is recorded. The pages state a date and no clock time; the 16:30 New York instant is the registry's own.",
+ "url_pattern": "https://www.federalreserve.gov/releases/h41/<path>/",
+ "scope": "every Thursday from 2026-01-08 to 2026-09-03, the nominal release of each H.4.1 week with Wednesday 2026-01-07 to 2026-09-02. Each page exists and states its own Thursday as the release date, so no week in that range is an exception. The week ended Wednesday 2026-12-31's Friday 2026-01-02 release is in h41_release_pages.json (#583).",
+ "pages": [
+  {
+   "path": "20260108",
+   "http": 200,
+   "release_date": "2026-01-08",
+   "wednesday": "2026-01-07"
+  },
+  {
+   "path": "20260115",
+   "http": 200,
+   "release_date": "2026-01-15",
+   "wednesday": "2026-01-14"
+  },
+  {
+   "path": "20260122",
+   "http": 200,
+   "release_date": "2026-01-22",
+   "wednesday": "2026-01-21"
+  },
+  {
+   "path": "20260129",
+   "http": 200,
+   "release_date": "2026-01-29",
+   "wednesday": "2026-01-28"
+  },
+  {
+   "path": "20260205",
+   "http": 200,
+   "release_date": "2026-02-05",
+   "wednesday": "2026-02-04"
+  },
+  {
+   "path": "20260212",
+   "http": 200,
+   "release_date": "2026-02-12",
+   "wednesday": "2026-02-11"
+  },
+  {
+   "path": "20260219",
+   "http": 200,
+   "release_date": "2026-02-19",
+   "wednesday": "2026-02-18"
+  },
+  {
+   "path": "20260226",
+   "http": 200,
+   "release_date": "2026-02-26",
+   "wednesday": "2026-02-25"
+  },
+  {
+   "path": "20260305",
+   "http": 200,
+   "release_date": "2026-03-05",
+   "wednesday": "2026-03-04"
+  },
+  {
+   "path": "20260312",
+   "http": 200,
+   "release_date": "2026-03-12",
+   "wednesday": "2026-03-11"
+  },
+  {
+   "path": "20260319",
+   "http": 200,
+   "release_date": "2026-03-19",
+   "wednesday": "2026-03-18"
+  },
+  {
+   "path": "20260326",
+   "http": 200,
+   "release_date": "2026-03-26",
+   "wednesday": "2026-03-25"
+  },
+  {
+   "path": "20260402",
+   "http": 200,
+   "release_date": "2026-04-02",
+   "wednesday": "2026-04-01"
+  },
+  {
+   "path": "20260409",
+   "http": 200,
+   "release_date": "2026-04-09",
+   "wednesday": "2026-04-08"
+  },
+  {
+   "path": "20260416",
+   "http": 200,
+   "release_date": "2026-04-16",
+   "wednesday": "2026-04-15"
+  },
+  {
+   "path": "20260423",
+   "http": 200,
+   "release_date": "2026-04-23",
+   "wednesday": "2026-04-22"
+  },
+  {
+   "path": "20260430",
+   "http": 200,
+   "release_date": "2026-04-30",
+   "wednesday": "2026-04-29"
+  },
+  {
+   "path": "20260507",
+   "http": 200,
+   "release_date": "2026-05-07",
+   "wednesday": "2026-05-06"
+  },
+  {
+   "path": "20260514",
+   "http": 200,
+   "release_date": "2026-05-14",
+   "wednesday": "2026-05-13"
+  },
+  {
+   "path": "20260521",
+   "http": 200,
+   "release_date": "2026-05-21",
+   "wednesday": "2026-05-20"
+  },
+  {
+   "path": "20260528",
+   "http": 200,
+   "release_date": "2026-05-28",
+   "wednesday": "2026-05-27"
+  },
+  {
+   "path": "20260604",
+   "http": 200,
+   "release_date": "2026-06-04",
+   "wednesday": "2026-06-03"
+  },
+  {
+   "path": "20260611",
+   "http": 200,
+   "release_date": "2026-06-11",
+   "wednesday": "2026-06-10"
+  },
+  {
+   "path": "20260618",
+   "http": 200,
+   "release_date": "2026-06-18",
+   "wednesday": "2026-06-17"
+  },
+  {
+   "path": "20260625",
+   "http": 200,
+   "release_date": "2026-06-25",
+   "wednesday": "2026-06-24"
+  },
+  {
+   "path": "20260702",
+   "http": 200,
+   "release_date": "2026-07-02",
+   "wednesday": "2026-07-01"
+  },
+  {
+   "path": "20260709",
+   "http": 200,
+   "release_date": "2026-07-09",
+   "wednesday": "2026-07-08"
+  },
+  {
+   "path": "20260716",
+   "http": 200,
+   "release_date": "2026-07-16",
+   "wednesday": "2026-07-15"
+  },
+  {
+   "path": "20260723",
+   "http": 200,
+   "release_date": "2026-07-23",
+   "wednesday": "2026-07-22"
+  },
+  {
+   "path": "20260730",
+   "http": 200,
+   "release_date": "2026-07-30",
+   "wednesday": "2026-07-29"
+  },
+  {
+   "path": "20260806",
+   "http": 200,
+   "release_date": "2026-08-06",
+   "wednesday": "2026-08-05"
+  },
+  {
+   "path": "20260813",
+   "http": 200,
+   "release_date": "2026-08-13",
+   "wednesday": "2026-08-12"
+  },
+  {
+   "path": "20260820",
+   "http": 200,
+   "release_date": "2026-08-20",
+   "wednesday": "2026-08-19"
+  },
+  {
+   "path": "20260827",
+   "http": 200,
+   "release_date": "2026-08-27",
+   "wednesday": "2026-08-26"
+  },
+  {
+   "path": "20260903",
+   "http": 200,
+   "release_date": "2026-09-03",
+   "wednesday": "2026-09-02"
+  }
+ ]
+}
