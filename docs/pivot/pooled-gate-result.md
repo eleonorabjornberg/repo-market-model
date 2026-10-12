@@ -9,6 +9,8 @@ variant (c) was committed before any (c) score (the design refuses to run withou
 **The variants were built after seeing 2018-2025 (the diagnosis below reads the onsets they target), so a pass here would not be a confirmation (ruling of 11 October 2026
 on #567). A variant can replace a shortlist slot only by Eleonora's decision, before the 2026 window opens. None passes. Nothing here joins a published declaration.**
 
+**Re-run on main at 0adb032.** The whole pipeline was re-run on the tree after the merge of the own-leg scarcity reading (#586) and the state recalibration (#589), with the declaration and the candidate files unchanged. Every figure on this page is the same: the forecasts of the rows, the onsets flagged and lost, the pooled false alarms, the paired comparisons and the diagnosis reproduce byte for byte. What moved is only the judge's tier 3 detail that reads the scarcity state (`evidence/pooled-gate/judge-*.md`: the days in each state and the flags per 252 days by state), and the declaration digest that report prints. No tier verdict changed.
+
 ## Result in one paragraph
 
 None of the three variants passes tier 1 under the judge in force. The best, (a) `+leadgate`, brings the pooled weighted false alarms per onset from 3.46 to 2.69
