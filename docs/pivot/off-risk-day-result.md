@@ -3,6 +3,8 @@
 **Status: a measurement, not a record.** Step 1 is below and step 2 follows it; step 1 was committed before step 2 was declared. Nothing is published, no day after 2025-12-31 is scored (`docs/decisions/lockbox.md`), and the live record and pin do not move.
 Every figure reads 2018-2025, so it describes that history and does not confirm anything (Eleonora's ruling of 11 October 2026 on #567).
 
+**Hypothesis and step:** H2 (the data we hold carries signal for ordinary-day pressure), step #624. Exploration on development data (Eleonora's ruling of 12 October 2026 on #624): the judge tier verdicts below are reported but are not evidence for any hypothesis, and no follow-up +5 bp variant is queued from this result while +5 bp classification is paused.
+
 ## Step 1: do the every-day parts have skill beyond the base rate on those days?
 
 The question (#616): tiers 3 and 5 check calibration on the mean only, so a constant floor can pass them without any skill. The measurement asks
