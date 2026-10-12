@@ -1,0 +1,674 @@
+{
+ "gained_against_row": {
+  "risk_gbm+settle+h41": [],
+  "risk_gbm+settle+h41+dist_roll+offday": [
+   "2019-05-28",
+   "2019-08-13"
+  ],
+  "risk_gbm+settle+h41+dist_roll+offday_mono": [
+   "2019-05-28",
+   "2019-06-25",
+   "2019-08-13"
+  ],
+  "risk_gbm+settle+h41+dist_roll+offday_rate": [
+   "2019-05-28",
+   "2019-06-25",
+   "2019-08-13"
+  ]
+ },
+ "lost_against_row": {
+  "risk_gbm+settle+h41": [
+   "2025-10-15"
+  ],
+  "risk_gbm+settle+h41+dist_roll+offday": [],
+  "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+  "risk_gbm+settle+h41+dist_roll+offday_rate": []
+ },
+ "onsets": [
+  {
+   "date": "2018-11-15",
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2018-11-30",
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2018-12-17",
+   "day_type": "tax_date",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2018-12-28",
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2019-01-15",
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1
+   ]
+  },
+  {
+   "date": "2019-01-31",
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1
+   ]
+  },
+  {
+   "date": "2019-02-28",
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-03-15",
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-03-29",
+   "day_type": "quarter_end",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-05-28",
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    4
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-06-17",
+   "day_type": "tax_date",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-06-25",
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-08-13",
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-08-30",
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-10-15",
+   "day_type": "ordinary",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-11-29",
+   "day_type": "month_end",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2019-12-16",
+   "day_type": "tax_date",
+   "regime": "2018-19",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2020-03-04",
+   "day_type": "ordinary",
+   "regime": "2020",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2020-03-12",
+   "day_type": "ordinary",
+   "regime": "2020",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2024-09-30",
+   "day_type": "quarter_end",
+   "regime": "2024",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2024-12-26",
+   "day_type": "ordinary",
+   "regime": "2024",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [],
+   "risk_gbm+settle+h41+dist_roll+offday": [],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": []
+  },
+  {
+   "date": "2025-09-15",
+   "day_type": "tax_date",
+   "regime": "2025-26",
+   "risk_gbm+settle+h41": [
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    5
+   ]
+  },
+  {
+   "date": "2025-09-30",
+   "day_type": "quarter_end",
+   "regime": "2025-26",
+   "risk_gbm+settle+h41": [
+    1,
+    2
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2
+   ]
+  },
+  {
+   "date": "2025-10-15",
+   "day_type": "ordinary",
+   "regime": "2025-26",
+   "risk_gbm+settle+h41": [],
+   "risk_gbm+settle+h41+dist_roll": [
+    2,
+    3
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    2
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    2
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    2
+   ]
+  },
+  {
+   "date": "2025-12-15",
+   "day_type": "tax_date",
+   "regime": "2025-26",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "date": "2025-12-26",
+   "day_type": "ordinary",
+   "regime": "2025-26",
+   "risk_gbm+settle+h41": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_mono": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "risk_gbm+settle+h41+dist_roll+offday_rate": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  }
+ ],
+ "rule": "weighted"
+}
