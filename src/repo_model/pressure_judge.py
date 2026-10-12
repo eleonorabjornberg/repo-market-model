@@ -125,6 +125,7 @@ __all__ = [
     "Declaration",
     "Forecast",
     "Grid",
+    "StartupRule",
     "WeightedMiss",
     "auroc",
     "benchmark_forecasts",
@@ -142,6 +143,7 @@ __all__ = [
     "restrict_forecast",
     "require_scored_days",
     "select_cutoff",
+    "startup_cutoff",
     "usefulness",
 ]
 
@@ -919,6 +921,21 @@ def _alarm_flags(declaration: "Declaration", name: str, flags: Sequence[int], on
     )
 
 
+def _require_training_only(days: Sequence[date], training_end: Optional[date]) -> None:
+    """Refuse a cut-off window that reaches past the refit's training end.
+
+    Raises:
+        LookAheadError: if a day is after `training_end`, or there is a day and no training end.
+    """
+
+    late = [day for day in days if training_end is None or day > training_end]
+    if late:
+        raise LookAheadError(
+            f"cut-off chosen from {len(late)} day(s) from {min(late)} on, after the refit's "
+            f"training end ({training_end}); a flag cut-off is chosen on training data only"
+        )
+
+
 def select_cutoff(
     declaration: Declaration,
     *,
@@ -953,13 +970,7 @@ def select_cutoff(
         raise ValueError("the cut-off window needs one probability, outcome and onset flag per day")
     if false_alarm_weights is not None and len(false_alarm_weights) != len(days):
         raise ValueError("the cut-off window needs one false-alarm weight per day")
-    if days:
-        late = [day for day in days if training_end is None or day > training_end]
-        if late:
-            raise LookAheadError(
-                f"cut-off chosen from {len(late)} day(s) from {min(late)} on, after the refit's "
-                f"training end ({training_end}); a flag cut-off is chosen on training data only"
-            )
+    _require_training_only(days, training_end)
     onsets = sum(onset)
     if not onsets:
         return math.inf
@@ -990,12 +1001,71 @@ def _state_at_least(label: str, at_least: int) -> bool:
         return False
 
 
+_STARTUP_KINDS = ("climatology_rate", "fixed_probability")
+
+
+@dataclass(frozen=True)
+class StartupRule:
+    """A start-up cut-off (#584): what a refit block flags with while its training window holds no onset.
+
+    Not part of the declared judge: `choose_cutoffs` uses one only when it is passed one, and a comparison that
+    does so is a scratch measurement. `climatology_rate` is the pressure-day rate of the training window (the
+    probability climatology gives), read from days known at the refit; `fixed_probability` is a probability fixed
+    in advance that reads no outcome.
+    """
+
+    kind: str
+    probability: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        if self.kind not in _STARTUP_KINDS:
+            raise ValueError(f"unknown start-up rule {self.kind!r}; the kinds are {', '.join(_STARTUP_KINDS)}")
+        if self.kind == "fixed_probability":
+            p = self.probability
+            if isinstance(p, bool) or not isinstance(p, (int, float)) or not 0.0 < p <= 1.0:
+                raise ValueError(f"a fixed start-up probability is a number in (0, 1], not {p!r}")
+        elif self.probability is not None:
+            raise ValueError("the climatology-rate start-up rule takes no probability")
+
+    def document(self) -> dict:
+        return {"kind": self.kind, "probability": self.probability}
+
+
+def startup_cutoff(
+    rule: StartupRule,
+    *,
+    days: Sequence[date],
+    pressure: Sequence[int],
+    training_end: Optional[date],
+) -> float:
+    """The cut-off of a block whose training window holds no onset, under `rule`.
+
+    `fixed_probability` is its probability and reads nothing. `climatology_rate` is the share of the window's days
+    that are pressure days, or `math.inf` (flag nothing) when the window has no day or no pressure day: there is
+    nothing to match.
+
+    Raises:
+        LookAheadError: if a day of the window is after `training_end`, or the window has a day and no training end.
+        ValueError: if the series differ in length.
+    """
+
+    if len(days) != len(pressure):
+        raise ValueError("the start-up window needs one outcome per day")
+    _require_training_only(days, training_end)
+    if rule.kind == "fixed_probability":
+        return float(rule.probability)
+    if not days or not sum(pressure):
+        return math.inf
+    return sum(pressure) / len(days)
+
+
 def choose_cutoffs(
     declaration: Declaration,
     grids: Mapping[int, Grid],
     forecasts: Sequence[Forecast],
     calendar: Sequence[date],
     scarce_at_least: Optional[int] = None,
+    startup: Optional[StartupRule] = None,
 ) -> List[Forecast]:
     """Each forecast with the flag cut-off in force on every day, chosen refit by refit.
 
@@ -1017,6 +1087,10 @@ def choose_cutoffs(
     the training days of that block that are in such a state, and on those alone.
     Other days, and days with an unknown state, keep the cut-off chosen on all
     training days.
+
+    With `startup` (#584, a scratch measurement; the declared judge passes none) a block whose training window
+    holds no onset takes `startup_cutoff` instead of flagging nothing. A window with an onset is the declared
+    rule's, whatever it returns.
 
     Raises:
         LookAheadError: if a window reaches past its training end.
@@ -1061,6 +1135,13 @@ def choose_cutoffs(
                             positions=[position[forecast.dates[k]] for k in rows],
                             pressure=[grid.outcomes[tau][k] for k in rows],
                             known_through=position[training_end],
+                        )
+                    if startup is not None and not any(grid.onset_at(tau, declaration.primary)[k] for k in rows):
+                        return startup_cutoff(
+                            startup,
+                            days=[forecast.dates[k] for k in rows],
+                            pressure=[grid.outcomes[tau][k] for k in rows],
+                            training_end=training_end,
                         )
                     return select_cutoff(
                         declaration,
