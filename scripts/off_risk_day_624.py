@@ -18,7 +18,11 @@ Per lead 1 to 5, on the days that are not risk dates (`announcement_dating_resco
     # AUG2.csv is the scratch panel of risk_date_severity.py; the forecast files are those of scripts/tailcap_floor_610.py and
     # scripts/iorb_every_day_579.py (OUT/iorb_h?.json, OUT/cap_h?.json, OUT/v610_h?.json)
     PYTHONPATH=src python3 scripts/off_risk_day_624.py measure --panel PUBLISHED.csv --scratch AUG2.csv \\
-        --iorb 'OUT/iorb_h{h}.json' --cap 'OUT/cap_h{h}.json' --floors 'OUT/v610_h{h}.json' \\
+        --row 'risk_gbm+every_day+gate+settle+h41+iorb=OUT/iorb_h{h}.json' \\
+        --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75=OUT/cap_h{h}.json' \\
+        --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor=OUT/v610_h{h}.json' \\
+        --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor=OUT/v610_h{h}.json' \\
+        --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor=OUT/v610_h{h}.json' \\
         --output OUT/step1.json --markdown OUT/step1.md
 """
 
@@ -502,11 +506,117 @@ def read_features(rows, registry, last: date, horizon: int, fields: Sequence[str
     return out
 
 
+def declared_document() -> dict:
+    return rds.committed_declaration(STEP_TWO_DECLARATION)
+
+
+def run_command(args) -> int:
+    """Each declared variant at one lead: the best row's forecasts with the day-level model's on the days that are not risk dates."""
+
+    declared = declared_document()
+    for name in declared["variants"]:
+        rds.committed_declaration(CANDIDATES / f"{name}.json")
+    h = args.horizon
+    if h not in declared["horizons"]:
+        raise SystemExit(f"horizon {h} is not declared")
+    scoring = declared["scoring"]
+    last = date.fromisoformat(scoring["last_day"])
+    require_unlocked([last], where="off_risk_day_624")
+    pj.require_scored_days(pj.load_declaration(), [last], where="off_risk_day_624")
+    best_name = declared["parent"]["row"]
+    best_document = json.loads(args.best.read_text(encoding="utf-8"))
+    if best_document["horizon"] != h or best_document["panel_sha256"] != panel_sha256(args.published) or best_name not in best_document["forecasts"]:
+        raise SystemExit(f"{args.best} is not the {best_name!r} forecasts at h = {h} on this panel")
+    best = best_document["forecasts"][best_name]
+    rows = load_daily_panel(args.panel)
+    audit_panel(rows)
+    splits = load_split_declaration(SPLITS)
+    by_date = {row.date: row for row in rows}
+    taus = tuple(float(t) for t in declared["thresholds_bp"])
+    scored, train_ends, outcomes = grid(rows, splits, scoring, h, taus, last)
+    days = [d.isoformat() for d in scored]
+    for tau in taus:
+        if sorted(best[f"{tau:g}"]) != days:
+            raise SystemExit(f"the best row's scored days at +{tau:g} bp are not the grid's at h = {h}")
+    off_risk = [not ann.risk_flag(splits, by_date[d].values, True) for d in scored]
+    states = _load("pressure_judge")._scarcity_states(h, last)
+    state_value = [None if states.get(d) is None else float(states[d]) for d in scored]
+    reads = read_features(rows, measurement_fields.load_registry(), last, h)
+    missing = [d for d in days if d not in reads]
+    if missing:
+        raise SystemExit(f"h = {h}: {len(missing)} scored days are not on the read grid, the first {missing[0]}")
+    base = design_rows([reads[d] for d in days], state_value)
+    best_by_tau = {tau: [best[f"{tau:g}"][d] for d in days] for tau in taus}
+    from repo_model import ml
+
+    forecasts, settings = {}, {}
+    for name, spec in declared["variants"].items():
+        designs = [None if row is None else variant_vector(spec["form"], row, state_value[k]) for k, row in enumerate(base)]
+        model = walk_forward_day_model(
+            designs, {tau: outcomes[tau] for tau in taus}, scored, train_ends, off_risk, kind=spec["kind"], monotone=spec.get("monotone"),
+            minimum_pairs=declared["constants"]["minimum_pairs"], minimum_events=declared["constants"]["minimum_events"],
+            fit=ml.fit_off_risk_day_model,
+        )
+        column = monotone_across_thresholds(combine(best_by_tau, model, off_risk, taus), taus)
+        forecasts[name] = {f"{tau:g}": {d: column[tau][k] for k, d in enumerate(days)} for tau in taus}
+        served = [k for k in range(len(days)) if off_risk[k] and designs[k] is not None]
+        settings[name] = {
+            "parent": best_name, "off_risk_days": sum(off_risk), "served_days": len(served),
+            "first_served_day": next((days[k] for k in served if model[taus[0]][k] > 0.0), None),
+            "satiation_distance": "built per H.4.1 release (#622)",
+        }
+        print(json.dumps({"horizon": h, "row": name, "served_days": len(served)}), flush=True)
+    out = {
+        "horizon": h, "panel_sha256": panel_sha256(args.published), "scratch_panel_sha256": panel_sha256(args.panel),
+        "declaration": declared, "declarations": settings, "forecasts": forecasts,
+    }
+    args.output.write_text(json.dumps(out, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    print(json.dumps({"horizon": h, "output": str(args.output)}))
+    return 0
+
+
+def _patch_pg():
+    pg = _load("pooled_gate_595")
+    declared = declared_document()
+    pg.DECLARATION = STEP_TWO_DECLARATION
+    pg.VARIANTS = {name: name for name in declared["variants"]}
+    pg.ROW = CAP
+    pg.PARENT = declared["parent"]["row"]
+    return pg
+
+
+def compare_command(args) -> int:
+    """`announcement_dating_rescore.py compare` with each variant against one reference row (`+dist_roll` or `+tailcap75`)."""
+
+    pg = _patch_pg()
+    declared = declared_document()
+    reference = declared["parent"]["row"] if args.reference == "distroll" else CAP
+    pairs = [("variant", name, reference) for name in declared["variants"]]
+    if args.reference == "distroll":
+        pairs.append(("row", CAP, reference))
+    ann.DECLARATION = STEP_TWO_DECLARATION
+    ann.rows_of_pairs = lambda: pairs
+    # the table's header in pooled_gate_595.py reads the sign the other way (#604): the difference is the reference's loss less the row's
+    ann.markdown = lambda document, p: pg.comparison_markdown(document, p).replace(
+        "(negative favours the row)", "(the reference's squared error less the row's, so positive favours the row, #604)"
+    )
+    return ann.compare_command(args)
+
+
+def passthrough_command(args) -> int:
+    """`pooled_gate_595.py`'s onsets and summary, over these rows (the reference of onsets is +tailcap75)."""
+
+    pg = _patch_pg()
+    return pg.main(args.rest)
+
+
 # -- the command ------------------------------------------------------------------------------------------
 
 
 def measure_command(args) -> int:
-    declared = rds.committed_declaration(STEP_ONE_DECLARATION)
+    """Each `--row NAME=TEMPLATE`: the forecasts of row NAME are in the files TEMPLATE names (with `{h}` for the lead)."""
+
+    declared = rds.committed_declaration(args.declaration)
     scoring = declared["scoring"]
     last = date.fromisoformat(scoring["last_day"])
     require_unlocked([last], where="off_risk_day_624")
@@ -514,25 +624,28 @@ def measure_command(args) -> int:
     rows = load_daily_panel(args.scratch)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
-    paths = {"iorb": args.iorb, "cap": args.cap, "floors": args.floors}
+    templates = dict(item.split("=", 1) for item in args.row)
     pj_script = _load("pressure_judge")
     result: Dict[str, dict] = {}
     for h in LEADS:
-        documents = {}
-        for kind, template in paths.items():
-            document = json.loads(Path(template.format(h=h)).read_text(encoding="utf-8"))
-            if document["horizon"] != h or document["panel_sha256"] != panel_sha256(args.panel):
-                raise SystemExit(f"{template.format(h=h)} is not the forecasts at h = {h} on this panel")
-            documents[kind] = document
         states = pj_script._scarcity_states(h, last)
-        for name, kind in ROWS.items():
-            table = day_table(name, documents[kind], h, rows, splits, scoring, states, last)
+        documents: Dict[str, dict] = {}
+        for name, template in templates.items():
+            path = template.format(h=h)
+            if path not in documents:
+                document = json.loads(Path(path).read_text(encoding="utf-8"))
+                if document["horizon"] != h or document["panel_sha256"] != panel_sha256(args.panel):
+                    raise SystemExit(f"{path} is not the forecasts at h = {h} on this panel")
+                documents[path] = document
+            table = day_table(name, documents[path], h, rows, splits, scoring, states, last)
             result.setdefault(name, {})[str(h)] = {"scored_days": table["scored_days"], "cells": measure_row(table, declared["bootstrap"])}
             print(json.dumps({"row": name, "horizon": h, "off_risk_days": len(table["y"])}), flush=True)
-    document = {"declaration": declared, "panel_sha256": panel_sha256(args.panel), "scratch_panel_sha256": panel_sha256(args.scratch), "rows": result}
+    document = {
+        "declaration": declared, "panel_sha256": panel_sha256(args.panel), "scratch_panel_sha256": panel_sha256(args.scratch), "rows": result,
+    }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
     if args.markdown:
-        args.markdown.write_text(markdown(document), encoding="utf-8")
+        args.markdown.write_text(markdown(document, args.title), encoding="utf-8")
     return 0
 
 
@@ -548,9 +661,9 @@ def _iv(value, interval) -> str:
     return f"{value:.3f} [{interval['lower']:.3f}, {interval['upper']:.3f}]"
 
 
-def markdown(document: Mapping) -> str:
+def markdown(document: Mapping, title: str = "Step 1: skill on the days that are not risk dates (#624)") -> str:
     out = [
-        "# Step 1: skill on the days that are not risk dates (#624)", "",
+        f"# {title}", "",
         "Generated by `scripts/off_risk_day_624.py measure`; not edited by hand.", "",
     ]
     for name, by_lead in document["rows"].items():
@@ -586,12 +699,30 @@ def main(argv=None) -> int:
     m = sub.add_parser("measure")
     m.add_argument("--panel", type=Path, required=True, help="the published panel")
     m.add_argument("--scratch", type=Path, required=True)
-    m.add_argument("--iorb", required=True, help="template with {h}: the control row's forecasts")
-    m.add_argument("--cap", required=True, help="template with {h}: the tailcap75 forecasts")
-    m.add_argument("--floors", required=True, help="template with {h}: the three floors' forecasts")
+    m.add_argument("--declaration", type=Path, default=STEP_ONE_DECLARATION, help="the committed declaration whose scoring and bootstrap are used")
+    m.add_argument("--row", action="append", required=True, help="NAME=TEMPLATE, TEMPLATE with {h}: the file of the row's forecasts at each lead")
+    m.add_argument("--title", default="Step 1: skill on the days that are not risk dates (#624)")
     m.add_argument("--output", type=Path, required=True)
     m.add_argument("--markdown", type=Path)
     m.set_defaults(func=measure_command)
+    r = sub.add_parser("run")
+    r.add_argument("--panel", type=Path, required=True, help="the scratch panel with the distance built per release (AUG2R.csv)")
+    r.add_argument("--published", type=Path, required=True)
+    r.add_argument("--horizon", type=int, required=True)
+    r.add_argument("--best", type=Path, required=True, help="the file of the best row's forecasts at this lead (OUT/dist_h?.json)")
+    r.add_argument("--output", type=Path, required=True)
+    r.set_defaults(func=run_command)
+    c = sub.add_parser("compare")
+    c.add_argument("--rule", choices=("unweighted", "weighted"), default="weighted")
+    c.add_argument("--reference", choices=("distroll", "tailcap"), default="distroll")
+    c.add_argument("--panel", type=Path, required=True)
+    c.add_argument("--output", type=Path, required=True)
+    c.add_argument("--markdown", type=Path)
+    c.add_argument("inputs", nargs="+", type=Path)
+    c.set_defaults(func=compare_command)
+    t = sub.add_parser("pg")
+    t.add_argument("rest", nargs=argparse.REMAINDER)
+    t.set_defaults(func=passthrough_command)
     pn = sub.add_parser("panel", help="the scratch panel with the satiation distance built per H.4.1 release")
     pn.add_argument("--panel", type=Path, required=True, help="AUG2.csv")
     pn.add_argument("--output", type=Path, required=True)
