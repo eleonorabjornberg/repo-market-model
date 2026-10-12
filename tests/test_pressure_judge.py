@@ -1204,6 +1204,95 @@ class TierTests(unittest.TestCase):
         self.assertEqual(result["mode"], "development")
 
 
+class AlwaysFlagBlockTests(unittest.TestCase):
+    """The always-flag reading of tier 1 (#588, on Eleonora's ruling on #570): off in the in-force judge.
+
+    A 21-day refit block (here 20 days) is always-flag when its chosen cut-off is at or below every probability in it, so
+    every day of it is flagged. With the option on, a flag in such a block counts neither as a warning nor as a false
+    alarm; the blocks and the onsets that only they warned are listed instead.
+
+    **Recorded mutation** (CLAUDE.md): the option reads a block's cut-off and probabilities and refuses nothing, but the
+    single look cannot be cut into the development blocks, so `judge` refuses the option there. Mutation: in
+    `pressure_judge.judge`, replace `if declaration.always_flag_not_warning and confirmation:` with `if False:`; the failing
+    test was `test_the_single_look_refuses_the_option`, which raised `AssertionError` (the message of the later refusal did not match "always-flag"; a bare
+    `assertRaises(ValueError)` was satisfied by that refusal, so the test matches the message).
+    """
+
+    LOOSE = {
+        "false_alarms_per_onset_at_most": 30.0, "refit_every": 20,
+        "no_onsets": "never_flag", "none_meets_limit": "never_flag",
+    }
+
+    def _blanket(self, series):
+        # 0.4 on every day: from the second block the cut-off is 0.4, at or below every probability, so every day flags.
+        return lambda h: series.flat("sharp", h, 0.4)
+
+    def _judged(self, candidate, series, *, on):
+        grids, forecasts = series.everything(candidate)
+        declaration = pj.load_declaration(_write(_declaration(cutoff_rule=self.LOOSE)))
+        if on:
+            declaration = replace(declaration, always_flag_not_warning=True)
+        return pj.judge(declaration, grids, forecasts, calendar=series.dates)["candidates"]["sharp"]
+
+    def test_it_is_off_in_the_declaration_in_force(self):
+        self.assertFalse(pj.load_declaration().always_flag_not_warning)
+        self.assertFalse(_load().always_flag_not_warning)
+
+    def test_off_a_blanket_flag_warns_every_onset_after_the_first_refit(self):
+        series = Series()
+        near = self._judged(self._blanket(series), series, on=False)["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(near["onsets_flagged"], 19)
+        self.assertNotIn("always_flag", near)
+
+    def test_on_a_blanket_flag_is_not_a_warning_and_is_listed(self):
+        series = Series()
+        near = self._judged(self._blanket(series), series, on=True)["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(near["onsets_flagged"], 0)
+        listed = near["always_flag"]
+        self.assertEqual(listed["blocks_by_horizon"]["1"]["count"], 19)
+        self.assertEqual(listed["blocks_by_horizon"]["1"]["first_days"][0], series.dates[20].isoformat())
+        self.assertEqual(listed["onsets_lost"], [series.dates[k].isoformat() for k in range(24, 400, 20)])
+        self.assertEqual(near["recall"]["mean"], 0.0)
+        self.assertFalse(near["passes"])
+
+    def test_on_a_flag_in_an_always_flag_block_is_not_a_false_alarm_either(self):
+        series = Series()
+        off = self._judged(self._blanket(series), series, on=False)["tiers"]["onset_warning"]["lead_at_least_1"]
+        on = self._judged(self._blanket(series), series, on=True)["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(off["false_alarms_by_horizon"]["1"]["false_alarms"], 19 * 19)
+        self.assertEqual(on["false_alarms_by_horizon"]["1"]["false_alarms"], 0)
+        self.assertEqual(on["always_flag"]["flags_dropped_by_horizon"]["1"], 380)
+
+    def test_on_a_sharp_candidate_is_unchanged(self):
+        series = Series()
+        off = self._judged(lambda h: series.perfect(h), series, on=False)["tiers"]["onset_warning"]["lead_at_least_1"]
+        on = self._judged(lambda h: series.perfect(h), series, on=True)["tiers"]["onset_warning"]["lead_at_least_1"]
+        self.assertEqual(on["onsets_flagged"], off["onsets_flagged"])
+        self.assertEqual(on["always_flag"]["onsets_lost"], [])
+        self.assertEqual(on["always_flag"]["blocks_by_horizon"]["1"]["count"], 0)
+        self.assertEqual(on["recall"]["mean"], off["recall"]["mean"])
+
+    def test_a_block_that_never_flags_is_not_always_flag(self):
+        # A cut-off of infinity is at or below nothing.
+        self.assertEqual(pj.always_flag_blocks([0.1, 0.2], [float("inf")] * 2, 2), [False])
+        self.assertEqual(pj.always_flag_blocks([0.1, 0.2, 0.3, 0.4], [0.5, 0.5, 0.1, 0.1], 2), [False, True])
+        # The cut-off of a block is the one on its first day; a day below it makes the block not always-flag.
+        self.assertEqual(pj.always_flag_blocks([0.1, 0.4], [0.2, 0.2], 2), [False])
+
+    def test_the_single_look_refuses_the_option(self):
+        series = Series()
+        grids, forecasts = series.everything(lambda h: series.perfect(h))
+        declaration = replace(_load(), always_flag_not_warning=True)
+        with self.assertRaisesRegex(ValueError, "always-flag"):
+            pj.judge(declaration, grids, forecasts, calendar=series.dates, confirmation=True)
+
+    def test_the_document_names_the_option_only_when_it_is_on(self):
+        off = _load().document()["tiers"]["onset_warning"]
+        on = replace(_load(), always_flag_not_warning=True).document()["tiers"]["onset_warning"]
+        self.assertNotIn("always_flag_blocks", off)
+        self.assertIn("always_flag_blocks", on)
+
+
 class RulingsOfTenOctoberTests(unittest.TestCase):
     """Eleonora's rulings of 10 October 2026 on the judge (#509, #510 and regime scoring; directive #536).
 
