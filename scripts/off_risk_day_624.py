@@ -552,6 +552,139 @@ def read_features(rows, registry, last: date, horizon: int, fields: Sequence[str
     return out
 
 
+BEST = "risk_gbm+settle+h41+dist_roll"
+PARENT = "risk_gbm+settle+h41"
+#: the three variants of step 2 and the form of each: (name, design form, estimator, monotone constraint on the design, trailing rate as an input)
+VARIANTS = {
+    "a": (BEST + "+offday", "interaction", "logistic", None, False),
+    "b": (BEST + "+offday_mono", "monotone", "gbm_classifier", [0, 0, 0, 0, 1], False),
+    "c": (BEST + "+offday_rate", "interaction", "logistic", None, True),
+}
+
+
+def declaration_document() -> dict:
+    """The step 2 declaration (`metadata/off_risk_day_624.json`), written before any score of a variant."""
+
+    step_one = json.loads(STEP_ONE_DECLARATION.read_text(encoding="utf-8"))
+    common_inputs = {
+        "tail_level": "the SOFR 99th percentile less IORB (bp, sofr_p99_iorb_bps), at its latest public row",
+        "tail_change_5": "that read less the read 5 scored days earlier; both public at the day's decision instant",
+        "dispersion_p99_p1": "the SOFR 99th percentile less the 1st (percentage points), at their latest public row",
+        "satiation_distance": "the rolling satiation distance of #587 (satiation_dist_roll), built per H.4.1 release as #622 requires",
+        "scarcity_state": "the reserve-scarcity state 0 to 3 as of the decision instant, each leg at its own latest public row (#586); a day whose state is unknown is not served",
+    }
+    return {
+        "status": (
+            "declared by the pull request that closes #624 after step 1 was committed (docs/pivot/off-risk-day-result.md, docs/pivot/evidence/off-risk-day/) and "
+            "before any score of a step 2 variant; a measurement, not a record. Nothing here is published: no variant joins any published declaration, no day "
+            "after 2025-12-31 is scored, no rule changes and the live record and pin do not move. The variants were built after seeing 2018-2025, so a pass here "
+            "is not a confirmation (ruling of 11 October 2026 on #567)"
+        ),
+        "issue": 624,
+        "step": 2,
+        "scoring": step_one["scoring"],
+        "thresholds_bp": [5, 10],
+        "horizons": list(LEADS),
+        "parent": {"row": BEST, "from": "metadata/satiation_distance_598.json, variant (a); its forecasts, on risk dates, are not changed"},
+        "second_parent": CAP,
+        "replaces": "the constant 0 on a day that is not a risk date (announcement_dating_rescore.risk_flag(splits, values, True)); a risk date keeps the parent's forecast",
+        "step_one": "docs/pivot/off-risk-day-result.md: the control's own inputs rank the days (AUROC 0.70 to 0.75 pooled, 0.65 to 0.70 inside 2018-19) and the cap and the constant floors do not; part of a trailing rate's pooled skill is the split between regimes",
+        "variants": {
+            name: {
+                "label": f"({key})",
+                "parent": BEST,
+                "form": form,
+                "kind": kind,
+                "monotone": monotone,
+                "rate": rate,
+            }
+            for key, (name, form, kind, monotone, rate) in VARIANTS.items()
+        },
+        "variant_rules": {
+            VARIANTS["a"][0]: (
+                "(a) a ridge logistic (ml.PRESSURE_LOGISTIC_SETTINGS: C = 1, standardized) of a pressure day at the threshold on the four inputs, the scarcity "
+                "state, and each input times the state; fitted at each refit block on the earlier scored days that were not risk dates, whose outcome was "
+                "observable at the block's fit and whose inputs and state are all public; it serves the block's days that are not risk dates"
+            ),
+            VARIANTS["b"][0]: (
+                "(b) as (a), in the gradient-boosted form (ml.PRESSURE_CLASSIFIER_SETTINGS: a HistGradientBoostingClassifier) on the four inputs and the state, with a "
+                "monotone constraint of +1 on the state, so that a scarcer state never lowers the forecast; the interaction is the trees' own"
+            ),
+            VARIANTS["c"][0]: (
+                "(c) chosen from step 1: as (a), with one more input, the rate of pressure days at the threshold over the 60 most recent earlier scored days that "
+                "were not risk dates and whose outcome was observable at the block's fit (the rate #610's +recent_floor forecasts, the only row of step 1 whose "
+                "pooled figures separate from the climatology at every lead). A day has the block's rate; nothing is read until 60 such days exist"
+            ),
+        },
+        "inputs": common_inputs,
+        "inputs_reading": (
+            "each input is read at the decision instant of the day's own lead through asof.InformationRule, on the 'both' arm of #541 (settlements dated from "
+            "the auction announcement, the H.4.1 per release), with the leakage and staleness guards of baseline._as_of_folds. The days that train a block are "
+            "the same days read at their own decision instants. No outcome after the block's fit enters a training label or the trailing rate"
+        ),
+        "satiation_distance_version": (
+            "built per H.4.1 release (scripts/off_risk_day_624.py panel), as #622 requires; #623 had not landed. It differs from the old-lag build "
+            "(scripts/satiation_distance_598.py panel) on the rows #622 counts. The parent row's own forecasts are #598's, on the old-lag build, unchanged"
+        ),
+        "constants": {
+            "minimum_pairs": gc.GROUP_MINIMUM_PAIRS,
+            "minimum_events": gc.GROUP_MINIMUM_EVENTS,
+            "trailing_window": gc.GROUP_MINIMUM_PAIRS,
+            "searched": "none: every constant is #606's or #610's, declared before any scoring",
+            "fit": "a block is fitted only when its training pairs number minimum_pairs and hold minimum_events pressure days at the threshold, and not every pair is a pressure day; else its days are 0",
+        },
+        "off_risk_rule": "a scored day for which announcement_dating_rescore.risk_flag(splits, values, True) is false, as in #606 and #610",
+        "cadence": "the judge's: a refit every 21 scored days from 61 days of history",
+        "monotone_in_threshold": "the curve across +5 and +10 bp is made non-increasing afterwards (probability_calibration.monotone_curves), as every row's is",
+        "no_hindsight_regimes": "no regime label enters a fit; the scarcity state is read as of the decision instant (ruling on #515). The back-filled 2014-2018 history is not used (the guard of #572)",
+        "variants_declared": "these three; no other variant, input, window, constant or form",
+        "rows": {
+            "controls": [PARENT, BEST, CAP],
+            "new": [v[0] for v in VARIANTS.values()],
+            "pairs": {v[0]: BEST for v in VARIANTS.values()},
+        },
+        "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), under the weighted rule in force and the flat rule beside it",
+        "pairing": "each variant against risk_gbm+settle+h41+dist_roll and against +tailcap75, with 90% stationary-bootstrap intervals, split by regime and pressure-day type",
+        "reports": [
+            "tier 1 pooled and per lead, tiers 3 and 5, under the weighted rule with the flat rule beside it",
+            "on the days that are not risk dates: AUROC, Brier skill against the walk-forward climatology, the reliability slope and intercept (scripts/off_risk_day_624.py measure, step 1's declaration)",
+            "onsets kept and lost by date, against the parent and against +tailcap75",
+            "a variant that passes a tier through its mean only is reported as such: the off-risk-day discrimination is read beside the verdict",
+        ],
+        "ruling_567": "these variants were built after seeing 2018-2025; a pass is not a confirmation, and a variant can replace a shortlist slot only by Eleonora's decision before the 2026 window opens",
+        "published": "nothing; no variant joins any published declaration",
+    }
+
+
+def candidate_entries() -> dict:
+    base = json.loads((CANDIDATES / f"{BEST}.json").read_text(encoding="utf-8"))
+    rules = declaration_document()["variant_rules"]
+    entries = {}
+    for _key, (name, *_rest) in VARIANTS.items():
+        entry = dict(base)
+        entry["track"] = "#624"
+        entry["parent"] = BEST
+        entry["inputs_note"] = "the parent's risk-date part unchanged, with a day-level model on the days that are not risk dates in place of the constant 0 (the declared inputs are in metadata/off_risk_day_624.json)"
+        entry["calibration"] = (
+            base["calibration"].split("; metadata/satiation_distance_598.json")[0].replace("fitted on risk-date label days only and exactly 0 on every other day", "the risk-date part fitted on risk-date label days only")
+            + "; then, on the days that are not risk dates, the constant 0 is replaced by a day-level model fitted walk-forward on those days only: "
+            + rules[name] + "; metadata/off_risk_day_624.json"
+        )
+        entries[name] = entry
+    return entries
+
+
+def declare_command(args) -> int:
+    STEP_TWO_DECLARATION.write_text(json.dumps(declaration_document(), indent=2) + "\n", encoding="utf-8")
+    written = [str(STEP_TWO_DECLARATION)]
+    for name, entry in candidate_entries().items():
+        path = CANDIDATES / f"{name}.json"
+        path.write_text(json.dumps(entry, indent=2) + "\n", encoding="utf-8")
+        written.append(str(path))
+    print(json.dumps({"written": written}, indent=1))
+    return 0
+
+
 def declared_document() -> dict:
     return rds.committed_declaration(STEP_TWO_DECLARATION)
 
@@ -598,10 +731,14 @@ def run_command(args) -> int:
     forecasts, settings = {}, {}
     for name, spec in declared["variants"].items():
         designs = [None if row is None else variant_vector(spec["form"], row, state_value[k]) for k, row in enumerate(base)]
+        extra = (
+            {tau: trailing_rate_column(outcomes[tau], scored, train_ends, off_risk, window=declared["constants"]["trailing_window"]) for tau in taus}
+            if spec["rate"] else None
+        )
         model = walk_forward_day_model(
             designs, {tau: outcomes[tau] for tau in taus}, scored, train_ends, off_risk, kind=spec["kind"], monotone=spec.get("monotone"),
             minimum_pairs=declared["constants"]["minimum_pairs"], minimum_events=declared["constants"]["minimum_events"],
-            fit=ml.fit_off_risk_day_model,
+            fit=ml.fit_off_risk_day_model, extra=extra,
         )
         column = monotone_across_thresholds(combine(best_by_tau, model, off_risk, taus), taus)
         forecasts[name] = {f"{tau:g}": {d: column[tau][k] for k, d in enumerate(days)} for tau in taus}
@@ -792,6 +929,7 @@ def main(argv=None) -> int:
     t = sub.add_parser("pg")
     t.add_argument("rest", nargs=argparse.REMAINDER)
     t.set_defaults(func=passthrough_command)
+    sub.add_parser("declare").set_defaults(func=declare_command)
     sm = sub.add_parser("summary")
     sm.add_argument("--input", type=Path, required=True)
     sm.add_argument("--within", default="regime 2018-19")

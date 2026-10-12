@@ -68,6 +68,45 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(SCRIPT.RELIABILITY_FLOOR, 1e-4)
 
 
+class StepTwoDeclarationTests(unittest.TestCase):
+    def setUp(self):
+        self.declared = json.loads((ROOT / "metadata" / "off_risk_day_624.json").read_text())
+
+    def test_the_declaration_is_what_the_script_declares(self):
+        self.assertEqual(SCRIPT.declaration_document(), self.declared)
+
+    def test_at_most_three_variants_are_declared(self):
+        self.assertEqual(len(self.declared["variants"]), 3)
+        self.assertEqual(set(self.declared["variants"]), {v[0] for v in SCRIPT.VARIANTS.values()})
+
+    def test_the_second_variant_is_gradient_boosted_with_a_non_negative_constraint_on_the_state_only(self):
+        spec = self.declared["variants"][SCRIPT.VARIANTS["b"][0]]
+        self.assertEqual(spec["kind"], "gbm_classifier")
+        self.assertEqual(spec["monotone"], [0, 0, 0, 0, 1])
+        # the state is the last column of the 'monotone' form, after the four inputs
+        self.assertEqual(len(SCRIPT.variant_vector("monotone", [0.0] * len(SCRIPT.INPUTS), 1.0)), len(spec["monotone"]))
+
+    def test_the_candidates_are_the_declared_variants_and_replace_the_parent(self):
+        for name in self.declared["variants"]:
+            entry = json.loads((SCRIPT.CANDIDATES / f"{name}.json").read_text())
+            self.assertEqual(entry["parent"], SCRIPT.BEST)
+            self.assertEqual(entry["role"], "candidate")
+            self.assertIn("metadata/off_risk_day_624.json", entry["calibration"])
+        self.assertEqual({n: e for n, e in SCRIPT.candidate_entries().items()}, {
+            n: json.loads((SCRIPT.CANDIDATES / f"{n}.json").read_text()) for n in self.declared["variants"]
+        })
+
+    def test_the_scoring_matches_step_one_and_ends_before_the_lockbox(self):
+        self.assertEqual(self.declared["scoring"], DECLARED["scoring"])
+        self.assertLess(self.declared["scoring"]["last_day"], "2026-01-01")
+        self.assertEqual(self.declared["published"], "nothing; no variant joins any published declaration")
+
+    def test_the_constants_are_the_floors(self):
+        self.assertEqual(self.declared["constants"]["minimum_pairs"], SCRIPT.gc.GROUP_MINIMUM_PAIRS)
+        self.assertEqual(self.declared["constants"]["minimum_events"], SCRIPT.gc.GROUP_MINIMUM_EVENTS)
+        self.assertEqual(self.declared["constants"]["trailing_window"], 60)
+
+
 def days(n, start=date(2018, 1, 1)):
     return [start + timedelta(days=k) for k in range(n)]
 

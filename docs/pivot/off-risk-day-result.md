@@ -6,7 +6,7 @@ Every figure reads 2018-2025, so it describes that history and does not confirm 
 
 ## Step 1: do the every-day parts have skill beyond the base rate on those days?
 
-The question (#616): tiers 3 and 5 test calibration on the mean, so a constant floor can pass them without any skill. The measurement asks
+The question (#616): tiers 3 and 5 check calibration on the mean only, so a constant floor can pass them without any skill. The measurement asks
 of the part that serves the days that are not risk dates in five rows whether it ranks those days, and whether it beats the walk-forward
 climatology, per lead 1 to 5, for a pressure day at +5 bp. `ROW` below is `risk_gbm+every_day+gate+settle+h41+iorb` (#579, PR #582),
 `ROW+tailcap75` is the row capped by the tail spread's trailing history (#601, PR #609), and the three floors of #610 (PR #612) are in
