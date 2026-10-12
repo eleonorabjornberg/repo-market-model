@@ -1013,7 +1013,7 @@ def heatmap(matrix: dict) -> str:
             if v is None:
                 continue
             colour = "#c0392b" if v > 0 else "#1f6fb2"
-            out.append(f'<rect x="{left + j * cell}" y="{top + i * cell}" width="{cell}" height="{cell}" fill="{colour}" fill-opacity="{min(1.0, abs(v)):.2f}"><title>{a} / {b}: {v:+.2f}</title></rect>')
+            out.append(f'<rect x="{left + j * cell}" y="{top + i * cell}" width="{cell}" height="{cell}" fill="{colour}" fill-opacity="{min(1.0, abs(v)):.1f}"/>')
     out.append("</svg>")
     return "\n".join(out) + "\n"
 
@@ -1029,6 +1029,7 @@ def report_command(args) -> int:
         for a, row in zip(names, matrix["rho"]):
             handle.write(a + "," + ",".join("" if v is None else f"{v:.4f}" for v in row) + "\n")
     (out_dir / "matrix.json").write_text(json.dumps({"names": names, "rho": [[None if v is None else round(v, 4) for v in r] for r in matrix["rho"]], "n": matrix["n"], "threshold": matrix["threshold"]}) + "\n", encoding="utf-8")
+    (out_dir / "screen.json").write_text(json.dumps({k: v for k, v in doc.items() if k != "matrix"}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
     (out_dir / "clusters.json").write_text(json.dumps(matrix["clusters"], indent=1) + "\n", encoding="utf-8")
     (out_dir / "matrix.svg").write_text(heatmap(matrix), encoding="utf-8")
     leads = ranked_leads(doc)
@@ -1062,6 +1063,38 @@ def report_command(args) -> int:
         lines.append(f"| `{c['representative']}` | {', '.join('`' + m + '`' for m in c['members'])} |")
     (out_dir / "tables.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(json.dumps({"leads": len(leads), "clusters": len(matrix["clusters"])}))
+    return 0
+
+
+def model_report_command(args) -> int:
+    """The model test's tables: the judge's tiers, then the ordinary-day AUROC and calibration, paired."""
+
+    judged = {rule: json.loads(Path(path).read_text(encoding="utf-8"))["candidates"] for rule, path in (("flat", args.unweighted), ("weighted", args.weighted))}
+    ordinary = json.loads(args.ordinary.read_text(encoding="utf-8"))
+    names = [CONTROL.rsplit("+dist_roll", 1)[0], CONTROL, PARENT, TEST]
+    yes = lambda x: "yes" if x else "no"
+    ci = lambda r: f"{r['mean']:.3f} [{r['interval']['lower']:.3f}, {r['interval']['upper']:.3f}]"
+    lines = ["Table M1. The judge in force (tiers 1, 3 and 5; the weighted rule is the one in force, the flat rule is reported beside it). Tier 1: onsets flagged at some lead 1 to 5, recall [90%], the pooled false alarms per onset (a false alarm counted once however many leads flag it; limit 2, #550); tier 1 also needs the recall conditions at each lead.", "",
+             "| row | rule | onsets flagged | recall [90%] | pooled false alarms per onset | tier 1 | tier 3 | tier 5 | passes |", "|---|---|---|---|---|---|---|---|---|"]
+    for name in names:
+        for rule in ("weighted", "flat"):
+            e = judged[rule][name]
+            t = e["tiers"]["onset_warning"]["lead_at_least_1"]
+            v = e["verdict"]
+            worst = t["pooled_weighted_false_alarms_per_onset"] if rule == "weighted" else t["pooled_false_alarms_per_onset"]
+            lines.append(f"| `{name}` | {rule} | {t['onsets_flagged']:g} of {t['onsets']} | {ci(t['recall'])} | {worst:.2f} | {yes(v['tier_1_onset_warning'])} | {yes(v['tier_3_no_crying_wolf'])} | {yes(v['tier_5_week_ahead'])} | {yes(v['passes'])} |")
+    lines += ["", "Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%], and the reliability intercept and slope (logistic of the outcome on logit(forecast); `-` where the forecast is constant or the fit is not formed). The control forecasts exactly 0 there.", "",
+              "| row | h | days | pressure days | mean forecast | realised | AUROC [90%] | intercept | slope |", "|---|---|---|---|---|---|---|---|---|"]
+    for name in names[1:]:
+        for h, c in ordinary["rows"][name].items():
+            cal = c["calibration"]
+            auc = "0.500 (constant)" if c["constant"] else _auc({"auroc": c["auroc"], "interval": c["interval"]})
+            lines.append(f"| `{name}` | {h} | {c['days']} | {c['pressure_days']} | {c['mean_forecast']:.4f} | {c['realised']:.4f} | {auc} | {_fmt(cal and cal['intercept'], 2, True)} | {_fmt(cal and cal['slope'], 2)} |")
+    lines += ["", "Table M3. Paired on ordinary days: the AUROC of the test less the parent's, 90% stationary-bootstrap interval.", "", "| h | difference [90%] |", "|---|---|"]
+    for h, c in ordinary["paired"].items():
+        lines.append(f"| {h} | {c['auroc_difference']:+.3f} [{c['interval'][0]:+.3f}, {c['interval'][1]:+.3f}] |")
+    args.output.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(args.output)
     return 0
 
 
@@ -1101,6 +1134,12 @@ def main(argv=None) -> int:
     report.add_argument("screen", type=Path)
     report.add_argument("--output-dir", type=Path, required=True)
     report.set_defaults(func=report_command)
+    modelreport = sub.add_parser("model-report")
+    modelreport.add_argument("--weighted", type=Path, required=True)
+    modelreport.add_argument("--unweighted", type=Path, required=True)
+    modelreport.add_argument("--ordinary", type=Path, required=True)
+    modelreport.add_argument("--output", type=Path, required=True)
+    modelreport.set_defaults(func=model_report_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
