@@ -8,6 +8,16 @@ Recorded mutations, 12 October 2026, in a disposable copy of `scripts/off_risk_d
    dates). `test_the_rate_is_taken_over_days_that_are_not_risk_dates` then fails with `AssertionError: 0.25 != 0.0`.
 3. in `climatology_column`, `if off_risk[index]` on the block's days removed (a risk date is given the rate). `test_a_risk_date_has_no_climatology`
    then fails with `AssertionError: 0.5 is not None`.
+
+Step 2 (the day-level model), same protocol:
+4. in `walk_forward_day_model`, `pc.past_positions(scored, train_ends, start)` replaced by `range(stop)` (a block trains on days whose outcome was not
+   observable at its fit, among them its own). `test_a_block_is_fitted_on_the_observable_past_only` then errors with
+   `repo_model.splits.LookAheadError` (raised by `require_observable_pairs`).
+5. in `combine`, the refusal of a non-zero forecast of the row on a day that is not a risk date deleted.
+   `test_a_non_zero_forecast_off_the_risk_dates_is_a_defect` then fails with `AssertionError: ValueError not raised`.
+6. in `design_rows`, the earlier read `reads[k - CHANGE_DAYS]` replaced by `reads[min(k + 1, len(reads) - 1)]` (the change is formed against the next
+   scored day's read, a later decision). `test_the_change_is_the_read_less_the_read_five_scored_days_earlier` then fails with
+   `AssertionError: -1.0 != 5.0`.
 """
 
 import importlib.util
@@ -183,6 +193,144 @@ class IntervalTests(unittest.TestCase):
         result = self.run_it(reliability_cells=("all",))
         self.assertIsNotNone(result["all"]["slope"])
         self.assertIsNone(result["first half"]["slope"])
+
+
+def rate_fit(kind, xs, labels, served, monotone=None):
+    """A stand-in fit: the training rate of pressure days for every served row, and the number of training rows seen."""
+
+    rate_fit.seen.append(len(xs))
+    return [sum(labels) / len(labels)] * len(served)
+
+
+rate_fit.seen = []
+
+
+class DayModelTests(unittest.TestCase):
+    """The walk-forward fit on the days that are not risk dates, with a stand-in estimator."""
+
+    def setUp(self):
+        rate_fit.seen = []
+        self.scored = days(12)
+        # three blocks of four days; a block is fitted at the last day of the block before it
+        self.train_ends = [self.scored[0]] * 4 + [self.scored[3]] * 4 + [self.scored[7]] * 4
+        self.designs = [[float(k)] for k in range(12)]
+        self.outcomes = {5.0: [0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1], 10.0: [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0]}
+        self.off_risk = [True] * 12
+
+    def run_it(self, **kw):
+        base = dict(kind="logistic", monotone=None, minimum_pairs=2, minimum_events=1, fit=rate_fit)
+        base.update(kw)
+        return SCRIPT.walk_forward_day_model(
+            self.designs, self.outcomes, self.scored, self.train_ends, self.off_risk, **base
+        )
+
+    def test_a_block_is_fitted_on_the_observable_past_only(self):
+        columns = self.run_it()
+        # block 2 (days 4 to 7) sees days 0 to 3 only; block 3 sees days 0 to 7. At +5 bp the rates are 2/4 and 3/8.
+        self.assertEqual(columns[5.0][4:8], [0.5] * 4)
+        self.assertEqual(columns[5.0][8:], [3 / 8] * 4)
+        self.assertEqual(columns[5.0][:4], [0.0] * 4)
+
+    def test_a_pair_after_the_fit_is_refused(self):
+        with self.assertRaises(LookAheadError):
+            SCRIPT.require_observable_pairs([(self.scored[5], 0.0, 1, "")], self.scored[3])
+
+    def test_only_days_that_are_not_risk_dates_train_and_are_served(self):
+        self.off_risk = [True, True, False, True] + [True] * 8
+        columns = self.run_it()
+        # block 2 trains on days 0, 1 and 3 (day 2 is a risk date): rate 2/3
+        self.assertAlmostEqual(columns[5.0][4], 2 / 3)
+        self.assertEqual(columns[5.0][2], 0.0)
+
+    def test_a_day_without_a_complete_design_is_not_trained_or_served(self):
+        self.designs[1] = None
+        self.designs[5] = None
+        columns = self.run_it()
+        self.assertAlmostEqual(columns[5.0][4], 1 / 3)
+        self.assertEqual(columns[5.0][5], 0.0)
+
+    def test_nothing_is_fitted_below_the_minimum_pairs_or_events(self):
+        self.assertEqual(self.run_it(minimum_pairs=5)[5.0][4:8], [0.0] * 4)
+        self.assertEqual(self.run_it(minimum_events=3)[5.0][4:8], [0.0] * 4)
+
+    def test_a_threshold_with_one_class_in_training_is_left_at_zero(self):
+        self.outcomes[10.0] = [0] * 12
+        self.assertEqual(self.run_it()[10.0], [0.0] * 12)
+
+    def test_the_curve_across_thresholds_is_non_increasing(self):
+        self.outcomes[10.0] = [1] * 12
+        columns = SCRIPT.monotone_across_thresholds(self.run_it(), (5.0, 10.0))
+        for a, b in zip(columns[5.0], columns[10.0]):
+            self.assertLessEqual(b, a)
+
+    def test_the_columns_must_be_one_per_scored_day(self):
+        self.designs = self.designs[:-1]
+        with self.assertRaises(ValueError):
+            self.run_it()
+
+
+class CombineTests(unittest.TestCase):
+    def test_a_risk_date_keeps_the_rows_forecast_and_the_others_take_the_models(self):
+        best = {5.0: [0.4, 0.0, 0.0], 10.0: [0.2, 0.0, 0.0]}
+        model = {5.0: [0.9, 0.1, 0.3], 10.0: [0.9, 0.05, 0.1]}
+        got = SCRIPT.combine(best, model, [False, True, True], (5.0, 10.0))
+        self.assertEqual(got[5.0], [0.4, 0.1, 0.3])
+        self.assertEqual(got[10.0], [0.2, 0.05, 0.1])
+
+    def test_a_non_zero_forecast_off_the_risk_dates_is_a_defect(self):
+        with self.assertRaises(ValueError):
+            SCRIPT.combine({5.0: [0.4]}, {5.0: [0.1]}, [True], (5.0,))
+
+
+class DesignTests(unittest.TestCase):
+    def reads(self, n=8):
+        return [
+            {SCRIPT.TAIL: float(10 + k), "sofr_p99": 5.0 + 0.1 * k, "sofr_p1": 4.9, SCRIPT.DISTANCE: -0.01 * k} for k in range(n)
+        ]
+
+    def test_the_change_is_the_read_less_the_read_five_scored_days_earlier(self):
+        design = SCRIPT.design_rows(self.reads(), [3.0] * 8)
+        self.assertIsNone(design[4])
+        self.assertEqual(design[5][SCRIPT.INPUTS.index("tail_change_5")], 5.0)
+
+    def test_the_dispersion_is_the_99th_less_the_1st_percentile(self):
+        design = SCRIPT.design_rows(self.reads(), [3.0] * 8)
+        self.assertAlmostEqual(design[6][SCRIPT.INPUTS.index("dispersion_p99_p1")], 0.1 * 6 + 0.1)
+
+    def test_a_hole_in_any_input_or_an_unknown_state_leaves_the_day_out(self):
+        reads = self.reads()
+        reads[6][SCRIPT.DISTANCE] = None
+        design = SCRIPT.design_rows(reads, [3.0] * 5 + [None, 3.0, 3.0])
+        self.assertIsNone(design[5])
+        self.assertIsNone(design[6])
+        self.assertIsNotNone(design[7])
+
+    def test_the_variants_build_their_columns_from_the_same_inputs(self):
+        row = [10.0, 5.0, 0.2, -0.01]
+        self.assertEqual(SCRIPT.variant_vector("interaction", row, 2.0), row + [2.0] + [x * 2.0 for x in row])
+        self.assertEqual(SCRIPT.variant_vector("monotone", row, 2.0), row + [2.0])
+        with self.assertRaises(ValueError):
+            SCRIPT.variant_vector("other", row, 2.0)
+
+
+@unittest.skipUnless(importlib.util.find_spec("sklearn") is not None, "needs the ml extra")
+class FitTests(unittest.TestCase):
+    def test_the_monotone_fit_never_lowers_the_forecast_as_the_state_rises(self):
+        from repo_model import ml
+
+        xs = [[k % 7, s] for k in range(210) for s in range(4)]
+        labels = [1 if (s >= 2 and k % 3 == 0) or (s < 2 and k % 11 == 0) else 0 for k in range(210) for s in range(4)]
+        served = [[3.0, s] for s in range(4)]
+        out = ml.fit_off_risk_day_model("gbm_classifier", xs, labels, served, monotone=[0, 1])
+        self.assertEqual(out, sorted(out))
+
+    def test_a_fit_on_one_class_is_refused(self):
+        from repo_model import ml
+
+        with self.assertRaises(ValueError):
+            ml.fit_off_risk_day_model("logistic", [[1.0], [2.0]], [0, 0], [[1.0]])
+        with self.assertRaises(ValueError):
+            ml.fit_off_risk_day_model("probit", [[1.0], [2.0]], [0, 1], [[1.0]])
 
 
 if __name__ == "__main__":

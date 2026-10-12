@@ -311,6 +311,127 @@ def measure_row(table: Mapping, bootstrap: Mapping) -> dict:
     return out
 
 
+# -- step 2: a day-level model on the days that are not risk dates -----------------------------------------
+
+TAIL = "sofr_p99_iorb_bps"
+DISTANCE = "satiation_dist_roll"
+#: the four inputs of the day-level model, in the order of its design (the inputs that showed separation in #601 and #564)
+INPUTS = ("tail_level", "tail_change_5", "dispersion_p99_p1", "satiation_distance")
+#: the tail spread's change is over this many scored days
+CHANGE_DAYS = 5
+READ_FIELDS = (TAIL, "sofr_p99", "sofr_p1", DISTANCE)
+
+
+def design_rows(reads: Sequence[Mapping[str, Optional[float]]], states: Sequence[Optional[float]]) -> List[Optional[List[float]]]:
+    """The four inputs of each scored day, from the as-of reads of the scored days in date order, or None when any is a hole.
+
+    `reads[k]` is what the information rule gives at scored day `k`'s own decision instant. The tail spread's change is its read less its
+    read `CHANGE_DAYS` scored days earlier, both public at day `k`'s decision (a later read of an earlier day is never used); the dispersion
+    is the 99th less the 1st percentile. A day whose state is unknown is left out.
+    """
+
+    if len(reads) != len(states):
+        raise ValueError("reads and states must be one per scored day")
+    out: List[Optional[List[float]]] = []
+    for k, read in enumerate(reads):
+        tail, p99, p1, dist = read.get(TAIL), read.get("sofr_p99"), read.get("sofr_p1"), read.get(DISTANCE)
+        earlier = reads[k - CHANGE_DAYS].get(TAIL) if k >= CHANGE_DAYS else None
+        if None in (tail, p99, p1, dist, earlier) or states[k] is None:
+            out.append(None)
+            continue
+        out.append([float(tail), float(tail) - float(earlier), float(p99) - float(p1), float(dist)])
+    return out
+
+
+def variant_vector(form: str, row: Sequence[float], state: float) -> List[float]:
+    """The design row of a form: `interaction` is the inputs, the state and the inputs times the state; `monotone` the inputs and the state."""
+
+    if form == "interaction":
+        return list(row) + [state] + [x * state for x in row]
+    if form == "monotone":
+        return list(row) + [state]
+    raise ValueError(f"form {form!r} is not declared")
+
+
+def require_observable_pairs(pairs, fitted_at: date) -> None:
+    """Refuse a training pair of a day after the fit (`group_calibration.require_observable`)."""
+
+    gc.require_observable(pairs, fitted_at)
+
+
+def walk_forward_day_model(
+    designs: Sequence[Optional[Sequence[float]]],
+    outcomes: Mapping[float, Sequence[int]],
+    scored: Sequence[date],
+    train_ends: Sequence[date],
+    off_risk: Sequence[bool],
+    *,
+    kind: str,
+    monotone: Optional[Sequence[int]],
+    minimum_pairs: int,
+    minimum_events: int,
+    fit,
+) -> Dict[float, List[float]]:
+    """The forecast of a day-level model for each threshold on the days that are not risk dates; 0 everywhere else.
+
+    Each refit block (the judge's cadence) is fitted on the earlier scored days that were not risk dates, have a complete design and had an
+    outcome observable at the block's fit (`probability_calibration.past_positions`), and serves the block's days that are not risk
+    dates and have a complete design. Nothing is fitted until those pairs number `minimum_pairs` and hold `minimum_events` pressure days
+    at the threshold, or when every pair is a pressure day; the block is then left at 0.
+
+    Raises:
+        ValueError: for columns of different lengths.
+        LookAheadError: if a training pair is of a day after the block's fit.
+    """
+
+    n = len(scored)
+    if len({len(designs), len(train_ends), len(off_risk), *(len(v) for v in outcomes.values())} | {n}) != 1:
+        raise ValueError("designs, outcomes, dates, train ends and risk flags must be one per scored day")
+    columns = {tau: [0.0] * n for tau in outcomes}
+    for start, stop, end in pc.blocks(scored, train_ends):
+        past = [i for i in pc.past_positions(scored, train_ends, start) if off_risk[i] and designs[i] is not None]
+        served = [i for i in range(start, stop) if off_risk[i] and designs[i] is not None]
+        if not served:
+            continue
+        for tau, outcome in outcomes.items():
+            pairs = [(scored[i], 0.0, outcome[i], "") for i in past]
+            require_observable_pairs(pairs, end)
+            events = sum(outcome[i] for i in past)
+            if len(past) < minimum_pairs or events < minimum_events or events == len(past):
+                continue
+            fitted = fit(kind, [list(designs[i]) for i in past], [outcome[i] for i in past], [list(designs[i]) for i in served], monotone)
+            for i, value in zip(served, fitted):
+                columns[tau][i] = float(value)
+    return columns
+
+
+def monotone_across_thresholds(columns: Mapping[float, Sequence[float]], taus: Sequence[float]) -> Dict[float, List[float]]:
+    """The forecast curve across thresholds made non-increasing in the threshold (`probability_calibration.monotone_curves`)."""
+
+    curves = pc.monotone_curves(list(zip(*(columns[tau] for tau in taus))))
+    return {tau: [curve[k] for curve in curves] for k, tau in enumerate(taus)}
+
+
+def combine(
+    best: Mapping[float, Sequence[float]], model: Mapping[float, Sequence[float]], off_risk: Sequence[bool], taus: Sequence[float]
+) -> Dict[float, List[float]]:
+    """`best`'s forecasts with the model's on the days that are not risk dates, where the row forecasts exactly 0.
+
+    Raises:
+        ValueError: if the row forecast above 0 on a day that is not a risk date (it must be the constant 0 the model replaces).
+    """
+
+    out = {}
+    for tau in taus:
+        column = []
+        for k, flag in enumerate(off_risk):
+            if flag and best[tau][k] != 0.0:
+                raise ValueError("the best row forecast a non-zero probability on a day that is not a risk date")
+            column.append(model[tau][k] if flag else best[tau][k])
+        out[tau] = column
+    return out
+
+
 # -- the command ------------------------------------------------------------------------------------------
 
 
