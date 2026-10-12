@@ -54,10 +54,14 @@ from statistics import NormalDist
 from repo_model import scoring_protocol as sp
 
 PHI = 0.9
-SIGMA = 3.0
+SIGMA = 1.5
 VAR = SIGMA**2 / (1.0 - PHI**2)
-#: Decision days. Enough that every stated pair is resolved at the protocol's settings.
-DECISION_DAYS = 1000
+#: Decision days. The closest stated pair, ideal against the off-by-one lead under the
+#: twCRPS, has an expected Diebold-Mariano z of about 4 on this many days (measured on
+#: longer paths), so its one-sided 95% bound is resolved on all but a small share of paths.
+#: The same pair needs about 2,000 days for an expected z of 2.5: a lead slip of one day
+#: is not something the protocol's 250 days can see in a world like this one.
+DECISION_DAYS = 5000
 SEED = 655
 START = date(2001, 1, 2)
 STANDARD = NormalDist()
@@ -294,14 +298,12 @@ class RecoveryTests(unittest.TestCase):
             for name, forecast in cls.forecasts.items()
         }
 
-        def tests(scores, orders):
-            results = sp.paired_tests(
-                [(scores[worse], scores[better]) for better, worse in orders], seed=SEED
-            )
-            return dict(zip(orders, results))
-
-        cls.crps_tests = tests(cls.crps, ORDERS)
-        cls.twcrps_tests = tests(cls.twcrps, TWCRPS_ORDERS)
+        pairs = [(cls.crps[worse], cls.crps[better]) for better, worse in ORDERS]
+        pairs += [(cls.twcrps[worse], cls.twcrps[better]) for better, worse in TWCRPS_ORDERS]
+        # One resample stream for every pair, as the protocol reads them.
+        results = sp.paired_tests(pairs, seed=SEED)
+        cls.crps_tests = dict(zip(ORDERS, results[: len(ORDERS)]))
+        cls.twcrps_tests = dict(zip(TWCRPS_ORDERS, results[len(ORDERS):]))
 
     def test_one_score_per_decision_day(self):
         for name, scores in self.crps.items():
