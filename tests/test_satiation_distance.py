@@ -23,8 +23,10 @@ What is covered:
 confirmed applied by `grep` and restored before the next):
 
 1. `build_distance_columns`: replace `ratio = ratios[i]` by `ratio = ratios[min(i + 1, len(ratios) - 1)]`. The distance at row `i`
-   then reads the next row's ratio; `BuildDistanceTests.test_a_later_rows_values_do_not_move_an_earlier_value` fails (see the
-   record on the pull request for the exact message).
+   then reads the next row's ratio; `NoFutureDistanceTests.test_no_value_depends_on_a_later_row` errors with
+   `LookAheadError: satiation_dist_roll on 2023-03-20 is 0.0162, but the panel cut at that row gives 0.0402; the column depended on a
+   later row` (`test_the_columns_pass_when_they_use_nothing_later` and `BuildDistanceTests.test_a_day_after_the_last_scored_day_has_no_value`
+   fail too).
 2. `check_distance_no_future`: replace `if (have is None) != (want is None) or (have is not None and abs(have - want) > 1e-12):` by
    `if False:`. A column that differs from the cut panel's is no longer refused;
    `NoFutureDistanceTests.test_a_column_built_from_a_later_row_is_refused` fails with `AssertionError: LookAheadError not raised`.
