@@ -25,6 +25,8 @@ Per lead 1 to 5, on the days that are not risk dates (`announcement_dating_resco
 from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
 import importlib.util
 import json
 import math
@@ -37,8 +39,11 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import group_calibration as gc, measurement_fields, probability_calibration as pc, pressure_judge as pj  # noqa: E402
-from repo_model.baseline import climatology_exceedance, panel_sha256, rolling_exceedance_backtest  # noqa: E402
+from repo_model import (  # noqa: E402
+    group_calibration as gc, h41_release, measurement_fields, probability_calibration as pc, pressure_judge as pj, satiation as sat,
+)
+from repo_model.asof import InformationRule  # noqa: E402
+from repo_model.baseline import _as_of_folds, climatology_exceedance, panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
@@ -55,10 +60,12 @@ def _load(name: str):
 
 ann = _load("announcement_dating_rescore")
 rds = _load("risk_date_severity")
+sd = _load("satiation_distance_598")
 
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
 STEP_ONE_DECLARATION = REPO / "metadata" / "off_risk_day_624_step1.json"
+STEP_TWO_DECLARATION = REPO / "metadata" / "off_risk_day_624.json"
 LEADS = (1, 2, 3, 4, 5)
 TAU = 5.0
 ROW = "risk_gbm+every_day+gate+settle+h41+iorb"
@@ -432,6 +439,69 @@ def combine(
     return out
 
 
+# -- the per-release satiation distance and the as-of reads ----------------------------------------------
+
+
+def per_release_panel_command(args) -> int:
+    """The scratch panel with the rolling satiation distance built per H.4.1 release (#622, ruling on #541).
+
+    `scripts/satiation_distance_598.py panel` builds the two columns with a registry that dates the H.4.1 five days after its Wednesday. The
+    rows the distance joins read the H.4.1 per release (`metadata/h41_release_dating.json`), so the ratio here is read per release too:
+    the same builder, the same constants (`metadata/satiation_587.json`), the registry release-dated for the run. The panel written
+    is a scratch input of this measurement and is not committed.
+    """
+
+    end = date.fromisoformat(rds.committed_declaration(STEP_ONE_DECLARATION)["scoring"]["last_day"])
+    require_unlocked([end], where="off_risk_day_624")
+    rolling = sd.rolling_constants()
+    rows = [row for row in load_daily_panel(args.panel) if row.date <= end]
+    kw = dict(q=rolling["quantile"], window=rolling["window_rows"], minimum=rolling["minimum_rows"])
+    registry = h41_release.release_dated_registry(measurement_fields.load_registry(), h41_release.load_release_dating(ann.H41))
+    with sd.switched_on(), h41_release.release_dating():
+        rule = InformationRule(registry, sat.READ_FEATURES, decision_time=time(16, 0), horizon=1)
+        built = sat.build_distance_columns(rows, rule, last_day=end, **kw)
+        sat.check_distance_no_future(rows, built, rule, last_day=end, indices=range(0, len(built), args.check_every), **kw)
+    with args.panel.open(newline="", encoding="utf-8") as handle:
+        base = next(csv.reader(handle))
+    header = list(dict.fromkeys(base + [sat.DISTANCE_COLUMN, sat.HINGE_COLUMN]))
+    with args.output.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(header)
+        for row in built:
+            writer.writerow([row.date.isoformat()] + [sd._cell(row.values.get(name)) for name in header[1:]])
+    older = {row.date: row.values.get(sat.DISTANCE_COLUMN) for row in load_daily_panel(args.compare_with)} if args.compare_with else {}
+    changed = [
+        r.date.isoformat() for r in built if r.date in older and older[r.date] is not None and r.values.get(sat.DISTANCE_COLUMN) is not None
+        and abs(older[r.date] - r.values[sat.DISTANCE_COLUMN]) > 1e-12
+    ]
+    print(json.dumps({
+        "output": str(args.output), "sha256": hashlib.sha256(args.output.read_bytes()).hexdigest(), "rows": len(built),
+        "rows_that_differ_from_the_old_lag_build": len(changed),
+    }, indent=1))
+    return 0
+
+
+def read_features(rows, registry, last: date, horizon: int, fields: Sequence[str] = READ_FIELDS) -> Dict[str, Dict[str, Optional[float]]]:
+    """The as-of read of each field at the decision instant of every scored day at `horizon` (`every_day_conditioning_601.read_levels`'s read).
+
+    Settlements are dated from the auction announcement and the H.4.1 per release (the "both" arm of #541), the distance columns are
+    switched on for the run only, and every read passes the leakage and staleness guards (`asof.InformationRule`, `_as_of_folds`).
+    """
+
+    timed_rows, timed_registry = ann.arm_inputs("both", rows, registry, horizon)
+    dates = [row.date for row in timed_rows]
+    out: Dict[str, Dict[str, Optional[float]]] = {}
+    with sd.switched_on(), h41_release.release_dating():
+        rule = InformationRule(timed_registry, ("spread_bps",) + tuple(fields), decision_time=time(16, 0), horizon=horizon)
+        for fold in _as_of_folds(
+            timed_rows, rule, minimum_history=61, refit_every=len(timed_rows), entry="off_risk_day_624", end=last
+        ):
+            out[dates[fold.index].isoformat()] = {
+                field: (None if fold.feature_row.values.get(field) is None else float(fold.feature_row.values[field])) for field in fields
+            }
+    return out
+
+
 # -- the command ------------------------------------------------------------------------------------------
 
 
@@ -522,6 +592,12 @@ def main(argv=None) -> int:
     m.add_argument("--output", type=Path, required=True)
     m.add_argument("--markdown", type=Path)
     m.set_defaults(func=measure_command)
+    pn = sub.add_parser("panel", help="the scratch panel with the satiation distance built per H.4.1 release")
+    pn.add_argument("--panel", type=Path, required=True, help="AUG2.csv")
+    pn.add_argument("--output", type=Path, required=True)
+    pn.add_argument("--compare-with", type=Path, help="AUG2D.csv (the old-lag build), to count the rows that differ")
+    pn.add_argument("--check-every", type=int, default=25)
+    pn.set_defaults(func=per_release_panel_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
