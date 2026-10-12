@@ -338,6 +338,11 @@ NON_SCORING_COMMANDS = {
 
 #: Functions that read an as-of information set but score nothing, and why.
 NOT_ENTRY_POINTS = {
+    "protocol_benchmarks._anchor": (
+        "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a forecast, "
+        "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls "
+        "require_unlocked on every scored day"
+    ),
     # Holds the guard itself: every entry point above reaches it.
     "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
     "scripts/pressure_judge._same_row_scarcity_states": (
@@ -950,6 +955,8 @@ GUARD_CALLS = frozenset({"require_unlocked", "_require_scored_days_unlocked", "_
 _WALK = "scores the days `final_test_opening.distribution_walk` walks, which calls lockbox.require_unlocked before any fit"
 _FOLDS = "scores the days `baseline.rolling_persistence_backtest` walks, which refuses a locked day through `_as_of_folds`"
 CRPS_SCORERS = {
+    "scoring_protocol.grid_crps": ("delegates", "scoring protocol v1's loss of one vector at one outcome; `day_scores` calls `require_unlocked` on every decision and target day before it computes any (#655)"),
+    "scoring_protocol.upper_tail_twcrps": ("delegates", "the key secondary's loss of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any (#655)"),
     "scripts/live_score.score_crps": ("guard", "the live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "scripts/live_score.score": ("guard", "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "baseline.rolling_persistence_backtest": ("guard", "the CRPS fold loop: `_as_of_folds` refuses a locked scored day"),
