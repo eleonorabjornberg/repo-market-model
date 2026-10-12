@@ -392,12 +392,12 @@ class H41CoverageTests(unittest.TestCase):
             self.assertEqual(h41.release_instant(self.calendar, row), datetime(2026, 1, 2, 16, 30))
 
     def test_the_declaration_covers_exactly_as_far_as_its_evidence(self):
-        self.assertEqual(self.declaration["covers"], {"first_wednesday": "2018-03-28", "last_wednesday": "2025-12-31"})
+        self.assertEqual(self.declaration["covers"], {"first_wednesday": "2018-03-28", "last_wednesday": "2026-09-02"})
 
     def test_a_week_after_the_last_declared_wednesday_is_refused(self):
         with self.assertRaises(ValueError) as caught:
-            h41.release_instant(self.calendar, date(2026, 1, 7))
-        self.assertIn("2026-01-07", str(caught.exception))
+            h41.release_instant(self.calendar, date(2026, 9, 9))
+        self.assertIn("2026-09-09", str(caught.exception))
 
     def test_a_week_before_the_first_declared_wednesday_is_refused(self):
         with self.assertRaises(ValueError):
@@ -422,6 +422,70 @@ class H41CoverageTests(unittest.TestCase):
             path.write_text(json.dumps(bad), encoding="utf-8")
             with self.assertRaises(ValueError):
                 h41.load_release_dating(path)
+
+
+class H41CalendarThrough3September2026Tests(unittest.TestCase):
+    """The calendar dates every weekday of the 2026 window, and still refuses past it (#625, ruling on #614).
+
+    #614 found `release_instant` dating 3 and refusing 172 of the weekdays 2026-01-02 to 2026-09-03
+    because `covers.last_wednesday` was 2025-12-31. Extending the coverage to Wednesday 2026-09-02
+    (the last H.4.1 week inside the window) is checked here against the Board's release pages,
+    www.federalreserve.gov/releases/h41/<date>/, fetched 12 October 2026: the pages of all 35 Thursdays from
+    2026-01-08 to 2026-09-03 exist and state those dates, so no 2026 week inside the window is an
+    exception. The guard of #576 is unchanged. Rows 2026-09-04 to 2026-09-08 carry the 2 September
+    level (weekly carry) and are dated by its 3 September print; the first refused row is 2026-09-09.
+
+    Red first: against `covers.last_wednesday = 2025-12-31` these tests raised `ValueError` on 2026-01-07.
+
+    Mutation record. In a `git archive` copy of the tree under /tmp, this class run alone, unmutated
+    control green. `covers.last_wednesday` in `metadata/h41_release_dating.json` was mutated from
+    `2026-09-02` back to `2025-12-31`. Killed: `test_every_weekday_of_the_window_is_dated`,
+    `test_each_2026_week_is_released_on_its_thursday_except_the_declared` and
+    `test_the_last_week_of_the_window_prints_on_3_september` failed with `ValueError` (the H.4.1
+    week of Wednesday 2026-01-07 is outside the declared coverage).
+    """
+
+    def setUp(self):
+        self.declaration = h41.load_release_dating(H41)
+        registry = h41.release_dated_registry(load_source_registry(REGISTRY), self.declaration)
+        self.calendar = registry["fred_macro_latest_vintage"]["release_calendar"]
+
+    def test_every_weekday_of_the_window_is_dated(self):
+        day, dated = date(2026, 1, 2), 0
+        while day <= date(2026, 9, 3):
+            if day.weekday() < 5:
+                h41.release_instant(self.calendar, day)
+                dated += 1
+            day += timedelta(days=1)
+        self.assertGreater(dated, 170)
+
+    def test_each_2026_week_is_released_on_its_thursday_except_the_declared(self):
+        wednesday = date(2026, 1, 7)
+        while wednesday <= date(2026, 9, 2):
+            expected = self.declaration["exceptions"].get(wednesday.isoformat())
+            printed = date.fromisoformat(expected) if expected else wednesday + timedelta(days=1)
+            self.assertEqual(h41.release_instant(self.calendar, wednesday), datetime.combine(printed, time(16, 30)))
+            wednesday += timedelta(days=7)
+        self.assertEqual(
+            sorted(w for w in self.declaration["exceptions"] if "2026-01-02" <= w <= "2026-09-02"), []
+        )
+
+    def test_the_last_week_of_the_window_prints_on_3_september(self):
+        for row in (date(2026, 9, 2), date(2026, 9, 3), date(2026, 9, 4), date(2026, 9, 8)):
+            self.assertEqual(h41.release_instant(self.calendar, row), datetime(2026, 9, 3, 16, 30))
+
+    def test_the_week_after_the_window_is_refused(self):
+        for row in (date(2026, 9, 9), date(2026, 9, 10), date(2026, 12, 31)):
+            with self.assertRaises(ValueError):
+                h41.release_instant(self.calendar, row)
+
+    def test_the_lockbox_is_unchanged_by_the_calendar(self):
+        # metadata/lockbox.json is not touched by #625: the blind tier (from 2026-09-04) is still locked.
+        from repo_model.lockbox import require_unlocked
+
+        require_unlocked([date(2026, 9, 3)], where="h41 calendar test")
+        with self.assertRaises(LookAheadError):
+            require_unlocked([date(2026, 9, 4)], where="h41 calendar test")
 
 
 if __name__ == "__main__":

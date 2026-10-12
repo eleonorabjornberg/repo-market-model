@@ -347,7 +347,7 @@ Implemented:
 
 Still in progress:
 
-- the pressure model and the scarcity indicator (`docs/pivot/plan.md` §7);
+- the research plan H1–H10, led by H5 (the SOFR − IORB spread distribution in bp), in the top block of the "Directive queue" issue (#46);
 - validating complete SEC Form N-MFP monthly cross-sections; and
 - producing event-window results. The out-of-sample results below are produced and
   published; the event-window evaluator cannot yet express the published model's
@@ -483,7 +483,7 @@ question.
   judgement calls: a new rule, a threshold, a data meaning, a published figure.
 - **A delegated Claude routine reviews and merges most pull requests.** Under "Delegated
   review" in [`docs/decisions/workflow.md`](docs/decisions/workflow.md), queued pull
-  requests are reviewed and merged by the "Directive reviewer" routine, a separate Claude
+  requests are reviewed and merged by the "Directive loop" routine, which reviews in a separate Claude
   Code session from the one that wrote the change. It checks each acceptance criterion and
   CI, and escalates the cases the record lists to her. She did not read those pull requests
   before they merged, and she did not read all of the code.

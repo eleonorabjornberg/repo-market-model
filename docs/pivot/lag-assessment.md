@@ -166,7 +166,7 @@ Small 2008; Bańbura et al. 2013). It is also what the registry's per-field decl
 ## 6. What follows
 
 The rule is decided in `docs/decisions/information-set.md`. The work is sequenced as directives in
-[`plan.md`](plan.md) §7:
+[`pivot-plan-2026-09-30.md`](../archive/pivot-plan-2026-09-30.md) §7 (archived):
 - **01** implements it.
 - **03** re-scores and publishes, and archives the old records.
 - **The verdicts in §4 re-open only after 03.** That covers the calendar, dealer positions, `on_rrp_h41` (now

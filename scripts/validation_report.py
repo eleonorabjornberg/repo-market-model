@@ -535,7 +535,7 @@ def governance_block(emit):
         "",
         "The records in `docs/decisions/drafts/` are drafts for Eleonora and are in force only once she merges "
         "them. Her ruling on #112 delegates the review and merge of queued pull requests to the \"Directive "
-        "reviewer\" routine until she revokes it in writing (`docs/decisions/workflow.md`, \"Delegated review\")."])
+        "loop\" routine until she revokes it in writing (`docs/decisions/workflow.md`, \"Delegated review\")."])
     return lines
 
 
