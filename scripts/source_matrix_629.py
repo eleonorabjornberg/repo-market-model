@@ -706,13 +706,7 @@ def run_command(args) -> int:
     ordinary_idx = [i for i, ok in enumerate(ordinary) if ok]
     print(json.dumps({"scored_days": len(dates), "ordinary_days": len(ordinary_idx), "pressure_days": sum(pressure_flag),
                       "pressure_days_ordinary": sum(pressure_flag[i] for i in ordinary_idx)}), flush=True)
-    regime_of = []
-    for d in dates:
-        label = None
-        for regime in splits_decl.regimes:
-            if regime.first <= d <= regime.last:
-                label = regime.label
-        regime_of.append(label)
+    regime_of = [splits_decl.regime(d) for d in dates]
     # -- readings
     values: Dict[int, Dict[str, List[Optional[float]]]] = {}
     kinds: Dict[str, str] = {}
@@ -739,7 +733,7 @@ def run_command(args) -> int:
     states = {lead: values[lead].get(SCARCITY) for lead in LEADS}
     bands = {lead: [ss.band(s) for s in states[lead]] for lead in LEADS}
     # -- splits (positions in `dates`), per lead
-    period_labels = [r.label for r in splits_decl.regimes if any(regime_of[i] == r.label for i in ordinary_idx)]
+    period_labels = [label for label in splits_decl.regime_labels if any(regime_of[i] == label for i in ordinary_idx)]
     split_positions: Dict[int, Dict[str, List[int]]] = {}
     for lead in LEADS:
         by = {"pooled": list(ordinary_idx)}
@@ -756,6 +750,7 @@ def run_command(args) -> int:
     for b in BANDS:
         matrix_subsets["ordinary_scarcity_" + b] = split_positions[1]["scarcity:" + b]
     matrices = {}
+    matrix_subsets = {key: subset for key, subset in matrix_subsets.items() if subset}  # a state with no ordinary day has no matrix
     for key, subset in matrix_subsets.items():
         matrices[key] = correlation_matrix(lead1, names, subset)
         print(json.dumps({"matrix": key, "days": len(subset)}), flush=True)
@@ -827,8 +822,9 @@ def run_command(args) -> int:
     columns_present = {}
     for column in rows[0].values:
         present = [row.date for row in rows if row.values.get(column) is not None]
+        first_row = next((i for i, row in enumerate(rows) if row.values.get(column) is not None), None)
         columns_present[column] = {"first": present[0].isoformat() if present else None, "last": present[-1].isoformat() if present else None,
-                                   "present": len(present), "rows": len(rows)}
+                                   "present": len(present), "rows": len(rows), "first_row": first_row}
     n_series = len(names)
     n_matrix_cells = sum(1 for _ in itertools.combinations(names, 2)) * len(matrices)
     result = {
@@ -848,7 +844,7 @@ def run_command(args) -> int:
                 "incremental_cells": len(top) * len(LEADS) * len(TARGETS),
             },
         },
-        "names": names, "kinds": {n: kinds.get(n, "derived" if n in FOURTEEN else "n/a") for n in names},
+        "matrix_days": {k: len(v) for k, v in matrix_subsets.items()}, "names": names, "kinds": {n: kinds.get(n, "derived" if n in FOURTEEN else "n/a") for n in names},
         "clusters": clusters, "correlations": correlations, "bootstrap": boots,
         "incremental": {"controls": list(CONTROLS), "top": top, "cells": incremental},
         "not_public_at_lead": {c: v for c, v in sorted(not_public.items())},
@@ -872,6 +868,178 @@ def run_command(args) -> int:
         (matrices_dir / f"heatmap_{key}.svg").write_text(svg, encoding="utf-8")
     print(json.dumps({"written": str(args.output), "series": n_series, "clusters": len(clusters["ordinary_pooled"])}))
     return 0
+
+
+#: Due diligence, one row per source group: the registry entries it draws on, the panel columns it supplies, how its vintages and revisions
+#: are handled, and the known construction caveats with the findings that record them. The publisher, frequency and publication instant
+#: are read from `metadata/sources.json` and `metadata/sources_measurement.json`; the start of history and the gaps are measured on the panel.
+DILIGENCE: Tuple[dict, ...] = (
+    {
+        "name": "NY Fed SOFR, with percentiles and volume",
+        "registry": ("nyfed_sofr",),
+        "columns": ("sofr_volume", "sofr_p1", "sofr_p25", "sofr_p75", "sofr_p99", "sofr_p75_iorb_bps", "sofr_p99_iorb_bps", "sofr_p99_iorb_sd15_bps", "sofr_p99_p75_bps"),
+        "vintages": "first published about 08:00 ET on the next business day and may be revised about 14:30 ET that day; the registry dates a value at the finalized 15:00 ET. The snapshot is one retrieval, so a later revision is not tracked",
+        "caveats": "panel history starts at the first publication, 2018-04-03; the back-filled 2014-18 history is not read while its posting instant is null (#572)",
+    },
+    {
+        "name": "NY Fed TGCR and BGCR, with percentiles and volume",
+        "registry": ("nyfed_tgcr", "nyfed_bgcr"),
+        "columns": ("tgcr", "bgcr", "bgcr_volume", "sofr_tgcr_bps", "bgcr_tgcr_bps"),
+        "vintages": "first published on the next business day; 15:00 ET is the conservative finalized instant the adapter uses for all the secured rates",
+        "caveats": "same start and the same back-fill posting question as SOFR (#572)",
+    },
+    {
+        "name": "NY Fed EFFR",
+        "registry": ("nyfed_effr",),
+        "columns": ("effr", "sofr_above_effr_share_20", "effr_iorb_change_20_bps"),
+        "vintages": "first published about 09:00 ET on the next business day; 15:00 ET is declared. Taken from the New York Fed as published, not from FRED's DFF copy",
+        "caveats": "EFFR less IORB is a different market and target from SOFR less IORB (registry note on frb_ddp, #129)",
+    },
+    {
+        "name": "FRED: reserve balances (WRESBAL) and Treasury General Account (WTREGEN), weekly",
+        "registry": ("fred_macro_latest_vintage",),
+        "columns": ("reserve_balances", "tga", "tga_change_x_reserves", "tga_change_5d"),
+        "vintages": "FRED serves the latest revised vintage only; observations inherit the snapshot's retrieval instant, so a re-fetch does not reproduce an old snapshot's bytes. The published reading applies a declared weekly lag; the `@per_release` reading dates each Wednesday level at its H.4.1 release (#541)",
+        "caveats": "the per-release calendar assumes a Thursday print for any week not in its exception list and never checks its declared coverage (#576); ALFRED pulls exist at a few dates as revision studies, not as a daily series",
+    },
+    {
+        "name": "H.8 total assets and the reserve-scarcity state",
+        "registry": ("frb_h8",),
+        "columns": ("bank_total_assets", "reserve_scarcity_state"),
+        "vintages": "the H.8 is revised after its first print; the first print of a week is used, released the second Friday after the week ends at 16:15 ET",
+        "caveats": "the scarcity state is reserves over total assets against a published 0.12 band, so it carries the weekly steps of both legs",
+    },
+    {
+        "name": "NY Fed overnight reverse repo (ON RRP)",
+        "registry": ("nyfed_on_rrp", "nyfed_on_rrp_sameday"),
+        "columns": ("on_rrp", "on_rrp_sameday", "on_rrp_below_100bn"),
+        "vintages": "the sum of amounts accepted over the day's operations; dated at 16:00 ET on the next business day because the Desk states no publication time. The same-day reading (#445) carries a value only on dates whose records were last written on the day itself before 15:00",
+        "caveats": "an amount accepted that day, not the balance outstanding (registry note on nyfed_on_rrp); the same-day column has holes on dates without evidence",
+    },
+    {
+        "name": "NY Fed standing repo facility and repo operations",
+        "registry": ("nyfed_srf", "nyfed_repo_ops", "nyfed_repo_ops_sameday"),
+        "columns": ("srf_take_up", "srf_take_up_positive", "fed_repo_accepted", "fed_repo_submitted", "fed_repo_rate_iorb_bps", "fed_repo_ops",
+                    "fed_repo_log_accepted", "fed_repo_log_accepted_change", "fed_repo_days_since_positive", "fed_repo_accepted_sameday", "fed_repo_submitted_sameday",
+                    "fed_repo_rate_iorb_bps_sameday", "fed_repo_ops_sameday", "fed_repo_log_accepted_sameday", "fed_repo_log_accepted_change_sameday",
+                    "fed_repo_days_since_positive_sameday"),
+        "vintages": "results are dated at 16:00 ET on the next business day: the Desk states no publication time and `lastUpdated` is a write time that was rewritten days later. The same-day sensitivity (#442) withholds the dates written after their own 16:00",
+        "caveats": "`srf_take_up` starts with the facility's first operation on 2021-07-29, the `fed_repo_*` columns are present from the start of the panel; a day on which nothing was taken is 0.0",
+    },
+    {
+        "name": "Treasury auctions: gross settlements",
+        "registry": ("treasury_auctions",),
+        "columns": ("treasury_settlement", "treasury_settlement_bills", "treasury_settlement_coupons", "treasury_settlement_soma"),
+        "vintages": "dated from the settlement by the published registry; the `@per_release` reading dates each settlement from the auction announcement at 12:00 ET (#541). Records carry no revision history",
+        "caveats": "one aggregate across security types; SOMA add-ons are not in it; an auction with 'null' total_accepted at retrieval has no result instant; `treasury_settlement_soma` is a hole under announcement dating",
+    },
+    {
+        "name": "Treasury auctions: net settlement",
+        "registry": ("treasury_auction_net_settlement",),
+        "columns": ("net_settlement", "net_settlement_bills", "net_settlement_due_5d"),
+        "vintages": "counts the auctions announced on or before the day, at 12:00 ET; the announcement clock time is declared conservatively, not verified",
+        "caveats": "the maturing amount is an estimate of the publicly held share (registry limitation)",
+    },
+    {
+        "name": "Treasury daily bill rates",
+        "registry": ("treasury_bill_rates",),
+        "columns": ("tbill_4w", "tbill_13w"),
+        "vintages": "one export per year; the quote date is the record date and availability is declared at 16:30 ET on it",
+        "caveats": "the export header is not stable across years (17-week from 2022, 6-week from 2025); the page's quote time is the subject of #445, and a same-day reading is excluded",
+    },
+    {
+        "name": "Treasury Daily Treasury Statement: TGA close",
+        "registry": ("treasury_dts_tga",),
+        "columns": ("tga_daily", "tga_daily_change"),
+        "vintages": "the statement for a business day is published at 4:00 PM ET on the next business day; 16:30 ET that day is declared. The API keeps no vintages",
+        "caveats": "a daily series beside FRED's weekly WTREGEN; the two are near-duplicates in the matrix",
+    },
+    {
+        "name": "OFR short-term funding monitor: DVP, tri-party and GCF repo rates",
+        "registry": ("ofr_stfm_repo", "ofr_stfm_repo_segments"),
+        "columns": ("ofr_tri_rate", "ofr_gcf_rate", "ofr_dvp_rate", "ofr_dvp_minus_bgcr_bp", "ofr_dvp_minus_bgcr_bp_backfill", "dvp_volume_share", "dvp_volume_share_chg20"),
+        "vintages": "the API states no publication time and keeps no vintages; its one timestamp is a last-write time. A day's value is dated at 16:00 ET two business days after it",
+        "caveats": "history before 2020-09-09 was filled in after the OFR began publishing in real time and is blanked by a guard (#508, #522), so these series start in September 2020; the `_backfill` column therefore equals the real-time one here",
+    },
+    {
+        "name": "NY Fed primary dealer statistics (FR 2004)",
+        "registry": ("nyfed_fr2004",),
+        "columns": ("dealer_treasury_position",),
+        "vintages": "weekly, dated six days after the as-of date at 16:30 ET. The lag rests on the published release schedule and not on the snapshot",
+        "caveats": "a '*' marks a figure withheld for confidentiality and yields no observation; the tracked export mixes as-of dates, so no date is taken from the file as a whole",
+    },
+    {
+        "name": "Fed IORB implementation notes",
+        "registry": ("fed_iorb_announcements",),
+        "columns": ("iorb_announced_change_bps", "iorb_days_to_announced_change"),
+        "vintages": "an event table of every note that changed the rate since 2018-04; each note is read only at or after its announcement instant. No revisions",
+        "caveats": "scheduled: public at lead 1 only, a hole at longer leads; `iorb_days_to_announced_change` is a hole on days with no change scheduled, so its gaps are by design; a 0.0 change is a computed value, not a missing one",
+    },
+    {
+        "name": "Policy register (hand-kept)",
+        "registry": ("policy_register",),
+        "columns": ("policy_days_since_known", "policy_days_until_effective", "policy_pending_count", "policy_iorb_offset_bp", "policy_qt_in_force",
+                    "policy_standing_repo_in_force", "policy_slr_exclusion_in_force", "policy_reserve_management_in_force", "policy_debt_limit_reinstated"),
+        "vintages": "computed from `metadata/policy_events.json` entries announced at or before 16:00 ET on the row's own date; no vintages",
+        "caveats": "a register built by hand, not fetched; the in-force flags are step functions of the calendar, so a correlation with them is also a correlation with the period (this screen's reading, Tables 6 and 7)",
+    },
+    {
+        "name": "Constructed from the sources above (no source of their own)",
+        "registry": ("spread_nowcast", "satiation_columns", "satiation_distance_columns", "projected_reserves_columns"),
+        "columns": ("spread_nowcast_bps", "satiation_dist_roll", "satiation_hinge_roll", "quarter_end", "tax_date", "days_to_month_end"),
+        "vintages": "zero lag by construction: each row uses only reads the as-of rule allows at 16:00 ET on that day. The calendar columns are known in advance",
+        "caveats": "the rolling satiation level works as a two-year reserves low and its hinge is on in 2022-23 (#621); the distance columns read reserves on the old weekly lag, one release behind the `+h41` rows they join (#622); the nowcast is the naive previous spread wherever its model is not fitted",
+    },
+)
+#: Entries that supply no series in this screen, with the reason.
+NOT_READ = {
+    "sec_nmfp": "monthly as-filed bulk extracts with the extract's retrieval instant as availability; no panel column is built from it (`metadata/sec_nmfp_archives.json`)",
+    "frb_ddp": "not a panel source: read only by the pre-SOFR history study (#129)",
+    "treasury_bill_rates_sameday": "excluded: no publication time before 16:00 ET is evidenced (#445)",
+    "back-filled 2014-18 history": "stamped as public in real time from 2014 although its posting instant is null; not read (#572)",
+}
+
+
+def diligence_rows(result: Mapping) -> List[str]:
+    registry: Dict[str, dict] = {}
+    for name in ("sources", "sources_measurement"):
+        registry.update(json.loads((REPO / "metadata" / f"{name}.json").read_text(encoding="utf-8")))
+    columns = result["columns"]
+    out = [
+        "| source | publisher | start of history | frequency | publication instant used | vintages and revisions | gaps after the start | caveats |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for group in DILIGENCE:
+        entries = [(r, registry[r]) for r in group["registry"] if r in registry]
+        publishers = sorted({e["provider"] for _r, e in entries})
+        freqs = sorted({e["frequency"] for _r, e in entries})
+        instants = []
+        for r, e in entries:
+            lag = e.get("release_lag", {})
+            if lag.get("days") is not None and lag.get("available_time"):
+                instants.append(f"`{r}`: {lag['available_time']} ET, reference date + {lag['days']} day{'s' if lag['days'] != 1 else ''}")
+            elif lag.get("basis"):
+                instants.append(f"`{r}`: {lag['basis'].replace('_', ' ')}")
+        present = [c for c in group["columns"] if c in columns and columns[c]["first"]]
+        firsts = sorted(columns[c]["first"] for c in present)
+        first = None if not firsts else firsts[0] if firsts[0] == firsts[-1] else f"{firsts[0]} to {firsts[-1]}, by column"
+        gap_text = "-"
+        if present:
+            worst = []
+            for c in present:
+                info = columns[c]
+                span = info["rows"] - info["first_row"]
+                worst.append((span - info["present"], c, span))
+            worst.sort(reverse=True)
+            top = worst[0]
+            gap_text = f"{top[0]} of {top[2]} rows (`{top[1]}`)" if top[0] else "none"
+        out.append(
+            f"| {group['name']} | {'; '.join(publishers)} | {first or '-'} | {'; '.join(freqs)} | {'; '.join(instants) or '-'} "
+            f"| {group['vintages']} | {gap_text} | {group['caveats']} |"
+        )
+    for name, why in NOT_READ.items():
+        out.append(f"| {name} | - | not read | - | - | - | - | {why} |")
+    return out
 
 
 # -- the heatmap and the report ---------------------------------------------------------------
@@ -906,8 +1074,7 @@ def heatmap_svg(matrix, names: Sequence[str], clusters: Sequence[dict], title: s
         out.append(f'<text transform="translate({left + i * cell + 5},{top - 3}) rotate(-90)">{_esc(a)}</text>')
         for j, b in enumerate(order):
             r = matrix[a][b]
-            tip = "no value" if r is None else f"{r:+.2f}"
-            out.append(f'<rect x="{left + j * cell}" y="{top + i * cell}" width="{cell}" height="{cell}" fill="{_colour(r)}"><title>{_esc(a)} / {_esc(b)}: {tip}</title></rect>')
+            out.append(f'<rect x="{left + j * cell}" y="{top + i * cell}" width="{cell}" height="{cell}" fill="{_colour(r)}"/>')
     # group boundaries
     at = 0
     for group in clusters:
@@ -1013,13 +1180,33 @@ def report_command(args) -> int:
             c = result["incremental"]["cells"][name][str(lead)]["pressure"]
             cells.append(f"{_f(c['raw'], 2)} / {_f(c['partial'], 2)}")
         out.append(f"| `{name}` | " + " | ".join(cells) + " |")
-    # Table 7: due diligence columns
-    out.append("\nTable 7. Counts.\n")
+    # Table 7: the same top series, by split
+    splits_all = list(result["correlations"][names[0]]["1"].keys())
+    out.append(
+        "\nTable 7. Ordinary days, lead 1: Spearman with the +5 bp indicator in each split, for the top series of Table 6. "
+        "A split with under %d days or %d pressure days is empty. The first row gives the pressure days in the split.\n" % (MINIMUM_DAYS, MINIMUM_PRESSURE)
+    )
+    out.append("| series | " + " | ".join(splits_all) + " |")
+    out.append("|---|" + "---|" * len(splits_all))
+    head = [str(result["correlations"][names[0]]["1"][sp]["pressure"]["pressure_days"]) for sp in splits_all]
+    out.append("| pressure days | " + " | ".join(head) + " |")
+    for name in result["incremental"]["top"]:
+        cells = [_f(result["correlations"][name]["1"][sp]["pressure"]["rho"], 2) for sp in splits_all]
+        out.append(f"| `{name}` | " + " | ".join(cells) + " |")
+    # Table 8: due diligence
+    out.append("\nTable 8. Due diligence, one row per source group.\n")
+    out.extend(diligence_rows(result))
+    # Table 9: counts
     t = scope["tests"]
-    out.append(f"* {scope['series']} series; {scope['scored_days']} scored days, of which {scope['ordinary_days']} ordinary, {scope['pressure_days_ordinary']} ordinary days above +5 bp.")
-    out.append(f"* Matrix pairs computed: {t['matrix_pairs']} (series pairs x {len(result['clusters'])} matrices of the leading two, plus the regime and scarcity matrices: {t['matrix_pairs']} in all).")
-    out.append(f"* Spearman cells: {t['spearman_cells']}; AUROC cells with an interval: {t['auroc_cells']}; pre-onset cells: {t['pre_onset_cells']}; incremental cells: {t['incremental_cells']}.")
-    out.append("* None of these is corrected for the number of tests.")
+    out.append("\nTable 9. Tests run. None is corrected for the number of tests.\n")
+    out.append("| quantity | computed |")
+    out.append("|---|---|")
+    out.append(f"| series | {scope['series']} |")
+    out.append(f"| pairwise Spearman cells (series pairs, in each of {len(result['matrix_days'])} matrices) | {t['matrix_pairs']} |")
+    out.append(f"| Spearman cells against a target (series x leads x targets x splits) | {t['spearman_cells']} |")
+    out.append(f"| AUROC cells with a bootstrap interval (series x leads x splits) | {t['auroc_cells']} |")
+    out.append(f"| pre-onset cells with a bootstrap interval (series x splits, lead 1) | {t['pre_onset_cells']} |")
+    out.append(f"| partial-correlation cells (top series x leads x targets) | {t['incremental_cells']} |")
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "tables.md").write_text("\n".join(out) + "\n", encoding="utf-8")
     print(json.dumps({"written": str(args.output / "tables.md")}))
