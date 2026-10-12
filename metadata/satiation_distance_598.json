@@ -1,0 +1,112 @@
+{
+  "status": "declared by the pull request that closes #598 before any score was computed; a measurement, not a record. Nothing is published: the published scarcity indicator and its 0.12 band are unchanged, the two columns below are off in every published declaration, no day after 2025-12-31 is scored, and these rows are not added to the frozen shortlist of #567. The variants were built after seeing 2018-2025, so a pass here is not a confirmation (ruling on #567). The constants of the rolling level are #587's, written down once there and not re-tuned here; only the passers' own fitted parameters are fitted, on the judge's cadence",
+  "issue": 598,
+  "ruling": "Eleonora, directive #598 (12 October 2026): put the rolling satiation distance of #596 into the row that passes tier 1 under the judge in force, where the risk-date part keeps the false alarms down. No hindsight regime labels (ruling on #515).",
+  "rolling_level": {
+    "quantile": 0.1,
+    "window_rows": 504,
+    "minimum_rows": 63,
+    "source": "metadata/satiation_587.json, forms.rolling, read as written there and not re-tuned; repo_model.satiation.rolling_level"
+  },
+  "columns": {
+    "distance": "satiation_dist_roll",
+    "distance_rule": "the reserves-to-assets ratio the as-of rule reads at the row's own 16:00 decision minus the rolling level at that row (satiation.distance): negative below the level, positive above it",
+    "hinge": "satiation_hinge_roll",
+    "hinge_rule": "the percentage points by which that ratio is below the level, 0 at or above it (satiation.hinge_value): the distance that enters only below the level, the shape that passed tier 5 in #596",
+    "source": "satiation_distance_columns (metadata/sources_measurement.json; zero lag; off in every published declaration)",
+    "guard": "satiation.check_distance_no_future rebuilds a checked row from the panel cut at it and refuses (LookAheadError) a value that differs"
+  },
+  "variants": {
+    "risk_gbm+settle+h41+dist_roll": {
+      "label": "(a) input",
+      "parent": "risk_gbm+settle+h41",
+      "model": "risk_gbm",
+      "column": "satiation_dist_roll",
+      "rule": "the passer risk_gbm+settle+h41 with the rolling distance as one extra input; everything else (the risk dates, the other features, the estimator, the settlement and H.4.1 timing) is the parent's"
+    },
+    "risk_gbm+settle+h41+hinge_roll": {
+      "label": "(b) gated input",
+      "parent": "risk_gbm+settle+h41",
+      "model": "risk_gbm",
+      "column": "satiation_hinge_roll",
+      "rule": "as (a), with the hinge of the distance in place of the signed distance: the input moves only below the rolling level"
+    },
+    "risk_gbm_base+settle+h41+hinge_roll": {
+      "label": "(c) as (b) on risk_gbm_base",
+      "parent": "risk_gbm_base+settle+h41",
+      "model": "risk_gbm_base",
+      "column": "satiation_hinge_roll",
+      "rule": "as (b) on risk_gbm_base, the other risk-date passer that passes tier 1 pooled"
+    }
+  },
+  "parents_declaration": "metadata/risk_date_severity.json (unchanged: the risk dates, the features, the estimators), scored under the settlement and H.4.1 timing of metadata/announcement_dating.json (the 'both' arm)",
+  "rows": {
+    "controls": [
+      "risk_gbm+settle+h41",
+      "risk_gbm_base+settle+h41"
+    ],
+    "controls_reading": "the two parent rows as scored on main, re-run in this measurement so that the pairs are on one run",
+    "new": [
+      "risk_gbm+settle+h41+dist_roll",
+      "risk_gbm+settle+h41+hinge_roll",
+      "risk_gbm_base+settle+h41+hinge_roll"
+    ],
+    "pairs": {
+      "risk_gbm+settle+h41+dist_roll": "risk_gbm+settle+h41",
+      "risk_gbm+settle+h41+hinge_roll": "risk_gbm+settle+h41",
+      "risk_gbm_base+settle+h41+hinge_roll": "risk_gbm_base+settle+h41"
+    },
+    "pairs_reading": "each variant is paired with its parent row; the parents' own pairing against the references is reported beside them"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5,
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "lead_at_least": 1
+  },
+  "references": {
+    "pair_against": [
+      "risk_gbm",
+      "ngboost_laplace",
+      "calendar_climatology",
+      "persistence_logistic"
+    ],
+    "controls": [],
+    "controls_reading": "the parents are the rows.controls; none is listed twice",
+    "risk_date_passers": [
+      "risk_gbm",
+      "risk_logistic",
+      "risk_gbm_base",
+      "risk_logistic_base",
+      "risk_quantile_skewt_base"
+    ]
+  },
+  "reports": {
+    "judge": "the judge as declared under the weighted rule in force: tier 1 pooled and per lead, tiers 3 and 5, for every row beside the five risk-date passers, ngboost_laplace and the two benchmarks; each variant paired with its parent at +5 bp: the Brier difference at h = 1 to 5 and the onset recall difference, pooled and by regime and pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed",
+    "calibration": "predicted against realised rate of a pressure day at +5 bp, by regime and pressure-day type, pooled over h = 1 to 5 (the combined page's table)",
+    "recall_by_year": "onset recall by calendar year, with 2019 and 2025 called out",
+    "gained_and_lost": "the onsets a variant warns and its parent does not, and the reverse, by date (the combined page's only-row table, read against the parent)"
+  },
+  "unchanged": "the judge, its bar, its cut-off rule, the weighted miss rule in force, the bootstrap, every published declaration, the information set, the published scarcity indicator and its 0.12 band, the frozen shortlist of #567 and the lockbox. A measurement only: nothing is published and no day after 2025-12-31 is read (docs/decisions/lockbox.md)."
+}
