@@ -5393,6 +5393,36 @@ def _skew_t_exceedance(
     return tuple(float(min(1.0, max(0.0, 1.0 - value))) for value in below)
 
 
+def exceedance_from_quantiles(
+    quantiles: Sequence[float], probabilities: Sequence[float], taus: Sequence[float]
+) -> Tuple[float, ...]:
+    """P(spread > tau) from one day's sorted predicted quantiles, linear between them.
+
+    Beyond the outer quantiles the law runs on at the outer segment's slope to probability 0 / 1,
+    so the curve reaches 0 and 1 (np.interp needs increasing knots: ties are nudged by one part in a
+    million of a bp). The curve at `tau` is `1 - F(floor(tau) + 0.5)`, the whole-basis-point event of
+    `data.exceeds_bp`; non-increasing in `tau` by construction. This is the reading of
+    `_quantile_exceedance`'s `"linear"` smoother, shared with the gradient-boosted spread
+    distribution (#632).
+    """
+
+    import numpy
+
+    row = numpy.asarray(quantiles, dtype=float)
+    grid = numpy.asarray(probabilities, dtype=float)
+    knots = row + 1e-6 * numpy.arange(len(row))
+    low = (knots[1] - knots[0]) / (grid[1] - grid[0])
+    high = (knots[-1] - knots[-2]) / (grid[-1] - grid[-2])
+    edges = numpy.concatenate([[knots[0] - grid[0] * low], knots, [knots[-1] + (1.0 - grid[-1]) * high]])
+    levels = numpy.concatenate([[0.0], grid, [1.0]])
+    curve = []
+    for tau in taus:
+        cut = math.floor(float(tau)) + 0.5
+        below = float(numpy.interp(cut, edges, levels))
+        curve.append(float(min(1.0, max(0.0, 1.0 - below))))
+    return tuple(curve)
+
+
 def _quantile_exceedance(
     xs: Sequence[Sequence[float]],
     spreads: Sequence[float],
@@ -5452,25 +5482,7 @@ def _quantile_exceedance(
         ]
     if smoother != "linear":
         raise ValueError(f"a quantile smoother is 'linear' or 'skew_t', got {smoother!r}")
-    curves = []
-    for row in predicted:
-        # Beyond the outer quantiles the law runs on at the outer segment's slope
-        # to probability 0 / 1, so the curve reaches 0 and 1 (np.interp needs
-        # increasing knots: ties are nudged by one part in a million of a bp).
-        knots = row + 1e-6 * numpy.arange(len(row))
-        low = (knots[1] - knots[0]) / (probabilities[1] - probabilities[0])
-        high = (knots[-1] - knots[-2]) / (probabilities[-1] - probabilities[-2])
-        edges = numpy.concatenate(
-            [[knots[0] - probabilities[0] * low], knots, [knots[-1] + (1.0 - probabilities[-1]) * high]]
-        )
-        levels = numpy.concatenate([[0.0], probabilities, [1.0]])
-        curve = []
-        for tau in taus:
-            cut = math.floor(float(tau)) + 0.5
-            below = float(numpy.interp(cut, edges, levels))
-            curve.append(float(min(1.0, max(0.0, 1.0 - below))))
-        curves.append(tuple(curve))
-    return curves
+    return [exceedance_from_quantiles(row, probabilities, taus) for row in predicted]
 
 
 def pressure_logistic_exceedance(
@@ -6500,6 +6512,198 @@ def pressure_risk_date_variant_exceedance(
         settings["early_prior"] = bool(early_prior)
         settings["early_fit"] = bool(early)
         if every_day:
+            settings["every_day_training_pairs"] = component_pairs
+        if design.scarcity:
+            settings["scarcity_state"] = SCARCITY_STATE
+        if design.tga:
+            settings["tga_change_rows"] = TGA_CHANGE_ROWS
+        read = tuple(dict.fromkeys(design.features + (component.features if component else ())))
+        return ExceedanceCurves(
+            tuple(curves),
+            read,
+            ml_libraries=_library_versions(),
+            model_settings=MappingProxyType(settings),
+            history_ends=(
+                None
+                if histories is None
+                else tuple(history[-1].date if history else None for history in histories)
+            ),
+        )
+
+    return fit_predict
+
+
+#: The spread-level distribution forecast (#632): one gradient-boosted quantile regression of
+#: `spread_bps` per level of the grid (the grid of `PRESSURE_QUANTILE_SETTINGS`, declared in
+#: `metadata/spread_distribution_632.json` before any score), with the risk-date classifier's
+#: hyperparameters (`PRESSURE_CLASSIFIER_SETTINGS`), none tuned. The exceedance is read off the fitted
+#: law linearly between the quantiles (`exceedance_from_quantiles`).
+PRESSURE_SPREAD_DISTRIBUTION_SETTINGS = MappingProxyType(
+    {
+        "estimator": "HistGradientBoostingRegressor",
+        "loss": "quantile",
+        "quantile_grid": PRESSURE_QUANTILE_SETTINGS["quantile_grid"],
+        "learning_rate": PRESSURE_CLASSIFIER_SETTINGS["learning_rate"],
+        "max_iter": PRESSURE_CLASSIFIER_SETTINGS["max_iter"],
+        "max_leaf_nodes": PRESSURE_CLASSIFIER_SETTINGS["max_leaf_nodes"],
+        "min_samples_leaf": PRESSURE_CLASSIFIER_SETTINGS["min_samples_leaf"],
+        "random_state": DEFAULT_RANDOM_STATE,
+        "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5), F linear between the grid's quantiles "
+        "and continued at the outer segments' slopes to 0 and 1",
+    }
+)
+SPREAD_DISTRIBUTION_STRUCTURES = ("risk_date", "two_part")
+
+
+def _gbm_quantile_matrix(
+    xs: Sequence[Sequence[float]], spreads: Sequence[float], served: Sequence[Sequence[float]]
+) -> Any:
+    """The predicted quantiles of the spread at each served row: one row per served row, one column per grid level.
+
+    A day's quantiles are sorted (the crossing fix).
+    """
+
+    _estimator_class()
+    import numpy
+    from sklearn.ensemble import HistGradientBoostingRegressor
+
+    settings = PRESSURE_SPREAD_DISTRIBUTION_SETTINGS
+    x = numpy.asarray(xs, dtype=float)
+    y = numpy.asarray(spreads, dtype=float)
+    z = numpy.asarray(served, dtype=float)
+    columns = []
+    for level in settings["quantile_grid"]:
+        model = HistGradientBoostingRegressor(
+            loss="quantile",
+            quantile=float(level),
+            learning_rate=settings["learning_rate"],
+            max_iter=settings["max_iter"],
+            max_leaf_nodes=settings["max_leaf_nodes"],
+            min_samples_leaf=settings["min_samples_leaf"],
+            random_state=settings["random_state"],
+            early_stopping=False,
+        )
+        model.fit(x, y)
+        columns.append(model.predict(z))
+    matrix = numpy.column_stack(columns)
+    matrix.sort(axis=1)
+    return matrix
+
+
+def pressure_spread_distribution_exceedance(
+    features: Sequence[str],
+    declaration: Any,
+    minimum_history: int = 20,
+    structure: str = "risk_date",
+    component_inputs: Sequence[str] = EVERY_DAY_COMPONENT_INPUTS,
+    record: Optional[List[Tuple[Optional[str], Optional[Tuple[float, ...]]]]] = None,
+) -> ExceedancePredictor:
+    """The spread forecast as a distribution, read as P(spread > tau) (#632).
+
+    The risk-date part is `pressure_risk_date_exceedance`'s design and training pairs (each label paired
+    with what a forecast of it read at its own decision instant, kept where the label day is a risk
+    date), with a gradient-boosted quantile regression of the spread at each level of
+    `PRESSURE_SPREAD_DISTRIBUTION_SETTINGS["quantile_grid"]` in place of the classifier. `structure`:
+
+    * `"risk_date"`: a served risk date is the fitted law's exceedance and any other day is exactly 0
+      at every threshold, with no law;
+    * `"two_part"`: the same risk-date part, and a served day that is not a risk date takes a second
+      spread-level model (the same estimator) fitted on the direct pairs of every training day, on
+      `component_inputs`. A served day whose component inputs are not all public is left at 0. A risk
+      date keeps the risk-date part's forecast.
+
+    `record`, if given, receives one entry per feature row, in order: `(part, quantiles)` with `part`
+    one of `"risk_date"`, `"every_day"`, and `quantiles` the day's sorted predicted quantiles at the
+    grid; `(None, None)` for a day left at 0. The curve across thresholds is made non-increasing.
+    """
+
+    if structure not in SPREAD_DISTRIBUTION_STRUCTURES:
+        raise ValueError(f"a spread distribution structure is one of {list(SPREAD_DISTRIBUTION_STRUCTURES)}, got {structure!r}")
+    if minimum_history < 1:
+        raise ValueError(f"minimum_history must be positive, got {minimum_history}")
+    design = _RiskDateDesign(features, declaration)
+    component = _PressureDesign(component_inputs, declaration) if structure == "two_part" else None
+    cache: dict = {}
+    component_cache: dict = {}
+    grid = PRESSURE_SPREAD_DISTRIBUTION_SETTINGS["quantile_grid"]
+
+    def fit_predict(
+        train_rows: Sequence[DailyObservation],
+        feature_rows: Sequence[DailyObservation],
+        taus: Sequence[float],
+        information: Optional[InformationRule] = None,
+        histories: Optional[Sequence[Sequence[DailyObservation]]] = None,
+    ) -> ExceedanceCurves:
+        if information is None:
+            raise ValueError(
+                "a spread distribution pairs each training label with what was public at that label's "
+                "own decision instant, which only the as-of rule can say; it was called without one"
+            )
+        if len(train_rows) < minimum_history:
+            raise ValueError(
+                f"a spread distribution needs at least {minimum_history} training rows, got {len(train_rows)}"
+            )
+        if design.needs_history() and (histories is None or len(histories) != len(feature_rows)):
+            raise ValueError(
+                "the TGA change is read off each forecast's own as-of history; one history per "
+                "feature row is required"
+            )
+        pairs, spreads = _pressure_pairs(design, information, train_rows, cache)
+        flags = [pair[-1] for pair in pairs]
+        xs = [pair[:-1] for pair, flag in zip(pairs, flags) if flag]
+        risk_spreads = [spread for spread, flag in zip(spreads, flags) if flag]
+        served_all = [
+            design.row(row, _served_tga_change(histories[day], row) if design.needs_history() else None)
+            for day, row in enumerate(feature_rows)
+        ]
+        members = [day for day, served in enumerate(served_all) if served[-1]]
+        served = [served_all[day][:-1] for day in members]
+        laws: List[Optional[Tuple[Optional[str], Optional[Tuple[float, ...]]]]] = [None] * len(feature_rows)
+        if members:
+            if not xs:
+                raise ValueError("no risk-date training label has a complete as-of read")
+            matrix = _gbm_quantile_matrix(xs, risk_spreads, served)
+            for day, quantiles in zip(members, matrix):
+                laws[day] = ("risk_date", tuple(float(value) for value in quantiles))
+        component_pairs = 0
+        if component is not None:
+            member_set = set(members)
+            others, rows = [], []
+            for day, row in enumerate(feature_rows):
+                if day in member_set:
+                    continue
+                try:
+                    rows.append(component.row(row, None))
+                except ValueError:
+                    continue
+                others.append(day)
+            if others:
+                component_xs, component_spreads = _pressure_pairs(component, information, train_rows, component_cache)
+                component_pairs = len(component_xs)
+                if not component_xs:
+                    raise ValueError("no training label has a complete as-of read of the every-day inputs")
+                matrix = _gbm_quantile_matrix(component_xs, component_spreads, rows)
+                for day, quantiles in zip(others, matrix):
+                    laws[day] = ("every_day", tuple(float(value) for value in quantiles))
+        curves = []
+        for entry in laws:
+            if entry is None:
+                curves.append(tuple(0.0 for _ in taus))
+                if record is not None:
+                    record.append((None, None))
+                continue
+            curve: List[float] = []
+            for value in exceedance_from_quantiles(entry[1], grid, taus):
+                curve.append(value if not curve else min(curve[-1], value))
+            curves.append(tuple(curve))
+            if record is not None:
+                record.append(entry)
+        settings = dict(PRESSURE_SPREAD_DISTRIBUTION_SETTINGS)
+        settings["design"] = list(design.names)
+        settings["structure"] = structure
+        settings["risk_date_training_pairs"] = len(xs)
+        if component is not None:
+            settings["every_day_inputs"] = list(component.features)
             settings["every_day_training_pairs"] = component_pairs
         if design.scarcity:
             settings["scarcity_state"] = SCARCITY_STATE
