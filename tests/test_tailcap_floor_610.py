@@ -37,7 +37,7 @@ class LaterWindowTests(unittest.TestCase):
         rows = [SimpleNamespace(date=d) for d in _days(500)]
         last = rows[-1].date
         start = SCRIPT.later_window_start(rows, 100, last, 61)
-        self.assertEqual(len(rows) - start - 61, 100)
+        self.assertEqual(len(rows) - start - 61 - 1, 100)
 
     def test_a_panel_too_short_is_refused(self):
         rows = [SimpleNamespace(date=d) for d in _days(100)]

@@ -71,7 +71,8 @@ SEED = 610
 def later_window_start(rows: Sequence, scored_days: int, last: date, minimum_history: int) -> int:
     """The index of the first panel row of a later stretch that scores exactly `scored_days` days up to `last`.
 
-    The stretch is cut so that its first scored day follows `minimum_history` rows and its last is `last`: each refit of the row on it
+    The stretch is cut so that its first scored day follows `minimum_history` rows and its last scored day is the row before `last`
+    (the grid's last row has no label one day ahead; checked against the grid by `diagnose`): each refit of the row on it
     then trains on as many days as the refit of the same number it is matched with in 2018-19.
 
     Raises:
@@ -81,7 +82,7 @@ def later_window_start(rows: Sequence, scored_days: int, last: date, minimum_his
     dates = [row.date for row in rows]
     if last not in dates:
         raise ValueError(f"{last} is not a row of the panel")
-    start = dates.index(last) - scored_days - minimum_history + 1
+    start = dates.index(last) - scored_days - minimum_history
     if start < 0:
         raise ValueError("the panel is too short for a later stretch of that many scored days")
     return start
