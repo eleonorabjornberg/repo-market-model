@@ -61,6 +61,7 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "satiation_distance_598.json"
 PARENT_DECLARATION = REPO / "metadata" / "satiation_587.json"
+H41 = REPO / "metadata" / "h41_release_dating.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 
 
@@ -151,17 +152,36 @@ def _cell(value):
     return "" if value is None else repr(float(value))
 
 
+def distance_rule() -> InformationRule:
+    """The rule the distance columns read the two legs through: each leg per H.4.1 release (#541, #622).
+
+    The rows these columns join read `reserve_balances` per release (`metadata/h41_release_dating.json`); the columns
+    must read the same print, not the weekly lag that is one release older on Fridays and Mondays. Callers hold
+    `h41_release.release_dating()` open while the rule reads.
+    """
+
+    registry = h41_release.release_dated_registry(measurement_fields.load_registry(), h41_release.load_release_dating(H41))
+    return InformationRule(registry, sat.READ_FEATURES, decision_time=time(16, 0), horizon=1)
+
+
+def distance_rows(rows, end: date, check_every: int, rule: InformationRule = None):
+    """`rows` with the two distance columns, built on the release-dated rule and checked for look-ahead (#622)."""
+
+    rolling = rolling_constants()
+    kw = dict(q=rolling["quantile"], window=rolling["window_rows"], minimum=rolling["minimum_rows"])
+    with switched_on(), h41_release.release_dating():
+        rule = rule or distance_rule()
+        built = sat.build_distance_columns(rows, rule, last_day=end, **kw)
+        sat.check_distance_no_future(rows, built, rule, last_day=end, indices=range(0, len(built), check_every), **kw)
+    return built
+
+
 def panel_command(args) -> int:
     declared = declared_document()
     end = date.fromisoformat(declared["scoring"]["last_day"])
     require_unlocked([end], where="satiation_distance_598")
-    rolling = rolling_constants()
     rows = [row for row in load_daily_panel(args.panel) if row.date <= end]
-    kw = dict(q=rolling["quantile"], window=rolling["window_rows"], minimum=rolling["minimum_rows"])
-    with switched_on():
-        rule = InformationRule(measurement_fields.load_registry(), sat.READ_FEATURES, decision_time=time(16, 0), horizon=1)
-        built = sat.build_distance_columns(rows, rule, last_day=end, **kw)
-        sat.check_distance_no_future(rows, built, rule, last_day=end, indices=range(0, len(built), args.check_every), **kw)
+    built = distance_rows(rows, end, args.check_every)
     with args.panel.open(newline="", encoding="utf-8") as handle:
         base = next(csv.reader(handle))
     header = list(dict.fromkeys(base + [sat.DISTANCE_COLUMN, sat.HINGE_COLUMN]))

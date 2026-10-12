@@ -100,7 +100,10 @@ class FeatureTests(unittest.TestCase):
         from repo_model import ml
 
         design, backtest = SCRIPT.component_features(2, ml.COMBINED_BLOCKS)
-        self.assertIn("net_settlement_due_5d", design)
+        # #618: the scored day's own settlement at h = 2 is the second cumulative column less the first
+        self.assertIn("net_settlement_ahead_2d", design)
+        self.assertIn("net_settlement_ahead_1d", design)
+        self.assertNotIn("net_settlement_due_5d", design)
         self.assertNotIn("net_settlement", design)
         self.assertIn("proj_dist_h2", design)
         self.assertTrue(set(ml.LATENT_FACTOR_COLUMNS) <= set(backtest))

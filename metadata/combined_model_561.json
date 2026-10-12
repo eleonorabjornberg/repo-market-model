@@ -67,7 +67,8 @@
         "bank_total_assets",
         "on_rrp",
         "tga",
-        "net_settlement_due_5d",
+        "net_settlement_ahead_2d",
+        "net_settlement_ahead_1d",
         "proj_dist_h2"
       ],
       "declared_to_the_backtest": [
@@ -79,7 +80,8 @@
         "bank_total_assets",
         "on_rrp",
         "tga",
-        "net_settlement_due_5d",
+        "net_settlement_ahead_2d",
+        "net_settlement_ahead_1d",
         "proj_dist_h2",
         "sofr_p1",
         "sofr_p25",

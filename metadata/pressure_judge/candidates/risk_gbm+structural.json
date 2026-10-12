@@ -20,6 +20,6 @@
     "bank_total_assets",
     "net_settlement_ahead_1d"
   ],
-  "features_at_horizon_2_or_more": "as the two parts: net_settlement_due_5d in place of net_settlement_ahead_1d, and no treasury_settlement or treasury_settlement_coupons",
+  "features_at_horizon_2_or_more": "as the two parts: net_settlement_ahead_{h}d less net_settlement_ahead_{h-1}d in place of net_settlement_ahead_1d (#618), and no treasury_settlement or treasury_settlement_coupons",
   "calibration": "none: the parent's risk-date forecast on risk dates, structural_liquidity's probability on every day the parent leaves at 0; metadata/structural_liquidity.json"
 }
