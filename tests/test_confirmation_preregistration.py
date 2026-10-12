@@ -36,7 +36,7 @@ ROOT = Path(__file__).parents[1]
 FROZEN = (
     "risk_gbm+every_day+gate+settle+h41+iorb",
     "risk_gbm+settle+h41",
-    "ngboost_laplace",
+    "risk_gbm_base",
 )
 
 
@@ -80,11 +80,34 @@ class DeclarationTests(unittest.TestCase):
         for amendment in pending:
             self.assertFalse(amendment["applied"], amendment)
 
-    def test_the_comparison_corrects_for_three_candidates(self):
+    def test_the_comparison_has_one_uncorrected_primary_and_two_holm_secondaries(self):
         comparison = _preregistration()["comparison"]
         self.assertEqual(comparison["family_size"], 3)
-        self.assertIn("Bonferroni", comparison["correction"])
+        self.assertEqual(comparison["primary"], "risk_gbm+settle+h41")
+        self.assertIn("without correction", comparison["primary_correction"])
+        self.assertEqual(
+            sorted(comparison["secondary"]), sorted(["risk_gbm+every_day+gate+settle+h41+iorb", "risk_gbm_base"])
+        )
+        self.assertIn("Holm", comparison["correction"])
+        self.assertNotIn("Bonferroni", comparison["correction"])
+        self.assertEqual({comparison["primary"], *comparison["secondary"]}, set(FROZEN))
         self.assertEqual(comparison["benchmarks"], ["calendar_climatology", "persistence_logistic"])
+
+    def test_the_window_is_stated_as_near_blind(self):
+        note = _preregistration()["window"]["note"]
+        self.assertIn("Near-blind", note)
+        self.assertIn("2026-10-05", note)
+        self.assertIn("metadata/lockbox.json", note)
+
+    def test_the_h41_calendar_hashed_is_the_extended_one(self):
+        declaration = json.loads((ROOT / "metadata" / "h41_release_dating.json").read_text(encoding="utf-8"))
+        self.assertEqual(declaration["covers"]["last_wednesday"], "2026-09-02")
+        for entry in _preregistration()["candidates"]:
+            if "metadata/h41_release_dating.json" in entry["files"]:
+                self.assertEqual(
+                    entry["files"]["metadata/h41_release_dating.json"],
+                    confirmation.digest_file(ROOT / "metadata" / "h41_release_dating.json"),
+                )
 
 
 class FreezeTests(unittest.TestCase):
@@ -109,11 +132,11 @@ class FreezeTests(unittest.TestCase):
             root = Path(scratch)
             self._copy_frozen(root)
             self.assertEqual(confirmation.verify(root=root), [])
-            target = root / "metadata" / "pressure_judge" / "candidates" / "ngboost_laplace.json"
+            target = root / "metadata" / "pressure_judge" / "candidates" / "risk_gbm_base.json"
             target.write_text(target.read_text(encoding="utf-8") + " ", encoding="utf-8")
             problems = confirmation.verify(root=root)
             self.assertEqual(len(problems), 1)
-            self.assertIn("ngboost_laplace.json", problems[0])
+            self.assertIn("risk_gbm_base.json", problems[0])
 
     def test_a_missing_frozen_file_is_named(self):
         with tempfile.TemporaryDirectory() as scratch:
@@ -163,9 +186,9 @@ class GuardTests(unittest.TestCase):
 
     def test_naming_one_candidate_opens_only_that_one(self):
         with tempfile.TemporaryDirectory() as scratch:
-            root = self._opened(scratch, names=("ngboost_laplace",))
+            root = self._opened(scratch, names=("risk_gbm_base",))
             with mock.patch.object(confirmation, "REPO", root):
-                confirmation.require_confirmation_open("ngboost_laplace", [self.WINDOW_DAY], where="test")
+                confirmation.require_confirmation_open("risk_gbm_base", [self.WINDOW_DAY], where="test")
                 with self.assertRaises(LookAheadError):
                     confirmation.require_confirmation_open("risk_gbm+settle+h41", [self.WINDOW_DAY], where="test")
 
@@ -176,7 +199,7 @@ class GuardTests(unittest.TestCase):
             target.write_text(target.read_text(encoding="utf-8") + " ", encoding="utf-8")
             with mock.patch.object(confirmation, "REPO", root):
                 with self.assertRaises(LookAheadError) as caught:
-                    confirmation.require_confirmation_open("ngboost_laplace", [self.WINDOW_DAY], where="test")
+                    confirmation.require_confirmation_open("risk_gbm_base", [self.WINDOW_DAY], where="test")
                 self.assertIn("weighted_miss.json", str(caught.exception))
 
     def test_a_blind_tier_day_is_refused_even_when_the_judge_names_the_candidate(self):
@@ -184,7 +207,7 @@ class GuardTests(unittest.TestCase):
             root = self._opened(scratch)
             with mock.patch.object(confirmation, "REPO", root):
                 with self.assertRaises(LookAheadError) as caught:
-                    confirmation.require_confirmation_open("ngboost_laplace", [date(2026, 9, 4)], where="test")
+                    confirmation.require_confirmation_open("risk_gbm_base", [date(2026, 9, 4)], where="test")
                 self.assertIn("blind", str(caught.exception))
 
     def test_a_day_before_the_window_is_refused(self):
@@ -192,7 +215,7 @@ class GuardTests(unittest.TestCase):
             root = self._opened(scratch)
             with mock.patch.object(confirmation, "REPO", root):
                 with self.assertRaises(LookAheadError):
-                    confirmation.require_confirmation_open("ngboost_laplace", [date(2025, 12, 31)], where="test")
+                    confirmation.require_confirmation_open("risk_gbm_base", [date(2025, 12, 31)], where="test")
 
     def test_a_name_that_is_not_frozen_is_refused(self):
         with tempfile.TemporaryDirectory() as scratch:

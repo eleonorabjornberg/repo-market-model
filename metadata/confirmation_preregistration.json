@@ -1,15 +1,15 @@
 {
-  "status": "DRAFT by the pull request that closes #585, for Eleonora to review; in force only once she has merged docs/decisions/confirmation-preregistration.md. Nothing here scores a day, and nothing here opens the confirmation window: opening is naming the three candidates in confirmation.candidates of metadata/pressure_judge.json, Eleonora's own attested action (#256).",
+  "status": "DRAFT by the pull request that closes #585, for Eleonora to review; in force only once she has merged docs/decisions/confirmation-preregistration.md. Nothing here scores a day, and nothing here opens the confirmation window: opening is naming the three candidates in confirmation.candidates of metadata/pressure_judge.json and recording it in metadata/lockbox.json, Eleonora's own attested action (#256).",
   "issue": 585,
-  "ruling": "Eleonora, 11 October 2026, on #567 (relayed by the orchestrating session): the shortlist is frozen at three candidates for the 2026 confirmation window; no new variants for 2018-2025; the pre-registration is drafted as a pull request and opening is owner-attested.",
+  "ruling": "Eleonora, 11 October 2026, on #567 (shortlist frozen at three candidates; no new variants for 2018-2025); confirmed with the replacement of ngboost_laplace by risk_gbm_base, the multiplicity rule, the near-blind window and the H.4.1 extension in her attested comment of 12 October 2026 on PR #593.",
   "frozen_at": {
-    "commit": "e61471abd80d2198c694de4ab7c06ea89d695ac1",
-    "note": "origin/main when the hashes below were taken. The hashes, not the commit, are what the test checks; a change to a listed file after this record merges is a decision, not a side effect of a pull request."
+    "commit": "49a5ff2b95e87f4c315a9bd4672fc5f6530efe5d",
+    "note": "origin/main when the hashes below were taken, after #625 extended the H.4.1 release calendar through 2026-09-03 (metadata/h41_release_dating.json is hashed as extended). The hashes, not the commit, are what the test checks; a change to a listed file after this record merges is a decision, not a side effect of a pull request."
   },
   "window": {
     "first": "2026-01-01",
     "last": "2026-09-03",
-    "note": "The judge's confirmation window (metadata/pressure_judge.json). Its near-blind days were opened once for the final test (#151, 2026-10-05) and are ordinary history in metadata/lockbox.json; the judge's confirmation.candidates is the gate."
+    "note": "The judge's confirmation window (metadata/pressure_judge.json). Near-blind: its days were opened once, on 2026-10-05, for the final test (#151), and are ordinary history in metadata/lockbox.json; the judge's confirmation.candidates is the gate. When the window is opened, the opening is also recorded in metadata/lockbox.json (Eleonora's attested action; this record does not make that edit)."
   },
   "panel": {
     "manifest": "metadata/funding_panel_manifest.json",
@@ -23,8 +23,8 @@
       "excluding": "confirmation.candidates"
     },
     "files": {
-      "src/repo_model/pressure_judge.py": "2a020d442ab711d082306152169d3be737ceec38a76217724a8f2e4bf05e9667",
-      "scripts/pressure_judge.py": "ecfc8805e656ec69972bc7a8a579f717b07836977efdde676333a02290168cb6",
+      "src/repo_model/pressure_judge.py": "26774f53e2fde614553ad95c5372e7f20bf3b07d8ee40b3703e1f5fc5646667b",
+      "scripts/pressure_judge.py": "c50655c3652cf7553bb9af99d194412728c448244f15c80a3880cef53d5aa065",
       "metadata/weighted_miss.json": "e290040cf1416fe071560af037951b4a81efa38bb52fd33f0fa6c5a29afe4c08",
       "docs/decisions/weighted-miss.md": "63fda75b1aaf2177b95b12735f414b53169f23f8203d00092e42ab55fae2782f",
       "docs/decisions/judge-rulings-10-october.md": "fa818c30781d156772ac12de511691d7456d0616bc45496e943dbf909782fc27"
@@ -35,25 +35,29 @@
       {
         "issue": 584,
         "what": "the judge's start-up cut-off for 2018 (measurement and a draft amendment for Eleonora's attested action)",
-        "applied": false
+        "applied": false,
+        "merged_in_pr": 591
       },
       {
         "issue": 586,
         "what": "scarcity state read at each leg's own latest public row (ruling on #571), a re-score",
-        "applied": false
+        "applied": false,
+        "merged_in_pr": 599
       },
       {
         "issue": 587,
         "what": "time-varying satiation level for the reserve-demand terms (ruling on #569), a measurement",
-        "applied": false
+        "applied": false,
+        "merged_in_pr": 596
       },
       {
         "issue": 588,
         "what": "always-flag blocks are not warnings (ruling on #570), a measurement and a draft amendment",
-        "applied": false
+        "applied": false,
+        "merged_in_pr": 594
       }
     ],
-    "pending_note": "Named, not applied. The judge rulings of 10 October 2026 (#536, merged in PR #550) are in force and are in the hashes above. An amendment that merges before the window opens changes a hashed file; the pre-registration is then amended by a decision, and the guard refuses the window until it is."
+    "pending_note": "Named, not applied. The four items (#584, #586, #587, #588) have merged as measurements, options left off and draft amendments, in PRs 591, 599, 596 and 594; the judge's rulings of 10 October 2026 (#536, merged in PR #550) remain the rules in force, and the merged code is in the hashes above. A draft amendment that Eleonora adopts before the window opens changes a hashed file; the pre-registration is then amended by a decision, and the guard refuses the window until it is."
   },
   "candidates": [
     {
@@ -90,24 +94,24 @@
       "inputs": "the published panel's columns plus the scratch columns of scripts/pressure_v1_1.py panel and scripts/measurement_fields.py panel (tga_daily, tga_daily_change, sofr_p75_iorb_bps, sofr_p99_iorb_bps) and iorb_announced_change_bps (repo_model.announced_iorb); settlements dated from the auction announcement and the H.4.1 weeklies read per release",
       "files": {
         "metadata/pressure_judge/candidates/risk_gbm+every_day+gate+settle+h41+iorb.json": "d5700fb24db41fc74ca9822b7ad1615762a9d2dd4da29ad333ed84ed72772df5",
-        "scripts/announcement_dating_rescore.py": "589086893a06d60dbb972d5bf1c6a3238241af4747af0e915674c7a1847d6830",
+        "scripts/announcement_dating_rescore.py": "c3c113e075abb78e18d87e3506de651889bc289fb8ef1742c681fef7f49a7a42",
         "scripts/risk_date_severity.py": "b4bc3d63b372039d20bff556746944c2693be9087e0b55f405e137ecbd5b0f68",
         "src/repo_model/settlement_dating.py": "9ba3b469a33654d20ab78d388ae4432b789ab08ae15a638cae87a9327d9857d8",
         "src/repo_model/h41_release.py": "31ba49bd8eafe9cf9d68ff1d686c86caba1bcf919ebea8a9690bce5f0c2b606b",
         "src/repo_model/measurement_fields.py": "c76b776f8446625eb55d2261f9a077b41017cc8fd2d06f3bdfebba15f13129ea",
-        "src/repo_model/ml.py": "574d72c3cba8b03948d950b9b89a7e85cb1d3ed42a759d160ca3a512a294d68c",
+        "src/repo_model/ml.py": "255c0c997a88486e65134f2b8508ee41fd681a1ff693dae27c2de24525441e64",
         "metadata/announcement_dating.json": "22c116eb0831b80656a711531db87c387ba2f7c093e2003ffe6fe57f930bef9e",
         "metadata/settlement_announcement_dating.json": "35c8795367229afacccf453d3578dca3aa20545566229994c4c0eee28428e2e3",
-        "metadata/h41_release_dating.json": "235156ef7213361beef60536d5b409f7a7b7076a4f04a04770fe830217608ea4",
+        "metadata/h41_release_dating.json": "9fd386fb8925848b932c000e1b6f311299cda75d423620a37908a11170c0fd83",
         "metadata/risk_date_severity.json": "2d7b9af2e214227d24dc116d434e93b912203bd0b4089db9e76f2a039a1c249f",
         "metadata/risk_date_every_day.json": "4bc106fd470ed55246f64b02a1770f159cdd1966c4657cbad5e795fbabb095f2",
         "metadata/risk_date_false_alarm_controls.json": "aea69bfaaa4b8446f2a13ca8d8db683a504401ad2bcd9ec89e0f5298f39e033a",
-        "scripts/iorb_every_day_579.py": "352bc6fec31aacb1f502890c04a32bc11a723b44d75fc6a7dbfe715b6aa3303f",
+        "scripts/iorb_every_day_579.py": "a0f0ce7dddd41828b8ca6cd9b846b4659bcaf0c4e8047b522c35a8bc59ad86b3",
         "metadata/iorb_every_day_579.json": "d8aa58dbdf8c2ddee2ce92cb7420e199793d829b0a4a7427c43f3a97336142d9",
         "src/repo_model/announced_iorb.py": "796bb2afe954569e3182bf7211eb0bee1ea0b6f239d136c90a33a071d2cd845b",
-        "docs/decisions/information-set.md": "e0c86de9bb59019b8722edb159d60a6c2d0741d856093958bbe98cd72129ab27",
+        "docs/decisions/information-set.md": "cf29339aab0e2a39396d63968d166d26c472ce2324c90b28c90621f425d67495",
         "metadata/sources.json": "175858050961823b563a9fcae2c4e62eed9772c3376eacc14d7fb8937210e7a6",
-        "metadata/sources_measurement.json": "c6ecea43782a9d2f71b73122735c8d18cc058701073baefbde7a8099a827fa49",
+        "metadata/sources_measurement.json": "5863ade54f3bd191c81cea19ee013d84eac14ab69576fbd6fd4bee5adb07a26e",
         "docs/decisions/fomc-point-in-time.md": "7e9ed4732447950b396ab92b923a51bd6b9e125e4ebd425a486bc074fa246f5d",
         "docs/decisions/iorb-availability.md": "33a6bb73d03c6c96b40e587df06a6a8eebd401b93594e5b1bcc64d6521490740"
       }
@@ -143,49 +147,55 @@
       "inputs": "the published panel's columns plus the scratch columns of scripts/pressure_v1_1.py panel and scripts/measurement_fields.py panel; settlements dated from the auction announcement and the H.4.1 weeklies read per release",
       "files": {
         "metadata/pressure_judge/candidates/risk_gbm+settle+h41.json": "347705537f34e98240021f09ea2299220857fa477fe44b83240c736186234782",
-        "scripts/announcement_dating_rescore.py": "589086893a06d60dbb972d5bf1c6a3238241af4747af0e915674c7a1847d6830",
+        "scripts/announcement_dating_rescore.py": "c3c113e075abb78e18d87e3506de651889bc289fb8ef1742c681fef7f49a7a42",
         "scripts/risk_date_severity.py": "b4bc3d63b372039d20bff556746944c2693be9087e0b55f405e137ecbd5b0f68",
         "src/repo_model/settlement_dating.py": "9ba3b469a33654d20ab78d388ae4432b789ab08ae15a638cae87a9327d9857d8",
         "src/repo_model/h41_release.py": "31ba49bd8eafe9cf9d68ff1d686c86caba1bcf919ebea8a9690bce5f0c2b606b",
         "src/repo_model/measurement_fields.py": "c76b776f8446625eb55d2261f9a077b41017cc8fd2d06f3bdfebba15f13129ea",
-        "src/repo_model/ml.py": "574d72c3cba8b03948d950b9b89a7e85cb1d3ed42a759d160ca3a512a294d68c",
+        "src/repo_model/ml.py": "255c0c997a88486e65134f2b8508ee41fd681a1ff693dae27c2de24525441e64",
         "metadata/announcement_dating.json": "22c116eb0831b80656a711531db87c387ba2f7c093e2003ffe6fe57f930bef9e",
         "metadata/settlement_announcement_dating.json": "35c8795367229afacccf453d3578dca3aa20545566229994c4c0eee28428e2e3",
-        "metadata/h41_release_dating.json": "235156ef7213361beef60536d5b409f7a7b7076a4f04a04770fe830217608ea4",
+        "metadata/h41_release_dating.json": "9fd386fb8925848b932c000e1b6f311299cda75d423620a37908a11170c0fd83",
         "metadata/risk_date_severity.json": "2d7b9af2e214227d24dc116d434e93b912203bd0b4089db9e76f2a039a1c249f",
         "metadata/risk_date_every_day.json": "4bc106fd470ed55246f64b02a1770f159cdd1966c4657cbad5e795fbabb095f2",
         "metadata/risk_date_false_alarm_controls.json": "aea69bfaaa4b8446f2a13ca8d8db683a504401ad2bcd9ec89e0f5298f39e033a",
-        "docs/decisions/information-set.md": "e0c86de9bb59019b8722edb159d60a6c2d0741d856093958bbe98cd72129ab27",
+        "docs/decisions/information-set.md": "cf29339aab0e2a39396d63968d166d26c472ce2324c90b28c90621f425d67495",
         "metadata/sources.json": "175858050961823b563a9fcae2c4e62eed9772c3376eacc14d7fb8937210e7a6",
-        "metadata/sources_measurement.json": "c6ecea43782a9d2f71b73122735c8d18cc058701073baefbde7a8099a827fa49"
+        "metadata/sources_measurement.json": "5863ade54f3bd191c81cea19ee013d84eac14ab69576fbd6fd4bee5adb07a26e"
       }
     },
     {
-      "name": "ngboost_laplace",
-      "ruling": "track Q (#385), check #533",
-      "declaration": "metadata/pressure_judge/candidates/ngboost_laplace.json",
+      "name": "risk_gbm_base",
+      "ruling": "Eleonora, 12 October 2026 (confirmation comment on PR #593; replaces ngboost_laplace, ruling on #567)",
+      "declaration": "metadata/pressure_judge/candidates/risk_gbm_base.json",
       "features": [
         "spread_bps",
         "days_to_month_end",
         "quarter_end",
         "tax_date",
-        "treasury_settlement_coupons",
-        "reserve_balances"
+        "reserve_balances",
+        "reserve_scarcity_state",
+        "tga",
+        "treasury_settlement",
+        "treasury_settlement_coupons"
       ],
-      "features_at_horizon_2_or_more": null,
+      "features_at_horizon_2_or_more": "without treasury_settlement and treasury_settlement_coupons (the risk dates are then the three calendar types)",
       "availability_declarations": [
         "docs/decisions/information-set.md",
-        "metadata/sources.json"
+        "metadata/sources.json",
+        "metadata/sources_measurement.json"
       ],
-      "inputs": "the published panel's columns only (spread_bps, the calendar columns, treasury_settlement_coupons, reserve_balances)",
+      "inputs": "the published panel's columns only; the risk-date severity model with the base inputs (scripts/risk_date_severity.py, metadata/risk_date_severity.json): fitted on risk-date label days only, exactly 0 on every other day, unweighted gbm_classifier",
       "files": {
-        "metadata/pressure_judge/candidates/ngboost_laplace.json": "0f1b6ac687c9217c3ca07ba1c64633ef082fe4b167612d20aaf3d1268306efec",
-        "scripts/pressure_track_q.py": "cc50ead05a295c19c9b7211f946bdc4c6c978c126a407a5f0f045a3a442d65e8",
-        "scripts/ngboost_laplace_check.py": "2127f4df40a68986ede7adf92dcca94be8ce9e5f7095463a8909427bab4446de",
-        "metadata/ngboost_laplace_check.json": "38e993425a09fdb9cf47faea13e07e87b266adec77d6d6b1129698554c0cfb75",
-        "src/repo_model/ml.py": "574d72c3cba8b03948d950b9b89a7e85cb1d3ed42a759d160ca3a512a294d68c",
-        "docs/decisions/information-set.md": "e0c86de9bb59019b8722edb159d60a6c2d0741d856093958bbe98cd72129ab27",
-        "metadata/sources.json": "175858050961823b563a9fcae2c4e62eed9772c3376eacc14d7fb8937210e7a6"
+        "metadata/pressure_judge/candidates/risk_gbm_base.json": "77885f21b5da6b30c79a66a23e6ada5bf99bfb3a87b739e9d8428e02ff3b1d3e",
+        "scripts/risk_date_severity.py": "b4bc3d63b372039d20bff556746944c2693be9087e0b55f405e137ecbd5b0f68",
+        "metadata/risk_date_severity.json": "2d7b9af2e214227d24dc116d434e93b912203bd0b4089db9e76f2a039a1c249f",
+        "src/repo_model/ml.py": "255c0c997a88486e65134f2b8508ee41fd681a1ff693dae27c2de24525441e64",
+        "src/repo_model/measurement_fields.py": "c76b776f8446625eb55d2261f9a077b41017cc8fd2d06f3bdfebba15f13129ea",
+        "src/repo_model/scarcity.py": "a5dccd4c9d092d5474d8288073d167702dec21a967df016c61e10c52c541a6ca",
+        "docs/decisions/information-set.md": "cf29339aab0e2a39396d63968d166d26c472ce2324c90b28c90621f425d67495",
+        "metadata/sources.json": "175858050961823b563a9fcae2c4e62eed9772c3376eacc14d7fb8937210e7a6",
+        "metadata/sources_measurement.json": "5863ade54f3bd191c81cea19ee013d84eac14ab69576fbd6fd4bee5adb07a26e"
       }
     }
   ],
@@ -202,13 +212,19 @@
       "calendar_climatology",
       "persistence_logistic"
     ],
-    "primary_contrast": "For each candidate, the judge's tier 1 recall condition: recall of onsets warned at lead >= 1 against calendar_climatology at the same false-alarm rate, paired, with the bootstrap interval.",
-    "correction": "Bonferroni across the three: a candidate is said to beat a benchmark only if the paired interval at level 1 - 0.10/3 (about 96.7%) excludes zero, in place of the judge's 90%. The 90% intervals are reported beside them. The pass rule itself is read as in force, unadjusted, and is reported for all three.",
-    "among_the_three": "The three are compared with one another only through the same paired differences, each with the corrected interval; no winner is declared from a pooled figure. The selection is the three; no fourth candidate is added after the window is read.",
-    "status": "A proposal drafted for Eleonora: the multiplicity correction is a judgement call and is hers (docs/decisions/confirmation-preregistration.md, 'For Eleonora')."
+    "correction": "Holm's step-down method across the two secondary candidates, on the same paired tier 1 contrast, family-wise level 0.10. The 90% intervals are reported beside the adjusted result. The pass rule itself is read as in force, unadjusted, and is reported for all three.",
+    "among_the_three": "The primary is the only candidate whose result is the confirmation claim; the other two are secondary. The three are compared with one another only through the same paired differences; no winner is declared from a pooled figure. The selection is the three; no fourth candidate is added after the window is read.",
+    "status": "Decided by Eleonora, 12 October 2026 (her attested comment on PR #593, performed_via_github_app null): one named primary tested without correction, the two secondary corrected with Holm's method.",
+    "primary": "risk_gbm+settle+h41",
+    "primary_correction": "none: the single named primary is tested at the judge's own level (90% paired interval, metadata/pressure_judge.json), without correction.",
+    "secondary": [
+      "risk_gbm+every_day+gate+settle+h41+iorb",
+      "risk_gbm_base"
+    ],
+    "primary_contrast": "For each candidate, the judge's tier 1 recall condition: recall of onsets warned at lead >= 1 against calendar_climatology at the same false-alarm rate, paired, with the bootstrap interval."
   },
   "opening": {
-    "how": "Naming the three candidates in confirmation.candidates of metadata/pressure_judge.json (the pull request carries Eleonora's own attestation, metadata/owner_attestations.json, #256). repo_model.confirmation.require_confirmation_open refuses a window day for a candidate until then, and for every candidate if a hashed file no longer matches.",
+    "how": "Naming the three candidates in confirmation.candidates of metadata/pressure_judge.json, with Eleonora's own attestation (metadata/owner_attestations.json, #256), and recording the opening in metadata/lockbox.json. repo_model.confirmation.require_confirmation_open refuses a window day for a candidate until the candidates are named, and for every candidate if a hashed file no longer matches.",
     "done": false
   }
 }
