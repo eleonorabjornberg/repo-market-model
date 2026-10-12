@@ -34,7 +34,7 @@ other features, estimators and timing are the parents' (`both` arm of #541).
 | `risk_gbm_base+settle+h41` (parent) | 14 of 26 / 1.26 | 0.2 / 0.0 | fails | 4 of 5 | no |
 | (c) `risk_gbm_base+settle+h41+hinge_roll` | 15 of 26 / 1.32 | 0.5 / 0.0 | fails | 5 of 5 | no |
 
-- **No tier or pass verdict changes.** Tier 1 passes for every row, parent and variant; tiers 3 and 5 fail for every row.
+- **No tier or pass verdict changes.** Every row, parent and variant, passes the first tier; the third and fifth fail for every row.
 - **One more onset is warned in each variant, and none is lost**: 2025-10-15 for (a) and (b), 2025-09-15 for (c). 2019 is unchanged
   (10 of 13). Recall difference against the parent, pooled: 0.038 [0.000, 0.111] on 26 onsets in each pairing, so the interval
   excludes nothing but zero at its edge.
