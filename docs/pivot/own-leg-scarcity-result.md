@@ -4,6 +4,11 @@ A scratch measurement under the pressure-day judge. It writes nothing into `docs
 figure, scores no day of 2026 and reads no day after 2025-12-31 (`docs/decisions/lockbox.md`). No cut-point, threshold, onset
 definition, cut-off rule or availability time changes; the only change is which row each of the state's three legs is read at.
 
+> **Note of 12 October 2026 (#603): the verdicts and false-alarm counts below are on the earlier counting.** They were scored before the judge's
+> pooled false-alarm count (ruling of 10 October 2026, #509) was merged into this branch, so tier 1 was read on the worst single lead. The same
+> scoring under the judge in force is at the end of this page ("Note of 12 October 2026"), with its evidence in
+> `evidence/own-leg-scarcity-pooled/`. Nothing below is edited.
+
 > **Drafted decision record, not in force.** The amendment to `docs/decisions/information-set.md` that records the ruling is
 > drafted by this pull request, for Eleonora to review. A decision is in force only once she has merged it.
 
@@ -118,3 +123,46 @@ for r in weighted unweighted:
   (an owner-attested item), is not decided here. The published declaration is unchanged.
 - The H.4.1 per-release dating of #541 is not part of the published registry; the `h41` arms apply it as before.
 - The 102 against the audit's 105 to 110 is not reconciled: the audit's definition of "each leg's latest public value" was not available to this run.
+
+## Note of 12 October 2026 (#603): the same scoring under the judge in force
+
+The scoring above was run on the branch before it merged the judge's pooled false-alarm count (ruling of 10 October 2026, #509; merge
+commit `62610793`), so the tier 1 verdicts and the "worst false alarms per onset" column are the earlier counting, the worst single lead.
+The judge in force reads tier 1's limit on the false alarms pooled over the leads. The scoring was run again from the same declarations, the
+same scratch panel and the same forecasts-producing commands as in "Reproduce" above, on `origin/main` at `5d88b50`, under both reads of the
+state (own-leg and same-row) and both rules. Nothing else changed: the published declaration, the panel (`4ddc3882…`, `verify-panel` clean)
+and the judge's declaration are the same, and no day of 2026 is scored. Evidence: `evidence/own-leg-scarcity-pooled/` (`judge-*`, `tables-*`
+and `table-*` as in the folder above, now with both counts; recall by year is identical to `years-*` of the folder above for every row, so it
+is not repeated). The table script prints the pooled count beside the worst single lead.
+
+Tier 1 on the three frozen candidates (#567) and the scarce control, weighted rule (the rule in force). Onsets flagged of 26 at lead >= 1;
+false alarms per onset, pooled (the count tier 1 reads; limit 2) and worst single lead (the earlier counting):
+
+| row | read | flagged | pooled | worst single lead | tier 1 now | tier 1 as stored above |
+|---|---|---|---|---|---|---|
+| `risk_gbm+settle+h41` | same-row | 14 | 1.44 | 0.88 | yes | yes |
+| `risk_gbm+settle+h41` | own-leg | 14 | 1.48 | 0.88 | yes | yes |
+| `risk_gbm+every_day+gate+settle+h41+iorb` | same-row | 19 | 3.46 | 1.64 | **no** | yes |
+| `risk_gbm+every_day+gate+settle+h41+iorb` | own-leg | 19 | 3.46 | 1.64 | **no** | yes |
+| `ngboost_laplace` | same-row | 17 | 2.34 | 1.73 | **no** | yes |
+| `ngboost_laplace` | own-leg | 17 | 2.34 | 1.73 | **no** | yes |
+| `risk_gbm+every_day+scarce` | same-row | 17 | 3.60 | 2.17 | no | no |
+| `risk_gbm+every_day+scarce` | own-leg | 17 | 3.49 | 2.15 | no | no |
+
+Flat rule: `risk_gbm+settle+h41` is 14 of 26 with 2.00 pooled on the same-row read (tier 1 yes) and **13 of 26 with 2.04 pooled on the own-leg
+read (tier 1 no)**; the other three rows fail tier 1 on both reads, as stored.
+
+**Correction.** The statement above that "no tier verdict of the three changes" holds for the two reads only under the weighted rule. Under the
+flat rule `risk_gbm+settle+h41` moves from tier 1 yes to no with the own-leg read (the pooled count passes the limit of 2 by 0.04). And the
+stored absolute tier 1 verdicts "yes" for the iorb row and for `ngboost_laplace` (weighted rule) are on the earlier counting: under the pooled
+count both fail tier 1 on either read, as does the iorb row's parent. The comparison of one read with the other, which this directive was
+about, is not changed by the counting for those rows. No row passes the judge overall under either read, either rule, as before.
+
+Across the 117 rows judged, the tier verdicts that change between the two reads are 9 under the weighted rule and 11 under the flat rule
+(`table-*.json` lists the named rows); none is an overall pass. The set of changed verdicts is not the one listed above (2 and 1 among the named
+rows). Verdicts of tier 3 and tier 5 also differ from the stored ones for some rows (listed in `evidence/own-leg-scarcity-pooled/table-*.json`
+against `evidence/own-leg-scarcity/table-*.json`). Tiers 3 and 5 are not read on the pooled false-alarm count, so the counting is not the explanation; the branch merged the rest of `main` (including the start-up cut-off machinery of #584) after the scoring above, and this
+re-score has not been split by which merged change moves which verdict. That is a finding for whoever reads those rows, not settled here.
+
+Not checked: scripts that read the state outside this directive's list (as above), and any 2026 day.
+

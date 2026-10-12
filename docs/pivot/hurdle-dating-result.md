@@ -68,3 +68,9 @@ Evidence: `docs/pivot/evidence/hurdle-dating/` (`summary.md`, the judge's report
 * The sign convention of Table 6 here is the hurdle page's: a positive difference favours the arm. The #541 page's Table 5 note says the opposite for its own table; not looked at.
 * 26 onsets; no multiple-testing correction over 60 arm rows and two rules; the +10 bp verdicts, the 2026 tiers and the confirmation window are not looked at.
 * The scoring script reuses the machinery of `announcement_dating_rescore.py` and `risk_date_hurdle.py`; the tests pin its declaration, candidates and pairs, not a fit.
+
+## Note of 12 October 2026 (#604): the #541 page's Table 5
+
+The "Not checked" item above, that the #541 page's Table 5 note says the opposite sign convention, is resolved: the #541 header was wrong and this
+page's Table 6 was right (a positive difference favours the arm). The #541 files were corrected in #604 (see the note at the end of
+`settlement-h41-dating-result.md`). Nothing on this page changes.
