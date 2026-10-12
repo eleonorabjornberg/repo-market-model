@@ -1,0 +1,59 @@
+{
+  "status": "declared by the pull request that closes #584 before any score was computed under either rule; a measurement, not a rule in force. It changes nothing in metadata/pressure_judge.json (its in-force version, cut-off rule, tiers and bar are untouched), publishes nothing, scores no day of 2026 and reads no day after 2025-12-31. The judge amendment it would support is a draft for Eleonora, in force only when she acts herself on GitHub (owner-attested, #256).",
+  "issue": 584,
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [5, 10],
+  "primary_threshold_bp": 5,
+  "horizons": [1, 2, 3, 4, 5],
+  "the_problem": "pressure_judge.choose_cutoffs picks each refit block's flag cut-off from the forecast's own earlier walk-forward probabilities and the outcomes known at the block's first decision instant. A block whose training window holds no onset flags nothing (the cut-off is infinite). In 2018 that is almost every block, so no 2018 onset can be warned whatever the forecast (#560, PR #564: 36 percent of 2018-19 model-row cells have no cut-off).",
+  "when_a_startup_rule_applies": "For a refit block, at a threshold, only when the training window (the scored days whose outcome was known at the block's first decision instant: up to the business day before it, from the first scored day) holds no onset at the primary +5 bp threshold's onset definition of the judge's grid. The moment the window holds one onset, the judge as declared takes over for that block and for every later one, and its result stands even if it is an infinite cut-off (an onset that no cut-off within the false-alarm limit reaches). Nothing else changes: the same block grid, the same refit, the same limit, the same weights.",
+  "rows": {
+    "frozen": [
+      "risk_gbm+every_day+gate+settle+h41+iorb",
+      "risk_gbm+settle+h41",
+      "ngboost_laplace"
+    ],
+    "frozen_by": "Eleonora's ruling of 11 October 2026 on #567: the shortlist is frozen at these three for the 2026 confirmation window; no new variant is built to improve 2018-2025 scores; a pass on those days is not a confirmation",
+    "benchmarks": ["calendar_climatology", "persistence_logistic"],
+    "no_other_row": "no other candidate, variant, input or parent. The forecasts are the rows' existing walk-forward probabilities, re-produced with the repository's own scripts on the published panel (digest 4ddc3882) and the scratch panels; the start-up rule changes the cut-offs and nothing that the rows forecast",
+    "benchmarks_note": "the benchmarks get the same start-up rule, so that a pairing against them is like for like"
+  },
+  "rules": {
+    "baseline": {
+      "name": "declared",
+      "what": "the judge as it stands: a block with no onset in its window flags nothing"
+    },
+    "a": {
+      "name": "climatology_rate",
+      "what": "the block's cut-off is the pressure-day rate of its training window at the threshold: the share of the window's scored days that are pressure days, which is the probability a climatology fitted to that window gives. A day is flagged when the row's probability is at least that rate. A window with no day or no pressure day has nothing to match and flags nothing, as now",
+      "code": "repo_model.pressure_judge.StartupRule('climatology_rate'), startup_cutoff",
+      "reads_no_scored_outcome": "it reads the pressure-day labels of the training window and no other outcome. Those days are the ones the judge's own cut-off rule already reads: every one is on or before the business day before the block's first decision instant, and startup_cutoff refuses (LookAheadError) a day after the training end, so it reads no day of the block it serves or after. It reads no probability and no onset. Fixed by this file before any score; it has no free parameter"
+    },
+    "b": {
+      "name": "fixed_probability",
+      "probability": 0.2,
+      "what": "the block's cut-off is a fixed probability, 0.2, for every block, row and threshold: the flag cut-off the judge was first declared with as a placeholder before any candidate was scored (metadata/pressure_judge.json status, the pull request that closed #375), fixed in advance and not chosen from any outcome. A day is flagged when the row's probability is at least 0.2",
+      "code": "repo_model.pressure_judge.StartupRule('fixed_probability', 0.2), startup_cutoff",
+      "history_alternative": "the directive's alternative, a probability chosen from the 2014-2018 back-filled history, is not used: the guard that ties that history to the workbook's posting date does not exist (#572; docs/decisions/information-set.md says no back-filled value is used as training history before the posting date is established). So the probability comes from the rule alone",
+      "reads_no_scored_outcome": "it reads no outcome, no probability and no date: the value is a constant (tests/test_startup_cutoff.py::FixedProbabilityTests::test_it_reads_no_outcome). It was not tuned: 0.2 is the only value tried"
+    },
+    "at_most": "two rules; no other value of 0.2, no other quantile, no combination of A and B, no per-row choice"
+  },
+  "judge": "the judge as declared (metadata/pressure_judge.json) under the weighted rule in force (metadata/weighted_miss.json) with the flat rule beside it, unchanged, run once per start-up rule (declared, A, B) on the same forecasts. Only the cut-off of a block with no onset in its window differs between the runs",
+  "report": {
+    "tier_1": "pooled over leads 1 to 5 and per lead (h = 1 to 5): onsets flagged of the 26, recall with its 90% stationary-bootstrap interval, worst false alarms per onset, the verdict",
+    "tiers_3_and_5": "the judge's verdicts",
+    "recall_by_year": "onsets flagged at some lead, by year, 2018 called out, for each rule, with the 90% interval on the difference from the declared rule",
+    "false_alarms_added_in_2018": "for each rule and row, the flags added against the declared rule in 2018 (scored days with an infinite cut-off under the declared rule and a finite one under the start-up rule): how many, how many were not pressure days, how many were onsets, at h = 1 to 5",
+    "blocks_served": "for each rule and row, the refit blocks (first day, last day) whose cut-off came from the start-up rule, and the cut-off",
+    "paired": "each rule against the declared rule for the same row, split by regime and pressure-day type, with 90% intervals; the benchmarks beside them"
+  },
+  "lockbox": "scoring.last_day is 2025-12-31 and the script calls require_unlocked; no 2026 day is read (docs/decisions/lockbox.md). The three rows are frozen for the 2026 confirmation window, which this measurement does not open",
+  "selection": "the rows were frozen, and the rules are two and fixed here, before any score. A result on 2018-2025 is not a confirmation (Eleonora's ruling of 11 October 2026 on #567). Whichever rule the amendment would adopt, the pick is hers",
+  "published": "nothing: no published figure moves, metadata/pressure_judge.json is unchanged, and no row joins confirmation.candidates"
+}
