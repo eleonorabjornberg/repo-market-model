@@ -41,6 +41,10 @@ from .splits import LookAheadError, SplitError
 
 __all__ = [
     "COLUMN_FIELDS",
+    "DISTANCE_COLUMN",
+    "DISTANCE_COLUMN_FIELDS",
+    "DISTANCE_SOURCE_ID",
+    "HINGE_COLUMN",
     "FIXED",
     "FORMS",
     "KINK_GRID",
@@ -53,9 +57,13 @@ __all__ = [
     "SOURCE_ID",
     "asof_ratios",
     "build_columns",
+    "build_distance_columns",
+    "check_distance_no_future",
     "check_no_future",
+    "distance",
     "fit_level",
     "hinge",
+    "hinge_value",
     "quantile",
     "rolling_level",
 ]
@@ -66,6 +74,15 @@ SOURCE_ID = "satiation_columns"
 #: The rolling level, a panel column. **Off** in every published declaration.
 ROLLING_COLUMN = "satiation_roll"
 COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {ROLLING_COLUMN: ((SOURCE_ID, ROLLING_COLUMN),)}
+#: The rolling distance (#598): two more panel columns built from the same as-of ratio and the same rolling level, read by
+#: the risk-date passers as one extra input each. Zero lag, like `ROLLING_COLUMN`; **off** in every published declaration.
+DISTANCE_SOURCE_ID = "satiation_distance_columns"
+DISTANCE_COLUMN = "satiation_dist_roll"
+HINGE_COLUMN = "satiation_hinge_roll"
+DISTANCE_COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
+    DISTANCE_COLUMN: ((DISTANCE_SOURCE_ID, DISTANCE_COLUMN),),
+    HINGE_COLUMN: ((DISTANCE_SOURCE_ID, HINGE_COLUMN),),
+}
 #: The two legs of the ratio, each read at its own latest public row (as the structural model reads them).
 READ_FEATURES = ("reserve_balances", "bank_total_assets")
 #: The fixed level: the lower end of the published band. Never changed here.
@@ -271,3 +288,82 @@ def check_no_future(
                 f"{ROLLING_COLUMN} on {rows[i].date.isoformat()} is {have}, but the panel cut at that row gives "
                 f"{want}; the level depended on a later row"
             )
+
+
+def distance(ratio: Optional[float], level: Optional[float]) -> Optional[float]:
+    """The reserves ratio minus the satiation level (#598); `None` when either is unobserved."""
+
+    if ratio is None or level is None:
+        return None
+    return float(ratio) - float(level)
+
+
+def hinge_value(ratio: Optional[float], level: Optional[float]) -> Optional[float]:
+    """`hinge(ratio, level)`, or `None` when either is unobserved: the distance that enters only below the level (#598)."""
+
+    if ratio is None or level is None:
+        return None
+    return hinge(ratio, level)
+
+
+def build_distance_columns(
+    rows: Sequence[DailyObservation],
+    rule: InformationRule,
+    *,
+    last_day: date,
+    q: float = ROLLING_QUANTILE,
+    window: int = ROLLING_WINDOW,
+    minimum: int = ROLLING_MINIMUM,
+) -> List[DailyObservation]:
+    """`rows` with the rolling distance as two columns, for rows to `last_day`; a later row's values are `None`.
+
+    Row `i` carries the ratio the rule reads at its own decision minus the rolling level at `i` (`DISTANCE_COLUMN`), and the
+    percentage points by which that ratio is below the level (`HINGE_COLUMN`). The level is `rolling_level`, with the
+    constants of #587 passed in by the caller; nothing here re-tunes them. Only rows up to `i` are read.
+    """
+
+    ratios = asof_ratios(rows, rule, last_day=last_day)
+    out = []
+    for i, row in enumerate(rows):
+        values = dict(row.values)
+        if row.date <= last_day:
+            ratio = ratios[i]
+            level = rolling_level(ratios, i, q=q, window=window, minimum=minimum)
+            values[DISTANCE_COLUMN] = distance(ratio, level)
+            values[HINGE_COLUMN] = hinge_value(ratio, level)
+        else:
+            values[DISTANCE_COLUMN] = values[HINGE_COLUMN] = None
+        out.append(DailyObservation(row.date, values))
+    return out
+
+
+def check_distance_no_future(
+    rows: Sequence[DailyObservation],
+    built: Sequence[DailyObservation],
+    rule: InformationRule,
+    *,
+    last_day: date,
+    indices: Sequence[int],
+    q: float = ROLLING_QUANTILE,
+    window: int = ROLLING_WINDOW,
+    minimum: int = ROLLING_MINIMUM,
+) -> None:
+    """Refuse a built distance column that is not what the panel cut at its own row gives.
+
+    Raises:
+        LookAheadError: a checked row's distance or hinge differs from the same row rebuilt from `rows` up to and including
+            it, so it depended on a later row.
+    """
+
+    for i in indices:
+        if rows[i].date > last_day:
+            continue
+        cut = rows[: i + 1]
+        again = build_distance_columns(cut, rule, last_day=last_day, q=q, window=window, minimum=minimum)[i]
+        for column in (DISTANCE_COLUMN, HINGE_COLUMN):
+            have, want = built[i].values.get(column), again.values.get(column)
+            if (have is None) != (want is None) or (have is not None and abs(have - want) > 1e-12):
+                raise LookAheadError(
+                    f"{column} on {rows[i].date.isoformat()} is {have}, but the panel cut at that row gives "
+                    f"{want}; the column depended on a later row"
+                )
