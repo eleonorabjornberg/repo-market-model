@@ -41,6 +41,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -187,8 +188,36 @@ def forecasts_command(args) -> int:
     return 0
 
 
+#: Set to `same_row` (by `scripts/own_leg_rescore.py`) to read the state the way it was read before #586, for a
+#: before-and-after comparison on the same forecasts. Unset, the state is the own-leg read.
+STATE_READ_VARIABLE = "RMM_SCARCITY_READ"
+
+
 def _scarcity_states(horizon, last_day):
-    """{day: state} on the shared grid, read as of each forecast's decision instant at `horizon`."""
+    """{day: state} on the shared grid, each leg read at its own latest public row (#586).
+
+    Eleonora's ruling on #571 (relayed 11 October 2026): the reserves, the H.8 total assets and the
+    day's ON RRP are each read as of the forecast's decision instant at `horizon`, not all at the row
+    the H.8 lag picks. `_same_row_scarcity_states` is the read this replaces, kept to count the days
+    that change.
+    """
+
+    from repo_model.scarcity import measurement_declaration, own_leg_states
+
+    if os.environ.get(STATE_READ_VARIABLE) == "same_row":
+        return _same_row_scarcity_states(horizon, last_day)
+    validation = _load_script("scarcity_validation")
+    with measurement_declaration(), tempfile.TemporaryDirectory() as tmp:
+        build, _, registry, decision = validation.build_measurement_panel(REGISTRY, Path(tmp))
+        scored = own_leg_states(
+            build.observations, registry=registry, decision_time=decision,
+            minimum_history=MINIMUM_HISTORY, horizon=horizon, end=last_day,
+        )
+    return {entry.day: entry.state for entry in scored}
+
+
+def _same_row_scarcity_states(horizon, last_day):
+    """{day: state} as read before #586: the `reserve_scarcity_state` column, one row for all three legs."""
 
     from repo_model.asof import InformationRule
     from repo_model.baseline import _as_of_folds

@@ -1,0 +1,318 @@
+{
+ "read": "same_row",
+ "rows": {
+  "ngboost_laplace": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 4,
+     "onsets": 5
+    }
+   },
+   "flagged": 15,
+   "onsets": 26
+  },
+  "risk_gbm+every_day": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "flagged": 15,
+   "onsets": 26
+  },
+  "risk_gbm+every_day+gate+settle+h41": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 1,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 15,
+   "onsets": 26
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 2,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 16,
+   "onsets": 26
+  },
+  "risk_gbm+every_day+scarce": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 16,
+   "onsets": 26
+  },
+  "risk_gbm+hurdle_isotonic+settle+h41": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 14,
+   "onsets": 26
+  },
+  "risk_gbm+hurdle_platt+settle+h41": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 11,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 14,
+   "onsets": 26
+  },
+  "risk_gbm+hurdle_state_isotonic": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "flagged": 15,
+   "onsets": 26
+  },
+  "risk_gbm+hurdle_state_isotonic+settle+h41": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 15,
+   "onsets": 26
+  },
+  "risk_gbm+hurdle_state_platt": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 13,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 2,
+     "onsets": 5
+    }
+   },
+   "flagged": 15,
+   "onsets": 26
+  },
+  "risk_gbm+hurdle_state_platt+settle+h41": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 12,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 3,
+     "onsets": 5
+    }
+   },
+   "flagged": 15,
+   "onsets": 26
+  },
+  "risk_gbm+settle+h41": {
+   "by_year": {
+    "2018": {
+     "flagged": 0,
+     "onsets": 4
+    },
+    "2019": {
+     "flagged": 10,
+     "onsets": 13
+    },
+    "2020": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2024": {
+     "flagged": 0,
+     "onsets": 2
+    },
+    "2025": {
+     "flagged": 4,
+     "onsets": 5
+    }
+   },
+   "flagged": 14,
+   "onsets": 26
+  }
+ },
+ "rule": "unweighted"
+}
