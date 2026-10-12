@@ -1,0 +1,1526 @@
+{
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "rows": {
+  "risk_gbm+settle+h41": {
+   "shortfall_by_lead": {
+    "1": {
+     "2018-19": {
+      "days": 375,
+      "mean_predicted": 0.09749641246027352,
+      "pressure_days": 102,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 40,
+      "risk_dates": 81,
+      "share_not_risk": 0.9474494803477579,
+      "shortfall_not_risk": 0.16533333333333333,
+      "shortfall_risk": 0.009170254206393141,
+      "shortfall_total": 0.17450358753972647
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.016802733152072025,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.012818669407052103,
+      "shortfall_total": -0.0008664781719923434
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.0004794116894287206,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.0004794116894287206,
+      "shortfall_total": -0.0004794116894287206
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.00048030275384247114,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.4098424222012362,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.011519697246157527,
+      "shortfall_total": 0.019519697246157527
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.03952547386308899,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.7829563143085854,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.016699425735304585,
+      "shortfall_total": 0.07694038959072627
+     },
+     "all": {
+      "days": 1873,
+      "mean_predicted": 0.02728198575431664,
+      "pressure_days": 140,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 58,
+      "risk_dates": 404,
+      "share_not_risk": 0.9223759794709191,
+      "shortfall_not_risk": 0.04378003203416978,
+      "shortfall_risk": 0.003684378367413199,
+      "shortfall_total": 0.04746441040158298
+     }
+    },
+    "2": {
+     "2018-19": {
+      "days": 374,
+      "mean_predicted": 0.0945122806507655,
+      "pressure_days": 101,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 39,
+      "risk_dates": 80,
+      "share_not_risk": 0.9443675075831294,
+      "shortfall_not_risk": 0.1657754010695187,
+      "shortfall_risk": 0.009765794215544688,
+      "shortfall_total": 0.1755411952850634
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.020004973008787005,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.016020909263767084,
+      "shortfall_total": -0.004068718028707325
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.0005287406194618183,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.0005287406194618183,
+      "shortfall_total": -0.0005287406194618183
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.0019514012954438373,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.44324770753424153,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.010048598704556162,
+      "shortfall_total": 0.018048598704556162
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.027519498830775722,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.6772729173443659,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.02870540076761785,
+      "shortfall_total": 0.08894636462303954
+     },
+     "all": {
+      "days": 1872,
+      "mean_predicted": 0.025696872171299904,
+      "pressure_days": 139,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 57,
+      "risk_dates": 403,
+      "share_not_risk": 0.9021353128555819,
+      "shortfall_not_risk": 0.0438034188034188,
+      "shortfall_risk": 0.004751845777418044,
+      "shortfall_total": 0.048555264580836845
+     }
+    },
+    "3": {
+     "2018-19": {
+      "days": 373,
+      "mean_predicted": 0.10053979353005349,
+      "pressure_days": 100,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 38,
+      "risk_dates": 79,
+      "share_not_risk": 0.9920213163431013,
+      "shortfall_not_risk": 0.16621983914209115,
+      "shortfall_risk": 0.001336882073163681,
+      "shortfall_total": 0.16755672121525483
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.025199210247923313,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.02121514650290339,
+      "shortfall_total": -0.00926295526784363
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.000637844502714304,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.000637844502714304,
+      "shortfall_total": -0.000637844502714304
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.002465421476127751,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.45624136269420407,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.00953457852387225,
+      "shortfall_total": 0.01753457852387225
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.025942458488221153,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.6654739056525537,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.03028244111017242,
+      "shortfall_total": 0.0905234049655941
+     },
+     "all": {
+      "days": 1871,
+      "mean_predicted": 0.027460972730928908,
+      "pressure_days": 138,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 56,
+      "risk_dates": 402,
+      "share_not_risk": 0.9466579048550837,
+      "shortfall_not_risk": 0.043826830571886695,
+      "shortfall_risk": 0.0024695457084083425,
+      "shortfall_total": 0.04629637628029504
+     }
+    },
+    "4": {
+     "2018-19": {
+      "days": 372,
+      "mean_predicted": 0.0948948109795837,
+      "pressure_days": 100,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 38,
+      "risk_dates": 79,
+      "share_not_risk": 0.9582818145710952,
+      "shortfall_not_risk": 0.16666666666666666,
+      "shortfall_risk": 0.007255726654824907,
+      "shortfall_total": 0.17392239332149156
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.019375982603337883,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.015391918858317963,
+      "shortfall_total": -0.003439727623258202
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.0006629362572087756,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.0006629362572087756,
+      "shortfall_total": -0.0006629362572087756
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.0010305943118268388,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.4217317153477166,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.010969405688173162,
+      "shortfall_total": 0.018969405688173162
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.02928680974201786,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.6910027270377409,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.026938089856375705,
+      "shortfall_total": 0.08717905371179739
+     },
+     "all": {
+      "days": 1870,
+      "mean_predicted": 0.025780845904788366,
+      "pressure_days": 138,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 56,
+      "risk_dates": 402,
+      "share_not_risk": 0.9132438586262163,
+      "shortfall_not_risk": 0.04385026737967915,
+      "shortfall_risk": 0.004165678159382756,
+      "shortfall_total": 0.048015945539061904
+     }
+    },
+    "5": {
+     "2018-19": {
+      "days": 371,
+      "mean_predicted": 0.09409085661495185,
+      "pressure_days": 100,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 38,
+      "risk_dates": 79,
+      "share_not_risk": 0.9524937271136709,
+      "shortfall_not_risk": 0.16711590296495957,
+      "shortfall_risk": 0.008335019395829812,
+      "shortfall_total": 0.17545092236078938
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.021169326559155884,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.017185262814135967,
+      "shortfall_total": -0.005233071579076204
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.0007479883084889874,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.0007479883084889874,
+      "shortfall_total": -0.0007479883084889874
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.00044915903942639235,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.4091895594738286,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.01155084096057361,
+      "shortfall_total": 0.01955084096057361
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.028120664650709264,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.6818815812467646,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.028104234947684312,
+      "shortfall_total": 0.088345198803106
+     },
+     "all": {
+      "days": 1869,
+      "mean_predicted": 0.025626024228532995,
+      "pressure_days": 138,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 56,
+      "risk_dates": 402,
+      "share_not_risk": 0.9100497835814028,
+      "shortfall_not_risk": 0.043873729266987696,
+      "shortfall_risk": 0.004336522587946402,
+      "shortfall_total": 0.0482102518549341
+     }
+    }
+   },
+   "tier_3_by_lead": {
+    "1": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 375,
+       "difference": 0.17450358753972658,
+       "events": 102,
+       "lower": 0.09516398897705922,
+       "margin": -0.09516398897705922,
+       "predicted": 0.09749641246027352,
+       "realised": 0.272,
+       "tested": true,
+       "upper": 0.25404920815687226
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": -0.0008664781719923306,
+       "events": 4,
+       "lower": -0.013957338780248775,
+       "margin": 0.013957338780248775,
+       "predicted": 0.016802733152072025,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.015634123486017205
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.0004794116894287206,
+       "events": 0,
+       "lower": -0.0008362724251464785,
+       "margin": -0.00021379887053829888,
+       "predicted": 0.0004794116894287206,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.00021379887053829888
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.01951969724615753,
+       "events": 5,
+       "lower": -0.00017865287255288778,
+       "margin": 0.00017865287255288778,
+       "predicted": 0.00048030275384247114,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.04384882669254376
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.07694038959072629,
+       "events": 29,
+       "lower": 0.014188085602381648,
+       "margin": -0.014188085602381648,
+       "predicted": 0.03952547386308899,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.15850382420843603
+      }
+     },
+     "tier_3_ok": false
+    },
+    "2": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 374,
+       "difference": 0.17554119528506335,
+       "events": 101,
+       "lower": 0.09877810411156696,
+       "margin": -0.09877810411156696,
+       "predicted": 0.0945122806507655,
+       "realised": 0.2700534759358289,
+       "tested": true,
+       "upper": 0.25200638081373405
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": -0.0040687180287073315,
+       "events": 4,
+       "lower": -0.019451656706281115,
+       "margin": 0.014568215481946395,
+       "predicted": 0.020004973008787005,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.014568215481946395
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.0005287406194618183,
+       "events": 0,
+       "lower": -0.0007988611775105255,
+       "margin": -0.00029202766769469314,
+       "predicted": 0.0005287406194618183,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.00029202766769469314
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.018048598704556162,
+       "events": 5,
+       "lower": -0.0002389818653451908,
+       "margin": 0.0002389818653451908,
+       "predicted": 0.0019514012954438373,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.04225009222001932
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.08894636462303956,
+       "events": 29,
+       "lower": 0.021445991195691225,
+       "margin": -0.021445991195691225,
+       "predicted": 0.027519498830775722,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.1725968823005142
+      }
+     },
+     "tier_3_ok": false
+    },
+    "3": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 373,
+       "difference": 0.16755672121525483,
+       "events": 100,
+       "lower": 0.0897066582622072,
+       "margin": -0.0897066582622072,
+       "predicted": 0.10053979353005349,
+       "realised": 0.2680965147453083,
+       "tested": true,
+       "upper": 0.2429900778865531
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": -0.009262955267843627,
+       "events": 4,
+       "lower": -0.028665667105525355,
+       "margin": 0.012491418022791271,
+       "predicted": 0.025199210247923313,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.012491418022791271
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.000637844502714304,
+       "events": 0,
+       "lower": -0.0011536661084180033,
+       "margin": -0.00027071728184819926,
+       "predicted": 0.000637844502714304,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.00027071728184819926
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.01753457852387225,
+       "events": 5,
+       "lower": -0.0001658012564307502,
+       "margin": 0.0001658012564307502,
+       "predicted": 0.002465421476127751,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.03832213560906792
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.09052340496559408,
+       "events": 29,
+       "lower": 0.01877530847551637,
+       "margin": -0.01877530847551637,
+       "predicted": 0.025942458488221153,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.18692455024105986
+      }
+     },
+     "tier_3_ok": false
+    },
+    "4": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 372,
+       "difference": 0.17392239332149168,
+       "events": 100,
+       "lower": 0.09785120946430381,
+       "margin": -0.09785120946430381,
+       "predicted": 0.0948948109795837,
+       "realised": 0.26881720430107525,
+       "tested": true,
+       "upper": 0.2533006593161246
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": -0.003439727623258194,
+       "events": 4,
+       "lower": -0.022284061426326572,
+       "margin": 0.017539607005477752,
+       "predicted": 0.019375982603337883,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.017539607005477752
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.0006629362572087756,
+       "events": 0,
+       "lower": -0.0011931016158808938,
+       "margin": -0.00028493143363390037,
+       "predicted": 0.0006629362572087756,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.00028493143363390037
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.018969405688173162,
+       "events": 5,
+       "lower": -0.0009272645325500628,
+       "margin": 0.0009272645325500628,
+       "predicted": 0.0010305943118268388,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.04594359227434405
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.08717905371179738,
+       "events": 29,
+       "lower": 0.019378424996303358,
+       "margin": -0.019378424996303358,
+       "predicted": 0.02928680974201786,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.17249859329812608
+      }
+     },
+     "tier_3_ok": false
+    },
+    "5": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 371,
+       "difference": 0.17545092236078944,
+       "events": 100,
+       "lower": 0.10141230596811529,
+       "margin": -0.10141230596811529,
+       "predicted": 0.09409085661495185,
+       "realised": 0.2695417789757412,
+       "tested": true,
+       "upper": 0.25670577714065584
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": -0.005233071579076215,
+       "events": 4,
+       "lower": -0.024804292607150266,
+       "margin": 0.017667337122865147,
+       "predicted": 0.021169326559155884,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.017667337122865147
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.0007479883084889874,
+       "events": 0,
+       "lower": -0.0015522787862185484,
+       "margin": -0.00026273997504448445,
+       "predicted": 0.0007479883084889874,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.00026273997504448445
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.01955084096057361,
+       "events": 5,
+       "lower": -3.5922080878199435e-05,
+       "margin": 3.5922080878199435e-05,
+       "predicted": 0.00044915903942639235,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.04456516788235585
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.08834519880310601,
+       "events": 29,
+       "lower": 0.020425246396141936,
+       "margin": -0.020425246396141936,
+       "predicted": 0.028120664650709264,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.17351709009348895
+      }
+     },
+     "tier_3_ok": false
+    }
+   },
+   "tier_5": {
+    "base_rate": 0.15195291599785982,
+    "beats_climatology": {
+     "difference": 0.042927025747812445,
+     "lower": 0.030784172379390354,
+     "margin": 0.030784172379390354,
+     "upper": 0.0562980905567668
+    },
+    "calibration": {
+     "covers_zero": false,
+     "difference": 0.0593998610030808,
+     "lower": 0.030436109708869313,
+     "margin": 0.030436109708869313,
+     "upper": 0.09105009403971948
+    },
+    "criteria": {
+     "beats_climatology_brier": true,
+     "calibrated": false
+    },
+    "decision_days": 1869,
+    "events": 284,
+    "mean_predicted": 0.092553054994779
+   },
+   "verdict": {
+    "passes": false,
+    "tier_1_onset_warning": true,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false
+   },
+   "week_split": {
+    "base_rate": 0.15195291599785982,
+    "decision_days": 1869,
+    "mean_predicted": 0.092553054994779,
+    "shortfall_total": 0.05939986100308081,
+    "shortfall_zero_forecast": 0.03959336543606207,
+    "weeks_forecast_zero": 740,
+    "weeks_with_pressure": 284,
+    "weeks_with_pressure_forecast_zero": 74
+   }
+  },
+  "risk_gbm+settle+h41+dist_roll": {
+   "shortfall_by_lead": {
+    "1": {
+     "2018-19": {
+      "days": 375,
+      "mean_predicted": 0.09271911310235462,
+      "pressure_days": 102,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 40,
+      "risk_dates": 81,
+      "share_not_risk": 0.9222027857756252,
+      "shortfall_not_risk": 0.16533333333333333,
+      "shortfall_risk": 0.013947553564312015,
+      "shortfall_total": 0.17928088689764535
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.008310761762937137,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": 1.5673991038626265,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.004326698017917216,
+      "shortfall_total": 0.007625493217142545
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.0009460941849258782,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.0009460941849258782,
+      "shortfall_total": -0.0009460941849258782
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.002153784394974508,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.4482743107590385,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.009846215605025493,
+      "shortfall_total": 0.017846215605025494
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.048056135465688925,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.8805906064394456,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.008168764132704648,
+      "shortfall_total": 0.06840972798812633
+     },
+     "all": {
+      "days": 1873,
+      "mean_predicted": 0.026731324557343818,
+      "pressure_days": 140,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 58,
+      "risk_dates": 404,
+      "share_not_risk": 0.9117977038586066,
+      "shortfall_not_risk": 0.04378003203416978,
+      "shortfall_risk": 0.004235039564386027,
+      "shortfall_total": 0.04801507159855581
+     }
+    },
+    "2": {
+     "2018-19": {
+      "days": 374,
+      "mean_predicted": 0.0870228594513132,
+      "pressure_days": 101,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 39,
+      "risk_dates": 80,
+      "share_not_risk": 0.9057249778948498,
+      "shortfall_not_risk": 0.1657754010695187,
+      "shortfall_risk": 0.01725521541499697,
+      "shortfall_total": 0.18303061648451568
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.00952095676210339,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": 1.8630764820205168,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.0055368930170834685,
+      "shortfall_total": 0.006415298217976292
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.00025890606632511694,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.00025890606632511694,
+      "shortfall_total": -0.00025890606632511694
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.003789573859643633,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.49350954322439106,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.008210426140356369,
+      "shortfall_total": 0.01621042614035637
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.03527090307069039,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.7419298386398604,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.020953996527703175,
+      "shortfall_total": 0.08119496038312486
+     },
+     "all": {
+      "days": 1872,
+      "mean_predicted": 0.023963578872437552,
+      "pressure_days": 139,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 57,
+      "risk_dates": 403,
+      "share_not_risk": 0.8710414585402466,
+      "shortfall_not_risk": 0.0438034188034188,
+      "shortfall_risk": 0.0064851390762803995,
+      "shortfall_total": 0.0502885578796992
+     }
+    },
+    "3": {
+     "2018-19": {
+      "days": 373,
+      "mean_predicted": 0.08138704060956108,
+      "pressure_days": 100,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 38,
+      "risk_dates": 79,
+      "share_not_risk": 0.8902592646222168,
+      "shortfall_not_risk": 0.16621983914209115,
+      "shortfall_risk": 0.02048963499365608,
+      "shortfall_total": 0.18670947413574723
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.011847459189044457,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": 2.9231568035912208,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.007863395444024538,
+      "shortfall_total": 0.0040887957910352235
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.0005428229031095138,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.0005428229031095138,
+      "shortfall_total": -0.0005428229031095138
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.003574879207434099,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.48705882294764263,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.008425120792565903,
+      "shortfall_total": 0.016425120792565903
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.045105408289420806,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.8441785260007579,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.011119491308972773,
+      "shortfall_total": 0.07136045516439446
+     },
+     "all": {
+      "days": 1871,
+      "mean_predicted": 0.02451206648918584,
+      "pressure_days": 138,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 56,
+      "risk_dates": 402,
+      "share_not_risk": 0.889970131702939,
+      "shortfall_not_risk": 0.043826830571886695,
+      "shortfall_risk": 0.005418451950151414,
+      "shortfall_total": 0.04924528252203811
+     }
+    },
+    "4": {
+     "2018-19": {
+      "days": 372,
+      "mean_predicted": 0.08808327923770873,
+      "pressure_days": 100,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 38,
+      "risk_dates": 79,
+      "share_not_risk": 0.9221659221323955,
+      "shortfall_not_risk": 0.16666666666666666,
+      "shortfall_risk": 0.014067258396699867,
+      "shortfall_total": 0.18073392506336652
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.013321563426581126,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": 4.571166805150413,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.009337499681561206,
+      "shortfall_total": 0.0026146915534985553
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.0011015742815413754,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.0011015742815413754,
+      "shortfall_total": -0.0011015742815413754
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.0022815720175308066,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.4515073237826339,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.009718427982469195,
+      "shortfall_total": 0.017718427982469195
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.04124163036730176,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.8008185844332912,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.014983269231091806,
+      "shortfall_total": 0.07522423308651349
+     },
+     "all": {
+      "days": 1870,
+      "mean_predicted": 0.025547715949162168,
+      "pressure_days": 138,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 56,
+      "risk_dates": 402,
+      "share_not_risk": 0.9088312455749907,
+      "shortfall_not_risk": 0.04385026737967915,
+      "shortfall_risk": 0.004398808115008951,
+      "shortfall_total": 0.0482490754946881
+     }
+    },
+    "5": {
+     "2018-19": {
+      "days": 371,
+      "mean_predicted": 0.09491028589771361,
+      "pressure_days": 100,
+      "pressure_days_not_risk": 62,
+      "pressure_days_risk": 38,
+      "risk_dates": 79,
+      "share_not_risk": 0.9569631457614005,
+      "shortfall_not_risk": 0.16711590296495957,
+      "shortfall_risk": 0.007515590113068071,
+      "shortfall_total": 0.17463149307802764
+     },
+     "2020": {
+      "days": 251,
+      "mean_predicted": 0.01320104430278291,
+      "pressure_days": 4,
+      "pressure_days_not_risk": 3,
+      "pressure_days_risk": 1,
+      "risk_dates": 56,
+      "share_not_risk": 4.369751600586834,
+      "shortfall_not_risk": 0.01195219123505976,
+      "shortfall_risk": -0.00921698055776299,
+      "shortfall_total": 0.0027352106772967704
+     },
+     "2021-23": {
+      "days": 748,
+      "mean_predicted": 0.00046268062919537384,
+      "pressure_days": 0,
+      "pressure_days_not_risk": 0,
+      "pressure_days_risk": 0,
+      "risk_dates": 162,
+      "share_not_risk": null,
+      "shortfall_not_risk": 0.0,
+      "shortfall_risk": -0.00046268062919537384,
+      "shortfall_total": -0.00046268062919537384
+     },
+     "2024": {
+      "days": 250,
+      "mean_predicted": 0.003007263896756915,
+      "pressure_days": 5,
+      "pressure_days_not_risk": 2,
+      "pressure_days_risk": 3,
+      "risk_dates": 53,
+      "share_not_risk": 0.47078939797536135,
+      "shortfall_not_risk": 0.008,
+      "shortfall_risk": 0.008992736103243085,
+      "shortfall_total": 0.016992736103243086
+     },
+     "2025-26": {
+      "days": 249,
+      "mean_predicted": 0.039522244894825344,
+      "pressure_days": 29,
+      "pressure_days_not_risk": 15,
+      "pressure_days_risk": 14,
+      "risk_dates": 52,
+      "share_not_risk": 0.7829234572485969,
+      "shortfall_not_risk": 0.060240963855421686,
+      "shortfall_risk": 0.01670265470356823,
+      "shortfall_total": 0.07694361855898992
+     },
+     "all": {
+      "days": 1869,
+      "mean_predicted": 0.026465552836644788,
+      "pressure_days": 138,
+      "pressure_days_not_risk": 82,
+      "pressure_days_risk": 56,
+      "risk_dates": 402,
+      "share_not_risk": 0.9261781594168674,
+      "shortfall_not_risk": 0.043873729266987696,
+      "shortfall_risk": 0.003496993979834606,
+      "shortfall_total": 0.0473707232468223
+     }
+    }
+   },
+   "tier_3_by_lead": {
+    "1": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 375,
+       "difference": 0.17928088689764532,
+       "events": 102,
+       "lower": 0.10462769846856139,
+       "margin": -0.10462769846856139,
+       "predicted": 0.09271911310235462,
+       "realised": 0.272,
+       "tested": true,
+       "upper": 0.2531765022396428
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": 0.007625493217142543,
+       "events": 4,
+       "lower": -0.006278614111931785,
+       "margin": 0.006278614111931785,
+       "predicted": 0.008310761762937137,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.027981490694851074
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.0009460941849258782,
+       "events": 0,
+       "lower": -0.0020502830244769708,
+       "margin": -0.00025321501970925934,
+       "predicted": 0.0009460941849258782,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.00025321501970925934
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.017846215605025494,
+       "events": 5,
+       "lower": -0.0005390339347755284,
+       "margin": 0.0005390339347755284,
+       "predicted": 0.002153784394974508,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.04053550831504221
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.06840972798812633,
+       "events": 29,
+       "lower": 0.005082197931291961,
+       "margin": -0.005082197931291961,
+       "predicted": 0.048056135465688925,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.1500274024277288
+      }
+     },
+     "tier_3_ok": false
+    },
+    "2": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 374,
+       "difference": 0.18303061648451574,
+       "events": 101,
+       "lower": 0.10480225817083172,
+       "margin": -0.10480225817083172,
+       "predicted": 0.0870228594513132,
+       "realised": 0.2700534759358289,
+       "tested": true,
+       "upper": 0.2646392923296158
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": 0.00641529821797629,
+       "events": 4,
+       "lower": -0.010309982136857285,
+       "margin": 0.010309982136857285,
+       "predicted": 0.00952095676210339,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.029498738947531022
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.00025890606632511694,
+       "events": 0,
+       "lower": -0.0003592777539800071,
+       "margin": -0.00017034243048393504,
+       "predicted": 0.00025890606632511694,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.00017034243048393504
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.01621042614035637,
+       "events": 5,
+       "lower": -8.607590737944365e-05,
+       "margin": 8.607590737944365e-05,
+       "predicted": 0.003789573859643633,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.037570158582049366
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.08119496038312488,
+       "events": 29,
+       "lower": 0.01876811684792077,
+       "margin": -0.01876811684792077,
+       "predicted": 0.03527090307069039,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.16990191727553805
+      }
+     },
+     "tier_3_ok": false
+    },
+    "3": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 373,
+       "difference": 0.1867094741357472,
+       "events": 100,
+       "lower": 0.10936872888114468,
+       "margin": -0.10936872888114468,
+       "predicted": 0.08138704060956108,
+       "realised": 0.2680965147453083,
+       "tested": true,
+       "upper": 0.26581542974108596
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": 0.004088795791035221,
+       "events": 4,
+       "lower": -0.013763328079947583,
+       "margin": 0.013763328079947583,
+       "predicted": 0.011847459189044457,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.02687018883280896
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.0005428229031095138,
+       "events": 0,
+       "lower": -0.0008979458439117904,
+       "margin": -0.0002457586352934042,
+       "predicted": 0.0005428229031095138,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.0002457586352934042
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.016425120792565903,
+       "events": 5,
+       "lower": -0.00016498489048259542,
+       "margin": 0.00016498489048259542,
+       "predicted": 0.003574879207434099,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.03771685202720442
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.07136045516439446,
+       "events": 29,
+       "lower": 0.007393377524638807,
+       "margin": -0.007393377524638807,
+       "predicted": 0.045105408289420806,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.149589392934243
+      }
+     },
+     "tier_3_ok": false
+    },
+    "4": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 372,
+       "difference": 0.18073392506336663,
+       "events": 100,
+       "lower": 0.10307916933879761,
+       "margin": -0.10307916933879761,
+       "predicted": 0.08808327923770873,
+       "realised": 0.26881720430107525,
+       "tested": true,
+       "upper": 0.25989812662013145
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": 0.0026146915534985514,
+       "events": 4,
+       "lower": -0.01515016085029287,
+       "margin": 0.01515016085029287,
+       "predicted": 0.013321563426581126,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.026810934130268062
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.0011015742815413754,
+       "events": 0,
+       "lower": -0.0017402181935242775,
+       "margin": -0.0005541060346493078,
+       "predicted": 0.0011015742815413754,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.0005541060346493078
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.01771842798246919,
+       "events": 5,
+       "lower": -0.0017121849084661045,
+       "margin": 0.0017121849084661045,
+       "predicted": 0.0022815720175308066,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.043648020690473806
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.07522423308651349,
+       "events": 29,
+       "lower": 0.014202082182340732,
+       "margin": -0.014202082182340732,
+       "predicted": 0.04124163036730176,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.15792776389486804
+      }
+     },
+     "tier_3_ok": false
+    },
+    "5": {
+     "failing": [
+      "2018-19",
+      "2025-26"
+     ],
+     "regimes": {
+      "2018-19": {
+       "covers_zero": false,
+       "days": 371,
+       "difference": 0.17463149307802764,
+       "events": 100,
+       "lower": 0.09839840534400693,
+       "margin": -0.09839840534400693,
+       "predicted": 0.09491028589771361,
+       "realised": 0.2695417789757412,
+       "tested": true,
+       "upper": 0.25426131337037056
+      },
+      "2020": {
+       "covers_zero": true,
+       "days": 251,
+       "difference": 0.002735210677296766,
+       "events": 4,
+       "lower": -0.014531822465623744,
+       "margin": 0.014531822465623744,
+       "predicted": 0.01320104430278291,
+       "realised": 0.01593625498007968,
+       "tested": false,
+       "upper": 0.02489513275726038
+      },
+      "2021-23": {
+       "covers_zero": false,
+       "days": 748,
+       "difference": -0.00046268062919537384,
+       "events": 0,
+       "lower": -0.0007167339676146009,
+       "margin": -0.000265357921307285,
+       "predicted": 0.00046268062919537384,
+       "realised": 0.0,
+       "tested": false,
+       "upper": -0.000265357921307285
+      },
+      "2024": {
+       "covers_zero": true,
+       "days": 250,
+       "difference": 0.016992736103243082,
+       "events": 5,
+       "lower": -0.0007142166708380834,
+       "margin": 0.0007142166708380834,
+       "predicted": 0.003007263896756915,
+       "realised": 0.02,
+       "tested": false,
+       "upper": 0.041417861734216445
+      },
+      "2025-26": {
+       "covers_zero": false,
+       "days": 249,
+       "difference": 0.07694361855898992,
+       "events": 29,
+       "lower": 0.01250133089373169,
+       "margin": -0.01250133089373169,
+       "predicted": 0.039522244894825344,
+       "realised": 0.11646586345381527,
+       "tested": true,
+       "upper": 0.16290038098189702
+      }
+     },
+     "tier_3_ok": false
+    }
+   },
+   "tier_5": {
+    "base_rate": 0.15195291599785982,
+    "beats_climatology": {
+     "difference": 0.047395168346971925,
+     "lower": 0.03372888573402949,
+     "margin": 0.03372888573402949,
+     "upper": 0.06113096254527806
+    },
+    "calibration": {
+     "covers_zero": false,
+     "difference": 0.0616916277854051,
+     "lower": 0.03415028404086987,
+     "margin": 0.03415028404086987,
+     "upper": 0.09305653156150852
+    },
+    "criteria": {
+     "beats_climatology_brier": true,
+     "calibrated": false
+    },
+    "decision_days": 1869,
+    "events": 284,
+    "mean_predicted": 0.09026128821245474
+   },
+   "verdict": {
+    "passes": false,
+    "tier_1_onset_warning": true,
+    "tier_3_no_crying_wolf": false,
+    "tier_5_week_ahead": false
+   },
+   "week_split": {
+    "base_rate": 0.15195291599785982,
+    "decision_days": 1869,
+    "mean_predicted": 0.09026128821245474,
+    "shortfall_total": 0.06169162778540507,
+    "shortfall_zero_forecast": 0.03959336543606207,
+    "weeks_forecast_zero": 740,
+    "weeks_with_pressure": 284,
+    "weeks_with_pressure_forecast_zero": 74
+   }
+  }
+ },
+ "threshold_bp": 5.0
+}
