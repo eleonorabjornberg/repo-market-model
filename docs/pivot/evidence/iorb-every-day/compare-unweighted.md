@@ -28,7 +28,7 @@ Table 2. Flags at +5 bp, by horizon: flags (false alarms); onsets flagged of ons
 | risk_gbm+every_day+gate+settle+h41 | 65(21); 12/27; 0.78 | 96(43); 10/26; 1.65 | 93(47); 9/26; 1.81 | 93(41); 10/26; 1.58 | 123(61); 12/26; 2.35 |
 | risk_gbm+every_day+gate+settle+h41+iorb | 68(22); 13/27; 0.81 | 96(43); 10/26; 1.65 | 93(47); 9/26; 1.81 | 93(41); 10/26; 1.58 | 123(61); 12/26; 2.35 |
 
-Table 3. Paired Brier difference against the parent, +5 bp (negative favours the row), 90% interval, h = 1: all days, by regime and by pressure-day type.
+Table 3. Paired Brier difference against the parent, +5 bp (the parent's squared error minus the row's, so positive favours the row), 90% interval, h = 1: all days, by regime and by pressure-day type.
 
 | cell | days | difference |
 |---|---|---|
