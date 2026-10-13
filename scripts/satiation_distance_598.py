@@ -52,6 +52,7 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model import (  # noqa: E402
     contract, h41_release, measurement_fields, ml, pressure_judge as pj, satiation as sat, scarcity,
 )
@@ -234,7 +235,7 @@ def hinge_share_command(args) -> int:
 
 def panel_command(args) -> int:
     declared = declared_document()
-    end = date.fromisoformat(declared["scoring"]["last_day"])
+    end = panel_end(args.end, date.fromisoformat(declared["scoring"]["last_day"]), where="satiation_distance_598.panel")
     require_unlocked([end], where="satiation_distance_598")
     rows = [row for row in load_daily_panel(args.panel) if row.date <= end]
     built = distance_rows(rows, end, args.check_every)
@@ -465,6 +466,7 @@ def main(argv=None) -> int:
     p.add_argument("--panel", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--check-every", type=int, default=40)
+    p.add_argument("--end", help="last day kept, ISO; default this script's own end (at most 2026-09-03, #684)")
     p = sub.add_parser("hinge-share")
     p.add_argument("--panel", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)

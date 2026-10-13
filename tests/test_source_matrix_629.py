@@ -5,7 +5,7 @@ clusters, a partial rank correlation), the ordinary-day rule, and the two guards
 the back-filled 2014-18 history (`posting_instant` is null, #572).
 
 Recorded mutations, 12 October 2026, in a disposable copy of `scripts/source_matrix_629.py` (control green before and after):
-1. in `require_panel_window`, `if rows[-1].date > LAST_DAY:` -> `if False:` (a panel past 2025-12-31 is accepted).
+1. in `require_panel_window`, `if rows[-1].date > LAST_DAY:` -> `if False:` (a panel past 2026-09-03 is accepted).
    `PanelGuardTests.test_a_panel_past_the_last_day_is_refused` then fails with `AssertionError: LookAheadError not raised`.
 2. in `require_no_backfill`, `if rows[0].date < backfill.FIRST_PUBLISHED:` -> `if False:` (a panel that carries back-filled days is accepted).
    `PanelGuardTests.test_a_panel_with_backfilled_days_is_refused` then fails with `AssertionError: LookAheadError not raised`.
@@ -69,10 +69,10 @@ class DeclarationTests(unittest.TestCase):
 class PanelGuardTests(unittest.TestCase):
     def test_a_panel_past_the_last_day_is_refused(self):
         with self.assertRaises(LookAheadError):
-            SCRIPT.require_panel_window([_row(date(2025, 12, 30)), _row(date(2026, 1, 2))])
+            SCRIPT.require_panel_window([_row(date(2026, 9, 2)), _row(date(2026, 9, 4))])
 
     def test_a_panel_ending_on_the_last_day_is_accepted(self):
-        SCRIPT.require_panel_window([_row(date(2025, 12, 30)), _row(date(2025, 12, 31))])
+        SCRIPT.require_panel_window([_row(date(2026, 9, 2)), _row(date(2026, 9, 3))])
 
     def test_a_panel_with_backfilled_days_is_refused(self):
         with self.assertRaises(LookAheadError):

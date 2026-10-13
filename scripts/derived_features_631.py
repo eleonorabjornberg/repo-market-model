@@ -1,6 +1,6 @@
 """Derived features, interactions and lagged pressure from data we hold, screened on ordinary days; one model test (#631).
 
-An exploratory measurement, not a record: nothing is selected, nothing is published, no day after 2025-12-31 and no day of a locked tier
+An exploratory measurement, not a record: nothing is selected, nothing is published, no day after 2026-09-03 (`repo_model.exploration.EXPLORATORY_END`, #684) and no day of a locked tier
 is read (`docs/decisions/lockbox.md`; `require_unlocked`). Everything is declared in `metadata/derived_features_631.json`, which this
 script refuses to read unless it is committed and unchanged (`risk_date_severity.committed_declaration`); `declare` writes it from the
 constants below and was run, and its output committed, before any number was computed.
@@ -20,11 +20,13 @@ from typing import Dict, List
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model.exploration import EXPLORATORY_END, NEAR_BLIND_START  # noqa: E402
+
 DECLARATION = REPO / "metadata" / "derived_features_631.json"
 CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
 
 FIRST_DAY = "2018-06-29"
-LAST_DAY = "2025-12-31"
+LAST_DAY = EXPLORATORY_END.isoformat()
 LEADS = (1, 2, 3, 5, 10)
 THRESHOLD_BP = 5.0
 #: rates whose own trailing range is read (panel column -> what it is)
@@ -73,7 +75,7 @@ def declaration_document() -> dict:
         "status": (
             "declared by the pull request that closes #631 before any number was computed; an exploratory screen and one model test, "
             "not a result. Nothing is selected into a model or published: no rule, threshold, onset definition or availability time changes, "
-            "the published declaration, the live record and the pin do not move. The screen reads 2018-2025 and the model test is one "
+            "the published declaration, the live record and the pin do not move. The screen reads 2018 to " + LAST_DAY + " (the 2026 days are development days, #684) and the model test is one "
             "declared comparison under the judge in force, so a pass is not a confirmation (ruling on #567)"
         ),
         "issue": 631,
@@ -88,7 +90,7 @@ def declaration_document() -> dict:
                 "the auction schedule, known in advance, not of any outcome"
             ),
             "no_hindsight_regime_labels": "regimes are metadata/evaluation_splits.json's date ranges; the scarcity state is read as of each decision instant (ruling on #515)",
-            "locked_days": "none read: require_unlocked on the last scored day; the panel is cut at 2025-12-31",
+            "locked_days": "none read: require_unlocked on the last scored day; the panel is cut at " + LAST_DAY,
         },
         "reading": {
             "rule": "every series is read through asof.InformationRule at the decision instant 16:00, at a lead of L panel days (horizon L), L in LEADS, per field, with both guards",
@@ -160,7 +162,7 @@ def declaration_document() -> dict:
                 "(3) its pre-onset AUC interval excludes 0.5 in the same direction at lead 1; (4) it is not in a cluster with a member that passes more checks (a cluster is listed once, by its representative-or-best). "
                 "The noise risk is 'low' if 4 checks pass, 'medium' if 3 or 2, 'high' otherwise; the reason column says which checks pass and fail"
             ),
-            "note": "a list for the next declared model test, selected on 2018-2025: nothing in it is selected into a model",
+            "note": "a list for the next declared model test, selected on 2018 to " + LAST_DAY + ": nothing in it is selected into a model",
         },
         "model_test": {
             "question": "does lagged pressure added to the every-day part of risk_gbm+settle+h41+dist_roll improve its forecast of pressure days that are not risk dates?",
@@ -593,6 +595,9 @@ def run_command(args) -> int:
             idx = [i for i in ordinary if regime_of[i] == label]
             if idx:
                 sp[f"regime:{label}"] = idx
+        # The 2026 column (#684): the days the opened near-blind tier added, beside the days the earlier page read.
+        sp["period:2018-2025"] = [i for i in ordinary if scored[i] < NEAR_BLIND_START]
+        sp["period:2026"] = [i for i in ordinary if scored[i] >= NEAR_BLIND_START]
         for b in _ss.BANDS:
             idx = [i for i in ordinary if band[i] == b]
             if idx:
@@ -1044,10 +1049,10 @@ def report_command(args) -> int:
         extra = f"; also in its cluster: {', '.join(item['also_in_cluster'])}" if item.get("also_in_cluster") else ""
         lines.append(f"| {k} | `{item['name']}` | {'higher series, more pressure' if item['direction'] == 1 else 'lower series, more pressure'} | {item['best_lead']} | {item['auroc']:.3f} | {item['leads_excluding']} | {item['passed']} of 4 | {item['noise_risk']} | passes {', '.join(passed) or 'none'}; fails {', '.join(failed) or 'none'}{extra} |")
     lines += ["", "## Splits of the ranked leads, and the persistence reference, at lead 1 (AUROC; 90% interval where the declared trigger fired)", "",
-              "| series | pooled | 2018-19 | 2025-26 | scarce state | ample state |", "|---|---|---|---|---|---|"]
+              "| series | pooled | 2018-19 | 2025-26 | 2018-2025 | 2026 | scarce state | ample state |", "|---|---|---|---|---|---|---|---|"]
     for name in [item["name"] for item in leads] + [SPREAD, "spread_lag1"]:
         cells = doc["series"][name]["leads"]["1"]
-        lines.append(f"| `{name}` | " + " | ".join(_auc(cells.get(k)) for k in ("pooled", "regime:2018-19", "regime:2025-26", "state:scarce", "state:ample")) + " |")
+        lines.append(f"| `{name}` | " + " | ".join(_auc(cells.get(k)) for k in ("pooled", "regime:2018-19", "regime:2025-26", "period:2018-2025", "period:2026", "state:scarce", "state:ample")) + " |")
     lines += ["", "Pressure days on ordinary days by split: " + ", ".join(
         f"{k} {v['pressure_days']} of {v['n']}" for k, v in doc["series"][SPREAD]["leads"]["1"].items()) + ".", ""]
     lines += ["", "## Every series: AUROC for pressure days on ordinary days (pooled, 90% interval), by lead", "",

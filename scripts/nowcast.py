@@ -54,6 +54,7 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model import contract, measurement_fields, nowcast  # noqa: E402
 from repo_model import pressure, pressure_judge as pj  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
@@ -159,7 +160,8 @@ def _scored_days():
 def panel_command(args) -> int:
     declarations_committed()
     declaration = nowcast.load_declaration(DECLARATION)
-    rows = [row for row in load_daily_panel(args.panel) if row.date <= END]
+    end = panel_end(args.end, END, where="nowcast.panel")
+    rows = [row for row in load_daily_panel(args.panel) if row.date <= end]
     operations = nowcast.load_operations(SNAPSHOT)
     values, excluded = nowcast.sameday_on_rrp(operations)
     built, walks = nowcast.with_nowcast(rows, values, declaration)
@@ -733,6 +735,7 @@ def main(argv=None) -> int:
     panel.add_argument("--panel", type=Path, required=True)
     panel.add_argument("--output", type=Path, required=True)
     panel.add_argument("--summary", type=Path)
+    panel.add_argument("--end", help="last day kept, ISO; default this script's own end (at most 2026-09-03, #684)")
     panel.set_defaults(handler=panel_command)
     accuracy = commands.add_parser("accuracy")
     accuracy.add_argument("--panel", type=Path, required=True)
