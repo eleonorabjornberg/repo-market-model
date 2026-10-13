@@ -12,6 +12,13 @@ all committed (822ab19) before the first forecast was fitted; `scripts/combined_
 2025-12-31). A pass here would not be a confirmation: only the 2026 confirmation window can confirm it, and it is not opened here.
 No row is in the confirmation look.**
 
+> **Note of 12 October 2026 (#619): tier 1 in the table below is on the earlier counting.** The "yes" for `ngboost_laplace` (17 of 26 onsets, worst
+> lead 1.73 weighted) and for the control `risk_gbm+every_day+gate+settle+h41` (18 of 26, worst lead 1.64) is the worst single lead. Tier 1 is read on the
+> false alarms pooled over the leads (ruling of 10 October 2026, #509; in force since PR #550). Under it `ngboost_laplace` has 2.34 pooled weighted false alarms per
+> onset and the control 3.39, against a limit of 2: **tier 1 is "no" for both**, with the worst-lead figures beside them. Sources:
+> `evidence/judge-rulings-rescore/rescore.json` and `evidence/satiation/compare.json`. Whether these rows stay on the confirmation shortlist (#567, #585) is
+> Eleonora's; this note decides nothing. Nothing below is edited.
+
 ## What was declared
 
 | part | what |

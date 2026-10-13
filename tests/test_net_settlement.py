@@ -20,6 +20,16 @@ Recorded mutations (CLAUDE.md), 8 October 2026, each applied in a disposable cop
 * `src/repo_model/net_settlement.py`, `check_known_columns`, `raise StaleReadError(` preceded by
   `continue`. `GuardTests.test_a_column_leaving_out_an_announced_auction_is_refused`
   then fails with `AssertionError: StaleReadError not raised`.
+
+Recorded mutation for the partly announced class (#620), 12 October 2026, in a disposable copy:
+
+* `src/repo_model/net_settlement.py`, `net_for_day`, `partly_announced = len(members) < len(everything[is_bill])`
+  mutated to `False` (a class whose other auctions are still unannounced nets its full maturing amount again).
+  Killed by `PartlyAnnouncedTests.test_a_partly_announced_class_nets_its_announced_offering_only` (`AssertionError:
+  -60.0 != 30.0`) and `PartlyAnnouncedTests.test_the_longer_lead_columns_do_not_read_a_partial_class_as_an_inflow`.
+* `value = sum(a.offering for a in members) - maturing` mutated to sum `everything[is_bill]` (the unannounced auctions'
+  offerings enter the net, a look-ahead). Killed by
+  `PartlyAnnouncedTests.test_an_unannounced_offering_never_enters_a_partial_class` (`AssertionError: 530.0 != 90.0`).
 """
 
 from __future__ import annotations
@@ -215,6 +225,57 @@ class AnnouncementTests(unittest.TestCase):
         self.assertAlmostEqual(built["2026-01-14"]["net_settlement_due_5d"], 0.0)
         self.assertAlmostEqual(built["2026-01-15"]["net_settlement_due_5d"], 10.0)
         self.assertAlmostEqual(built["2026-01-16"]["net_settlement_due_5d"], 10.0)
+
+
+class PartlyAnnouncedTests(unittest.TestCase):
+    """A class whose other auctions are not yet announced nets what is announced, not its whole maturing amount (#620)."""
+
+    def built(self, records, instant_day="2026-01-07"):
+        auctions = ns.auction_records(records, DECLARATION)
+        return {r.date.isoformat(): r.values for r in ns.with_net_settlement(rows(*DAYS), auctions, DECLARATION)}[instant_day]
+
+    def two_bills(self, second_announced):
+        # a 13-week bill announced early and a 4-week bill announced later settle together; one maturing total, 90
+        return [
+            record(offering=30e9, maturing="90000000000", announced="2026-01-05", term="13-Week"),
+            record(offering=60e9, maturing="90000000000", announced=second_announced, auctioned="2026-01-08", term="4-Week"),
+        ]
+
+    def test_a_partly_announced_class_nets_its_announced_offering_only(self):
+        # announced: the 30; the 90 maturing covers both bills, so subtracting it from 30 would read -60 (an inflow)
+        values = self.built(self.two_bills("2026-01-08"), "2026-01-07")
+        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0)
+
+    def test_the_class_nets_in_full_once_every_auction_is_announced(self):
+        values = self.built(self.two_bills("2026-01-08"), "2026-01-08")
+        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0 + 60.0 - 90.0)
+
+    def test_the_other_class_of_the_day_is_netted_as_before(self):
+        records = self.two_bills("2026-01-08") + [
+            record(kind="Note", offering=60e9, maturing="25000000000", announced="2026-01-05", term="2-Year")
+        ]
+        values = self.built(records, "2026-01-07")
+        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0 + (60.0 - 25.0))
+
+    def test_an_unannounced_offering_never_enters_a_partial_class(self):
+        small = self.built(self.two_bills("2026-01-08"), "2026-01-07")["net_settlement_due_5d"]
+        records = self.two_bills("2026-01-08")
+        records[1]["offering_amt"] = str(int(500e9))
+        self.assertAlmostEqual(self.built(records, "2026-01-07")["net_settlement_due_5d"], small)
+
+    def test_the_longer_lead_columns_do_not_read_a_partial_class_as_an_inflow(self):
+        from repo_model import projected_reserves as pr
+
+        auctions = ns.auction_records(self.two_bills("2026-01-08"), DECLARATION)
+        built = {r.date.isoformat(): r.values for r in pr.ahead_columns(rows(*DAYS), auctions, DECLARATION)}
+        # on 2026-01-07 the Friday 2026-01-09 settlement is 2 business days ahead
+        self.assertAlmostEqual(built["2026-01-07"]["net_settlement_ahead_2d"], 30.0)
+
+    def test_a_class_with_no_maturing_figure_announced_is_still_its_offering(self):
+        records = self.two_bills("2026-01-08")
+        records[0]["est_pub_held_mat_by_type_amt"] = "null"
+        values = self.built(records, "2026-01-07")
+        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0)
 
 
 class GuardTests(unittest.TestCase):

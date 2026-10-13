@@ -3,6 +3,11 @@
 `pressure_judge._paired_vectors` builds the difference as the reference's loss minus the candidate's, and its own comment says so.
 The tables of `announcement_dating_rescore.py compare` and `iorb_every_day_579.py compare` printed the opposite ("negative favours the
 arm"), which inverted every reading of "which arm is better" taken from them. These tests pin the statistic and the headers.
+
+`scripts/pooled_gate_595.py` printed the old header too (#613, found while working #610); its Table 3 now says "positive favours the row".
+Recorded mutation (12 October 2026, disposable copy): the header restored to "(negative favours the row)" fails
+`HeaderTests.test_the_pooled_gate_table_says_positive_favours_the_row` and `HeaderTests.test_no_script_that_pairs_against_the_judges_statistic_says_negative_favours`
+with `AssertionError`.
 """
 
 import importlib.util
@@ -66,11 +71,21 @@ class HeaderTests(unittest.TestCase):
         pairs = [("iorb", iorb.NEW, iorb.PARENT)]
         self.assertIn(iorb.PAIRED_BRIER_HEADER, iorb.markdown(document, pairs))
 
+    def test_the_pooled_gate_table_says_positive_favours_the_row(self):
+        # #613: scripts/pooled_gate_595.py printed "negative favours the row" under the same statistic
+        pooled = _load("pooled_gate_595")
+        document = {"onsets_in_cell": {}, "flags": {}, "recall_at_some_lead": {}, "caught_at_some_lead": {}, "brier": {"row": {"1": {}}}}
+        text = pooled.comparison_markdown(document, [("both", "row", "reference")])
+        self.assertIn("positive favours the row", text)
+        self.assertNotIn("negative favours", text)
+
     def test_no_script_that_pairs_against_the_judges_statistic_says_negative_favours(self):
+        # scripts that build their own a - b difference (unused_inputs, risk_date_severity, pressure_hazard) say what they compute
         offenders = []
         for path in sorted(SCRIPTS.glob("*.py")):
             text = path.read_text(encoding="utf-8")
-            if "_paired_vectors" in text and "negative favours" in text:
+            judges = "_paired_vectors" in text or '_load("announcement_dating_rescore")' in text
+            if judges and "negative favours" in text:
                 offenders.append(path.name)
         self.assertEqual(offenders, [])
 

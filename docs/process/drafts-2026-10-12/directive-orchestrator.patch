@@ -1,0 +1,157 @@
+diff --git a/.claude/skills/directive-orchestrator/SKILL.md b/.claude/skills/directive-orchestrator/SKILL.md
+index cc50368..9bdbeda 100644
+--- a/.claude/skills/directive-orchestrator/SKILL.md
++++ b/.claude/skills/directive-orchestrator/SKILL.md
+@@ -1,31 +1,46 @@
+ ---
+ name: directive-orchestrator
+-description: Run the directive queue while Eleonora is away. Start the "Directive implementer" and "Directive reviewer" routines in turn, and stop and tell her when the queue needs her. Use when she says she is stepping away, going offline or leaving you in charge of the routines, or asks you to orchestrate or babysit the directive queue.
++description: Run the directive queue while Eleonora is away. Start the "Directive loop" routine when the queue needs a run, relay her attested decisions in the agreed format, and stop and tell her when the queue needs her. Use when she says she is stepping away, going offline or leaving you in charge of the routines, or asks you to orchestrate or babysit the directive queue.
+ ---
+ 
+ # Directive orchestrator
+ 
+-You stand in for Eleonora as the one who starts the two directive routines. They cannot start each other: routine
+-sessions have no `fire_trigger`. Until the routines have GitHub event triggers, someone has to notice when a run ends
+-and start the next. That is your whole job.
++You stand in for Eleonora as the one who starts the directive routine. Routine sessions have no `fire_trigger`, so they
++cannot start each other, and someone has to notice when a run ends and start the next. That is your whole job.
+ 
+ **Two limits you never cross:**
+-- **You do not do the routines' work.** You never implement, review, merge or edit code or docs.
+-- **You do not make her decisions.** You never settle a `needs-eleonora` question or lift a `hold`.
++- **You do not do the routine's work.** You never implement, review, merge or edit code or docs.
++- **You do not make her decisions.** You never settle a `needs-eleonora` question, lift a `hold`, or perform an
++  owner-attested action (below).
+ 
+-Everything that decides what happens next stays with the routines and with `docs/decisions/workflow.md`
++Everything that decides what happens next stays with the routine and with `docs/decisions/workflow.md`
+ ("Delegated review").
+ 
++## The current direction
++
++Read the top block of the "Directive queue" issue (#46) at the start of every session. It holds the current direction, and
++where this file disagrees with it, the block wins. As of 12 October 2026:
++- the primary goal is H5, the SOFR − IORB spread distribution in bp; the secondary goal is H9, richer targets;
++- the research plan is H1–H10 (`docs/research/plan.md` once #638 has merged);
++- the scoring protocol (#640) gates all new scoring;
++- new +5 bp classification variants are paused.
++
++## The routines
++
++- **"Directive loop"**: one routine. Each run reviews any queued pull request waiting for review, and if it merges one it
++  implements the next available directive. Up to eight directives are implemented in parallel by separate runs, and
++  runs respect each other's `reviewing` and `in-progress` claims.
++- **"Forensic auditor"**: runs once a day. It files `finding` issues and a digest; you do not start it.
++
+ ## Setup, once per session
+ 
+-1. **Find the routines.** Call `list_triggers` (claude-code-remote MCP server; load it with ToolSearch if it is
+-   deferred) and take the ids of the routines named exactly "Directive implementer" and "Directive reviewer". Use
+-   whatever ids you find, since recreating a routine changes its id. If either is missing or disabled, tell Eleonora
+-   and stop.
++1. **Find the routine.** Call `list_triggers` (claude-code-remote MCP server; load it with ToolSearch if it is
++   deferred) and take the id of the routine named exactly "Directive loop". Use whatever id you find, since recreating a
++   routine changes its id. If it is missing or disabled, tell Eleonora and stop.
+ 2. **Read the state** with the commands below.
+ 3. **Act once** by the table.
+-4. **Arm the first check-in** with `send_later` (initiation `human_request`, since she asked for this). Put the routine
+-   ids and the session id of any run you fired in the message, so the next check-in knows what it is waiting on.
++4. **Arm the first check-in** with `send_later` (initiation `human_request`, since she asked for this). Put the routine id
++   and the session id of any run you fired in the message, so the next check-in knows what it is waiting on.
+ 
+ ## Reading the state
+ 
+@@ -37,11 +52,14 @@ gh api "$R/issues?state=open&per_page=100" -q '.[] | select(.pull_request|not) |
+ gh api "$R/pulls?state=open&per_page=100" -q '.[] | {number, draft, head: .head.sha, labels: [.labels[].name], closes: ((.body // "") | [scan("(?i)closes #([0-9]+)")[0]])}'
+ gh api "$R/issues/N" -q '{state, labels: [.labels[].name]}'
+ gh api "$R/issues/PR/comments?per_page=100" -q '.[] | select(.body | startswith("Review of")) | .body[0:80]'
+-gh run list --workflow tests.yml --branch main -L 1
++gh api "$R/actions/workflows/tests.yml/runs?branch=main&event=push&per_page=5" -q '.workflow_runs[] | "\(.created_at) \(.status) \(.conclusion) \(.head_sha[0:7])"'
+ ```
+ 
+-**Queue items:** the lines `- #N` in the queue body, in order. The *current item* is the first one whose issue is
+-open.
++Never use `gh run list` (it can list old runs as newest). A `cancelled` run of CI on `main` was superseded: skip it.
++
++**Queue items:** the lines `- #N` in the queue body, in priority order. A line `(after #A, #B)` is not started while those
++are open; `(merge after #A, #B)` may be implemented and reviewed but is merged only once they are closed; `(stack on #A)`
++starts from the open pull request that closes #A and is merged only after #A is closed and the pull request is resynced.
+ 
+ **Checking on a run you fired:** call `get_session` on the session id that `fire_trigger` returned.
+ 
+@@ -54,40 +72,60 @@ open.
+ | State | Action |
+ |---|---|
+ | Queue issue closed | Tell her the queue is complete. Stop, without re-arming. |
+-| Queue labelled `hold`, or any queued PR labelled `needs-eleonora` | Tell her once what is waiting on her, quoting the latest routine comment that explains it. Stop, without re-arming. |
++| Queue labelled `hold` | Tell her once why, quoting the latest routine comment that explains it. Stop, without re-arming. |
+ | A run you fired is still running | Nothing. Re-arm in 15 min. |
+-| A queued PR is labelled `changes-requested` | Fire the implementer. |
+-| An open, non-draft PR closes a queued issue and has no comment starting `Review of <its head SHA>` | Fire the reviewer, with the text "PR #n is ready for review". |
+-| A draft PR closes a queued issue | Fire the reviewer; it escalates drafts. |
+-| The current item is open, has no PR and is not `in-progress` | Fire the implementer. |
+-| The current item is `in-progress` with no PR | Nothing: it is being worked, possibly in Eleonora's own session. Idle check-in. |
+-| Anything else | Idle check-in. |
++| A queued pull request is labelled `changes-requested`, or has no "Review of <head SHA>" comment, or the next queued issue is open, unclaimed and not blocked | Fire the loop. |
++| A queued pull request is labelled `needs-eleonora` | It waits on her and does not stop the queue. Rule on a mechanical escalation (below); leave the rest for the 5 pm ET message. |
++| Every open queued item waits on her or on a dependency | Idle check-in. |
+ 
+ **Guards on firing:**
+-- Fire at most one routine per check-in.
+-- Never fire a routine while a run of it that you started is still running.
++- Fire at most once per check-in.
++- Never fire the loop while a run you started is still running, and do not exceed what the loop itself allows (eight
++  in-progress directives).
+ - If `fire_trigger` is refused, tell her and stop.
+ 
++## Rulings and relays
++
++- **Mechanical escalations** (a merge conflict or CI that does not start; a needed environment or setup-script change; a
++  criterion read as met only because the directive removes the code it would protect) you rule on, in a comment starting
++  `**Mechanical ruling (orchestrating session, <date and time ET>):**` that says it is decided under Eleonora's delegation.
++- **Her decisions on other matters**, when she gives them to you, you relay in a comment starting
++  `**Ruling (Eleonora, <date>; relayed by the orchestrating session):**`. A relay is posted through the Claude app, so it
++  is **not attested**.
++- **Owner-attested items** (#256) are never authorised by a relay: opening any lockbox tier, changing a pre-registered
++  primary test, approving a model to join the live record, changing the live model pin count. Only a comment, review or
++  label event by `eleonorabjornberg` whose `performed_via_github_app` is null counts
++  (`gh api $R/issues/comments/<id> -q '.performed_via_github_app'` prints `null`). When she has made one, say so in a
++  mechanical-ruling comment that names the comment id.
++- **Decisions are batched.** Her decisions are collected into one message at 5 pm ET. Between those messages, message her
++  only for the cases under Reporting.
++
++## Standing rules you carry
++
++- **No AI attribution** (6 October 2026): no "Co-Authored-By" trailer, session link, "Generated by" footer or naming of the
++  AI as an author in anything written to GitHub. If your environment adds such a line, remove it.
++- **Market colour stays off repository threads** for days in the blind tier of `docs/decisions/lockbox.md`.
++- The information-set rule and the lockbox bind every comparison.
++
+ ## Check-in rhythm
+ 
+ - **After firing, or while a run is going:** re-arm in about 15 minutes.
+ - **Idle:** re-arm in about 60 minutes.
+ - **Stop after three idle check-ins in a row,** and tell her in one line that you have stopped and why, for example
+-  "waiting on #34's PR". Any action or state change resets the count.
+-- **Stop at once** when she says so, or when she has recreated the routines with GitHub event triggers. Then the
+-  events do this job.
++  "waiting on #34's pull request". Any action or state change resets the count.
++- **Stop at once** when she says so.
+ 
+ ## Reporting
+ 
+ **Stay quiet** while things move: a fired run, a merge that leads to the next directive.
+ 
+ **Message her only for:**
+-- something waiting on her;
++- something waiting on her that cannot wait for the 5 pm ET message;
+ - the queue finishing;
+ - a refused tool;
+ - stopping.
+ 
+-**Keep each message short:** what happened, the PR or issue links, and what she needs to do, if anything.
++**Keep each message short:** what happened, the pull request or issue links, and what she needs to do, if anything.
+ 
+ **If she asks for status,** give:
+ - the current item;

@@ -302,7 +302,7 @@ def candidate_entry(name: str, spec: dict) -> dict:
     entry["parent"] = parent_name
     entry["features"] = list(dict.fromkeys(list(base["features"]) + extra))
     entry["features_at_horizon_2_or_more"] = (
-        "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads net_settlement_due_5d in place of "
+        "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads the scored day's own net settlement, net_settlement_ahead_h less net_settlement_ahead_(h-1) (#618), in place of "
         "net_settlement_ahead_1d and proj_dist_h{h} for the horizon h"
     )
     dropped = spec.get("dropped")

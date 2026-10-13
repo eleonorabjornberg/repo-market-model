@@ -8,6 +8,13 @@ row was declared in `metadata/iorb_every_day_579.json` and `metadata/pressure_ju
 **The input was picked after #560 found it on these same days (2018-06-29 to 2025-12-31), so a result here is not a confirmation. The row is not in the confirmation
 look. The input does not join any published declaration; no figure on any published page moves.**
 
+> **Note of 12 October 2026 (#619): tier 1 below is on the earlier counting.** The "yes" in the tier 1 column for `+iorb` (19 of 26, worst lead 1.64
+> weighted) is the worst single lead. Tier 1 is read on the false alarms pooled over the leads (ruling of 10 October 2026, #509; the judge counts a flagged
+> day once however many leads flag it). Under that count, in force since PR #550, `risk_gbm+every_day+gate+settle+h41+iorb` has 3.46 pooled weighted false
+> alarms per onset against a limit of 2: **tier 1 is "no"**, with the worst-lead 1.64 beside it. The parent `risk_gbm+every_day+gate+settle+h41`
+> (18 of 26) is 3.39 pooled against the same worst lead 1.64: also **"no"**. Sources: `evidence/pooled-gate/diag-weighted.md`
+> and `evidence/satiation/compare.json` (#591, #600). Whether these rows stay on the confirmation shortlist (#567, #585) is Eleonora's; this note decides nothing. Nothing below is edited.
+
 ## What was declared
 
 | part | what |

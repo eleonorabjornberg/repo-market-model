@@ -57,7 +57,8 @@ def _values(**kw):
     base = {
         "sofr": 4.0, "iorb": 4.0, "reserve_balances": 3200.0, "bank_total_assets": 26000.0, "on_rrp": 50.0,
         "tga": 700.0, "net_settlement": 80.0, "net_settlement_ahead_1d": 30.0 + 80.0, "net_settlement_due_5d": 150.0,
-        "days_to_month_end": 12.0, "quarter_end": 0.0, "tax_date": 0.0,
+        "net_settlement_ahead_2d": 125.0, "net_settlement_ahead_3d": 200.0, "net_settlement_ahead_4d": 260.0,
+        "net_settlement_ahead_5d": 330.0, "days_to_month_end": 12.0, "quarter_end": 0.0, "tax_date": 0.0,
     }
     base.update(kw)
     return base
@@ -142,16 +143,38 @@ class DesignTests(unittest.TestCase):
         self.assertAlmostEqual(design.row(_obs(quarter_end=1.0), 0.0)[4], e)
         self.assertAlmostEqual(design.row(_obs(days_to_month_end=0.0), 0.0)[4], e)
 
-    def test_the_drain_column_follows_the_horizon(self):
-        far = sl.StructuralDesign(sl.features_at_horizon(3), SPLITS)
-        self.assertEqual(far.drain_column, "net_settlement_due_5d")
+    def test_the_drain_columns_follow_the_horizon(self):
         near = sl.StructuralDesign(sl.features_at_horizon(1), SPLITS)
         # #568: at h = 1 the scored day is the next row, whose settlement is public at the decision only as
         # the one-day-ahead announced net (`net_settlement` on the decision row is the decision day's own)
-        self.assertEqual(near.drain_column, "net_settlement_ahead_1d")
+        self.assertEqual(near.drain_columns, ("net_settlement_ahead_1d",))
         self.assertNotIn("net_settlement", sl.features_at_horizon(1))
+        # #618: at h >= 2 it is that day's own net, the cumulative column less the one before, not the five-day sum
+        for horizon in range(2, 6):
+            far = sl.StructuralDesign(sl.features_at_horizon(horizon), SPLITS)
+            self.assertEqual(
+                far.drain_columns, (f"net_settlement_ahead_{horizon}d", f"net_settlement_ahead_{horizon - 1}d")
+            )
+            self.assertNotIn("net_settlement_due_5d", sl.features_at_horizon(horizon))
+
+    def test_the_scored_days_own_net_is_the_drain_at_every_horizon(self):
         e = sl.elasticity(3200.0 / 26000.0)
-        self.assertAlmostEqual(far.row(_obs(), 0.0)[1], e * 100.0)
+        # the cumulative columns of `_values` are 110, 125, 200, 260, 330: the days' own nets are 110, 15, 75, 60, 70
+        for horizon, own in ((1, 110.0), (2, 15.0), (3, 75.0), (4, 60.0), (5, 70.0)):
+            design = sl.StructuralDesign(sl.features_at_horizon(horizon), SPLITS)
+            self.assertAlmostEqual(design.drain(_obs()), own)
+            self.assertAlmostEqual(design.row(_obs(), 0.0)[1], e * max(0.0, own - 50.0))
+
+    def test_a_scored_day_that_returns_cash_drains_nothing_whatever_the_days_before_it(self):
+        # #618: the five-day sum is 150 here and would fire; the scored day's own net at h = 2 is -20
+        design = sl.StructuralDesign(sl.features_at_horizon(2), SPLITS)
+        row = design.row(_obs(net_settlement_ahead_1d=100.0, net_settlement_ahead_2d=80.0), 0.0)
+        self.assertEqual(row[1], 0.0)
+
+    def test_a_pair_of_drain_columns_that_is_not_adjacent_is_refused(self):
+        features = [f for f in sl.features_at_horizon(1)] + ["net_settlement_ahead_3d"]
+        with self.assertRaises(ValueError):
+            sl.StructuralDesign(features, SPLITS)
 
     def test_an_unobserved_input_is_refused(self):
         design = sl.StructuralDesign(self.FEATURES, SPLITS)
@@ -203,7 +226,8 @@ def _panel(count=330):
             "sofr": 4.0 + spread / 100.0, "iorb": 4.0, "sofr_volume": 2100.0 + index % 11,
             "reserve_balances": 3000.0, "bank_total_assets": 26000.0,
             "on_rrp": 20.0, "tga": 700.0 + 25.0 * ((week * 7) % 5),
-            "net_settlement": settle, "net_settlement_ahead_1d": settle, "net_settlement_due_5d": settle, **calendar,
+            "net_settlement": settle, "net_settlement_due_5d": settle, **calendar,
+            **{f"net_settlement_ahead_{k}d": k * settle for k in range(1, 6)},
         }))
     return rows
 

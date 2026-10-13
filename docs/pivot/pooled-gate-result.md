@@ -11,6 +11,12 @@ on #567). A variant can replace a shortlist slot only by Eleonora's decision, be
 
 **Re-run on main at 0adb032.** The whole pipeline was re-run on the tree after the merge of the own-leg scarcity reading (#586) and the state recalibration (#589), with the declaration and the candidate files unchanged. Every figure on this page is the same: the forecasts of the rows, the onsets flagged and lost, the pooled false alarms, the paired comparisons and the diagnosis reproduce byte for byte. What moved is only the judge's tier 3 detail that reads the scarcity state (`evidence/pooled-gate/judge-*.md`: the days in each state and the flags per 252 days by state), and the declaration digest that report prints. No tier verdict changed.
 
+> **Note of 12 October 2026 (#613): the sign of Table 3 in the compare tables.** The `compare-*.md` tables under `evidence/pooled-gate/` head their Table 3
+> "negative favours the row". After #604 the statistic is the reference's squared error less the row's, so **positive favours the row** and negative favours the
+> reference. `scripts/pooled_gate_595.py` now prints that header. This page draws no conclusion from a Table 3 sign (its readings are on onsets flagged, pooled false
+> alarms and the recall differences of Table 2), so no reading on it inverts. The tables are not regenerated; read their Table 3 with the corrected sign.
+> The same inversion is in `every-day-separation-result.md` (#601), which carries its own dated note. Nothing below is edited.
+
 ## Result in one paragraph
 
 None of the three variants passes tier 1 under the judge in force. The best, (a) `+leadgate`, brings the pooled weighted false alarms per onset from 3.46 to 2.69

@@ -608,6 +608,6 @@ GitHub herself (`docs/decisions/drafts/owner-attestation.md`).
 | `docs/decisions/weekly-carry.md` | Decision: a weekly column carries its last print forward, under a bound | Status: decided and implemented. |
 | `docs/decisions/weighted-miss.md` | Decision: weighted miss criteria for the pressure judge | Status: adopted by Eleonora on 10 October 2026, in her own comment on #464 (comment 6092866136, `performed_via_github_app` null, the attested approval that #256 requires for a change to a pre-registered test). |
 
-The records in `docs/decisions/drafts/` are drafts for Eleonora and are in force only once she merges them. Her ruling on #112 delegates the review and merge of queued pull requests to the "Directive reviewer" routine until she revokes it in writing (`docs/decisions/workflow.md`, "Delegated review").
+The records in `docs/decisions/drafts/` are drafts for Eleonora and are in force only once she merges them. Her ruling on #112 delegates the review and merge of queued pull requests to the "Directive loop" routine until she revokes it in writing (`docs/decisions/workflow.md`, "Delegated review").
 
 <!-- end generated: validation-governance -->

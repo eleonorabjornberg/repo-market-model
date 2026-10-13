@@ -1,25 +1,45 @@
 # Next session — start here
 
-For sessions in the `rmm` cloud environment. Everything a session needs is in this repository. Every statement about
-state below comes with the command that checks it, and the command's output wins over this page.
+For every session working a directive, in the `rmm` cloud environment or elsewhere. Everything a session needs is in this
+repository, except the current direction, which is the top block of the "Directive queue" issue. Every statement about
+state below comes with the command that checks it, and the command's output wins over this page. Where this page
+disagrees with the top block of the queue issue (#46) or a later ruling comment on your directive, they win, and the
+disagreement is a `finding`.
 
 ## Read, in this order
 
-1. [`CLAUDE.md`](../../CLAUDE.md): the standing rules. One directive, one branch, one pull request, and never push to `main`.
-2. [`docs/process/AGENT_CONTRACT.md`](../../AGENT_CONTRACT.md): the data and model interfaces.
-3. `docs/decisions/information-set.md`, `workflow.md` and `publish-rule.md`.
-4. [`lag-assessment.md`](lag-assessment.md): why every published record is being re-scored.
-5. [`plan.md`](plan.md), and the directive you were given, from [`directives/`](directives) or its GitHub issue.
-6. As needed: [`literature.md`](literature.md). `docs/archive/` holds superseded documents and is **not binding**.
+1. **The current direction:** the top block of the "Directive queue" issue (#46), then the ruling comments on your
+   directive. It sets:
+   - the primary goal H5, the SOFR − IORB spread distribution in bp, and the secondary goal H9, richer targets;
+   - the research plan H1–H10, each with its test and its kill rule;
+   - that new +5 bp classification variants are paused.
+
+   ```
+   gh api repos/eleonorabjornberg/repo-market-model/issues?state=open -q '.[] | select(.title=="Directive queue") | .body'
+   ```
+
+2. **The research plan:** `docs/research/plan.md` and the hypothesis manuals, once #638 has merged. Until then the plan
+   block in the top of #46 is the plan. Your pull request names the hypothesis and the step it serves, and, once
+   `docs/research/log.md` exists, adds an entry to it.
+3. **The scoring protocol:** #640. No new scoring starts until Eleonora has decided it; once decided it is
+   `docs/decisions/scoring-protocol.md`. Directives already running finish as exploration only: their results are logged
+   and none is a verdict.
+4. [`CLAUDE.md`](../../CLAUDE.md): the standing rules. One directive, one branch, one pull request, and never push to `main`.
+5. `docs/decisions/information-set.md` (the as-of rule, with its leakage and staleness guards) and
+   [`docs/decisions/lockbox.md`](../decisions/lockbox.md) (no comparison scores a locked day).
+6. [`docs/process/AGENT_CONTRACT.md`](../process/AGENT_CONTRACT.md): the data and model interfaces. Then
+   `docs/decisions/workflow.md` and `publish-rule.md`.
+7. As needed: [`lag-assessment.md`](lag-assessment.md), the finding behind the as-of rule, and [`literature.md`](literature.md).
+   `docs/archive/` holds superseded documents, among them the September plan and directive briefs, and is **not binding**.
 
 ## State, and how to check it
 
-- **`main` carries the current rules.** It has this folder, `CLAUDE.md`, `docs/process/AGENT_CONTRACT.md` and the three decision
-  records:
+- **`main` carries the current rules.** It has this folder, `CLAUDE.md`, `docs/process/AGENT_CONTRACT.md` and the
+  decision records:
 
   ```
   git fetch origin && git log --oneline -5 origin/main
-  ls docs/pivot docs/pivot/directives docs/decisions
+  ls docs/pivot docs/decisions
   ```
 
 - **The published panel rebuilds from tracked fixtures and verifies,** with no network:
@@ -62,6 +82,9 @@ state below comes with the command that checks it, and the command's output wins
 
 ## Where a new pressure-day candidate goes
 
+New +5 bp classification variants are paused (the top block of #46), and the judge is held under #640's decision 6. This
+section says where a candidate is declared if a directive asks for one; it does not invite new ones.
+
 A candidate for the pressure-day judge (#374) is declared in a file of its own,
 `metadata/pressure_judge/candidates/<name>.json` (its `role`, `features` and `calibration`), and nowhere else:
 `metadata/pressure_judge.json` holds the bar, tiers, thresholds, horizons and status, and the judge loads the union
@@ -71,23 +94,16 @@ confirmation look. Commit the file before the candidate is scored: `scripts/pres
 edited declaration or candidate file. A pull request that still lists candidates in `pressure_judge.json` moves them into
 files when it next merges main; that is a mechanical change.
 
-## The directives, in order
+## The directives
 
-1. [`01`](directives/01-as-of-information-set.md): implement the as-of information set.
-2. `02`, streamline the front door: done in PR #24.
-3. [`03`](directives/03-rescore-publish.md): re-score and publish: done in the directive 03 pull request (#27).
-4. [`04`](directives/04-retire-legacy-gates.md): retire the legacy ownership gates: done in PR #30.
-5. [`05`](directives/05-review-ci-and-tests.md): review CI and the test suite, after 04.
-6. [`06`](directives/06-visual-layer.md): the visual layer, descriptive half (#40): plan §7 step 10's first half.
-7. The visual layer, model half (#118): plan §7 step 10's second half.
-   The newcomer layer (plan #141, #143–#149) is the "Start here" block above both halves, on the same page. It is
-   generated by `scripts/emit_visual.py` like the rest of `site/index.html`, so a change to it is a change to the
-   generator or its inputs, regenerated in the same PR and refused stale by `python3 scripts/emit_visual.py --check`.
-8. The rest of [`plan.md`](plan.md) §7, each drafted as a directive when its turn comes.
+The queue is the open issue titled "Directive queue" (#46). Its lines, in priority order, are the directives; its
+notation (`after`, `merge after`, `stack on`) is explained in its body. The September briefs `01`–`06` are done and are in
+`docs/archive/directives-2026-09/`.
 
 ## Open for Eleonora
 
-Raise these as `needs-eleonora` issues if they block you. Do not settle them in code.
+Raise these as `needs-eleonora` issues if they block you. Do not settle them in code. Her decisions are batched into one
+message at 5 pm ET.
 
-- **Public pages outside this repository** (the Notion advisor pages and the website) still carry the old figures.
-  They are corrected from records after directive 03.
+- **Public pages outside this repository** (the Notion advisor pages and the website) may still carry figures older than
+  `docs/runs/`. They are corrected from records, on her instruction.
