@@ -1,0 +1,25 @@
+{
+  "role": "candidate",
+  "track": "#624",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "reserve_scarcity_state",
+    "tga",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "on_rrp",
+    "tga_daily",
+    "tga_daily_change",
+    "sofr_p75_iorb_bps",
+    "sofr_p99_iorb_bps",
+    "satiation_dist_roll"
+  ],
+  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons",
+  "calibration": "none: the risk-date part fitted on risk-date label days only; unweighted gbm_classifier; scored under settlements dated from the auction announcement (metadata/settlement_announcement_dating.json), the settlement columns kept at every horizon and the coupon clause of the risk-date rule applied at h >= 2 and the H.4.1 weeklies read per release (metadata/h41_release_dating.json); with the rolling satiation level's distance as one extra input (satiation_dist_roll, variant (a) input); then, on the days that are not risk dates, the constant 0 is replaced by a day-level model fitted walk-forward on those days only: (c) chosen from step 1: as (a), with one more input, the rate of pressure days at the threshold over the 60 most recent earlier scored days that were not risk dates and whose outcome was observable at the block's fit (the rate #610's +recent_floor forecasts, the only row of step 1 whose pooled figures separate from the climatology at every lead). A day has the block's rate; nothing is read until 60 such days exist; metadata/off_risk_day_624.json",
+  "parent": "risk_gbm+settle+h41+dist_roll",
+  "inputs_note": "the parent's risk-date part unchanged, with a day-level model on the days that are not risk dates in place of the constant 0 (the declared inputs are in metadata/off_risk_day_624.json)"
+}

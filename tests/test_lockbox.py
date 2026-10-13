@@ -366,6 +366,11 @@ NOT_ENTRY_POINTS = {
         "last scored day through _as_of_folds, which calls require_unlocked, and `cap` calls require_unlocked on "
         "that day before it reads anything"
     ),
+    "scripts/off_risk_day_624.read_features": (
+        "reads the inputs of the day-level model at each scored day's decision (#624); scores no forecast, it ends at "
+        "the declared last scored day through _as_of_folds, which calls require_unlocked, and `run` calls "
+        "require_unlocked and pressure_judge.require_scored_days on that day before it reads anything"
+    ),
     "satiation._ratio_at": (
         "reads the reserves-to-assets ratio the as-of rule gives one panel row's decision (#587); scores nothing, "
         "`asof_ratios` and `build_columns` build no row after the declared last scored day, and "
