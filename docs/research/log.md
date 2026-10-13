@@ -265,7 +265,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data). It does not beat the published distribution, so it adds nothing over the incumbent on CRPS.
 - Next: Eleonora decides whether a reverting level is worth adding to #634's candidates; #707 diagnoses 2021-23 and the upper tail.
 
-### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#PR
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
 - Directive: #687
 - Step: 3 (diagnosis of avenue #674)
 - Tier: development
