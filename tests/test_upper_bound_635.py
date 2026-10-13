@@ -95,6 +95,17 @@ class StatisticsTests(unittest.TestCase):
         self.assertEqual(script.blocks(50), [(0, 21), (21, 42), (42, 50)])
 
 
+class CrossFitFoldTests(unittest.TestCase):
+    def test_folds_are_contiguous_blocks_of_near_equal_size(self):
+        self.assertEqual(script.folds(50, 4), [(0, 13), (13, 26), (26, 38), (38, 50)])
+        self.assertEqual(script.CEILING_FOLDS, 10)
+        everything = script.folds(1868, script.CEILING_FOLDS)
+        self.assertEqual(len(everything), 10)
+        self.assertEqual(everything[0][0], 0)
+        self.assertEqual(everything[-1][1], 1868)
+        self.assertTrue(all(a[1] == b[0] for a, b in zip(everything, everything[1:])))
+
+
 class EmbargoTests(unittest.TestCase):
     def test_the_training_set_is_the_rows_at_or_before_the_anchor(self):
         self.assertEqual(script.training_positions([3, 4, 5, 6, 7, 8], 6), [0, 1, 2, 3])

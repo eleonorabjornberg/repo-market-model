@@ -294,6 +294,18 @@ def require_crossfit_embargo(label_rows: Sequence[int], anchors: Sequence[int], 
             )
 
 
+def folds(count: int, parts: int = CEILING_FOLDS) -> List[Tuple[int, int]]:
+    """`parts` half-open contiguous runs of near-equal size (the first `count % parts` are one longer)."""
+
+    size, extra = divmod(count, parts)
+    out, start = [], 0
+    for k in range(parts):
+        stop = start + size + (1 if k < extra else 0)
+        out.append((start, stop))
+        start = stop
+    return out
+
+
 def crossfit_positions(label_rows: Sequence[int], anchors: Sequence[int], start: int, stop: int) -> List[int]:
     """Positions of the scored days outside the block `[start, stop)` and outside its embargo, in order, checked."""
 
@@ -487,7 +499,8 @@ def fit_command(args) -> int:
     )
     tasks = [("memorised", lead, 0, len(scored)) for lead in LEADS]
     for lead in LEADS:
-        tasks += [(fit, lead, a, b) for fit in ("reachable", "ceiling") for a, b in blocks(len(scored))]
+        tasks += [("reachable", lead, a, b) for a, b in blocks(len(scored))]
+        tasks += [("ceiling", lead, a, b) for a, b in folds(len(scored))]
     results = []
     with multiprocessing.get_context("fork").Pool(args.workers) as pool:
         for done, (task, result) in enumerate(pool.imap_unordered(_fit_task, tasks, chunksize=1), 1):
