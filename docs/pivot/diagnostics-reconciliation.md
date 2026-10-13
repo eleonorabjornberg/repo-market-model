@@ -252,3 +252,8 @@ their published figures, so they stay as they are; they are a finding for Eleono
 pressure days, the month-ends, in the ordinary set, so an ordinary-day AUROC under it is harder to win. `non_ordinary` removes them and
 makes the remaining days easier. Until she rules, each script keeps its current definition, and an ordinary-day figure should be quoted
 with the name of the definition it was read under.
+
+**Is the table of the four headlines under both definitions wanted, at the cost of re-scoring each page's forecasts?** Criterion 2 of
+#682 asked for each headline under both definitions. It is met for the counts and not for the headline figures: the stored evidence
+keeps summaries, not per-day forecasts, so the figure under the other definition needs a re-run of each page's scoring (development
+exploration only, no published figure would move). That re-run is not done here; whether it is worth doing is for Eleonora.

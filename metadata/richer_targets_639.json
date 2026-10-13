@@ -1,0 +1,120 @@
+{
+  "status": "declared by the pull request that closes #639 before any score; step 1 of H9, an exploratory screen on development data, not a record and not a verdict (scoring protocol v1 section 1; ruling on #639, 12 October 2026). Nothing is fitted, selected into a model or published, no rule, threshold, onset definition or availability time changes, no day after 2025-12-31 is read, and no hindsight regime label is used (ruling on #515). None of the intervals is corrected for multiplicity",
+  "issue": 639,
+  "hypothesis": "H9",
+  "step": 1,
+  "panel": {
+    "sha256": "347f5afb6b9359c8da279f090fbe22a28febb5c7c864f9811daa161932284edf",
+    "built_by": "scripts/richer_targets_639.py panel over measurement_fields.py's scratch panel and early_warning_inputs.py's"
+  },
+  "days": "the scored days of the lead-1 fold grid, 2018-06-29 to 2025-12-31 (source_screen), the same days at every lead",
+  "leads": [
+    1,
+    2,
+    3,
+    5,
+    10
+  ],
+  "targets": [
+    {
+      "column": "sofr_p99_iorb_bps",
+      "unit": "bp",
+      "group": "sofr_tail",
+      "definition": "SOFR 99th percentile \u2212 IORB"
+    },
+    {
+      "column": "sofr_dispersion_bps",
+      "unit": "bp",
+      "group": "sofr_tail",
+      "definition": "SOFR 99th \u2212 1st percentile"
+    },
+    {
+      "column": "tgcr_iorb_bps",
+      "unit": "bp",
+      "group": "tgcr",
+      "definition": "TGCR \u2212 IORB"
+    },
+    {
+      "column": "tgcr_dispersion_bps",
+      "unit": "bp",
+      "group": "tgcr",
+      "definition": "TGCR 99th \u2212 1st percentile"
+    },
+    {
+      "column": "bgcr_iorb_bps",
+      "unit": "bp",
+      "group": "bgcr",
+      "definition": "BGCR \u2212 IORB"
+    },
+    {
+      "column": "bgcr_dispersion_bps",
+      "unit": "bp",
+      "group": "bgcr",
+      "definition": "BGCR 99th \u2212 1st percentile"
+    },
+    {
+      "column": "effr_iorb_bps",
+      "unit": "bp",
+      "group": "effr",
+      "definition": "EFFR \u2212 IORB"
+    },
+    {
+      "column": "on_rrp_bn",
+      "unit": "USD bn",
+      "group": "on_rrp",
+      "definition": "ON RRP take-up, the day's total accepted"
+    },
+    {
+      "column": "on_rrp_change_bn",
+      "unit": "USD bn",
+      "group": "on_rrp",
+      "definition": "ON RRP take-up, change from the previous panel day"
+    },
+    {
+      "column": "srf_take_up_bn",
+      "unit": "USD bn",
+      "group": "srf",
+      "definition": "standing repo facility take-up, the day's total accepted"
+    }
+  ],
+  "target_reading": "the realised value of the scored day, as the panel holds it; the forecasts' inputs are read as of each decision instant through repo_model.asof.InformationRule at the declared leads",
+  "benchmarks": {
+    "B1": "the last public value plus the empirical distribution of the lead's own changes over the trailing two years (protocol v1 section 4, generalised to the series)",
+    "B2": "the trailing year's values on days of the scored day's reporting day type (protocol v1 section 4, generalised)",
+    "minimum_changes_b1": 60,
+    "minimum_values_b2": 4,
+    "dropped": "a day on which the outcome, B1 or B2 is missing is dropped for both benchmarks"
+  },
+  "scores": {
+    "crps": "scoring_protocol.grid_crps on the protocol's 23 quantile levels",
+    "mae": "the absolute error of the forecast's median (level 0.5)",
+    "naive": "the absolute error of the last public value",
+    "skill": "mean(S(B2) - S(B1)) / mean(S(B2)): positive when B1 beats B2"
+  },
+  "interval": {
+    "paired_crps": "scoring_protocol.paired_test, stationary bootstrap, mean block 10, 10000 draws, seed 639, one-sided 95% lower bound of mean(d) and a two-sided 90% interval of skill",
+    "correlations": "stationary bootstrap of full-sample ranks, mean block 10, 1000 draws, seed 639, two-sided 90%",
+    "pre_onset": "resampling onsets, 2000 draws, seed 639, two-sided 90%"
+  },
+  "splits": {
+    "regime": "the as-of scarcity state at the same lead: ample (0, 1), scarce (2, 3)",
+    "day_type": "SplitDeclaration.reporting_day_type of the scored day",
+    "minimum_days": 30
+  },
+  "lead": {
+    "outcomes": [
+      "pressure: the spread strictly above +5 bp on whole basis points (repo_model.data.exceeds_bp)",
+      "level: the spread"
+    ],
+    "pressure_is_not_a_judge": "the +5 bp indicator is the definition of an episode here, as in the screens of #478 and #629; the judge it served is retired as a decision rule (protocol v1 section 10)",
+    "minimum_pressure_days": 3,
+    "onsets": "repo_model.pressure.onsets at +5 bp over the scored days of the grid every horizon scores (from 2018-07-06)",
+    "pre_onset_window_panel_days": [
+      1,
+      5
+    ],
+    "pre_onset_reading_lead": 1
+  },
+  "overlap": "Spearman of the target with SOFR - IORB on the same day, in level and in the change from the previous panel day",
+  "not_run": "step 2, the model: its targets are chosen from this screen, which is Eleonora's call (see the pull request)"
+}

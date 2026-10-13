@@ -30,7 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import nowcast, pressure, risk_dates  # noqa: E402
+from repo_model import nowcast, pressure, risk_dates as risk_date_rules  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
@@ -629,7 +629,7 @@ def risk_dates(splits, rows_by_date: dict, days: list, h: int) -> set:
     return {
         day
         for day in days
-        if risk_dates.is_risk_date(rows_by_date[day], risk_dates.NON_ORDINARY, splits=splits, coupon_clause=h == 1)
+        if risk_date_rules.is_risk_date(rows_by_date[day], risk_date_rules.NON_ORDINARY, splits=splits, coupon_clause=h == 1)
     }
 
 
