@@ -254,3 +254,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: grid CRPS 1.778 bp over 1,855 decision days to 2025-12-31: skill +22.3% [+13.7%, +29.5%] against B1 and +29.4% [+21.4%, +37.3%] against B2; upper-tail twCRPS +32.4% and +17.8%. Against the published distribution on five levels: +1.2% [-2.3%, +4.8%], a tie. Weak spots: 2021-23 (-2.6% vs B1) and quarter-end days. It narrows B1's over-forecast of P(> +5 bp) on ordinary days (2018-19 -0.113 to -0.071, 2025-26 -0.049 to -0.028) without closing it.
 - Against kill: not applicable (no verdict; development data). It does not beat the published distribution, so it adds nothing over the incumbent on CRPS.
 - Next: Eleonora decides whether a reverting level is worth adding to #634's candidates; #707 diagnoses 2021-23 and the upper tail.
+
+### 2026-10-13 [H8] step 1 · eleonorabjornberg/repo-market-model#721
+- Directive: #694
+- Step: 1 (the target, the benchmarks and a development score)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer for the bootstrap; base `bd7f573`; seed 694
+- Tried: 2 rankers of the next 20 business days, from the mean-reverting spread distribution of #686 extended to 20 leads (read as P(spread > +5 bp) and as the predicted median), against persistence (B1), climatology by day type and the calendar of known risk dates. Variants: 2 (the declaration `metadata/ranking_694.json`; nothing is fitted to the +5 bp event).
+- Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Detail in `docs/pivot/ranking-result.md`.
+- Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
+- Next: Eleonora decides whether a model-plus-calendar ranker, or #634's candidates once on main, is worth a step 2.
