@@ -113,3 +113,10 @@ Published panel `4ddc3882…` (`verify-panel` clean, unchanged); scratch panels 
 `OMP_NUM_THREADS=OPENBLAS_NUM_THREADS=MKL_NUM_THREADS=1`. The forecasts of `+tailcap75` are those of `scripts/every_day_conditioning_601.py cap`; the
 commands are the docstring of `scripts/tailcap_floor_610.py` (`slice` and `diagnose` for step 1; `declare`, `run`, the judge under both rules,
 `compare --reference tailcap|distroll`, `pg onsets`, `pg summary` and `calibration` for step 2).
+
+## Note of 13 October 2026 (#658)
+
+The comparator `risk_gbm+settle+h41+dist_roll` in the tables above was scored before the distance columns were read per H.4.1 release (#622, merged in
+#647). It is re-scored in [`tailcap-floor-rebuild-658-result.md`](tailcap-floor-rebuild-658-result.md): no verdict of any row changes, `+tailcap75` and
+the three floors are byte-identical, and the comparator's figures move slightly (for example its pooled false alarms per onset, weighted, 1.27 to 1.17).
+This page and its evidence folders are left as scored.
