@@ -1,0 +1,61 @@
+{
+  "status": "declared by the pull request that closes #633 before any score was computed. Exploration on development data, not a record: nothing is published, nothing is written into docs/runs/, no day after 2025-12-31 is read, and under scoring protocol v1 (#640) development data never gives a verdict. The kill rule of H4 is applied as the queue (#46) states it, as exploration.",
+  "issue": 633,
+  "hypothesis": "H4, step 2: longer history fixes part of 2018-19. Kill (#46): no 2014-18 series has an established posting time, or extended training moves 2018-19 calibration by less than its interval.",
+  "rulings": [
+    "Eleonora, 12 October 2026 (#633, comment 6127634601): measure what the extended history does to the H5 spread forecast, under the scoring of #640, not the +5 bp judge's tiers",
+    "Eleonora, 13 October 2026 (PR #661, comment 6146010089): the back-fill workbook is public from 17 May 2018, one posting_instant for TGCR, BGCR and SOFR (metadata/backfill_posting.json)"
+  ],
+  "target": "spread_bps (SOFR - IORB, bp) at each lead h = 1..5 business days after the decision day, at the 23 levels of scoring_protocol.GRID",
+  "model": {
+    "name": "spread_qgbm_633",
+    "estimator": "sklearn HistGradientBoostingRegressor, loss='quantile', one fit per lead and per level of scoring_protocol.GRID; a day's predicted quantiles are sorted",
+    "hyperparameters": "ml.PRESSURE_CLASSIFIER_SETTINGS (learning_rate 0.05, max_iter 200, max_leaf_nodes 15, min_samples_leaf 20, random_state 0), the settings #632's spread model uses; none tuned",
+    "why_this_model": "the H5 models on main (#632's) read inputs the back-fill does not carry (the SOFR percentiles, the settlement and H.4.1 timing and satiation-distance columns), so a back-filled row would train no pair and the arms could not differ. This model reads only inputs present in the back-filled rows, so the measurement isolates the history",
+    "inputs": {
+      "observed, read per field at the latest row public at the decision instant (asof.InformationRule at the lead)": [
+        "tgcr",
+        "bgcr",
+        "reserve_balances",
+        "tga",
+        "tbill_4w"
+      ],
+      "not read": "on_rrp: its registry entry (fred_macro_latest_vintage.RRPONTSYD) declares no availability relative to its row, so the as-of rule refuses it",
+      "composed from those reads, in bp against the anchor's IORB": [
+        "tgcr - iorb",
+        "bgcr - iorb",
+        "tbill_4w - iorb"
+      ],
+      "the target at the anchor": [
+        "spread_bps at the anchor",
+        "spread_bps at the anchor minus the spread 5 rows before it"
+      ],
+      "calendar, read at the target day": [
+        "quarter_end",
+        "tax_date",
+        "days_to_month_end"
+      ]
+    },
+    "training_pairs": "each label row s paired with what a forecast of s at lead h read at its own decision instant (InformationRule(horizon=h).observation), under both guards; a fit uses the labels observable at its block's decision instant (information-set rule 3)",
+    "refit": "every 21 decision days (docs/decisions/information-set.md), one block for all leads"
+  },
+  "arms": {
+    "without": "trained on the published days only: the scratch panel of backfill_history.py panel (from 2018-04-03)",
+    "with": "the same model on the extended panel (backfill_history.py panel): the same rows from 2018-04-03 and the 899 back-filled rows from 2014-08-22 in every training frame. Each block passes backfill.require_training_only and backfill.require_posting_established with the declared posting instant"
+  },
+  "decision_days": "every business day of the scratch panel from 2018-06-29 whose lead-5 target is on or before 2025-12-31 (2018-06-29 is the first scored day of the earlier back-fill measurement, #484, and its first fit ends 2018-06-27, after 17 May 2018)",
+  "scoring": {
+    "primary": "scoring_protocol.day_scores with grid_crps (mean over leads), paired per decision day; d = S(without) - S(with), positive when the history helps; scoring_protocol.paired_tests, stationary bootstrap, mean block 10, 10,000 draws, seed 633, one-sided 95% (the lower bound of mean d) and the two-sided 90% interval",
+    "secondary": "upper_tail_twcrps the same way",
+    "calibration": "per decision day, the share of leads whose outcome falls inside the central 90% interval (q0.05 to q0.95) and inside the central 50% interval (q0.25 to q0.75), and the share above q0.95; the move is with minus without, a mean of paired daily differences, with a two-sided 90% stationary-bootstrap interval on the same resample stream",
+    "context": "both arms' CRPS skill against B1 (as-of persistence, protocol_benchmarks.b1_forecast on the scratch panel)",
+    "splits": "pooled, by regime of metadata/evaluation_splits.json (2018-19 is the headline), and by the pressure-day type of the lead-1 target (SplitDeclaration.reporting_day_type)"
+  },
+  "kill_rule_reading": "H4 is killed, as exploration, when the two-sided 90% interval of the 2018-19 move in 90%-interval coverage covers zero. The 50%-interval coverage and CRPS moves are reported beside it and do not change that reading",
+  "sensitivity_workbook_only": {
+    "declared": "added after the first score of the declared model was seen (13 October 2026), so it is a robustness check, not a fresh test",
+    "why": "the declared model reads tbill_4w, reserve_balances and tga on the back-filled rows; docs/pivot/posting-dates-due-diligence.md marks the 2014-2017 bill rates not usable, and the posting of the FRED reserve and TGA levels for those years was not established there. Only the workbook (TGCR, BGCR, SOFR) is ruled public, from 17 May 2018",
+    "inputs": "the same model without tbill_4w - iorb, reserve_balances and tga: spread_bps at the anchor and its 5-row change, tgcr - iorb, bgcr - iorb, and the calendar columns. IORB (IOER before 2021) is an administered rate announced in advance",
+    "arms, days, scoring": "as declared above; outputs suffixed _wb"
+  }
+}

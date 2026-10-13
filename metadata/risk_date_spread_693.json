@@ -1,0 +1,83 @@
+{
+  "status": "declared by the pull request that closes #693 before any score was computed; a measurement, not a record. Nothing is published: no variant joins any published declaration, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. The day set and the two candidates were written after seeing 2018-2025 (the project has worked these years since 2018), so a result here is exploration, never a verdict (scoring protocol v1, #640)",
+  "issue": 693,
+  "hypothesis": "H6: the spread on known risk dates is forecastable. Step 1 of the plan: benchmarks and a first candidate on development data",
+  "ruling": "Eleonora, directive #693 (13 October 2026): queue H6. The +5 bp classification variants are paused: no threshold is fitted, the target is the spread in bp",
+  "target": "spread_bps at the target day, in basis points, on days of the four risk types below: the 23 quantiles of scoring_protocol.GRID at each lead h = 1..5 business days after the decision day",
+  "day_set": {
+    "definition": "repo_model.risk_date_spread.risk_day_type, read from the target row's own calendar columns (known in advance, as protocol B2 reads them)",
+    "types_in_precedence": [
+      "quarter_end: SplitDeclaration.reporting_day_type == quarter_end",
+      "month_end: one of the month's last two business days on the market calendar (reporting_day_type == month_end)",
+      "tax_date: reporting_day_type == tax_date",
+      "settlement: none of the above, and treasury_settlement_coupons > 0 on the day (the reading of pressure_judge._scheduled_risk_date; a coupon settlement, any size)"
+    ],
+    "not_a_risk_date": "every other day; it is not scored here",
+    "relation_to_682": "#682 (one definition of 'not a risk date', a shared function) had not merged when this declaration was made. When it does, its function replaces risk_day_type in a follow-up and this day set is compared with it; nothing here waits on it",
+    "marked_questions": [
+      "size: the H6 plan says 'announced settlements above a size'. This declaration takes any coupon settlement, because no size threshold has been decided; the threshold is Eleonora's (a data meaning)",
+      "announcement: a coupon settlement is announced about a week before it; at the longer leads some target days may not yet have been announced at the decision instant. #679 audits partly announced bill classes. The column is read as the existing risk-date grouping reads it (a calendar fact); whether a settlement flag may be read at lead 5 is a data-meaning question, not settled here"
+    ],
+    "counts_per_year_to_2025-12-31": {
+      "note": "days on the panel's calendar (the panel starts 2018-04-03), computed from the calendar columns before any score; these are the possible target days, the scored ones are fewer by the first days with no history",
+      "2018": {"quarter_end": 3, "month_end": 15, "tax_date": 12, "settlement": 9, "not_a_risk_date": 148},
+      "2019": {"quarter_end": 4, "month_end": 20, "tax_date": 12, "settlement": 16, "not_a_risk_date": 198},
+      "2020": {"quarter_end": 4, "month_end": 20, "tax_date": 12, "settlement": 16, "not_a_risk_date": 199},
+      "2021": {"quarter_end": 4, "month_end": 20, "tax_date": 12, "settlement": 19, "not_a_risk_date": 195},
+      "2022": {"quarter_end": 4, "month_end": 20, "tax_date": 12, "settlement": 15, "not_a_risk_date": 198},
+      "2023": {"quarter_end": 4, "month_end": 20, "tax_date": 12, "settlement": 16, "not_a_risk_date": 197},
+      "2024": {"quarter_end": 4, "month_end": 20, "tax_date": 12, "settlement": 15, "not_a_risk_date": 199},
+      "2025": {"quarter_end": 4, "month_end": 20, "tax_date": 11, "settlement": 13, "not_a_risk_date": 201},
+      "total": {"quarter_end": 31, "month_end": 155, "tax_date": 95, "settlement": 119, "not_a_risk_date": 1535}
+    }
+  },
+  "benchmarks": {
+    "B1": "as-of persistence of scoring protocol v1: protocol_benchmarks.b1_forecast (the last public spread plus the trailing two years' h-row changes)",
+    "calendar": {
+      "name": "risk_date_calendar",
+      "definition": "the empirical distribution (23 linearly interpolated quantiles, protocol_benchmarks.empirical_quantiles) of the spreads on days of the target's risk type over the trailing year, rows after the decision day less one year and at or before the anchor; its median (the 0.5 quantile) is its point forecast. The type is the risk type above, so settlement days have their own sample; protocol B2 groups them with ordinary days and is not used here",
+      "implementation": "repo_model.risk_date_spread.calendar_forecast",
+      "no_sample": "a decision with no day of a lead's type in the window has no calendar forecast for that lead, and the cell is dropped for every model (counted in the report)"
+    }
+  },
+  "candidates": {
+    "h5_mean_reversion": {
+      "label": "the strongest current H5 distribution row on main, restricted to risk-date targets",
+      "definition": "spread_mr_level10 of #686 (repo_model.spread_mean_reversion, declared in metadata/spread_distribution_686.json), walked over every decision day with its own refit cadence and then read on the cells whose target is a risk date",
+      "why": "of the H5 rows on main it has the largest grid-CRPS skill against B1 and B2 (#686: +22.3% and +29.4%), and it ties the published distribution. #634's model had not merged; if it merges first, its row is a separate column in a follow-up, not a swap"
+    },
+    "type_state": {
+      "label": "one simple day-type x scarcity-state model",
+      "definition": "repo_model.risk_date_spread.type_state_forecast: the empirical distribution of the spreads on days of the target's risk type and scarcity-state group over the trailing two years (rows at or before the anchor); the type alone over the same two years when the cell holds fewer than 10 days or the target's state is unknown",
+      "state": "reserve_scarcity_state, each leg at its own latest public row (scarcity.own_leg_states, #586, via pressure_judge._scarcity_states) as read at the decision instant at the lead being forecast, for the target and for every sample day; groups: low = states 0 and 1, high = states 2 and 3, unknown = no state. The two groups are declared here and not chosen on a score (state 2 holds few days)",
+      "parameters": "none fitted; the window (two years, B1's), the minimum cell (10 days) and the two groups are declared",
+      "max_variants": 1
+    }
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days with a forecast of the first candidate and of B1 whose five targets (h = 1..5 business days later on the panel's calendar) all fall on or before 2025-12-31; a (decision day, lead) cell is scored when its target is a risk date and the calendar benchmark and the type x state model both forecast it. No day after 2025-12-31 is read (docs/decisions/lockbox.md); the script calls lockbox.require_unlocked on every decision and target day",
+    "metrics": "grid CRPS of the 23 quantiles (scoring_protocol.grid_crps) and MAE of the median (|0.5 quantile - outcome|, in bp); the key secondary, upper-tail twCRPS (weight 1{z > 0 bp}), is reported beside them and has no part in the kill rule",
+    "unit": "the target day: its score is the mean over the leads that forecast it (those whose decision day is in the scored set). The pooled figure is the mean over risk target days; the per-lead figures use the cells of that lead, keyed by target day",
+    "pairing": "each candidate against each benchmark on the same target days, skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate): positive favours the candidate",
+    "interval": "scoring_protocol.paired_tests: stationary bootstrap, mean block 10, 10,000 draws, seed 693, over the risk target days in date order (a block of 10 is 10 consecutive risk days, which are not consecutive business days); the 5th and 95th percentile of the draws, a 90% two-sided interval, with the Diebold-Mariano statistic beside it",
+    "outcomes": "the panel's spread_bps at the target day, not the first-published vintage of protocol section 11; the difference is stated in the pull request"
+  },
+  "splits": {
+    "day_type": "the four risk types of the target day",
+    "regime": "SplitDeclaration.regime (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024 and 2025-26, also reported as 2018-19, 2020-24 and 2025-26",
+    "scarcity_state": "low, high or unknown, the target's reserve_scarcity_state as read at the lead-1 decision instant (the same own-leg read as the model's)",
+    "minimum": "a group of fewer than 20 target days is listed and not tested"
+  },
+  "kill_rule": {
+    "source": "docs/research/hypotheses/H6.md and #693: no CRPS or MAE skill against as-of persistence and the calendar benchmark",
+    "skill": "a candidate has skill against a benchmark on a metric when the 90% interval of its pooled skill lies above zero",
+    "reading": "H6 step 1 is not killed when at least one candidate has skill on CRPS or on MAE against both B1 and the calendar benchmark; otherwise it is killed on the development data and the report says so in words. The weaker reading (skill against at least one benchmark) is also tabulated, so the choice is visible. Development data never gives a verdict (#640): 'killed' and 'not killed' here are exploration findings about whether to continue, not a registered result",
+    "if_not_killed": "a sketch of the desk-facing risk-date severity calendar is added to the result page as one table (the type x state model's median and 5th to 95th range per risk type and state group on the last scored year); it is not built"
+  },
+  "limits": {
+    "max_new_variants": 1,
+    "last_day": "2025-12-31",
+    "extension": "#684 (the 2026 development days, to 2026-09-03) had not merged when this declaration was made; if it merges first, the 2026 days are a separate column in a follow-up, not pooled in the headline"
+  }
+}
