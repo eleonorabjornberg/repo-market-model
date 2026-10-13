@@ -18,9 +18,15 @@ function of the weight, and its quantiles are the forecast's quantiles mapped th
 **One sign everywhere (§5).** `d_t = S(benchmark) - S(candidate)`, so a positive `d` always
 favours the candidate, and skill is `mean(d) / mean(S(benchmark))`.
 
-**The interval (§5).** The stationary bootstrap of `repo_model.metrics`, mean block 10
-business days, 10,000 draws, a seed fixed at registration, read one-sided at 95%. The
-Diebold-Mariano statistic with a Newey-West long-run variance at lag 10 is reported beside it.
+**The interval (§5).** The studentized stationary bootstrap (Eleonora's ruling of 13 October
+2026 on PR #660, which replaced the plain percentile bootstrap after H1's coverage check failed):
+the resamples of `repo_model.metrics`, mean block 10 business days, 10,000 draws (100,000 at the
+interim checkpoints), a seed fixed at registration; each resample's mean(d) is studentized by its
+own Newey-West standard error at lag 10, and the bound is read one-sided at 95%. The observed t is
+the Diebold-Mariano statistic, reported beside it.
+
+**B3 (ruling of 13 October 2026).** The incumbent is scored on its own five levels against each
+candidate read at the same five (`on_levels`, `level_crps`), as a secondary comparison.
 
 **Checkpoints (§6).** 60, 125 and 250 confirmation days, the overall one-sided 5% spent across
 them by the Lan-DeMets O'Brien-Fleming function. `nominal_levels` gives the one-sided level each
@@ -40,6 +46,8 @@ from __future__ import annotations
 
 import math
 import random
+from itertools import islice
+from operator import mul
 from dataclasses import dataclass
 from functools import lru_cache
 from datetime import date
@@ -63,6 +71,9 @@ TWCRPS_THRESHOLD_BP = 0.0
 #: §5: the stationary bootstrap's mean block length (business days) and draws.
 BLOCK_LENGTH = 10
 DRAWS = 10_000
+#: The draws at an interim checkpoint (60 and 125 days), whose nominal levels are finer than
+#: 10,000 draws resolve: Eleonora's ruling of 13 October 2026 (PR #660).
+INTERIM_DRAWS = 100_000
 #: §5, §6: the overall one-sided level.
 ALPHA = 0.05
 #: §5: the Diebold-Mariano statistic's Newey-West lag.
@@ -143,6 +154,36 @@ def upper_tail_twcrps(quantiles: Sequence[float], observed: float) -> float:
         [max(value, floor) for value in _quantiles(quantiles)],
         max(_finite(observed, "the outcome"), floor),
     )
+
+
+def on_levels(quantiles: Sequence[float], levels: Sequence[float]) -> List[float]:
+    """A 23-level forecast read at `levels`, each of which must be on `GRID`.
+
+    The secondary comparison against B3 scores B3 on its own levels and each candidate on the
+    same ones (ruling of 13 October 2026, PR #660).
+    """
+
+    values = _quantiles(quantiles)
+    out = []
+    for level in levels:
+        if float(level) not in GRID:
+            raise ProtocolError(f"level {level} is not on the protocol's grid")
+        out.append(values[GRID.index(float(level))])
+    return out
+
+
+def level_crps(levels: Sequence[float]) -> Callable[[Sequence[float], float], float]:
+    """The grid CRPS on `levels` alone: twice the mean pinball loss over them."""
+
+    grid = tuple(float(level) for level in levels)
+
+    def score(quantiles: Sequence[float], observed: float) -> float:
+        values = [_finite(value, "a quantile") for value in quantiles]
+        if len(values) != len(grid):
+            raise ProtocolError(f"a forecast carries {len(values)} quantiles; the levels are {len(grid)}")
+        return crps_from_quantiles(grid, values, _finite(observed, "the outcome"))
+
+    return score
 
 
 def _calendar(calendar: Sequence[date]) -> List[date]:
@@ -303,34 +344,25 @@ def first_published(
 # --------------------------------------------------------------------------
 
 
-def _segments(indices: Sequence[int], n: int) -> Tuple[List[int], List[int]]:
-    """A stationary resample as runs of consecutive rows: their starts and (exclusive) ends.
+def _long_run_variance(values: Sequence[float], lag: int) -> float:
+    """The Newey-West (Bartlett) long-run variance of `values` at `lag`.
 
-    A run that wraps past the last row is split in two, so no segment wraps, and the
-    resampled sum of a series is `sum(prefix[end]) - sum(prefix[start])` over the segments.
+    Each lag's sum runs in C (`map` over `operator.mul`), because the studentized bootstrap
+    computes it once per resample.
     """
 
-    starts, ends = [indices[0]], []
-    for previous, current in zip(indices, indices[1:]):
-        if current != previous + 1:
-            ends.append(previous + 1)
-            starts.append(current)
-    ends.append(indices[-1] + 1)
-    return starts, ends
-
-
-def _resampled_sum(prefix: Sequence[float], starts: Sequence[int], ends: Sequence[int]) -> float:
-    return sum(map(prefix.__getitem__, ends)) - sum(map(prefix.__getitem__, starts))
-
-
-def _prefix(values: Sequence[float]) -> List[float]:
-    out = [0.0]
-    for value in values:
-        out.append(out[-1] + value)
-    return out
+    n = len(values)
+    mean = sum(values) / n
+    centred = list(map(mean.__rsub__, values))
+    variance = sum(map(mul, centred, centred))
+    for k in range(1, lag + 1):
+        variance += 2.0 * (1.0 - k / (lag + 1.0)) * sum(map(mul, islice(centred, k, None), centred))
+    return variance / n
 
 
 def _bound(ordered: Sequence[float], level: float, draws: int) -> float:
+    """The `level` quantile of sorted draws, refused where the draws cannot resolve it."""
+
     if not 0.0 < level < 1.0:
         raise ProtocolError(f"a one-sided level must be in (0, 1), got {level}")
     if min(level, 1.0 - level) * draws < 1.0:
@@ -343,7 +375,13 @@ def _bound(ordered: Sequence[float], level: float, draws: int) -> float:
 
 @dataclass(frozen=True)
 class PairedTest:
-    """One candidate against one benchmark on the same days (§5)."""
+    """One candidate against one benchmark on the same days (§5).
+
+    The interval is the studentized stationary bootstrap (Eleonora's ruling of 13 October
+    2026 on PR #660): each resample's statistic is studentized by its own HAC standard error,
+    and a bound is the point value less a quantile of those t-draws times the original HAC
+    standard error.
+    """
 
     days: Tuple[date, ...]
     #: mean of d_t = S(benchmark) - S(candidate); positive favours the candidate.
@@ -351,13 +389,20 @@ class PairedTest:
     benchmark_mean: float
     #: mean(d) / mean(S(benchmark)).
     skill: float
-    #: Sorted bootstrap draws of mean(d) and of skill, on the same resamples.
-    mean_difference_draws: Tuple[float, ...]
-    skill_draws: Tuple[float, ...]
-    #: Share of the mean(d) draws at or below zero: the one-sided bootstrap p-value.
+    #: The HAC (Newey-West, `hac_lag`) standard error of mean(d).
+    standard_error: float
+    #: Sorted studentized draws `(mean* - mean) / se*`.
+    t_draws: Tuple[float, ...]
+    #: The HAC standard error of skill, from the linearised series `d - skill * b`, over mean(b);
+    #: `None` when the test was made without skill.
+    skill_standard_error: Optional[float]
+    #: Sorted studentized draws of skill, `(skill* - skill) / se*(skill)`; empty without skill.
+    skill_t_draws: Tuple[float, ...]
+    #: Share of the t-draws at or above the observed statistic: the one-sided bootstrap p-value.
     p_value: float
+    #: `mean / standard_error`: the Diebold-Mariano statistic, the observed t.
     dm_statistic: float
-    #: One-sided: the probability under no difference of a statistic at least this large.
+    #: One-sided normal p-value of `dm_statistic`, reported beside the bootstrap's.
     dm_p_value: float
     alpha: float
     draws: int
@@ -371,13 +416,16 @@ class PairedTest:
     def lower_mean_difference(self, level: Optional[float] = None) -> float:
         """The one-sided lower bound of mean(d) at `level` (default: the test's `alpha`)."""
 
-        return _bound(self.mean_difference_draws, self.alpha if level is None else level, self.draws)
+        level = self.alpha if level is None else level
+        return self.mean_difference - _bound(self.t_draws, 1.0 - level, self.draws) * self.standard_error
 
     def upper_skill(self, level: Optional[float] = None) -> float:
         """The one-sided upper bound of skill at `level` (default: the test's `alpha`)."""
 
+        if self.skill_standard_error is None:
+            raise ProtocolError("this test was made without skill (with_skill=False)")
         level = self.alpha if level is None else level
-        return _bound(self.skill_draws, 1.0 - level, self.draws)
+        return self.skill - _bound(self.skill_t_draws, level, self.draws) * self.skill_standard_error
 
 
 def diebold_mariano(differences: Sequence[float], lag: int = HAC_LAG) -> Tuple[float, float]:
@@ -391,16 +439,18 @@ def diebold_mariano(differences: Sequence[float], lag: int = HAC_LAG) -> Tuple[f
     n = len(values)
     if n <= lag:
         raise ProtocolError(f"{n} days cannot carry a lag-{lag} long-run variance")
-    mean = sum(values) / n
-    centred = [value - mean for value in values]
-    variance = sum(value * value for value in centred) / n
-    for k in range(1, lag + 1):
-        autocovariance = sum(centred[t] * centred[t - k] for t in range(k, n)) / n
-        variance += 2.0 * (1.0 - k / (lag + 1.0)) * autocovariance
+    variance = _long_run_variance(values, lag)
     if variance <= 0.0:
         raise ProtocolError("the daily differences have no variance; the two forecasts score alike")
-    statistic = mean / math.sqrt(variance / n)
+    statistic = (sum(values) / n) / math.sqrt(variance / n)
     return statistic, 1.0 - _NORMAL.cdf(statistic)
+
+
+def _standard_error(values: Sequence[float], lag: int, what: str) -> float:
+    variance = _long_run_variance(values, lag)
+    if variance <= 0.0:
+        raise ProtocolError(f"{what} has no long-run variance; it cannot be studentized")
+    return math.sqrt(variance / len(values))
 
 
 def paired_tests(
@@ -411,17 +461,19 @@ def paired_tests(
     draws: int = DRAWS,
     block_length: float = BLOCK_LENGTH,
     hac_lag: int = HAC_LAG,
+    with_skill: bool = True,
 ) -> Tuple[PairedTest, ...]:
     """§5: each (benchmark scores, candidate scores) pair, tested on one resample stream.
 
     Every pair must cover the same decision days: the resamples are drawn once, with
     `metrics.stationary_bootstrap_indices` from `random.Random(seed)`, and every pair is
     read off the same draws, so a pair's result does not depend on which others share the
-    call.
+    call. Each resample's mean(d) is studentized by the resample's own HAC standard error.
+    `with_skill=False` leaves out skill's bound, which doubles the work.
 
     Raises:
-        ProtocolError: on pairs that do not cover the same days, or a benchmark whose
-            resampled mean score is zero (skill is undefined there).
+        ProtocolError: on pairs that do not cover the same days, a benchmark scoring zero
+            (skill is undefined), or a series or resample with no long-run variance.
     """
 
     if not pairs:
@@ -431,7 +483,10 @@ def paired_tests(
     days = tuple(sorted(pairs[0][0]))
     if not days:
         raise ProtocolError("no scored days")
-    series = []
+    n = len(days)
+    if n <= hac_lag:
+        raise ProtocolError(f"{n} days cannot carry a lag-{hac_lag} long-run variance")
+    cells = []
     for benchmark, candidate in pairs:
         if tuple(sorted(benchmark)) != days or tuple(sorted(candidate)) != days:
             raise ProtocolError(
@@ -439,43 +494,53 @@ def paired_tests(
             )
         bench = [_finite(benchmark[day], "a benchmark score") for day in days]
         cand = [_finite(candidate[day], "a candidate score") for day in days]
-        series.append((bench, [b - c for b, c in zip(bench, cand)]))
-    n = len(days)
-    prefixes = [(_prefix(bench), _prefix(diff)) for bench, diff in series]
-    mean_draws: List[List[float]] = [[] for _ in series]
-    skill_draws: List[List[float]] = [[] for _ in series]
-    rng = random.Random(seed)
-    for _ in range(draws):
-        starts, ends = _segments(stationary_bootstrap_indices(n, block_length, rng), n)
-        for cell, (bench_prefix, diff_prefix) in enumerate(prefixes):
-            bench_sum = _resampled_sum(bench_prefix, starts, ends)
-            diff_sum = _resampled_sum(diff_prefix, starts, ends)
-            if bench_sum == 0.0:
-                raise ProtocolError("a resampled benchmark scores zero; skill is undefined")
-            mean_draws[cell].append(diff_sum / n)
-            skill_draws[cell].append(diff_sum / bench_sum)
-    out = []
-    for cell, (bench, diff) in enumerate(series):
+        diff = [b - c for b, c in zip(bench, cand)]
         benchmark_mean = sum(bench) / n
         if benchmark_mean == 0.0:
             raise ProtocolError("the benchmark scores zero on every day; skill is undefined")
-        mean_difference = sum(diff) / n
-        if any(value != 0.0 for value in diff) and n > hac_lag:
-            statistic, dm_p = diebold_mariano(diff, hac_lag)
-        else:
-            statistic, dm_p = math.nan, math.nan
-        ordered = sorted(mean_draws[cell])
+        mean = sum(diff) / n
+        se = _standard_error(diff, hac_lag, "the daily difference")
+        skill = mean / benchmark_mean
+        skill_se = None
+        if with_skill:
+            linear = [d - skill * b for d, b in zip(diff, bench)]
+            skill_se = _standard_error(linear, hac_lag, "skill's linearised series") / benchmark_mean
+        cells.append((bench, diff, mean, se, benchmark_mean, skill, skill_se, [], []))
+    rng = random.Random(seed)
+    for _ in range(draws):
+        indices = stationary_bootstrap_indices(n, block_length, rng)
+        for bench, diff, mean, se, _, skill, skill_se, t_out, skill_out in cells:
+            resample = list(map(diff.__getitem__, indices))
+            resampled_mean = sum(resample) / n
+            t_out.append(
+                (resampled_mean - mean) / _standard_error(resample, hac_lag, "a resampled difference")
+            )
+            if skill_se is not None:
+                resampled_bench = list(map(bench.__getitem__, indices))
+                bench_mean = sum(resampled_bench) / n
+                if bench_mean == 0.0:
+                    raise ProtocolError("a resampled benchmark scores zero; skill is undefined")
+                resampled_skill = resampled_mean / bench_mean
+                linear = list(map(lambda d, b: d - resampled_skill * b, resample, resampled_bench))
+                resampled_se = _standard_error(linear, hac_lag, "a resampled skill") / bench_mean
+                skill_out.append((resampled_skill - skill) / resampled_se)
+    out = []
+    for bench, diff, mean, se, benchmark_mean, skill, skill_se, t_out, skill_out in cells:
+        ordered = sorted(t_out)
+        statistic = mean / se
         out.append(
             PairedTest(
                 days=days,
-                mean_difference=mean_difference,
+                mean_difference=mean,
                 benchmark_mean=benchmark_mean,
-                skill=mean_difference / benchmark_mean,
-                mean_difference_draws=tuple(ordered),
-                skill_draws=tuple(sorted(skill_draws[cell])),
-                p_value=sum(1 for value in ordered if value <= 0.0) / draws,
+                skill=skill,
+                standard_error=se,
+                t_draws=tuple(ordered),
+                skill_standard_error=skill_se,
+                skill_t_draws=tuple(sorted(skill_out)),
+                p_value=sum(1 for value in ordered if value >= statistic) / draws,
                 dm_statistic=statistic,
-                dm_p_value=dm_p,
+                dm_p_value=1.0 - _NORMAL.cdf(statistic),
                 alpha=alpha,
                 draws=draws,
                 block_length=block_length,
@@ -637,6 +702,13 @@ def verdict(
             raise ProtocolError(f"the test against {name} covers {test.n} days, not checkpoint {look}'s {days}")
     if against_b1.days != against_b2.days:
         raise ProtocolError("the tests against B1 and B2 must cover the same days")
+    if look < len(checkpoints):
+        for name, test in (("B1", against_b1), ("B2", against_b2)):
+            if test.draws < INTERIM_DRAWS:
+                raise ProtocolError(
+                    f"the test against {name} has {test.draws} draws; an interim look is read on "
+                    f"{INTERIM_DRAWS} (ruling of 13 October 2026, PR #660)"
+                )
     level = nominal_levels(checkpoints, alpha)[look - 1]
     if (
         against_b1.lower_mean_difference(level) > 0.0

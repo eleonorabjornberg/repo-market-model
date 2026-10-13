@@ -16,9 +16,45 @@ count. The words are otherwise unchanged.
 <https://github.com/eleonorabjornberg/repo-market-model/issues/640#issuecomment-6127513444>
 
 **Implemented by:** `repo_model.scoring_protocol` (sections 3, 5, 6 and 11) and `repo_model.protocol_benchmarks`
-(section 4), tested on the synthetic suite `tests/test_scoring_protocol_synthetic.py` (H1, section 9). Where the
-implementation had to read the text one way among several, the pull request that closes #655 lists the reading as
-a question for her; nothing here changes until she answers.
+(section 4), tested on the synthetic suite `tests/test_scoring_protocol_synthetic.py` (H1, section 9).
+
+## Rulings on the implementation (13 October 2026, PR #660)
+
+Eleonora ruled on the questions the implementing pull request asked. The ruling was relayed by the orchestrating
+session on PR #660 (comment 6145669436); it is recorded here as relayed, and this record is in force only once she
+merges it.
+<https://github.com/eleonorabjornberg/repo-market-model/pull/660#issuecomment-6145669436>
+
+1. **The interval is the studentized stationary bootstrap.** H1's coverage check found the plain percentile
+   bootstrap of §5 covering far below its nominal rate on a resampled real series of daily differences. §5's
+   interval is therefore read as the studentized stationary bootstrap: each resample's mean(d) is studentized by its
+   own Newey-West standard error at lag 10, with mean block 10 and 10,000 draws, and the one-sided bound is the
+   observed mean less a quantile of those t-draws times the observed HAC standard error. The coverage check is re-run
+   on the same real series and on a control, and both are reported in the pull request. No candidate is registered
+   until #656's power study confirms coverage under the heavy-tailed series.
+2. **B3 is a secondary comparison on its own levels.** The incumbent forecasts five quantile levels (0.05, 0.25,
+   0.5, 0.75 and 0.95). It is scored on those five against each candidate read at the same five. B1 and B2 stay the
+   primary benchmarks, on the 23-level grid.
+3. **Scoring confirmation days opens them.** Every confirmation day of §1 falls in the blind tier of
+   `docs/decisions/lockbox.md`. Scoring a registered candidate's prospective days at a checkpoint is the opening of
+   those blind-tier days. Each opening is Eleonora's own attested action (#256); neither this record nor the relay
+   opens any day.
+4. **Interim checkpoints use 100,000 draws.** The checkpoints stay at 60, 125 and 250 days with Lan-DeMets
+   O'Brien-Fleming spending. The first checkpoint's nominal one-sided level is about 6 in 100,000, below what 10,000
+   draws resolve, so the bootstrap at the 60- and 125-day checkpoints uses 100,000 draws. (The relay chose more
+   draws over dropping the first checkpoint, which leaves the decided spending plan unchanged; she may override.)
+5. **The other readings stand as the pull request proposed them**, unless she says otherwise:
+   - the futility bound's level is not set by §6 and is given explicitly at each verdict;
+   - the verdict reads the primary score alone at the spent level, and Holm across the primary and the key secondary
+     is reported, not applied to the primary;
+   - the key secondary's weight is the threshold weight 1{z > 0 bp}, by the chaining function max(z, 0);
+   - B1 adds the h-day change to the last public value, as §4 reads, although that value is one row older than the
+     decision day;
+   - a decision day counts as missing if any lead is missing, and a target with no published outcome drops that lead
+     alone, the same lead for every forecast;
+   - B2's day type is the reporting day type (month-end on the market calendar), with no minimum sample;
+   - the trailing windows are counted in calendar years back from the decision day and clipped at the panel's first
+     day.
 
 ---
 
