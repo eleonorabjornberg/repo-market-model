@@ -14,7 +14,7 @@ Recorded mutations, 13 October 2026, in a disposable copy of `scripts/off_risk_d
    `AssertionError: 17.000000000000014 != -5.000000000000004 within 9 places`.
 
 The as-of read of the spread is `off_risk_day_624.read_features`, the reader of step 2 (`asof.InformationRule` with the leakage and staleness guards of
-`baseline._as_of_folds`); `spread_bps` is an input already declared in `metadata/sources.json`, so no new availability declaration is made.
+`baseline._as_of_folds`); `spread_bps` is the row's own sofr less iorb, both already declared, so no new availability declaration is made.
 """
 
 import importlib.util
