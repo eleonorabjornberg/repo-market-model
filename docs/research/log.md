@@ -214,3 +214,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the export withholds 85 of 666 weekly dates of `pd_repo_ust` and 72 of `pd_reverse_repo_ust` (2022 to 2025), 3 of `pd_repo_mbs`, none of the fails series. Partial rank correlation with the +5 bp indicator on ordinary days: `pd_reverse_repo_ust` +0.112 → +0.087 [+0.05, +0.12], `pd_repo_ust` +0.104 → +0.076 [+0.03, +0.12]. Detail in `docs/pivot/new-sources-withheld-weeks.md`.
 - Against kill: not applicable (H3's kill is not tested here; the two series lose rank, and neither was a lead beyond #630's own reading).
 - Next: Eleonora decides whether the source is admitted given the withheld weeks.
+
+### 2026-10-13 [H2] step 1 · eleonorabjornberg/repo-market-model#710
+- Directive: #684
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d`
+- Tried: #629's source screen and #631's derived-feature screen re-run unchanged on a panel that runs to 2026-09-03 (the opened near-blind tier), with a 2026 column; one shared end date, `repo_model.exploration.EXPLORATORY_END`. Variants: n/a (re-run).
+- Result: the 2026 column is empty on both screens: 133 ordinary days and 2 pressure days (2026-01-02, 2026-02-18), under the declared minimum of 3. The 2018-2025 column reproduces the earlier page (82 pressure days on 1,469 ordinary days). #629 has 87 series, not 101: the 14 `fed_repo_*` series cannot be read in 2026 (the repo-operations snapshot ends 2025-12-31). #631's ranked leads move by one entry (`spread_rv5` enters, `days_since_pressure` becomes redundant). #624 and #631's model test are not re-run: the pressure judge's declaration ends 2025-12-31.
+- Against kill: not applicable (H2's kill is not tested here; development data never gives a verdict).
+- Next: Eleonora rules on extending the judge's span for exploratory re-runs; a 2026 repo-operations snapshot would restore the 14 series.
