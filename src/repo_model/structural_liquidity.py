@@ -42,6 +42,14 @@ level, the unkinked curve's growth below it. Above the level `e` no longer decay
 constant factor on the four terms and the fitted level can move the forecast. Declared in `metadata/kinked_626.json`; a
 measurement, off in every published declaration.
 
+**Identified levels (#689, finding #671).** `kinked_profile` and `kinked_slow` take the kinked curve's level from the ridge
+logistic itself rather than from a least-squares hinge on the spread: at each refit the design is completed at every level of
+`satiation.KINK_GRID`, the logistic is fitted on the training pairs' lowest-threshold labels, and the level is the grid point
+with the smallest fitted objective (`profile_curve`, `choose_profile_level`). `kinked_slow` adds a penalty,
+`PROFILE_PENALTY` per pair per squared percentage point, on the move from the previous refit's level. Each refit records the
+level, the interval of levels within `PROFILE_INTERVAL_NATS` of the minimum and the number of local minima. Declared in
+`metadata/identified_level_689.json`; a measurement, off in every published declaration.
+
 Standard library only: the six-coefficient ridge logistic is fitted here by Newton's method; the
 as-of pairing of labels with what was public at their own decision instant is `ml._pressure_pairs`,
 imported inside the function that needs it (`tests/test_dependency_boundary.py`).
