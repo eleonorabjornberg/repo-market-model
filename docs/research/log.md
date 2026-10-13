@@ -204,3 +204,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: one input separates them, the tail spread's level, lower at the onset warnings: AUROC 0.304 [0.16, 0.47] over all, in the same direction against the 2019-20 false alarms. Step 2, weighted rule: `+tailcap75` 18 of 26 onsets, recall 0.692 [0.522, 0.852], pooled false alarms 1.88 (tier 1 yes, tiers 3 and 5 no); `+tailcap50` 14 of 26 at 1.48. Paired Brier of `+tailcap75` against the row: −0.0073 [−0.0150, −0.0005] over all days. Detail in `docs/pivot/every-day-separation-result.md`; the paired-Brier header on this page was later corrected (dated note, #623).
 - Against kill: not applicable.
 - Next: cap with floor (#610).
+
+### 2026-10-13 [H4] step 3 · eleonorabjornberg/repo-market-model#661
+- Directive: #633
+- Step: 3 (steps 1 and 2 in the same pull request: the due-diligence table, and the workbook released from 17 May 2018 by Eleonora's ruling)
+- Tier: development
+- Pins: scratch panel `4137d0ad…`, extended panel `f3acce04…`, workbook `1c889930…`; base `09640f5b`; declaration `metadata/backfill_spread_633.json`
+- Tried: one scratch quantile model of the spread (23 levels, leads 1 to 5) trained without and with the 899 back-filled rows, scored by the protocol's scorer from 2018-06-29 to 2025-12-31; a workbook-only sensitivity declared after the first score. Variants: 1 model, 2 input sets, 2 arms each.
+- Result: 2018-19 coverage of the central 90% interval rises +0.050 [+0.020, +0.082] (declared) and +0.035 [+0.017, +0.054] (workbook-only); 2018-19 CRPS d +0.043 [−0.013, +0.101] and +0.064 [+0.009, +0.117]; the share above the 95th percentile does not move (0.167 → 0.174, 0.191 → 0.191). Detail in `docs/pivot/posting-dates-h4-result.md`.
+- Against kill: not killed, as exploration: a posting time is established, and the 2018-19 calibration move's interval excludes zero in both input sets. The 2018-19 upper tail stays under-forecast.
+- Next: whether to register (step 4) is Eleonora's; the H5 models cannot use the history without pre-2018 inputs the project does not hold.
