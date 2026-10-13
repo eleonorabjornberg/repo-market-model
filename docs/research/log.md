@@ -205,6 +205,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable.
 - Next: cap with floor (#610).
 
+### 2026-10-13 [H5] step 3 · eleonorabjornberg/repo-market-model#697
+- Directive: #637
+- Step: 3 (progress tracking; no new scoring)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5bb4063da150e09a285d242cd28db1c136`
+- Tried: no variants. `scripts/emit_progress.py` copies committed evidence into `docs/pivot/progress.md` and `docs/research/progress.json`; the running count it starts is 358 candidate files and 1 spread-forecast declaration (3 variants).
+- Result: no new figure; a page that shows each candidate's spread CRPS difference, ordinary-day AUROC, Brier difference, calibration and judge tiers, with "not measured" where the evidence has none.
+- Against kill: not applicable (no verdict; infrastructure).
+- Next: #645 reads `docs/research/progress.json` for the hypothesis sections.
+
 ### 2026-10-13 [H3] step 1 · eleonorabjornberg/repo-market-model#696
 - Directive: #680
 - Step: 1
