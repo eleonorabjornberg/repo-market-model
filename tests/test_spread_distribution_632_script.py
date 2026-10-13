@@ -132,6 +132,33 @@ class PairedTests(unittest.TestCase):
             SCRIPT.paired_losses([1.0], [1.0, 2.0], {}, seed=1)
 
 
+class MedianAndCoverageTests(unittest.TestCase):
+    LEVELS = [0.05, 0.25, 0.5, 0.75, 0.95]
+    VECTOR = [-4.0, -1.0, 0.5, 2.0, 6.0]
+
+    def test_the_median_error_is_read_at_level_one_half(self):
+        self.assertAlmostEqual(SCRIPT.median_abs_error(self.LEVELS, self.VECTOR, 3.5), 3.0)
+        self.assertAlmostEqual(SCRIPT.median_abs_error(self.LEVELS, self.VECTOR, -2.5), 3.0)
+
+    def test_central_hits_use_the_matching_pair_of_levels(self):
+        # 50%: [-1, 2]; 90%: [-4, 6]
+        self.assertEqual(SCRIPT.central_hit(self.LEVELS, self.VECTOR, 1.0, 0.5), 1.0)
+        self.assertEqual(SCRIPT.central_hit(self.LEVELS, self.VECTOR, 4.0, 0.5), 0.0)
+        self.assertEqual(SCRIPT.central_hit(self.LEVELS, self.VECTOR, 4.0, 0.9), 1.0)
+        self.assertEqual(SCRIPT.central_hit(self.LEVELS, self.VECTOR, 6.5, 0.9), 0.0)
+        self.assertEqual(SCRIPT.central_hit(self.LEVELS, self.VECTOR, -1.0, 0.5), 1.0)
+
+    def test_a_mass_the_levels_do_not_carry_is_refused(self):
+        with self.assertRaises(ValueError):
+            SCRIPT.central_hit(self.LEVELS, self.VECTOR, 0.0, 0.8)
+
+    def test_the_rate_by_group_is_the_group_mean(self):
+        out = SCRIPT.cells_by_group([1.0, 0.0, 1.0, 1.0], {"regime": ["a", "a", "b", "b"]}, seed=1)
+        self.assertAlmostEqual(out["pooled"]["mean"], 0.75)
+        self.assertAlmostEqual(out["regime"]["a"]["mean"], 0.5)
+        self.assertAlmostEqual(out["regime"]["b"]["mean"], 1.0)
+
+
 class PublishedDistributionTests(unittest.TestCase):
     def test_days_after_the_last_scored_day_are_not_read(self):
         end = date(2025, 12, 31)
