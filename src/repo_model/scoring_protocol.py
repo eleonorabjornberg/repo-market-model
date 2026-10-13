@@ -74,6 +74,10 @@ DRAWS = 10_000
 #: The draws at an interim checkpoint (60 and 125 days), whose nominal levels are finer than
 #: 10,000 draws resolve: Eleonora's ruling of 13 October 2026 (PR #660).
 INTERIM_DRAWS = 100_000
+#: Inner draws per outer resample of the double bootstrap that calibrates the studentized bound:
+#: Eleonora's ruling of 13 October 2026 (PR #695). The value is the implementing pull request's
+#: proposal, from its stability study.
+INNER_DRAWS = 200
 #: §5, §6: the overall one-sided level.
 ALPHA = 0.05
 #: §5: the Diebold-Mariano statistic's Newey-West lag.
@@ -408,15 +412,50 @@ class PairedTest:
     draws: int
     block_length: float
     seed: int
+    #: Sorted prepivots of the double bootstrap: for each outer resample, the share of its
+    #: inner t-draws at or below its own t-draw. Empty when the test was made uncalibrated.
+    prepivots: Tuple[float, ...] = ()
+    inner_draws: int = 0
 
     @property
     def n(self) -> int:
         return len(self.days)
 
+    def calibrated_level(self, level: Optional[float] = None) -> float:
+        """The level the outer t-draws are read at so the bound covers `level`'s rate.
+
+        `1 - beta` is the `1 - level` quantile of the prepivots: in the bootstrap world, the
+        inner bound at `beta` covers the outer truth on a `1 - level` share of the resamples.
+
+        Raises:
+            ProtocolError: the test was made without calibration.
+            UnresolvedLevel: the quantile reaches the prepivots' ceiling of 1, so no outer
+                quantile below the maximum is calibrated to it.
+        """
+
+        if not self.prepivots:
+            raise ProtocolError("this test was made without calibration (inner_draws=0)")
+        level = self.alpha if level is None else level
+        if not 0.0 < level < 1.0:
+            raise ProtocolError(f"a one-sided level must be in (0, 1), got {level}")
+        reach = _quantile(self.prepivots, 1.0 - level)
+        if reach >= 1.0:
+            raise UnresolvedLevel(
+                f"the {1.0 - level:.6g} quantile of the prepivots is 1: at {self.inner_draws} inner "
+                f"draws no calibrated level resolves {level:.6g}"
+            )
+        return 1.0 - reach
+
     def lower_mean_difference(self, level: Optional[float] = None) -> float:
-        """The one-sided lower bound of mean(d) at `level` (default: the test's `alpha`)."""
+        """The one-sided lower bound of mean(d) at `level` (default: the test's `alpha`).
+
+        Calibrated by the double bootstrap when the test carries prepivots, the studentized
+        bound at the nominal level otherwise.
+        """
 
         level = self.alpha if level is None else level
+        if self.prepivots:
+            level = self.calibrated_level(level)
         return self.mean_difference - _bound(self.t_draws, 1.0 - level, self.draws) * self.standard_error
 
     def upper_skill(self, level: Optional[float] = None) -> float:
@@ -462,6 +501,7 @@ def paired_tests(
     block_length: float = BLOCK_LENGTH,
     hac_lag: int = HAC_LAG,
     with_skill: bool = True,
+    inner_draws: int = 0,
 ) -> Tuple[PairedTest, ...]:
     """§5: each (benchmark scores, candidate scores) pair, tested on one resample stream.
 
@@ -470,6 +510,11 @@ def paired_tests(
     read off the same draws, so a pair's result does not depend on which others share the
     call. Each resample's mean(d) is studentized by the resample's own HAC standard error.
     `with_skill=False` leaves out skill's bound, which doubles the work.
+
+    `inner_draws` > 0 calibrates mean(d)'s bound by the double bootstrap (ruling of 13 October
+    2026, PR #695): each outer resample b is resampled `inner_draws` times, with the same mean
+    block, from `random.Random(f"{seed}/{b}")`, shared across pairs, and its prepivot is the
+    share of those inner t-draws at or below its outer t-draw. The outer draws are unchanged.
 
     Raises:
         ProtocolError: on pairs that do not cover the same days, a benchmark scoring zero
@@ -505,16 +550,30 @@ def paired_tests(
         if with_skill:
             linear = [d - skill * b for d, b in zip(diff, bench)]
             skill_se = _standard_error(linear, hac_lag, "skill's linearised series") / benchmark_mean
-        cells.append((bench, diff, mean, se, benchmark_mean, skill, skill_se, [], []))
+        cells.append((bench, diff, mean, se, benchmark_mean, skill, skill_se, [], [], []))
+    if isinstance(inner_draws, bool) or not isinstance(inner_draws, int) or inner_draws < 0:
+        raise ProtocolError(f"inner_draws must be a non-negative int, got {inner_draws!r}")
     rng = random.Random(seed)
-    for _ in range(draws):
+    for outer in range(draws):
         indices = stationary_bootstrap_indices(n, block_length, rng)
-        for bench, diff, mean, se, _, skill, skill_se, t_out, skill_out in cells:
+        inner = []
+        if inner_draws:
+            inner_rng = random.Random(f"{seed}/{outer}")
+            inner = [stationary_bootstrap_indices(n, block_length, inner_rng) for _ in range(inner_draws)]
+        for bench, diff, mean, se, _, skill, skill_se, t_out, skill_out, pivots in cells:
             resample = list(map(diff.__getitem__, indices))
             resampled_mean = sum(resample) / n
-            t_out.append(
-                (resampled_mean - mean) / _standard_error(resample, hac_lag, "a resampled difference")
-            )
+            outer_t = (resampled_mean - mean) / _standard_error(resample, hac_lag, "a resampled difference")
+            t_out.append(outer_t)
+            if inner:
+                below = 0
+                for inner_indices in inner:
+                    again = list(map(resample.__getitem__, inner_indices))
+                    inner_t = (sum(again) / n - resampled_mean) / _standard_error(
+                        again, hac_lag, "an inner resampled difference"
+                    )
+                    below += inner_t <= outer_t
+                pivots.append(below / inner_draws)
             if skill_se is not None:
                 resampled_bench = list(map(bench.__getitem__, indices))
                 bench_mean = sum(resampled_bench) / n
@@ -525,7 +584,7 @@ def paired_tests(
                 resampled_se = _standard_error(linear, hac_lag, "a resampled skill") / bench_mean
                 skill_out.append((resampled_skill - skill) / resampled_se)
     out = []
-    for bench, diff, mean, se, benchmark_mean, skill, skill_se, t_out, skill_out in cells:
+    for bench, diff, mean, se, benchmark_mean, skill, skill_se, t_out, skill_out, pivots in cells:
         ordered = sorted(t_out)
         statistic = mean / se
         out.append(
@@ -545,6 +604,8 @@ def paired_tests(
                 draws=draws,
                 block_length=block_length,
                 seed=seed,
+                prepivots=tuple(sorted(pivots)),
+                inner_draws=inner_draws,
             )
         )
     return tuple(out)
@@ -702,6 +763,12 @@ def verdict(
             raise ProtocolError(f"the test against {name} covers {test.n} days, not checkpoint {look}'s {days}")
     if against_b1.days != against_b2.days:
         raise ProtocolError("the tests against B1 and B2 must cover the same days")
+    for name, test in (("B1", against_b1), ("B2", against_b2)):
+        if test.inner_draws < INNER_DRAWS:
+            raise ProtocolError(
+                f"the test against {name} is calibrated on {test.inner_draws} inner draws; a verdict "
+                f"reads the double bootstrap on {INNER_DRAWS} (ruling of 13 October 2026, PR #695)"
+            )
     if look < len(checkpoints):
         for name, test in (("B1", against_b1), ("B2", against_b2)):
             if test.draws < INTERIM_DRAWS:
