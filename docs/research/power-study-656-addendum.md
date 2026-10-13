@@ -8,7 +8,7 @@ test the study rests on, not a part of the study's answer.
 
 The power figures are the share of simulated paths in which the protocol's test says *Supported*. That figure is power
 only if the test holds its size: under no true difference it must say *Supported* rarely. The protocol sets the overall
-one-sided level at 5%, spent across the three checkpoints. The synthetic suite of #655 shows the test ranks forecasts of
+one-sided level at 5%, spent across the three checkpoints. The synthetic suite (H1) shows the test ranks forecasts of
 known quality; it does not measure the test's size on daily score differences that are skewed and heavy-tailed, as a
 spread's are.
 
