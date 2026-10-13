@@ -121,9 +121,16 @@ class DeclarationTests(unittest.TestCase):
 
     def test_the_reading_rule_is_the_issues(self):
         rule = self.declared["reading_rule"]
-        self.assertIn("under 0.6", rule["barely_above"]["indicator"])
+        self.assertIn("persistence-logistic", rule["barely_above"]["indicator"])
+        self.assertIn("under 0.6", rule["secondary_indicator_reading"])
         self.assertEqual(set(rule["verdict"]), {"data problem", "model problem", "partly reached"})
         self.assertEqual(script.AUROC_LINE, 0.6)
+
+    def test_the_two_deviations_of_the_ruling_are_declared(self):
+        self.assertEqual([d["number"] for d in self.declared["deviations"]], [1, 2])
+        for deviation in self.declared["deviations"]:
+            self.assertIn("6149433242", deviation["ruling"])
+        self.assertIn("memorised", self.declared["fits"])
 
 
 class ReadingTests(unittest.TestCase):

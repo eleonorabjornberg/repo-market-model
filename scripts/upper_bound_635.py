@@ -106,13 +106,14 @@ READING_RULE = {
         "secondary": "the +5 bp indicator on ordinary days, AUROC averaged over leads 1 to 5",
     },
     "benchmark_for_the_spread": "B1, as-of persistence (protocol v1 section 4); B2, calendar climatology, reported",
-    "benchmark_for_the_indicator": "walk-forward climatology (the training rate) and a persistence-logistic model on the last public spread, reported; the line below is the issue's own absolute line",
+    "benchmark_for_the_indicator": "persistence-logistic, a logistic model on the last public spread alone (the pressure-probability benchmark of CLAUDE.md), fitted on the same training rows as the candidate; walk-forward climatology is reported beside it (deviation 2)",
     "barely_above": {
         "spread": "the skill against B1 on ordinary days has a 90% stationary-bootstrap interval (5th to 95th percentile of the paired skill draws) whose lower end is at or below 0",
-        "indicator": "the ordinary-day AUROC, averaged over leads 1 to 5, is under 0.6",
+        "indicator": "the ordinary-day AUROC difference to persistence-logistic, averaged over leads 1 to 5, has a 90% interval whose lower end is at or below 0, or the Brier skill against persistence-logistic, averaged over leads 1 to 5, has a 90% interval whose lower end is at or below 0 (deviation 2); clearly above needs both intervals above 0",
     },
+    "secondary_indicator_reading": "the issue's own absolute line: the ordinary-day AUROC, averaged over leads 1 to 5, under 0.6 is 'barely above climatology'; reported beside the headline, it decides no verdict (deviation 2)",
     "clearly_above": "not barely above",
-    "which_model": "for each fit, the better of the two model families on the same days, by the point estimate of the quantity above; the choice is among two, on development data, and is reported as such",
+    "which_model": "for each fit, the better of the two model families on the same days, by the point estimate of the quantity above (the skill against B1 for the spread, the AUROC for the indicator); the choice is among two, on development data, and is reported as such",
     "verdict": {
         "data problem": "the ceiling is barely above the benchmark",
         "model problem": "the ceiling is clearly above the benchmark and the reachable line is barely above it",
@@ -120,8 +121,27 @@ READING_RULE = {
     },
     "the_verdict_line": "stated for the spread (the primary target) and for the indicator, each under the rule; if they differ, both are stated and the primary target's decides the one-line verdict",
     "effort_rule": "H2 outcome rule (docs/research/hypotheses/H2.md): a data problem sends effort to H3 and H4, a model problem to H5's development steps",
-    "not_a_claim": "the ceiling is fitted and scored in-sample, so it is an upper bound and not a forecast; a reachable figure is development evidence and gives no verdict (protocol v1 section 1)",
+    "not_a_claim": "the ceiling reads every day's own surroundings, before and after, so it is an upper bound and not a forecast; a reachable figure is development evidence and gives no verdict (protocol v1 section 1)",
 }
+
+#: Eleonora's ruling of 13 October 2026 on the two marked questions of the pull request (repo-market-model#703, comment 6149433242): two declared
+#: deviations from the first declaration (commit 0da8993), committed before the re-run
+DEVIATIONS = [
+    {
+        "number": 1,
+        "ruling": "repo-market-model#703, comment 6149433242, item 1: cross-fit the ceiling",
+        "changed": "the ceiling is cross-fitted: blocked folds by time (the walk-forward's blocks of 21 scored days), each block scored by a fit that did not see it, at the ceiling settings; a training row is embargoed from a block when it falls inside the walk-forward's embargo before the block (its scored row is after the last public row of the block's first decision instant) or inside its mirror after the block (its own last public row is before the block's last scored row); an embargoed row in a training set raises LookAheadError (crossfit_positions)",
+        "kept": "inputs, settings, targets, scoring, intervals and the reading rule's spread line; the first declaration's in-sample fit is kept and reported beside the new ceiling as 'memorised', labelled as in-sample, and carries no reading",
+        "reason": "the in-sample gradient-boosted ceiling memorises (ordinary-day AUROC exactly 1.000 at every lead), so the reading rule could never return 'data problem' for a flexible model",
+    },
+    {
+        "number": 2,
+        "ruling": "repo-market-model#703, comment 6149433242, item 2: read the indicator against persistence-logistic",
+        "changed": "the indicator's headline is read against persistence-logistic (AUROC difference and Brier skill, with 90% intervals), in the form of the spread's rule: barely above when the lower end of the AUROC-difference interval, or of the Brier-skill interval, is at or below 0 (the operational form is this pull request's choice, marked in its description); the 0.6 line is reported as a secondary reading",
+        "kept": "the verdict map (data problem, model problem, partly reached) and the spread's rule",
+        "reason": "persistence-logistic alone scores AUROC 0.890 on the walk-forward ordinary days, so a 0.6 line against climatology is below the benchmark the project names",
+    },
+]
 
 
 def declaration_document(inputs: Sequence[str], refused: Mapping[str, str], panel_sha: str) -> dict:
@@ -162,12 +182,13 @@ def declaration_document(inputs: Sequence[str], refused: Mapping[str, str], pane
             "key_columns_interacted": list(KEY_COLUMNS),
             "settings": {fit: {k: (dict(v) if hasattr(v, "items") else v) for k, v in settings[fit].items()} for fit in FITS},
             "shared": {k: settings[k] for k in ("standardise_clip", "scale_floor_share", "scale_ceiling_share", "logistic_max_iter")},
-            "tuning": "none: settings are fixed here; the ceiling's are looser (more rounds, more leaves, a weaker penalty) so that it is the more flexible fit",
+            "tuning": "none: settings are fixed here; the ceiling's are looser (more rounds, more leaves, a weaker penalty) so that it is the more flexible fit; the cross-fitted ceiling and the memorised fit use the same ceiling settings",
             "persistence_logistic": "ml.l2_logistic_probabilities on the last public spread alone, c = 1.0, the reachable fit's rule",
-            "climatology": "the training rate of the indicator (the in-sample rate for the ceiling)",
+            "climatology": "the training rate of the indicator (the cross-fitted training rate for the ceiling, the in-sample rate for the memorised fit)",
         },
         "fits": {
-            "ceiling": "(i) fitted on every scored day with a spread, scored on the same days, at the ceiling settings: what any model could at best extract from these inputs; not a claim",
+            "ceiling": "(i) cross-fitted (deviation 1): the scored days are cut into the walk-forward's blocks of 21; each block is scored by a fit on the other blocks' days with a spread, at the ceiling settings, less the embargoed rows (crossfit_positions); what any model could at best extract from these inputs; not a claim",
+            "memorised": "(i-a) the first declaration's ceiling: fitted on every scored day with a spread and scored on the same days, at the ceiling settings; it memorises, is reported beside the cross-fitted ceiling and labelled in-sample, and carries no reading",
             "reachable": {
                 "refit_every_scored_days": REFIT_EVERY,
                 "training_rows": "the scored days whose spread row is at or before the last public row (the anchor) of the block's first decision instant; a row after it raises LookAheadError (training_positions)",
@@ -183,13 +204,14 @@ def declaration_document(inputs: Sequence[str], refused: Mapping[str, str], pane
                 "splits": "all days, ordinary days, risk dates; by regime (metadata/evaluation_splits.json) on all and on ordinary days; by reporting day type; by lead; a split is reported, never a pass requirement",
             },
             "indicator": {
-                "metrics": "AUROC, and Brier skill against walk-forward climatology and against persistence-logistic, per lead and averaged over leads 1 to 5",
+                "metrics": "AUROC, the AUROC difference to persistence-logistic, and Brier skill against walk-forward climatology and against persistence-logistic, per lead and averaged over leads 1 to 5",
                 "interval": "the stationary bootstrap over the ordinary scored days in date order, mean block %d, %d draws, seed %d, one draw shared by every lead and model; the 90%% interval is the 5th to 95th percentile" % (BLOCK, RESAMPLES, SEED),
                 "splits": "by regime and by as-of scarcity state (ample | scarce | unknown)",
             },
         },
         "reading_rule": READING_RULE,
-        "variant_count": "four fitted families of two kinds (a quantile law and a classifier, each gradient-boosted and regularised linear), each at two settings (ceiling and reachable) and no other; no input list, setting or interaction was changed after a score",
+        "deviations": DEVIATIONS,
+        "variant_count": "four fitted families of two kinds (a quantile law and a classifier, each gradient-boosted and regularised linear), each at two settings (ceiling and reachable) and no other; the ceiling settings are used twice (cross-fitted, and in-sample as the memorised fit); no input list, setting or interaction was changed after a score",
     }
 
 
