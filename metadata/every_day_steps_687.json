@@ -1,0 +1,102 @@
+{
+  "status": "declared by the pull request that closes #687 before any score of a step row; a measurement, not a record. Nothing is published: no rule, threshold or declaration changes, no day after 2025-12-31 is scored, and the live record and pin do not move. The days read are 2018-2025, so a result describes that history and does not confirm anything (ruling of 11 October 2026 on #567). Exploration on development data, not a verdict (scoring protocol v1, #640); no new +5 bp classification variant is proposed (paused)",
+  "issue": 687,
+  "serves": "H2 (the data we hold carries signal for ordinary-day pressure) and H5, step: the diagnosis of #674",
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "bootstrap": {
+    "level": 0.9,
+    "replications": 2000,
+    "block_length": 10,
+    "seed": 624,
+    "resampling": "the judge's stationary bootstrap over the date-ordered days that are not risk dates (metrics.stationary_bootstrap_indices), one resample per replication shared by every cell. A statistic that is undefined on a resample is left out of that cell's draws and counted beside the interval. The reliability fit is bootstrapped for the pooled cell only"
+  },
+  "population": "every scored day of 2018-06-29 to 2025-12-31 at the lead on which announcement_dating_rescore.risk_flag(splits, values, True) is false (the settlement columns and their coupon clause are read at every lead, as the rows are scored), at each lead 1 to 5 apart",
+  "outcome": "the day is a pressure day at +5 bp, the judge's primary threshold and outcome, read from the judge's own fold grid",
+  "statistics": {
+    "auroc": "the chance that a pressure day's forecast is above a non-pressure day's, ties half (pressure_judge.auroc); 0.5 is no ranking",
+    "brier_skill": "1 less the row's Brier score over that of the walk-forward climatology, on the days on which the climatology exists",
+    "walk_forward_climatology": "per judge refit block, the pooled rate of pressure days among the earlier scored days that were not risk dates and whose outcome was observable at the block's fit (probability_calibration.past_positions); none while those days number fewer than 60 (group_calibration.GROUP_MINIMUM_PAIRS). It reads no later day (group_calibration.fit_floor refuses a pair after the fit)",
+    "reliability": "the logistic recalibration of the outcome on the logit of the forecast, by Newton's method, on the days on which the forecast is above 1e-4 (the row forecasts exactly 0 on the others; their number and the pressure days on them are reported beside it). A calibrated forecast has intercept 0 and slope 1; a slope of 0 ranks nothing",
+    "clip": "a forecast is clipped to [1e-4, 1 - 1e-4] before its logit"
+  },
+  "reference_rows": {
+    "persistence_logistic": "the persistence-logistic benchmark of the judge (scripts/pressure_judge.py forecasts: pressure_judge.persistence_logistic_exceedance, a logistic regression of a pressure day at +5 bp on the as-of spread_bps, walk-forward on the judge's fold grid). A probability, so it has every statistic of step 1",
+    "spread_bps_asof": "the raw as-of spread_bps in bp at the decision instant of the day's own lead, read through asof.InformationRule on the 'both' arm of #541 (off_risk_day_624.read_features, with its leakage and staleness guards). A level and not a probability: only its AUROC is a statistic; the Brier skill and the reliability curve are not defined for it and are reported as not applicable"
+  },
+  "component": {
+    "row": "the every-day part of risk_gbm+every_day+gate+settle+h41+iorb (#579): ml.pressure_risk_date_variant_exceedance with every_day=True and early_prior=False, the component inputs of ml.EVERY_DAY_COMPONENT_INPUTS and, at lead 1 only, iorb_announced_change_bps; settlements dated from the announcement and the H.4.1 read per release (the 'both' arm of #541)",
+    "raw": "the component's probability before any step, on the days that are not risk dates; a risk date keeps the parent's forecast and is not scored here"
+  },
+  "steps": {
+    "order": [
+      "persist",
+      "gate",
+      "cap"
+    ],
+    "persist": {
+      "days": 2,
+      "rule": "on a day that is not a risk date, the smaller of the component's forecast today and its forecast on the previous scored day (the parent's, if that was a risk date; #532)"
+    },
+    "gate": {
+      "quantile": 0.9,
+      "window": 250,
+      "minimum_earlier": 60,
+      "rule": "the component's forecast is kept only if strictly above the quantile (nearest rank) of its forecasts on the days that were not risk dates among the previous window scored days, with at least minimum_earlier of them (#532, #595)"
+    },
+    "cap": {
+      "quantile": 0.75,
+      "window": 250,
+      "minimum_earlier": 60,
+      "tail": "sofr_p99_iorb_bps",
+      "rule": "the forecast is kept only if the tail spread, read at the day's decision instant, is at or below the quantile of the readings of the previous window scored days that were not risk dates (#601)"
+    },
+    "values": "every value is the published one of the step it names; none is tuned here"
+  },
+  "rows": {
+    "component_subsets": [
+      "comp",
+      "comp+persist",
+      "comp+gate",
+      "comp+cap",
+      "comp+persist+gate",
+      "comp+persist+cap",
+      "comp+gate+cap",
+      "comp+persist+gate+cap"
+    ],
+    "reproduced": {
+      "comp+gate": "risk_gbm+every_day+gate+settle+h41+iorb",
+      "comp+gate+cap": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75"
+    },
+    "reproduction": "the two rows named above must equal the published control row and its +tailcap75 cap cell for cell on every lead; `check` refuses a difference",
+    "leave_one_out": "from the full construction (persist, gate and cap, applied in that order) each step removed in turn; and each step added alone to the raw component. Persist is not in the published row; it is a #532 control that was not chosen, and is included here because the avenue (#674) names it",
+    "day_level": {
+      "day:inputs": "inputs",
+      "day:inputs+state": "monotone",
+      "day:inputs+state+interactions": "interaction"
+    },
+    "day_level_reading": "the day-level model of #624 step 2 (a), taken apart: a ridge logistic of a pressure day at +5 bp, fitted at each refit block on the earlier days that were not risk dates and whose outcome was observable at the block's fit, on (1) the four inputs, (2) the four inputs and the as-of scarcity state, (3) those and each input times the state (#624's `+offday`). Inputs as in metadata/off_risk_day_624.json. No step of the component is applied to them"
+  },
+  "pairing": "every row is paired against the full construction (comp+persist+gate+cap) and against persistence_logistic on the same days (scripts/off_risk_day_624.py measure --pair-with), pooled, by the judge's regimes and by as-of scarcity state, at leads 1 to 5, with a 90% stationary-bootstrap interval from resamples shared by the rows",
+  "refit_blocks": "`blocks` compares, for every row and the reference rows, the pooled AUROC on the ordinary days with the AUROC over the pairs (a pressure day, a non-pressure day) that are in the same refit block of 21 scored days (probability_calibration.blocks), and the second less the first with a 90% stationary-bootstrap interval (the seed and block length of the bootstrap above). The raw as-of spread has no refit, so its two figures differ only by which pairs are counted: it is the control",
+  "cut_off": "'pushed below the cut-off' is counted against the component's own walk-forward gate cut: an ordinary pressure day on which the raw component is above that cut and the row is at or below it. 'zeroed' is a forecast of 0 (at most 1e-4) on a day the raw component forecast above it",
+  "near_empty_cells": "a cell of fewer than 10 pressure days is called near-empty on the page, and a difference that sits only in such cells is reported as such",
+  "published": "nothing"
+}
