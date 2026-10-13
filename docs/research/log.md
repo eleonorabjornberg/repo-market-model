@@ -234,3 +234,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: persistence beats the climatology for EFFR − IORB and the ON RRP level at every lead (skill +0.80 [+0.72, +0.86] and +0.89 [+0.87, +0.91] at lead 1), for TGCR/BGCR − IORB at lead 1 only (+0.22 [+0.04, +0.38]); the climatology beats it for the dispersions from lead 2, the ON RRP change and the facility take-up. The rate-level targets correlate +0.39 with the pressure indicator and read high before onsets (AUC 0.83) but not within the as-of scarcity state (scarce-state pre-onset AUC 0.47 to 0.52); TGCR/BGCR − IORB repeat SOFR − IORB (+0.95).
 - Against kill: not testable in this step (no model, development data); no target shows a lead beyond the as-of scarcity state.
 - Next: step 2, the model for at most three targets, once the target-choice rule and #634's model are settled.
+
+### 2026-10-13 [H5] step 2 · eleonorabjornberg/repo-market-model#713
+- Directive: #686
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmarks B1, B2; seed 686
+- Tried: 1 variant, `spread_mr_level10`: persistence with partial mean reversion toward the median of the last 10 ordinary days, phi on a grid, empirical residual quantiles, refitted every 21 decision days. Variants: 1 (the declaration `metadata/spread_distribution_686.json` is the second spread-forecast declaration on main, after #632).
+- Result: grid CRPS 1.778 bp over 1,855 decision days to 2025-12-31: skill +22.3% [+13.7%, +29.5%] against B1 and +29.4% [+21.4%, +37.3%] against B2; upper-tail twCRPS +32.4% and +17.8%. Against the published distribution on five levels: +1.2% [-2.3%, +4.8%], a tie. Weak spots: 2021-23 (-2.6% vs B1) and quarter-end days. It narrows B1's over-forecast of P(> +5 bp) on ordinary days (2018-19 -0.113 to -0.071, 2025-26 -0.049 to -0.028) without closing it.
+- Against kill: not applicable (no verdict; development data). It does not beat the published distribution, so it adds nothing over the incumbent on CRPS.
+- Next: Eleonora decides whether a reverting level is worth adding to #634's candidates; #707 diagnoses 2021-23 and the upper tail.
