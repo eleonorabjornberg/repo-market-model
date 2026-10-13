@@ -13,7 +13,8 @@ as of each decision instant. Nothing here joins the published panel or a publish
   release as the held positions, so the same declared lag.
 * `treasury_auction_results` -- the results fields of the Treasury auctions table
   (`tests/fixtures/snapshots/treasury_auctions/`, already tracked): the accepted amount, the dealers'
-  and indirect bidders' shares of it, and the cover. Public at the auction close.
+  and indirect bidders' shares of what is accepted outside the Fed's rollover (SOMA), and Treasury's
+  bid-to-cover (#690). Public at the auction close.
 * `nyfed_on_rrp_counterparties` -- the number of counterparties in the Desk's regular overnight
   reverse repo operation. The split of the amount by counterparty type (`propositions`) is **not**
   read: the Desk adds it a month later (`tests/test_registry.py`, A45), so it was not public on the
@@ -44,10 +45,10 @@ import io
 import json
 from datetime import date, datetime, time
 from pathlib import Path
-from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
 from urllib.parse import urlencode
 
-from .data import DailyObservation
+from .data import WEEKLY_CARRY_MAX_STALENESS_DAYS, DailyObservation
 from .ingest import (
     SnapshotArtifact,
     _download,
@@ -70,6 +71,8 @@ __all__ = [
     "parse_dts_debt_cash",
     "parse_on_rrp_counterparties",
     "parse_pd_export",
+    "parse_pd_suppressed",
+    "summarise_suppressed",
     "require_result_public",
     "require_unamended",
 ]
@@ -96,7 +99,14 @@ PD_SERIES: Mapping[str, str] = {
 PD_EXPORT_URL = "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
 
 AUCTION_COLUMNS = ("auc_accepted_bn", "auc_dealer_share", "auc_indirect_share", "auc_cover")
-AUCTION_FIELDS = ("total_accepted", "primary_dealer_accepted", "indirect_bidder_accepted", "total_tendered")
+AUCTION_FIELDS = (
+    "total_accepted",
+    "primary_dealer_accepted",
+    "indirect_bidder_accepted",
+    "total_tendered",
+    "soma_accepted",
+    "soma_tendered",
+)
 #: The declared availability is 15:00 New York time on the auction day. The competitive bids close
 #: at 11:30 or earlier (most bills), 13:00 (notes, bonds and some bills) or, twice in the tracked table, 14:30, and the results follow within minutes; a later close
 #: would not be public by the declared instant.
@@ -119,9 +129,22 @@ DTS_PAGE_SIZE = 10000
 COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
     **{column: ((SOURCE_PD, series),) for column, series in PD_SERIES.items()},
     "auc_accepted_bn": ((SOURCE_AUCTIONS, "total_accepted"),),
-    "auc_dealer_share": ((SOURCE_AUCTIONS, "primary_dealer_accepted"), (SOURCE_AUCTIONS, "total_accepted")),
-    "auc_indirect_share": ((SOURCE_AUCTIONS, "indirect_bidder_accepted"), (SOURCE_AUCTIONS, "total_accepted")),
-    "auc_cover": ((SOURCE_AUCTIONS, "total_tendered"), (SOURCE_AUCTIONS, "total_accepted")),
+    "auc_dealer_share": (
+        (SOURCE_AUCTIONS, "primary_dealer_accepted"),
+        (SOURCE_AUCTIONS, "total_accepted"),
+        (SOURCE_AUCTIONS, "soma_accepted"),
+    ),
+    "auc_indirect_share": (
+        (SOURCE_AUCTIONS, "indirect_bidder_accepted"),
+        (SOURCE_AUCTIONS, "total_accepted"),
+        (SOURCE_AUCTIONS, "soma_accepted"),
+    ),
+    "auc_cover": (
+        (SOURCE_AUCTIONS, "total_tendered"),
+        (SOURCE_AUCTIONS, "total_accepted"),
+        (SOURCE_AUCTIONS, "soma_tendered"),
+        (SOURCE_AUCTIONS, "soma_accepted"),
+    ),
     RRP_COLUMN: ((SOURCE_RRP, "participatingCpty"),),
     "dts_debt_issues_bn": ((SOURCE_DTS, "debt_cash_issues"),),
     "dts_debt_net_bn": ((SOURCE_DTS, "debt_cash_issues"), (SOURCE_DTS, "debt_cash_redemptions")),
@@ -129,34 +152,69 @@ COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
 #: Columns placed on a panel day by their own date, against those placed on the last panel day at
 #: or before their weekly as-of date.
 WEEKLY_COLUMNS = tuple(PD_SERIES)
+#: What the export writes in place of a figure withheld for confidentiality (`ingest.FR2004_SUPPRESSED`).
+PD_SUPPRESSED = "*"
 
 
 # -- Primary Dealer Statistics ---------------------------------------------------------------
 
 
-def parse_pd_export(payload: bytes, end: date = END) -> Dict[str, Dict[date, float]]:
-    """`{column: {as_of_date: USD billions}}` for the series of `PD_SERIES`.
-
-    A value of `*` is a figure the New York Fed withheld for confidentiality and is skipped. A day
-    after `end` is not read. Raises `ValueError` if the response is not the export's CSV.
-    """
+def _pd_rows(payload: bytes, end: date) -> Iterator[Tuple[str, date, str]]:
+    """`(column, as_of_date, raw value)` for each row of `PD_SERIES` up to `end`."""
 
     reader = csv.DictReader(io.StringIO(payload.decode("utf-8-sig")))
     needed = {"As Of Date", "Time Series", "Value (millions)"}
     if not reader.fieldnames or not needed.issubset(reader.fieldnames):
         raise ValueError(f"primary dealer export must carry the columns {sorted(needed)}")
     wanted = {series: column for column, series in PD_SERIES.items()}
-    out: Dict[str, Dict[date, float]] = {column: {} for column in PD_SERIES}
     for row in reader:
         column = wanted.get(row["Time Series"])
         if column is None:
             continue
         day = date.fromisoformat(row["As Of Date"])
-        raw = row["Value (millions)"].strip()
-        if day > end or raw == "*":
-            continue
-        out[column][day] = float(raw.replace(",", "")) / 1000.0
+        if day <= end:
+            yield column, day, row["Value (millions)"].strip()
+
+
+def parse_pd_export(payload: bytes, end: date = END) -> Dict[str, Dict[date, float]]:
+    """`{column: {as_of_date: USD billions}}` for the series of `PD_SERIES`.
+
+    A value of `*` is a figure the New York Fed withheld for confidentiality: it yields no value
+    here, and `parse_pd_suppressed` lists it. A day after `end` is not read. Raises `ValueError` if
+    the response is not the export's CSV.
+    """
+
+    out: Dict[str, Dict[date, float]] = {column: {} for column in PD_SERIES}
+    for column, day, raw in _pd_rows(payload, end):
+        if raw != PD_SUPPRESSED:
+            out[column][day] = float(raw.replace(",", "")) / 1000.0
     return out
+
+
+def parse_pd_suppressed(payload: bytes, end: date = END) -> Dict[str, Tuple[date, ...]]:
+    """`{column: as-of dates the New York Fed withheld (`*`)}`, oldest first, as the FR 2004 reader
+    in `ingest.py` records a withheld cell as `suppressed` instead of dropping it unseen."""
+
+    out: Dict[str, List[date]] = {column: [] for column in PD_SERIES}
+    for column, day, raw in _pd_rows(payload, end):
+        if raw == PD_SUPPRESSED:
+            out[column].append(day)
+    return {column: tuple(sorted(days)) for column, days in out.items()}
+
+
+def summarise_suppressed(days: Sequence[date]) -> Dict[str, object]:
+    """The count of withheld weekly dates, the longest run of consecutive weeks, and the count by year."""
+
+    ordered = sorted(days)
+    longest = run = 0
+    previous: Optional[date] = None
+    by_year: Dict[int, int] = {}
+    for day in ordered:
+        run = run + 1 if previous is not None and (day - previous).days == 7 else 1
+        longest = max(longest, run)
+        previous = day
+        by_year[day.year] = by_year.get(day.year, 0) + 1
+    return {"count": len(ordered), "longest_run_weeks": longest, "by_year": by_year}
 
 
 # -- Treasury auction results ----------------------------------------------------------------
@@ -190,10 +248,13 @@ def _number(record: Mapping[str, object], field: str) -> Optional[float]:
 def parse_auction_results(payload: bytes, end: date = END) -> Dict[str, Dict[date, float]]:
     """`{column: {auction_date: value}}`: the auctions of one day summed.
 
-    `auc_accepted_bn` is the total accepted in USD billions; `auc_dealer_share` and
-    `auc_indirect_share` are the primary dealers' and indirect bidders' accepted amounts over it;
-    `auc_cover` is the total tendered over the total accepted. An auction with no result yet
-    (`total_accepted` null) is skipped. A day after `end` is not read.
+    `auc_accepted_bn` is the total accepted in USD billions, the Fed's rollover (SOMA) included.
+    The other three leave SOMA out (#690), because it is added to an auction and takes no bid:
+    `auc_dealer_share` and `auc_indirect_share` are the primary dealers' and indirect bidders' accepted
+    amounts over the accepted amount outside SOMA; `auc_cover` is the tendered amount outside SOMA over
+    it, which is Treasury's bid-to-cover (`bid_to_cover_ratio`, reproduced to its two decimals by every
+    tracked result). An auction with no result yet (`total_accepted` null) or none outside SOMA is
+    skipped. A day after `end` is not read.
     """
 
     parsed = json.loads(payload)
@@ -203,7 +264,8 @@ def parse_auction_results(payload: bytes, end: date = END) -> Dict[str, Dict[dat
     sums: Dict[date, Dict[str, float]] = {}
     for record in records:
         accepted = _number(record, "total_accepted")
-        if accepted is None or accepted <= 0:
+        soma = _number(record, "soma_accepted")
+        if accepted is None or accepted <= 0 or soma is None or accepted - soma <= 0:
             continue
         day = date.fromisoformat(str(record["auction_date"]))
         if day > end:
@@ -218,10 +280,11 @@ def parse_auction_results(payload: bytes, end: date = END) -> Dict[str, Dict[dat
     out: Dict[str, Dict[date, float]] = {column: {} for column in AUCTION_COLUMNS}
     for day, s in sums.items():
         total = s["total_accepted"]
+        outside = total - s["soma_accepted"]
         out["auc_accepted_bn"][day] = total / 1e9
-        out["auc_dealer_share"][day] = s["primary_dealer_accepted"] / total
-        out["auc_indirect_share"][day] = s["indirect_bidder_accepted"] / total
-        out["auc_cover"][day] = s["total_tendered"] / total
+        out["auc_dealer_share"][day] = s["primary_dealer_accepted"] / outside
+        out["auc_indirect_share"][day] = s["indirect_bidder_accepted"] / outside
+        out["auc_cover"][day] = (s["total_tendered"] - s["soma_tendered"]) / outside
     return out
 
 
@@ -374,7 +437,7 @@ def add_columns(
 
     A weekly column (`WEEKLY_COLUMNS`) is carried forward as the panel carries its weekly columns: an
     as-of date's value starts on the first panel day at or after that date and stays until the next
-    value. Any other column is placed on its own day. A day with no value
+    value, or until `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` after its as-of date, whichever is first. Any other column is placed on its own day. A day with no value
     is `None`. Raises `LookAheadError` for a panel day after `END`.
     """
 
@@ -392,12 +455,16 @@ def add_columns(
             # counted from the row never makes it public before it was) and stays until the next.
             starts = sorted(values)
             current: Optional[float] = None
+            current_day: Optional[date] = None
             cursor = 0
             for day in dates:
                 while cursor < len(starts) and starts[cursor] <= day:
                     current = values[starts[cursor]]
+                    current_day = starts[cursor]
                     cursor += 1
-                if current is not None:
+                # The carry stops after the decided bound (`docs/decisions/weekly-carry.md`), counted from
+                # the value's own as-of date: beyond it the cell is a hole, not yesterday's print.
+                if current is not None and current_day is not None and (day - current_day).days <= WEEKLY_CARRY_MAX_STALENESS_DAYS:
                     target[day] = current
         else:
             target = {day: value for day, value in values.items() if day in present}

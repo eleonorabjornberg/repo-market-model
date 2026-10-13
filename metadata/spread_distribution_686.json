@@ -1,0 +1,64 @@
+{
+  "status": "declared by the pull request that closes #686 before any score was computed; a measurement, not a record. Nothing is published: no variant joins any published declaration, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. The variant was written after seeing 2018-2025 (avenue #675 quotes ordinary-day numbers from that window), so a result here is exploration, never a verdict (scoring protocol v1, #640)",
+  "issue": 686,
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 2 of the plan (a candidate beyond the phase 2 models), development tier",
+  "ruling": "Eleonora, directive #686 (13 October 2026), from the instruction to queue avenue #675. The +5 bp classification variants are paused: the tail probability is read off the distribution, never fitted as a classifier",
+  "target": "spread_bps at the scored day, in basis points: the level, as a 23-quantile distribution at each lead h = 1..5 (the grid of scoring_protocol.GRID)",
+  "model": {
+    "name": "persistence with partial mean reversion toward a local level",
+    "formula": "q_p(t+h) = level + phi^k * (last - level) + eps_h,p, for the 23 levels p of scoring_protocol.GRID",
+    "last": "the spread of the anchor row: the latest row whose spread was public at the decision instant, found by protocol_benchmarks._anchor, which runs both guards of InformationRule (LookAheadError, StaleReadError) at every lead",
+    "level": {
+      "definition": "the median of the spreads of the last 10 ordinary days at or before the anchor row",
+      "ordinary": "SplitDeclaration.reporting_day_type == 'ordinary' (not quarter-end, not one of the month's last two business days, not a tax date), read from each row's own calendar columns, as protocol B2 reads it",
+      "window": "10 days, a count of ordinary rows going back from the anchor, however far back that goes",
+      "before_ten": "a decision with fewer than 10 ordinary days at or before its anchor has no forecast"
+    },
+    "k": "the number of panel rows from the anchor row to the target row: k = h + (decision row - anchor row), which is h + 1 when the anchor is the row before the decision day. The formula's phi^h is phi^k with this k; the row gap is part of the horizon, because the anchor is the last public row, one row older than the decision day",
+    "phi": {
+      "fit": "the value on the grid 0.00, 0.01, ..., 1.00 that minimises the sum of squared errors of (spread[target] - level[origin]) - phi^k * (spread[origin] - level[origin]) over every training pair of every lead h = 1..5; a tie takes the smaller phi. The grid is closed at 1 (a random walk around the level) and at 0 (the level), so the fit has one parameter and no solver",
+      "training_pairs": "for lead h, every origin row o with a level and target row s = o + k, where s is in the training window and s is at or before the anchor (so the target was public at the decision instant; protocol_benchmarks._require_public refuses any row after it)"
+    },
+    "epsilon": {
+      "quantile_method": "for each lead h, the 23 empirical quantiles, linearly interpolated (protocol_benchmarks.empirical_quantiles, the method of B1 and B2), of the residuals (spread[target] - level[origin]) - phi^k * (spread[origin] - level[origin]) over lead h's training pairs",
+      "crossing": "none: the residual quantiles are non-decreasing and phi^k * (last - level) is one number per lead"
+    },
+    "training_window": "the training pairs' targets fall in the two calendar years before the decision day (strictly after the decision day less two years), clipped at the start of the panel; B1's window (protocol_benchmarks.B1_YEARS)",
+    "minimum_pairs": "a decision whose fit has fewer than 60 training pairs at any lead has no forecast",
+    "refit": "phi and the eps_h quantiles are refitted every 21 decision days (the project's refit cadence, metadata/dist_roll_606.json scoring.refit_every), on the first decision day and on every 21st after it; in between, the last fit is kept, and last, level, k and the anchor are read afresh each day",
+    "parameters": "phi, and the 23 x 5 residual quantiles (the noise law); no other free choice. The level definition, the window, the grid for phi and the cadence are declared here and not chosen on a score",
+    "implementation": "repo_model.spread_mean_reversion (stdlib only)"
+  },
+  "variants": {
+    "spread_mr_level10": {
+      "label": "persistence with partial mean reversion toward the median of the last 10 ordinary days",
+      "structure": "level + phi^k * (last - level) + empirical residual quantiles",
+      "run": true
+    }
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days with a forecast whose five targets (h = 1..5 business days later on the panel's calendar) all fall on or before 2025-12-31, from the first with a forecast of this model, B1 and B2; no day after 2025-12-31 is read (docs/decisions/lockbox.md); scoring_protocol.day_scores passes every decision and target day to lockbox.require_unlocked",
+    "primary": "grid CRPS (23 levels), the mean over leads 1..5 per decision day, paired against B1 and B2 (protocol_benchmarks), skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate): positive favours the candidate",
+    "key_secondary": "upper-tail twCRPS with weight 1{z > 0 bp} (scoring_protocol.upper_tail_twcrps), the same pairs",
+    "interval": "scoring_protocol.paired_tests: stationary bootstrap, mean block 10 business days, 10,000 draws, seed 686; reported as the 5th and 95th percentile of the draws (a 90% two-sided interval, the project's reporting interval), with the Diebold-Mariano statistic beside it",
+    "outcomes": "the panel's spread_bps at the target day, not the first-published vintage of protocol section 11; the difference is stated in the pull request",
+    "published_distribution": "docs/runs/published_distribution_daily_h{h}.json (the gbm on the funding features with nested conformal PID), a forecast at five levels (0.05, 0.25, 0.5, 0.75, 0.95), days on or before 2025-12-31 only. Putting it on the 23-level grid is Eleonora's question (protocol_benchmarks.b3_forecast), so it is compared on the five levels both forecasts have: each side's five-level CRPS (metrics.crps_from_quantiles on those levels), the candidate read at its own quantiles at those levels, the mean over the five leads, paired by decision day",
+    "variant_b_of_632": "docs/pivot/evidence/spread-distribution/distribution.json, the two-part variant of #632, whose daily quantiles are not committed: its recorded five-level CRPS on its own days is set beside this model's on the same horizon, the published distribution's recorded CRPS being the common reference. Not paired, and said so"
+  },
+  "splits": {
+    "regime": "SplitDeclaration.regime (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024 and 2025-26 on development days, also reported as 2018-19, 2020-24 and 2025-26 (the directive's three)",
+    "day_type": "SplitDeclaration.reporting_day_type of the target day",
+    "unit": "the primary, pooled score is one number per decision day (protocol section 3). A split is on the target day: each target day's score is the mean over the leads that forecast it (those whose decision day is in the scored set), and a target day belongs to the regime and the type of its own date"
+  },
+  "tail": {
+    "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5), F linear between the 23 quantiles and continued at the outer segments' slopes to 0 and 1 (the reading of ml.exceedance_from_quantiles, written again in stdlib, as the whole-basis-point event of data.exceeds_bp), for tau = 5 bp",
+    "reliability": "the mean predicted P(spread > +5 bp), the realised share of target days above +5 bp, and their difference, by regime and lead, on ordinary target days and on all target days, for B1, B2 and the candidate. Brier score of the same probabilities. Not a classification variant: nothing is fitted to the +5 bp event",
+    "avenue_675": "realised minus predicted on ordinary days, B1: -0.06 to -0.085 in 2018-19 and -0.03 to -0.08 in 2025 (avenue #675). Whether the candidate's number is nearer zero than B1's"
+  },
+  "limits": {
+    "max_variants": 1,
+    "last_day": "2025-12-31",
+    "extension": "#684 (the 2026 development days) had not merged when this declaration was made; if it merges before this pull request does, the days from 2026-01-01 to 2026-09-03 are a separate column, not pooled in the headline"
+  }
+}

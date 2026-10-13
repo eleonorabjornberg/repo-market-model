@@ -23,7 +23,7 @@ from unittest import mock
 
 from repo_model import contract, measurement_fields, new_sources
 from repo_model.asof import InformationRule
-from repo_model.data import DailyObservation
+from repo_model.data import WEEKLY_CARRY_MAX_STALENESS_DAYS, DailyObservation
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +62,28 @@ class PrimaryDealerReaderTests(unittest.TestCase):
         self.assertEqual(got["pd_fails_deliver_ust"], {date(2024, 5, 1): 1.2})
         self.assertEqual(got["pd_reverse_repo_ust"], {})
 
+    def test_a_withheld_week_is_recorded_as_suppressed_and_is_not_a_value(self):
+        payload = pd_export(
+            ("2024-05-01", "PDSORA-UTSETTOT", "2500000"),
+            ("2024-05-08", "PDSORA-UTSETTOT", "*"),
+            ("2024-05-15", "PDSORA-UTSETTOT", "*"),
+            ("2024-05-08", "PDSIRRA-UTSETTOT", "*"),
+            ("2026-01-07", "PDSORA-UTSETTOT", "*"),
+        )
+        got = new_sources.parse_pd_suppressed(payload)
+        self.assertEqual(got["pd_repo_ust"], (date(2024, 5, 8), date(2024, 5, 15)))
+        self.assertEqual(got["pd_reverse_repo_ust"], (date(2024, 5, 8),))
+        self.assertEqual(got["pd_fails_deliver_ust"], ())
+        self.assertNotIn(date(2024, 5, 8), new_sources.parse_pd_export(payload)["pd_repo_ust"])
+
+    def test_the_withheld_weeks_are_summarised_as_a_count_a_longest_run_and_years(self):
+        weeks = [date(2022, 12, 21), date(2022, 12, 28), date(2023, 1, 4), date(2023, 3, 1)]
+        self.assertEqual(
+            new_sources.summarise_suppressed(weeks),
+            {"count": 4, "longest_run_weeks": 3, "by_year": {2022: 2, 2023: 2}},
+        )
+        self.assertEqual(new_sources.summarise_suppressed(()), {"count": 0, "longest_run_weeks": 0, "by_year": {}})
+
     def test_no_day_after_the_end_is_read(self):
         payload = pd_export(
             ("2025-12-31", "PDSORA-UTSETTOT", "1000"),
@@ -76,6 +98,8 @@ class PrimaryDealerReaderTests(unittest.TestCase):
 
 def auction(day, closing, accepted, dealers, indirect, tendered, **extra):
     record = {
+        "soma_accepted": "0",
+        "soma_tendered": "0",
         "auction_date": day,
         "closing_time_comp": closing,
         "total_accepted": str(accepted),
@@ -104,6 +128,43 @@ class AuctionReaderTests(unittest.TestCase):
         self.assertAlmostEqual(got["auc_dealer_share"][day], 0.23)
         self.assertAlmostEqual(got["auc_indirect_share"][day], 0.40)
         self.assertAlmostEqual(got["auc_cover"][day], 2.5)
+
+    def test_shares_and_cover_leave_out_the_fed_portfolio(self):
+        """#690: the Fed's rollover (SOMA) is added to an auction and takes no bid; Treasury leaves it out of the bid-to-cover.
+
+        The dealer share is the dealers' accepted amount over the accepted amount outside SOMA, the indirect share likewise,
+        and the cover is (tendered - SOMA tendered) / (accepted - SOMA accepted), the definition that reproduces the
+        `bid_to_cover_ratio` field of every tracked result. `auc_accepted_bn` stays the whole accepted total.
+
+        Recorded mutation (#690): `outside = total - s["soma_accepted"]` replaced by `outside = total` in
+        `parse_auction_results`. This test then fails with an AssertionError (the dealer share is 0.2, not 1/3).
+        """
+
+        payload = auction_payload(
+            auction("2024-05-07", "11:30 AM", 100e9, 20e9, 30e9, 250e9, soma_accepted=str(40e9), soma_tendered=str(40e9)),
+        )
+        got = new_sources.parse_auction_results(payload)
+        day = date(2024, 5, 7)
+        self.assertAlmostEqual(got["auc_accepted_bn"][day], 100.0)
+        self.assertAlmostEqual(got["auc_dealer_share"][day], 20 / 60)
+        self.assertAlmostEqual(got["auc_indirect_share"][day], 30 / 60)
+        self.assertAlmostEqual(got["auc_cover"][day], 210 / 60)
+
+    def test_an_auction_wholly_in_the_fed_portfolio_is_skipped(self):
+        payload = auction_payload(
+            auction("2024-05-07", "11:30 AM", 10e9, 0, 0, 10e9, soma_accepted=str(10e9), soma_tendered=str(10e9))
+        )
+        self.assertEqual(new_sources.parse_auction_results(payload)["auc_dealer_share"], {})
+
+    def test_the_cover_reproduces_treasurys_field_on_the_tracked_results(self):
+        path = ROOT / "tests" / "fixtures" / "snapshots" / "treasury_auctions" / "auctions_2018_present.json"
+        for record in json.loads(path.read_bytes())["data"]:
+            if record["total_accepted"] == "null" or float(record["total_accepted"]) <= 0:
+                continue
+            cover = (float(record["total_tendered"]) - float(record["soma_tendered"])) / (
+                float(record["total_accepted"]) - float(record["soma_accepted"])
+            )
+            self.assertAlmostEqual(cover, float(record["bid_to_cover_ratio"]), delta=0.0051, msg=record["auction_date"])
 
     def test_an_auction_without_a_result_is_skipped(self):
         payload = auction_payload(
@@ -279,6 +340,41 @@ class AddColumnsTests(unittest.TestCase):
         self.assertEqual(out[date(2024, 5, 7)]["pd_repo_ust"], 10.0)
         self.assertEqual(out[date(2024, 5, 9)]["pd_repo_ust"], 11.0)
         self.assertEqual(out[date(2024, 5, 14)]["pd_repo_ust"], 11.0)
+
+    def test_a_weekly_value_is_not_carried_beyond_the_declared_staleness(self):
+        """A weekly value is carried for `WEEKLY_CARRY_MAX_STALENESS_DAYS` after its date and no longer.
+
+        The bound is `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` (13 days, `docs/decisions/weekly-carry.md`):
+        one missed print is tolerated, two in a row leave holes.
+
+        Recorded mutation (CLAUDE.md), 13 October 2026, in a disposable copy:
+        `src/repo_model/new_sources.py`, `add_columns`, the line
+        `if current is not None and current_day is not None and (day - current_day).days <=
+        WEEKLY_CARRY_MAX_STALENESS_DAYS:` mutated to `if current is not None:`. This test then fails with
+        `AssertionError: 10.0 is not None` (on 2024-05-15, the first day past the bound).
+        """
+
+        series = {"pd_repo_ust": {date(2024, 5, 1): 10.0}}
+        out = {r.date: r.values["pd_repo_ust"] for r in new_sources.add_columns(self.rows(), series)}
+        last_carried = date(2024, 5, 1) + timedelta(days=WEEKLY_CARRY_MAX_STALENESS_DAYS)
+        self.assertEqual(last_carried, date(2024, 5, 14))
+        self.assertEqual(out[date(2024, 5, 14)], 10.0)
+        self.assertIsNone(out[date(2024, 5, 15)])
+        self.assertIsNone(out[self.DAYS[-1]])
+
+    def test_a_carry_that_starts_after_a_holiday_is_bounded_from_the_value_date(self):
+        holiday = date(2024, 5, 1)
+        rows = [r for r in self.rows() if r.date != holiday]
+        out = {r.date: r.values["pd_repo_ust"] for r in new_sources.add_columns(rows, {"pd_repo_ust": {holiday: 10.0}})}
+        self.assertEqual(out[date(2024, 5, 14)], 10.0)
+        self.assertIsNone(out[date(2024, 5, 15)])
+
+    def test_one_missed_print_is_bridged_by_the_carry(self):
+        series = {"pd_repo_ust": {date(2024, 5, 1): 10.0, date(2024, 5, 15): 12.0}}
+        out = {r.date: r.values["pd_repo_ust"] for r in new_sources.add_columns(self.rows(), series)}
+        self.assertEqual(out[date(2024, 5, 14)], 10.0)
+        self.assertEqual(out[date(2024, 5, 15)], 12.0)
+        self.assertEqual(out[date(2024, 5, 28)], 12.0)
 
     def test_a_weekly_column_is_empty_before_its_first_value(self):
         out = {r.date: r.values for r in new_sources.add_columns(self.rows(), {"pd_repo_ust": {date(2024, 5, 8): 1.0}})}
