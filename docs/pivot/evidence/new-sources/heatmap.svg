@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 622" role="img" aria-label="Spearman with the +5 bp indicator on ordinary days, series by lead">
+<style>text{font:11px sans-serif;fill:#222}@media (prefers-color-scheme: dark){text{fill:#ddd}}</style>
+<text x="233" y="32" text-anchor="middle">lead 1</text>
+<text x="279" y="32" text-anchor="middle">lead 2</text>
+<text x="325" y="32" text-anchor="middle">lead 3</text>
+<text x="371" y="32" text-anchor="middle">lead 5</text>
+<text x="417" y="32" text-anchor="middle">lead 10</text>
+<text x="204" y="57" text-anchor="end">auc_accepted_bn (new)</text>
+<rect x="210" y="40" width="44" height="21" fill="rgb(255,232,232)"/><text x="232" y="55" text-anchor="middle" style="fill:#111">-0.08</text>
+<rect x="256" y="40" width="44" height="21" fill="rgb(255,239,239)"/><text x="278" y="55" text-anchor="middle" style="fill:#111">-0.05</text>
+<rect x="302" y="40" width="44" height="21" fill="rgb(255,254,254)"/><text x="324" y="55" text-anchor="middle" style="fill:#111">-0.00</text>
+<rect x="348" y="40" width="44" height="21" fill="rgb(255,229,229)"/><text x="370" y="55" text-anchor="middle" style="fill:#111">-0.09</text>
+<rect x="394" y="40" width="44" height="21" fill="rgb(255,230,230)"/><text x="416" y="55" text-anchor="middle" style="fill:#111">-0.08</text>
+<text x="204" y="80" text-anchor="end">auc_cover (new)</text>
+<rect x="210" y="63" width="44" height="21" fill="rgb(255,237,237)"/><text x="232" y="78" text-anchor="middle" style="fill:#111">-0.06</text>
+<rect x="256" y="63" width="44" height="21" fill="rgb(255,240,240)"/><text x="278" y="78" text-anchor="middle" style="fill:#111">-0.05</text>
+<rect x="302" y="63" width="44" height="21" fill="rgb(255,248,248)"/><text x="324" y="78" text-anchor="middle" style="fill:#111">-0.02</text>
+<rect x="348" y="63" width="44" height="21" fill="rgb(255,221,221)"/><text x="370" y="78" text-anchor="middle" style="fill:#111">-0.11</text>
+<rect x="394" y="63" width="44" height="21" fill="rgb(255,253,253)"/><text x="416" y="78" text-anchor="middle" style="fill:#111">-0.00</text>
+<text x="204" y="103" text-anchor="end">auc_dealer_share (new)</text>
+<rect x="210" y="86" width="44" height="21" fill="rgb(236,236,255)"/><text x="232" y="101" text-anchor="middle" style="fill:#111">+0.06</text>
+<rect x="256" y="86" width="44" height="21" fill="rgb(236,236,255)"/><text x="278" y="101" text-anchor="middle" style="fill:#111">+0.06</text>
+<rect x="302" y="86" width="44" height="21" fill="rgb(223,223,255)"/><text x="324" y="101" text-anchor="middle" style="fill:#111">+0.10</text>
+<rect x="348" y="86" width="44" height="21" fill="rgb(251,251,255)"/><text x="370" y="101" text-anchor="middle" style="fill:#111">+0.01</text>
+<rect x="394" y="86" width="44" height="21" fill="rgb(232,232,255)"/><text x="416" y="101" text-anchor="middle" style="fill:#111">+0.07</text>
+<text x="204" y="126" text-anchor="end">auc_indirect_share (new)</text>
+<rect x="210" y="109" width="44" height="21" fill="rgb(255,244,244)"/><text x="232" y="124" text-anchor="middle" style="fill:#111">-0.04</text>
+<rect x="256" y="109" width="44" height="21" fill="rgb(255,244,244)"/><text x="278" y="124" text-anchor="middle" style="fill:#111">-0.04</text>
+<rect x="302" y="109" width="44" height="21" fill="rgb(255,245,245)"/><text x="324" y="124" text-anchor="middle" style="fill:#111">-0.03</text>
+<rect x="348" y="109" width="44" height="21" fill="rgb(255,252,252)"/><text x="370" y="124" text-anchor="middle" style="fill:#111">-0.01</text>
+<rect x="394" y="109" width="44" height="21" fill="rgb(255,246,246)"/><text x="416" y="124" text-anchor="middle" style="fill:#111">-0.03</text>
+<text x="204" y="149" text-anchor="end">dts_debt_issues_bn (new)</text>
+<rect x="210" y="132" width="44" height="21" fill="rgb(255,235,235)"/><text x="232" y="147" text-anchor="middle" style="fill:#111">-0.06</text>
+<rect x="256" y="132" width="44" height="21" fill="rgb(255,229,229)"/><text x="278" y="147" text-anchor="middle" style="fill:#111">-0.08</text>
+<rect x="302" y="132" width="44" height="21" fill="rgb(255,233,233)"/><text x="324" y="147" text-anchor="middle" style="fill:#111">-0.07</text>
+<rect x="348" y="132" width="44" height="21" fill="rgb(255,224,224)"/><text x="370" y="147" text-anchor="middle" style="fill:#111">-0.10</text>
+<rect x="394" y="132" width="44" height="21" fill="rgb(255,228,228)"/><text x="416" y="147" text-anchor="middle" style="fill:#111">-0.09</text>
+<text x="204" y="172" text-anchor="end">dts_debt_net_bn (new)</text>
+<rect x="210" y="155" width="44" height="21" fill="rgb(255,247,247)"/><text x="232" y="170" text-anchor="middle" style="fill:#111">-0.03</text>
+<rect x="256" y="155" width="44" height="21" fill="rgb(255,251,251)"/><text x="278" y="170" text-anchor="middle" style="fill:#111">-0.01</text>
+<rect x="302" y="155" width="44" height="21" fill="rgb(255,246,246)"/><text x="324" y="170" text-anchor="middle" style="fill:#111">-0.03</text>
+<rect x="348" y="155" width="44" height="21" fill="rgb(255,251,251)"/><text x="370" y="170" text-anchor="middle" style="fill:#111">-0.01</text>
+<rect x="394" y="155" width="44" height="21" fill="rgb(255,252,252)"/><text x="416" y="170" text-anchor="middle" style="fill:#111">-0.01</text>
+<text x="204" y="195" text-anchor="end">pd_fails_deliver_ust (new)</text>
+<rect x="210" y="178" width="44" height="21" fill="rgb(248,248,255)"/><text x="232" y="193" text-anchor="middle" style="fill:#111">+0.02</text>
+<rect x="256" y="178" width="44" height="21" fill="rgb(242,242,255)"/><text x="278" y="193" text-anchor="middle" style="fill:#111">+0.04</text>
+<rect x="302" y="178" width="44" height="21" fill="rgb(238,238,255)"/><text x="324" y="193" text-anchor="middle" style="fill:#111">+0.05</text>
+<rect x="348" y="178" width="44" height="21" fill="rgb(241,241,255)"/><text x="370" y="193" text-anchor="middle" style="fill:#111">+0.04</text>
+<rect x="394" y="178" width="44" height="21" fill="rgb(253,253,255)"/><text x="416" y="193" text-anchor="middle" style="fill:#111">+0.01</text>
+<text x="204" y="218" text-anchor="end">pd_fails_receive_ust (new)</text>
+<rect x="210" y="201" width="44" height="21" fill="rgb(255,253,253)"/><text x="232" y="216" text-anchor="middle" style="fill:#111">-0.01</text>
+<rect x="256" y="201" width="44" height="21" fill="rgb(253,253,255)"/><text x="278" y="216" text-anchor="middle" style="fill:#111">+0.01</text>
+<rect x="302" y="201" width="44" height="21" fill="rgb(252,252,255)"/><text x="324" y="216" text-anchor="middle" style="fill:#111">+0.01</text>
+<rect x="348" y="201" width="44" height="21" fill="rgb(253,253,255)"/><text x="370" y="216" text-anchor="middle" style="fill:#111">+0.01</text>
+<rect x="394" y="201" width="44" height="21" fill="rgb(255,251,251)"/><text x="416" y="216" text-anchor="middle" style="fill:#111">-0.01</text>
+<text x="204" y="241" text-anchor="end">pd_repo_mbs (new)</text>
+<rect x="210" y="224" width="44" height="21" fill="rgb(250,250,255)"/><text x="232" y="239" text-anchor="middle" style="fill:#111">+0.01</text>
+<rect x="256" y="224" width="44" height="21" fill="rgb(250,250,255)"/><text x="278" y="239" text-anchor="middle" style="fill:#111">+0.02</text>
+<rect x="302" y="224" width="44" height="21" fill="rgb(250,250,255)"/><text x="324" y="239" text-anchor="middle" style="fill:#111">+0.02</text>
+<rect x="348" y="224" width="44" height="21" fill="rgb(250,250,255)"/><text x="370" y="239" text-anchor="middle" style="fill:#111">+0.02</text>
+<rect x="394" y="224" width="44" height="21" fill="rgb(250,250,255)"/><text x="416" y="239" text-anchor="middle" style="fill:#111">+0.01</text>
+<text x="204" y="264" text-anchor="end">pd_repo_ust (new)</text>
+<rect x="210" y="247" width="44" height="21" fill="rgb(255,250,250)"/><text x="232" y="262" text-anchor="middle" style="fill:#111">-0.02</text>
+<rect x="256" y="247" width="44" height="21" fill="rgb(255,250,250)"/><text x="278" y="262" text-anchor="middle" style="fill:#111">-0.02</text>
+<rect x="302" y="247" width="44" height="21" fill="rgb(255,250,250)"/><text x="324" y="262" text-anchor="middle" style="fill:#111">-0.02</text>
+<rect x="348" y="247" width="44" height="21" fill="rgb(255,249,249)"/><text x="370" y="262" text-anchor="middle" style="fill:#111">-0.02</text>
+<rect x="394" y="247" width="44" height="21" fill="rgb(255,250,250)"/><text x="416" y="262" text-anchor="middle" style="fill:#111">-0.02</text>
+<text x="204" y="287" text-anchor="end">pd_reverse_repo_ust (new)</text>
+<rect x="210" y="270" width="44" height="21" fill="rgb(255,241,241)"/><text x="232" y="285" text-anchor="middle" style="fill:#111">-0.05</text>
+<rect x="256" y="270" width="44" height="21" fill="rgb(255,240,240)"/><text x="278" y="285" text-anchor="middle" style="fill:#111">-0.05</text>
+<rect x="302" y="270" width="44" height="21" fill="rgb(255,239,239)"/><text x="324" y="285" text-anchor="middle" style="fill:#111">-0.05</text>
+<rect x="348" y="270" width="44" height="21" fill="rgb(255,238,238)"/><text x="370" y="285" text-anchor="middle" style="fill:#111">-0.06</text>
+<rect x="394" y="270" width="44" height="21" fill="rgb(255,238,238)"/><text x="416" y="285" text-anchor="middle" style="fill:#111">-0.06</text>
+<text x="204" y="310" text-anchor="end">rrp_counterparties (new)</text>
+<rect x="210" y="293" width="44" height="21" fill="rgb(255,188,188)"/><text x="232" y="308" text-anchor="middle" style="fill:#111">-0.22</text>
+<rect x="256" y="293" width="44" height="21" fill="rgb(255,186,186)"/><text x="278" y="308" text-anchor="middle" style="fill:#111">-0.23</text>
+<rect x="302" y="293" width="44" height="21" fill="rgb(255,190,190)"/><text x="324" y="308" text-anchor="middle" style="fill:#111">-0.21</text>
+<rect x="348" y="293" width="44" height="21" fill="rgb(255,190,190)"/><text x="370" y="308" text-anchor="middle" style="fill:#111">-0.22</text>
+<rect x="394" y="293" width="44" height="21" fill="rgb(255,192,192)"/><text x="416" y="308" text-anchor="middle" style="fill:#111">-0.21</text>
+<text x="204" y="333" text-anchor="end">sofr_p75_iorb_bps</text>
+<rect x="210" y="316" width="44" height="21" fill="rgb(149,149,255)"/><text x="232" y="331" text-anchor="middle" style="fill:#111">+0.35</text>
+<rect x="256" y="316" width="44" height="21" fill="rgb(152,152,255)"/><text x="278" y="331" text-anchor="middle" style="fill:#111">+0.34</text>
+<rect x="302" y="316" width="44" height="21" fill="rgb(153,153,255)"/><text x="324" y="331" text-anchor="middle" style="fill:#111">+0.34</text>
+<rect x="348" y="316" width="44" height="21" fill="rgb(153,153,255)"/><text x="370" y="331" text-anchor="middle" style="fill:#111">+0.34</text>
+<rect x="394" y="316" width="44" height="21" fill="rgb(153,153,255)"/><text x="416" y="331" text-anchor="middle" style="fill:#111">+0.34</text>
+<text x="204" y="356" text-anchor="end">sofr_p99_iorb_bps</text>
+<rect x="210" y="339" width="44" height="21" fill="rgb(150,150,255)"/><text x="232" y="354" text-anchor="middle" style="fill:#111">+0.35</text>
+<rect x="256" y="339" width="44" height="21" fill="rgb(154,154,255)"/><text x="278" y="354" text-anchor="middle" style="fill:#111">+0.33</text>
+<rect x="302" y="339" width="44" height="21" fill="rgb(154,154,255)"/><text x="324" y="354" text-anchor="middle" style="fill:#111">+0.34</text>
+<rect x="348" y="339" width="44" height="21" fill="rgb(155,155,255)"/><text x="370" y="354" text-anchor="middle" style="fill:#111">+0.33</text>
+<rect x="394" y="339" width="44" height="21" fill="rgb(156,156,255)"/><text x="416" y="354" text-anchor="middle" style="fill:#111">+0.33</text>
+<text x="204" y="379" text-anchor="end">spread_nowcast_bps</text>
+<rect x="210" y="362" width="44" height="21" fill="rgb(157,157,255)"/><text x="232" y="377" text-anchor="middle" style="fill:#111">+0.32</text>
+<rect x="256" y="362" width="44" height="21" fill="rgb(161,161,255)"/><text x="278" y="377" text-anchor="middle" style="fill:#111">+0.31</text>
+<rect x="302" y="362" width="44" height="21" fill="rgb(165,165,255)"/><text x="324" y="377" text-anchor="middle" style="fill:#111">+0.30</text>
+<rect x="348" y="362" width="44" height="21" fill="rgb(165,165,255)"/><text x="370" y="377" text-anchor="middle" style="fill:#111">+0.30</text>
+<rect x="394" y="362" width="44" height="21" fill="rgb(165,165,255)"/><text x="416" y="377" text-anchor="middle" style="fill:#111">+0.30</text>
+<text x="204" y="402" text-anchor="end">reserve_balances</text>
+<rect x="210" y="385" width="44" height="21" fill="rgb(255,160,160)"/><text x="232" y="400" text-anchor="middle" style="fill:#111">-0.32</text>
+<rect x="256" y="385" width="44" height="21" fill="rgb(255,160,160)"/><text x="278" y="400" text-anchor="middle" style="fill:#111">-0.31</text>
+<rect x="302" y="385" width="44" height="21" fill="rgb(255,160,160)"/><text x="324" y="400" text-anchor="middle" style="fill:#111">-0.31</text>
+<rect x="348" y="385" width="44" height="21" fill="rgb(255,161,161)"/><text x="370" y="400" text-anchor="middle" style="fill:#111">-0.31</text>
+<rect x="394" y="385" width="44" height="21" fill="rgb(255,162,162)"/><text x="416" y="400" text-anchor="middle" style="fill:#111">-0.31</text>
+<text x="204" y="425" text-anchor="end">ofr_dvp_minus_bgcr_bp</text>
+<rect x="210" y="408" width="44" height="21" fill="rgb(206,206,255)"/><text x="232" y="423" text-anchor="middle" style="fill:#111">+0.16</text>
+<rect x="256" y="408" width="44" height="21" fill="rgb(207,207,255)"/><text x="278" y="423" text-anchor="middle" style="fill:#111">+0.16</text>
+<rect x="302" y="408" width="44" height="21" fill="rgb(207,207,255)"/><text x="324" y="423" text-anchor="middle" style="fill:#111">+0.16</text>
+<rect x="348" y="408" width="44" height="21" fill="rgb(201,201,255)"/><text x="370" y="423" text-anchor="middle" style="fill:#111">+0.18</text>
+<rect x="394" y="408" width="44" height="21" fill="rgb(202,202,255)"/><text x="416" y="423" text-anchor="middle" style="fill:#111">+0.17</text>
+<text x="204" y="448" text-anchor="end">ofr_dvp_minus_bgcr_bp_backfill</text>
+<rect x="210" y="431" width="44" height="21" fill="rgb(206,206,255)"/><text x="232" y="446" text-anchor="middle" style="fill:#111">+0.16</text>
+<rect x="256" y="431" width="44" height="21" fill="rgb(207,207,255)"/><text x="278" y="446" text-anchor="middle" style="fill:#111">+0.16</text>
+<rect x="302" y="431" width="44" height="21" fill="rgb(207,207,255)"/><text x="324" y="446" text-anchor="middle" style="fill:#111">+0.16</text>
+<rect x="348" y="431" width="44" height="21" fill="rgb(201,201,255)"/><text x="370" y="446" text-anchor="middle" style="fill:#111">+0.18</text>
+<rect x="394" y="431" width="44" height="21" fill="rgb(202,202,255)"/><text x="416" y="446" text-anchor="middle" style="fill:#111">+0.17</text>
+<text x="204" y="471" text-anchor="end">sofr_above_effr_share_20</text>
+<rect x="210" y="454" width="44" height="21" fill="rgb(162,162,255)"/><text x="232" y="469" text-anchor="middle" style="fill:#111">+0.31</text>
+<rect x="256" y="454" width="44" height="21" fill="rgb(164,164,255)"/><text x="278" y="469" text-anchor="middle" style="fill:#111">+0.30</text>
+<rect x="302" y="454" width="44" height="21" fill="rgb(165,165,255)"/><text x="324" y="469" text-anchor="middle" style="fill:#111">+0.30</text>
+<rect x="348" y="454" width="44" height="21" fill="rgb(168,168,255)"/><text x="370" y="469" text-anchor="middle" style="fill:#111">+0.29</text>
+<rect x="394" y="454" width="44" height="21" fill="rgb(174,174,255)"/><text x="416" y="469" text-anchor="middle" style="fill:#111">+0.27</text>
+<text x="204" y="494" text-anchor="end">sofr_p99_iorb_sd15_bps</text>
+<rect x="210" y="477" width="44" height="21" fill="rgb(165,165,255)"/><text x="232" y="492" text-anchor="middle" style="fill:#111">+0.30</text>
+<rect x="256" y="477" width="44" height="21" fill="rgb(170,170,255)"/><text x="278" y="492" text-anchor="middle" style="fill:#111">+0.28</text>
+<rect x="302" y="477" width="44" height="21" fill="rgb(173,173,255)"/><text x="324" y="492" text-anchor="middle" style="fill:#111">+0.27</text>
+<rect x="348" y="477" width="44" height="21" fill="rgb(174,174,255)"/><text x="370" y="492" text-anchor="middle" style="fill:#111">+0.27</text>
+<rect x="394" y="477" width="44" height="21" fill="rgb(181,181,255)"/><text x="416" y="492" text-anchor="middle" style="fill:#111">+0.25</text>
+<text x="204" y="517" text-anchor="end">reserve_scarcity_state</text>
+<rect x="210" y="500" width="44" height="21" fill="rgb(158,158,255)"/><text x="232" y="515" text-anchor="middle" style="fill:#111">+0.32</text>
+<rect x="256" y="500" width="44" height="21" fill="rgb(159,159,255)"/><text x="278" y="515" text-anchor="middle" style="fill:#111">+0.32</text>
+<rect x="302" y="500" width="44" height="21" fill="rgb(159,159,255)"/><text x="324" y="515" text-anchor="middle" style="fill:#111">+0.32</text>
+<rect x="348" y="500" width="44" height="21" fill="rgb(159,159,255)"/><text x="370" y="515" text-anchor="middle" style="fill:#111">+0.32</text>
+<rect x="394" y="500" width="44" height="21" fill="rgb(159,159,255)"/><text x="416" y="515" text-anchor="middle" style="fill:#111">+0.32</text>
+<text x="204" y="540" text-anchor="end">policy_reserve_management_in_force</text>
+<rect x="210" y="523" width="44" height="21" fill="rgb(255,159,159)"/><text x="232" y="538" text-anchor="middle" style="fill:#111">-0.32</text>
+<rect x="256" y="523" width="44" height="21" fill="rgb(255,157,157)"/><text x="278" y="538" text-anchor="middle" style="fill:#111">-0.33</text>
+<rect x="302" y="523" width="44" height="21" fill="rgb(255,155,155)"/><text x="324" y="538" text-anchor="middle" style="fill:#111">-0.33</text>
+<rect x="348" y="523" width="44" height="21" fill="rgb(255,151,151)"/><text x="370" y="538" text-anchor="middle" style="fill:#111">-0.35</text>
+<rect x="394" y="523" width="44" height="21" fill="rgb(255,145,145)"/><text x="416" y="538" text-anchor="middle" style="fill:#111">-0.37</text>
+<text x="204" y="563" text-anchor="end">ofr_gcf_rate</text>
+<rect x="210" y="546" width="44" height="21" fill="rgb(255,184,184)"/><text x="232" y="561" text-anchor="middle" style="fill:#111">-0.23</text>
+<rect x="256" y="546" width="44" height="21" fill="rgb(255,182,182)"/><text x="278" y="561" text-anchor="middle" style="fill:#111">-0.24</text>
+<rect x="302" y="546" width="44" height="21" fill="rgb(255,171,171)"/><text x="324" y="561" text-anchor="middle" style="fill:#111">-0.28</text>
+<rect x="348" y="546" width="44" height="21" fill="rgb(255,163,163)"/><text x="370" y="561" text-anchor="middle" style="fill:#111">-0.30</text>
+<rect x="394" y="546" width="44" height="21" fill="rgb(255,189,189)"/><text x="416" y="561" text-anchor="middle" style="fill:#111">-0.22</text>
+<text x="204" y="586" text-anchor="end">on_rrp_below_100bn</text>
+<rect x="210" y="569" width="44" height="21" fill="rgb(175,175,255)"/><text x="232" y="584" text-anchor="middle" style="fill:#111">+0.26</text>
+<rect x="256" y="569" width="44" height="21" fill="rgb(173,173,255)"/><text x="278" y="584" text-anchor="middle" style="fill:#111">+0.27</text>
+<rect x="302" y="569" width="44" height="21" fill="rgb(175,175,255)"/><text x="324" y="584" text-anchor="middle" style="fill:#111">+0.27</text>
+<rect x="348" y="569" width="44" height="21" fill="rgb(175,175,255)"/><text x="370" y="584" text-anchor="middle" style="fill:#111">+0.27</text>
+<rect x="394" y="569" width="44" height="21" fill="rgb(176,176,255)"/><text x="416" y="584" text-anchor="middle" style="fill:#111">+0.26</text>
+</svg>

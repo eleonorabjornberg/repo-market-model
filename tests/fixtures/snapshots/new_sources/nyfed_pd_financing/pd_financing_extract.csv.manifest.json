@@ -1,0 +1,37 @@
+{
+  "export_byte_count": 26915180,
+  "export_sha256": "ce3c70712759ec2259eb5edbafc57005742baac8ac3ec48dea809ab54bcc2826",
+  "extract_byte_count": 122495,
+  "extract_sha256": "d8b0eb182adcc8f277c79094f9ab1f7fde5d72d17a499d8bef58915323828098",
+  "kept": "the series of repo_model.new_sources.PD_SERIES, dated up to 2025-12-31, lines copied byte for byte",
+  "retrieved_at": "2026-10-12T15:25:42.615529+00:00",
+  "series": {
+    "PDFTD-UST": {
+      "first": "2013-04-03",
+      "last": "2025-12-31",
+      "rows": 666
+    },
+    "PDFTR-UST": {
+      "first": "2013-04-03",
+      "last": "2025-12-31",
+      "rows": 666
+    },
+    "PDSIRRA-UTSETTOT": {
+      "first": "2013-04-03",
+      "last": "2025-12-31",
+      "rows": 666
+    },
+    "PDSORA-FGMTOT": {
+      "first": "2013-04-03",
+      "last": "2025-12-31",
+      "rows": 666
+    },
+    "PDSORA-UTSETTOT": {
+      "first": "2013-04-03",
+      "last": "2025-12-31",
+      "rows": 666
+    }
+  },
+  "source_id": "nyfed_pd_financing",
+  "url": "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
+}

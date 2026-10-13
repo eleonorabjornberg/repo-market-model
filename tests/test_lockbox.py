@@ -366,6 +366,11 @@ NOT_ENTRY_POINTS = {
         "last scored day through _as_of_folds, which calls require_unlocked, and `cap` calls require_unlocked on "
         "that day before it reads anything"
     ),
+    "scripts/off_risk_day_624.read_features": (
+        "reads the inputs of the day-level model at each scored day's decision (#624); scores no forecast, it ends at "
+        "the declared last scored day through _as_of_folds, which calls require_unlocked, and `run` calls "
+        "require_unlocked and pressure_judge.require_scored_days on that day before it reads anything"
+    ),
     "satiation._ratio_at": (
         "reads the reserves-to-assets ratio the as-of rule gives one panel row's decision (#587); scores nothing, "
         "`asof_ratios` and `build_columns` build no row after the declared last scored day, and "
@@ -443,6 +448,12 @@ NOT_ENTRY_POINTS = {
         "source screen (#478); selects no model and scores no forecast, calls "
         "lockbox.require_unlocked on every day before it reads one, and the screen's `run` refuses "
         "a panel that runs past 2025-12-31 (tests/test_source_screen.py)"
+    ),
+    "scripts/derived_features_631.read_all": (
+        "reads each derived series as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "screen of #631; selects no model and scores no forecast, calls lockbox.require_unlocked on every "
+        "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
+        "(tests/test_derived_features_631.py)"
     ),
     "scripts/source_screen.probe": (
         "asks the as-of rule, on the one middle row of the panel, whether a column has a "
