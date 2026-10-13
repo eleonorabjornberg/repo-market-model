@@ -113,15 +113,11 @@ class RateTests(unittest.TestCase):
 
 
 class ScreenStatisticTests(unittest.TestCase):
-    def setUp(self):
-        if importlib.util.find_spec("numpy") is None:  # pragma: no cover - the ml extra is optional
-            self.skipTest("the ml extra is not installed")
-
     def test_the_array_counts_agree_with_the_row_reading(self):
         rows = [(1, 1, 4), (1, 0, 4), (0, 0, 4), (0, 1, 4), (1, 1, 1), (0, 0, 1), (0, 0, 1)]
         table = SCRIPT._counts([r[0] for r in rows], [r[1] for r in rows], [r[2] for r in rows], 9)
-        self.assertEqual([int(v) for v in table[4]], [1, 2, 1, 2])
-        self.assertEqual([int(v) for v in table[1]], [1, 1, 0, 2])
+        self.assertEqual(table[4], [1, 2, 1, 2])
+        self.assertEqual(table[1], [1, 1, 0, 2])
         by_rows = SCRIPT.stratified_difference([(f, o, str(k)) for f, o, k in rows])
         self.assertAlmostEqual(SCRIPT._mh(table, range(9)), by_rows)
 

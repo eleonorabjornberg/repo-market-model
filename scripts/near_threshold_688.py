@@ -268,27 +268,32 @@ def stratified_difference(rows: Sequence[Tuple[int, int, str]]) -> Optional[floa
 # -- the screen ----------------------------------------------------------------------------------------------------
 
 
-def _counts(flag: Sequence[int], outcome: Sequence[int], stratum: Sequence[int], strata: int):
-    """The `(with events, with days, without events, without days)` table per stratum code, as a (strata, 4) integer array."""
+def _counts(flag: Sequence[int], outcome: Sequence[int], stratum: Sequence[int], strata: int, index: Optional[Sequence[int]] = None):
+    """The `[with events, with days, without events, without days]` table per stratum code, over the days `index` (all if none)."""
 
-    import numpy
-
-    code = numpy.asarray(stratum) * 4 + numpy.asarray(flag) * 2 + numpy.asarray(outcome)
-    cells = numpy.bincount(code, minlength=strata * 4).reshape(strata, 2, 2)  # [stratum, flag, outcome]
-    return numpy.stack([cells[:, 1, 1], cells[:, 1, :].sum(axis=1), cells[:, 0, 1], cells[:, 0, :].sum(axis=1)], axis=1)
+    table = [[0, 0, 0, 0] for _ in range(strata)]
+    for i in range(len(flag)) if index is None else index:
+        entry = table[stratum[i]]
+        if flag[i]:
+            entry[0] += outcome[i]
+            entry[1] += 1
+        else:
+            entry[2] += outcome[i]
+            entry[3] += 1
+    return table
 
 
 def _mh(table, members) -> Optional[float]:
     """`mantel_haenszel` over the strata `members` of a (strata, 4) array."""
 
-    return mantel_haenszel({int(k): tuple(int(v) for v in table[k]) for k in members})
+    return mantel_haenszel({k: tuple(table[k]) for k in members})
 
 
 def _raw(table, members) -> Optional[float]:
-    with_events = sum(int(table[k][0]) for k in members)
-    with_n = sum(int(table[k][1]) for k in members)
-    without_events = sum(int(table[k][2]) for k in members)
-    without_n = sum(int(table[k][3]) for k in members)
+    with_events = sum(table[k][0] for k in members)
+    with_n = sum(table[k][1] for k in members)
+    without_events = sum(table[k][2] for k in members)
+    without_n = sum(table[k][3] for k in members)
     if not with_n or not without_n:
         return None
     return with_events / with_n - without_events / without_n
@@ -403,21 +408,19 @@ MEMBERS = {
 def qualifies(table, members: Sequence[int]) -> bool:
     """Whether the strata `members` hold the declared minimum: 30 days with and without the input, and 3 pressure days."""
 
-    with_n = sum(int(table[k][1]) for k in members)
-    without_n = sum(int(table[k][3]) for k in members)
-    events = sum(int(table[k][0]) + int(table[k][2]) for k in members)
+    with_n = sum(table[k][1] for k in members)
+    without_n = sum(table[k][3] for k in members)
+    events = sum(table[k][0] + table[k][2] for k in members)
     return with_n >= MINIMUM_CELL_DAYS and without_n >= MINIMUM_CELL_DAYS and events >= MINIMUM_CELL_EVENTS
 
 
 def screen_cell(flag, outcome, stratum, seed: str) -> dict:
     """The rates of one cell and its statistics; a statistic whose own strata hold too few days is `None`, with no interval."""
 
-    import numpy
-
-    flag, outcome, stratum = numpy.asarray(flag), numpy.asarray(outcome), numpy.asarray(stratum)
+    flag, outcome, stratum = list(flag), list(outcome), list(stratum)
     table = _counts(flag, outcome, stratum, 9)
     cell: dict = {
-        "days": int(len(flag)), "pressure_days": int(outcome.sum()), "input_days": int(flag.sum()),
+        "days": len(flag), "pressure_days": sum(outcome), "input_days": sum(flag),
         "rates": {
             band: rate_cell([(int(f), int(o)) for f, o, k in zip(flag, outcome, stratum) if k // 3 == code])
             for band, code in BAND_CODE.items()
@@ -432,8 +435,8 @@ def screen_cell(flag, outcome, stratum, seed: str) -> dict:
     if any(enough.values()):
         rng = random.Random(seed)
         for _ in range(RESAMPLES):
-            index = numpy.asarray(metrics.stationary_bootstrap_indices(len(flag), BLOCK, rng))
-            resampled = cell_statistics(_counts(flag[index], outcome[index], stratum[index], 9))
+            index = metrics.stationary_bootstrap_indices(len(flag), BLOCK, rng)
+            resampled = cell_statistics(_counts(flag, outcome, stratum, 9, index))
             resampled["persistence_share"] = persistence_share(resampled["raw_all"], resampled["stratified_all"])
             for name, value in resampled.items():
                 if value is not None and enough[name]:
