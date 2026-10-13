@@ -29,9 +29,10 @@ meaning. The declared curve has the positive exponent below the level, which equ
 scored. If she meant the literal one, the rows need a re-run; the declaration records the reading.
 
 **Dating.** The reserves leg of the ratio, `satiation_roll` and the distance columns are read per H.4.1 release, as #622 requires
-(`metadata/h41_release_dating.json`). #623 had not merged; the construction here is this directive's own and does not depend on it, and
-#618 and #620 (open in #623) are not applied to the structural drain. The comparator `risk_gbm+settle+h41+dist_roll` is re-built here
-with its distance column per release, so its figures are not those of #598's page (which reads the earlier lag).
+(`metadata/h41_release_dating.json`). This tree contains #623 and everything else on main (#618 and #620 included: the structural drain at
+h = 2 to 5 and partly announced classes), and all rows were re-scored on it, so `structural_liquidity` is the model as it stands on main.
+The comparator `risk_gbm+settle+h41+dist_roll` is the row as it stands on main (15 of 26 at 1.17 weighted, 1.81 flat), the same
+figures as the merged pages.
 
 ## Result (weighted rule in force, +5 bp, h = 1 to 5)
 
@@ -41,33 +42,34 @@ Tier 1 pooled (lead >= 1; 26 onsets; weighted false alarms per onset, limit 2), 
 
 | row | onsets flagged | recall [90%] | weighted false alarms per onset | tiers 1 / 3 / 5 | 2025 onsets | 2019 |
 |---|---|---|---|---|---|---|
-| `structural_liquidity` (as on main) | 11 | 0.423 [0.250, 0.613] | 1.69 | no / yes / yes | 0 of 5 | 11 of 13 |
-| `structural_liquidity+h41` | 10 | 0.385 [0.208, 0.556] | 1.48 | no / no / yes | 0 of 5 | 10 of 13 |
-| `structural_kinked_fitted` | 10 | 0.385 [0.219, 0.571] | 2.12 | no / no / yes | 0 of 5 | 10 of 13 |
-| `structural_kinked_rolling` | 15 | 0.577 [0.400, 0.762] | 4.64 | no / no / yes | 4 of 5 | 10 of 13 |
+| `structural_liquidity` (as on main) | 11 | 0.423 [0.250, 0.613] | 1.75 | no / yes / yes | 0 of 5 | 11 of 13 |
+| `structural_liquidity+h41` | 10 | 0.385 [0.208, 0.556] | 2.13 | no / yes / yes | 0 of 5 | 10 of 13 |
+| `structural_kinked_fitted` | 11 | 0.423 [0.250, 0.600] | 2.81 | no / yes / yes | 0 of 5 | 10 of 13 |
+| `structural_kinked_rolling` | 16 | 0.615 [0.433, 0.800] | 5.05 | no / no / yes | 4 of 5 | 11 of 13 |
 | `risk_gbm+settle+h41` (comparator parent) | 14 | 0.538 [0.353, 0.710] | 1.44 | yes / no / no | 4 of 5 | 10 of 13 |
 | `risk_gbm+settle+h41+dist_roll` (comparator) | 15 | 0.577 [0.400, 0.762] | 1.17 | yes / no / no | 5 of 5 | 10 of 13 |
 
-Recall by year for the structural rows is 0 of 4 in 2018 and 0 of 2 in 2024 in every row; 2020 is 0 of 2 except `structural_kinked_rolling`
-(1 of 2).
+Recall by year for the structural rows is 0 of 4 in 2018 and 0 of 2 in 2024 in every row; 2020 is 0 of 2 except the two kinked rows
+(1 of 2 each).
 
 - **Variant (a), the fitted level, does what #587 said a kink would need to: the level now moves the forecast.** The forecasts differ
   from the like-for-like control's (`tests/test_satiation.py`, `test_a_fitted_level_changes_the_kinked_forecasts_and_not_the_unkinked_ones`).
-  But it does not help. Onsets flagged are the control's 10 of 26 with the same recall, the false alarms rise from 1.48 to 2.12 and past
-  the limit of 2, and it warns no 2025 onset. Against the like-for-like control, the pooled onset-recall difference is 0.000 [0.000,
-  0.000] and the Brier difference includes 0 at every pooled horizon (h = 1: -0.003 [-0.007, +0.001]). In 2025-26 it flags 0.07 of the
-  pressure days at h = 1, where the control flags 0.34 (Table 2).
-- **Variant (b), the rolling level, warns the 2025 onsets (4 of 5) and pays for it.** Recall 0.577, the onset-recall difference against
-  the like-for-like control +0.192 [0.000, 0.391] on 26 onsets, but the weighted false alarms per onset are 4.64, past the limit of 2,
+  But it does not help. It flags 11 of 26 onsets against the control's 10, the pooled onset-recall difference is +0.038 [0.000, 0.107], the
+  false alarms rise from 2.13 to 2.81 weighted (both past the limit of 2), and it warns no 2025 onset. The Brier difference
+  against the like-for-like control includes 0 at every pooled horizon (h = 1: -0.003 [-0.007, +0.001]; h = 2: -0.005 [-0.012, 0.000]). In 2025-26 it
+  flags 0.07 of the pressure days at h = 1, where the control flags 0.34 (Table 2).
+- **Variant (b), the rolling level, warns the 2025 onsets (4 of 5) and pays for it.** Recall 0.615, the onset-recall difference against
+  the like-for-like control +0.231 [0.000, 0.429] on 26 onsets, but the weighted false alarms per onset are 5.05, past the limit of 2,
   and tier 3 loses a calibrated regime (1 of 2 tested). The Brier difference against the control includes 0 pooled at every horizon
-  (h = 1: -0.001 [-0.009, +0.006]; h = 5: +0.006 [-0.011, +0.022]). By regime it is better in 2018-19 (h = 5: +0.065 [0.012, 0.121]) and
-  2025-26 (h = 1: +0.023 [0.007, 0.042]) and worse in 2020 (h = 1: -0.050 [-0.093, -0.019]).
+  (h = 1: -0.001 [-0.009, +0.006]; h = 5: +0.001 [-0.006, +0.008]). By regime it is better in 2025-26 (h = 1: +0.023 [0.007, 0.042]) and
+  worse in 2020 (h = 1: -0.050 [-0.093, -0.019]); in 2018-19 the interval includes 0 (h = 1: +0.014 [-0.008, +0.036]).
 - **No tier 1 verdict changes and no pass changes.** Every structural row fails tier 1 pooled, as the control does. The comparator
   passes tier 1; no structural row reaches it, and the difference in recall between `structural_kinked_rolling` and the comparator is
-  0.000 [-0.161, +0.174] with Brier differences whose intervals include 0.
-- **The per-release reading alone moves the control.** `structural_liquidity+h41` against `structural_liquidity` loses tier 3 and
-  moves forecasts by up to 0.76 in a probability on a day; the exponential curve is sensitive to a one-release difference in reserves.
-  That is a finding about the control, not about the kink.
+  +0.038 [-0.136, +0.231] with Brier differences whose intervals include 0.
+- **The per-release reading alone moves the control.** `structural_liquidity+h41` against `structural_liquidity` moves the weighted
+  false alarms from 1.75 to 2.13, across the limit of 2 (tier 1 fails for both), and the Brier difference at h = 4 is +0.004 [0.001, 0.009]
+  in the h41 row's favour. The exponential curve is sensitive to a one-release difference in reserves. That is a finding about the
+  control, not about the kink.
 
 ### Share of days on which the kink is active, by year (h = 1 decision rows)
 
@@ -97,9 +99,9 @@ slope 1), 90% stationary-bootstrap intervals; h = 1 here, h = 2 to 5 in `evidenc
 | `risk_gbm+settle+h41+dist_roll` | 0.498 [0.472, 0.531] | -0.385 | -2.41 | 0.03 |
 
 The structural rows rank the ordinary days about as well as persistence does (0.88) and no variant improves on the control's AUROC
-(differences are -0.02 to +0.01 at every horizon, intervals include 0 except fitted at h = 1 and 2). All are over-confident and biased
-high: the slope is 0.4 to 0.7 and the intercept is negative, i.e. the forecasts run high and too spread out; the rolling form is nearest
-to calibrated (slope 0.74 at h = 1), which comes with its extra false alarms. The risk-date passers forecast almost 0 on these days and so
+(differences are -0.017 to 0.000 at every horizon, intervals include 0 except fitted at h = 1 and 2). All are over-confident and biased
+high: the slope is 0.4 to 0.9 and the intercept is negative, i.e. the forecasts run high and too spread out; the rolling form is nearest
+to calibrated (slope 0.74 at h = 1, 0.85 at h = 4 and 5), which comes with its extra false alarms. The risk-date passers forecast almost 0 on these days and so
 have no ranking (AUROC 0.50), as designed.
 
 ## The ruling on #567
@@ -113,8 +115,6 @@ added to the frozen shortlist. Only Eleonora can replace a shortlist slot, befor
 - **The sign of the exponent** (above): the declared reading is the economically sensible one; the literal one was not scored.
 - **Whether a kinked structural row is worth carrying at all.** Variant (a) is a null result; variant (b) trades 2025 recall for false alarms
   past the limit, as the unkinked rolling level of #587 did.
-- **#618 and #620** (the structural drain at h = 2 to 5 and partly announced classes) are in #623 and are not applied: the structural rows
-  here carry the drain as on main. A re-score after #623 would move them.
 - **The 26 onsets are 17 in 2018-19, 2 in 2020, 2 in 2024 and 5 in 2025:** a difference of one onset is inside every interval.
 - **Not risk dates** is the calendar rule of the judge's grid (`risk_date` grouping), not each passer's own rule at h >= 2.
 - #571's pull request is not merged on main; the scarcity state the judge's tiers use is the one in force on main.
