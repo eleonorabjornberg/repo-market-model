@@ -27,6 +27,8 @@ CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
 
 FIRST_DAY = "2018-06-29"
 LAST_DAY = EXPLORATORY_END.isoformat()
+#: The model test (`model`, `compare`, `ordinary`) scores through the pressure judge, whose declaration ends 2025-12-31 (#684: not extended here).
+MODEL_TEST_LAST_DAY = "2025-12-31"
 LEADS = (1, 2, 3, 5, 10)
 THRESHOLD_BP = 5.0
 #: rates whose own trailing range is read (panel column -> what it is)
@@ -173,7 +175,7 @@ def declaration_document() -> dict:
             },
             "single_test": f"{TEST} against {PARENT}, the only declared model test; the control is reported beside them for reference and is not a second test",
             "added_inputs": list(MODEL_INPUTS),
-            "scoring": {"first_day": FIRST_DAY, "last_day": LAST_DAY, "minimum_history": 61, "refit_every": 21, "decision_time": "16:00", "horizons": [1, 2, 3, 4, 5], "thresholds_bp": [5, 10]},
+            "scoring": {"first_day": FIRST_DAY, "last_day": MODEL_TEST_LAST_DAY, "minimum_history": 61, "refit_every": 21, "decision_time": "16:00", "horizons": [1, 2, 3, 4, 5], "thresholds_bp": [5, 10]},
             "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), tiers 1, 3 and 5, under the weighted rule in force and, reported beside it, the flat rule; the cut-off rule unchanged",
             "pairing": "test against parent with 90% stationary-bootstrap intervals (the judge's bootstrap): the paired Brier difference at +5 bp (h = 1 to 5) pooled, by regime and by year; onset recall at some lead 1 to 5 (the judge's comparison); flags and false alarms per onset",
             "ordinary_days": "on the ordinary days of the screen, for each row at h = 1 to 5 and +5 bp: AUROC of the forecast for pressure days (ties half), with a 90% interval; and the reliability slope and intercept, from a logistic regression of the outcome on logit(forecast) (forecasts clipped to [1e-4, 1 - 1e-4]; Newton, 50 iterations), reported where the forecast varies and the days hold 5 pressure days (#616)",
@@ -873,8 +875,8 @@ def ordinary_command(args) -> int:
     rows = load_daily_panel(args.panel)
     splits = load_split_declaration(REPO / "metadata" / "evaluation_splits.json")
     by_date = {r.date: r for r in rows}
-    last = date.fromisoformat(LAST_DAY)
-    out = {"rows": {}, "paired": {}, "scope": {"threshold_bp": 5, "last_day": LAST_DAY}}
+    last = date.fromisoformat(MODEL_TEST_LAST_DAY)
+    out = {"rows": {}, "paired": {}, "scope": {"threshold_bp": 5, "last_day": MODEL_TEST_LAST_DAY}}
     for h in declared["model_test"]["scoring"]["horizons"]:
         docs = [json.loads(Path(str(p).format(h=h)).read_text(encoding="utf-8")) for p in args.inputs]
         forecasts = {}

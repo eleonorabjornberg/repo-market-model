@@ -6,7 +6,7 @@ What is covered:
 * `DeclarationTests` -- `metadata/derived_features_631.json` is committed, lists exactly the columns the script builds, the four
   interactions, the model test's rows and inputs, and the candidate files agree with it; nothing is on the confirmation roster.
 * `ReadTests` -- a derived column is read through the as-of rule at the row where its source fields are public, and a locked day is refused.
-* `RunTests` -- `run` refuses a panel past 2025-12-31.
+* `RunTests` -- `run` refuses a panel past 2026-09-03 (#684).
 
 **Recorded mutations** (disposable copy of the tree, `/opt/rmm-venv`, `PYTHONDONTWRITEBYTECODE=1`, the killing test run alone, each
 confirmed applied by `grep` and restored before the next; the readers' own guards are recorded in `tests/test_derived_features.py`):
@@ -122,9 +122,10 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(set(self.declared["interactions"]), set(script.INTERACTIONS))
         self.assertEqual(set(script.INTERACTIONS), {"tail_x_scarcity", "tgachg_x_satdist", "settle_x_scarcity", "netsettle_x_scarcity", "tail_x_reservetrend"})
 
-    def test_it_declares_the_leads_the_directive_asks_for_and_no_day_after_2025(self):
+    def test_it_declares_the_leads_the_directive_asks_for_and_no_day_after_the_exploratory_end(self):
         self.assertEqual(self.declared["leads"], [1, 2, 3, 5, 10])
-        self.assertEqual(self.declared["scope"]["last_day"], "2025-12-31")
+        # the screen reads to the exploratory end (#684); the model test scores through the judge, which ends 2025-12-31
+        self.assertEqual(self.declared["scope"]["last_day"], "2026-09-03")
         self.assertEqual(self.declared["model_test"]["scoring"]["last_day"], "2025-12-31")
 
     def test_the_model_test_is_one_comparison_and_the_candidates_agree_with_it(self):
@@ -179,7 +180,8 @@ class RunTests(unittest.TestCase):
         return path
 
     def test_a_panel_past_the_last_day_is_refused(self):
-        rows = synthetic_rows(date(2025, 8, 1), 140)
+        rows = synthetic_rows(date(2026, 6, 1), 140)  # runs past 2026-09-03 (#684)
+        self.assertGreater(rows[-1].date, date(2026, 9, 3))
         with tempfile.TemporaryDirectory() as directory:
             panel = self.write_panel(directory, rows)
             with self.assertRaises(SystemExit):

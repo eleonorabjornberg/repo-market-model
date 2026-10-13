@@ -208,7 +208,7 @@
     ],
     "scoring": {
       "first_day": "2018-06-29",
-      "last_day": "2026-09-03",
+      "last_day": "2025-12-31",
       "minimum_history": 61,
       "refit_every": 21,
       "decision_time": "16:00",
