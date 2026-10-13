@@ -272,6 +272,25 @@ class BootstrapTests(unittest.TestCase):
         for got, want in zip(test.t_draws, self.naive_t_draws(50)):
             self.assertAlmostEqual(got, want, places=9)
 
+    def test_the_percentile_draws_are_kept_for_their_readers(self):
+        """`mean_difference_draws` and `skill_draws` are the sorted resampled mean(d) and skill on the same
+        resamples: scripts on main (#686, #639) read them for their reported intervals."""
+
+        test = sp.paired_test(self.bench, self.cand, seed=7, draws=50)
+        rng = random.Random(7)
+        n = len(self.d)
+        means, skills = [], []
+        for _ in range(50):
+            indices = stationary_bootstrap_indices(n, 10, rng)
+            dm = sum(self.d[i] for i in indices) / n
+            bm = sum(self.b[i] for i in indices) / n
+            means.append(dm)
+            skills.append(dm / bm)
+        for got, want in zip(test.mean_difference_draws, sorted(means)):
+            self.assertAlmostEqual(got, want, places=10)
+        for got, want in zip(test.skill_draws, sorted(skills)):
+            self.assertAlmostEqual(got, want, places=10)
+
     def test_the_point_values(self):
         test = sp.paired_test(self.bench, self.cand, seed=7, draws=200)
         n = len(self.d)

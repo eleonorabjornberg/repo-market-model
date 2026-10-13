@@ -454,6 +454,10 @@ class PairedTest:
     #: inner t-draws at or below its own t-draw. Empty when the test was made uncalibrated.
     prepivots: Tuple[float, ...] = ()
     inner_draws: int = 0
+    #: Sorted resampled mean(d) and skill, unstudentized, on the same resamples: the percentile
+    #: draws, kept for the scripts that report percentile intervals from them (#686, #639).
+    mean_difference_draws: Tuple[float, ...] = ()
+    skill_draws: Tuple[float, ...] = ()
 
     @property
     def n(self) -> int:
@@ -593,7 +597,7 @@ def paired_tests(
         if with_skill:
             linear = [d - skill * b for d, b in zip(diff, bench)]
             skill_se = _standard_error(linear, hac_lag, "skill's linearised series") / benchmark_mean
-        cells.append((bench, diff, mean, se, benchmark_mean, skill, skill_se, [], [], []))
+        cells.append((bench, diff, mean, se, benchmark_mean, skill, skill_se, [], [], [], [], []))
     if isinstance(inner_draws, bool) or not isinstance(inner_draws, int) or inner_draws < 0:
         raise ProtocolError(f"inner_draws must be a non-negative int, got {inner_draws!r}")
     rng = random.Random(seed)
@@ -603,9 +607,14 @@ def paired_tests(
         if inner_draws:
             inner_rng = random.Random(f"{seed}/{outer}")
             inner = [stationary_bootstrap_indices(n, block_length, inner_rng) for _ in range(inner_draws)]
-        for bench, diff, mean, se, _, skill, skill_se, t_out, skill_out, pivots in cells:
+        for bench, diff, mean, se, _, skill, skill_se, t_out, skill_out, pivots, means, skills in cells:
             resample = list(map(diff.__getitem__, indices))
             resampled_mean = sum(resample) / n
+            means.append(resampled_mean)
+            resampled_bench_mean = sum(map(bench.__getitem__, indices)) / n
+            if resampled_bench_mean == 0.0:
+                raise ProtocolError("a resampled benchmark scores zero; skill is undefined")
+            skills.append(resampled_mean / resampled_bench_mean)
             outer_t = (resampled_mean - mean) / _standard_error(resample, hac_lag, "a resampled difference")
             t_out.append(outer_t)
             if inner:
@@ -627,7 +636,7 @@ def paired_tests(
                 resampled_se = _standard_error(linear, hac_lag, "a resampled skill") / bench_mean
                 skill_out.append((resampled_skill - skill) / resampled_se)
     out = []
-    for bench, diff, mean, se, benchmark_mean, skill, skill_se, t_out, skill_out, pivots in cells:
+    for bench, diff, mean, se, benchmark_mean, skill, skill_se, t_out, skill_out, pivots, means, skills in cells:
         ordered = sorted(t_out)
         statistic = mean / se
         out.append(
@@ -649,6 +658,8 @@ def paired_tests(
                 seed=seed,
                 prepivots=tuple(sorted(pivots)),
                 inner_draws=inner_draws,
+                mean_difference_draws=tuple(sorted(means)),
+                skill_draws=tuple(sorted(skills)),
             )
         )
     return tuple(out)
