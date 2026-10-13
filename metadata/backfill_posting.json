@@ -1,7 +1,13 @@
 {
-  "directive": "#583",
-  "status": "unknown. The date and time the New York Fed first posted the back-filled repo-rate workbook (#430) is not established: the workbook's own file properties say only that it was created on 2018-05-01 (docs/pivot/backfilled-history-result.md), which is not a posting date. Eleonora establishes it (docs/decisions/information-set.md, draft amendment 'back-filled repo-rate history is training history only'); until she does, posting_instant is null and repo_model.backfill.require_posting_established refuses every fit that trains on a back-filled value.",
-  "posting_instant": null,
+  "directive": "#583; instant set by #633",
+  "status": "established by Eleonora's ruling of 13 October 2026, relayed by the orchestrating session on PR #661 (comment 6146010089, https://github.com/eleonorabjornberg/repo-market-model/pull/661#issuecomment-6146010089): every value in the New York Fed's TGCR/BGCR/SOFR back-fill workbook (22 Aug 2014 - 29 Mar 2018, today's Data Release.xlsx) is public from 17 May 2018; one posting_instant for all three series; no value is read as of a decision before that date; pre-May-2018 vintages are not used. No announcement gives a time of day, so the instant is the start of that day.",
+  "source": "the research comment 6145957978 on PR #661 (https://github.com/eleonorabjornberg/repo-market-model/pull/661#issuecomment-6145957978): the revised full back-fill was first public between 3 and 17 May 2018 (the workbook's file properties: created 2018-05-01, modified 2018-05-03; the Liberty Street copy reads 'Updated: May 16, 2018' and its editor's note is dated 17 May 2018, its values matching the workbook on all 899 dates); 17 May 2018 is the conservative date. docs/pivot/posting-dates-due-diligence.md records it.",
+  "series": [
+    "tgcr",
+    "bgcr",
+    "sofr"
+  ],
+  "posting_instant": "2018-05-17T00:00:00",
   "format": "null, or an ISO date-time without a zone, in New York time, e.g. 2018-05-01T12:00:00. A fit is allowed only when its training-end day starts at or after the instant.",
   "guard": "repo_model.backfill.require_posting_established, called by scripts/backfill_history.py run after every backtest (#572)"
 }
