@@ -1,0 +1,1942 @@
+{
+ "scope": {
+  "bootstraps": 300,
+  "cluster_threshold": 0.8,
+  "first_day": "2018-06-29",
+  "interval": "90 % percentile bootstrap, days resampled independently",
+  "last_day": "2025-12-31",
+  "leads": [
+   1,
+   2,
+   3,
+   5,
+   10
+  ],
+  "new_series": [
+   "auc_accepted_bn",
+   "auc_cover",
+   "auc_dealer_share",
+   "auc_indirect_share",
+   "dts_debt_issues_bn",
+   "dts_debt_net_bn",
+   "pd_fails_deliver_ust",
+   "pd_fails_receive_ust",
+   "pd_repo_mbs",
+   "pd_repo_ust",
+   "pd_reverse_repo_ust",
+   "rrp_counterparties"
+  ],
+  "ordinary_days": 1469,
+  "ordinary_onsets": [
+   "2019-05-28",
+   "2019-06-25",
+   "2019-08-13",
+   "2020-03-04",
+   "2020-03-12",
+   "2024-12-26"
+  ],
+  "ordinary_pressure_days": 82,
+  "other_days": 1445,
+  "panel_sha256": "8acbf52d92d58edb4c6274ad74eef70f63f54f3e4196946b4eabf9c9b7d8e4e6",
+  "pre_onset_days": 24,
+  "scored_days": 1873,
+  "series_screened": 89,
+  "tests_run": {
+   "auroc": 994,
+   "inter_source": 11075,
+   "partial": 170,
+   "pre_onset": 257,
+   "spearman": 4016
+  },
+  "tests_total": 16512
+ },
+ "series": {
+  "auc_cover": {
+   "kind": "observed",
+   "leads": {
+    "1": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 857,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 857,
+        "rho": -0.006691352494900253
+       },
+       "level": {
+        "n": 857,
+        "rho": 0.21590139208858822
+       },
+       "pressure": {
+        "n": 857,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.4743431348323861,
+       "interval": [
+        0.399519890260631,
+        0.5423941266004119
+       ],
+       "n": 270,
+       "pressure_days": 57
+      },
+      "spearman": {
+       "change": {
+        "n": 270,
+        "rho": 0.0020809263063920882
+       },
+       "level": {
+        "n": 270,
+        "rho": -0.027841555086549834
+       },
+       "pressure": {
+        "n": 270,
+        "pressure_days": 57,
+        "rho": -0.036271094347552824
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.36497809940963627,
+       "interval": [
+        0.31277258566978194,
+        0.42722542333019753
+       ],
+       "n": 1127,
+       "pressure_days": 59
+      },
+      "spearman": {
+       "change": {
+        "n": 1127,
+        "rho": 0.0005893246713322296
+       },
+       "level": {
+        "n": 1127,
+        "rho": 0.005181958156536658
+       },
+       "pressure": {
+        "n": 1127,
+        "pressure_days": 59,
+        "rho": -0.10417960992866887
+       }
+      }
+     },
+     "state:0": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 653,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 653,
+        "rho": -0.004489204849496584
+       },
+       "level": {
+        "n": 653,
+        "rho": 0.07221174189787344
+       },
+       "pressure": {
+        "n": 653,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "state:1": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 204,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 204,
+        "rho": 0.013442630836457059
+       },
+       "level": {
+        "n": 204,
+        "rho": 0.026073084675466773
+       },
+       "pressure": {
+        "n": 204,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "state:2": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 26,
+       "pressure_days": 8
+      },
+      "spearman": {
+       "change": {
+        "n": 26,
+        "rho": null
+       },
+       "level": {
+        "n": 26,
+        "rho": null
+       },
+       "pressure": {
+        "n": 26,
+        "pressure_days": 8,
+        "rho": null
+       }
+      }
+     },
+     "state:3": {
+      "auroc": {
+       "auroc": 0.45787545787545786,
+       "interval": null,
+       "n": 244,
+       "pressure_days": 49
+      },
+      "spearman": {
+       "change": {
+        "n": 244,
+        "rho": -0.03161146460952539
+       },
+       "level": {
+        "n": 244,
+        "rho": -0.042725168289665355
+       },
+       "pressure": {
+        "n": 244,
+        "pressure_days": 49,
+        "rho": -0.05845948472249213
+       }
+      }
+     }
+    },
+    "10": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 853,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 853,
+        "rho": -0.054472970750908435
+       },
+       "level": {
+        "n": 853,
+        "rho": 0.17974473471910335
+       },
+       "pressure": {
+        "n": 853,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.5489035851026801,
+       "interval": null,
+       "n": 273,
+       "pressure_days": 52
+      },
+      "spearman": {
+       "change": {
+        "n": 273,
+        "rho": -0.05508896608229454
+       },
+       "level": {
+        "n": 273,
+        "rho": 0.060231619820280954
+       },
+       "pressure": {
+        "n": 273,
+        "pressure_days": 52,
+        "rho": 0.06652262779501995
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.4281198175787728,
+       "interval": null,
+       "n": 1126,
+       "pressure_days": 54
+      },
+      "spearman": {
+       "change": {
+        "n": 1126,
+        "rho": -0.03625406742249929
+       },
+       "level": {
+        "n": 1126,
+        "rho": 0.00038051870101326647
+       },
+       "pressure": {
+        "n": 1126,
+        "pressure_days": 54,
+        "rho": -0.053205416465295724
+       }
+      }
+     }
+    },
+    "2": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 819,
+       "pressure_days": 1
+      },
+      "spearman": {
+       "change": {
+        "n": 819,
+        "rho": -0.025075838973244287
+       },
+       "level": {
+        "n": 819,
+        "rho": 0.1961679246346293
+       },
+       "pressure": {
+        "n": 819,
+        "pressure_days": 1,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.4716462366823233,
+       "interval": null,
+       "n": 246,
+       "pressure_days": 43
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": 0.01083727376135977
+       },
+       "level": {
+        "n": 246,
+        "rho": -0.028985195616879088
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 43,
+        "rho": -0.037303712962672375
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.37084854420799573,
+       "interval": null,
+       "n": 1065,
+       "pressure_days": 44
+      },
+      "spearman": {
+       "change": {
+        "n": 1065,
+        "rho": -0.003939700420952286
+       },
+       "level": {
+        "n": 1065,
+        "rho": 0.0019500274089478606
+       },
+       "pressure": {
+        "n": 1065,
+        "pressure_days": 44,
+        "rho": -0.0890388868498065
+       }
+      }
+     }
+    },
+    "3": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 821,
+       "pressure_days": 1
+      },
+      "spearman": {
+       "change": {
+        "n": 821,
+        "rho": -0.05274699566549728
+       },
+       "level": {
+        "n": 821,
+        "rho": 0.13948397357538841
+       },
+       "pressure": {
+        "n": 821,
+        "pressure_days": 1,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.5030513468013468,
+       "interval": null,
+       "n": 246,
+       "pressure_days": 48
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": 0.022429824544132143
+       },
+       "level": {
+        "n": 246,
+        "rho": -0.0227215877594361
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 48,
+        "rho": 0.004188937573935164
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.39010063750451063,
+       "interval": null,
+       "n": 1067,
+       "pressure_days": 49
+      },
+      "spearman": {
+       "change": {
+        "n": 1067,
+        "rho": -0.019983765478749183
+       },
+       "level": {
+        "n": 1067,
+        "rho": -0.02669057175148652
+       },
+       "pressure": {
+        "n": 1067,
+        "pressure_days": 49,
+        "rho": -0.07968810448398513
+       }
+      }
+     }
+    },
+    "5": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 839,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 839,
+        "rho": -0.03465860292531902
+       },
+       "level": {
+        "n": 839,
+        "rho": 0.11979098698883078
+       },
+       "pressure": {
+        "n": 839,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.365553925165077,
+       "interval": [
+        0.29955808080808083,
+        0.4282606725278709
+       ],
+       "n": 246,
+       "pressure_days": 58
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": -0.07300477650555838
+       },
+       "level": {
+        "n": 246,
+        "rho": -0.1682678919732855
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 58,
+        "rho": -0.19769703370607394
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.2967967479674797,
+       "interval": [
+        0.24511844583209436,
+        0.352473604826546
+       ],
+       "n": 1085,
+       "pressure_days": 60
+      },
+      "spearman": {
+       "change": {
+        "n": 1085,
+        "rho": -0.038033490590495767
+       },
+       "level": {
+        "n": 1085,
+        "rho": -0.05203548324837813
+       },
+       "pressure": {
+        "n": 1085,
+        "pressure_days": 60,
+        "rho": -0.16089008503922622
+       }
+      }
+     }
+    }
+   },
+   "new": true,
+   "partial": {
+    "level": {
+     "partial": 0.047653135547678034,
+     "raw": 0.005181958156536658
+    },
+    "n": 1127,
+    "pressure": {
+     "interval": [
+      -0.14704917572433318,
+      -0.06018872298728704
+     ],
+     "partial": -0.10225020974776668,
+     "raw": -0.10417960992866887
+    }
+   },
+   "pre_onset": {
+    "band:ample": {
+     "auc": 0.4816549570647931,
+     "mean_other": 2.9608897132659697,
+     "mean_pre": 2.8979855018532525,
+     "n_other": 854,
+     "n_pre": 3,
+     "std_diff": -0.20066355707264966
+    },
+    "band:scarce": {
+     "auc": 0.42689732142857145,
+     "mean_other": 2.8058963078208077,
+     "mean_pre": 2.7312066133084087,
+     "n_other": 256,
+     "n_pre": 14,
+     "std_diff": -0.2883578153549501
+    },
+    "ordinary": {
+     "auc": 0.3677795442501325,
+     "auc_interval": [
+      0.2673025967143614,
+      0.47599364069952305
+     ],
+     "mean_other": 2.92514348642456,
+     "mean_pre": 2.7606381818751458,
+     "n_other": 1110,
+     "n_pre": 17,
+     "std_diff": -0.5329445178831872,
+     "std_diff_interval": [
+      -0.8933629830620267,
+      -0.15860428628719433
+     ]
+    }
+   }
+  },
+  "auc_dealer_share": {
+   "kind": "observed",
+   "leads": {
+    "1": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 857,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 857,
+        "rho": -0.0775008052073035
+       },
+       "level": {
+        "n": 857,
+        "rho": 0.14423205693491153
+       },
+       "pressure": {
+        "n": 857,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.4908162424841446,
+       "interval": [
+        0.40937917222963954,
+        0.5550667475728155
+       ],
+       "n": 270,
+       "pressure_days": 57
+      },
+      "spearman": {
+       "change": {
+        "n": 270,
+        "rho": -0.14133655164782608
+       },
+       "level": {
+        "n": 270,
+        "rho": 0.0057361445481699655
+       },
+       "pressure": {
+        "n": 270,
+        "pressure_days": 57,
+        "rho": -0.012983072294549406
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.5655113311750143,
+       "interval": [
+        0.49118558152633063,
+        0.6428597957288765
+       ],
+       "n": 1127,
+       "pressure_days": 59
+      },
+      "spearman": {
+       "change": {
+        "n": 1127,
+        "rho": -0.08838796295721617
+       },
+       "level": {
+        "n": 1127,
+        "rho": 0.21525080792258283
+       },
+       "pressure": {
+        "n": 1127,
+        "pressure_days": 59,
+        "rho": 0.050546947553543144
+       }
+      }
+     },
+     "state:0": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 653,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 653,
+        "rho": -0.11313807868384432
+       },
+       "level": {
+        "n": 653,
+        "rho": -0.15428165372109087
+       },
+       "pressure": {
+        "n": 653,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "state:1": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 204,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 204,
+        "rho": -0.00919801652372742
+       },
+       "level": {
+        "n": 204,
+        "rho": 0.2996321020768604
+       },
+       "pressure": {
+        "n": 204,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "state:2": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 26,
+       "pressure_days": 8
+      },
+      "spearman": {
+       "change": {
+        "n": 26,
+        "rho": null
+       },
+       "level": {
+        "n": 26,
+        "rho": null
+       },
+       "pressure": {
+        "n": 26,
+        "pressure_days": 8,
+        "rho": null
+       }
+      }
+     },
+     "state:3": {
+      "auroc": {
+       "auroc": 0.5243328100470958,
+       "interval": null,
+       "n": 244,
+       "pressure_days": 49
+      },
+      "spearman": {
+       "change": {
+        "n": 244,
+        "rho": -0.12181247784146346
+       },
+       "level": {
+        "n": 244,
+        "rho": 0.050092119024066115
+       },
+       "pressure": {
+        "n": 244,
+        "pressure_days": 49,
+        "rho": 0.03376852223100477
+       }
+      }
+     }
+    },
+    "10": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 853,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 853,
+        "rho": -0.04679998828878572
+       },
+       "level": {
+        "n": 853,
+        "rho": 0.17403386590002526
+       },
+       "pressure": {
+        "n": 853,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.49386529759832926,
+       "interval": null,
+       "n": 273,
+       "pressure_days": 52
+      },
+      "spearman": {
+       "change": {
+        "n": 273,
+        "rho": -0.14359617911147896
+       },
+       "level": {
+        "n": 273,
+        "rho": -0.02701539195756036
+       },
+       "pressure": {
+        "n": 273,
+        "pressure_days": 52,
+        "rho": -0.008344921621099233
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.5744022940851299,
+       "interval": null,
+       "n": 1126,
+       "pressure_days": 54
+      },
+      "spearman": {
+       "change": {
+        "n": 1126,
+        "rho": -0.08728798063158383
+       },
+       "level": {
+        "n": 1126,
+        "rho": 0.23477888283201975
+       },
+       "pressure": {
+        "n": 1126,
+        "pressure_days": 54,
+        "rho": 0.05507227364628933
+       }
+      }
+     }
+    },
+    "2": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 819,
+       "pressure_days": 1
+      },
+      "spearman": {
+       "change": {
+        "n": 819,
+        "rho": 0.03091578813445496
+       },
+       "level": {
+        "n": 819,
+        "rho": 0.1396078740747813
+       },
+       "pressure": {
+        "n": 819,
+        "pressure_days": 1,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.4680375758964372,
+       "interval": null,
+       "n": 246,
+       "pressure_days": 43
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": -0.057875418262180366
+       },
+       "level": {
+        "n": 246,
+        "rho": -0.03947185697280639
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 43,
+        "rho": -0.04205146672313981
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.5704077998397293,
+       "interval": null,
+       "n": 1065,
+       "pressure_days": 44
+      },
+      "spearman": {
+       "change": {
+        "n": 1065,
+        "rho": -0.009610475423392948
+       },
+       "level": {
+        "n": 1065,
+        "rho": 0.21987307718572022
+       },
+       "pressure": {
+        "n": 1065,
+        "pressure_days": 44,
+        "rho": 0.048540158894123775
+       }
+      }
+     }
+    },
+    "3": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 821,
+       "pressure_days": 1
+      },
+      "spearman": {
+       "change": {
+        "n": 821,
+        "rho": -0.01619558434018557
+       },
+       "level": {
+        "n": 821,
+        "rho": 0.1009974924243845
+       },
+       "pressure": {
+        "n": 821,
+        "pressure_days": 1,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.47095959595959597,
+       "interval": null,
+       "n": 246,
+       "pressure_days": 48
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": 0.04742159780775351
+       },
+       "level": {
+        "n": 246,
+        "rho": -0.04825542106728206
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 48,
+        "rho": -0.03986713001400363
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.6065314141373642,
+       "interval": null,
+       "n": 1067,
+       "pressure_days": 49
+      },
+      "spearman": {
+       "change": {
+        "n": 1067,
+        "rho": -0.006558524908350662
+       },
+       "level": {
+        "n": 1067,
+        "rho": 0.22370981619500205
+       },
+       "pressure": {
+        "n": 1067,
+        "pressure_days": 49,
+        "rho": 0.07724600277779951
+       }
+      }
+     }
+    },
+    "5": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 839,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 839,
+        "rho": 0.0854848262710981
+       },
+       "level": {
+        "n": 839,
+        "rho": 0.09694425135862692
+       },
+       "pressure": {
+        "n": 839,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.39590975788701394,
+       "interval": [
+        0.3246527777777778,
+        0.46060201784374216
+       ],
+       "n": 246,
+       "pressure_days": 58
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": 0.026589158461458654
+       },
+       "level": {
+        "n": 246,
+        "rho": -0.1580915918706
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 58,
+        "rho": -0.15306011818307907
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.4976260162601626,
+       "interval": [
+        0.42645363729508196,
+        0.5616160398585663
+       ],
+       "n": 1085,
+       "pressure_days": 60
+      },
+      "spearman": {
+       "change": {
+        "n": 1085,
+        "rho": 0.04159572108152015
+       },
+       "level": {
+        "n": 1085,
+        "rho": 0.17671936829905857
+       },
+       "pressure": {
+        "n": 1085,
+        "pressure_days": 60,
+        "rho": -0.0018796473130270061
+       }
+      }
+     }
+    }
+   },
+   "new": true,
+   "partial": {
+    "level": {
+     "partial": -0.12595796462879888,
+     "raw": 0.21525080792258283
+    },
+    "n": 1127,
+    "pressure": {
+     "interval": [
+      -0.14095016362473115,
+      -0.011841608347944543
+     ],
+     "partial": -0.08079828917207135,
+     "raw": 0.050546947553543144
+    }
+   },
+   "pre_onset": {
+    "band:ample": {
+     "auc": 0.1444184231069477,
+     "mean_other": 0.3704690185577473,
+     "mean_pre": 0.26868444421525806,
+     "n_other": 854,
+     "n_pre": 3,
+     "std_diff": -1.0920856490734632
+    },
+    "band:scarce": {
+     "auc": 0.7092633928571429,
+     "mean_other": 0.4129861358670927,
+     "mean_pre": 0.5221166664121284,
+     "n_other": 256,
+     "n_pre": 14,
+     "std_diff": 0.9497995019176144
+    },
+    "ordinary": {
+     "auc": 0.6757286698463169,
+     "auc_interval": [
+      0.5404345521992581,
+      0.8093799682034977
+     ],
+     "mean_other": 0.38027476813539796,
+     "mean_pre": 0.4773933330832689,
+     "n_other": 1110,
+     "n_pre": 17,
+     "std_diff": 0.9693453321497797,
+     "std_diff_interval": [
+      0.34215040801028995,
+      1.7146919161900367
+     ]
+    }
+   }
+  },
+  "auc_indirect_share": {
+   "kind": "observed",
+   "leads": {
+    "1": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 857,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 857,
+        "rho": 0.05664831947177225
+       },
+       "level": {
+        "n": 857,
+        "rho": -0.123157648156748
+       },
+       "pressure": {
+        "n": 857,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.5230211679433325,
+       "interval": [
+        0.44864540466392316,
+        0.5913902611150318
+       ],
+       "n": 270,
+       "pressure_days": 57
+      },
+      "spearman": {
+       "change": {
+        "n": 270,
+        "rho": 0.15120095452898455
+       },
+       "level": {
+        "n": 270,
+        "rho": 0.007314317196431378
+       },
+       "pressure": {
+        "n": 270,
+        "pressure_days": 57,
+        "rho": 0.032545010819072274
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.42171332444613724,
+       "interval": [
+        0.361651386627824,
+        0.4877299724757352
+       ],
+       "n": 1127,
+       "pressure_days": 59
+      },
+      "spearman": {
+       "change": {
+        "n": 1127,
+        "rho": 0.08279389844084105
+       },
+       "level": {
+        "n": 1127,
+        "rho": -0.22079168826101117
+       },
+       "pressure": {
+        "n": 1127,
+        "pressure_days": 59,
+        "rho": -0.060404092122487485
+       }
+      }
+     },
+     "state:0": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 653,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 653,
+        "rho": 0.06543465008241299
+       },
+       "level": {
+        "n": 653,
+        "rho": 0.16937273751079873
+       },
+       "pressure": {
+        "n": 653,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "state:1": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 204,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 204,
+        "rho": 0.024575984972104996
+       },
+       "level": {
+        "n": 204,
+        "rho": -0.23245122301394974
+       },
+       "pressure": {
+        "n": 204,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "state:2": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 26,
+       "pressure_days": 8
+      },
+      "spearman": {
+       "change": {
+        "n": 26,
+        "rho": null
+       },
+       "level": {
+        "n": 26,
+        "rho": null
+       },
+       "pressure": {
+        "n": 26,
+        "pressure_days": 8,
+        "rho": null
+       }
+      }
+     },
+     "state:3": {
+      "auroc": {
+       "auroc": 0.4926216640502355,
+       "interval": null,
+       "n": 244,
+       "pressure_days": 49
+      },
+      "spearman": {
+       "change": {
+        "n": 244,
+        "rho": 0.13699080798811072
+       },
+       "level": {
+        "n": 244,
+        "rho": -0.029550591618104253
+       },
+       "pressure": {
+        "n": 244,
+        "pressure_days": 49,
+        "rho": -0.01023948738617564
+       }
+      }
+     }
+    },
+    "10": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 853,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 853,
+        "rho": 0.002793650220190072
+       },
+       "level": {
+        "n": 853,
+        "rho": -0.16197503163488208
+       },
+       "pressure": {
+        "n": 853,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.5267577445179256,
+       "interval": null,
+       "n": 273,
+       "pressure_days": 52
+      },
+      "spearman": {
+       "change": {
+        "n": 273,
+        "rho": 0.1366788694484795
+       },
+       "level": {
+        "n": 273,
+        "rho": 0.055335773977091475
+       },
+       "pressure": {
+        "n": 273,
+        "pressure_days": 52,
+        "rho": 0.036398062389900905
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.4148700939745716,
+       "interval": null,
+       "n": 1126,
+       "pressure_days": 54
+      },
+      "spearman": {
+       "change": {
+        "n": 1126,
+        "rho": 0.058595634974552537
+       },
+       "level": {
+        "n": 1126,
+        "rho": -0.25284676261385136
+       },
+       "pressure": {
+        "n": 1126,
+        "pressure_days": 54,
+        "rho": -0.06301280810980121
+       }
+      }
+     }
+    },
+    "2": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 819,
+       "pressure_days": 1
+      },
+      "spearman": {
+       "change": {
+        "n": 819,
+        "rho": -0.05623905218133614
+       },
+       "level": {
+        "n": 819,
+        "rho": -0.11738665247723819
+       },
+       "pressure": {
+        "n": 819,
+        "pressure_days": 1,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.5287547256272196,
+       "interval": null,
+       "n": 246,
+       "pressure_days": 43
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": 0.058488595463729795
+       },
+       "level": {
+        "n": 246,
+        "rho": 0.04045481686509011
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 43,
+        "rho": 0.037831247840530796
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.4008547769566379,
+       "interval": null,
+       "n": 1065,
+       "pressure_days": 44
+      },
+      "spearman": {
+       "change": {
+        "n": 1065,
+        "rho": -0.0018108733992982027
+       },
+       "level": {
+        "n": 1065,
+        "rho": -0.2253805451949112
+       },
+       "pressure": {
+        "n": 1065,
+        "pressure_days": 44,
+        "rho": -0.06835215545824448
+       }
+      }
+     }
+    },
+    "3": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 821,
+       "pressure_days": 1
+      },
+      "spearman": {
+       "change": {
+        "n": 821,
+        "rho": -0.031178295786828836
+       },
+       "level": {
+        "n": 821,
+        "rho": -0.09784283713871178
+       },
+       "pressure": {
+        "n": 821,
+        "pressure_days": 1,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.5520833333333334,
+       "interval": null,
+       "n": 246,
+       "pressure_days": 48
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": -0.007301026700602004
+       },
+       "level": {
+        "n": 246,
+        "rho": 0.07364797607141862
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 48,
+        "rho": 0.07150083100337608
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.3953931277815645,
+       "interval": null,
+       "n": 1067,
+       "pressure_days": 49
+      },
+      "spearman": {
+       "change": {
+        "n": 1067,
+        "rho": -0.00248465174656718
+       },
+       "level": {
+        "n": 1067,
+        "rho": -0.23905231863293042
+       },
+       "pressure": {
+        "n": 1067,
+        "pressure_days": 49,
+        "rho": -0.07585051608855059
+       }
+      }
+     }
+    },
+    "5": {
+     "band:ample": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 839,
+       "pressure_days": 2
+      },
+      "spearman": {
+       "change": {
+        "n": 839,
+        "rho": -0.09793875193990596
+       },
+       "level": {
+        "n": 839,
+        "rho": -0.1176934288844801
+       },
+       "pressure": {
+        "n": 839,
+        "pressure_days": 2,
+        "rho": null
+       }
+      }
+     },
+     "band:scarce": {
+      "auroc": {
+       "auroc": 0.5872157006603081,
+       "interval": [
+        0.511921458625526,
+        0.6538899823888946
+       ],
+       "n": 246,
+       "pressure_days": 58
+      },
+      "spearman": {
+       "change": {
+        "n": 246,
+        "rho": -0.037280234518758
+       },
+       "level": {
+        "n": 246,
+        "rho": 0.11813818763471924
+       },
+       "pressure": {
+        "n": 246,
+        "pressure_days": 58,
+        "rho": 0.1282468479225623
+       }
+      }
+     },
+     "band:unknown": {
+      "auroc": {
+       "auroc": null,
+       "interval": null,
+       "n": 0,
+       "pressure_days": 0
+      },
+      "spearman": {
+       "change": {
+        "n": 0,
+        "rho": null
+       },
+       "level": {
+        "n": 0,
+        "rho": null
+       },
+       "pressure": {
+        "n": 0,
+        "pressure_days": 0,
+        "rho": null
+       }
+      }
+     },
+     "ordinary": {
+      "auroc": {
+       "auroc": 0.4540813008130081,
+       "interval": [
+        0.38617443647540983,
+        0.5194670899165524
+       ],
+       "n": 1085,
+       "pressure_days": 60
+      },
+      "spearman": {
+       "change": {
+        "n": 1085,
+        "rho": -0.05479110750463075
+       },
+       "level": {
+        "n": 1085,
+        "rho": -0.21920863250940742
+       },
+       "pressure": {
+        "n": 1085,
+        "pressure_days": 60,
+        "rho": -0.03635701378074154
+       }
+      }
+     }
+    }
+   },
+   "new": true,
+   "partial": {
+    "level": {
+     "partial": 0.12521080973821003,
+     "raw": -0.22079168826101117
+    },
+    "n": 1127,
+    "pressure": {
+     "interval": [
+      0.021867001598451563,
+      0.1244920310050904
+     ],
+     "partial": 0.07030776955613063,
+     "raw": -0.060404092122487485
+    }
+   },
+   "pre_onset": {
+    "band:ample": {
+     "auc": 0.9305230288836847,
+     "mean_other": 0.5372383774414621,
+     "mean_pre": 0.6614082717548494,
+     "n_other": 854,
+     "n_pre": 3,
+     "std_diff": 1.4631034942995838
+    },
+    "band:scarce": {
+     "auc": 0.3111049107142857,
+     "mean_other": 0.4939223779846798,
+     "mean_pre": 0.3992627984660427,
+     "n_other": 256,
+     "n_pre": 14,
+     "std_diff": -0.9408178476406468
+    },
+    "ordinary": {
+     "auc": 0.33407525172231056,
+     "auc_interval": [
+      0.2003709591944886,
+      0.4519342872284049
+     ],
+     "mean_other": 0.5272483811703482,
+     "mean_pre": 0.4455237643405379,
+     "n_other": 1110,
+     "n_pre": 17,
+     "std_diff": -0.9024533552234905,
+     "std_diff_interval": [
+      -1.6424647433801158,
+      -0.24588622475597713
+     ]
+    }
+   }
+  }
+ }
+}
