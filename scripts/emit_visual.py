@@ -130,6 +130,10 @@ from repo_model.scarcity import (  # noqa: E402
 )
 from repo_model.splits import LookAheadError  # noqa: E402
 
+_spec = importlib.util.spec_from_file_location("research_view", ROOT / "scripts" / "research_view.py")
+research_view = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(research_view)
+
 # #115's measurement panel, loaded from its script by path: scripts/ is not a package.
 _spec = importlib.util.spec_from_file_location("scarcity_validation", ROOT / "scripts" / "scarcity_validation.py")
 _scarcity_validation = importlib.util.module_from_spec(_spec)
@@ -175,6 +179,12 @@ INPUTS = (
     "scripts/scarcity_validation.py",
     "scripts/final_test_influence.py",
     "scripts/band_coverage.py",
+    "scripts/research_view.py",
+    "scripts/check_research_log.py",
+    "docs/research/plan.md",
+    "docs/research/log.md",
+    "docs/research/milestones.json",
+    "docs/research/hypotheses",
     USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",
@@ -3400,6 +3410,11 @@ def generate(repo, commit=None):
     fills.update(final_fills)
     fills.update(coverage_fills)
     fills.update(daily_fills)
+    try:
+        research_fills, research = research_view.fills(repo, final)
+    except research_view.ResearchError as exc:
+        raise VisualError(str(exc)) from exc
+    fills.update(research_fills)
 
     inputs = {rel: sha256(repo / rel) for rel in
               (MANIFEST, SOURCES, EVENTS, THRESHOLDS, SPLITS, LOCKBOX, ANNOTATIONS, GLOSSARY, TEMPLATE,
@@ -3416,7 +3431,7 @@ def generate(repo, commit=None):
     model_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in records})
     payloads = {"history": hist, "plumbing": plumbing, "clock": clock_data, "build": build, "model": model,
                 "newcomer_n1": n1, "newcomer_n2": n2, "newcomer_n3": n3, "newcomer_n4": n4, "newcomer_band": band,
-                "newcomer_n5": n5, "final_test": final, "forecast_daily": daily}
+                "newcomer_n5": n5, "final_test": final, "forecast_daily": daily, "research": research}
     # N3 also reads the holiday table (through `data.quarter_end_window`) and the ON RRP snapshots.
     n3_provenance = {**provenance, "inputs": {**inputs, HOLIDAYS: sha256(repo / HOLIDAYS), **on_rrp_snapshots}}
     n4_provenance = dict(provenance, inputs=dict(
@@ -3432,8 +3447,13 @@ def generate(repo, commit=None):
                      "inputs": {**inputs, MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES),
                                 **on_rrp_snapshots, **n5_digests}}
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
+    research_provenance = dict(provenance, inputs={
+        rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.LOG, research_view.PROGRESS,
+                                            *sorted(str(p.relative_to(repo)) for p in
+                                                    (repo / research_view.HYPOTHESES).glob("H*.md")))},
+        incumbent_from=f"{DATA_DIR}/final_test.json")
     daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})
-    own = {"model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
+    own = {"research": research_provenance, "model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
            "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}
     out = {}
     for name, payload in payloads.items():
