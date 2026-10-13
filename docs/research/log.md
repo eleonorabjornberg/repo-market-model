@@ -234,3 +234,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: persistence beats the climatology for EFFR − IORB and the ON RRP level at every lead (skill +0.80 [+0.72, +0.86] and +0.89 [+0.87, +0.91] at lead 1), for TGCR/BGCR − IORB at lead 1 only (+0.22 [+0.04, +0.38]); the climatology beats it for the dispersions from lead 2, the ON RRP change and the facility take-up. The rate-level targets correlate +0.39 with the pressure indicator and read high before onsets (AUC 0.83) but not within the as-of scarcity state (scarce-state pre-onset AUC 0.47 to 0.52); TGCR/BGCR − IORB repeat SOFR − IORB (+0.95).
 - Against kill: not testable in this step (no model, development data); no target shows a lead beyond the as-of scarcity state.
 - Next: step 2, the model for at most three targets, once the target-choice rule and #634's model are settled.
+
+### 2026-10-13 [H3] step 1 · eleonorabjornberg/repo-market-model#715
+- Directive: #690
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ee9366eb`; the scratch panel of `scripts/new_sources.py panel`
+- Tried: 0 model variants; a re-screen of 3 columns (`auc_dealer_share`, `auc_indirect_share`, `auc_cover`) after the Fed's rollover (SOMA) was left out of their denominators and the cover took Treasury's definition; no other series moved.
+- Result: `auc_dealer_share` is no longer clear of 0.5 on ordinary days (AUROC 0.566 [0.49, 0.64] at lead 1, was 0.580 [0.51, 0.66]; scarce band 0.491 [0.41, 0.56]). `auc_cover` on Treasury's definition is now the auction series clear of 0.5, on the low side (ordinary days 0.365 [0.31, 0.43] at lead 1 and 0.297 [0.25, 0.35] at lead 5; partial rho -0.10 [-0.15, -0.06]). Exploratory, unadjusted for multiplicity.
+- Against kill: not applicable (no verdict; development data).
+- Next: whether `auc_cover` enters the nested test of H3 step 3 (#708); not decided here.
