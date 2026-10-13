@@ -114,6 +114,35 @@ class CoverageTests(unittest.TestCase):
         self.assertGreater((mean - min(self.real)) / sd, 30.0)
 
 
+class CalibrationTests(unittest.TestCase):
+    """The double-bootstrap calibration (ruling of 13 October 2026, PR #695) on one real window.
+
+    It does not repair coverage on the real series, and the pull request reports why: a
+    250-day window that misses the series' tail days is resampled into a world that lacks them
+    too, so the calibration learns from a lighter tail than the truth has. On the small runs the
+    pull request reports, the calibrated bound covers no more often than the studentized one,
+    and on about a fifth of windows (100 inner draws) the calibrated level hits the prepivots'
+    ceiling and is refused. This test records the calibration on one window at small counts, so
+    a change to the calibration is seen; the counts are far below the protocol's.
+    """
+
+    def test_one_window_is_recorded(self):
+        real = real_differences()
+        rng = random.Random(42)
+        window = []
+        while len(window) < DAYS:
+            start = rng.randrange(len(real))
+            window.extend(real[(start + k) % len(real)] for k in range(GENERATOR_BLOCK))
+        window = window[:DAYS]
+        days = [date(2001, 1, 1) + timedelta(days=k) for k in range(DAYS)]
+        test = sp.paired_test(
+            {day: 10.0 for day in days},
+            {day: 10.0 - value for day, value in zip(days, window)},
+            seed=42, draws=200, inner_draws=100, with_skill=False,
+        )
+        self.assertAlmostEqual(test.calibrated_level(0.05), 0.07, places=9)
+
+
 #: The coverage measured on the seeds above under the studentized bootstrap, 13 October 2026
 #: (0.81 under the percentile bootstrap it replaced).
 RECORDED_REAL_COVERAGE = 0.8533

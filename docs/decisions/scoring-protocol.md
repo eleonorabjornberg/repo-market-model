@@ -43,7 +43,14 @@ merges it.
    O'Brien-Fleming spending. The first checkpoint's nominal one-sided level is about 6 in 100,000, below what 10,000
    draws resolve, so the bootstrap at the 60- and 125-day checkpoints uses 100,000 draws. (The relay chose more
    draws over dropping the first checkpoint, which leaves the decided spending plan unchanged; she may override.)
-5. **The other readings stand as the pull request proposed them**, unless she says otherwise:
+5. **The critical value is calibrated by resampling** (a second ruling of 13 October 2026, relayed on PR #695,
+   comment 6146940245, after the studentized bound still covered about 0.83 on the real series). The studentized
+   bound's critical value is calibrated by the double (iterated) stationary bootstrap on the same mean block: each
+   outer resample is itself resampled, and the outer t-draws are read at the level that makes the inner bound cover
+   its nominal rate in the bootstrap world. Nothing in d is trimmed or winsorized. The outer level keeps 100,000
+   draws at the interim checkpoints. Registration stays held until H1's coverage check passes and #656's power study
+   confirms it. <https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6146940245>
+6. **The other readings stand as the pull request proposed them**, unless she says otherwise:
    - the futility bound's level is not set by §6 and is given explicitly at each verdict;
    - the verdict reads the primary score alone at the spent level, and Holm across the primary and the key secondary
      is reported, not applied to the primary;
