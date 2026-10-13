@@ -30,7 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import nowcast, pressure  # noqa: E402
+from repo_model import nowcast, pressure, risk_dates  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
@@ -626,14 +626,11 @@ def daily_proxy(calendar: Calendar, series: dict, tga: dict, rrp: dict, weekly_t
 def risk_dates(splits, rows_by_date: dict, days: list, h: int) -> set:
     """The risk dates of `metadata/risk_date_severity.json` at horizon `h`: a calendar day type, and at h = 1 a coupon settlement."""
 
-    out = set()
-    for day in days:
-        values = rows_by_date[day]
-        if splits.day_type(values) != "ordinary":
-            out.add(day)
-        elif h == 1 and float(values["treasury_settlement_coupons"] or 0) > 0:
-            out.add(day)
-    return out
+    return {
+        day
+        for day in days
+        if risk_dates.is_risk_date(rows_by_date[day], risk_dates.NON_ORDINARY, splits=splits, coupon_clause=h == 1)
+    }
 
 
 def cutoff_windows(calendar: Calendar, scored: list, onsets: set, h: int) -> list:
