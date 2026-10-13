@@ -338,6 +338,11 @@ NON_SCORING_COMMANDS = {
 
 #: Functions that read an as-of information set but score nothing, and why.
 NOT_ENTRY_POINTS = {
+    "protocol_benchmarks._anchor": (
+        "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a forecast, "
+        "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls "
+        "require_unlocked on every scored day"
+    ),
     # Holds the guard itself: every entry point above reaches it.
     "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
     "scripts/pressure_judge._same_row_scarcity_states": (
@@ -365,6 +370,11 @@ NOT_ENTRY_POINTS = {
         "reads the tail spread at each scored day's decision (#601); scores no forecast, it ends at the declared "
         "last scored day through _as_of_folds, which calls require_unlocked, and `cap` calls require_unlocked on "
         "that day before it reads anything"
+    ),
+    "scripts/off_risk_day_624.read_features": (
+        "reads the inputs of the day-level model at each scored day's decision (#624); scores no forecast, it ends at "
+        "the declared last scored day through _as_of_folds, which calls require_unlocked, and `run` calls "
+        "require_unlocked and pressure_judge.require_scored_days on that day before it reads anything"
     ),
     "satiation._ratio_at": (
         "reads the reserves-to-assets ratio the as-of rule gives one panel row's decision (#587); scores nothing, "
@@ -444,9 +454,28 @@ NOT_ENTRY_POINTS = {
         "lockbox.require_unlocked on every day before it reads one, and the screen's `run` refuses "
         "a panel that runs past 2025-12-31 (tests/test_source_screen.py)"
     ),
+    "scripts/derived_features_631.read_all": (
+        "reads each derived series as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "screen of #631; selects no model and scores no forecast, calls lockbox.require_unlocked on every "
+        "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
+        "(tests/test_derived_features_631.py)"
+    ),
     "scripts/source_screen.probe": (
         "asks the as-of rule, on the one middle row of the panel, whether a column has a "
         "row-relative availability; reads one row, scores and selects nothing (#478)"
+    ),
+    "scripts/source_matrix_629.scored_grid": (
+        "the lead-1 fold grid of the exploratory source matrix (#629); scores and selects no model, and "
+        "calls lockbox.require_unlocked on every day before it returns one (tests/test_source_matrix_629.py)"
+    ),
+    "scripts/source_matrix_629.read_lead": (
+        "reads each series as of the decision instant at one lead on days scored_grid has already "
+        "passed through lockbox.require_unlocked (#629); selects no model and scores no forecast, and "
+        "the screen's `run` refuses a panel past 2025-12-31 (tests/test_source_matrix_629.py)"
+    ),
+    "scripts/source_matrix_629.read_derived": (
+        "forms the every-day inputs of #601 from the masked frames of the decisions on the screen's "
+        "scored days (#629); scores nothing, and walks _as_of_folds, which refuses a locked day"
     ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
@@ -950,6 +979,8 @@ GUARD_CALLS = frozenset({"require_unlocked", "_require_scored_days_unlocked", "_
 _WALK = "scores the days `final_test_opening.distribution_walk` walks, which calls lockbox.require_unlocked before any fit"
 _FOLDS = "scores the days `baseline.rolling_persistence_backtest` walks, which refuses a locked day through `_as_of_folds`"
 CRPS_SCORERS = {
+    "scoring_protocol.grid_crps": ("delegates", "scoring protocol v1's loss of one vector at one outcome; `day_scores` calls `require_unlocked` on every decision and target day before it computes any (#655)"),
+    "scoring_protocol.upper_tail_twcrps": ("delegates", "the key secondary's loss of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any (#655)"),
     "scripts/live_score.score_crps": ("guard", "the live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "scripts/live_score.score": ("guard", "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "baseline.rolling_persistence_backtest": ("guard", "the CRPS fold loop: `_as_of_folds` refuses a locked scored day"),
@@ -982,6 +1013,7 @@ CRPS_SCORERS = {
     "scripts/pressure_model_v2.assemble_command": ("delegates", "assembles blocks over days " + _WALK),
     "scripts/quarter_end_remedy._crps": ("delegates", "one loss; " + _WALK),
     "scripts/desk_outputs.check_against_published": ("delegates", "compares the days `history_command` chose, after its `require_unlocked`"),
+    "scripts/spread_distribution_632.crps_contract": ("delegates", "one loss on the contract's levels; `distribution_command` calls `require_unlocked` on the last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the published daily file is read to that day only (#632)"),
     "scripts/desk_outputs._series": ("delegates", "the series of days `history_command` chose, after its `require_unlocked`"),
 }
 

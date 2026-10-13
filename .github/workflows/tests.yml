@@ -135,6 +135,36 @@ jobs:
             python3 -B -m unittest discover -s tests -v
           fi
 
+  research-log:
+    # The research log (#638): `docs/research/log.md` keeps to its format and to the hypotheses of
+    # `docs/research/plan.md`, and a pull request that changes a result page or a declaration adds an entry that
+    # names its directive (the `Closes #N` line of its body).
+    name: research log
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+
+      - name: The log is well formed
+        if: github.event_name != 'pull_request'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -B scripts/check_research_log.py check
+
+      - name: The log is well formed and names this pull request's directive
+        if: github.event_name == 'pull_request'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 -B scripts/check_research_log.py check --base "$BASE_SHA"
+
   owner-attested:
     # A binding change (a lockbox tier, the live pin, a model joining the live
     # record) counts only with Eleonora's own GitHub comment, not one posted

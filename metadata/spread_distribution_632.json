@@ -1,0 +1,158 @@
+{
+  "status": "declared by the pull request that closes #632 before any score was computed; a measurement, not a record. Nothing is published: no variant joins any published declaration, no day after 2025-12-31 is scored, no rule changes and the live record and pin do not move. The variants were built after seeing 2018-2025, so a pass here is not a confirmation (ruling on #567)",
+  "issue": 632,
+  "ruling": "Eleonora, directive #632 (12 October 2026): forecast the spread itself (spread_bps at the scored day) as a distribution, then read the pressure probability as P(spread > +5 bp); at most 3 variants; the distributional forecast is checked against as-of persistence and the published distribution on CRPS and pinball loss before any judge score. No hindsight regime labels (ruling on #515).",
+  "target": "spread_bps at the scored day, in basis points: the level, not its change from the as-of reading",
+  "model": {
+    "estimator": "sklearn HistGradientBoostingRegressor, loss='quantile', one fit per level of the grid",
+    "quantile_grid": [
+      0.01,
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      0.95,
+      0.99
+    ],
+    "grid_source": "ml.PRESSURE_QUANTILE_SETTINGS['quantile_grid'] (#372), the grid of the linear quantile regression; not chosen on a score",
+    "hyperparameters": "ml.PRESSURE_CLASSIFIER_SETTINGS (learning_rate 0.05, max_iter 200, max_leaf_nodes 15, min_samples_leaf 20, random_state 0), the risk-date passers' own; none tuned",
+    "crossing": "a day's predicted quantiles are sorted",
+    "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5), F linear between the grid's quantiles and continued at the outer segments' slopes to 0 and 1 (ml.exceedance_from_quantiles, the reading of the linear quantile regression of #372); the curve across thresholds is made non-increasing",
+    "implementation": "ml.pressure_spread_distribution_exceedance",
+    "inputs": "those of risk_gbm+settle+h41+dist_roll at the horizon (scripts/satiation_distance_598.py variant_features): the same features, risk dates, settlement and H.4.1 timing and rolling satiation distance, read through the as-of rule",
+    "training_pairs": "the direct pairs of ml.pressure_risk_date_exceedance: each label day paired with what a forecast of it read at its own decision instant, under both guards"
+  },
+  "variants": {
+    "spread_q_gbm+settle+h41+dist_roll": {
+      "label": "(a) quantile regression of the spread",
+      "structure": "risk_date",
+      "parent": "risk_gbm+settle+h41",
+      "rule": "the risk-date part of the passer, fitted and served on the risk dates only, with the quantile regression of the spread in place of the classifier; a day that is not a risk date is exactly 0 at every threshold and has no distribution, as the passer's"
+    },
+    "spread_q_gbm+two_part+settle+h41+dist_roll": {
+      "label": "(b) two-part",
+      "structure": "two_part",
+      "parent": "risk_gbm+settle+h41",
+      "rule": "(a)'s risk-date part, and on a day that is not a risk date a second spread-level model, the same estimator, fitted on the direct pairs of every training day on the every-day inputs ml.EVERY_DAY_COMPONENT_INPUTS (spread_bps, sofr_p75_iorb_bps, sofr_p99_iorb_bps), so an ordinary day has a law and a non-zero ranked forecast; a risk date keeps the risk-date part; a day whose every-day inputs are not public is left at 0. No gate, floor or cap",
+      "every_day_inputs": [
+        "spread_bps",
+        "sofr_p75_iorb_bps",
+        "sofr_p99_iorb_bps"
+      ]
+    },
+    "(c)": {
+      "label": "(c) with the inputs of #629 or #631",
+      "run": false,
+      "reason": "not run: #629 and #631 had not merged when this declaration was made (both open), so there are no inputs from them to add"
+    }
+  },
+  "step_1": {
+    "claim": "the distributional forecast against as-of persistence and the published distribution model on CRPS and pinball loss, before any judge score",
+    "benchmarks": {
+      "as_of_persistence": "the fitter 'persistence' of the frozen CRPS test (final_test_preregistration.CRPS_COMMAND, side a), walked at the horizon by final_test_opening.distribution_walk on the published panel cut at 2025-12-31",
+      "published_distribution": "docs/runs/published_distribution_daily_h{h}.json (the gbm on the funding features with nested conformal PID, #169, #246), days on or before 2025-12-31 only"
+    },
+    "levels": [
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95
+    ],
+    "levels_reading": "the contract's fixed quantile grid (contract.QUANTILE_LEVELS), at which the benchmarks report; a variant's law is read at these levels (ml.exceedance_from_quantiles' knots, inverted); CRPS is metrics.crps_from_quantiles on them, in basis points. A variant's CRPS on its own 13-level grid is reported beside it",
+    "loss": "CRPS and the mean pinball loss at each level, per scored day then averaged",
+    "days": "the days each side scores at the horizon, on or before 2025-12-31. (a) has a law on the risk dates only, so it is compared on those days (and the benchmarks on them); (b) on every scored day on which its every-day inputs are public, and on the same days for the benchmarks",
+    "pairing": "paired per day: the benchmark's loss minus the variant's, positive when the variant is better, with a 90% stationary-bootstrap interval (mean block length 10, 2000 replications, seed 632), pooled and split by regime and by pressure-day type",
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "not_checked": "nothing about the exceedance of +5 bp is read here; that is the judge's"
+  },
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5,
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "lead_at_least": 1
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "parents_declaration": "metadata/risk_date_severity.json and metadata/satiation_distance_598.json (unchanged), scored under the settlement and H.4.1 timing of metadata/announcement_dating.json (the 'both' arm)",
+  "rows": {
+    "controls": [
+      "risk_gbm+settle+h41",
+      "risk_gbm+settle+h41+dist_roll",
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75"
+    ],
+    "controls_reading": "the passer, the row #598 and #606 built on it, and the row of #601 that passes tier 1 under the weighted rule in force (the '+tailcap75' of the directive, read as that row), as scored on main, re-run in this measurement so that the pairs are on one run. The directive's '+tailcap75' names no parent row; this is the only row of that suffix in the tree",
+    "new": [
+      "spread_q_gbm+settle+h41+dist_roll",
+      "spread_q_gbm+two_part+settle+h41+dist_roll"
+    ],
+    "pairs": {
+      "spread_q_gbm+settle+h41+dist_roll": [
+        "risk_gbm+settle+h41+dist_roll",
+        "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75"
+      ],
+      "spread_q_gbm+two_part+settle+h41+dist_roll": [
+        "risk_gbm+settle+h41+dist_roll",
+        "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75"
+      ]
+    },
+    "pairs_reading": "each variant is paired with risk_gbm+settle+h41+dist_roll and with the +tailcap75 row, as the directive says; the passer is a control beside them"
+  },
+  "references": {
+    "pair_against": [
+      "risk_gbm",
+      "ngboost_laplace",
+      "calendar_climatology",
+      "persistence_logistic"
+    ],
+    "controls": [],
+    "controls_reading": "the controls are the rows.controls; none is listed twice",
+    "risk_date_passers": [
+      "risk_gbm",
+      "risk_logistic",
+      "risk_gbm_base",
+      "risk_logistic_base",
+      "risk_quantile_skewt_base"
+    ]
+  },
+  "reports": {
+    "judge": "the judge as declared under the weighted rule in force, with the flat rule beside it: tier 1 pooled and per lead, tiers 3 and 5, for every row beside the five risk-date passers, ngboost_laplace and the two benchmarks; each variant paired with each of its two references at +5 bp: the Brier difference at h = 1 to 5 and the onset recall difference, pooled and by regime and pressure-day type, 90% stationary-bootstrap intervals on shared resamples, the judge's seed",
+    "ordinary_days": "on the days whose pressure-day type is ordinary: the AUROC of the +5 bp probability for a pressure day at each lead h = 1 to 5 with a 90% stationary-bootstrap interval, and the reliability slope and intercept of the logistic fit of the outcome on logit(p) (#616), pooled over h = 1 to 5 and at each lead; undefined where the forecast is constant",
+    "calibration": "predicted against realised rate of a pressure day at +5 bp, by regime and pressure-day type, pooled over h = 1 to 5",
+    "recall_by_year": "onset recall by calendar year",
+    "gained_and_lost": "the onsets a variant warns and each reference does not, and the reverse, by date",
+    "ruling_567": "a pass is not a confirmation: the variants are built and scored on 2018-2025, and the result is stated that way"
+  },
+  "unchanged": "the judge, its bar, its cut-off rule, the weighted miss rule in force, the bootstrap, every published declaration, the information set, the published scarcity indicator, the frozen shortlist of #567 and the lockbox. A measurement only: nothing is published and no day after 2025-12-31 is read (docs/decisions/lockbox.md)."
+}
