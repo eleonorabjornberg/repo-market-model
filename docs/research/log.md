@@ -204,3 +204,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: one input separates them, the tail spread's level, lower at the onset warnings: AUROC 0.304 [0.16, 0.47] over all, in the same direction against the 2019-20 false alarms. Step 2, weighted rule: `+tailcap75` 18 of 26 onsets, recall 0.692 [0.522, 0.852], pooled false alarms 1.88 (tier 1 yes, tiers 3 and 5 no); `+tailcap50` 14 of 26 at 1.48. Paired Brier of `+tailcap75` against the row: −0.0073 [−0.0150, −0.0005] over all days. Detail in `docs/pivot/every-day-separation-result.md`; the paired-Brier header on this page was later corrected (dated note, #623).
 - Against kill: not applicable.
 - Next: cap with floor (#610).
+
+### 2026-10-13 [H5] step 3 · eleonorabjornberg/repo-market-model#697
+- Directive: #637
+- Step: 3 (progress tracking; no new scoring)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5bb4063da150e09a285d242cd28db1c136`
+- Tried: no variants. `scripts/emit_progress.py` copies committed evidence into `docs/pivot/progress.md` and `docs/research/progress.json`; the running count it starts is 358 candidate files and 1 spread-forecast declaration (3 variants).
+- Result: no new figure; a page that shows each candidate's spread CRPS difference, ordinary-day AUROC, Brier difference, calibration and judge tiers, with "not measured" where the evidence has none.
+- Against kill: not applicable (no verdict; infrastructure).
+- Next: #645 reads `docs/research/progress.json` for the hypothesis sections.
