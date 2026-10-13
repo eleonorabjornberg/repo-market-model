@@ -521,6 +521,19 @@ def score_command(args) -> int:
     refuse_locked(common + [calendar[calendar.index(day) + h] for day in common for h in HORIZONS])
     if not common:
         raise SystemExit("no decision day is covered by every walk")
+    # a decision day on which a benchmark cannot be built (B2 needs a day of the target's type in the year before the
+    # decision, and the panel starts on 2018-04-03) is not scored for any forecast; the days are listed in the record
+    usable, unbuilt = [], []
+    for day in common:
+        try:
+            pb.forecasts(pb.b1_forecast, rows, [day], registry=registry, decision_time=DECISION)
+            pb.forecasts(pb.b2_forecast, rows, [day], registry=registry, decision_time=DECISION, splits=splits)
+            usable.append(day)
+        except sp.ProtocolError as error:
+            unbuilt.append((day.isoformat(), str(error)))
+    common = usable
+    if not common:
+        raise SystemExit("no decision day has both benchmarks")
     b1 = pb.forecasts(pb.b1_forecast, rows, common, registry=registry, decision_time=DECISION)
     b2 = pb.forecasts(pb.b2_forecast, rows, common, registry=registry, decision_time=DECISION, splits=splits)
     forecasts: Dict[str, Dict[date, Dict[int, Sequence[float]]]] = {"B1": b1, "B2": b2}
@@ -545,6 +558,7 @@ def score_command(args) -> int:
         "decision_days": {"n": len(days), "first": days[0].isoformat(), "last": days[-1].isoformat()},
         "draws": draws,
         "seed": SEED,
+        "decision_days_without_a_benchmark": unbuilt,
         "missing": missing,
         "names": names,
         "mean_primary": {n: sum(primary[n].values()) / len(days) for n in names},
