@@ -186,7 +186,7 @@ def by_cell(
     level: float = 0.90,
     minimum_events: int = DEFAULT_MINIMUM_EVENTS,
 ) -> Dict[str, Cell]:
-    """The reliability line of the pooled days and of each label's days, `"pooled"` first and the labels in order of first appearance.
+    """The reliability line of the pooled days and of each label's days, `"pooled"` first and the labels sorted.
 
     `labels` gives each day's cell (a regime from `regime_of`, a scarcity state): one per day. The bootstrap arguments are required, as
     everywhere in this project: an interval that cannot be reproduced cannot be checked.
@@ -211,7 +211,7 @@ def by_cell(
         if label == "pooled":
             raise ValueError('"pooled" is the name of the pooled cell and cannot label a day')
         members.setdefault(label, []).append(i)
-    for label, rows in members.items():
+    for label, rows in sorted(members.items()):
         cells[label] = _cell([probabilities[i] for i in rows], [outcomes[i] for i in rows], **settings)
     return cells
 
@@ -221,7 +221,7 @@ def _figure(value: Optional[float], interval: _Interval, signed: bool = False) -
         return "undefined"
     text = f"{value:+.2f}" if signed else f"{value:.2f}"
     if interval is None:
-        return text
+        return text + "†"
     return f"{text} [{interval[0]:.2f}, {interval[1]:.2f}]"
 
 
@@ -236,4 +236,9 @@ def markdown_table(cells: Mapping[str, Cell], *, level: float = 0.90) -> str:
         f"| {name} | {c.days} | {c.events} | {_figure(c.slope, c.slope_interval)} | {_figure(c.intercept, c.intercept_interval, True)} |"
         for name, c in cells.items()
     ]
-    return "\n".join(head + rows) + "\n"
+    foot = [
+        "",
+        "† a figure without an interval: the cell has too few pressure days (or days without one), or too many of its resamples were undefined; "
+        "its slope is a handful of events' worth.",
+    ]
+    return "\n".join(head + rows + foot) + "\n"

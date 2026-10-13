@@ -104,6 +104,15 @@ high: the slope is 0.4 to 0.9 and the intercept is negative, i.e. the forecasts 
 to calibrated (slope 0.74 at h = 1, 0.85 at h = 4 and 5), which comes with its extra false alarms. The risk-date passers forecast almost 0 on these days and so
 have no ranking (AUROC 0.50), as designed.
 
+> *Note, 13 October 2026 (#683).* Every slope in this table, and "nearest to calibrated" for the rolling form, is **pooled across regimes**, so it is not a
+> reading of calibration inside 2018-19 or 2025-26 and the rolling form is not shown to be calibrated in either. 2021-23 has no pressure day and
+> forecasts near 0; it adds a well-ordered stretch at the bottom of the curve and raises the pooled slope (`docs/pivot/diagnostics-reconciliation.md`,
+> point 11). For the nearest tracked comparator, `+offday` of #624, the pooled 0.83 at h = 1 is 0.48 inside 2018-19 and 0.79 inside 2025-26
+> (`docs/pivot/off-risk-day-result.md`, "Reliability within regimes"); #626's own rows have **no per-regime slope yet**. The tracked evidence of this page
+> keeps no forecast, so computing them means rebuilding #626's forecasts (the commands in the docstring of `scripts/kinked_626.py`) and then running
+> `scripts/reliability_regimes_683.py kinked`, which writes each row's slope and intercept with a 90% interval pooled, per regime and per scarcity state.
+> That run did not finish in the session of #683; until it has, read this table as pooled and uncalibrated by regime.
+
 ## The ruling on #567
 
 **A pass here is not a confirmation.** These variants were built, and their level fitted or chosen, after the 2018-2025 days (including the

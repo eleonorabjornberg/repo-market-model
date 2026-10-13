@@ -170,7 +170,7 @@ calibrated while the forecasts inside the regime that holds most of the pressure
 | page | pooled reading | within 2018-19 (`evidence/off-risk-day/step2-off-risk-days.md`) |
 |---|---|---|
 | `off-risk-day-result.md`, `+offday` | slope 0.78 to 0.85, all days | 0.48 at h = 1 and 0.14 to 0.22 at h = 3 to 5 (scarcity state 3: 0.44 at h = 1) |
-| `kinked-elasticity-result.md`, rolling form | "nearest to calibrated", slope 0.74 at h = 1 | see the table that page now carries |
+| `kinked-elasticity-result.md`, rolling form | "nearest to calibrated", slope 0.74 at h = 1 | not computed for these rows yet (the page's note says how); `+offday` of #624 is the nearest tracked comparator |
 
 **Why pooling misleads.** The slope is the weight the forecast's log-odds earn in a logistic fit of the outcome. 2021-23 has no pressure day and
 forecasts near 0, so it adds a long, well-ordered stretch at the bottom of the curve: many days whose low forecast is followed by no event. That

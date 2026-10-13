@@ -154,6 +154,13 @@ class ByCellTests(unittest.TestCase):
         with self.assertRaises(MetricError):
             rr.by_cell([0.1, 0.2], [0, 1], ["a", "a"], block_length=0.5, seed=1)
 
+    def test_labels_are_sorted_and_a_figure_without_an_interval_is_marked(self):
+        p, y, labels = self._data()
+        cells = rr.by_cell(p, y, labels[::-1], block_length=5, seed=1, replications=50, minimum_events=100)
+        self.assertEqual(list(cells), ["pooled", "2018-19", "2020-24", "2025-26"])
+        text = rr.markdown_table(cells)
+        self.assertIn("†", text)
+
     def test_the_markdown_table_names_every_cell_and_restates_the_reading(self):
         p, y, labels = self._data()
         cells = rr.by_cell(p, y, labels, block_length=5, seed=1, replications=50)

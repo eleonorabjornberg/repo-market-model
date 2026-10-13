@@ -160,14 +160,16 @@ def kinked_command(args) -> int:
         rows: Dict[str, dict] = {}
         for n in names:
             p = [columns[n][days[i].isoformat()] for i in keep]
-            settings = dict(block_length=base.block_length, seed=base.seed + h, replications=base.replications, level=base.level)
+            settings = dict(
+                block_length=base.block_length, seed=base.seed + h, replications=args.replications or base.replications, level=base.level
+            )
             rows[n] = {
                 "regime": _cells_json(rr.by_cell(p, outcome, regime, **settings)),
                 "scarcity_state": _cells_json(rr.by_cell(p, outcome, state, **settings)),
             }
         result[str(h)] = {"days": len(keep), "events": sum(outcome), "rows": rows}
         print(json.dumps({"horizon": h, "off_risk_days": len(keep)}), flush=True)
-    out = {"level": base.level, "replications": base.replications, "block_length": base.block_length, "reading": READING, "horizons": result}
+    out = {"level": base.level, "replications": args.replications or base.replications, "block_length": base.block_length, "reading": READING, "horizons": result}
     Path(args.output).write_text(json.dumps(out, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     if args.markdown:
         Path(args.markdown).write_text(kinked_text(out), encoding="utf-8")
@@ -216,6 +218,7 @@ def main(argv=None) -> int:
         p.add_argument(f"--{name}", required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--markdown", type=Path)
+    p.add_argument("--replications", type=int, help="override the declaration's bootstrap replications (a smoke run; a record uses the declared number)")
     args = parser.parse_args(argv)
     return {"tracked": tracked_command, "kinked": kinked_command}[args.command](args)
 
