@@ -205,6 +205,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable.
 - Next: cap with floor (#610).
 
+### 2026-10-13 [H5] step 3 · eleonorabjornberg/repo-market-model#697
+- Directive: #637
+- Step: 3 (progress tracking; no new scoring)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5bb4063da150e09a285d242cd28db1c136`
+- Tried: no variants. `scripts/emit_progress.py` copies committed evidence into `docs/pivot/progress.md` and `docs/research/progress.json`; the running count it starts is 358 candidate files and 1 spread-forecast declaration (3 variants).
+- Result: no new figure; a page that shows each candidate's spread CRPS difference, ordinary-day AUROC, Brier difference, calibration and judge tiers, with "not measured" where the evidence has none.
+- Against kill: not applicable (no verdict; infrastructure).
+- Next: #645 reads `docs/research/progress.json` for the hypothesis sections.
+
 ### 2026-10-13 [H3] step 1 · eleonorabjornberg/repo-market-model#696
 - Directive: #680
 - Step: 1
@@ -224,3 +234,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: over all days at lead 1 no row beats persistence-logistic (AUROC 0.897, Brier skill 0.196; `+offday` −0.009 [−0.065, +0.027] and +0.042 [−0.008, +0.111]). `+offday` is ahead at leads 2, 3 and 5 over all days (Brier skill +0.090, +0.092, +0.062, intervals above 0) and not inside 2018-19 (62 of 82 pressure days) or 2025-26; the gain sits in 2020 and 2024 (3 and 2 pressure days). The raw as-of spread has AUROC 0.92 to 0.94, above every row. Detail in `docs/pivot/off-risk-day-result.md`.
 - Against kill: not tested (H2's kill is on the ceiling, #635); consistent with the ordinary-day ranking being no more than the as-of spread's.
 - Next: Eleonora decides which benchmark H2 progress is judged against.
+
+### 2026-10-13 [H9] step 1 · eleonorabjornberg/repo-market-model#702
+- Directive: #639
+- Step: 1 (the screen of the richer targets; step 2, the model, is not done)
+- Tier: development
+- Pins: published panel `4ddc3882…`; screen panel `347f5afb…`; base `374fe3d4`
+- Tried: 10 targets (SOFR 99th percentile − IORB and SOFR dispersion, TGCR and BGCR each minus IORB and their dispersion, EFFR − IORB, ON RRP level and change, standing repo facility take-up), as-of persistence B1 and calendar climatology B2 at leads 1, 2, 3, 5 and 10, the lead against the +5 bp episodes and the overlap with SOFR − IORB. Variants: 0 (nothing is fitted).
+- Result: persistence beats the climatology for EFFR − IORB and the ON RRP level at every lead (skill +0.80 [+0.72, +0.86] and +0.89 [+0.87, +0.91] at lead 1), for TGCR/BGCR − IORB at lead 1 only (+0.22 [+0.04, +0.38]); the climatology beats it for the dispersions from lead 2, the ON RRP change and the facility take-up. The rate-level targets correlate +0.39 with the pressure indicator and read high before onsets (AUC 0.83) but not within the as-of scarcity state (scarce-state pre-onset AUC 0.47 to 0.52); TGCR/BGCR − IORB repeat SOFR − IORB (+0.95).
+- Against kill: not testable in this step (no model, development data); no target shows a lead beyond the as-of scarcity state.
+- Next: step 2, the model for at most three targets, once the target-choice rule and #634's model are settled.

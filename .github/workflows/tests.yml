@@ -69,6 +69,13 @@ jobs:
           PYTHONPATH: src
         run: python3 -B scripts/emit_visual.py --check
 
+      # The progress page and its data are generated from the committed
+      # evidence (#637); this refuses a stale one. Needs the history.
+      - name: Check the progress page is current
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -B scripts/emit_progress.py --check
+
       # The same suite again with the network namespace empty, so a test that
       # reaches a host fails here by name even if the in-process guard
       # (tests/netguard.py) were bypassed (#262). `sudo` for the namespace;
