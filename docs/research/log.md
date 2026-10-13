@@ -204,3 +204,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: one input separates them, the tail spread's level, lower at the onset warnings: AUROC 0.304 [0.16, 0.47] over all, in the same direction against the 2019-20 false alarms. Step 2, weighted rule: `+tailcap75` 18 of 26 onsets, recall 0.692 [0.522, 0.852], pooled false alarms 1.88 (tier 1 yes, tiers 3 and 5 no); `+tailcap50` 14 of 26 at 1.48. Paired Brier of `+tailcap75` against the row: −0.0073 [−0.0150, −0.0005] over all days. Detail in `docs/pivot/every-day-separation-result.md`; the paired-Brier header on this page was later corrected (dated note, #623).
 - Against kill: not applicable.
 - Next: cap with floor (#610).
+
+### 2026-10-13 [H5] step 1 · eleonorabjornberg/repo-market-model#711
+- Directive: #634
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: the phase 2 gbm and the published declaration re-scored under protocol v1 (grid CRPS, h = 1 to 5, against B1, B2, B3), and 3 variants with the post-phase-2 inputs (published declaration, gbm, two-part). Variants: 3 new plus 1 re-fitted control; 9 spread-forecast variants in all with phase 2 (3) and #632 (2).
+- Result: published declaration 1.823 bp, +20.8% [+11.5%, +29.0%] against B1 and +27.5% [+20.1%, +35.2%] against B2. The new inputs add nothing on the primary score (ablation −0.8% [−2.2%, +0.4%] for the published declaration and for the gbm); no variant beats B3. Upper-tail twCRPS: only the two-part form is ahead of B3, +5.6% [+1.5%, +10.9%]. In 2021-23 no variant beats persistence.
+- Against kill: not applicable (development days give no verdict); no CRPS gain over the phase 2 models on the primary score.
+- Next: the 2021-23 and upper-tail diagnoses (H5 step 3); the grid reading of the published declaration is Eleonora's question (#655).
