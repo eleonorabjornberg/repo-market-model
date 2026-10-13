@@ -78,7 +78,7 @@ def coverage(series, seed):
             start = rng.randrange(len(series))
             draw.extend(series[(start + k) % len(series)] for k in range(GENERATOR_BLOCK))
         candidate = {day: 10.0 - value for day, value in zip(days, draw)}
-        test = sp.paired_test(benchmark, candidate, seed=replication, draws=DRAWS)
+        test = sp.paired_test(benchmark, candidate, seed=replication, draws=DRAWS, with_skill=False)
         covered += test.lower_mean_difference(LEVEL) <= truth
     return covered / REPLICATIONS
 
