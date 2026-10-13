@@ -189,3 +189,66 @@ spread column: `exceeds_bp(spread, 5.0)` on consecutive panel rows, split at the
   noted above, not a correction.
 * No forecast was rebuilt: every model figure is read from the tracked evidence of its page. The page-level numbers (for example the
   1.35 and the 1.30) were reproduced from those files, not re-scored.
+
+## Which days are "ordinary"? Two definitions, named (#682, finding #669)
+
+A reading of tracked evidence and the published panel; it moves no figure, edits no page, scores no day after 2025-12-31 and decides
+nothing. The two definitions are now `repo_model.risk_dates.SCHEDULED` and `repo_model.risk_dates.NON_ORDINARY`, one function
+(`is_risk_date`, `not_risk_date_mask`) that the judge's `risk_date` grouping and every script that tested a day for ordinariness now ask.
+Each page keeps the definition it used.
+
+| name | rule | read by |
+|---|---|---|
+| `scheduled` | a quarter-end, a tax date, or a day on which coupons settle | the judge's `risk_date` grouping (tier splits); #626 |
+| `non_ordinary` | any day type other than `ordinary` (the split declaration's month-end window, so month-ends too), or a coupon settlement | the model's risk-date rule (`ml._RiskDateDesign.member`); #624, #631, #610, #629, #630 |
+
+They differ by the month-ends that are not quarter-ends: 99 days at lead 1, 5 of them above +5 bp. Month-ends are prone to pressure, so
+calling them risk dates (`non_ordinary`) makes the days left easier to rank; calling them ordinary (`scheduled`) puts the pressure-prone
+days among the "ordinary" ones.
+
+### Counts per lead on the published panel (2018-06-29 to 2025-12-31)
+
+Days that are not risk dates, and those of them above +5 bp (strictly, on whole basis points), by the lead's scored grid. The coupon clause
+is on, as #624, #631 and #610 call it (`risk_flag(splits, values, True)`); the coupon column is the panel's own, not the dated arm's.
+
+| lead | scored days | pressure days | `scheduled`: days / pressure | `non_ordinary`: days / pressure |
+|---|---|---|---|---|
+| 1 | 1873 | 140 | 1568 / 87 | 1469 / 82 |
+| 2 | 1872 | 139 | 1568 / 87 | 1469 / 82 |
+| 3 | 1871 | 138 | 1568 / 87 | 1469 / 82 |
+| 4 | 1870 | 138 | 1567 / 87 | 1468 / 82 |
+| 5 | 1869 | 138 | 1566 / 87 | 1467 / 82 |
+
+The 1568 / 87 agrees with `evidence/kinked/extras.json` (`off_risk_dates`, lead 1: 1568 days, 87 events) and the 1469 / 82 with
+`derived-features-result.md`. In the 2018-19 regime at lead 1 the two leave 314 days with 63 pressure days (`scheduled`) and 294 with 62
+(`non_ordinary`).
+
+### The published ordinary-day headlines and the definition each was read under
+
+Every figure below is as its page publishes it, under that page's definition. **The figure under the other definition is not given:** it
+needs the page's forecasts re-scored on the other population, and the evidence keeps summaries, not the per-day forecasts. The counts
+above are what each would be scored on.
+
+| page | headline (lead 1 unless said) | definition | days / pressure at lead 1 | under the other definition |
+|---|---|---|---|---|
+| #626 `kinked-elasticity-result.md` | AUROC: persistence-logistic 0.898 [0.848, 0.935]; `structural_liquidity` 0.876; `+h41` 0.883; kinked fitted 0.876; kinked rolling 0.882 | `scheduled` | 1568 / 87 | not re-scored; population 1469 / 82 |
+| #624 `off-risk-day-result.md` | AUROC on the off-risk days: `ROW` 0.736 [0.668, 0.788]; `ROW+tailcap75+recent_floor` 0.870 [0.805, 0.916] (leads 1 to 5 in the page) | `non_ordinary` | 1469 / 82 | not re-scored; population 1568 / 87 |
+| #631 `derived-features-result.md` | AUROC on ordinary days: parent `risk_gbm+settle+h41+dist_roll+every_day` 0.903 [0.86, 0.94]; with lagged pressure 0.864 [0.79, 0.92]; the persistence reference `spread_bps` 0.94 | `non_ordinary` | 1469 / 82 | not re-scored; population 1568 / 87 |
+| #610 `tailcap-floor-result.md` | the share of the 2018-19 shortfall on days that are not risk dates: 94% (62 of 102 pressure days) | `non_ordinary` | 2018-19: 294 / 62 | population 314 / 63 |
+
+The two populations are not nested in the way a headline can be adjusted by hand: the 99 extra days are scored by the same forecasts, but
+an AUROC is not a sum over days, so none of the headlines above is moved by arithmetic from these counts.
+
+### Other "ordinary" sets that are neither of the two (not changed here)
+
+Three more scripts read a third population, by the *reporting* day type (`reporting_day_type`: the month's last two business days):
+`spread_distribution_632.py` (the `day_type` group equal to `ordinary`, with no coupon clause), `construction_gaps_485.py` and
+`model_defects_540.py` (`reporting_day_type` other than `ordinary`, or inside the quarter-end window). Re-pointing them would move
+their published figures, so they stay as they are; they are a finding for Eleonora's ruling with the one below.
+
+### Marked question for Eleonora (not settled in code)
+
+**Which definition do H2 and H5, and the progress page (#637), use for "ordinary day"?** `scheduled` leaves 99 more days and 5 more
+pressure days, the month-ends, in the ordinary set, so an ordinary-day AUROC under it is harder to win. `non_ordinary` removes them and
+makes the remaining days easier. Until she rules, each script keeps its current definition, and an ordinary-day figure should be quoted
+with the name of the definition it was read under.
