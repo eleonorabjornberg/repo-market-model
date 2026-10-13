@@ -183,7 +183,7 @@ INPUTS = (
     "scripts/check_research_log.py",
     "docs/research/plan.md",
     "docs/research/log.md",
-    "docs/research/progress.json",
+    "docs/research/milestones.json",
     "docs/research/hypotheses",
     USE_LIMITATION,
     TEMPLATE,

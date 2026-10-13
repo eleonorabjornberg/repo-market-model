@@ -123,7 +123,7 @@ class Sources(unittest.TestCase):
     def test_a_done_milestone_needs_tracked_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = self.copy_tree(tmp)
-            path = out / "docs/research/progress.json"
+            path = out / "docs/research/milestones.json"
             data = json.loads(path.read_text(encoding="utf-8"))
             data["milestones"]["H1.M1"]["evidence"] = "tests/no_such_file.py"
             path.write_text(json.dumps(data), encoding="utf-8")
@@ -133,7 +133,7 @@ class Sources(unittest.TestCase):
     def test_a_milestone_the_manual_lacks_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = self.copy_tree(tmp)
-            path = out / "docs/research/progress.json"
+            path = out / "docs/research/milestones.json"
             data = json.loads(path.read_text(encoding="utf-8"))
             data["milestones"]["H1.M9"] = {"evidence": "docs/research/plan.md"}
             path.write_text(json.dumps(data), encoding="utf-8")

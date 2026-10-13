@@ -23,7 +23,7 @@ from unittest import mock
 
 from repo_model import contract, measurement_fields, new_sources
 from repo_model.asof import InformationRule
-from repo_model.data import DailyObservation
+from repo_model.data import WEEKLY_CARRY_MAX_STALENESS_DAYS, DailyObservation
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,6 +61,28 @@ class PrimaryDealerReaderTests(unittest.TestCase):
         self.assertEqual(got["pd_repo_ust"], {date(2024, 5, 1): 2500.0})
         self.assertEqual(got["pd_fails_deliver_ust"], {date(2024, 5, 1): 1.2})
         self.assertEqual(got["pd_reverse_repo_ust"], {})
+
+    def test_a_withheld_week_is_recorded_as_suppressed_and_is_not_a_value(self):
+        payload = pd_export(
+            ("2024-05-01", "PDSORA-UTSETTOT", "2500000"),
+            ("2024-05-08", "PDSORA-UTSETTOT", "*"),
+            ("2024-05-15", "PDSORA-UTSETTOT", "*"),
+            ("2024-05-08", "PDSIRRA-UTSETTOT", "*"),
+            ("2026-01-07", "PDSORA-UTSETTOT", "*"),
+        )
+        got = new_sources.parse_pd_suppressed(payload)
+        self.assertEqual(got["pd_repo_ust"], (date(2024, 5, 8), date(2024, 5, 15)))
+        self.assertEqual(got["pd_reverse_repo_ust"], (date(2024, 5, 8),))
+        self.assertEqual(got["pd_fails_deliver_ust"], ())
+        self.assertNotIn(date(2024, 5, 8), new_sources.parse_pd_export(payload)["pd_repo_ust"])
+
+    def test_the_withheld_weeks_are_summarised_as_a_count_a_longest_run_and_years(self):
+        weeks = [date(2022, 12, 21), date(2022, 12, 28), date(2023, 1, 4), date(2023, 3, 1)]
+        self.assertEqual(
+            new_sources.summarise_suppressed(weeks),
+            {"count": 4, "longest_run_weeks": 3, "by_year": {2022: 2, 2023: 2}},
+        )
+        self.assertEqual(new_sources.summarise_suppressed(()), {"count": 0, "longest_run_weeks": 0, "by_year": {}})
 
     def test_no_day_after_the_end_is_read(self):
         payload = pd_export(
@@ -279,6 +301,41 @@ class AddColumnsTests(unittest.TestCase):
         self.assertEqual(out[date(2024, 5, 7)]["pd_repo_ust"], 10.0)
         self.assertEqual(out[date(2024, 5, 9)]["pd_repo_ust"], 11.0)
         self.assertEqual(out[date(2024, 5, 14)]["pd_repo_ust"], 11.0)
+
+    def test_a_weekly_value_is_not_carried_beyond_the_declared_staleness(self):
+        """A weekly value is carried for `WEEKLY_CARRY_MAX_STALENESS_DAYS` after its date and no longer.
+
+        The bound is `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` (13 days, `docs/decisions/weekly-carry.md`):
+        one missed print is tolerated, two in a row leave holes.
+
+        Recorded mutation (CLAUDE.md), 13 October 2026, in a disposable copy:
+        `src/repo_model/new_sources.py`, `add_columns`, the line
+        `if current is not None and current_day is not None and (day - current_day).days <=
+        WEEKLY_CARRY_MAX_STALENESS_DAYS:` mutated to `if current is not None:`. This test then fails with
+        `AssertionError: 10.0 is not None` (on 2024-05-15, the first day past the bound).
+        """
+
+        series = {"pd_repo_ust": {date(2024, 5, 1): 10.0}}
+        out = {r.date: r.values["pd_repo_ust"] for r in new_sources.add_columns(self.rows(), series)}
+        last_carried = date(2024, 5, 1) + timedelta(days=WEEKLY_CARRY_MAX_STALENESS_DAYS)
+        self.assertEqual(last_carried, date(2024, 5, 14))
+        self.assertEqual(out[date(2024, 5, 14)], 10.0)
+        self.assertIsNone(out[date(2024, 5, 15)])
+        self.assertIsNone(out[self.DAYS[-1]])
+
+    def test_a_carry_that_starts_after_a_holiday_is_bounded_from_the_value_date(self):
+        holiday = date(2024, 5, 1)
+        rows = [r for r in self.rows() if r.date != holiday]
+        out = {r.date: r.values["pd_repo_ust"] for r in new_sources.add_columns(rows, {"pd_repo_ust": {holiday: 10.0}})}
+        self.assertEqual(out[date(2024, 5, 14)], 10.0)
+        self.assertIsNone(out[date(2024, 5, 15)])
+
+    def test_one_missed_print_is_bridged_by_the_carry(self):
+        series = {"pd_repo_ust": {date(2024, 5, 1): 10.0, date(2024, 5, 15): 12.0}}
+        out = {r.date: r.values["pd_repo_ust"] for r in new_sources.add_columns(self.rows(), series)}
+        self.assertEqual(out[date(2024, 5, 14)], 10.0)
+        self.assertEqual(out[date(2024, 5, 15)], 12.0)
+        self.assertEqual(out[date(2024, 5, 28)], 12.0)
 
     def test_a_weekly_column_is_empty_before_its_first_value(self):
         out = {r.date: r.values for r in new_sources.add_columns(self.rows(), {"pd_repo_ust": {date(2024, 5, 8): 1.0}})}

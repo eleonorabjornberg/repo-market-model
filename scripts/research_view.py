@@ -6,7 +6,7 @@ Read by `scripts/emit_visual.py`. Everything shown is parsed from tracked source
 - `docs/research/plan.md`: each hypothesis's goal, test, kill criterion, next step and status;
 - `docs/research/hypotheses/H<n>.md`: its owner, question, milestones and progress markers;
 - `docs/research/log.md`: its log view (every entry tagged `[H<n>]`);
-- `docs/research/progress.json`: the two facts no other source holds, which milestones are done (each with the
+- `docs/research/milestones.json`: the two facts no other source holds, which milestones are done (each with the
   tracked file that shows it) and a step floor for a hypothesis whose work predates the log.
 
 Nothing is typed into the page. A figure with no source reads "not measured"; a figure from development days
@@ -26,7 +26,7 @@ _spec.loader.exec_module(check_research_log)
 
 PLAN = "docs/research/plan.md"
 LOG = "docs/research/log.md"
-PROGRESS = "docs/research/progress.json"
+PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES)
 
@@ -235,7 +235,7 @@ def summary_html(hypotheses):
         'scoring protocol v1</a>).</p></div>'
         '<div class="rs-box"><h3>Next on the critical path</h3><ul>' + "".join(next_items) + '</ul>'
         '<p class="rs-note">Each line is the first milestone not yet marked done in '
-        '<code>docs/research/progress.json</code>, for the two goals and for H1, whose checks block every '
+        '<code>docs/research/milestones.json</code>, for the two goals and for H1, whose checks block every '
         'registration.</p></div>')
 
 
