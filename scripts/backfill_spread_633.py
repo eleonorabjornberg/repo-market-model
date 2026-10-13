@@ -126,9 +126,9 @@ def _select(row: Sequence[float], inputs: str) -> List[float]:
 
 
 def forecasts_command(args) -> int:
-    from sklearn.ensemble import HistGradientBoostingRegressor
+    from repo_model.ml import PRESSURE_CLASSIFIER_SETTINGS, _estimator_class
 
-    from repo_model.ml import PRESSURE_CLASSIFIER_SETTINGS
+    HistGradientBoostingRegressor = _estimator_class()  # the ml extra, imported in ml.py only
 
     _committed_declaration()
     h = args.horizon

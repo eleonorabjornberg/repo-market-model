@@ -338,6 +338,15 @@ NON_SCORING_COMMANDS = {
 
 #: Functions that read an as-of information set but score nothing, and why.
 NOT_ENTRY_POINTS = {
+    "scripts/backfill_spread_633.features": (
+        "reads one forecast's declared inputs through InformationRule and checks both guards (#633); scores "
+        "nothing"
+    ),
+    "scripts/backfill_spread_633.forecasts_command": (
+        "makes the H4 measurement's forecasts and scores nothing (#633): its decision days end with the lead-5 "
+        "target on or before 2025-12-31 (`decision_indices`) and no training label after it is read; "
+        "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
+    ),
     "protocol_benchmarks._anchor": (
         "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a forecast, "
         "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls "
