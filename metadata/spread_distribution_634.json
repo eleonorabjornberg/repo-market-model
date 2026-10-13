@@ -1,0 +1,161 @@
+{
+  "status": "declared by the pull request that closes #634 before any score was computed; a measurement, not a record. Nothing is published: no variant joins any published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #640): every figure here is exploration, and a pass is not a confirmation (ruling on #567)",
+  "issue": 634,
+  "hypothesis": "H5 (primary goal), research step 1 (re-score the phase 2 models under the protocol) and step 2 (the post-phase-2 inputs, tested together against the same models without them)",
+  "rulings": [
+    "Eleonora, directive #634 (12 October 2026): forecast the spread in bp, not the +5 bp threshold; at most 3 variants; declare everything before any score",
+    "Eleonora, 12 October 2026 (comment on #634): the scoring sections of the directive are superseded by the protocol of #640 wherever they differ, including metric, benchmarks, interval and splits; development results are exploration, never a verdict",
+    "Orchestrating session, 12 October 2026, 5:14 pm ET, under Eleonora's ruling on #554: the market-day tax_date window (data.tax_date_market_days, #538) is one of the inputs of the first H5 candidate registered under protocol v1; it is carried in the candidate declarations here, and the published panel's column stays off"
+  ],
+  "protocol": {
+    "record": "docs/decisions/scoring-protocol.md (version 1; read as the text of #640, comment 6127513444, accepted by Eleonora in comment 6131185033; its merge is hers)",
+    "scorer": "repo_model.scoring_protocol (grid_crps, upper_tail_twcrps, day_scores, fill_missing, paired_tests) and repo_model.protocol_benchmarks (b1_forecast, b2_forecast)",
+    "grid": [
+      0.01,
+      0.025,
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6,
+      0.65,
+      0.7,
+      0.75,
+      0.8,
+      0.85,
+      0.9,
+      0.95,
+      0.975,
+      0.99
+    ],
+    "primary_score": "grid CRPS (twice the mean pinball loss over the 23 levels), averaged with equal weight over h = 1 to 5, one number per decision day",
+    "key_secondary": "upper-tail twCRPS with weight 1{y > 0 bp}",
+    "difference": "d = S(benchmark) - S(candidate); positive favours the candidate; skill = mean(d) / mean(S(benchmark))",
+    "interval": "stationary bootstrap, mean block length 10 business days, 10,000 draws, seed 634, one-sided 95% (the lower bound of mean(d); the upper bound of skill); Diebold-Mariano with Newey-West lag 10 beside it",
+    "not_applied": "the checkpoints, the O'Brien-Fleming spending and the verdict rule (sections 6 and 8) apply to confirmation days; development days give a score and an interval, never a verdict. Holm is not applied: no claim is tested"
+  },
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_decision_day_rule": "a decision day is scored when every one of its five target days is on or before 2025-12-31 and has a published outcome",
+    "last_target_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "outcome": "the panel's spread_bps on the target day (the published panel, digest 4ddc3882...), not re-derived from first-published vintages",
+    "calendar": "the published panel's business days"
+  },
+  "inputs": {
+    "base": {
+      "columns": [
+        "reserve_balances",
+        "sofr_p25",
+        "sofr_p75",
+        "sofr_volume",
+        "spread_bps",
+        "tbill_13w",
+        "tbill_4w",
+        "tga",
+        "treasury_settlement"
+      ],
+      "reading": "the published funding declaration's features (scripts/live_record.py CRPS_FEATURES); treasury_settlement is dropped at h >= 2 when read as published (published_features), kept at every lead when announcement-dated"
+    },
+    "new": {
+      "timing": {
+        "settlement": "treasury_settlement dated from the announcement (metadata/settlement_announcement_dating.json, the 'both' arm of #541)",
+        "h41": "reserve_balances and tga read per H.4.1 release (metadata/h41_release_dating.json, #541)"
+      },
+      "columns": {
+        "tax_date": "the tax-date window on market days (data.tax_date_market_days, #538); the panel is built with scripts/tax_date_market_days.py",
+        "reserve_scarcity_state": "the scarcity state read per leg (#571)",
+        "iorb_announced_change_bps": "the announced IORB change (#579)",
+        "iorb_days_to_announced_change": "days to that change (#579); empty when no change is announced, which the gbm imputes",
+        "satiation_dist_roll": "the rolling satiation distance (#587, #598), constants unchanged",
+        "sofr_p99_iorb_bps": "the tail-spread level: the previous day's SOFR 99th percentile above IORB (#601)"
+      },
+      "source": "scripts/pressure_v1_1.py panel, scripts/measurement_fields.py panel and scripts/satiation_distance_598.py panel, each run under scripts/tax_date_market_days.py; off in every published declaration, switched on for these runs only (satiation_distance_598.switched_on)",
+      "not_included": "#622's lag fix is on main (#623 merged) and is in the distance column as built; no other input is added; the ON RRP rate, the SRF rate and the H.8 series belong to the liquidity repository"
+    }
+  },
+  "variants": {
+    "a_published_new": {
+      "label": "(a) the published funding declaration with the new inputs",
+      "model": "gbm on the published features plus the new inputs, nested conformal PID calibration as the published distribution (cli_eval 'gbm', --calibration conformal_pid_nested)",
+      "levels": [
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "grid_reading": "the published model forecasts five levels; its law is put on the protocol's 23 by the linear law of the gbm exceedance (spread_distribution_632.quantile_at: linear between the fitted quantiles, continued at the outer segments' slopes). A reading, not a decision: see 'questions'"
+    },
+    "b_gbm_new": {
+      "label": "(b) gbm quantiles with the new inputs",
+      "model": "ml.fit_gradient_boosted_quantiles at the 23 levels, no calibration, the published model's settings (random_state, min_samples_leaf), the base features plus the new inputs, every day, directly at each lead",
+      "levels": "the protocol's 23"
+    },
+    "c_two_part_new": {
+      "label": "(c) two-part form, chosen from #632's step 1",
+      "model": "ml.pressure_spread_distribution_exceedance, structure 'two_part' at the protocol's 23 levels: the risk-date part as in #632 on the inputs of risk_gbm+settle+h41+dist_roll plus iorb_announced_change_bps, and an every-day part on spread_bps, sofr_p75_iorb_bps, sofr_p99_iorb_bps, satiation_dist_roll, iorb_announced_change_bps and reserve_scarcity_state. A day whose every-day inputs are not all public has no forecast and is scored as B1's (protocol section 11)",
+      "chosen_because": "#632's step 1 (docs/pivot/spread-distribution-result.md): the two-part form was the one that beat as-of persistence at every lead",
+      "levels": "the protocol's 23"
+    },
+    "count": "at most 3 variants (a, b, c)"
+  },
+  "controls": {
+    "published": "the published funding declaration as it stands, five levels (docs/runs/published_distribution_daily_h*.json, reproduced here by a re-run of the same walk on the same panel, which must match to the byte before it is used): B3 and the ablation parent of (a)",
+    "gbm_funding": "ml.fit_gradient_boosted_quantiles at the 23 levels on the published features only, uncalibrated: the phase 2 gbm re-scored under the protocol, and the ablation parent of (b)"
+  },
+  "benchmarks": {
+    "B1": "repo_model.protocol_benchmarks.b1_forecast on the published panel",
+    "B2": "repo_model.protocol_benchmarks.b2_forecast on the published panel",
+    "B3": "the published funding declaration (control 'published'), on the grid by the reading above"
+  },
+  "pairs": {
+    "benchmarks": "every variant and control against B1, B2 and B3",
+    "ablation": {
+      "a_published_new": "published",
+      "b_gbm_new": "gbm_funding",
+      "c_two_part_new": "b_gbm_new"
+    }
+  },
+  "metrics": {
+    "primary": "grid CRPS over h = 1 to 5",
+    "key_secondary": "upper-tail twCRPS, weight 1{y > 0 bp}",
+    "also": [
+      "pinball loss at the levels 0.05, 0.25, 0.5, 0.75 and 0.95 (the fixed grid of contract.QUANTILE_LEVELS), averaged over the leads",
+      "MAE of the median (level 0.5)",
+      "50% and 90% central interval coverage (levels 0.25 and 0.75; 0.05 and 0.95)",
+      "Brier score of P(spread > 0, +2, +5, +10 bp) read off the distribution, against the calendar-climatology and the persistence-logistic models fitted at the same thresholds and lead (the whole-basis-point event of docs/decisions/pressure-probability.md)"
+    ]
+  },
+  "splits": {
+    "regime": "metadata/evaluation_splits.json regimes, by the decision day: 2018-19, 2020, 2021-23, 2024, 2025-26 are called out. These regimes were drawn after the fact; the protocol (section 7) makes no split a pass requirement, and none is here",
+    "day_type": "the pressure-day type of metadata/evaluation_splits.json (SplitDeclaration.reporting_day_type) of the target day: a decision day's score on a type is the mean over those of its leads whose target is of that type",
+    "upper_tail_reported_separately": "the Brier table at 0, +2, +5, +10 bp and the key secondary"
+  },
+  "variant_count": "spread-forecast variants scored in development before this directive: phase 2, three distribution models (gbm uncalibrated, gbm cross-conformal, the published nested-PID declaration); #632, two variants. This directive adds three declared variants (a, b, c) and one re-fitted control (gbm_funding), so four new fits and nine in all",
+  "questions": [
+    "How the five-level published declaration is put on the protocol's 23-level grid (B3 and variant a). protocol_benchmarks.b3_forecast refuses any grid but the protocol's and says this is hers (#655). This measurement reads it by the linear law stated above and reports it as a reading",
+    "Whether the outcome should be re-derived from first-published vintages (section 11) rather than the panel's spread_bps"
+  ],
+  "not_checked": [
+    "the as-of scarcity-state split of protocol section 7",
+    "any 2026 day (locked)",
+    "the ON RRP rate, SRF rate and H.8 inputs (liquidity repository)"
+  ]
+}
