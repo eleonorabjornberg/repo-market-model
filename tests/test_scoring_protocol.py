@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 import random
 import unittest
+from unittest import mock
 from datetime import date, datetime, timedelta, timezone
 from statistics import NormalDist
 
@@ -333,6 +334,98 @@ class BootstrapTests(unittest.TestCase):
             sp.paired_test(self.bench, self.cand, seed=None, draws=10)
 
 
+class CalibrationTests(unittest.TestCase):
+    """The double (iterated) stationary bootstrap calibration of the studentized bound.
+
+    Eleonora's ruling of 13 October 2026 (PR #695, comment 6146940245): the critical value is
+    calibrated by resampling so the one-sided bound covers its nominal rate. For each outer
+    resample b, `inner_draws` inner resamples are drawn from it (seeded `f"{seed}/{b}"`) and give
+    the prepivot `u_b`, the share of inner t-draws at or below the outer `t*_b`. A bound at level
+    `a` reads the outer t-draws at `1 - beta`, with `1 - beta` the `1 - a` quantile of the `u_b`.
+    """
+
+    def setUp(self):
+        rng = random.Random(4)
+        self.days = weekdays(date(2015, 1, 2), 40)
+        self.bench = {day: 2.0 + rng.random() for day in self.days}
+        self.cand = {day: self.bench[day] - 0.1 + 0.3 * rng.gauss(0, 1) for day in self.days}
+        self.d = [self.bench[day] - self.cand[day] for day in self.days]
+
+    def naive(self, outer, inner, seed=7):
+        n = len(self.d)
+        mean = sum(self.d) / n
+        rng = random.Random(seed)
+        t_draws, prepivots = [], []
+        for b in range(outer):
+            x = [self.d[i] for i in stationary_bootstrap_indices(n, 10, rng)]
+            mx = sum(x) / n
+            tb = (mx - mean) / math.sqrt(hac_variance(x) / n)
+            t_draws.append(tb)
+            inner_rng = random.Random(f"{seed}/{b}")
+            below = 0
+            for _ in range(inner):
+                y = [x[i] for i in stationary_bootstrap_indices(n, 10, inner_rng)]
+                ty = (sum(y) / n - mx) / math.sqrt(hac_variance(y) / n)
+                below += ty <= tb
+            prepivots.append(below / inner)
+        return sorted(t_draws), sorted(prepivots)
+
+    @staticmethod
+    def quantile(ordered, p):
+        x = p * (len(ordered) - 1)
+        lo = int(x)
+        w = x - lo
+        return ordered[lo] if w == 0 else ordered[lo] * (1 - w) + ordered[lo + 1] * w
+
+    def test_the_prepivots_match_a_direct_double_loop(self):
+        test = sp.paired_test(self.bench, self.cand, seed=7, draws=30, inner_draws=20, with_skill=False)
+        t_draws, prepivots = self.naive(30, 20)
+        self.assertEqual(test.inner_draws, 20)
+        for got, want in zip(test.prepivots, prepivots):
+            self.assertAlmostEqual(got, want, places=12)
+        for got, want in zip(test.t_draws, t_draws):
+            self.assertAlmostEqual(got, want, places=9)
+
+    def test_the_calibrated_bound(self):
+        test = sp.paired_test(self.bench, self.cand, seed=7, draws=200, inner_draws=40, with_skill=False)
+        t_draws, prepivots = self.naive(200, 40)
+        level = self.quantile(prepivots, 0.95)
+        expected = test.mean_difference - self.quantile(t_draws, level) * test.standard_error
+        self.assertAlmostEqual(test.calibrated_level(0.05), 1.0 - level)
+        self.assertAlmostEqual(test.lower_mean_difference(), expected, places=9)
+
+    def test_the_outer_draws_are_the_uncalibrated_ones(self):
+        """Calibration adds inner streams; the outer resamples, and so the t-draws, do not move."""
+
+        plain = sp.paired_test(self.bench, self.cand, seed=7, draws=100, with_skill=False)
+        calibrated = sp.paired_test(self.bench, self.cand, seed=7, draws=100, inner_draws=10, with_skill=False)
+        self.assertEqual(plain.t_draws, calibrated.t_draws)
+        self.assertEqual(plain.prepivots, ())
+        self.assertAlmostEqual(
+            plain.lower_mean_difference(),
+            plain.mean_difference - sp._bound(plain.t_draws, 0.95, 100) * plain.standard_error,
+        )
+
+    def test_a_calibrated_level_at_the_prepivots_ceiling_is_refused(self):
+        """When every prepivot is 1, no outer quantile below the maximum is calibrated: refused."""
+
+        test = sp.paired_test(self.bench, self.cand, seed=7, draws=200, inner_draws=40, with_skill=False)
+        with self.assertRaises(sp.UnresolvedLevel):
+            test.lower_mean_difference(1e-4)
+
+    def test_the_protocol_inner_draws(self):
+        self.assertGreaterEqual(sp.INNER_DRAWS, 100)
+
+    def test_verdict_refuses_an_uncalibrated_test(self):
+        days = weekdays(date(2015, 1, 2), 250)
+        rng = random.Random(9)
+        b = {day: 1 + 0.05 * rng.gauss(0, 1) for day in days}
+        c = {day: 0.8 + 0.05 * rng.gauss(0, 1) for day in days}
+        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=200)
+        with self.assertRaises(sp.ProtocolError):
+            sp.verdict(tests[0], tests[1], look=3, futility_level=0.05)
+
+
 class DieboldMarianoTests(unittest.TestCase):
     def test_against_a_direct_computation(self):
         rng = random.Random(5)
@@ -392,6 +485,8 @@ class SpendingTests(unittest.TestCase):
 
 
 class VerdictTests(unittest.TestCase):
+    """Verdicts read calibrated tests. The protocol's draw counts are patched down to keep these fast."""
+
     def test_from_scores(self):
         rng = random.Random(9)
         days = weekdays(date(2015, 1, 2), 250)
@@ -401,19 +496,26 @@ class VerdictTests(unittest.TestCase):
 
         b1, b2 = scores(1.0), scores(1.2)
         strong, weak = scores(0.80), scores(0.9999)
-        tests = sp.paired_tests([(b1, strong), (b2, strong), (b1, weak), (b2, weak)], seed=1)
-        self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
-        self.assertEqual(sp.verdict(tests[2], tests[3], look=3, futility_level=0.05), sp.KILLED)
+        with mock.patch.object(sp, "INNER_DRAWS", 20):
+            tests = sp.paired_tests(
+                [(b1, strong), (b2, strong), (b1, weak), (b2, weak)], seed=1, draws=500, inner_draws=20
+            )
+            self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
+            self.assertEqual(sp.verdict(tests[2], tests[3], look=3, futility_level=0.05), sp.KILLED)
 
-    def test_the_first_look_resolves_at_the_interim_draws(self):
-        """Look 1's nominal level is about 6e-5: about six draws in 100,000 (ruling of 13 October)."""
+    def test_the_first_look_cannot_be_calibrated(self):
+        """Look 1's nominal level is about 6e-5. A prepivot is a share of the inner draws, so the
+        calibrated level needs more than one prepivot in about 16,000 below 1, which no feasible
+        inner count gives: the bound is refused, not read at the ceiling. A question for Eleonora."""
 
         days = weekdays(date(2015, 1, 2), 60)
         rng = random.Random(2)
         b = {day: 1 + rng.random() for day in days}
         c = {day: 0.5 + 0.2 * rng.random() for day in days}
-        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=sp.INTERIM_DRAWS)
-        self.assertEqual(sp.verdict(tests[0], tests[1], look=1, futility_level=0.05), sp.SUPPORTED)
+        with mock.patch.object(sp, "INTERIM_DRAWS", 2000), mock.patch.object(sp, "INNER_DRAWS", 20):
+            tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=2000, inner_draws=20)
+            with self.assertRaises(sp.UnresolvedLevel):
+                sp.verdict(tests[0], tests[1], look=1, futility_level=0.05)
 
     def test_an_interim_look_on_too_few_draws_is_refused(self):
         days = weekdays(date(2015, 1, 2), 60)
