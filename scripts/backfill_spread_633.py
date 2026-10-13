@@ -18,6 +18,9 @@ declared in `metadata/backfill_posting.json` (17 May 2018, Eleonora's ruling on 
             --horizon $h --output OUT/${arm}_h$h.json
     PYTHONPATH=src python3 scripts/backfill_spread_633.py score --scratch SCRATCH.csv --runs OUT \\
         --output OUT/score.json --markdown OUT/score.md
+
+The workbook-only sensitivity (declared after the first score): `forecasts ... --inputs workbook --output
+OUT/${arm}_h${h}_wb.json`, then `score ... --suffix _wb`.
 """
 
 from __future__ import annotations
@@ -58,6 +61,8 @@ NAMES = (
     "spread", "spread_change_5", "tgcr_iorb", "bgcr_iorb", "tbill_4w_iorb", "reserve_balances", "tga",
 ) + CALENDAR
 ARMS = ("without", "with")
+#: The sensitivity declared after the first score: the inputs the ruled workbook and the calendar carry.
+WORKBOOK_ONLY = ("spread", "spread_change_5", "tgcr_iorb", "bgcr_iorb") + CALENDAR
 LOW90, HIGH90 = sp.GRID.index(0.05), sp.GRID.index(0.95)
 LOW50, HIGH50 = sp.GRID.index(0.25), sp.GRID.index(0.75)
 
@@ -112,6 +117,14 @@ def features(rows, rule: InformationRule, dates, scored: int) -> Optional[Tuple[
     return out, anchor
 
 
+def _select(row: Sequence[float], inputs: str) -> List[float]:
+    """The declared inputs (`declared`), or the workbook-only sensitivity's (`workbook`)."""
+
+    if inputs == "declared":
+        return list(row)
+    return [value for name, value in zip(NAMES, row) if name in WORKBOOK_ONLY]
+
+
 def forecasts_command(args) -> int:
     from sklearn.ensemble import HistGradientBoostingRegressor
 
@@ -155,7 +168,7 @@ def forecasts_command(args) -> int:
         ]
         backfill.require_training_only(folds, where="backfill_spread_633")
         backfill.require_posting_established(folds, posting, where="backfill_spread_633")
-        xs = [pairs[s] for s in labels]
+        xs = [_select(pairs[s], args.inputs) for s in labels]
         ys = [rows[s].spread_bps for s in labels]
         models = [
             HistGradientBoostingRegressor(loss="quantile", quantile=level, **settings).fit(xs, ys) for level in sp.GRID
@@ -165,7 +178,7 @@ def forecasts_command(args) -> int:
             read = features(rows, rule, dates, d + h)
             if read is None:
                 continue
-            x = [read[0]]
+            x = [_select(read[0], args.inputs)]
             out[dates[d].isoformat()] = sorted(float(model.predict(x)[0]) for model in models)
             served.append(d)
         blocks.append({
@@ -177,7 +190,7 @@ def forecasts_command(args) -> int:
     document = {
         "issue": 633, "arm": args.arm, "horizon": h, "panel_sha256": panel_sha256(args.panel),
         "backfilled_rows": prefix, "posting_instant": None if posting is None else posting.isoformat(),
-        "levels": list(sp.GRID), "inputs": list(NAMES), "blocks": blocks, "forecasts": out,
+        "levels": list(sp.GRID), "inputs": [name for name in NAMES if args.inputs == "declared" or name in WORKBOOK_ONLY], "blocks": blocks, "forecasts": out,
     }
     args.output.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8")
     print(json.dumps({"arm": args.arm, "horizon": h, "blocks": len(blocks), "forecasts": len(out)}))
@@ -219,11 +232,11 @@ def _coverage(forecasts: Mapping[date, Mapping[int, Sequence[float]]], outcomes,
     return out
 
 
-def _load_arm(runs: Path, arm: str) -> Tuple[Dict[date, Dict[int, List[float]]], List[dict]]:
+def _load_arm(runs: Path, arm: str, suffix: str = "") -> Tuple[Dict[date, Dict[int, List[float]]], List[dict]]:
     by_day: Dict[date, Dict[int, List[float]]] = {}
     documents = []
     for h in sp.HORIZONS:
-        document = json.loads((runs / f"{arm}_h{h}.json").read_text(encoding="utf-8"))
+        document = json.loads((runs / f"{arm}_h{h}{suffix}.json").read_text(encoding="utf-8"))
         if document["arm"] != arm or document["horizon"] != h or tuple(document["levels"]) != sp.GRID:
             raise SystemExit(f"{arm}_h{h}.json is not the {arm} arm at lead {h} on the protocol's grid")
         documents.append(document)
@@ -245,7 +258,7 @@ def score_command(args) -> int:
     arms = {}
     documents = {}
     for arm in ARMS:
-        arms[arm], documents[arm] = _load_arm(args.runs, arm)
+        arms[arm], documents[arm] = _load_arm(args.runs, arm, args.suffix)
     declared = [calendar[k] for k in decision_indices(calendar)]
     days = [day for day in declared if day in arms["without"] and day in arms["with"]]
     position = {day: k for k, day in enumerate(calendar)}
@@ -369,12 +382,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     run.add_argument("--arm", choices=ARMS, required=True)
     run.add_argument("--horizon", type=int, required=True)
     run.add_argument("--output", type=Path, required=True)
+    run.add_argument("--inputs", choices=("declared", "workbook"), default="declared")
     run.set_defaults(handler=forecasts_command)
     score = commands.add_parser("score")
     score.add_argument("--scratch", type=Path, required=True)
     score.add_argument("--runs", type=Path, required=True)
     score.add_argument("--output", type=Path, required=True)
     score.add_argument("--markdown", type=Path, required=True)
+    score.add_argument("--suffix", default="", help="`_wb` scores the workbook-only sensitivity")
     score.set_defaults(handler=score_command)
     args = parser.parse_args(argv)
     return int(args.handler(args) or 0)

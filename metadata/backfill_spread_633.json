@@ -13,11 +13,28 @@
     "hyperparameters": "ml.PRESSURE_CLASSIFIER_SETTINGS (learning_rate 0.05, max_iter 200, max_leaf_nodes 15, min_samples_leaf 20, random_state 0), the settings #632's spread model uses; none tuned",
     "why_this_model": "the H5 models on main (#632's) read inputs the back-fill does not carry (the SOFR percentiles, the settlement and H.4.1 timing and satiation-distance columns), so a back-filled row would train no pair and the arms could not differ. This model reads only inputs present in the back-filled rows, so the measurement isolates the history",
     "inputs": {
-      "observed, read per field at the latest row public at the decision instant (asof.InformationRule at the lead)": ["tgcr", "bgcr", "reserve_balances", "tga", "tbill_4w"],
+      "observed, read per field at the latest row public at the decision instant (asof.InformationRule at the lead)": [
+        "tgcr",
+        "bgcr",
+        "reserve_balances",
+        "tga",
+        "tbill_4w"
+      ],
       "not read": "on_rrp: its registry entry (fred_macro_latest_vintage.RRPONTSYD) declares no availability relative to its row, so the as-of rule refuses it",
-      "composed from those reads, in bp against the anchor's IORB": ["tgcr - iorb", "bgcr - iorb", "tbill_4w - iorb"],
-      "the target at the anchor": ["spread_bps at the anchor", "spread_bps at the anchor minus the spread 5 rows before it"],
-      "calendar, read at the target day": ["quarter_end", "tax_date", "days_to_month_end"]
+      "composed from those reads, in bp against the anchor's IORB": [
+        "tgcr - iorb",
+        "bgcr - iorb",
+        "tbill_4w - iorb"
+      ],
+      "the target at the anchor": [
+        "spread_bps at the anchor",
+        "spread_bps at the anchor minus the spread 5 rows before it"
+      ],
+      "calendar, read at the target day": [
+        "quarter_end",
+        "tax_date",
+        "days_to_month_end"
+      ]
     },
     "training_pairs": "each label row s paired with what a forecast of s at lead h read at its own decision instant (InformationRule(horizon=h).observation), under both guards; a fit uses the labels observable at its block's decision instant (information-set rule 3)",
     "refit": "every 21 decision days (docs/decisions/information-set.md), one block for all leads"
@@ -34,5 +51,11 @@
     "context": "both arms' CRPS skill against B1 (as-of persistence, protocol_benchmarks.b1_forecast on the scratch panel)",
     "splits": "pooled, by regime of metadata/evaluation_splits.json (2018-19 is the headline), and by the pressure-day type of the lead-1 target (SplitDeclaration.reporting_day_type)"
   },
-  "kill_rule_reading": "H4 is killed, as exploration, when the two-sided 90% interval of the 2018-19 move in 90%-interval coverage covers zero. The 50%-interval coverage and CRPS moves are reported beside it and do not change that reading"
+  "kill_rule_reading": "H4 is killed, as exploration, when the two-sided 90% interval of the 2018-19 move in 90%-interval coverage covers zero. The 50%-interval coverage and CRPS moves are reported beside it and do not change that reading",
+  "sensitivity_workbook_only": {
+    "declared": "added after the first score of the declared model was seen (13 October 2026), so it is a robustness check, not a fresh test",
+    "why": "the declared model reads tbill_4w, reserve_balances and tga on the back-filled rows; docs/pivot/posting-dates-due-diligence.md marks the 2014-2017 bill rates not usable, and the posting of the FRED reserve and TGA levels for those years was not established there. Only the workbook (TGCR, BGCR, SOFR) is ruled public, from 17 May 2018",
+    "inputs": "the same model without tbill_4w - iorb, reserve_balances and tga: spread_bps at the anchor and its 5-row change, tgcr - iorb, bgcr - iorb, and the calendar columns. IORB (IOER before 2021) is an administered rate announced in advance",
+    "arms, days, scoring": "as declared above; outputs suffixed _wb"
+  }
 }
