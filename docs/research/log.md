@@ -304,3 +304,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 2018-19 coverage of the central 90% interval rises +0.050 [+0.020, +0.082] (declared) and +0.035 [+0.017, +0.054] (workbook-only); 2018-19 CRPS d +0.043 [−0.013, +0.101] and +0.064 [+0.009, +0.117]; the share above the 95th percentile does not move (0.167 → 0.174, 0.191 → 0.191). Detail in `docs/pivot/posting-dates-h4-result.md`.
 - Against kill: not killed, as exploration: a posting time is established, and the 2018-19 calibration move's interval excludes zero in both input sets. The 2018-19 upper tail stays under-forecast.
 - Next: whether to register (step 4) is Eleonora's; the H5 models cannot use the history without pre-2018 inputs the project does not hold.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#692
+- Directive: #692
+- Step: 3 (data rework: re-run the seven records that read the Fed repo take-up columns after #659)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `e2b1f397`; data change confined to 339 panel rows, 2018-05-09 to 2019-09-16
+- Tried: no new variant. Re-ran the record's own commands, unchanged apart from the data: source screen, source matrix, unused inputs, OFR follow-up, weighted-miss rows that read the columns; backfilled history and the due-diligence table checked. Variants: 0.
+- Result: no ranking, redundancy group or pass/fail verdict moved. Figures moved for the Fed repo columns only (e.g. `fed_repo_days_since_positive` ordinary-day pressure AUROC at lead 1 0.58 [0.43, 0.72] to 0.64 [0.48, 0.79]); in the judged records the dealer candidates flag more 2018 onsets (OFR logistic 15 to 18 of 27, recall 0.577 to 0.692 [0.517, 0.844]) and some paired-Brier intervals change whether they exclude zero. Detail in `docs/pivot/fed-repo-rescreen-692-result.md`.
+- Against kill: not applicable (no verdict; development data). The ceiling statements of H2 are unchanged: the Fed repo columns stay far below the cut-off of the source screen.
+- Next: Eleonora decides whether to amend the stale sentences named in the result page.
