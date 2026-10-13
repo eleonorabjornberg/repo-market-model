@@ -5,11 +5,10 @@ the evidence does not hold is printed as "not measured", never computed here. `-
 
 Recorded mutations (run on the tests below, then restored):
 
-* `read_ordinary` returning the lead-1 AUROC where the evidence has none, instead of None: `test_missing_figure_is_not_measured`
-  failed with AssertionError.
-* `render` printing a figure for a candidate the evidence does not name (iterating the candidate files, not the
-  evidence): `test_candidate_without_evidence_is_counted_not_tabled` failed with AssertionError.
-* `check` comparing only the Markdown page and not the data file: `test_check_fails_on_a_stale_data_file` failed
+* `read_ordinary` filling a missing lead-1 interval (`interval(...) or [0.0, 1.0]`) instead of leaving None:
+  `test_missing_figure_is_not_measured` failed with AssertionError.
+* `build` dropping the `if not any(measured)` skip, so a candidate with no evidence is tabled: `test_candidate_without_evidence_is_counted_not_tabled` failed with AssertionError.
+* `check` looping over only the first output (`list(outputs(...).items())[:1]`), so the data file is not compared: `test_check_fails_on_a_stale_data_file` failed
   with AssertionError.
 """
 import importlib.util
