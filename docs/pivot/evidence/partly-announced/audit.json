@@ -175,24 +175,24 @@
     }
    }
   },
-  "by_rule_all_leads": {
+  "by_rule_leads_2_to_5": {
    "announced": {
-    "mae": 84.05972727272727,
-    "mean_error": 79.2925041322314,
-    "n": 121
+    "mae": 85.70278632478633,
+    "mean_error": 83.23413675213675,
+    "n": 117
    },
    "left_out": {
-    "mae": 38.6888347107438,
-    "mean_error": -30.16204132231405,
-    "n": 121
+    "mae": 37.242290598290595,
+    "mean_error": -28.423982905982907,
+    "n": 117
    },
    "old": {
-    "mae": 50.12693388429752,
-    "mean_error": -50.12693388429752,
-    "n": 121
+    "mae": 50.60989743589744,
+    "mean_error": -50.60989743589744,
+    "n": 117
    }
   },
-  "by_rule_leads_2_to_5": {
+  "by_rule_partly_announced": {
    "announced": {
     "mae": 84.05972727272727,
     "mean_error": 79.2925041322314,
@@ -337,22 +337,55 @@
     }
    }
   },
+  "old_and_announced_differ": 117,
   "partly_announced": 121
  },
  "fixture": "tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions/20261008T205048Z_568c69347867.json",
  "groups": {
-  "announced": {
-   "mae": 60.36029341317365,
-   "mean_error": -0.7256826347305393
+  "announcement_dates": {
+   "announced": {
+    "mae": 60.36029341317365,
+    "mean_error": -0.7256826347305393
+   },
+   "left_out": {
+    "mae": 57.059670658682634,
+    "mean_error": -53.47418562874252
+   },
+   "n": 167,
+   "old": {
+    "mae": 104.6467125748503,
+    "mean_error": -104.6467125748503
+   }
   },
-  "left_out": {
-   "mae": 57.059670658682634,
-   "mean_error": -53.47418562874252
+  "within_10_business_days": {
+   "announced": {
+    "mae": 56.45832543103448,
+    "mean_error": -12.103493534482759
+   },
+   "left_out": {
+    "mae": 59.78533836206896,
+    "mean_error": -57.09702801724138
+   },
+   "n": 464,
+   "old": {
+    "mae": 107.27802155172414,
+    "mean_error": -107.27802155172414
+   }
   },
-  "n": 167,
-  "old": {
-   "mae": 104.6467125748503,
-   "mean_error": -104.6467125748503
+  "within_5_business_days": {
+   "announced": {
+    "mae": 83.89147933884297,
+    "mean_error": 79.4607520661157
+   },
+   "left_out": {
+    "mae": 38.5205867768595,
+    "mean_error": -29.99379338842975
+   },
+   "n": 121,
+   "old": {
+    "mae": 49.958685950413226,
+    "mean_error": -49.958685950413226
+   }
   }
  },
  "named_cases": [

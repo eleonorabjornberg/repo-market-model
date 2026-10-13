@@ -6,16 +6,16 @@ Fixture: `tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions/20261
 
 ## #665's population: (day, lead) cases a partly announced class changes
 
-121 of 4980 (day, lead 1-5) cases have a partly announced class.
+121 of 4980 (day, lead 1-5) cases have a partly announced class; in 117 of them the old and the #647 rule differ (a maturing figure was announced). #665's table is the second row group: leads 2-5, old and #647 rule differing.
 
-| leads | rule | n | mean error | MAE |
+| cases | rule | n | mean error | MAE |
 |---|---|---|---|---|
-| 2-5 | old | 121 | -50.1 | 50.1 |
-| 2-5 | announced | 121 | +79.3 | 84.1 |
-| 2-5 | left_out | 121 | -30.2 | 38.7 |
-| 1-5 | old | 121 | -50.1 | 50.1 |
-| 1-5 | announced | 121 | +79.3 | 84.1 |
-| 1-5 | left_out | 121 | -30.2 | 38.7 |
+| old and #647 rule differ, leads 2-5 | old | 117 | -50.6 | 50.6 |
+| old and #647 rule differ, leads 2-5 | announced | 117 | +83.2 | 85.7 |
+| old and #647 rule differ, leads 2-5 | left_out | 117 | -28.4 | 37.2 |
+| every partly announced case | old | 121 | -50.1 | 50.1 |
+| every partly announced case | announced | 121 | +79.3 | 84.1 |
+| every partly announced case | left_out | 121 | -30.2 | 38.7 |
 
 ## By lead (cases with a partly announced class)
 
@@ -69,15 +69,21 @@ Fixture: `tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions/20261
 | 2024 | 2 | 200.0 | 49.0 | 40.0 |
 | 2025 | 2 | 179.0 | 36.0 | 50.0 |
 
-## #647's population: (settlement day, class, decision day) groups
+## #647's figures: (settlement day, class, decision day) groups
 
-167 partly announced groups, error against the class's completed net.
+#647 reports 238 groups (old -136 / 136, announced -25 / 58, class left out -64 / 67). That measurement is not tracked and its population does not reproduce from the fixture under any of these decision-day definitions; the error is the rule's class net less the class's completed net.
 
-| rule | mean error | MAE |
-|---|---|---|
-| old | -104.6 | 104.6 |
-| announced | -0.7 | 60.4 |
-| left_out | -53.5 | 57.1 |
+| decision days | rule | groups | mean error | MAE |
+|---|---|---|---|---|
+| announcement dates of the class | old | 167 | -104.6 | 104.6 |
+| announcement dates of the class | announced | 167 | -0.7 | 60.4 |
+| announcement dates of the class | left_out | 167 | -53.5 | 57.1 |
+| within 5 business days | old | 121 | -50.0 | 50.0 |
+| within 5 business days | announced | 121 | +79.5 | 83.9 |
+| within 5 business days | left_out | 121 | -30.0 | 38.5 |
+| within 10 business days | old | 464 | -107.3 | 107.3 |
+| within 10 business days | announced | 464 | -12.1 | 56.5 |
+| within 10 business days | left_out | 464 | -57.1 | 59.8 |
 
 ## Worst cases by the announced-rule error
 
