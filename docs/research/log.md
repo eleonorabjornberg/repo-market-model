@@ -214,3 +214,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the export withholds 85 of 666 weekly dates of `pd_repo_ust` and 72 of `pd_reverse_repo_ust` (2022 to 2025), 3 of `pd_repo_mbs`, none of the fails series. Partial rank correlation with the +5 bp indicator on ordinary days: `pd_reverse_repo_ust` +0.112 → +0.087 [+0.05, +0.12], `pd_repo_ust` +0.104 → +0.076 [+0.03, +0.12]. Detail in `docs/pivot/new-sources-withheld-weeks.md`.
 - Against kill: not applicable (H3's kill is not tested here; the two series lose rank, and neither was a lead beyond #630's own reading).
 - Next: Eleonora decides whether the source is admitted given the withheld weeks.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#703
+- Directive: #635
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`; scratch panel `DERIV.csv` `08df8d19…`
+- Tried: the upper bound on 159 inputs for the spread (23-level grid CRPS over leads 1 to 5, against B1 and B2) and the +5 bp indicator on ordinary days: a gradient-boosted and a regularised linear family, each fitted in-sample with generous settings (the ceiling) and walk-forward every 21 scored days (the reachable line). Variants: 8 fitted rows (2 families x 2 targets x 2 fits).
+- Result: pre-registered reading, partly reached for both targets. Spread, ordinary days, reachable gbm against B1: skill +0.192 [+0.007, +0.352] (behind in 2021-23, -0.318 [-0.529, -0.133]); reachable ridge -1.213 [-2.114, -0.620]. Indicator, reachable gbm AUROC 0.905 [0.851, 0.938] against persistence-logistic 0.890; difference +0.015 [-0.017, +0.058]. The in-sample gbm ceiling memorises (AUROC 1.000), so it cannot be low; the 0.6 AUROC line is below persistence's.
+- Against kill: not triggered under the rule as written, but the rule cannot trigger for the in-sample gbm ceiling; two marked questions on the PR for Eleonora (a cross-fitted ceiling; the indicator's benchmark line).
+- Next: H5's development steps on the spread (#634), once the cross-fitted ceiling question is answered.
