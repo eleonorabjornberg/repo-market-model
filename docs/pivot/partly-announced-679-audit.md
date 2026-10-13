@@ -26,9 +26,8 @@ That measurement is not tracked, and no decision-day definition rebuilds it:
 | business days within 5 of settlement (the leads the columns read) | 121 | 83.9 | 38.5 | 50.0 |
 | business days within 10 of settlement | 464 | 56.5 | 59.8 | 107.3 |
 
-Why they differ: #647's measure is a per-class group error pooled over decision days, including leads beyond 5 that no column reads, where
-a class announced in full a week out looks well predicted by its first piece. #665's measure is the day-lead case the model
-reads. Restricted to the leads the model reads (rows 2), leaving the class out wins by a wide margin; with groups out to 10 business
+Why they differ: #647's measure is a per-class group error pooled over decision days that can include leads beyond 5, which no
+column reads; #665's measure is the day-lead case the model reads. The #647 population itself is not recoverable. Restricted to the leads the model reads (rows 2), leaving the class out wins by a wide margin; with groups out to 10 business
 days (row 3) #647's ordering, announced offering alone ahead, appears. The PR's "67 against 58" is on neither.
 
 ## 2. Diagnosis: the 2018 concentration at h = 4 and 5
@@ -49,7 +48,7 @@ Worst cases (decision day, lead 4; `audit.md` has them all):
 | 2024-11-26 | 49 | 9 | +249 | 0 | 30-day cash management bill, announced Thursday 2024-11-21 |
 | 2025-04-08 | 36 | -14 | +215 | 0 | 14-day cash management bill, announced Thursday 2025-04-03 |
 
-From 2021 the late piece is a small cash management bill; the regular 4-, 8- and 17-week bills are announced on the Tuesday before. Then
+In the later cases above the late piece is a small cash management bill; the regular 4-, 8- and 17-week bills are announced on the Tuesday before. Then
 #647's rule reads the whole regular offering (200 to 250 bn) as a drain with nothing maturing.
 
 ## 3. Remedy
@@ -72,7 +71,7 @@ until it is fully announced**, which `net_settlement.net_for_day` now does (test
 at lead 3 on ten). The samples are too small to read, and 109 of the 121 cases are at leads 4 and 5. Whether the rule should
 differ by lead is her call. A second, larger question: by year, leaving out wins in 2018 (MAE 21.5 against 52.3 for the old rule) and
 loses in 2020 (103.1 against 58.3), and the old rule has the smallest error in 2023 to 2025 (15.8, 40.0, 50.0 against 32.7, 49.0, 36.0;
-n = 5, 2, 2). Since 2020 the late piece is a small cash management bill and the old rule is nearer. Those years are too few to choose a rule on, and a rule
+n = 5, 2, 2). In the later years inspected (above) the late piece is a small cash management bill and the old rule is nearer. Those years are too few to choose a rule on, and a rule
 that depends on the size of the late piece would use something not known at the instant.
 
 ## 4. What the change moves
