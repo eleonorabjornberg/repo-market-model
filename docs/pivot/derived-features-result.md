@@ -1,6 +1,6 @@
 # Derived features, interactions and lagged pressure, screened on ordinary days, and one model test (#631)
 
-A scratch measurement. It writes nothing into `docs/runs/`, publishes nothing, moves no published figure, reads no day after 2025-12-31 and scores no day of a locked tier
+A scratch measurement. It writes nothing into `docs/runs/`, publishes nothing, moves no published figure, reads no day after 2025-12-31 (the 2026 extension of #684, at the end of the page, reads to 2026-09-03) and scores no day of a locked tier
 (`docs/decisions/lockbox.md`; `require_unlocked`). The declaration of the features, interactions, leads, tests, ranking rule and the single model test,
 `metadata/derived_features_631.json` (with the two candidate files in `metadata/pressure_judge/candidates/`), was committed before any number was computed; the script refuses an uncommitted
 declaration. The screen reads 2018-2025, so a result describes that history and is not a confirmation (ruling of 11 October 2026 on #567). **Nothing here is selected into a model or joins a published declaration.**
@@ -261,3 +261,17 @@ PYTHONPATH=src python3 scripts/derived_features_631.py compare --rule weighted -
 PYTHONPATH=src python3 scripts/derived_features_631.py ordinary --panel PUB.csv --output OUT/ordinary.json 'OUT/dist_h{h}.json' 'OUT/v631_h{h}.json'
 PYTHONPATH=src python3 scripts/derived_features_631.py model-report --weighted OUT/judge_weighted.json --unweighted OUT/judge_unweighted.json --ordinary OUT/ordinary.json --output OUT/model.md
 ```
+
+## The 2026 extension (#684)
+
+**Development data, exploration only.** The screen of this page (not the model test) was re-run, unchanged, on a panel that runs to 2026-09-03 (`LAST_DAY` is now
+`repo_model.exploration.EXPLORATORY_END`; the declaration was regenerated and committed before the run, `metadata/derived_features_631.json`). The opened near-blind tier is
+development data: nothing here is a verdict or out-of-sample evidence (scoring protocol v1, #640); the blind tier stays shut. Evidence: `docs/pivot/evidence/derived-features-684/`
+(`screen.json`, `screen-tables.md`, `ranked-leads.json`, `clusters.json`).
+
+* **Days.** 2,042 scored days, 1,602 ordinary, 84 pressure days on ordinary days of 145, 30 onsets (6 ordinary). 101 series screened, as before (derived features need no repo-operations column).
+* **The 2026 column is empty**, for the reason on #629's page: 133 ordinary days, 2 pressure days, under the declared minimum of 3. The `2018-2025` column is the earlier page's evidence (82 of 1,469).
+* **The ranked list moved a little.** Seventeen leads as before; `spread_rv5` (AUROC 0.847, 4 of 4 checks, low noise risk) enters the list at rank 3, and `days_since_pressure` leaves it: with the 2026 days it joins
+  `tail_x_scarcity`'s cluster, so it fails the `not_redundant` check and the list keeps `tail_x_scarcity` as its representative. The best AUROCs shift in the third decimal (for example `settle_x_scarcity` 0.693 to 0.671,
+  `ofr_tri_rate_min_dist_20` 0.717 to 0.685). It remains a list of leads for a declared model test, not a result.
+* **Not re-run:** the model test (the judge's declaration, `metadata/pressure_judge.json`, scores to 2025-12-31, and extending it is not this directive's to decide; see the pull request for #684).

@@ -1,7 +1,7 @@
 # How the sources relate to each other, and what they say on ordinary days (#629)
 
 An exploratory screen for #624 and after, not a record and not a model. Nothing is selected, no model changes, no published figure moves, and
-nothing is written into `docs/runs/`. No day after 2025-12-31 is read (the script refuses a panel past it; `docs/decisions/lockbox.md`), no
+nothing is written into `docs/runs/`. The tables on this page read no day after 2025-12-31 (the 2026 extension of #684, at the end of the page, reads the opened near-blind tier to 2026-09-03; the script refuses a panel past that; `docs/decisions/lockbox.md`), no
 hindsight regime label is used (ruling on #515: the regimes are the period slices of `metadata/evaluation_splits.json` and the as-of scarcity
 state), and the back-filled 2014-18 history is not read while its `posting_instant` is null (#572, guarded by PR #590; the script refuses a panel that starts before
 2018-04-03). The choices (series list, leads, targets, cluster threshold, ordinary-day rule, bootstrap) are in `metadata/source_matrix_629.json`,
@@ -325,3 +325,29 @@ The intervals are the stationary bootstrap's, resampling days within a split; th
 * **The derived inputs are read under the per-release arm only**, as the every-day part of #601 reads them.
 * **Not re-run:** the full model comparisons of #479; the published panel and every record in `docs/runs/` are as they were.
 * **Findings, not fixed here.** #621 and #622 are open and are cited as caveats; this screen does not change what they describe. #572 and #576 are closed, guarded by PR #590 (the 2014-18 posting dates are #633; the H.4.1 coverage through 2026-09-03 is #625), and are cited for how the readings here were built.
+
+## The 2026 extension (#684)
+
+**Development data, exploration only.** The near-blind tier (2026-01-01 to 2026-09-03) was opened on 2026-10-05 (`metadata/lockbox.json`), so this screen
+may read it. Nothing on it is a verdict, and none of it is out-of-sample evidence for a registered candidate (scoring protocol v1, #640). The blind tier
+(after 2026-09-03) stays shut: `repo_model.exploration.EXPLORATORY_END` is the one end date, and a panel past it is refused. The screen was re-run unchanged
+(same ordinary-day rule, leads, targets, bootstrap and seed) on a panel that runs to 2026-09-03; the declaration was regenerated and committed before the run
+(`metadata/source_matrix_629.json`, panel `c823a0ce…`). Evidence: `docs/pivot/evidence/source-matrix-684/` (`source_matrix.json`, `tables.md`).
+
+* **Days.** 2,042 scored days (2018-06-29 to 2026-09-03), 1,602 ordinary, 145 days above +5 bp of which 84 are ordinary, 30 onsets of which 6 fall on ordinary days
+  (the same six as above: none of the 2026 pressure days is an ordinary-day onset).
+* **The earlier page reproduces.** The new `period:2018-2025` split has 82 pressure days on 1,469 ordinary days, as the 82 and 1,469 above. Every scratch-panel
+  column the extended builders produce is, through 2025-12-31, byte-identical to the earlier build (checked on the first 1,936 lines of each panel).
+* **87 series, not 101.** The 14 `fed_repo_*` series are out. The tracked repo-operations snapshot ends 2025-12-31 (its declared coverage end), and
+  `fed_liquidity.assemble` refuses a 2026 day (`StaleReadError`, #654/#659), as it should. A 2026 reading of those series needs a new snapshot: a data step, not this one.
+  Every other column extends. The series list changed for that reason only, and the pooled figures above (101 series) are not comparable cell for cell to the extended ones.
+* **The 2026 column is empty.** On this screen's ordinary days 2026 holds 133 days and 2 pressure days (2026-01-02 at 10 bp and 2026-02-18 at 8 bp). The declared
+  minimum is 3 pressure days for a cell, so every 2026 AUROC and correlation is empty (`-` in Tables 4 and 7), and no interval is drawn from 2 events.
+  The other 2026 days above +5 bp are 2026-02-17, 2026-03-02 and 2026-04-15, which are coupon-settlement days and so not ordinary. The directive's list (01-02, 01-05, 02-18, 03-03)
+  counts 2026-01-05 and 2026-03-03, which sit exactly on +5.0 bp: not above +5 bp under the ruling of 2 October 2026 on #155 (`docs/decisions/pressure-probability.md`).
+* **The over-forecast and false-alarm check is not made here.** This screen scores inputs, not a forecast; there is no forecast to over-forecast with. The check belongs to the model pages.
+* **What moves with the 2026 days.** Little in the pooled tables: the top of Table 2 is the same series in the same order (`policy_reserve_management_in_force`, Spearman -0.32 with the
+  +5 bp indicator at lead 1 on both pages; it is a step that switches on at 2019-10-15, so it separates the 2018-19 days from the rest and is a period contrast, not a signal). The 2026 days add
+  133 ordinary days with 2 pressure days to a pooled sample of 84, so they pull the pooled figures towards the calm side by a small amount.
+
+See `docs/pivot/evidence/source-matrix-684/tables.md` for the nine tables on the extended window.
