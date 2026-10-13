@@ -87,7 +87,8 @@
         "sofr_p99_iorb_bps": "the tail-spread level: the previous day's SOFR 99th percentile above IORB (#601)"
       },
       "source": "scripts/pressure_v1_1.py panel, scripts/measurement_fields.py panel and scripts/satiation_distance_598.py panel, each run under scripts/tax_date_market_days.py; off in every published declaration, switched on for these runs only (satiation_distance_598.switched_on)",
-      "not_included": "#622's lag fix is on main (#623 merged) and is in the distance column as built; no other input is added; the ON RRP rate, the SRF rate and the H.8 series belong to the liquidity repository"
+      "iorb_leads":"the announced IORB change is public one panel day ahead (metadata/sources.json), so iorb_announced_change_bps and iorb_days_to_announced_change are inputs at h = 1 only; at h = 2 to 5 variants a, b and c run without them, as iorb_every_day_579.py does. Amended after the h = 1 walks and before any score, when the as-of rule refused the columns at h >= 2",
+   "not_included": "#622's lag fix is on main (#623 merged) and is in the distance column as built; no other input is added; the ON RRP rate, the SRF rate and the H.8 series belong to the liquidity repository"
     }
   },
   "variants": {

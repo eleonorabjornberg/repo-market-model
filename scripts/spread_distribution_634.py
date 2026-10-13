@@ -301,15 +301,24 @@ def published_side(horizon: int, features: Sequence[str]):
     return (name, fit, tuple(getattr(args, "feature_b")), online), args
 
 
+#: the announced IORB change is public one panel day ahead (`metadata/sources.json`), so it is an input at h = 1 only;
+#: at the other leads the as-of rule refuses it and the variants run without it (as `iorb_every_day_579.py`, #579).
+IORB_COLUMNS = ("iorb_announced_change_bps", "iorb_days_to_announced_change")
+
+
 def new_features(horizon: int) -> Tuple[str, ...]:
-    return tuple(sorted(BASE + NEW_COLUMNS))
+    return tuple(sorted(name for name in BASE + NEW_COLUMNS if horizon == 1 or name not in IORB_COLUMNS))
 
 
 def two_part_features(horizon: int) -> Tuple[str, ...]:
     """Variant (c)'s risk-date part: #632's inputs (`risk_gbm+settle+h41+dist_roll`) and the announced IORB change."""
 
     spread = _load("spread_distribution_632")
-    return tuple(spread.sd.variant_features(spread.BEST, horizon)) + TWO_PART_EXTRA
+    return tuple(spread.sd.variant_features(spread.BEST, horizon)) + (TWO_PART_EXTRA if horizon == 1 else ())
+
+
+def two_part_every_day(horizon: int) -> Tuple[str, ...]:
+    return tuple(name for name in TWO_PART_EVERY_DAY if horizon == 1 or name not in IORB_COLUMNS)
 
 
 def walk_command(args) -> int:
@@ -373,7 +382,7 @@ def walk_command(args) -> int:
                 features = two_part_features(h)
                 record: list = []
                 predictor = ml.pressure_spread_distribution_exceedance(
-                    features, splits, minimum_history=minimum, structure="two_part", component_inputs=TWO_PART_EVERY_DAY,
+                    features, splits, minimum_history=minimum, structure="two_part", component_inputs=two_part_every_day(h),
                     record=record, grid=GRID,
                 )
                 report = rolling_exceedance_backtest(
@@ -386,7 +395,7 @@ def walk_command(args) -> int:
                     raise SystemExit(f"{variant}: {len(record)} laws recorded for {len(days)} scored days")
                 laws = {day: (list(q) if q is not None else None) for day, (_part, q) in zip(days, record)}
                 levels = list(GRID)
-                settings = {"features": list(features), "every_day_inputs": list(TWO_PART_EVERY_DAY)}
+                settings = {"features": list(features), "every_day_inputs": list(two_part_every_day(h))}
     document = {
         "variant": variant,
         "horizon": h,
@@ -421,7 +430,7 @@ def exceedance_command(args) -> int:
             taus=THRESHOLDS_BP, minimum_history=minimum, refit_every=refit, end=LAST_TARGET, horizon=args.horizon,
         )
         out[name] = {
-            f"{tau:g}": {fold.scored_date.isoformat(): curve[position] for fold, curve in zip(report.folds, report.curves)}
+            f"{tau:g}": {fold.scored_date.isoformat(): forecast[position] for fold, forecast in zip(report.folds, report.forecast)}
             for position, tau in enumerate(THRESHOLDS_BP)
         }
     document = {"horizon": args.horizon, "thresholds_bp": list(THRESHOLDS_BP), "panel_sha256": panel_sha256(args.published), "forecasts": out}
