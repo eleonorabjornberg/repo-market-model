@@ -269,23 +269,34 @@
       "publication": "New York Fed repo operation results: the temporary open market operations of 2019 and 2020 and the Standing Repo Facility from 2021-07-29. Operations close between 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the next business day is the conservative availability instant declared here."
     },
     "coverage": [
-      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2018-05-09 to 2025-12-31 in the tracked snapshots"
+      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2019-09-17 to 2025-12-31 in the tracked snapshots (the six test operations of 2018-05-09 to 2019-05-13 are left out), and the term repos outstanding per business day over the same dates"
     ],
+    "coverage_end": "2025-12-31",
+    "facility_start": "2019-09-17",
     "field_frequencies": {
       "repo_accepted": "business_daily",
       "repo_ops_accepting": "business_daily",
       "repo_rate": "business_daily",
-      "repo_submitted": "business_daily"
+      "repo_submitted": "business_daily",
+      "repo_term_outstanding": "business_daily"
+    },
+    "field_meanings": {
+      "repo_accepted": "A take-up demand signal: the amount the Desk accepted on the operation date, summed over the date's operations. It is not the amount outstanding: a term repo is counted once, on its operation date, and not on the days until it matures.",
+      "repo_ops_accepting": "The number of the date's operations that accepted anything.",
+      "repo_rate": "The accepted-amount-weighted mean of the securities' weighted-average rate accepted, in percent; absent on a date where nothing was accepted at a stated rate.",
+      "repo_submitted": "The amount submitted on the operation date, summed over the date's operations: a take-up demand signal, as repo_accepted.",
+      "repo_term_outstanding": "The cash in the system from term repos: the amount accepted on term repos with settlement on or before the business day and maturity after it (#659). Rebuilt from settlementDate and maturityDate across the snapshot files; 0.0 on a covered business day with nothing outstanding."
     },
     "fields": [
       "repo_accepted",
       "repo_ops_accepting",
       "repo_rate",
-      "repo_submitted"
+      "repo_submitted",
+      "repo_term_outstanding"
     ],
     "frequency": "business daily",
     "identities": [],
-    "limitation": "Off in every published declaration (#425), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. repo_accepted and repo_submitted are totalAmtAccepted and totalAmtSubmitted summed over every operation of an operationDate whose operationType is 'Repo' (overnight or term), in USD billions (the API serves US dollars). repo_rate is the accepted-amount-weighted mean of the securities' percentWeightedAverageRate, in percent, and is absent on a date where nothing was accepted at a stated rate. repo_ops_accepting counts the date's operations that accepted anything. A date with no operation has no row; the measurement columns (repo_liquidity) read it as zero. Operations the Desk names small-value exercises in the note are left out. The Desk's operational tests of 2018 and 2019 (about 65 million dollars each, announced by operating-policy notices and not named so in the note) are kept: they are non-zero days. Each yearly snapshot is one unmodified search response; the year in progress changes when re-fetched.",
+    "limitation": "Off in every published declaration (#425), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. repo_accepted and repo_submitted are totalAmtAccepted and totalAmtSubmitted summed over every operation of an operationDate whose operationType is 'Repo' (overnight or term), in USD billions (the API serves US dollars). repo_rate is the accepted-amount-weighted mean of the securities' percentWeightedAverageRate, in percent, and is absent on a date where nothing was accepted at a stated rate. repo_ops_accepting counts the date's operations that accepted anything. Operations the Desk names small-value exercises in the note are left out, and so are the six operations of 64 to 66 million dollars before the facility's first day, 2019-09-17 (facility_start; 2018-05-09 to 2019-05-13): they are operational tests, not take-up, and no Fed repo was offered to the market before it (#659, data meaning decided by Nicholas Beroud on eleonorabjornberg/repo-market-liquidity#1). A date with no operation has no row. The measurement columns (fed_liquidity.assemble) read it as zero before facility_start (a structural zero) and from the Standing Repo Facility's first day, 2021-07-29, and as missing from facility_start to the day before it (2021-07-28), in the years the Desk did not operate on every day; the tracked snapshots hold no such date. A date after coverage_end, the last date the tracked snapshots cover, is refused, never read as zero. repo_accepted and repo_submitted are demand signals (field_meanings); repo_term_outstanding is the term repos outstanding, so that no different measure sits under the same name. Each yearly snapshot is one unmodified search response; the year in progress changes when re-fetched.",
     "provider": "Federal Reserve Bank of New York",
     "release_lag": {
       "available_time": "16:00",
@@ -308,8 +319,10 @@
       "publication": "New York Fed repo operation results: the temporary open market operations of 2019 and 2020 and the Standing Repo Facility from 2021-07-29. Operations close between 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the operation date is the less conservative availability instant tested here."
     },
     "coverage": [
-      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2018-05-09 to 2025-12-31 in the tracked snapshots"
+      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2019-09-17 to 2025-12-31 in the tracked snapshots (the six test operations of 2018-05-09 to 2019-05-13 are left out)"
     ],
+    "coverage_end": "2025-12-31",
+    "facility_start": "2019-09-17",
     "field_frequencies": {
       "repo_accepted": "business_daily",
       "repo_ops_accepting": "business_daily",

@@ -131,12 +131,25 @@ NYFED_REPO_OPS_ACCEPTED = "repo_accepted"
 NYFED_REPO_OPS_SUBMITTED = "repo_submitted"
 NYFED_REPO_OPS_RATE = "repo_rate"
 NYFED_REPO_OPS_COUNT = "repo_ops_accepting"
+#: The term repos outstanding (#659): USD billions of term repos with settlement <= d < maturity
+#: on each business day d, so that the amount accepted on an operation date, a take-up demand
+#: signal, is not mistaken for the cash in the system. Built across the snapshot files, not
+#: parsed from any one (`_nyfed_repo_term_outstanding_rows`).
+NYFED_REPO_TERM_OUTSTANDING = "repo_term_outstanding"
 NYFED_REPO_OPS_FIELDS = (
     NYFED_REPO_OPS_ACCEPTED,
     NYFED_REPO_OPS_SUBMITTED,
     NYFED_REPO_OPS_RATE,
     NYFED_REPO_OPS_COUNT,
+    NYFED_REPO_TERM_OUTSTANDING,
 )
+#: The first operation of the Desk's repo facility (#659, decided by Nicholas Beroud on
+#: eleonorabjornberg/repo-market-liquidity#1): 17 September 2019, when it began to offer repo to
+#: the market. The six operations of $64-66 million before it (2018-05-09 to 2019-05-13) are
+#: small-value test operations, not take-up, and are left out. Before this date no Fed repo was
+#: offered, so a date with no operation is a structural zero; from it to `SRF_INCEPTION` a date with
+#: none is missing (`fed_liquidity.assemble`).
+REPO_FACILITY_START = date(2019, 9, 17)
 #: The OFR's Short-term Funding Monitor, repo collection (#187): one
 #: unmodified `timeseries` response per series mnemonic, saved by
 #: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
@@ -2130,14 +2143,42 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
     return rows
 
 
+def _kept_repo_operations(operations):
+    """`(number, operation, operationDate)` of each repo operation that counts as take-up (#425, #659).
+
+    An operation whose `operationType` is `Repo`, overnight or term, that is not a small-value
+    exercise (`_is_small_value_exercise`) and is dated on or after `REPO_FACILITY_START`: the
+    six test operations of $64-66 million before the facility are not take-up. Raises
+    `ValueError` on a kept-type operation with no valid `operationDate`.
+    """
+
+    for number, operation in enumerate(operations, start=1):
+        if not isinstance(operation, dict):
+            raise ValueError(f"New York Fed operation {number} is not an object")
+        if operation.get("operationType") != "Repo" or _is_small_value_exercise(operation):
+            continue
+        try:
+            ref_date = date.fromisoformat(str(operation["operationDate"]))
+        except (KeyError, ValueError) as exc:
+            raise ValueError(
+                f"New York Fed repo operation {number} has no valid operationDate"
+            ) from exc
+        if ref_date < REPO_FACILITY_START:
+            continue
+        yield number, operation, ref_date
+
+
 def _nyfed_repo_ops_rows(artifact: SnapshotArtifact, payload: bytes):
     """Per operation date: the repo operations' amounts, rate and count (#425).
 
     Keeps every operation whose `operationType` is `Repo`, overnight or term, that is not a
-    small-value exercise (`_is_small_value_exercise`). Per `operationDate` it emits
+    small-value exercise (`_is_small_value_exercise`) and is dated on or after the facility's
+    first day (`REPO_FACILITY_START`, #659). Per `operationDate` it emits
 
     * `repo_accepted` and `repo_submitted`: `totalAmtAccepted` and `totalAmtSubmitted` summed
-      over the day's operations, in USD billions;
+      over the day's operations, in USD billions. `repo_accepted` is a take-up *demand signal*
+      (what the Desk accepted on the operation date), not the cash in the system: the term repos
+      outstanding are `repo_term_outstanding` (`_nyfed_repo_term_outstanding_rows`);
     * `repo_rate`: the accepted-amount-weighted mean of the securities' weighted-average rate
       accepted (`percentWeightedAverageRate`, percent), only on a day something was accepted
       at a stated rate;
@@ -2165,17 +2206,7 @@ def _nyfed_repo_ops_rows(artifact: SnapshotArtifact, payload: bytes):
     rated: Dict[date, int] = {}
     counts: Dict[date, int] = {}
     published: Dict[date, datetime] = {}
-    for number, operation in enumerate(operations, start=1):
-        if not isinstance(operation, dict):
-            raise ValueError(f"New York Fed operation {number} is not an object")
-        if operation.get("operationType") != "Repo" or _is_small_value_exercise(operation):
-            continue
-        try:
-            ref_date = date.fromisoformat(str(operation["operationDate"]))
-        except (KeyError, ValueError) as exc:
-            raise ValueError(
-                f"New York Fed repo operation {number} has no valid operationDate"
-            ) from exc
+    for number, operation, ref_date in _kept_repo_operations(operations):
         amounts = []
         for key in ("totalAmtAccepted", "totalAmtSubmitted"):
             value = operation.get(key)
@@ -2235,6 +2266,110 @@ def _nyfed_repo_ops_rows(artifact: SnapshotArtifact, payload: bytes):
     return rows
 
 
+def _nyfed_repo_term_outstanding_rows(artifacts_payloads):
+    """`repo_term_outstanding` per business day, across the `nyfed_repo_ops` snapshot files (#659).
+
+    USD billions of term repos (`term` other than `Overnight`) with `settlementDate` <= d <
+    `maturityDate`, summing `totalAmtAccepted`, on each business day d from the first to the last
+    kept operation date of the files. The amount accepted on an operation date (`repo_accepted`)
+    is a take-up demand signal; this is the cash those term repos hold in the system on d. The
+    same operations are kept as for `repo_accepted` (`_kept_repo_operations`: repo, not a
+    small-value exercise, not before the facility), so the six test operations are not outstanding.
+    A business day with nothing outstanding is 0.0. A term repo struck in one file and maturing in
+    the next is counted in both files' days, so the files are read together; an operation that
+    appears in two files (a re-fetch) is counted once, from the later retrieval.
+
+    `available_at` is the date's own, as for `repo_accepted` (the later of the declaration, 16:00
+    New York time on the next business day, and the Desk's recorded publication time, never after
+    the retrieval), and never earlier than that of any operation that contributes to the amount: a
+    term repo rewritten days after it was struck makes the amount that includes it public no
+    sooner than the rewrite.
+
+    Raises `ValueError` on a kept term operation with no valid `settlementDate` and `maturityDate`
+    (maturity after settlement), or no numeric `totalAmtAccepted`.
+    """
+
+    from zoneinfo import ZoneInfo
+    from .data import PointInTimeObservation
+
+    new_york = ZoneInfo("America/New_York")
+    latest = max(
+        artifacts_payloads,
+        key=lambda pair: datetime.fromisoformat(pair[0].retrieved_at.replace("Z", "+00:00")),
+    )[0]
+    published: Dict[date, datetime] = {}
+    holder: Dict[date, SnapshotArtifact] = {}
+    terms: Dict[object, Tuple[date, date, date, int, SnapshotArtifact]] = {}
+    first = last = None
+    for artifact, payload in artifacts_payloads:
+        retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+        for day, stamp in repo_operation_publication_times(payload).items():
+            if day not in published or stamp > published[day]:
+                published[day] = stamp
+        for number, operation, ref_date in _kept_repo_operations(_nyfed_operations(json.loads(payload))):
+            first = ref_date if first is None else min(first, ref_date)
+            last = ref_date if last is None else max(last, ref_date)
+            if ref_date not in holder or retrieved >= datetime.fromisoformat(
+                holder[ref_date].retrieved_at.replace("Z", "+00:00")
+            ):
+                holder[ref_date] = artifact
+            if operation.get("term") == "Overnight":
+                continue
+            try:
+                settle = date.fromisoformat(str(operation["settlementDate"]))
+                maturity = date.fromisoformat(str(operation["maturityDate"]))
+            except (KeyError, ValueError) as exc:
+                raise ValueError(
+                    f"New York Fed term repo operation {operation.get('operationId', number)!r} "
+                    f"on {ref_date} has no valid settlementDate and maturityDate"
+                ) from exc
+            if maturity <= settle:
+                raise ValueError(
+                    f"New York Fed term repo operation {operation.get('operationId', number)!r} "
+                    f"on {ref_date} matures on {maturity}, not after it settles on {settle}"
+                )
+            amount = operation.get("totalAmtAccepted")
+            if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+                raise ValueError(
+                    f"New York Fed repo operation {operation.get('operationId', number)!r} "
+                    f"on {ref_date} has no numeric totalAmtAccepted ({amount!r}); an outstanding "
+                    f"amount summed without one of its operations is not that day's"
+                )
+            key = operation.get("operationId", (ref_date, number))
+            if key not in terms or retrieved >= datetime.fromisoformat(
+                terms[key][4].retrieved_at.replace("Z", "+00:00")
+            ):
+                terms[key] = (ref_date, settle, maturity, amount, artifact)
+    if first is None:
+        return []
+
+    def instant(day: date) -> datetime:
+        declared = datetime.combine(_next_business_day(day, 1), time(16, 0), tzinfo=new_york)
+        artifact = holder.get(day, latest)
+        retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
+        return min(max(declared, published.get(day, declared)), retrieved)
+
+    rows = []
+    day = first
+    while day <= last:
+        if _next_business_day(day - timedelta(days=1), 1) == day:
+            contributing = [t for t in terms.values() if t[1] <= day < t[2]]
+            available_at = max([instant(day)] + [instant(t[0]) for t in contributing])
+            artifact = holder.get(day, latest)
+            rows.append(
+                PointInTimeObservation(
+                    series_id=NYFED_REPO_TERM_OUTSTANDING,
+                    ref_date=day,
+                    available_at=available_at,
+                    value=sum(t[3] for t in contributing) / 1e9,
+                    vintage_id=f"{artifact.retrieved_at}:operations",
+                    source_sha=artifact.sha256,
+                )
+            )
+        day += timedelta(days=1)
+    return rows
+
+
 def repo_operation_publication_times(payload: bytes) -> Dict[date, datetime]:
     """Per operation date, the latest `lastUpdated` of its kept repo operations (#425), New York time.
 
@@ -2246,13 +2381,10 @@ def repo_operation_publication_times(payload: bytes) -> Dict[date, datetime]:
 
     new_york = ZoneInfo("America/New_York")
     out: Dict[date, datetime] = {}
-    for operation in _nyfed_operations(json.loads(payload)):
-        if operation.get("operationType") != "Repo" or _is_small_value_exercise(operation):
-            continue
+    for _number, operation, ref_date in _kept_repo_operations(_nyfed_operations(json.loads(payload))):
         stamp = operation.get("lastUpdated")
         if not isinstance(stamp, str):
             continue
-        ref_date = date.fromisoformat(str(operation["operationDate"]))
         written = datetime.fromisoformat(stamp).replace(tzinfo=new_york)
         if ref_date not in out or written > out[ref_date]:
             out[ref_date] = written
@@ -4865,6 +4997,7 @@ def parse_snapshots(
     coverage = []
     absent_cells = AbsentCellRecorder(keep_row_dates=keep_row_dates)
     nmfp = []
+    repo_ops = []
     for artifact in artifacts:
         artifact = replace(
             artifact,
@@ -4888,6 +5021,7 @@ def parse_snapshots(
             parsed_rows = _nyfed_srf_rows(artifact, payload)
         elif artifact.source_id == NYFED_REPO_OPS_SOURCE_ID:
             parsed_rows = _nyfed_repo_ops_rows(artifact, payload)
+            repo_ops.append((artifact, payload))
         elif artifact.source_id in (OFR_STFM_SOURCE_ID, OFR_STFM_SEGMENTS_SOURCE_ID):
             parsed_rows = _ofr_stfm_rows(artifact, payload)
         elif artifact.source_id == TREASURY_DTS_TGA_SOURCE_ID:
@@ -4920,6 +5054,16 @@ def parse_snapshots(
             artifact.retrieved_at.replace("Z", "+00:00")
         )
         candidates.extend((retrieved_at, row) for row in parsed_rows)
+
+    if repo_ops:
+        # Read across the files: a term repo struck in one year matures in the next (#659).
+        outstanding_retrieved = max(
+            datetime.fromisoformat(a.retrieved_at.replace("Z", "+00:00")) for a, _p in repo_ops
+        )
+        candidates.extend(
+            (outstanding_retrieved, row)
+            for row in _nyfed_repo_term_outstanding_rows(repo_ops)
+        )
 
     if nmfp:
         _check_declared_entity_unit("sec_nmfp", registry, NMFP_ENTITY_UNIT)

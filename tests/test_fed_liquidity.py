@@ -28,16 +28,23 @@ NEW_YORK = ZoneInfo("America/New_York")
 BN = 1_000_000_000
 
 
-def operation(day, accepted, *, kind="Repo", term="Overnight", submitted=None, rate=None, written=None, note=""):
-    """One operation record, in the Desk's shape."""
+def operation(
+    day, accepted, *, kind="Repo", term="Overnight", submitted=None, rate=None, written=None, note="",
+    settle=None, maturity=None,
+):
+    """One operation record, in the Desk's shape. Settles on its date and matures the next day unless told."""
 
     submitted = accepted if submitted is None else submitted
+    settle = settle or day
+    maturity = maturity or (date.fromisoformat(settle) + timedelta(days=1)).isoformat()
     details = [{"securityType": "Treasury", "amtSubmitted": submitted, "amtAccepted": accepted}]
     if rate is not None:
         details[0]["percentWeightedAverageRate"] = rate
     return {
         "operationId": f"{kind} {day} {term}",
         "operationDate": day,
+        "settlementDate": settle,
+        "maturityDate": maturity,
         "operationType": kind,
         "term": term,
         "note": note,
@@ -77,6 +84,13 @@ def by_series(rows):
 class ParserTests(unittest.TestCase):
     """`_nyfed_repo_ops_rows`: every repo operation of a date, in USD billions.
 
+    Recorded mutation for the facility start (#659), 13 October 2026, in a disposable copy:
+    `src/repo_model/ingest.py`, `_kept_repo_operations`, `if ref_date < REPO_FACILITY_START:` mutated to
+    `if False:` (the six test operations of $64-66m kept as take-up).
+    `test_an_operation_before_the_facility_is_a_test_not_take_up` then fails with `AssertionError`
+    (`Lists differ: [datetime.date(2019, 5, 13), datetime.date(2019, 9, 16), datetime.date(2019, 9, 17)] !=
+    [datetime.date(2019, 9, 17)]`).
+
     Recorded mutation (CLAUDE.md), 8 October 2026, in a disposable copy:
     `src/repo_model/ingest.py`, `_nyfed_repo_ops_rows`,
     `available_at = min(max(declared, published.get(ref_date, declared)), retrieved)` mutated to
@@ -112,6 +126,23 @@ class ParserTests(unittest.TestCase):
         self.assertNotIn(date(2019, 12, 16), rows["repo_accepted"])
         self.assertEqual(rows["repo_accepted"][date(2019, 12, 17)].value, 0.0)
         self.assertNotIn(date(2019, 12, 17), rows.get("repo_rate", {}))
+
+    def test_an_operation_before_the_facility_is_a_test_not_take_up(self):
+        rows = by_series(
+            rows_for(
+                operation("2019-05-13", 65_000_000),
+                operation("2019-09-16", 66_000_000, term="Term", maturity="2019-09-18"),
+                operation("2019-09-17", 53 * BN),
+            )
+        )
+        self.assertEqual(sorted(rows["repo_accepted"]), [date(2019, 9, 17)])
+        self.assertEqual(ingest.REPO_FACILITY_START, date(2019, 9, 17))
+        self.assertEqual(
+            sorted(ingest.repo_operation_publication_times(
+                json.dumps({"repo": {"operations": [operation("2019-05-13", 65_000_000), operation("2019-09-17", BN)]}}).encode()
+            )),
+            [date(2019, 9, 17)],
+        )
 
     def test_a_date_is_declared_available_at_four_pm_on_the_next_business_day(self):
         rows = by_series(rows_for(operation("2026-01-16", BN)))
@@ -165,6 +196,16 @@ class BuildColumnsTests(unittest.TestCase):
         for a, b in zip(short, longer):
             for name in fed_liquidity.DERIVED_COLUMNS:
                 self.assertEqual(a.values[name], b.values[name])
+
+    def test_a_missing_day_is_missing_in_every_derived_column_when_the_caller_allows_it(self):
+        built = fed_liquidity.build_columns(self.rows([1.0, None, 0.0, 2.0]), allow_missing=True)
+        for name in ("fed_repo_log_accepted", "fed_repo_log_accepted_change"):
+            self.assertIsNone(built[1].values[name])
+        # The change needs the previous row too, so the day after a missing one has none.
+        self.assertIsNone(built[2].values["fed_repo_log_accepted_change"])
+        self.assertAlmostEqual(built[3].values["fed_repo_log_accepted_change"], 1.0986122886681098)
+        # Rows since a positive take-up: a missing row is not a positive one.
+        self.assertEqual([r.values["fed_repo_days_since_positive"] for r in built], [0.0, 1.0, 2.0, 0.0])
 
     def test_a_missing_or_negative_take_up_is_refused_not_guessed(self):
         for bad in (None, -1.0, float("nan")):
@@ -410,7 +451,8 @@ class AssemblyTests(unittest.TestCase):
 
     def assemble(self, reading):
         return fed_liquidity.assemble(
-            self.panel(), self.directory(*self.operations()), cutoff=self.CUTOFF, end=date(2026, 12, 31), reading=reading
+            self.panel(), self.directory(*self.operations()), cutoff=self.CUTOFF, end=date(2026, 12, 31), reading=reading,
+            coverage_end=date(2026, 12, 31),
         )
 
     def test_the_conservative_reading_is_unchanged_by_the_second_one(self):
@@ -436,7 +478,7 @@ class AssemblyTests(unittest.TestCase):
         rows, _ = self.assemble(fed_liquidity.CONSERVATIVE)
         both, _ = fed_liquidity.assemble(
             rows, self.directory(*self.operations()), cutoff=self.CUTOFF, end=date(2026, 12, 31),
-            reading=fed_liquidity.SAME_DAY,
+            reading=fed_liquidity.SAME_DAY, coverage_end=date(2026, 12, 31),
         )
         self.assertEqual(both[0].values["fed_repo_accepted"], both[0].values["fed_repo_accepted_sameday"])
         self.assertEqual(both[1].values["fed_repo_accepted"], 3.0)
@@ -526,6 +568,282 @@ class SameDayDeclarationTests(unittest.TestCase):
             self.assertEqual(set(document[name]["features"]), renamed)
             self.assertEqual(document[name]["calibration"], document[counterpart]["calibration"])
             self.assertNotIn("cutoffs", document[name])
+
+
+def snapshot_directory(case, *files, urls=None, retrieved="2026-10-08T20:51:05+00:00"):
+    """A snapshot directory with one `nyfed_repo_ops` file per list of operations."""
+
+    holder = tempfile.TemporaryDirectory()
+    case.addCleanup(holder.cleanup)
+    root = Path(holder.name)
+    (root / "nyfed_repo_ops").mkdir()
+    for number, operations in enumerate(files):
+        payload = json.dumps({"repo": {"operations": list(operations)}}).encode()
+        name = f"ops{number}.json"
+        (root / "nyfed_repo_ops" / name).write_bytes(payload)
+        manifest = {
+            "byte_count": len(payload),
+            "path": f"nyfed_repo_ops/{name}",
+            "retrieved_at": retrieved,
+            "sha256": hashlib.sha256(payload).hexdigest(),
+            "source_id": ingest.NYFED_REPO_OPS_SOURCE_ID,
+            "url": (urls or {}).get(number, ingest.NYFED_RP_RESULTS_URL),
+        }
+        (root / "nyfed_repo_ops" / f"{name}.manifest.json").write_text(json.dumps(manifest))
+    return root
+
+
+def outstanding_rows(case, *files):
+    root = snapshot_directory(case, *files)
+    parsed = parse_snapshots([load_snapshot_manifest(p) for p in sorted(root.rglob("*.manifest.json"))])
+    return by_series(parsed.rows)
+
+
+class TermOutstandingTests(unittest.TestCase):
+    """`repo_term_outstanding`: the term repos settled and not yet matured, per business day (#659, item 3).
+
+    USD billions of term repos with settlement <= d < maturity on each business day d the
+    snapshots cover, small-value exercises and the operations before the facility excluded as for
+    `repo_accepted`; 0.0 on a covered business day with nothing outstanding. It is read across the
+    snapshot files, since a term repo struck in December matures in January's file. Its
+    `available_at` is the date's own (the later of the declaration and the Desk's recorded
+    publication time) and never earlier than that of any operation that contributes to it.
+
+    Recorded mutation (CLAUDE.md), 13 October 2026, in a disposable copy:
+    `src/repo_model/ingest.py`, `_nyfed_repo_term_outstanding_rows`,
+    `available_at = max([instant(day)] + [instant(t[0]) for t in contributing])` mutated to
+    `available_at = instant(day)` (a rewritten earlier operation ignored).
+    `test_an_outstanding_amount_is_never_public_before_a_rewritten_contributor` then fails with
+    `AssertionError` (`datetime(2020, 3, 19, 16, 0) != datetime(2020, 4, 1, 9, 0)`): the amount that
+    includes a record rewritten on 1 April is read on 19 March.
+    """
+
+    OVERNIGHT = ("2020-03-16", "2020-04-02")
+
+    def ops(self, *extra):
+        return [operation(day, BN) for day in self.OVERNIGHT] + list(extra)
+
+    def test_the_amount_is_what_has_settled_and_not_matured(self):
+        rows = outstanding_rows(
+            self,
+            self.ops(
+                operation("2020-03-17", 60 * BN, term="Term", settle="2020-03-17", maturity="2020-03-31"),
+                operation("2020-03-18", 40 * BN, term="Term", settle="2020-03-19", maturity="2020-03-26"),
+                operation("2020-03-17", 99 * BN),  # overnight: not a term repo
+                operation("2020-03-17", 98 * BN, kind="Reverse Repo", term="Term", maturity="2020-04-17"),
+                operation("2020-03-17", 25_000_000, term="Term", maturity="2020-04-14", note="Small Value Exercise"),
+            ),
+        )["repo_term_outstanding"]
+        got = {d.isoformat(): r.value for d, r in rows.items()}
+        self.assertEqual(got["2020-03-16"], 0.0)
+        self.assertEqual(got["2020-03-17"], 60.0)
+        self.assertEqual(got["2020-03-18"], 60.0)  # the 40bn is struck but not yet settled
+        self.assertEqual(got["2020-03-19"], 100.0)
+        self.assertEqual(got["2020-03-25"], 100.0)
+        self.assertEqual(got["2020-03-26"], 60.0)  # matures on the 26th: not outstanding on it
+        self.assertEqual(got["2020-03-30"], 60.0)
+        self.assertEqual(got["2020-03-31"], 0.0)
+        self.assertEqual(got["2020-04-02"], 0.0)
+        self.assertNotIn("2020-03-21", got)  # a Saturday
+        self.assertEqual(sorted(got)[0], "2020-03-16")
+        self.assertEqual(sorted(got)[-1], "2020-04-02")
+
+    def test_a_term_repo_struck_in_one_file_is_outstanding_in_the_next(self):
+        december = [operation("2020-12-28", BN), operation("2020-12-29", 28 * BN, term="Term", maturity="2021-01-26")]
+        january = [operation("2021-01-04", BN), operation("2021-01-29", BN)]
+        rows = outstanding_rows(self, december, january)["repo_term_outstanding"]
+        self.assertEqual(rows[date(2020, 12, 30)].value, 28.0)
+        self.assertEqual(rows[date(2021, 1, 4)].value, 28.0)
+        self.assertEqual(rows[date(2021, 1, 25)].value, 28.0)
+        self.assertEqual(rows[date(2021, 1, 26)].value, 0.0)
+
+    def test_an_operation_before_the_facility_is_not_outstanding(self):
+        rows = outstanding_rows(
+            self,
+            [
+                operation("2019-05-08", 65_000_000, term="Term", maturity="2019-05-10"),
+                operation("2019-09-17", BN),
+                operation("2019-09-19", BN),
+            ],
+        )["repo_term_outstanding"]
+        self.assertEqual(min(rows), date(2019, 9, 17))
+        self.assertEqual({r.value for r in rows.values()}, {0.0})
+
+    def test_an_outstanding_amount_is_published_with_its_date(self):
+        files = [self.ops(operation("2020-03-17", 60 * BN, term="Term", maturity="2020-03-31"))]
+        parsed = outstanding_rows(self, *files)
+        for day, row in parsed["repo_term_outstanding"].items():
+            if day in parsed["repo_accepted"]:
+                self.assertEqual(row.available_at, parsed["repo_accepted"][day].available_at, day)
+
+    def test_an_outstanding_amount_is_never_public_before_a_rewritten_contributor(self):
+        rewritten = operation(
+            "2020-03-17", 60 * BN, term="Term", maturity="2020-03-31", written="2020-04-01 09:00:00"
+        )
+        rows = outstanding_rows(self, self.ops(rewritten, operation("2020-03-18", BN)))
+        self.assertEqual(rows["repo_accepted"][date(2020, 3, 17)].available_at, datetime(2020, 4, 1, 9, 0, tzinfo=NEW_YORK))
+        # The 18th's own results were public at 16:00 on the 19th, but the 60bn in it was not.
+        self.assertEqual(rows["repo_accepted"][date(2020, 3, 18)].available_at, datetime(2020, 3, 19, 16, 0, tzinfo=NEW_YORK))
+        self.assertEqual(
+            rows["repo_term_outstanding"][date(2020, 3, 18)].available_at, datetime(2020, 4, 1, 9, 0, tzinfo=NEW_YORK)
+        )
+        self.assertEqual(rows["repo_term_outstanding"][date(2020, 3, 18)].value, 60.0)
+
+    def test_a_term_operation_without_valid_dates_is_refused(self):
+        for settle, maturity in (("not a date", "2020-03-31"), ("2020-03-17", "2020-03-17"), ("2020-03-17", "2020-03-16")):
+            broken = operation("2020-03-17", BN, term="Term")
+            broken["settlementDate"], broken["maturityDate"] = settle, maturity
+            with self.assertRaises(ValueError):
+                outstanding_rows(self, self.ops(broken))
+
+
+class MissingAndCoverageTests(unittest.TestCase):
+    """Missing days, the facility's start and the snapshots' last date (#659, items 1, 2 and 4).
+
+    * Before 2019-09-17 no Fed repo was offered to the market: a date with no operation is a
+      structural zero, and the six test operations of $64-66m are not take-up.
+    * From 2019-09-17 to the day before the Standing Repo Facility (2021-07-28) a panel date with
+      no operation is **missing**, not zero. From the facility's first day a date with none is zero.
+    * A panel date after the snapshots' last date (`nyfed_repo_ops.coverage_end`) is refused
+      (`StaleReadError`), never read as zero.
+
+    Recorded mutation (CLAUDE.md), 13 October 2026, in a disposable copy:
+    `src/repo_model/fed_liquidity.py`, `assemble`, `if row.date > coverage_end:` mutated to
+    `if False:` (a date past the coverage read as zero take-up).
+    `test_a_date_after_the_snapshots_last_date_is_refused_not_read_as_zero` then fails with
+    `AssertionError: StaleReadError not raised`.
+
+    Recorded mutation, same day, `assemble`:
+    `if in_window and row.date not in full[NYFED_REPO_OPS_ACCEPTED]:` mutated to `if False:` (a window
+    date with no operation read as zero).
+    `test_a_day_with_no_operation_between_the_facility_start_and_the_srf_is_missing` then fails with
+    `AssertionError: 0.0 is not None : fed_repo_accepted`.
+    """
+
+    CUTOFF = datetime(2026, 9, 8, 21, 31, 42, tzinfo=ZoneInfo("UTC"))
+    COVERAGE_END = date(2025, 12, 31)
+
+    def directory(self, *operations):
+        return snapshot_directory(self, list(operations))
+
+    def assemble(self, days, *operations, **kwargs):
+        panel = [DailyObservation(d, {"iorb": 1.55}) for d in days]
+        kwargs.setdefault("end", date(2030, 12, 31))
+        kwargs.setdefault("coverage_end", self.COVERAGE_END)
+        return fed_liquidity.assemble(panel, self.directory(*operations), cutoff=self.CUTOFF, **kwargs)
+
+    def test_a_day_with_no_operation_between_the_facility_start_and_the_srf_is_missing(self):
+        days = weekdays(date(2020, 3, 16), 5)
+        rows, summary = self.assemble(days, operation("2020-03-16", 2 * BN, rate=1.6), operation("2020-03-19", BN, rate=1.6))
+        missing = rows[1]
+        for name in ("fed_repo_accepted", "fed_repo_submitted", "fed_repo_rate_iorb_bps", "fed_repo_ops",
+                     "fed_repo_log_accepted", "fed_repo_log_accepted_change"):
+            self.assertIsNone(missing.values[name], name)
+        self.assertEqual(rows[0].values["fed_repo_accepted"], 2.0)
+        self.assertEqual(rows[3].values["fed_repo_accepted"], 1.0)
+        self.assertIsNone(rows[3].values["fed_repo_log_accepted_change"])  # needs the previous row, which is missing
+        self.assertEqual(summary["dates_read_as_missing"], 3)
+
+    def test_a_day_with_no_operation_before_the_facility_is_a_structural_zero(self):
+        rows, summary = self.assemble([date(2018, 6, 4), date(2019, 6, 3), date(2019, 9, 13)], operation("2020-03-16", BN))
+        for row in rows:
+            self.assertEqual(row.values["fed_repo_accepted"], 0.0)
+            self.assertEqual(row.values["fed_repo_ops"], 0.0)
+        self.assertEqual(summary["dates_read_as_missing"], 0)
+
+    def test_a_day_with_no_operation_from_the_srf_on_is_zero(self):
+        rows, summary = self.assemble([date(2021, 7, 27), date(2021, 7, 28), date(2021, 7, 29), date(2022, 1, 17)], operation("2020-03-16", BN))
+        self.assertEqual([r.values["fed_repo_accepted"] for r in rows], [None, None, 0.0, 0.0])
+        self.assertEqual(summary["dates_read_as_missing"], 2)
+
+    def test_the_facility_dates_are_the_published_ones(self):
+        self.assertEqual(ingest.REPO_FACILITY_START, date(2019, 9, 17))
+        self.assertEqual(ingest.SRF_INCEPTION, date(2021, 7, 29))
+        for source in ("nyfed_repo_ops", fed_liquidity.SAME_DAY_SOURCE_ID):
+            self.assertEqual(REGISTRY[source]["facility_start"], "2019-09-17")
+
+    def test_a_date_after_the_snapshots_last_date_is_refused_not_read_as_zero(self):
+        with self.assertRaises(StaleReadError):
+            self.assemble([date(2025, 12, 31), date(2026, 1, 2)], operation("2025-12-31", BN))
+        with self.assertRaises(StaleReadError):
+            self.assemble([date(2026, 1, 2)], operation("2025-12-31", BN), end=date(2026, 1, 2))
+        rows, _ = self.assemble([date(2025, 12, 31), date(2026, 1, 2)], operation("2025-12-31", BN), end=date(2025, 12, 31))
+        self.assertEqual([r.date for r in rows], [date(2025, 12, 31)])
+
+    def test_the_default_coverage_end_is_the_declared_one(self):
+        panel = [DailyObservation(date(2026, 1, 5), {"iorb": 1.55})]
+        with self.assertRaises(StaleReadError):
+            fed_liquidity.assemble(panel, self.directory(operation("2025-12-31", BN)), cutoff=self.CUTOFF, end=date(2026, 12, 31))
+        self.assertEqual(fed_liquidity.declared_coverage_end(), date(2025, 12, 31))
+
+    def test_the_declared_coverage_end_is_the_tracked_snapshots_last_date(self):
+        manifests = [load_snapshot_manifest(p) for p in sorted(SNAPSHOTS.rglob("*.manifest.json"))]
+        last_requested = max(date.fromisoformat(m.url.split("endDate=")[1]) for m in manifests)
+        last_operation = max(
+            date.fromisoformat(str(op["operationDate"]))
+            for m in manifests
+            for op in json.loads(m.path.read_bytes())["repo"]["operations"]
+        )
+        for source in ("nyfed_repo_ops", fed_liquidity.SAME_DAY_SOURCE_ID):
+            declared = date.fromisoformat(REGISTRY[source]["coverage_end"])
+            self.assertEqual(declared, last_requested, source)
+            self.assertLessEqual(last_operation, declared, source)
+
+    def business_days(self, first, last):
+        from repo_model.data import next_business_day
+
+        out, day = [], first
+        while day <= last:
+            if next_business_day(day - timedelta(days=1), 1) == day:
+                out.append(day)
+            day += timedelta(days=1)
+        return out
+
+    def test_no_business_day_of_the_tracked_snapshots_is_missing(self):
+        # The Desk operated on every business day from 2019-09-17, so the missing rule binds no
+        # date of the tracked history: nothing that read these columns for 2019-09-17 on changes
+        # through it. The six dates before the facility are the only values that moved.
+        days = self.business_days(date(2018, 5, 9), self.COVERAGE_END)
+        panel = [DailyObservation(d, {"iorb": 1.55}) for d in days]
+        rows, summary = fed_liquidity.assemble(panel, SNAPSHOTS, cutoff=self.CUTOFF, end=self.COVERAGE_END)
+        self.assertEqual(summary["dates_read_as_missing"], 0)
+        self.assertTrue(all(r.values["fed_repo_accepted"] is not None for r in rows))
+        self.assertEqual(
+            [d.isoformat() for d in days if d < ingest.REPO_FACILITY_START and rows[days.index(d)].values["fed_repo_accepted"]],
+            [],
+        )
+
+    def test_the_material_use_dates_through_2025_are_unchanged(self):
+        # The liquidity repo's H7 stress days are the dates with $1bn or more accepted. The set was
+        # taken from the module before #659 and is pinned here by its digest.
+        days = self.business_days(date(2018, 5, 9), self.COVERAGE_END)
+        panel = [DailyObservation(d, {"iorb": 1.55}) for d in days]
+        rows, _ = fed_liquidity.assemble(panel, SNAPSHOTS, cutoff=self.CUTOFF, end=self.COVERAGE_END)
+        events = [r.date.isoformat() for r in rows if r.values["fed_repo_accepted"] >= 1.0]
+        self.assertEqual(len(events), 221)
+        self.assertEqual(
+            hashlib.sha256(",".join(events).encode()).hexdigest(),
+            "f0c02e01288311993608fd27f937a569f852ec9cde0da90a2b84a2c2ddb4dfaf",
+        )
+
+
+class MeaningTests(unittest.TestCase):
+    """The accepted amount is a take-up demand signal, not cash in the system (#659, item 3)."""
+
+    def test_the_declaration_labels_each_measure_for_what_it_is(self):
+        meanings = REGISTRY["nyfed_repo_ops"]["field_meanings"]
+        self.assertIn("demand", meanings["repo_accepted"])
+        self.assertIn("not the amount outstanding", meanings["repo_accepted"])
+        self.assertIn("outstanding", meanings["repo_term_outstanding"])
+        self.assertEqual(set(meanings), set(REGISTRY["nyfed_repo_ops"]["fields"]))
+        self.assertIn("repo_term_outstanding", REGISTRY["nyfed_repo_ops"]["fields"])
+
+    def test_the_outstanding_series_is_off_the_panel_and_off_the_published_declaration(self):
+        for columns in (fed_liquidity.ALL_COLUMN_FIELDS, contract.FEATURE_FIELDS):
+            for pairs in columns.values():
+                self.assertNotIn("repo_term_outstanding", [field for _source, field in pairs])
+        self.assertNotIn("repo_term_outstanding", json.dumps(json.loads((ROOT / "metadata" / "sources.json").read_text())))
+        self.assertEqual(ingest.NYFED_REPO_TERM_OUTSTANDING, "repo_term_outstanding")
 
 
 if __name__ == "__main__":
