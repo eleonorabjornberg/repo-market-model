@@ -596,6 +596,11 @@ from .splits import (
 )
 
 __all__ = [
+    "UPPER_BOUND_SETTINGS",
+    "grid_quantiles_gbm",
+    "ridge_location_scale_quantiles",
+    "gbm_probabilities",
+    "l2_logistic_probabilities",
     "fit_off_risk_day_model",
     "paired_bootstrap_p_values",
     "PRESSURE_QRF_SETTINGS",
@@ -10207,3 +10212,263 @@ def latent_factor_exceedance(
         )
 
     return fit_predict
+
+
+# -- the upper-bound study (#635) ---------------------------------------------------------------------------------
+#
+# Four fitters for `scripts/upper_bound_635.py`, each a pure function of the rows it is given: it reads its training
+# rows and nothing else, so the walk-forward's embargo (which rows are public at a decision instant) is the caller's.
+# Settings are declared in `metadata/upper_bound_635.json` before any score and are not tuned. A missing input is
+# `None` or NaN: the gradient-boosted fitters take it as it is, the linear ones impute the training mean.
+
+UPPER_BOUND_SETTINGS = MappingProxyType(
+    {
+        "reachable": MappingProxyType(
+            {
+                "gbm": MappingProxyType(
+                    {
+                        "learning_rate": PRESSURE_CLASSIFIER_SETTINGS["learning_rate"],
+                        "max_iter": PRESSURE_CLASSIFIER_SETTINGS["max_iter"],
+                        "max_leaf_nodes": PRESSURE_CLASSIFIER_SETTINGS["max_leaf_nodes"],
+                        "min_samples_leaf": PRESSURE_CLASSIFIER_SETTINGS["min_samples_leaf"],
+                        "random_state": DEFAULT_RANDOM_STATE,
+                    }
+                ),
+                "ridge_alpha": 30.0,
+                "logistic_c": 0.05,
+            }
+        ),
+        "ceiling": MappingProxyType(
+            {
+                "gbm": MappingProxyType(
+                    {
+                        "learning_rate": PRESSURE_CLASSIFIER_SETTINGS["learning_rate"],
+                        "max_iter": 400,
+                        "max_leaf_nodes": 31,
+                        "min_samples_leaf": 10,
+                        "random_state": DEFAULT_RANDOM_STATE,
+                    }
+                ),
+                "ridge_alpha": 1.0,
+                "logistic_c": 1.0,
+            }
+        ),
+        "standardise_clip": 5.0,
+        "scale_floor_share": 0.2,
+        "scale_ceiling_share": 5.0,
+        "logistic_max_iter": 2000,
+    }
+)
+
+
+def _upper_bound_matrix(rows: Sequence[Sequence[Optional[float]]], width: Optional[int], what: str) -> Any:
+    import numpy
+
+    if not rows:
+        raise ValueError(f"{what}: no rows")
+    size = len(rows[0]) if width is None else width
+    out = numpy.full((len(rows), size), numpy.nan)
+    for k, row in enumerate(rows):
+        if len(row) != size:
+            raise ValueError(f"{what}: row {k} has {len(row)} inputs, expected {size}")
+        for j, value in enumerate(row):
+            if value is not None:
+                out[k, j] = float(value)
+    return out
+
+
+def _check_levels(levels: Sequence[float]) -> None:
+    if not levels or any(not 0.0 < float(a) < 1.0 for a in levels) or list(levels) != sorted(levels):
+        raise ValueError(f"quantile levels are ascending and inside (0, 1), got {list(levels)}")
+
+
+def grid_quantiles_gbm(
+    xs: Sequence[Sequence[Optional[float]]],
+    ys: Sequence[float],
+    zs: Sequence[Sequence[Optional[float]]],
+    levels: Sequence[float],
+    settings: Mapping[str, Any],
+) -> List[List[float]]:
+    """Gradient-boosted quantiles of `ys` at `levels` for each served row `zs`, each served row's quantiles sorted.
+
+    One `HistGradientBoostingRegressor(loss="quantile")` per level, `early_stopping=False` and a fixed `random_state`
+    (the estimator's own defaults move the fit with the size of the panel). Missing inputs are left to the estimator.
+    """
+
+    _estimator_class()
+    import numpy
+    from sklearn.ensemble import HistGradientBoostingRegressor
+
+    _check_levels(levels)
+    if len(xs) != len(ys):
+        raise ValueError(f"{len(xs)} training rows but {len(ys)} labels")
+    x = _upper_bound_matrix(xs, None, "training rows")
+    z = _upper_bound_matrix(zs, x.shape[1], "served rows")
+    y = numpy.asarray(ys, dtype=float)
+    columns = []
+    for level in levels:
+        model = HistGradientBoostingRegressor(
+            loss="quantile",
+            quantile=float(level),
+            learning_rate=settings["learning_rate"],
+            max_iter=settings["max_iter"],
+            max_leaf_nodes=settings["max_leaf_nodes"],
+            min_samples_leaf=settings["min_samples_leaf"],
+            random_state=settings["random_state"],
+            early_stopping=False,
+        )
+        model.fit(x, y)
+        columns.append(model.predict(z))
+    matrix = numpy.column_stack(columns)
+    matrix.sort(axis=1)
+    return [[float(v) for v in row] for row in matrix]
+
+
+def _linear_design(
+    train: Any, served: Any, interaction_columns: Sequence[int], clip: float
+) -> Tuple[Any, Any]:
+    """Standardise on the training rows, impute their mean, clip, then add the declared pairwise products.
+
+    The products are every `i <= j` among `interaction_columns` of the standardised, clipped inputs, so the squares
+    are included. Neither matrix is read for anything but its own rows.
+    """
+
+    import numpy
+
+    width = train.shape[1]
+    if any(not 0 <= int(c) < width for c in interaction_columns):
+        raise ValueError(f"an interaction column is outside the {width} inputs: {list(interaction_columns)}")
+    with numpy.errstate(all="ignore"):
+        mean = numpy.nanmean(train, axis=0)
+        scale = numpy.nanstd(train, axis=0)
+    mean = numpy.where(numpy.isfinite(mean), mean, 0.0)
+    scale = numpy.where(numpy.isfinite(scale) & (scale > 0.0), scale, 1.0)
+
+    def prepare(matrix: Any) -> Any:
+        scaled = (matrix - mean) / scale
+        scaled = numpy.where(numpy.isnan(scaled), 0.0, scaled)
+        scaled = numpy.clip(scaled, -clip, clip)
+        products = [
+            scaled[:, i] * scaled[:, j]
+            for position, i in enumerate(interaction_columns)
+            for j in interaction_columns[position:]
+        ]
+        return numpy.column_stack([scaled] + products) if products else scaled
+
+    return prepare(train), prepare(served)
+
+
+def _ridge_fit(design: Any, target: Any, alpha: float) -> Tuple[Any, float]:
+    import numpy
+
+    centre = design.mean(axis=0)
+    offset = float(target.mean())
+    centred = design - centre
+    gram = centred.T @ centred + alpha * numpy.eye(design.shape[1])
+    coefficients = numpy.linalg.solve(gram, centred.T @ (target - offset))
+    return coefficients, offset - float(centre @ coefficients)
+
+
+def ridge_location_scale_quantiles(
+    xs: Sequence[Sequence[Optional[float]]],
+    ys: Sequence[float],
+    zs: Sequence[Sequence[Optional[float]]],
+    levels: Sequence[float],
+    interaction_columns: Sequence[int],
+    alpha: float,
+    clip: Optional[float] = None,
+) -> List[List[float]]:
+    """A regularised linear location-scale law of `ys`, with declared pairwise interactions, at `levels`.
+
+    The location is a ridge regression of `ys` on the standardised inputs and the products of `interaction_columns`;
+    the scale is a second ridge regression, on the same design, of the absolute residual, clipped to
+    `scale_floor_share` to `scale_ceiling_share` times the mean absolute residual; the law is the location plus the
+    scale times the empirical quantiles of the standardised training residuals. A served row's quantiles are sorted by
+    construction (the scale is positive).
+    """
+
+    import numpy
+
+    _check_levels(levels)
+    if alpha <= 0.0:
+        raise ValueError(f"the ridge penalty is positive, got {alpha}")
+    if len(xs) != len(ys):
+        raise ValueError(f"{len(xs)} training rows but {len(ys)} labels")
+    settings = UPPER_BOUND_SETTINGS
+    clip = settings["standardise_clip"] if clip is None else clip
+    x = _upper_bound_matrix(xs, None, "training rows")
+    z = _upper_bound_matrix(zs, x.shape[1], "served rows")
+    y = numpy.asarray(ys, dtype=float)
+    train, served = _linear_design(x, z, tuple(interaction_columns), clip)
+    beta, intercept = _ridge_fit(train, y, alpha)
+    residual = y - (train @ beta + intercept)
+    mean_abs = float(numpy.abs(residual).mean()) or 1e-9
+    gamma, scale_intercept = _ridge_fit(train, numpy.abs(residual), alpha)
+    low, high = settings["scale_floor_share"] * mean_abs, settings["scale_ceiling_share"] * mean_abs
+    train_scale = numpy.clip(train @ gamma + scale_intercept, low, high)
+    standardised = residual / train_scale
+    offsets = numpy.quantile(standardised, [float(a) for a in levels])
+    location = served @ beta + intercept
+    spread = numpy.clip(served @ gamma + scale_intercept, low, high)
+    matrix = location[:, None] + spread[:, None] * offsets[None, :]
+    matrix.sort(axis=1)
+    return [[float(v) for v in row] for row in matrix]
+
+
+def gbm_probabilities(
+    xs: Sequence[Sequence[Optional[float]]],
+    labels: Sequence[int],
+    zs: Sequence[Sequence[Optional[float]]],
+    settings: Mapping[str, Any],
+) -> List[float]:
+    """P(label = 1) for each served row from a gradient-boosted classifier; a single-class label gives that class's constant."""
+
+    import numpy
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    if len(xs) != len(labels):
+        raise ValueError(f"{len(xs)} training rows but {len(labels)} labels")
+    x = _upper_bound_matrix(xs, None, "training rows")
+    z = _upper_bound_matrix(zs, x.shape[1], "served rows")
+    y = numpy.asarray(labels, dtype=int)
+    if len(set(y.tolist())) < 2:
+        return [float(y[0])] * len(zs)
+    model = HistGradientBoostingClassifier(
+        learning_rate=settings["learning_rate"],
+        max_iter=settings["max_iter"],
+        max_leaf_nodes=settings["max_leaf_nodes"],
+        min_samples_leaf=settings["min_samples_leaf"],
+        random_state=settings["random_state"],
+        early_stopping=False,
+    )
+    model.fit(x, y)
+    return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def l2_logistic_probabilities(
+    xs: Sequence[Sequence[Optional[float]]],
+    labels: Sequence[int],
+    zs: Sequence[Sequence[Optional[float]]],
+    interaction_columns: Sequence[int],
+    c: float,
+    clip: Optional[float] = None,
+) -> List[float]:
+    """P(label = 1) from an L2-penalised logistic regression on the `_linear_design` inputs; a single-class label gives that class's constant."""
+
+    import numpy
+    from sklearn.linear_model import LogisticRegression
+
+    if c <= 0.0:
+        raise ValueError(f"the inverse penalty is positive, got {c}")
+    if len(xs) != len(labels):
+        raise ValueError(f"{len(xs)} training rows but {len(labels)} labels")
+    clip = UPPER_BOUND_SETTINGS["standardise_clip"] if clip is None else clip
+    x = _upper_bound_matrix(xs, None, "training rows")
+    z = _upper_bound_matrix(zs, x.shape[1], "served rows")
+    y = numpy.asarray(labels, dtype=int)
+    if len(set(y.tolist())) < 2:
+        return [float(y[0])] * len(zs)
+    train, served = _linear_design(x, z, tuple(interaction_columns), clip)
+    model = LogisticRegression(C=c, max_iter=UPPER_BOUND_SETTINGS["logistic_max_iter"])
+    model.fit(train, y)
+    return [float(p) for p in model.predict_proba(served)[:, 1]]

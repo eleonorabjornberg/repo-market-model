@@ -14303,5 +14303,116 @@ class CombinedOrdinaryConformanceTests(ExceedancePredictorConformance, unittest.
         return bound
 
 
+class UpperBoundModelTests(unittest.TestCase):
+    """The four fitters of the upper-bound study (#635): `ml.grid_quantiles_gbm`, `ml.ridge_location_scale_quantiles`,
+    `ml.gbm_probabilities` and `ml.l2_logistic_probabilities`.
+
+    They are pure functions of the rows they are given: a fit reads its training rows and nothing else, so the
+    walk-forward's embargo is the caller's (`scripts/upper_bound_635.py`, tested in `tests/test_upper_bound_635.py`).
+    Covered: quantiles come back sorted at every level and the same on a second call; a missing input is accepted by
+    the gradient-boosted fitters and imputed by the linear ones; the ridge fit recovers an interaction only when the
+    interaction is declared; the probabilities rank a separable label and are constant for a single-class label; the
+    refusals.
+    """
+
+    LEVELS = (0.05, 0.25, 0.5, 0.75, 0.95)
+
+    def setUp(self):
+        require_extra(self)
+
+    @staticmethod
+    def _data(count=240, seed=7, interaction=False):
+        import random
+
+        rng = random.Random(seed)
+        xs, ys = [], []
+        for _ in range(count):
+            a, b, c = rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1)
+            y = 2.0 * a + (1.5 * a * b if interaction else 0.0) + rng.gauss(0, 0.3)
+            xs.append((a, b, c))
+            ys.append(y)
+        return xs, ys
+
+    def test_gbm_quantiles_are_sorted_deterministic_and_accept_a_missing_input(self):
+        xs, ys = self._data()
+        xs = [(None if k % 7 == 0 else row[0], row[1], row[2]) for k, row in enumerate(xs)]
+        served = [(0.5, 0.0, 0.0), (None, 1.0, 0.0)]
+        settings = ml.UPPER_BOUND_SETTINGS["reachable"]["gbm"]
+        first = ml.grid_quantiles_gbm(xs, ys, served, self.LEVELS, settings)
+        second = ml.grid_quantiles_gbm(xs, ys, served, self.LEVELS, settings)
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 2)
+        for row in first:
+            self.assertEqual(len(row), len(self.LEVELS))
+            self.assertEqual(list(row), sorted(row))
+
+    def test_ridge_quantiles_are_sorted_and_centre_on_the_signal(self):
+        xs, ys = self._data()
+        served = [(1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)]
+        rows = ml.ridge_location_scale_quantiles(xs, ys, served, self.LEVELS, (), 1.0)
+        for row in rows:
+            self.assertEqual(list(row), sorted(row))
+        self.assertGreater(rows[0][2], 1.0)
+        self.assertLess(rows[1][2], -1.0)
+
+    def test_the_ridge_fit_finds_an_interaction_only_when_it_is_declared(self):
+        xs, ys = self._data(count=400, interaction=True)
+        test_xs, test_ys = self._data(count=200, seed=99, interaction=True)
+
+        def error(columns):
+            rows = ml.ridge_location_scale_quantiles(xs, ys, test_xs, self.LEVELS, columns, 1.0)
+            return sum(abs(row[2] - y) for row, y in zip(rows, test_ys)) / len(test_ys)
+
+        self.assertLess(error((0, 1)), 0.6 * error(()))
+
+    def test_the_ridge_fit_imputes_a_missing_input_with_its_training_mean(self):
+        xs, ys = self._data()
+        served = [(None, 0.0, 0.0)]
+        row = ml.ridge_location_scale_quantiles(xs, ys, served, self.LEVELS, (), 1.0)[0]
+        mean = ml.ridge_location_scale_quantiles(xs, ys, [(sum(r[0] for r in xs) / len(xs), 0.0, 0.0)], self.LEVELS, (), 1.0)[0]
+        self.assertAlmostEqual(row[2], mean[2], places=1)
+
+    def test_the_probabilities_rank_a_separable_label(self):
+        xs, ys = self._data(count=300)
+        labels = [1 if y > 1.5 else 0 for y in ys]
+        test_xs, test_ys = self._data(count=200, seed=11)
+        test_labels = [1 if y > 1.5 else 0 for y in test_ys]
+        for name, probabilities in (
+            ("gbm", ml.gbm_probabilities(xs, labels, test_xs, ml.UPPER_BOUND_SETTINGS["reachable"]["gbm"])),
+            ("logistic", ml.l2_logistic_probabilities(xs, labels, test_xs, (0, 1), 1.0)),
+        ):
+            with self.subTest(name):
+                self.assertEqual(len(probabilities), len(test_xs))
+                self.assertTrue(all(0.0 <= p <= 1.0 for p in probabilities))
+                positives = [p for p, l in zip(probabilities, test_labels) if l]
+                negatives = [p for p, l in zip(probabilities, test_labels) if not l]
+                wins = sum(1.0 if a > b else 0.5 if a == b else 0.0 for a in positives for b in negatives)
+                self.assertGreater(wins / (len(positives) * len(negatives)), 0.9)
+
+    def test_a_single_class_label_gives_a_constant_probability(self):
+        xs, _ = self._data(count=60)
+        for probabilities in (
+            ml.gbm_probabilities(xs, [0] * 60, xs[:5], ml.UPPER_BOUND_SETTINGS["reachable"]["gbm"]),
+            ml.l2_logistic_probabilities(xs, [0] * 60, xs[:5], (), 1.0),
+        ):
+            self.assertEqual(set(probabilities), {0.0})
+
+    def test_the_refusals(self):
+        xs, ys = self._data(count=30)
+        settings = ml.UPPER_BOUND_SETTINGS["reachable"]["gbm"]
+        with self.assertRaises(ValueError):
+            ml.grid_quantiles_gbm(xs, ys[:-1], xs[:2], self.LEVELS, settings)
+        with self.assertRaises(ValueError):
+            ml.grid_quantiles_gbm(xs, ys, [(1.0, 2.0)], self.LEVELS, settings)
+        with self.assertRaises(ValueError):
+            ml.ridge_location_scale_quantiles(xs, ys, xs[:2], (0.5, 0.2), (), 1.0)
+        with self.assertRaises(ValueError):
+            ml.ridge_location_scale_quantiles(xs, ys, xs[:2], self.LEVELS, (7,), 1.0)
+        with self.assertRaises(ValueError):
+            ml.l2_logistic_probabilities(xs, [0, 1], xs[:2], (), 1.0)
+        with self.assertRaises(ValueError):
+            ml.ridge_location_scale_quantiles([], [], xs[:2], self.LEVELS, (), 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()
