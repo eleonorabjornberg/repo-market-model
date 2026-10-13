@@ -990,6 +990,8 @@ _FOLDS = "scores the days `baseline.rolling_persistence_backtest` walks, which r
 CRPS_SCORERS = {
     "scoring_protocol.grid_crps": ("delegates", "scoring protocol v1's loss of one vector at one outcome; `day_scores` calls `require_unlocked` on every decision and target day before it computes any (#655)"),
     "scoring_protocol.upper_tail_twcrps": ("delegates", "the key secondary's loss of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any (#655)"),
+    "scripts/spread_mean_reversion_686.five_level_cells": ("guard", "the five-level CRPS of the mean-reversion walk's cells: `require_unlocked` on every decision and target day before any cell is computed (#686)"),
+    "scripts/spread_mean_reversion_686.published_cells": ("guard", "the five-level CRPS of the published distribution's cells on the same days: `require_unlocked` on every target day before any cell is computed (#686)"),
     "scripts/live_score.score_crps": ("guard", "the live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "scripts/live_score.score": ("guard", "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "baseline.rolling_persistence_backtest": ("guard", "the CRPS fold loop: `_as_of_folds` refuses a locked scored day"),
