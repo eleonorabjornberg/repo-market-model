@@ -21,15 +21,17 @@ Recorded mutations (CLAUDE.md), 8 October 2026, each applied in a disposable cop
   `continue`. `GuardTests.test_a_column_leaving_out_an_announced_auction_is_refused`
   then fails with `AssertionError: StaleReadError not raised`.
 
-Recorded mutation for the partly announced class (#620), 12 October 2026, in a disposable copy:
+Recorded mutation for the partly announced class (#620, #679), 13 October 2026, in a disposable copy:
 
 * `src/repo_model/net_settlement.py`, `net_for_day`, `partly_announced = len(members) < len(everything[is_bill])`
-  mutated to `False` (a class whose other auctions are still unannounced nets its full maturing amount again).
-  Killed by `PartlyAnnouncedTests.test_a_partly_announced_class_nets_its_announced_offering_only` (`AssertionError:
-  -60.0 != 30.0`) and `PartlyAnnouncedTests.test_the_longer_lead_columns_do_not_read_a_partial_class_as_an_inflow`.
-* `value = sum(a.offering for a in members) - maturing` mutated to sum `everything[is_bill]` (the unannounced auctions'
-  offerings enter the net, a look-ahead). Killed by
-  `PartlyAnnouncedTests.test_an_unannounced_offering_never_enters_a_partial_class` (`AssertionError: 530.0 != 90.0`).
+  mutated to `False` (a class whose other auctions are still unannounced nets its full maturing amount again, the
+  old rule). Killed by `PartlyAnnouncedTests.test_a_partly_announced_class_is_left_out_until_fully_announced`
+  (`AssertionError: -60.0 != 0.0`), `PartlyAnnouncedTests.test_the_longer_lead_columns_do_not_read_a_partial_class_as_an_inflow`,
+  `PartlyAnnouncedTests.test_the_other_class_of_the_day_is_netted_as_before` and
+  `AnnouncementTests.test_the_maturing_figure_of_a_later_announced_auction_is_not_read_early` (`AssertionError: 50.0 != 0.0`).
+  Deleting the `if partly_announced: continue` branch is the same mutation and fails the same four tests.
+* `value = sum(a.offering for a in members) - maturing` mutated to sum `everything[is_bill]` is an equivalent
+  mutation now: a class with unannounced auctions never reaches that line, so there is no look-ahead left to kill.
 """
 
 from __future__ import annotations
@@ -198,7 +200,8 @@ class AnnouncementTests(unittest.TestCase):
         ]
         auctions = ns.auction_records(records, DECLARATION)
         built = {r.date.isoformat(): r.values for r in ns.with_net_settlement(rows(*DAYS), auctions, DECLARATION)}
-        self.assertAlmostEqual(built["2026-01-06"]["net_settlement_due_5d"], 50.0)
+        # on the 6th the class is partly announced and left out (#679): the later 40 is read by no figure
+        self.assertAlmostEqual(built["2026-01-06"]["net_settlement_due_5d"], 0.0)
         self.assertAlmostEqual(built["2026-01-07"]["net_settlement_due_5d"], 50.0 + 40.0 - 40.0)
 
     def test_the_window_is_the_next_five_business_days_and_excludes_the_day_itself(self):
@@ -228,7 +231,7 @@ class AnnouncementTests(unittest.TestCase):
 
 
 class PartlyAnnouncedTests(unittest.TestCase):
-    """A class whose other auctions are not yet announced nets what is announced, not its whole maturing amount (#620)."""
+    """A class whose other auctions are not yet announced is left out, not netted (#620, #679)."""
 
     def built(self, records, instant_day="2026-01-07"):
         auctions = ns.auction_records(records, DECLARATION)
@@ -241,10 +244,12 @@ class PartlyAnnouncedTests(unittest.TestCase):
             record(offering=60e9, maturing="90000000000", announced=second_announced, auctioned="2026-01-08", term="4-Week"),
         ]
 
-    def test_a_partly_announced_class_nets_its_announced_offering_only(self):
-        # announced: the 30; the 90 maturing covers both bills, so subtracting it from 30 would read -60 (an inflow)
+    def test_a_partly_announced_class_is_left_out_until_fully_announced(self):
+        # announced: the 30; the 90 maturing covers both bills, so subtracting it from 30 would read -60 (an
+        # inflow) and counting the 30 alone would read a drain that the unannounced 60 mostly offsets (#679)
         values = self.built(self.two_bills("2026-01-08"), "2026-01-07")
-        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0)
+        self.assertAlmostEqual(values["net_settlement_due_5d"], 0.0)
+        self.assertAlmostEqual(values["net_settlement_bills"], 0.0)
 
     def test_the_class_nets_in_full_once_every_auction_is_announced(self):
         values = self.built(self.two_bills("2026-01-08"), "2026-01-08")
@@ -255,7 +260,7 @@ class PartlyAnnouncedTests(unittest.TestCase):
             record(kind="Note", offering=60e9, maturing="25000000000", announced="2026-01-05", term="2-Year")
         ]
         values = self.built(records, "2026-01-07")
-        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0 + (60.0 - 25.0))
+        self.assertAlmostEqual(values["net_settlement_due_5d"], 60.0 - 25.0)
 
     def test_an_unannounced_offering_never_enters_a_partial_class(self):
         small = self.built(self.two_bills("2026-01-08"), "2026-01-07")["net_settlement_due_5d"]
@@ -269,13 +274,14 @@ class PartlyAnnouncedTests(unittest.TestCase):
         auctions = ns.auction_records(self.two_bills("2026-01-08"), DECLARATION)
         built = {r.date.isoformat(): r.values for r in pr.ahead_columns(rows(*DAYS), auctions, DECLARATION)}
         # on 2026-01-07 the Friday 2026-01-09 settlement is 2 business days ahead
-        self.assertAlmostEqual(built["2026-01-07"]["net_settlement_ahead_2d"], 30.0)
+        self.assertAlmostEqual(built["2026-01-07"]["net_settlement_ahead_2d"], 0.0)
 
-    def test_a_class_with_no_maturing_figure_announced_is_still_its_offering(self):
-        records = self.two_bills("2026-01-08")
-        records[0]["est_pub_held_mat_by_type_amt"] = "null"
+    def test_a_fully_announced_class_with_no_maturing_figure_is_still_its_offering(self):
+        records = self.two_bills("2026-01-07")
+        for r in records:
+            r["est_pub_held_mat_by_type_amt"] = "null"
         values = self.built(records, "2026-01-07")
-        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0)
+        self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0 + 60.0)
 
 
 class GuardTests(unittest.TestCase):
