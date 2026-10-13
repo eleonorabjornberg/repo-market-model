@@ -7,7 +7,7 @@ quarter-ends. Which one H2 and H5 use is Eleonora's ruling; this module only nam
 ask.
 """
 
-import json
+import importlib.util
 import re
 import sys
 import unittest
@@ -83,8 +83,11 @@ class CallersTests(unittest.TestCase):
 
     def test_risk_flag_is_the_non_ordinary_definition(self):
         sys.path.insert(0, str(ROOT / "src"))
-        sys.path.insert(0, str(ROOT / "scripts"))
-        import announcement_dating_rescore as ann
+        spec = importlib.util.spec_from_file_location(
+            "announcement_dating_rescore_script", ROOT / "scripts" / "announcement_dating_rescore.py"
+        )
+        ann = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ann)
 
         for kwargs in ({}, {"quarter_end": 1.0}, {"tax_date": 1.0}, {"coupons": 1.0}, {"days_to_month_end": 0.0}):
             for clause in (True, False):
