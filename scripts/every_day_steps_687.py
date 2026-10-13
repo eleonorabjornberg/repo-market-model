@@ -321,21 +321,25 @@ def run_command(args) -> int:
     keys = [f"{tau:g}" for tau in taus]
     days = sorted(column[keys[0]])
     raw = [[column[key][day] for day in days] for key in keys]
-    off = [not ann.risk_flag(splits, by_date[date.fromisoformat(day)].values, settle or h == 1) for day in days]
+    # the component's risk dates are those of the arm's rows (settlements dated from the announcement), as the published row serves them
+    timed_rows, _timed_registry = ann.arm_inputs(iorb.ARM, rows, registry, h)
+    timed_by_date = {row.date: row for row in timed_rows}
+    off_arm = [not ann.risk_flag(splits, timed_by_date[date.fromisoformat(day)].values, settle or h == 1) for day in days]
     levels_by_day = cond.read_levels(rows, registry, last, h)
     missing = [d for d in days if d not in levels_by_day]
     if missing:
         raise SystemExit(f"lead {h}: {len(missing)} scored days are not on the fold grid, the first {missing[0]}")
-    keep = cond.tail_cap([levels_by_day[d] for d in days], off, **{k: declared["steps"]["cap"][k] for k in ("quantile", "window", "minimum_earlier")})
+    keep = cond.tail_cap([levels_by_day[d] for d in days], off_arm, **{k: declared["steps"]["cap"][k] for k in ("quantile", "window", "minimum_earlier")})
     controls = {s: {k: v for k, v in declared["steps"][s].items() if k != "rule"} for s in ("persist", "gate")}
     forecasts: Dict[str, dict] = {}
     for steps in subsets():
-        out = apply_steps(raw, off, steps, controls, keep)
+        out = apply_steps(raw, off_arm, steps, controls, keep)
         forecasts[row_name(steps)] = {key: dict(zip(days, out[j])) for j, key in enumerate(keys)}
-    cut = gate_cut(raw[0], off, **{k: declared["steps"]["gate"][k] for k in ("quantile", "window", "minimum_earlier")})
+    cut = gate_cut(raw[0], off_arm, **{k: declared["steps"]["gate"][k] for k in ("quantile", "window", "minimum_earlier")})
     # the cut-off is stored with the forecasts at +5 bp, the threshold the page scores
     forecasts[CUT] = {keys[0]: dict(zip(days, [None if c is None else c for c in cut]))}
     # the day-level rows: #624's step 2 (a) with its construction taken apart
+    off = [not ann.risk_flag(splits, by_date[date.fromisoformat(day)].values, True) for day in days]
     scoring = declared["scoring"]
     taus_day = tuple(taus)
     scored, train_ends, outcomes = odr.grid(rows, splits, scoring, h, taus_day, last)
