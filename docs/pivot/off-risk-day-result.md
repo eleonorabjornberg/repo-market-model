@@ -5,6 +5,13 @@ Every figure reads 2018-2025, so it describes that history and does not confirm 
 
 **Hypothesis and step:** H2 (the data we hold carries signal for ordinary-day pressure), step #624. Exploration on development data (Eleonora's ruling of 12 October 2026 on #624): the judge tier verdicts below are reported but are not evidence for any hypothesis, and no follow-up +5 bp variant is queued from this result while +5 bp classification is paused.
 
+**Restated against persistence-logistic (#681, finding #667).** CLAUDE.md requires a pressure probability to be stated against climatology *and* a
+persistence-logistic model; steps 1 and 2 below were stated against the walk-forward climatology only. The section "Against persistence-logistic and
+the raw as-of spread (#681)" at the end of this page pairs every row with it on the same days. In short: no row has skill on the days that are not
+risk dates beyond persistence-logistic at lead 1; the day-level model `+offday` is ahead of it at leads 2, 3 and 5 over all days, and that gain is not
+present inside 2018-19 (62 of the 82 pressure days) or 2025-26 (15 of 82); the raw as-of spread, ranked as it stands, has a higher AUROC than every row.
+The figures in steps 1 and 2 are unchanged and were re-derived exactly (every cell of `step1.json` and `step2-off-risk-days.json`).
+
 ## Step 1: do the every-day parts have skill beyond the base rate on those days?
 
 The question (#616): tiers 3 and 5 check calibration on the mean only, so a constant floor can pass them without any skill. The measurement asks
@@ -73,7 +80,8 @@ Whether any of them has skill on these days beyond the base rate, stated plainly
   trailing rate tracks the regime; it does not rank the days within it.
 
 The skill that exists on these days is therefore in the control's own inputs (the spread and the SOFR 75th and 99th percentiles above IORB), not in
-the cap or the floors, and part of what looks like skill pooled is the regime. A forecast that ranks days inside a regime is what step 2 builds.
+the cap or the floors, and part of what looks like skill pooled is the regime. A forecast that ranks days inside a regime is what step 2 builds. (Stated against persistence-logistic, the control's ranking is not an advantage: see
+"Against persistence-logistic and the raw as-of spread (#681)" below. The sentence above was written against the climatology only.)
 Five rows at five leads are read, so about one interval in ten that has no skill would exclude its null by chance.
 
 ### Reproduction
@@ -212,7 +220,7 @@ an onset. Against `+tailcap75` (18 of 26): each gains 2025-10-15, each loses 202
 * **None of the three passes the judge.** Each raises onset recall (17 or 18 of 26 against 15) and each fails tier 1 on the pooled false-alarm count
   (2.28 to 2.88 per onset against a limit of 2, weighted; 3.69 to 4.50 flat): a model that puts mass on every ordinary day flags many of them (flags
   at the first lead rise from 75 to 174 to 229). `+tailcap75` passes tier 1 under the weighted rule and none of the three does.
-* **They do rank the days, which the constant floors did not.** AUROC on the days that are not risk dates is 0.83 to 0.89 over all days, and 0.68 to
+* **They do rank the days, which the constant floors did not (against the climatology; against persistence-logistic see the section below).** AUROC on the days that are not risk dates is 0.83 to 0.89 over all days, and 0.68 to
   0.79 inside 2018-19 with intervals above 0.5 at every lead for all three. Inside 2018-19 only `+offday` has a Brier skill whose interval excludes 0
   (leads 1 and 2: 0.146 [0.055, 0.231] and 0.081 [0.009, 0.142]); the other two have none there. So a gain in the mean is not a gain in skill at every
   lead: leads 3 to 5 inside 2018-19 are not better than the climatology for any of the three. The forecasts are over-spread (slope below 1, 0.32 to
@@ -256,3 +264,257 @@ PYTHONPATH=src python3 scripts/off_risk_day_624.py measure --panel PUBLISHED.csv
 
 The off-risk-day statistics of step 2 use step 1's declaration for the bootstrap (the step 2 declaration names the same statistics and does not
 repeat the bootstrap block).
+
+
+## Against persistence-logistic and the raw as-of spread (#681)
+
+**Hypothesis and step:** H2 and H5, finding #667 made a directive (#681). Exploration on development data, not a verdict (scoring protocol v1, #640).
+Nothing here moves a published figure and no day after 2025-12-31 is scored.
+
+CLAUDE.md requires a pressure probability to be stated against climatology and a persistence-logistic model. Steps 1 and 2 above used the walk-forward
+climatology only. This section adds two reference rows on the same population (the scored days of 2018-06-29 to 2025-12-31 at each lead that are not
+risk dates, the same outcome at +5 bp, the same walk-forward climatology, the same bootstrap), declared in `metadata/off_risk_day_681.json` before any
+was scored:
+
+* **`persistence_logistic`**: the judge's benchmark (`pressure_judge.py forecasts`), a probability, with every statistic of step 1.
+* **`spread_bps_asof`**: the raw as-of spread in bp, read through the information rule at the decision instant of the day's own lead. It is a level, not a
+  probability, so only its AUROC is a statistic; its Brier skill and reliability slope are not defined.
+
+Every row of step 1 and step 2 is paired with `persistence_logistic` on the same days: the row less persistence, for the AUROC and for the Brier skill
+against the climatology, with a 90% stationary-bootstrap interval from resamples the two rows share. Positive favours the row. The figures of the existing
+rows are the ones above, re-derived exactly. `ROW` is `risk_gbm+every_day+gate+settle+h41+iorb`; `DR` is `risk_gbm+settle+h41+dist_roll`.
+
+### The reference rows
+
+| cell | lead | pressure days | persistence-logistic AUROC [90%] | Brier skill [90%] | slope [90%] | raw as-of spread AUROC [90%] |
+|---|---|---|---|---|---|---|
+| all | 1 | 82 | 0.897 [0.841, 0.933] | 0.196 [0.118, 0.263] | 1.016 [0.702, 1.433] | 0.941 [0.914, 0.961] |
+| all | 2 | 82 | 0.832 [0.737, 0.893] | 0.097 [0.023, 0.161] | 0.966 [0.677, 1.396] | 0.926 [0.892, 0.951] |
+| all | 3 | 82 | 0.793 [0.689, 0.865] | 0.056 [-0.006, 0.103] | 0.965 [0.604, 1.467] | 0.917 [0.881, 0.944] |
+| all | 4 | 82 | 0.816 [0.726, 0.884] | 0.105 [0.048, 0.159] | 1.082 [0.774, 1.483] | 0.919 [0.885, 0.944] |
+| all | 5 | 82 | 0.809 [0.705, 0.881] | 0.101 [0.051, 0.150] | 0.929 [0.534, 1.340] | 0.919 [0.882, 0.946] |
+| regime 2018-19 | 1 | 62 | 0.768 [0.667, 0.851] | 0.162 [0.047, 0.240] | 0.593 | 0.832 [0.773, 0.882] |
+| regime 2018-19 | 2 | 62 | 0.697 [0.579, 0.797] | 0.059 [-0.055, 0.130] | 0.498 | 0.784 [0.704, 0.851] |
+| regime 2018-19 | 3 | 62 | 0.692 [0.573, 0.793] | 0.043 [-0.053, 0.100] | 0.406 | 0.762 [0.674, 0.833] |
+| regime 2018-19 | 4 | 62 | 0.687 [0.575, 0.787] | 0.082 [0.031, 0.124] | 0.585 | 0.748 [0.647, 0.827] |
+| regime 2018-19 | 5 | 62 | 0.676 [0.568, 0.772] | 0.063 [0.005, 0.101] | 0.339 | 0.732 [0.615, 0.817] |
+| regime 2025-26 | 1 | 15 | 0.919 [0.838, 0.970] | 0.157 [-0.317, 0.294] | 0.919 | 0.923 [0.844, 0.973] |
+| regime 2025-26 | 2 | 15 | 0.880 [0.761, 0.950] | 0.019 [-0.609, 0.190] | 0.754 | 0.885 [0.768, 0.954] |
+| regime 2025-26 | 3 | 15 | 0.866 [0.736, 0.941] | 0.050 [-0.459, 0.179] | 1.007 | 0.871 [0.742, 0.944] |
+| regime 2025-26 | 4 | 15 | 0.875 [0.757, 0.945] | 0.029 [-0.760, 0.228] | 0.822 | 0.879 [0.765, 0.948] |
+| regime 2025-26 | 5 | 15 | 0.885 [0.783, 0.955] | 0.071 [-0.686, 0.231] | 0.899 | 0.889 [0.792, 0.958] |
+
+Persistence-logistic is calibrated (slope 0.93 to 1.08 over all days) and has Brier skill 0.06 to 0.20 over the climatology, the interval excluding 0 at
+every lead but 3. The raw as-of spread ranks the days better than persistence-logistic does in point estimate at every lead (0.92 to 0.94 against 0.79
+to 0.90; not a paired test, and the intervals overlap at leads 1 and 2), and better than every row of steps 1 and 2.
+
+### Every row paired against persistence-logistic
+
+All days that are not risk dates:
+
+| row | lead | pressure days | AUROC row | AUROC persistence_logistic | AUROC difference [90%] | Brier skill row | Brier skill persistence_logistic | Brier skill difference [90%] | slope row | slope persistence_logistic |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `ROW+tailcap75` | 1 | 82 | 0.493 | 0.897 | -0.403 [-0.446, -0.344] | -0.005 | 0.196 | -0.200 [-0.323, -0.024] | 2.035 | 1.016 |
+| `ROW+tailcap75` | 2 | 82 | 0.520 | 0.832 | -0.312 [-0.381, -0.221] | 0.000 | 0.097 | -0.097 [-0.206, +0.062] | 2.659 | 0.966 |
+| `ROW+tailcap75` | 3 | 82 | 0.501 | 0.793 | -0.292 [-0.368, -0.185] | -0.014 | 0.056 | -0.071 [-0.182, +0.101] | 3.186 | 0.965 |
+| `ROW+tailcap75` | 4 | 82 | 0.519 | 0.816 | -0.297 [-0.382, -0.193] | -0.003 | 0.105 | -0.108 [-0.218, +0.050] | 1.824 | 1.082 |
+| `ROW+tailcap75` | 5 | 82 | 0.528 | 0.809 | -0.281 [-0.358, -0.177] | 0.010 | 0.101 | -0.092 [-0.193, +0.061] | 2.396 | 0.929 |
+| `DR` | 1 | 82 | 0.500 | 0.897 | -0.397 [-0.433, -0.341] | -0.027 | 0.196 | -0.223 [-0.343, -0.050] | – | 1.016 |
+| `DR` | 2 | 82 | 0.500 | 0.832 | -0.332 [-0.393, -0.237] | -0.025 | 0.097 | -0.122 [-0.237, +0.047] | – | 0.966 |
+| `DR` | 3 | 82 | 0.500 | 0.793 | -0.293 [-0.365, -0.189] | -0.023 | 0.056 | -0.079 [-0.191, +0.100] | – | 0.965 |
+| `DR` | 4 | 82 | 0.500 | 0.816 | -0.316 [-0.384, -0.226] | -0.021 | 0.105 | -0.126 [-0.236, +0.038] | – | 1.082 |
+| `DR` | 5 | 82 | 0.500 | 0.809 | -0.309 [-0.381, -0.205] | -0.019 | 0.101 | -0.121 [-0.227, +0.036] | – | 0.929 |
+| `DR+offday` | 1 | 82 | 0.887 | 0.897 | -0.009 [-0.065, +0.027] | 0.237 | 0.196 | +0.042 [-0.008, +0.111] | 0.829 | 1.016 |
+| `DR+offday` | 2 | 82 | 0.867 | 0.832 | +0.035 [-0.005, +0.077] | 0.187 | 0.097 | +0.090 [+0.023, +0.176] | 0.853 | 0.966 |
+| `DR+offday` | 3 | 82 | 0.855 | 0.793 | +0.062 [+0.021, +0.111] | 0.148 | 0.056 | +0.092 [+0.026, +0.194] | 0.800 | 0.965 |
+| `DR+offday` | 4 | 82 | 0.849 | 0.816 | +0.033 [-0.002, +0.073] | 0.148 | 0.105 | +0.044 [-0.015, +0.129] | 0.778 | 1.082 |
+| `DR+offday` | 5 | 82 | 0.845 | 0.809 | +0.036 [+0.007, +0.070] | 0.163 | 0.101 | +0.062 [+0.010, +0.147] | 0.791 | 0.929 |
+| `DR+offday_mono` | 1 | 82 | 0.864 | 0.897 | -0.032 [-0.094, +0.007] | 0.167 | 0.196 | -0.029 [-0.123, +0.075] | 0.458 | 1.016 |
+| `DR+offday_mono` | 2 | 82 | 0.853 | 0.832 | +0.022 [-0.020, +0.069] | 0.047 | 0.097 | -0.050 [-0.172, +0.082] | 0.387 | 0.966 |
+| `DR+offday_mono` | 3 | 82 | 0.858 | 0.793 | +0.065 [+0.022, +0.117] | 0.017 | 0.056 | -0.039 [-0.165, +0.095] | 0.356 | 0.965 |
+| `DR+offday_mono` | 4 | 82 | 0.843 | 0.816 | +0.027 [-0.007, +0.065] | 0.036 | 0.105 | -0.069 [-0.185, +0.051] | 0.367 | 1.082 |
+| `DR+offday_mono` | 5 | 82 | 0.845 | 0.809 | +0.036 [+0.008, +0.072] | 0.072 | 0.101 | -0.030 [-0.122, +0.083] | 0.323 | 0.929 |
+| `DR+offday_rate` | 1 | 82 | 0.861 | 0.897 | -0.036 [-0.107, +0.009] | 0.191 | 0.196 | -0.004 [-0.092, +0.083] | 0.732 | 1.016 |
+| `DR+offday_rate` | 2 | 82 | 0.846 | 0.832 | +0.015 [-0.032, +0.058] | 0.139 | 0.097 | +0.042 [-0.062, +0.146] | 0.699 | 0.966 |
+| `DR+offday_rate` | 3 | 82 | 0.843 | 0.793 | +0.050 [+0.005, +0.097] | 0.101 | 0.056 | +0.045 [-0.056, +0.163] | 0.671 | 0.965 |
+| `DR+offday_rate` | 4 | 82 | 0.834 | 0.816 | +0.018 [-0.021, +0.055] | 0.100 | 0.105 | -0.004 [-0.111, +0.101] | 0.651 | 1.082 |
+| `DR+offday_rate` | 5 | 82 | 0.828 | 0.809 | +0.019 [-0.017, +0.055] | 0.093 | 0.101 | -0.008 [-0.107, +0.089] | 0.643 | 0.929 |
+| `ROW` | 1 | 82 | 0.736 | 0.897 | -0.160 [-0.218, -0.108] | 0.166 | 0.196 | -0.030 [-0.100, +0.055] | 0.487 | 1.016 |
+| `ROW` | 2 | 82 | 0.735 | 0.832 | -0.096 [-0.180, -0.013] | 0.089 | 0.097 | -0.008 [-0.078, +0.078] | 0.566 | 0.966 |
+| `ROW` | 3 | 82 | 0.704 | 0.793 | -0.089 [-0.192, +0.005] | 0.075 | 0.056 | +0.019 [-0.066, +0.122] | 0.445 | 0.965 |
+| `ROW` | 4 | 82 | 0.747 | 0.816 | -0.069 [-0.138, -0.006] | 0.108 | 0.105 | +0.003 [-0.052, +0.074] | 0.648 | 1.082 |
+| `ROW` | 5 | 82 | 0.744 | 0.809 | -0.065 [-0.140, +0.001] | 0.103 | 0.101 | +0.002 [-0.060, +0.082] | 0.559 | 0.929 |
+| `ROW+tailcap75+floor` | 1 | 82 | 0.574 | 0.897 | -0.323 [-0.477, -0.197] | 0.015 | 0.196 | -0.181 [-0.254, -0.096] | 0.465 | 1.016 |
+| `ROW+tailcap75+floor` | 2 | 82 | 0.574 | 0.832 | -0.258 [-0.407, -0.134] | 0.006 | 0.097 | -0.091 [-0.156, -0.019] | 0.385 | 0.966 |
+| `ROW+tailcap75+floor` | 3 | 82 | 0.558 | 0.793 | -0.235 [-0.376, -0.114] | 0.001 | 0.056 | -0.056 [-0.103, +0.005] | 0.273 | 0.965 |
+| `ROW+tailcap75+floor` | 4 | 82 | 0.564 | 0.816 | -0.252 [-0.393, -0.129] | 0.004 | 0.105 | -0.101 [-0.158, -0.045] | 0.398 | 1.082 |
+| `ROW+tailcap75+floor` | 5 | 82 | 0.556 | 0.809 | -0.253 [-0.400, -0.131] | 0.005 | 0.101 | -0.096 [-0.148, -0.046] | 0.456 | 0.929 |
+| `ROW+tailcap75+recent_floor` | 1 | 82 | 0.870 | 0.897 | -0.027 [-0.077, +0.021] | 0.154 | 0.196 | -0.042 [-0.122, +0.050] | 0.571 | 1.016 |
+| `ROW+tailcap75+recent_floor` | 2 | 82 | 0.859 | 0.832 | +0.028 [-0.042, +0.106] | 0.136 | 0.097 | +0.040 [-0.044, +0.132] | 0.549 | 0.966 |
+| `ROW+tailcap75+recent_floor` | 3 | 82 | 0.848 | 0.793 | +0.055 [-0.027, +0.149] | 0.131 | 0.056 | +0.075 [-0.009, +0.175] | 0.526 | 0.965 |
+| `ROW+tailcap75+recent_floor` | 4 | 82 | 0.840 | 0.816 | +0.024 [-0.064, +0.113] | 0.132 | 0.105 | +0.028 [-0.064, +0.124] | 0.579 | 1.082 |
+| `ROW+tailcap75+recent_floor` | 5 | 82 | 0.838 | 0.809 | +0.029 [-0.060, +0.115] | 0.130 | 0.101 | +0.029 [-0.061, +0.123] | 0.595 | 0.929 |
+| `ROW+tailcap75+state_floor` | 1 | 82 | 0.639 | 0.897 | -0.258 [-0.374, -0.156] | 0.030 | 0.196 | -0.165 [-0.242, -0.082] | 0.725 | 1.016 |
+| `ROW+tailcap75+state_floor` | 2 | 82 | 0.641 | 0.832 | -0.190 [-0.299, -0.091] | 0.021 | 0.097 | -0.076 [-0.149, -0.001] | 0.734 | 0.966 |
+| `ROW+tailcap75+state_floor` | 3 | 82 | 0.627 | 0.793 | -0.166 [-0.272, -0.068] | 0.016 | 0.056 | -0.040 [-0.092, +0.023] | 0.627 | 0.965 |
+| `ROW+tailcap75+state_floor` | 4 | 82 | 0.632 | 0.816 | -0.184 [-0.279, -0.091] | 0.019 | 0.105 | -0.086 [-0.145, -0.024] | 0.755 | 1.082 |
+| `ROW+tailcap75+state_floor` | 5 | 82 | 0.615 | 0.809 | -0.194 [-0.305, -0.095] | 0.017 | 0.101 | -0.084 [-0.133, -0.035] | 0.758 | 0.929 |
+
+Inside 2018-19 (62 of the 82 pressure days):
+
+| row | lead | pressure days | AUROC row | AUROC persistence_logistic | AUROC difference [90%] | Brier skill row | Brier skill persistence_logistic | Brier skill difference [90%] | slope row | slope persistence_logistic |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `ROW+tailcap75` | 1 | 62 | 0.486 | 0.768 | -0.281 [-0.367, -0.182] | -0.202 | 0.162 | -0.364 [-0.504, -0.168] | 1.389 | 0.593 |
+| `ROW+tailcap75` | 2 | 62 | 0.500 | 0.697 | -0.197 [-0.314, -0.064] | -0.175 | 0.059 | -0.233 [-0.369, -0.049] | 2.305 | 0.498 |
+| `ROW+tailcap75` | 3 | 62 | 0.474 | 0.692 | -0.218 [-0.333, -0.084] | -0.195 | 0.043 | -0.238 [-0.355, -0.063] | 2.314 | 0.406 |
+| `ROW+tailcap75` | 4 | 62 | 0.505 | 0.687 | -0.182 [-0.300, -0.047] | -0.181 | 0.082 | -0.264 [-0.393, -0.111] | 0.185 | 0.585 |
+| `ROW+tailcap75` | 5 | 62 | 0.519 | 0.676 | -0.157 [-0.254, -0.043] | -0.163 | 0.063 | -0.225 [-0.330, -0.082] | 1.581 | 0.339 |
+| `DR` | 1 | 62 | 0.500 | 0.768 | -0.268 [-0.351, -0.167] | -0.218 | 0.162 | -0.380 [-0.515, -0.182] | – | 0.593 |
+| `DR` | 2 | 62 | 0.500 | 0.697 | -0.197 [-0.297, -0.079] | -0.215 | 0.059 | -0.274 [-0.406, -0.076] | – | 0.498 |
+| `DR` | 3 | 62 | 0.500 | 0.692 | -0.192 [-0.293, -0.073] | -0.213 | 0.043 | -0.257 [-0.369, -0.078] | – | 0.406 |
+| `DR` | 4 | 62 | 0.500 | 0.687 | -0.187 [-0.287, -0.075] | -0.212 | 0.082 | -0.294 [-0.413, -0.140] | – | 0.585 |
+| `DR` | 5 | 62 | 0.500 | 0.676 | -0.176 [-0.272, -0.068] | -0.211 | 0.063 | -0.273 [-0.386, -0.118] | – | 0.339 |
+| `DR+offday` | 1 | 62 | 0.786 | 0.768 | +0.019 [+0.000, +0.043] | 0.146 | 0.162 | -0.016 [-0.064, +0.055] | 0.478 | 0.593 |
+| `DR+offday` | 2 | 62 | 0.735 | 0.697 | +0.038 [-0.012, +0.092] | 0.081 | 0.059 | +0.023 [-0.052, +0.122] | 0.453 | 0.498 |
+| `DR+offday` | 3 | 62 | 0.693 | 0.692 | +0.001 [-0.048, +0.054] | 0.019 | 0.043 | -0.024 [-0.078, +0.049] | 0.220 | 0.406 |
+| `DR+offday` | 4 | 62 | 0.679 | 0.687 | -0.008 [-0.051, +0.034] | 0.008 | 0.082 | -0.074 [-0.122, -0.027] | 0.143 | 0.585 |
+| `DR+offday` | 5 | 62 | 0.694 | 0.676 | +0.018 [-0.025, +0.059] | 0.039 | 0.063 | -0.024 [-0.058, +0.022] | 0.170 | 0.339 |
+| `DR+offday_mono` | 1 | 62 | 0.791 | 0.768 | +0.023 [-0.025, +0.075] | 0.099 | 0.162 | -0.064 [-0.189, +0.050] | 0.314 | 0.593 |
+| `DR+offday_mono` | 2 | 62 | 0.713 | 0.697 | +0.016 [-0.060, +0.093] | -0.060 | 0.059 | -0.119 [-0.291, +0.047] | 0.141 | 0.498 |
+| `DR+offday_mono` | 3 | 62 | 0.690 | 0.692 | -0.002 [-0.066, +0.060] | -0.126 | 0.043 | -0.169 [-0.359, -0.019] | 0.098 | 0.406 |
+| `DR+offday_mono` | 4 | 62 | 0.699 | 0.687 | +0.011 [-0.047, +0.078] | -0.116 | 0.082 | -0.198 [-0.394, -0.055] | 0.072 | 0.585 |
+| `DR+offday_mono` | 5 | 62 | 0.707 | 0.676 | +0.031 [-0.024, +0.088] | -0.054 | 0.063 | -0.117 [-0.266, +0.010] | 0.091 | 0.339 |
+| `DR+offday_rate` | 1 | 62 | 0.744 | 0.768 | -0.024 [-0.082, +0.025] | 0.069 | 0.162 | -0.093 [-0.223, +0.010] | 0.197 | 0.593 |
+| `DR+offday_rate` | 2 | 62 | 0.714 | 0.697 | +0.017 [-0.043, +0.083] | 0.010 | 0.059 | -0.048 [-0.218, +0.087] | 0.059 | 0.498 |
+| `DR+offday_rate` | 3 | 62 | 0.691 | 0.692 | -0.001 [-0.060, +0.060] | -0.053 | 0.043 | -0.096 [-0.266, +0.035] | -0.064 | 0.406 |
+| `DR+offday_rate` | 4 | 62 | 0.682 | 0.687 | -0.005 [-0.074, +0.066] | -0.062 | 0.082 | -0.145 [-0.320, -0.031] | -0.132 | 0.585 |
+| `DR+offday_rate` | 5 | 62 | 0.680 | 0.676 | +0.004 [-0.067, +0.071] | -0.063 | 0.063 | -0.126 [-0.310, -0.009] | -0.122 | 0.339 |
+| `ROW` | 1 | 62 | 0.700 | 0.768 | -0.068 [-0.148, +0.016] | 0.093 | 0.162 | -0.069 [-0.163, +0.037] | 0.236 | 0.593 |
+| `ROW` | 2 | 62 | 0.682 | 0.697 | -0.015 [-0.120, +0.099] | 0.003 | 0.059 | -0.056 [-0.158, +0.043] | 0.282 | 0.498 |
+| `ROW` | 3 | 62 | 0.648 | 0.692 | -0.044 [-0.169, +0.080] | -0.037 | 0.043 | -0.081 [-0.190, +0.018] | 0.102 | 0.406 |
+| `ROW` | 4 | 62 | 0.691 | 0.687 | +0.004 [-0.089, +0.097] | 0.029 | 0.082 | -0.053 [-0.121, +0.013] | 0.385 | 0.585 |
+| `ROW` | 5 | 62 | 0.682 | 0.676 | +0.006 [-0.089, +0.098] | -0.013 | 0.063 | -0.075 [-0.158, +0.006] | 0.078 | 0.339 |
+| `ROW+tailcap75+floor` | 1 | 62 | 0.659 | 0.768 | -0.109 [-0.222, -0.003] | 0.011 | 0.162 | -0.151 [-0.233, -0.040] | 0.120 | 0.593 |
+| `ROW+tailcap75+floor` | 2 | 62 | 0.656 | 0.697 | -0.041 [-0.126, +0.050] | 0.010 | 0.059 | -0.049 [-0.120, +0.059] | -0.008 | 0.498 |
+| `ROW+tailcap75+floor` | 3 | 62 | 0.648 | 0.692 | -0.044 [-0.119, +0.029] | 0.002 | 0.043 | -0.042 [-0.098, +0.050] | -0.051 | 0.406 |
+| `ROW+tailcap75+floor` | 4 | 62 | 0.647 | 0.687 | -0.040 [-0.130, +0.042] | 0.006 | 0.082 | -0.077 [-0.120, -0.025] | 0.055 | 0.585 |
+| `ROW+tailcap75+floor` | 5 | 62 | 0.658 | 0.676 | -0.018 [-0.092, +0.044] | 0.008 | 0.063 | -0.055 [-0.092, -0.000] | 0.121 | 0.339 |
+| `ROW+tailcap75+recent_floor` | 1 | 62 | 0.684 | 0.768 | -0.084 [-0.162, +0.009] | 0.049 | 0.162 | -0.113 [-0.242, -0.018] | 0.132 | 0.593 |
+| `ROW+tailcap75+recent_floor` | 2 | 62 | 0.681 | 0.697 | -0.016 [-0.082, +0.068] | 0.044 | 0.059 | -0.014 [-0.147, +0.092] | 0.077 | 0.498 |
+| `ROW+tailcap75+recent_floor` | 3 | 62 | 0.683 | 0.692 | -0.009 [-0.062, +0.055] | 0.046 | 0.043 | +0.003 [-0.126, +0.105] | 0.073 | 0.406 |
+| `ROW+tailcap75+recent_floor` | 4 | 62 | 0.687 | 0.687 | -0.000 [-0.054, +0.064] | 0.048 | 0.082 | -0.035 [-0.166, +0.057] | 0.129 | 0.585 |
+| `ROW+tailcap75+recent_floor` | 5 | 62 | 0.676 | 0.676 | +0.000 [-0.055, +0.057] | 0.041 | 0.063 | -0.022 [-0.167, +0.072] | 0.150 | 0.339 |
+| `ROW+tailcap75+state_floor` | 1 | 62 | 0.659 | 0.768 | -0.109 [-0.222, -0.003] | 0.011 | 0.162 | -0.151 [-0.233, -0.040] | 0.120 | 0.593 |
+| `ROW+tailcap75+state_floor` | 2 | 62 | 0.656 | 0.697 | -0.041 [-0.126, +0.050] | 0.010 | 0.059 | -0.049 [-0.120, +0.059] | -0.008 | 0.498 |
+| `ROW+tailcap75+state_floor` | 3 | 62 | 0.648 | 0.692 | -0.044 [-0.119, +0.029] | 0.002 | 0.043 | -0.042 [-0.098, +0.050] | -0.051 | 0.406 |
+| `ROW+tailcap75+state_floor` | 4 | 62 | 0.647 | 0.687 | -0.040 [-0.130, +0.042] | 0.006 | 0.082 | -0.077 [-0.120, -0.025] | 0.055 | 0.585 |
+| `ROW+tailcap75+state_floor` | 5 | 62 | 0.658 | 0.676 | -0.018 [-0.092, +0.044] | 0.008 | 0.063 | -0.055 [-0.092, -0.000] | 0.121 | 0.339 |
+
+Inside 2025-26 (15 pressure days):
+
+| row | lead | pressure days | AUROC row | AUROC persistence_logistic | AUROC difference [90%] | Brier skill row | Brier skill persistence_logistic | Brier skill difference [90%] | slope row | slope persistence_logistic |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `ROW+tailcap75` | 1 | 15 | 0.500 | 0.919 | -0.419 [-0.470, -0.338] | -0.070 | 0.157 | -0.227 [-0.360, +0.545] | – | 0.919 |
+| `ROW+tailcap75` | 2 | 15 | 0.500 | 0.880 | -0.380 [-0.450, -0.261] | -0.069 | 0.019 | -0.088 [-0.257, +0.861] | – | 0.754 |
+| `ROW+tailcap75` | 3 | 15 | 0.500 | 0.866 | -0.366 [-0.441, -0.236] | -0.068 | 0.050 | -0.119 [-0.249, +0.684] | – | 1.007 |
+| `ROW+tailcap75` | 4 | 15 | 0.500 | 0.875 | -0.375 [-0.445, -0.257] | -0.068 | 0.029 | -0.097 [-0.297, +0.988] | – | 0.822 |
+| `ROW+tailcap75` | 5 | 15 | 0.495 | 0.885 | -0.390 [-0.462, -0.288] | -0.069 | 0.071 | -0.140 [-0.307, +0.888] | – | 0.899 |
+| `DR` | 1 | 15 | 0.500 | 0.919 | -0.419 [-0.470, -0.338] | -0.070 | 0.157 | -0.227 [-0.360, +0.545] | – | 0.919 |
+| `DR` | 2 | 15 | 0.500 | 0.880 | -0.380 [-0.450, -0.261] | -0.069 | 0.019 | -0.088 [-0.257, +0.861] | – | 0.754 |
+| `DR` | 3 | 15 | 0.500 | 0.866 | -0.366 [-0.441, -0.236] | -0.068 | 0.050 | -0.119 [-0.249, +0.684] | – | 1.007 |
+| `DR` | 4 | 15 | 0.500 | 0.875 | -0.375 [-0.445, -0.257] | -0.068 | 0.029 | -0.097 [-0.297, +0.988] | – | 0.822 |
+| `DR` | 5 | 15 | 0.500 | 0.885 | -0.385 [-0.455, -0.283] | -0.068 | 0.071 | -0.139 [-0.307, +0.891] | – | 0.899 |
+| `DR+offday` | 1 | 15 | 0.920 | 0.919 | +0.001 [-0.032, +0.053] | 0.150 | 0.157 | -0.007 [-0.180, +0.250] | 0.786 | 0.919 |
+| `DR+offday` | 2 | 15 | 0.901 | 0.880 | +0.021 [-0.028, +0.100] | 0.052 | 0.019 | +0.033 [-0.160, +0.340] | 0.702 | 0.754 |
+| `DR+offday` | 3 | 15 | 0.899 | 0.866 | +0.032 [-0.018, +0.120] | 0.055 | 0.050 | +0.005 [-0.230, +0.244] | 0.728 | 1.007 |
+| `DR+offday` | 4 | 15 | 0.907 | 0.875 | +0.033 [-0.007, +0.112] | 0.101 | 0.029 | +0.072 [-0.101, +0.516] | 0.761 | 0.822 |
+| `DR+offday` | 5 | 15 | 0.904 | 0.885 | +0.019 [-0.016, +0.081] | 0.068 | 0.071 | -0.002 [-0.132, +0.387] | 0.726 | 0.899 |
+| `DR+offday_mono` | 1 | 15 | 0.860 | 0.919 | -0.059 [-0.125, +0.019] | -0.096 | 0.157 | -0.253 [-0.722, +0.133] | 0.325 | 0.919 |
+| `DR+offday_mono` | 2 | 15 | 0.851 | 0.880 | -0.029 [-0.097, +0.038] | -0.222 | 0.019 | -0.241 [-1.056, +0.120] | 0.216 | 0.754 |
+| `DR+offday_mono` | 3 | 15 | 0.878 | 0.866 | +0.012 [-0.016, +0.054] | -0.157 | 0.050 | -0.207 [-1.122, +0.104] | 0.265 | 1.007 |
+| `DR+offday_mono` | 4 | 15 | 0.867 | 0.875 | -0.008 [-0.052, +0.057] | -0.094 | 0.029 | -0.123 [-0.328, +0.343] | 0.394 | 0.822 |
+| `DR+offday_mono` | 5 | 15 | 0.834 | 0.885 | -0.051 [-0.107, +0.009] | -0.109 | 0.071 | -0.179 [-0.397, +0.174] | 0.213 | 0.899 |
+| `DR+offday_rate` | 1 | 15 | 0.917 | 0.919 | -0.002 [-0.040, +0.050] | 0.141 | 0.157 | -0.016 [-0.235, +0.244] | 0.787 | 0.919 |
+| `DR+offday_rate` | 2 | 15 | 0.897 | 0.880 | +0.017 [-0.039, +0.099] | 0.044 | 0.019 | +0.025 [-0.205, +0.308] | 0.706 | 0.754 |
+| `DR+offday_rate` | 3 | 15 | 0.899 | 0.866 | +0.032 [-0.020, +0.125] | 0.058 | 0.050 | +0.007 [-0.281, +0.256] | 0.731 | 1.007 |
+| `DR+offday_rate` | 4 | 15 | 0.905 | 0.875 | +0.030 [-0.012, +0.117] | 0.101 | 0.029 | +0.072 [-0.124, +0.495] | 0.758 | 0.822 |
+| `DR+offday_rate` | 5 | 15 | 0.901 | 0.885 | +0.016 [-0.020, +0.080] | 0.062 | 0.071 | -0.009 [-0.155, +0.361] | 0.723 | 0.899 |
+| `ROW` | 1 | 15 | 0.804 | 0.919 | -0.115 [-0.234, -0.013] | 0.089 | 0.157 | -0.068 [-0.222, -0.018] | 0.403 | 0.919 |
+| `ROW` | 2 | 15 | 0.717 | 0.880 | -0.163 [-0.329, -0.072] | -0.090 | 0.019 | -0.109 [-0.328, -0.029] | 0.293 | 0.754 |
+| `ROW` | 3 | 15 | 0.682 | 0.866 | -0.184 [-0.352, -0.077] | -0.060 | 0.050 | -0.111 [-0.436, +0.002] | 0.295 | 1.007 |
+| `ROW` | 4 | 15 | 0.747 | 0.875 | -0.128 [-0.244, -0.056] | -0.078 | 0.029 | -0.107 [-0.617, -0.005] | 0.258 | 0.822 |
+| `ROW` | 5 | 15 | 0.747 | 0.885 | -0.137 [-0.267, -0.057] | -0.029 | 0.071 | -0.099 [-0.524, -0.014] | 0.422 | 0.899 |
+| `ROW+tailcap75+floor` | 1 | 15 | 0.350 | 0.919 | -0.568 [-0.857, -0.199] | 0.000 | 0.157 | -0.157 [-0.294, +0.317] | -11.273 | 0.919 |
+| `ROW+tailcap75+floor` | 2 | 15 | 0.285 | 0.880 | -0.595 [-0.841, -0.276] | 0.000 | 0.019 | -0.019 [-0.190, +0.609] | -19.701 | 0.754 |
+| `ROW+tailcap75+floor` | 3 | 15 | 0.218 | 0.866 | -0.648 [-0.850, -0.364] | 0.000 | 0.050 | -0.050 [-0.179, +0.459] | -31.221 | 1.007 |
+| `ROW+tailcap75+floor` | 4 | 15 | 0.203 | 0.875 | -0.672 [-0.867, -0.390] | 0.000 | 0.029 | -0.029 [-0.228, +0.760] | -34.335 | 0.822 |
+| `ROW+tailcap75+floor` | 5 | 15 | 0.202 | 0.885 | -0.683 [-0.862, -0.429] | -0.001 | 0.071 | -0.071 [-0.231, +0.684] | -34.415 | 0.899 |
+| `ROW+tailcap75+recent_floor` | 1 | 15 | 0.745 | 0.919 | -0.173 [-0.408, +0.017] | 0.023 | 0.157 | -0.134 [-0.283, +0.417] | 0.886 | 0.919 |
+| `ROW+tailcap75+recent_floor` | 2 | 15 | 0.698 | 0.880 | -0.182 [-0.457, +0.056] | -0.000 | 0.019 | -0.019 [-0.220, +0.794] | 0.814 | 0.754 |
+| `ROW+tailcap75+recent_floor` | 3 | 15 | 0.650 | 0.866 | -0.216 [-0.499, +0.061] | -0.023 | 0.050 | -0.074 [-0.223, +0.584] | 0.725 | 1.007 |
+| `ROW+tailcap75+recent_floor` | 4 | 15 | 0.607 | 0.875 | -0.268 [-0.533, +0.035] | -0.030 | 0.029 | -0.059 [-0.276, +0.862] | 0.729 | 0.822 |
+| `ROW+tailcap75+recent_floor` | 5 | 15 | 0.601 | 0.885 | -0.283 [-0.536, -0.001] | -0.031 | 0.071 | -0.101 [-0.268, +0.804] | 0.703 | 0.899 |
+| `ROW+tailcap75+state_floor` | 1 | 15 | 0.554 | 0.919 | -0.364 [-0.744, +0.014] | 0.087 | 0.157 | -0.070 [-0.246, +0.254] | 1.359 | 0.919 |
+| `ROW+tailcap75+state_floor` | 2 | 15 | 0.534 | 0.880 | -0.346 [-0.745, +0.053] | 0.087 | 0.019 | +0.068 [-0.160, +0.569] | 1.352 | 0.754 |
+| `ROW+tailcap75+state_floor` | 3 | 15 | 0.514 | 0.866 | -0.352 [-0.738, +0.058] | 0.087 | 0.050 | +0.037 [-0.161, +0.410] | 1.345 | 1.007 |
+| `ROW+tailcap75+state_floor` | 4 | 15 | 0.500 | 0.875 | -0.375 [-0.740, +0.034] | 0.087 | 0.029 | +0.059 [-0.191, +0.729] | 1.341 | 0.822 |
+| `ROW+tailcap75+state_floor` | 5 | 15 | 0.456 | 0.885 | -0.429 [-0.778, +0.004] | 0.070 | 0.071 | -0.001 [-0.186, +0.612] | 1.165 | 0.899 |
+
+The other regimes (2020, 2021-23, 2024) and the split by as-of scarcity state are in `docs/pivot/evidence/off-risk-day/persistence-step1-paired.md`,
+`persistence-step2-paired.md` and, with the intercepts, `persistence-step1.md` and `persistence-step2.md`; the full tables of this section are
+`persistence-tables.md`. The regime 2021-23 has no pressure day, so it ranks nothing.
+
+### What it says
+
+* **Step 1's rows have no skill beyond persistence-logistic.** `ROW`, the one row whose own forecast ranked the days against the climatology, has a lower
+  AUROC than persistence-logistic at leads 1, 2 and 4 (lead 1: -0.160 [-0.218, -0.108]), and a Brier skill that does not differ from it at any lead over
+  all days or inside 2018-19. In 2025-26 it is below persistence on both statistics at leads 1, 2, 4 and 5.
+  `+tailcap75` and the constant floors are below it on AUROC at every lead, over all days. `+recent_floor`, whose pooled skill over the climatology was
+  the largest in step 1 (AUROC 0.84 to 0.87), does not differ from persistence over all days at any lead, and inside 2018-19 it is below it in Brier skill at lead 1 only: its pooled
+  figure is no more than persistence-logistic's.
+* **At lead 1 no row beats persistence-logistic.** `+offday`'s difference is -0.009 [-0.065, +0.027] in AUROC and +0.042 [-0.008, +0.111] in Brier skill.
+  `+offday_mono` and `+offday_rate` are below it in point estimate on both, with intervals holding 0.
+* **`+offday` is ahead over all days at leads 2, 3 and 5, and that does not hold where the pressure days are.** Over all days its Brier skill exceeds
+  persistence's at lead 2 (+0.090 [+0.023, +0.176]), lead 3 (+0.092 [+0.026, +0.194]) and lead 5 (+0.062 [+0.010, +0.147]), and its AUROC at leads 3 and 5.
+  Inside 2018-19, which holds 62 of the 82 pressure days, no Brier-skill difference is above 0 at any lead (the interval at lead 4 is below 0: -0.074
+  [-0.122, -0.027]) and the only AUROC difference whose interval excludes 0 is lead 1 (+0.019 [+0.000, +0.043]); inside 2025-26 no interval excludes 0.
+* **The near-empty cells, as #667 found.** The lead 3 and 5 gain is not repeated in any regime with 15 or more pressure days. The regimes 2020 and
+  2024 hold 3 and 2 pressure days. There `+offday` has Brier skill 0.54 to 0.63 (2020) and 0.17 to 0.18 (2024) against persistence's -0.10 to 0.12 and
+  -0.05 to 0.02, so the gain is absent from the regimes that hold 77 of the 82 pressure days and present only in the two that hold the other 5. **#667's finding holds.** (The AUROC of a
+  cell with 2 or 3 pressure days is not informative; the intervals are as wide as the cell.) `+offday_rate` differs from persistence in AUROC at lead 3
+  only, `+offday_mono` at leads 3 and 5, and neither in Brier skill over all days; both are below persistence in Brier skill inside 2018-19 at leads 4 and 5
+  (`+offday_rate`) and leads 3 and 4 (`+offday_mono`).
+* **No row ranks the days better than the raw as-of spread.** Its AUROC, 0.92 to 0.94 over all days, is above every row's at every lead. The extra inputs
+  of `+offday` (the tail spread, its dispersion, the satiation distance and the scarcity state) rank the days that are not risk dates no better than the
+  spread read alone (a statement about AUROC; the raw spread is not a probability and has no Brier skill).
+* **What this changes.** Steps 1 and 2 said the day-level models rank the days and have skill beyond the base rate. Against the benchmark CLAUDE.md
+  requires, the ordinary-day ranking is not beyond persistence-logistic at lead 1 or inside 2018-19, and what remains over all days at leads 2, 3 and 5 is
+  carried by two near-empty regimes. Whether H2's progress is judged against persistence-logistic, climatology or both is Eleonora's; this page reports
+  both and settles nothing. The judge's tier verdicts above are unchanged and are not evidence for any hypothesis.
+
+### Reproduction (#681)
+
+The forecast files are those of "Reproduction" and "Reproduction (step 2)" above, plus `pressure_judge.py forecasts` for the persistence-logistic
+benchmark (`OUT/bench_h?.json`). Run the single-threaded math libraries (`OMP_NUM_THREADS=1`): the gradient-boosted fits oversubscribe the cores
+otherwise and take hours. The panel digest is `4ddc3882…`.
+
+```
+PYTHONPATH=src python3 scripts/off_risk_day_624.py declare-persistence        # already committed; the declaration is checked equal by the tests
+PYTHONPATH=src python3 scripts/off_risk_day_624.py measure --panel PUBLISHED.csv --scratch AUG2.csv --declaration metadata/off_risk_day_681.json \
+    --pair-with persistence_logistic --row 'persistence_logistic=OUT/bench_h{h}.json' --row 'spread_bps_asof=asof:spread_bps' \
+    --row 'risk_gbm+every_day+gate+settle+h41+iorb=OUT/iorb_h{h}.json' --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75=OUT/cap_h{h}.json' \
+    --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor=OUT/v610_h{h}.json' \
+    --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor=OUT/v610_h{h}.json' \
+    --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor=OUT/v610_h{h}.json' \
+    --title 'Step 1 against persistence-logistic and the raw as-of spread (#681)' --output OUT/persistence-step1.json --markdown OUT/persistence-step1.md
+PYTHONPATH=src python3 scripts/off_risk_day_624.py measure --panel PUBLISHED.csv --scratch AUG2R.csv --declaration metadata/off_risk_day_681.json \
+    --pair-with persistence_logistic --row 'persistence_logistic=OUT/bench_h{h}.json' --row 'spread_bps_asof=asof:spread_bps' \
+    --row 'risk_gbm+settle+h41+dist_roll=OUT/dist_h{h}.json' --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75=OUT/cap_h{h}.json' \
+    --row 'risk_gbm+settle+h41+dist_roll+offday=OUT/v624_h{h}.json' --row 'risk_gbm+settle+h41+dist_roll+offday_mono=OUT/v624_h{h}.json' \
+    --row 'risk_gbm+settle+h41+dist_roll+offday_rate=OUT/v624_h{h}.json' \
+    --title 'Step 2 against persistence-logistic and the raw as-of spread (#681)' --output OUT/persistence-step2.json --markdown OUT/persistence-step2.md
+PYTHONPATH=src python3 scripts/off_risk_day_624.py paired --input OUT/persistence-step1.json --output OUT/persistence-step1-paired.md
+PYTHONPATH=src python3 scripts/off_risk_day_624.py paired --input OUT/persistence-step2.json --output OUT/persistence-step2-paired.md
+PYTHONPATH=src python3 scripts/off_risk_day_624.py tables --input OUT/persistence-step2.json --input OUT/persistence-step1.json \
+    --cell all --cell 'regime 2018-19' --cell 'regime 2025-26' --output OUT/persistence-tables.md
+```
