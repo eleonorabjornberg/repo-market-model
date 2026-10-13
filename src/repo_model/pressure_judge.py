@@ -235,8 +235,8 @@ class Declaration:
             document["weighted_miss"] = self.weighted_miss.document()
         if self.always_flag_not_warning:
             document["tiers"]["onset_warning"]["always_flag_blocks"] = (
-                "a flag from a refit block whose cut-off is at or below every probability in it counts neither as a "
-                "warning nor as a false alarm; the blocks are listed (#588)"
+                "a flag from a refit block whose cut-off is at or below every probability in it is not a warning but "
+                "is still a false alarm; the blocks are listed (#588, #685)"
             )
         return document
 
