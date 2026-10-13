@@ -30,6 +30,14 @@ alone, each confirmed applied by `grep` and restored before the next):
 3. `check_no_future`: replace `if (have is None) != (want is None) or (have is not None and abs(have - want) > 1e-12):` by
    `if False:`. A level that differs from the cut panel's is no longer refused;
    `NoFutureTests.test_a_level_that_differs_from_the_cut_panels_is_refused` fails with `AssertionError: LookAheadError not raised`.
+4. (#626) `structural_exceedance.fit_predict` (the same line, now reached by `kinked_fitted` through `design.level_source`): the
+   same replacement as 2. `PredictorTests.test_a_kinked_fitted_level_is_unmoved_by_rows_after_the_training_end` fails with
+   `AssertionError: 0.1425 != 0.14`.
+
+The kinked elasticity of #626 is covered by `DesignTests` (`test_the_kinked_elasticity_is_flat_above_the_level_and_exponential_below_it`,
+`test_kinked_forms_read_what_their_level_source_reads`, `test_a_constant_level_changes_the_kinked_columns`) and by
+`PredictorTests.test_a_fitted_level_changes_the_kinked_forecasts_and_not_the_unkinked_ones`; `metadata/kinked_626.json` by
+`tests/test_kinked_626.py`.
 """
 
 from __future__ import annotations
@@ -328,6 +336,53 @@ class DesignTests(unittest.TestCase):
                     self.assertAlmostEqual(y / x, factor, places=9)
         self.assertAlmostEqual(factor, sl.math.exp((0.14 - 0.10) / sl.LENGTH))
 
+    def test_the_kinked_elasticity_is_flat_above_the_level_and_exponential_below_it(self):
+        # #626: e = 1 at and above the level, exp((level - ratio) / L) below it (the sign of the exponent is the unkinked
+        # curve's: the elasticity grows as reserves fall below satiation)
+        self.assertEqual(sl.elasticity(0.15, 0.12, kinked=True), 1.0)
+        self.assertEqual(sl.elasticity(0.12, 0.12, kinked=True), 1.0)
+        self.assertEqual(sl.elasticity(0.30, 0.12, kinked=True), 1.0)
+        self.assertAlmostEqual(sl.elasticity(0.11, 0.12, kinked=True), sl.math.e, places=12)
+        self.assertAlmostEqual(sl.elasticity(0.10, 0.12, kinked=True), sl.math.exp(2.0), places=12)
+        # below the level it is the unkinked curve; above it the unkinked curve is below 1 and the kinked one is 1
+        self.assertAlmostEqual(sl.elasticity(0.10, 0.12, kinked=True), sl.elasticity(0.10, 0.12), places=12)
+        self.assertLess(sl.elasticity(0.15, 0.12), 1.0)
+        self.assertEqual(sl.elasticity(0.15, 0.12), sl.elasticity(0.15, 0.12, kinked=False))
+
+    def test_kinked_forms_read_what_their_level_source_reads(self):
+        self.assertEqual(sl.features_at_horizon(1, "kinked_fitted"), sl.features_at_horizon(1))
+        self.assertEqual(sl.features_at_horizon(1, "kinked_rolling"), sl.features_at_horizon(1, "rolling"))
+        design = sl.StructuralDesign(sl.features_at_horizon(1, "kinked_rolling"), SPLITS, "kinked_rolling")
+        row = design.row(_obs(**{sat.ROLLING_COLUMN: 0.10}), 12.0)
+        self.assertAlmostEqual(row[1], 1.0 * 60.0)  # ratio 3000 / 26000 = 0.1154 is above the level 0.10: e = 1
+        low = design.row(_obs(reserve_balances=26000.0 * 0.09, **{sat.ROLLING_COLUMN: 0.10}), 12.0)
+        self.assertAlmostEqual(low[1], sl.math.exp(1.0) * 60.0)
+        with self.assertRaises(ValueError):
+            design.row(_obs(), 12.0)
+        with self.assertRaises(ValueError):
+            sl.StructuralDesign(sl.features_at_horizon(1), SPLITS, "kinked_rolling")
+        fitted = sl.StructuralDesign(sl.features_at_horizon(1), SPLITS, "kinked_fitted")
+        raw = fitted.row(_obs(), 12.0)
+        self.assertEqual(len(raw), len(sl.RAW_NAMES))
+        done = fitted.finish(raw, 0.13)
+        self.assertAlmostEqual(done[1], sl.elasticity(3000.0 / 26000.0, 0.13, kinked=True) * 60.0)
+
+    def test_a_constant_level_changes_the_kinked_columns(self):
+        # #626, the opposite of test_a_constant_level_only_rescales_the_elasticity_columns: with the kink, a constant level
+        # no longer multiplies the elasticity terms by one constant. Rows above both levels keep e = 1 while rows between
+        # them do not, so the columns' shape moves and the logistic's standardisation does not remove it.
+        design = sl.StructuralDesign(sl.features_at_horizon(1), SPLITS, "kinked_fitted")
+        raws = [design.row(_obs(reserve_balances=26000.0 * r, net_settlement_ahead_1d=60.0 + 90.0 * k), 5.0 + k)
+                for k, r in enumerate((0.09, 0.11, 0.13, 0.15))]
+        low = [design.finish(raw, 0.10)[1] for raw in raws]
+        high = [design.finish(raw, 0.14)[1] for raw in raws]
+        ratios = [h / l for h, l in zip(high, low)]
+        self.assertGreater(max(ratios) - min(ratios), 1.0)
+        # the unkinked columns of the same rows differ by one constant
+        plain = sl.StructuralDesign(sl.features_at_horizon(1), SPLITS, "fitted")
+        plain_ratios = [plain.finish(raw, 0.14)[1] / plain.finish(raw, 0.10)[1] for raw in raws]
+        self.assertAlmostEqual(max(plain_ratios), min(plain_ratios), places=9)
+
     def test_an_unknown_form_is_refused(self):
         with self.assertRaises(ValueError):
             sl.StructuralDesign(sl.features_at_horizon(1), SPLITS, "kinked")
@@ -448,6 +503,32 @@ class PredictorTests(_Measured):
         self.assertTrue(again["fitted"])
         self.assertEqual(first["satiation_level"], again["satiation_level"])
         self.assertEqual(first["pairs"], again["pairs"])
+
+    def test_a_fitted_level_changes_the_kinked_forecasts_and_not_the_unkinked_ones(self):
+        # #626: the same constant levels, forced at every refit. Unkinked, the forecasts agree to rounding (the finding of
+        # #587); kinked, the level moves them.
+        def forecasts(form, level):
+            with mock.patch.object(sl, "fit_level", lambda ratios, spreads, **kw: (level, {"fitted": True, "pairs": len(ratios)})):
+                report, _ = self.structural(form)
+            return [p[0] for p in report.forecast]
+
+        plain_low, plain_high = forecasts("fitted", 0.10), forecasts("fitted", 0.14)
+        self.assertLess(max(abs(a - b) for a, b in zip(plain_low, plain_high)), 1e-6)
+        kink_low, kink_high = forecasts("kinked_fitted", 0.10), forecasts("kinked_fitted", 0.14)
+        self.assertGreater(max(abs(a - b) for a, b in zip(kink_low, kink_high)), 1e-3)
+
+    def test_a_kinked_fitted_level_is_unmoved_by_rows_after_the_training_end(self):
+        _report, predictor = self.structural("kinked_fitted")
+        first = next(f for f in predictor.fits if f["fitted"])
+        end = [r.date.isoformat() for r in self.rows].index(first["last_training_row"])
+        changed = [DailyObservation(r.date, dict(r.values)) for r in self.rows]
+        for later in changed[end + 1:]:
+            later.values["sofr"] = 4.0 + 0.30
+            later.values["reserve_balances"] = 26000.0 * 0.20
+        _report2, predictor2 = self.structural("kinked_fitted", changed)
+        again = next(f for f in predictor2.fits if f["last_training_row"] == first["last_training_row"])
+        self.assertTrue(again["fitted"])
+        self.assertEqual(first["satiation_level"], again["satiation_level"])
 
     def test_the_projected_hinge_model_under_each_form(self):
         from repo_model import ml

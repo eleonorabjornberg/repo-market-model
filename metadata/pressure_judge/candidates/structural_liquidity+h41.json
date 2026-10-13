@@ -1,0 +1,18 @@
+{
+  "role": "candidate",
+  "track": "M (#626)",
+  "features": [
+    "spread_bps",
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "reserve_balances",
+    "bank_total_assets",
+    "on_rrp",
+    "tga",
+    "net_settlement_ahead_1d"
+  ],
+  "features_at_horizon_2_or_more": "net_settlement_due_5d in place of net_settlement_ahead_1d (the scored day's own settlement is not yet public)",
+  "calibration": "none: a logistic of six declared terms, metadata/structural_liquidity.json; the reserves read per H.4.1 release (metadata/h41_release_dating.json)",
+  "inputs_note": "structural_liquidity with the reserves leg read per H.4.1 release: the like-for-like control for the two kinked variants (#626)"
+}
