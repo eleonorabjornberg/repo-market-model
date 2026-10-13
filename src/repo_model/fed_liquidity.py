@@ -8,9 +8,26 @@ operations and the Standing Repo Facility from 2021-07-29) are a source of their
 operation date's values are read after the Desk's recorded publication time and the
 registry's declared lag, whichever is later (`ingest._nyfed_repo_ops_rows`).
 
+**What the measure is** (#659, the data meaning decided by Nicholas Beroud on
+eleonorabjornberg/repo-market-liquidity#1). The amount accepted on an operation date is a
+*take-up demand signal*, not the cash in the system: a term repo is counted once, on its
+operation date. The cash outstanding is its own series, `nyfed_repo_ops.repo_term_outstanding`
+(USD billions of term repos with settlement <= d < maturity, rebuilt across the snapshot files),
+so no different measure sits under one name. It is declared and left off the panel columns.
+
+* Before 2019-09-17 (`ingest.REPO_FACILITY_START`) no Fed repo was offered to the market; the six
+  operations of $64-66 million before it are test operations and are not take-up. A date with no
+  operation is a structural zero.
+* From 2019-09-17 to the day before the Standing Repo Facility (2021-07-29), a date with no
+  operation is **missing** (`None`), not zero. The tracked snapshots hold no such date: the Desk
+  operated on every business day from 2019-09-17.
+* From 2021-07-29 a date with no operation (a holiday) is zero, as before.
+* A panel date after the snapshots' last date (`coverage_end`, declared in
+  `metadata/sources_measurement.json`) is refused with `StaleReadError`, never read as zero.
+
 **The columns** (`COLUMN_FIELDS`, with the source fields each draws on, which is what the
-as-of rule reads their lag from). Every one is observed on every panel row: a panel date
-with no repo operation is a date nothing was taken, read as zero.
+as-of rule reads their lag from). Every one is observed on every panel row except a missing
+date, as above, which carries `None` in each.
 
 * raw: `fed_repo_accepted` and `fed_repo_submitted` (USD billions), `fed_repo_rate_iorb_bps`
   (the amount-weighted rate accepted minus IORB, in bp, zero where nothing was accepted at
@@ -50,6 +67,7 @@ from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
+from .asof import StaleReadError
 from .contract import FEATURE_FIELDS
 from .data import DailyObservation
 from .ingest import (
@@ -58,6 +76,9 @@ from .ingest import (
     NYFED_REPO_OPS_RATE,
     NYFED_REPO_OPS_SOURCE_ID,
     NYFED_REPO_OPS_SUBMITTED,
+    NYFED_REPO_TERM_OUTSTANDING,
+    REPO_FACILITY_START,
+    SRF_INCEPTION,
     load_snapshot_manifest,
     parse_snapshots,
     repo_operation_publication_times,
@@ -82,6 +103,7 @@ __all__ = [
     "assemble",
     "build_columns",
     "declaration_entry",
+    "declared_coverage_end",
     "features_at_horizon",
     "load_registry",
     "series_from_snapshots",
@@ -183,7 +205,13 @@ def series_from_snapshots(
     instants = same_day_instants(directory) if reading == SAME_DAY else {}
     out: Dict[str, Dict[date, float]] = {
         name: {}
-        for name in (NYFED_REPO_OPS_ACCEPTED, NYFED_REPO_OPS_SUBMITTED, NYFED_REPO_OPS_RATE, NYFED_REPO_OPS_COUNT)
+        for name in (
+            NYFED_REPO_OPS_ACCEPTED,
+            NYFED_REPO_OPS_SUBMITTED,
+            NYFED_REPO_OPS_RATE,
+            NYFED_REPO_OPS_COUNT,
+            NYFED_REPO_TERM_OUTSTANDING,
+        )
     }
     for (series, ref_date), row in best.items():
         if reading == SAME_DAY and instants.get(ref_date, _decision(ref_date)) > _decision(ref_date):
@@ -201,11 +229,17 @@ def _get(row: DailyObservation, column: str) -> Optional[float]:
     return None if value is None else float(value)
 
 
-def build_columns(rows: Sequence[DailyObservation], suffix: str = "") -> List[DailyObservation]:
+def build_columns(
+    rows: Sequence[DailyObservation], suffix: str = "", *, allow_missing: bool = False
+) -> List[DailyObservation]:
     """`rows` with the derived columns added, each from its own row and earlier ones.
 
     Reads `fed_repo_accepted` + `suffix` (required on every row: a missing value is a
-    `ValueError`, never a guessed zero).
+    `ValueError`, never a guessed zero). With `allow_missing`, a row whose take-up is `None`
+    (a date the Desk held no operation on, in the years it did not operate every day:
+    `assemble`) carries `None` in its two derived levels, and the day after it has no change
+    either, since the change needs the previous row; `fed_repo_days_since_positive` counts a
+    missing row as not positive, because it is rows since a row that was.
     """
 
     out: List[DailyObservation] = []
@@ -214,17 +248,42 @@ def build_columns(rows: Sequence[DailyObservation], suffix: str = "") -> List[Da
     source = "fed_repo_accepted" + suffix
     for row in rows:
         accepted = _get(row, source)
+        values: Dict[str, Optional[float]] = dict(row.values)
+        if accepted is None and allow_missing:
+            values["fed_repo_log_accepted" + suffix] = None
+            values["fed_repo_log_accepted_change" + suffix] = None
+            previous_log = None
+            since = min(since + 1, DAYS_SINCE_CAP)
+            values["fed_repo_days_since_positive" + suffix] = float(since)
+            out.append(DailyObservation(row.date, values))
+            continue
         if accepted is None or not math.isfinite(accepted) or accepted < 0.0:
             raise ValueError(f"{row.date}: {source} must be a non-negative number, got {accepted!r}")
-        values: Dict[str, Optional[float]] = dict(row.values)
         logged = math.log1p(accepted)
         values["fed_repo_log_accepted" + suffix] = logged
-        values["fed_repo_log_accepted_change" + suffix] = 0.0 if previous_log is None else logged - previous_log
+        previous_row = out[-1] if out else None
+        values["fed_repo_log_accepted_change" + suffix] = (
+            0.0 if previous_row is None else None if previous_log is None else logged - previous_log
+        )
         previous_log = logged
         since = 0 if accepted > 0.0 else min(since + 1, DAYS_SINCE_CAP)
         values["fed_repo_days_since_positive" + suffix] = float(since)
         out.append(DailyObservation(row.date, values))
     return out
+
+
+def declared_coverage_end(source: str = NYFED_REPO_OPS_SOURCE_ID, registry: Optional[Mapping[str, Mapping[str, object]]] = None) -> date:
+    """The last date the tracked snapshots cover, as `metadata/sources_measurement.json` declares it (#659).
+
+    `coverage_end` of `source`: a panel date after it has no operation row because the snapshots
+    end, not because the Desk held none, and must not be read as zero take-up.
+    """
+
+    entry = (registry if registry is not None else load_registry())[source]
+    try:
+        return date.fromisoformat(str(entry["coverage_end"]))
+    except (KeyError, ValueError) as exc:
+        raise ValueError(f"{source} declares no valid coverage_end in the measurement registry") from exc
 
 
 def assemble(
@@ -234,33 +293,63 @@ def assemble(
     cutoff: datetime,
     end: date,
     reading: str = CONSERVATIVE,
+    coverage_end: Optional[date] = None,
 ) -> Tuple[List[DailyObservation], Dict[str, object]]:
     """The panel's `rows` up to `end`, with the raw and derived columns added.
 
-    A date with no repo operation is read as zero take-up (amounts, count and rate spread zero).
+    **What a date with no operation reads as** (#659, decided by Nicholas Beroud on
+    eleonorabjornberg/repo-market-liquidity#1):
+
+    * before the facility's first day (`REPO_FACILITY_START`, 2019-09-17) no Fed repo was offered
+      to the market: take-up is a structural zero (amounts, count and rate spread zero);
+    * from that day to the day before the Standing Repo Facility (`SRF_INCEPTION`, 2021-07-29) a
+      date with no operation is **missing**: `None` in every raw and derived column, because the
+      Desk did not operate on every day and nothing says nothing was demanded;
+    * from the Standing Repo Facility on a date with no operation is zero take-up, as before.
+
+    A panel date after `coverage_end` (default: the registry's declared coverage end of the
+    tracked snapshots) is refused with `StaleReadError`, never read as zero: past the snapshots
+    there is no operation row because the snapshots end. A date after `end` is not read at all,
+    so a caller who stops at the coverage end never meets it.
+
     Under `SAME_DAY` the columns carry the suffix `_sameday` and a date whose results were not
-    public at its own 16:00 is read the same way (`series_from_snapshots`); the conservative
-    columns, if the rows already carry them, are left as they are. Returns the rows and a
-    summary: how many dates had an operation, and how many a non-zero take-up (and, under
-    `SAME_DAY`, how many dates were withheld). `snapshots` is the directory holding
-    `nyfed_repo_ops/`'s parent (`tests/fixtures/snapshots/repo_ops_inputs`).
+    public at its own 16:00 is read as zero (`series_from_snapshots`); it had an operation, so it
+    is never missing. The conservative columns, if the rows already carry them, are left as they
+    are. Returns the rows and a summary: how many dates had an operation, and how many a non-zero
+    take-up, how many dates read as missing (and, under `SAME_DAY`, how many dates were withheld).
+    `snapshots` is the directory holding `nyfed_repo_ops/`'s parent
+    (`tests/fixtures/snapshots/repo_ops_inputs`).
     """
 
     suffix = SAME_DAY_SUFFIX if reading == SAME_DAY else ""
+    if coverage_end is None:
+        coverage_end = declared_coverage_end(NYFED_REPO_OPS_SOURCE_ID if reading != SAME_DAY else SAME_DAY_SOURCE_ID)
     series = series_from_snapshots(snapshots, cutoff, reading)
     full = series_from_snapshots(snapshots, cutoff) if reading == SAME_DAY else series
     rate = series[NYFED_REPO_OPS_RATE]
     iorb_name = "iorb"
     added: List[DailyObservation] = []
-    operated = positive = withheld = 0
+    operated = positive = withheld = missing_days = 0
     for row in rows:
         if row.date > end:
             continue
+        if row.date > coverage_end:
+            raise StaleReadError(
+                f"{row.date} is after the repo-operation snapshots' last date {coverage_end}: "
+                f"it has no operation row because the snapshots end, and is not read as zero take-up"
+            )
         values = dict(row.values)
         accepted = series[NYFED_REPO_OPS_ACCEPTED].get(row.date)
         operated += accepted is not None
         positive += bool(accepted)
         withheld += (row.date in full[NYFED_REPO_OPS_ACCEPTED]) and accepted is None
+        in_window = REPO_FACILITY_START <= row.date < SRF_INCEPTION
+        if in_window and row.date not in full[NYFED_REPO_OPS_ACCEPTED]:
+            missing_days += 1
+            for name in ("fed_repo_accepted", "fed_repo_submitted", "fed_repo_ops", "fed_repo_rate_iorb_bps"):
+                values[name + suffix] = None
+            added.append(DailyObservation(row.date, values))
+            continue
         values["fed_repo_accepted" + suffix] = accepted or 0.0
         values["fed_repo_submitted" + suffix] = series[NYFED_REPO_OPS_SUBMITTED].get(row.date, 0.0)
         values["fed_repo_ops" + suffix] = series[NYFED_REPO_OPS_COUNT].get(row.date, 0.0)
@@ -270,11 +359,17 @@ def assemble(
             0.0 if stated is None or not accepted else (stated - iorb) * 100.0 if iorb is not None else None
         )
         added.append(DailyObservation(row.date, values))
-    built = build_columns(added, suffix)
-    missing = sum(1 for row in built if row.values.get("fed_repo_rate_iorb_bps" + suffix) is None)
+    built = build_columns(added, suffix, allow_missing=True)
+    missing = sum(
+        1
+        for row in built
+        if row.values.get("fed_repo_rate_iorb_bps" + suffix) is None
+        and row.values.get("fed_repo_accepted" + suffix) is not None
+    )
     summary: Dict[str, object] = {
         "dates_with_an_operation": operated,
         "dates_with_a_non_zero_take_up": positive,
+        "dates_read_as_missing": missing_days,
         "rate_spread_missing_iorb": missing,
     }
     if reading == SAME_DAY:
