@@ -13,7 +13,8 @@ as of each decision instant. Nothing here joins the published panel or a publish
   release as the held positions, so the same declared lag.
 * `treasury_auction_results` -- the results fields of the Treasury auctions table
   (`tests/fixtures/snapshots/treasury_auctions/`, already tracked): the accepted amount, the dealers'
-  and indirect bidders' shares of it, and the cover. Public at the auction close.
+  and indirect bidders' shares of what is accepted outside the Fed's rollover (SOMA), and Treasury's
+  bid-to-cover (#690). Public at the auction close.
 * `nyfed_on_rrp_counterparties` -- the number of counterparties in the Desk's regular overnight
   reverse repo operation. The split of the amount by counterparty type (`propositions`) is **not**
   read: the Desk adds it a month later (`tests/test_registry.py`, A45), so it was not public on the
@@ -98,7 +99,14 @@ PD_SERIES: Mapping[str, str] = {
 PD_EXPORT_URL = "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
 
 AUCTION_COLUMNS = ("auc_accepted_bn", "auc_dealer_share", "auc_indirect_share", "auc_cover")
-AUCTION_FIELDS = ("total_accepted", "primary_dealer_accepted", "indirect_bidder_accepted", "total_tendered")
+AUCTION_FIELDS = (
+    "total_accepted",
+    "primary_dealer_accepted",
+    "indirect_bidder_accepted",
+    "total_tendered",
+    "soma_accepted",
+    "soma_tendered",
+)
 #: The declared availability is 15:00 New York time on the auction day. The competitive bids close
 #: at 11:30 or earlier (most bills), 13:00 (notes, bonds and some bills) or, twice in the tracked table, 14:30, and the results follow within minutes; a later close
 #: would not be public by the declared instant.
@@ -121,9 +129,22 @@ DTS_PAGE_SIZE = 10000
 COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
     **{column: ((SOURCE_PD, series),) for column, series in PD_SERIES.items()},
     "auc_accepted_bn": ((SOURCE_AUCTIONS, "total_accepted"),),
-    "auc_dealer_share": ((SOURCE_AUCTIONS, "primary_dealer_accepted"), (SOURCE_AUCTIONS, "total_accepted")),
-    "auc_indirect_share": ((SOURCE_AUCTIONS, "indirect_bidder_accepted"), (SOURCE_AUCTIONS, "total_accepted")),
-    "auc_cover": ((SOURCE_AUCTIONS, "total_tendered"), (SOURCE_AUCTIONS, "total_accepted")),
+    "auc_dealer_share": (
+        (SOURCE_AUCTIONS, "primary_dealer_accepted"),
+        (SOURCE_AUCTIONS, "total_accepted"),
+        (SOURCE_AUCTIONS, "soma_accepted"),
+    ),
+    "auc_indirect_share": (
+        (SOURCE_AUCTIONS, "indirect_bidder_accepted"),
+        (SOURCE_AUCTIONS, "total_accepted"),
+        (SOURCE_AUCTIONS, "soma_accepted"),
+    ),
+    "auc_cover": (
+        (SOURCE_AUCTIONS, "total_tendered"),
+        (SOURCE_AUCTIONS, "total_accepted"),
+        (SOURCE_AUCTIONS, "soma_tendered"),
+        (SOURCE_AUCTIONS, "soma_accepted"),
+    ),
     RRP_COLUMN: ((SOURCE_RRP, "participatingCpty"),),
     "dts_debt_issues_bn": ((SOURCE_DTS, "debt_cash_issues"),),
     "dts_debt_net_bn": ((SOURCE_DTS, "debt_cash_issues"), (SOURCE_DTS, "debt_cash_redemptions")),
@@ -227,10 +248,13 @@ def _number(record: Mapping[str, object], field: str) -> Optional[float]:
 def parse_auction_results(payload: bytes, end: date = END) -> Dict[str, Dict[date, float]]:
     """`{column: {auction_date: value}}`: the auctions of one day summed.
 
-    `auc_accepted_bn` is the total accepted in USD billions; `auc_dealer_share` and
-    `auc_indirect_share` are the primary dealers' and indirect bidders' accepted amounts over it;
-    `auc_cover` is the total tendered over the total accepted. An auction with no result yet
-    (`total_accepted` null) is skipped. A day after `end` is not read.
+    `auc_accepted_bn` is the total accepted in USD billions, the Fed's rollover (SOMA) included.
+    The other three leave SOMA out (#690), because it is added to an auction and takes no bid:
+    `auc_dealer_share` and `auc_indirect_share` are the primary dealers' and indirect bidders' accepted
+    amounts over the accepted amount outside SOMA; `auc_cover` is the tendered amount outside SOMA over
+    it, which is Treasury's bid-to-cover (`bid_to_cover_ratio`, reproduced to its two decimals by every
+    tracked result). An auction with no result yet (`total_accepted` null) or none outside SOMA is
+    skipped. A day after `end` is not read.
     """
 
     parsed = json.loads(payload)
@@ -240,7 +264,8 @@ def parse_auction_results(payload: bytes, end: date = END) -> Dict[str, Dict[dat
     sums: Dict[date, Dict[str, float]] = {}
     for record in records:
         accepted = _number(record, "total_accepted")
-        if accepted is None or accepted <= 0:
+        soma = _number(record, "soma_accepted")
+        if accepted is None or accepted <= 0 or soma is None or accepted - soma <= 0:
             continue
         day = date.fromisoformat(str(record["auction_date"]))
         if day > end:
@@ -255,10 +280,11 @@ def parse_auction_results(payload: bytes, end: date = END) -> Dict[str, Dict[dat
     out: Dict[str, Dict[date, float]] = {column: {} for column in AUCTION_COLUMNS}
     for day, s in sums.items():
         total = s["total_accepted"]
+        outside = total - s["soma_accepted"]
         out["auc_accepted_bn"][day] = total / 1e9
-        out["auc_dealer_share"][day] = s["primary_dealer_accepted"] / total
-        out["auc_indirect_share"][day] = s["indirect_bidder_accepted"] / total
-        out["auc_cover"][day] = s["total_tendered"] / total
+        out["auc_dealer_share"][day] = s["primary_dealer_accepted"] / outside
+        out["auc_indirect_share"][day] = s["indirect_bidder_accepted"] / outside
+        out["auc_cover"][day] = (s["total_tendered"] - s["soma_tendered"]) / outside
     return out
 
 
