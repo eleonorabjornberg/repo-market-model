@@ -225,7 +225,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H3's kill is not tested here; the two series lose rank, and neither was a lead beyond #630's own reading).
 - Next: Eleonora decides whether the source is admitted given the withheld weeks.
 
-### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#698
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#714
 - Directive: #681
 - Step: 3
 - Tier: development
