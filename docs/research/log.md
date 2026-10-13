@@ -264,3 +264,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: not applicable (a plan edit; no experiment).
 - Against kill: not applicable.
 - Next: the step is carried out once step 5 has chosen the primary candidate.
+
+### 2026-10-13 [H3] step 1 · eleonorabjornberg/repo-market-model#716
+- Directive: #690
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ee9366eb`; the scratch panel of `scripts/new_sources.py panel`
+- Tried: 0 model variants; a re-screen of 3 columns (`auc_dealer_share`, `auc_indirect_share`, `auc_cover`) after the Fed's rollover (SOMA) was left out of their denominators and the cover took Treasury's definition; no other series moved.
+- Result: `auc_dealer_share` is no longer clear of 0.5 on ordinary days (AUROC 0.566 [0.49, 0.64] at lead 1, was 0.580 [0.51, 0.66]; scarce band 0.491 [0.41, 0.56]). `auc_cover` on Treasury's definition is now the auction series clear of 0.5, on the low side (ordinary days 0.365 [0.31, 0.43] at lead 1 and 0.297 [0.25, 0.35] at lead 5; partial rho -0.10 [-0.15, -0.06]). Exploratory, unadjusted for multiplicity.
+- Against kill: not applicable (no verdict; development data).
+- Next: whether `auc_cover` enters the nested test of H3 step 3 (#708); not decided here.
