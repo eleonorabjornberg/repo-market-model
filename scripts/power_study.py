@@ -5,11 +5,13 @@ The rule it follows is `docs/research/power-study-656.md`, committed before this
 no day after 2026-09-03 (`PANEL_END`) is scored, and nothing here is a verdict.
 
     PYTHONPATH=src python3 scripts/power_study.py run --out docs/research/power-study-656 [--paths N] [--workers K]
+    PYTHONPATH=src python3 scripts/power_study.py null --out docs/research/power-study-656 [--paths N] [--workers K]
     PYTHONPATH=src python3 scripts/power_study.py check --out docs/research/power-study-656
 
 `run` builds the published panel from the tracked fixtures, scores B1 and B2 on every development decision day,
 constructs the synthetic candidate of the rule (§3), simulates confirmation paths (§4), and writes `result.json`.
-`check` re-reads `result.json` and refuses it if it was made from another rule text or panel. Standard library only.
+`null` is a post-hoc size check (`docs/research/power-study-656-addendum.md`), added after `run`'s figures were seen.
+`check` re-reads `result.json` and refuses it if it was made from another rule text. Standard library only.
 """
 
 from __future__ import annotations
@@ -219,6 +221,66 @@ def days_needed(power):
     return None
 
 
+# -- the post-hoc size check (docs/research/power-study-656-addendum.md) --------------------------------------------------
+
+ADDENDUM = REPO / "docs" / "research" / "power-study-656-addendum.md"
+
+
+def run_null_path(job):
+    """A path under no true difference: whether the lower bound is above zero at look 2 or 3, with and without the MME gate."""
+
+    seed, = job
+    s1, d = _DATA["s1"], _DATA["d"]
+    rng = random.Random(seed)
+    index = stationary_bootstrap_indices(len(s1), sp.BLOCK_LENGTH, rng)[:PATH_DAYS]
+    days = _DATA["days"]
+    bench = [s1[i] for i in index]
+    cand = [s1[i] - d[i] for i in index]
+    levels = sp.nominal_levels()
+    ungated = gated = None
+    for k, n in enumerate(sp.CHECKPOINTS):
+        if k == 0:
+            continue
+        test = sp.paired_test(
+            dict(zip(days[:n], bench[:n])), dict(zip(days[:n], cand[:n])), seed=seed, draws=sp.DRAWS
+        )
+        if test.lower_mean_difference(levels[k]) > 0.0:
+            if ungated is None:
+                ungated = n
+            if gated is None and test.skill >= sp.MME:
+                gated = n
+    return ungated, gated
+
+
+def null_command(args) -> int:
+    out = Path(args.out)
+    with tempfile.TemporaryDirectory() as tmp:
+        rows = load_daily_panel(build_panel(Path(tmp)))
+    days, s1, s2 = development_series(rows)
+    d = candidate_differences(s1, s2, 0.0, NOISE)
+    jobs = [(SEED * 100_003 + 7_000_000 + i,) for i in range(args.paths)]
+    with multiprocessing.Pool(args.workers, initializer=init_worker, initargs=(s1, d)) as pool:
+        results = pool.map(run_null_path, jobs, chunksize=max(1, args.paths // (args.workers * 8)))
+    total = len(results)
+
+    def share(position, upto):
+        return sum(1 for r in results if r[position] is not None and r[position] <= upto) / total
+
+    result = {
+        "post_hoc": True,
+        "addendum": str(ADDENDUM.relative_to(REPO)),
+        "addendum_sha256": sha256(ADDENDUM),
+        "paths": total,
+        "nominal_overall_level": sp.ALPHA,
+        "false_detection_share_without_the_mme_gate": {"125": share(0, 125), "250": share(0, 250)},
+        "false_detection_share_with_the_mme_gate": {"125": share(1, 125), "250": share(1, 250)},
+        "monte_carlo_se_at_250": math.sqrt(share(0, 250) * (1 - share(0, 250)) / total),
+    }
+    (out / "null.json").write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
 # -- the cross-check (§5) --------------------------------------------------------------------------------------------
 
 
@@ -364,6 +426,11 @@ def main(argv=None) -> int:
     run.add_argument("--paths", type=int, default=REPLICATIONS)
     run.add_argument("--workers", type=int, default=1)
     run.set_defaults(func=run_command)
+    null = sub.add_parser("null")
+    null.add_argument("--out", required=True)
+    null.add_argument("--paths", type=int, default=REPLICATIONS)
+    null.add_argument("--workers", type=int, default=1)
+    null.set_defaults(func=null_command)
     check = sub.add_parser("check")
     check.add_argument("--out", required=True)
     check.set_defaults(func=check_command)

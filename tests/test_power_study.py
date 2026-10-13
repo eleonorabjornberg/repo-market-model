@@ -129,6 +129,20 @@ class H7mGoalpostTests(unittest.TestCase):
         self.assertAlmostEqual(var**0.5, 0.0381, places=4)
 
 
+class NullPathTests(unittest.TestCase):
+    """The post-hoc size check (`docs/research/power-study-656-addendum.md`)."""
+
+    def test_a_series_with_no_difference_is_rarely_detected_and_never_by_the_gated_rule(self):
+        rng = random.Random(5)
+        s1 = [2.0 + rng.random() for _ in range(400)]
+        d = [rng.gauss(0.0, 0.3) for _ in s1]
+        d = [x - sum(d) / len(d) for x in d]
+        ps.init_worker(s1, d)
+        ungated = [ps.run_null_path((9000 + i,)) for i in range(20)]
+        self.assertTrue(all(g is None for _, g in ungated))
+        self.assertLessEqual(sum(1 for u, _ in ungated if u is not None), 3)
+
+
 class CheckTests(unittest.TestCase):
     def test_a_result_made_under_another_rule_text_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
