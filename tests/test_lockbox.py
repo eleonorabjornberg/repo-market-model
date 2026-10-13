@@ -477,6 +477,15 @@ NOT_ENTRY_POINTS = {
         "forms the every-day inputs of #601 from the masked frames of the decisions on the screen's "
         "scored days (#629); scores nothing, and walks _as_of_folds, which refuses a locked day"
     ),
+    "richer_targets.as_of_rows": (
+        "reads each target column as of the decision instant at each lead, on the rows it is given, for the "
+        "exploratory H9 screen (#639); selects no model and scores no forecast, and the screen's `run` passes "
+        "it only days that went through lockbox.require_unlocked (tests/test_richer_targets.py)"
+    ),
+    "scripts/richer_targets_639.run_command": (
+        "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls lockbox.require_unlocked on every "
+        "scored day before it reads one, refuses a panel past 2025-12-31 and fits and selects nothing"
+    ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
         "nothing, and leaves locked days out of every count through `counted` "
