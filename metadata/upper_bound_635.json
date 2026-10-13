@@ -1,7 +1,8 @@
 {
  "deviations": [
   {
-   "changed": "the ceiling is cross-fitted: blocked folds by time (the walk-forward's blocks of 21 scored days), each block scored by a fit that did not see it, at the ceiling settings; a training row is embargoed from a block when it falls inside the walk-forward's embargo before the block (its scored row is after the last public row of the block's first decision instant) or inside its mirror after the block (its own last public row is before the block's last scored row); an embargoed row in a training set raises LookAheadError (crossfit_positions)",
+   "changed": "the ceiling is cross-fitted: blocked folds by time (ten contiguous blocks of near-equal size per lead; a fold count chosen on cost, before any score, the embargo being what the ruling fixes), each block scored by a fit that did not see it, at the ceiling settings; a training row is embargoed from a block when it falls inside the walk-forward's embargo before the block (its scored row is after the last public row of the block's first decision instant) or inside its mirror after the block (its own last public row is before the block's last scored row); an embargoed row in a training set raises LookAheadError (crossfit_positions)",
+   "fold_count": 10,
    "kept": "inputs, settings, targets, scoring, intervals and the reading rule's spread line; the first declaration's in-sample fit is kept and reported beside the new ceiling as 'memorised', labelled as in-sample, and carries no reading",
    "number": 1,
    "reason": "the in-sample gradient-boosted ceiling memorises (ordinary-day AUROC exactly 1.000 at every lead), so the reading rule could never return 'data problem' for a flexible model",
@@ -16,7 +17,7 @@
   }
  ],
  "fits": {
-  "ceiling": "(i) cross-fitted (deviation 1): the scored days are cut into the walk-forward's blocks of 21; each block is scored by a fit on the other blocks' days with a spread, at the ceiling settings, less the embargoed rows (crossfit_positions); what any model could at best extract from these inputs; not a claim",
+  "ceiling": "(i) cross-fitted (deviation 1): the scored days are cut into ten contiguous blocks of near-equal size per lead (CEILING_FOLDS); each block is scored by a fit on the other blocks' days with a spread, at the ceiling settings, less the embargoed rows (crossfit_positions); what any model could at best extract from these inputs; not a claim",
   "memorised": "(i-a) the first declaration's ceiling: fitted on every scored day with a spread and scored on the same days, at the ceiling settings; it memorises, is reported beside the cross-fitted ceiling and labelled in-sample, and carries no reading",
   "reachable": {
    "minimum_training_rows": 250,

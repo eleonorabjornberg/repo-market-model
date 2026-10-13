@@ -19,7 +19,7 @@ day of a locked tier is read (`docs/decisions/lockbox.md`; `require_unlocked`).
   indicator (strictly above on whole basis points, `repo_model.data.exceeds_bp`) on ordinary days, the days the risk-date part does not serve.
 * **Fits.** Two families on the same inputs: gradient-boosted (quantile regression, and a classifier) and regularised linear with declared pairwise
   interactions (a ridge location-scale law, and an L2 logistic regression). (i) the **ceiling** is cross-fitted (deviation 1 of the declaration, Eleonora's
-  ruling of 13 October 2026 on #703): the walk-forward's blocks of 21 scored days, each scored by a fit on the other blocks less the embargo before and
+  ruling of 13 October 2026 on #703): ten contiguous blocks of near-equal size per lead, each scored by a fit on the other blocks less the embargo before and
   after it (`crossfit_positions`), with the generous settings; the first declaration's in-sample fit is kept as **memorised**, reported and labelled,
   with no reading. (ii) the **reachable** line is refitted every 21 scored days on the rows public at the block's first decision instant, with the
   project's settings, and scored on the days after.
@@ -57,6 +57,8 @@ DECISION_TIME = (16, 0)
 MINIMUM_HISTORY = 61
 #: the walk-forward: a refit every 21 scored days (the judge's cadence), no forecast before this many training rows
 REFIT_EVERY = 21
+#: the cross-fitted ceiling's folds: contiguous blocks of near-equal size per lead (deviation 1)
+CEILING_FOLDS = 10
 MINIMUM_TRAIN = 250
 SEED = 635
 PROTOCOL_DRAWS = 10_000
@@ -134,7 +136,8 @@ DEVIATIONS = [
     {
         "number": 1,
         "ruling": "repo-market-model#703, comment 6149433242, item 1: cross-fit the ceiling",
-        "changed": "the ceiling is cross-fitted: blocked folds by time (the walk-forward's blocks of 21 scored days), each block scored by a fit that did not see it, at the ceiling settings; a training row is embargoed from a block when it falls inside the walk-forward's embargo before the block (its scored row is after the last public row of the block's first decision instant) or inside its mirror after the block (its own last public row is before the block's last scored row); an embargoed row in a training set raises LookAheadError (crossfit_positions)",
+        "fold_count": CEILING_FOLDS,
+        "changed": "the ceiling is cross-fitted: blocked folds by time (ten contiguous blocks of near-equal size per lead; a fold count chosen on cost, before any score, the embargo being what the ruling fixes), each block scored by a fit that did not see it, at the ceiling settings; a training row is embargoed from a block when it falls inside the walk-forward's embargo before the block (its scored row is after the last public row of the block's first decision instant) or inside its mirror after the block (its own last public row is before the block's last scored row); an embargoed row in a training set raises LookAheadError (crossfit_positions)",
         "kept": "inputs, settings, targets, scoring, intervals and the reading rule's spread line; the first declaration's in-sample fit is kept and reported beside the new ceiling as 'memorised', labelled as in-sample, and carries no reading",
         "reason": "the in-sample gradient-boosted ceiling memorises (ordinary-day AUROC exactly 1.000 at every lead), so the reading rule could never return 'data problem' for a flexible model",
     },
@@ -191,7 +194,7 @@ def declaration_document(inputs: Sequence[str], refused: Mapping[str, str], pane
             "climatology": "the training rate of the indicator (the cross-fitted training rate for the ceiling, the in-sample rate for the memorised fit)",
         },
         "fits": {
-            "ceiling": "(i) cross-fitted (deviation 1): the scored days are cut into the walk-forward's blocks of 21; each block is scored by a fit on the other blocks' days with a spread, at the ceiling settings, less the embargoed rows (crossfit_positions); what any model could at best extract from these inputs; not a claim",
+            "ceiling": "(i) cross-fitted (deviation 1): the scored days are cut into ten contiguous blocks of near-equal size per lead (CEILING_FOLDS); each block is scored by a fit on the other blocks' days with a spread, at the ceiling settings, less the embargoed rows (crossfit_positions); what any model could at best extract from these inputs; not a claim",
             "memorised": "(i-a) the first declaration's ceiling: fitted on every scored day with a spread and scored on the same days, at the ceiling settings; it memorises, is reported beside the cross-fitted ceiling and labelled in-sample, and carries no reading",
             "reachable": {
                 "refit_every_scored_days": REFIT_EVERY,
