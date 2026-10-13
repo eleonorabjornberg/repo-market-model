@@ -94,6 +94,32 @@ class EmbargoTests(unittest.TestCase):
         script.require_public_labels([3, 4, 5, 6, 7], [0, 1, 2], 5)
 
 
+class CrossFitEmbargoTests(unittest.TestCase):
+    """The cross-fitted ceiling (deviation 1): a block is scored by a fit on the other blocks, less the embargo before and after it."""
+
+    #: eight scored days at lead 1: the label row of position p is 10 + p, the last public row at its decision instant is one row earlier
+    LABELS = [10, 11, 12, 13, 14, 15, 16, 17]
+    ANCHORS = [9, 10, 11, 12, 13, 14, 15, 16]
+
+    def test_the_training_set_is_the_rows_public_before_the_block_and_the_rows_that_start_after_it(self):
+        # the block holds positions 3 and 4 (label rows 13, 14); before it, label rows up to the block's first anchor (12); after it, rows whose own
+        # anchor is at or after the block's last label row (14)
+        self.assertEqual(script.crossfit_positions(self.LABELS, self.ANCHORS, 3, 5), [0, 1, 2, 5, 6, 7])
+
+    def test_the_first_block_has_no_rows_before_it_and_the_last_none_after_it(self):
+        self.assertEqual(script.crossfit_positions(self.LABELS, self.ANCHORS, 0, 2), [4, 5, 6, 7])
+        self.assertEqual(script.crossfit_positions(self.LABELS, self.ANCHORS, 6, 8), [0, 1, 2, 3, 4])
+
+    def test_a_row_inside_the_embargo_is_refused(self):
+        # before the block: a label row after the block's first anchor; after the block: an anchor before the block's last label row; in the block
+        for chosen in ([3], [4], [5], [0, 1, 2, 5, 6, 7, 3]):
+            with self.subTest(chosen=chosen), self.assertRaises(LookAheadError):
+                script.require_crossfit_embargo(self.LABELS, self.ANCHORS, chosen, 3, 5)
+        script.require_crossfit_embargo(self.LABELS, self.ANCHORS, [0, 1, 2], 3, 5)
+        with self.assertRaises(LookAheadError):
+            script.require_crossfit_embargo(self.LABELS, self.ANCHORS, [0, 1, 2, 6, 7], 3, 6)
+
+
 class DeclarationTests(unittest.TestCase):
     def setUp(self):
         self.declared = json.loads(DECLARATION.read_text(encoding="utf-8"))
@@ -135,7 +161,7 @@ class DeclarationTests(unittest.TestCase):
 
 class ReadingTests(unittest.TestCase):
     @staticmethod
-    def document(ceiling_low, reachable_low, ceiling_auc, reachable_auc):
+    def document(ceiling_low, reachable_low, ceiling_auc, reachable_auc, diff_low=0.05, brier_low=0.05):
         def spread_cell(low):
             return {"n": 10, "tests": {f"B1 -> {fit} {m}": {"skill": 0.1, "skill_interval_90": [low, 0.2], "n": 10} for fit in ("ceiling", "reachable") for m in script.MODELS}}
 
@@ -143,7 +169,15 @@ class ReadingTests(unittest.TestCase):
             return {f"reachable {m} -> ceiling {m}": {"skill": 0.0} for m in script.MODELS}
 
         def indicator_cell(auc):
-            return {m: {"auroc": auc, "auroc_interval_90": [auc - 0.01, auc + 0.01]} for m in ("gbm", "ridge")} | {"persistence_logistic": {"auroc": 0.85}}
+            return {
+                m: {
+                    "auroc": auc,
+                    "auroc_interval_90": [auc - 0.01, auc + 0.01],
+                    "auroc_minus_persistence_logistic": {"value": 0.06, "interval_90": [diff_low, 0.1]},
+                    "brier_skill_vs_persistence_logistic": {"value": 0.1, "interval_90": [brier_low, 0.2]},
+                }
+                for m in ("gbm", "ridge")
+            } | {"persistence_logistic": {"auroc": 0.85}}
 
         walk = spread_cell(reachable_low)
         walk["tests"].update(pair(0))
@@ -169,11 +203,20 @@ class ReadingTests(unittest.TestCase):
         out = script.reading(self.document(0.05, 0.02, 0.9, 0.9))
         self.assertEqual(out["spread"]["verdict"], "partly reached")
 
-    def test_an_auroc_under_the_line_is_barely_above(self):
-        out = script.reading(self.document(0.05, 0.02, 0.59, 0.9))
+    def test_the_indicator_is_read_against_persistence_logistic(self):
+        out = script.reading(self.document(0.05, 0.02, 0.9, 0.9, diff_low=-0.02))
         self.assertEqual(out["indicator"]["verdict"], "data problem")
-        out = script.reading(self.document(0.05, 0.02, 0.9, 0.55))
-        self.assertEqual(out["indicator"]["verdict"], "model problem")
+        out = script.reading(self.document(0.05, 0.02, 0.9, 0.9, brier_low=-0.1))
+        self.assertEqual(out["indicator"]["verdict"], "data problem")
+        self.assertEqual(script.reading(self.document(0.05, 0.02, 0.9, 0.9))["indicator"]["verdict"], "partly reached")
+
+    def test_the_auroc_line_is_a_secondary_reading_that_decides_nothing(self):
+        # an AUROC under 0.6 with both intervals above persistence-logistic: the secondary reading says barely above, the verdict does not follow it
+        out = script.reading(self.document(0.05, 0.02, 0.59, 0.55))
+        self.assertTrue(out["indicator"]["ceiling"]["secondary_barely_above"])
+        self.assertTrue(out["indicator"]["reachable"]["secondary_barely_above"])
+        self.assertEqual(out["indicator"]["verdict"], "partly reached")
+        self.assertFalse(script.reading(self.document(0.05, 0.02, 0.9, 0.9))["indicator"]["ceiling"]["secondary_barely_above"])
 
     def test_a_locked_day_is_refused(self):
         rows = synthetic_rows(date(2026, 6, 1), 140)
