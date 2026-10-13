@@ -210,7 +210,7 @@ an onset. Against `+tailcap75` (18 of 26): each gains 2025-10-15, each loses 202
 ### What step 2 says
 
 * **None of the three passes the judge.** Each raises onset recall (17 or 18 of 26 against 15) and each fails tier 1 on the pooled false-alarm count
-  (2.47 to 2.88 per onset against a limit of 2, weighted; 3.69 to 4.50 flat): a model that puts mass on every ordinary day flags many of them (flags
+  (2.28 to 2.88 per onset against a limit of 2, weighted; 3.69 to 4.50 flat): a model that puts mass on every ordinary day flags many of them (flags
   at the first lead rise from 75 to 174 to 229). `+tailcap75` passes tier 1 under the weighted rule and none of the three does.
 * **They do rank the days, which the constant floors did not.** AUROC on the days that are not risk dates is 0.83 to 0.89 over all days, and 0.68 to
   0.79 inside 2018-19 with intervals above 0.5 at every lead for all three. Inside 2018-19 only `+offday` has a Brier skill whose interval excludes 0
