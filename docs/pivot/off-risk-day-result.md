@@ -256,3 +256,120 @@ PYTHONPATH=src python3 scripts/off_risk_day_624.py measure --panel PUBLISHED.csv
 
 The off-risk-day statistics of step 2 use step 1's declaration for the bootstrap (the step 2 declaration names the same statistics and does not
 repeat the bootstrap block).
+
+## Reliability within regimes (added 13 October 2026, #683, finding #670)
+
+> *Note, 13 October 2026 (#683).* The slopes in the tables above, and "0.78 to 0.85" and "0.45 to 0.65" in the text, are **pooled across regimes**
+> and must not be read as calibration. 2021-23 has no pressure day and forecasts near 0; it adds a long, well-ordered stretch at the bottom of the
+> curve and raises the pooled slope. Inside 2018-19 the same forecasts are badly over-spread (`+offday`: 0.48 at h = 1, 0.14 to 0.22 at h = 3 to 5).
+> A row is not "nearly calibrated" on a pooled slope. Why, and how to read it: `docs/pivot/diagnostics-reconciliation.md`, point 11.
+
+The slope of each row inside each regime, from the tracked evidence of this page (`evidence/off-risk-day/step1.json` and `step2-off-risk-days.json`; no
+forecast is rebuilt, and those files carry points without an interval for a regime's slope; tabulated by `scripts/reliability_regimes_683.py tracked`;
+`evidence/reliability-regimes/tracked-step1.md` and `tracked-step2.md`). 1 is reliable; `undefined` is a regime with no pressure day; `–` a regime in
+which the forecast is constant or the fit is not formed; `unstable` a near-separated fit (a slope beyond 25 in size); `†` a cell with fewer than 5
+pressure days, whose slope is a handful of events' worth. Development data, not a verdict.
+
+### Step 1 rows
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.49 | 0.24 | – | undefined | – | 0.40 |
+| 2 | 0.57 | 0.28 | – | undefined | – | 0.29 |
+| 3 | 0.45 | 0.10 | – | undefined | – | 0.30 |
+| 4 | 0.65 | 0.38 | – | undefined | – | 0.26 |
+| 5 | 0.56 | 0.08 | – | undefined | – | 0.42 |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 2.03 | 1.39 | – | undefined | – | – |
+| 2 | 2.66 | 2.31 | – | undefined | – | – |
+| 3 | 3.19 | 2.31 | – | undefined | – | – |
+| 4 | 1.82 | 0.19 | – | undefined | – | – |
+| 5 | 2.40 | 1.58 | – | undefined | – | – |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.46 | 0.12 | 6.20† | undefined | unstable | -11.27 |
+| 2 | 0.38 | -0.01 | 6.92† | undefined | unstable | -19.70 |
+| 3 | 0.27 | -0.05 | 6.66† | undefined | unstable | unstable |
+| 4 | 0.40 | 0.05 | 6.39† | undefined | unstable | unstable |
+| 5 | 0.46 | 0.12 | 7.09† | undefined | unstable | unstable |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.57 | 0.13 | 0.41† | undefined | – | 0.89 |
+| 2 | 0.55 | 0.08 | -0.69† | undefined | – | 0.81 |
+| 3 | 0.53 | 0.07 | -0.70† | undefined | – | 0.72 |
+| 4 | 0.58 | 0.13 | -0.70† | undefined | – | 0.73 |
+| 5 | 0.59 | 0.15 | 0.06† | undefined | – | 0.70 |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.73 | 0.12 | 6.20† | undefined | unstable | 1.36 |
+| 2 | 0.73 | -0.01 | 6.92† | undefined | unstable | 1.35 |
+| 3 | 0.63 | -0.05 | 6.66† | undefined | unstable | 1.35 |
+| 4 | 0.75 | 0.05 | 6.39† | undefined | unstable | 1.34 |
+| 5 | 0.76 | 0.12 | 7.09† | undefined | unstable | 1.17 |
+
+### Step 2 rows
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 2.03 | 1.39 | – | undefined | – | – |
+| 2 | 2.66 | 2.31 | – | undefined | – | – |
+| 3 | 3.19 | 2.31 | – | undefined | – | – |
+| 4 | 1.82 | 0.19 | – | undefined | – | – |
+| 5 | 2.40 | 1.58 | – | undefined | – | – |
+
+#### `risk_gbm+settle+h41+dist_roll`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | – | – | – | undefined | – | – |
+| 2 | – | – | – | undefined | – | – |
+| 3 | – | – | – | undefined | – | – |
+| 4 | – | – | – | undefined | – | – |
+| 5 | – | – | – | undefined | – | – |
+
+#### `risk_gbm+settle+h41+dist_roll+offday`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.83 | 0.48 | 0.61† | undefined | 0.77† | 0.79 |
+| 2 | 0.85 | 0.45 | 0.91† | undefined | 2.82† | 0.70 |
+| 3 | 0.80 | 0.22 | 1.10† | undefined | -0.35† | 0.73 |
+| 4 | 0.78 | 0.14 | 0.98† | undefined | 1.76† | 0.76 |
+| 5 | 0.79 | 0.17 | 1.16† | undefined | 1.62† | 0.73 |
+
+#### `risk_gbm+settle+h41+dist_roll+offday_mono`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.46 | 0.31 | 0.01† | undefined | -0.69† | 0.32 |
+| 2 | 0.39 | 0.14 | 0.37† | undefined | 0.17† | 0.22 |
+| 3 | 0.36 | 0.10 | 0.21† | undefined | 0.26† | 0.27 |
+| 4 | 0.37 | 0.07 | 0.43† | undefined | – | 0.39 |
+| 5 | 0.32 | 0.09 | 0.21† | undefined | 0.39† | 0.21 |
+
+#### `risk_gbm+settle+h41+dist_roll+offday_rate`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.73 | 0.20 | 0.66† | undefined | 0.90† | 0.79 |
+| 2 | 0.70 | 0.06 | 0.67† | undefined | 2.76† | 0.71 |
+| 3 | 0.67 | -0.06 | 0.74† | undefined | 0.39† | 0.73 |
+| 4 | 0.65 | -0.13 | 0.70† | undefined | 1.71† | 0.76 |
+| 5 | 0.64 | -0.12 | 0.79† | undefined | 1.64† | 0.72 |

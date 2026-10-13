@@ -91,6 +91,9 @@ of the decision instant; no hindsight regime label is used (ruling on #515).
   [+0.0051, +0.1500]). In 2018-19 the interval still excludes zero for every variant: (a) +0.1059 [+0.0301, +0.1791]; (b) +0.1059
   [+0.0327, +0.1773]; (c) +0.1307 [+0.0552, +0.2078], against +0.1793 for the best row. 2018-19 is the first two years of the scored window, where a walk-forward rate has the least
   history; this measurement does not separate that from a model defect.
+  > *Note, 13 October 2026 (#683).* "Calibrated" here is the mean-based tier 3 and tier 5 criterion (realised minus predicted covers zero), not a reading
+  > of the reliability curve. A row can pass it and still be over-spread inside 2018-19: see `docs/pivot/off-risk-day-result.md` ("Reliability within
+  > regimes") for the slope of each row inside each regime, and `docs/pivot/diagnostics-reconciliation.md`, point 11, for how to read it.
 - **Where tier 1 fails.** The false alarms rise at every lead alone (Table 1b, lead 1 alone, weighted: 0.875 for the best row,
   2.587 for (a) and (b), 1.702 for (c)). It is a reading, not tested here, that a probability on every non-risk day moves more
   days over the judge's cut-off. Recall rises (15 to 18 of 26 for (a) and (b)), driven by 2019 (10 of 13
