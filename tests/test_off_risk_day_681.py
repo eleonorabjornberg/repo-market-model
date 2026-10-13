@@ -158,6 +158,13 @@ class MarkdownTests(unittest.TestCase):
         text = SCRIPT.markdown(self.document())
         self.assertIn("n/a (a level)", text)
 
+    def test_the_page_table_shows_a_row_once_with_its_reference_beside_it(self):
+        document = self.document()
+        text = SCRIPT.paired_table_markdown([document, document], "all")
+        self.assertEqual(text.count("`variant`"), 1)
+        self.assertNotIn("`" + SCRIPT.PERSISTENCE + "` |", text.split("\n", 2)[2])
+        self.assertIn("| `variant` | 1 | 9 | 0.850 | 0.800 | +0.050 [-0.010, +0.100] |", text)
+
 
 class AsOfSpreadTests(unittest.TestCase):
     """The spread read for a lead-1 scored day is the spread of the row two rows back (what is public at its decision instant), never the day's own (the leakage guard of the new reference row)."""
