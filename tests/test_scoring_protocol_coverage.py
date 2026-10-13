@@ -1,8 +1,10 @@
 """H1, check 2: the protocol's interval, checked for coverage on resampled real series (#655).
 
 The directive asks that interval coverage be checked by simulation on resampled real series,
-and be at its nominal rate within simulation error. **It is not.** This module measures it
-and records what it found; the pull request that closes #655 puts the result to Eleonora.
+and be at its nominal rate within simulation error. **It is not**, under either interval: the
+plain percentile bootstrap first implemented (PR #660, about 80%), or the studentized stationary
+bootstrap Eleonora ruled for on 13 October 2026 (PR #660, comment 6145669436), which this module
+now checks. Her ruling holds registration until #656's power study confirms coverage.
 
 **The real series.** `d_t = S(B2) - S(B1)`, the daily grid-CRPS difference of the two
 benchmarks of `protocol_benchmarks`, on every development decision day whose five targets fall
@@ -15,18 +17,19 @@ itself), runs the scorer's paired test on it, and records whether the one-sided 
 bound of mean(d) is at or below the truth. Coverage is the share of replications in which it
 is. `DAYS` is the last checkpoint, where the nominal level is close to 5%; the test reads the
 bound at 5%. The bootstrap uses `DRAWS` draws, not the protocol's 10,000, to keep the suite's
-run time in bounds: the coverage of a percentile bound moves little with the draw count once it
-is in the thousands (the pull request reports a run at 10,000).
+run time in bounds: the coverage of a bound moves little with the draw count once it is in the
+thousands (the pull request reports a run at 10,000).
 
 **The control.** The same simulation on iid standard normal days, where the only error is the
 bootstrap's own.
 
 **What it found** (on the seeds below; the pull request reports longer runs):
-- the control covers at about its nominal rate, a little under it, as a percentile block
-  bootstrap does on 250 days;
-- the real series covers far below it. The real `d` has a heavy left tail (one day in
-  September 2019 alone is about forty standard deviations from the mean); a 250-day draw that
-  misses such days has a mean above the truth and a tight interval around it.
+- the control covers at about its nominal rate, a little under it, as a block bootstrap does
+  on 250 days;
+- the real series covers well below it, better than the percentile bootstrap did and still
+  short. The real `d` has a heavy left tail (one day in September 2019 alone is about forty
+  standard deviations from the mean); a 250-day draw that misses such days has a mean above the
+  truth, and studentizing by that draw's own standard error does not bring the tail back.
 """
 
 from __future__ import annotations
@@ -111,8 +114,9 @@ class CoverageTests(unittest.TestCase):
         self.assertGreater((mean - min(self.real)) / sd, 30.0)
 
 
-#: The coverage measured on the seeds above, 12 October 2026.
-RECORDED_REAL_COVERAGE = 0.81
+#: The coverage measured on the seeds above under the studentized bootstrap, 13 October 2026
+#: (0.81 under the percentile bootstrap it replaced).
+RECORDED_REAL_COVERAGE = 0.8533
 
 
 if __name__ == "__main__":
