@@ -248,9 +248,6 @@ class RefusesFitsBeforeThePostingInstant(unittest.TestCase):
         published = _fold(date(2018, 6, 29), date(2018, 6, 27), start=backfill.FIRST_PUBLISHED)
         backfill.require_posting_established([published], None, where="test")
 
-    def test_the_declaration_is_unknown_today_and_is_read(self):
-        declared = backfill.load_posting_instant(ROOT / "metadata" / "backfill_posting.json")
-        self.assertIsNone(declared)
 
     def test_a_declared_instant_is_read_and_a_malformed_one_refused(self):
         import tempfile
@@ -267,6 +264,66 @@ class RefusesFitsBeforeThePostingInstant(unittest.TestCase):
     def test_the_run_script_applies_it(self):
         text = (ROOT / "scripts" / "backfill_history.py").read_text(encoding="utf-8")
         self.assertIn("backfill.require_posting_established(report.folds", text)
+
+
+class TheRuledPostingInstant(unittest.TestCase):
+    """The workbook is public from 17 May 2018 (Eleonora, 13 October 2026, #633).
+
+    Her ruling (PR #661, comment 6146010089, relayed by the orchestrating session): every value of the
+    TGCR/BGCR/SOFR back-fill workbook is public from 17 May 2018, one `posting_instant` for all three
+    series, its source the research comment 6145957978; no value is read as of a decision before that
+    date, and pre-May-2018 vintages are not used. `metadata/backfill_posting.json` declares it, and a fit
+    whose training ends before 17 May 2018 cannot train on the back-fill.
+
+    Red first: written while the declaration was `null` (`AssertionError: None != datetime(2018, 5, 17, 0, 0)`,
+    and the refusal tests read no instant).
+
+    Mutation record. In a copy of the working tree under the session's scratchpad, CPython 3.11
+    (`/opt/rmm-venv`), `PYTHONDONTWRITEBYTECODE=1`, `python -B`, this class run alone, unmutated control green before and after, the mutated line confirmed applied by grep.
+    In `backfill.require_posting_established` the refusal condition
+    `if posting_instant is None or posting_instant > start:` was mutated to `if posting_instant is None:`.
+    Killed, 2 failures, both `AssertionError: LookAheadError not raised`:
+    `test_a_fit_ending_the_day_before_the_ruled_instant_is_refused` and
+    `test_every_fit_ending_in_2018_before_17_may_is_refused`.
+    """
+
+    RULED = datetime(2018, 5, 17, 0, 0)
+
+    def _declared(self):
+        return backfill.load_posting_instant(ROOT / "metadata" / "backfill_posting.json")
+
+    def test_the_declaration_is_17_may_2018_and_cites_its_source(self):
+        self.assertEqual(self._declared(), self.RULED)
+        text = (ROOT / "metadata" / "backfill_posting.json").read_text(encoding="utf-8")
+        self.assertIn("6145957978", text)
+        self.assertIn("6146010089", text)
+
+    def test_a_fit_ending_the_day_before_the_ruled_instant_is_refused(self):
+        with self.assertRaises(LookAheadError) as caught:
+            backfill.require_posting_established(
+                [_fold(date(2018, 5, 17), date(2018, 5, 16))], self._declared(), where="test"
+            )
+        self.assertIn("2018-05-17", str(caught.exception))
+
+    def test_every_fit_ending_in_2018_before_17_may_is_refused(self):
+        day = backfill.FIRST_PUBLISHED
+        while day < self.RULED.date():
+            if day.weekday() < 5:
+                with self.assertRaises(LookAheadError):
+                    backfill.require_posting_established(
+                        [_fold(day + timedelta(days=1), day)], self._declared(), where="test"
+                    )
+            day += timedelta(days=1)
+
+    def test_a_fit_ending_on_or_after_17_may_passes(self):
+        for end in (date(2018, 5, 17), date(2018, 5, 18), date(2018, 6, 27)):
+            backfill.require_posting_established(
+                [_fold(end + timedelta(days=2), end)], self._declared(), where="test"
+            )
+
+    def test_the_declared_instant_does_not_open_a_back_filled_scored_day_or_feature_row(self):
+        with self.assertRaises(LookAheadError):
+            backfill.require_training_only([_fold(date(2018, 6, 29), date(2018, 3, 29))], where="test")
 
 
 class TheShiftKeepsTheScoredDays(unittest.TestCase):
