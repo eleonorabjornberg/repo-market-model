@@ -214,3 +214,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the export withholds 85 of 666 weekly dates of `pd_repo_ust` and 72 of `pd_reverse_repo_ust` (2022 to 2025), 3 of `pd_repo_mbs`, none of the fails series. Partial rank correlation with the +5 bp indicator on ordinary days: `pd_reverse_repo_ust` +0.112 → +0.087 [+0.05, +0.12], `pd_repo_ust` +0.104 → +0.076 [+0.03, +0.12]. Detail in `docs/pivot/new-sources-withheld-weeks.md`.
 - Against kill: not applicable (H3's kill is not tested here; the two series lose rank, and neither was a lead beyond #630's own reading).
 - Next: Eleonora decides whether the source is admitted given the withheld weeks.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#698
+- Directive: #681
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d`
+- Tried: #624's off-risk-day measurement re-stated against persistence-logistic (finding #667) and the raw as-of spread, on the same population, every row paired with persistence-logistic. Variants: n/a (reference rows added, none new).
+- Result: over all days at lead 1 no row beats persistence-logistic (AUROC 0.897, Brier skill 0.196; `+offday` −0.009 [−0.065, +0.027] and +0.042 [−0.008, +0.111]). `+offday` is ahead at leads 2, 3 and 5 over all days (Brier skill +0.090, +0.092, +0.062, intervals above 0) and not inside 2018-19 (62 of 82 pressure days) or 2025-26; the gain sits in 2020 and 2024 (3 and 2 pressure days). The raw as-of spread has AUROC 0.92 to 0.94, above every row. Detail in `docs/pivot/off-risk-day-result.md`.
+- Against kill: not tested (H2's kill is on the ceiling, #635); consistent with the ordinary-day ranking being no more than the as-of spread's.
+- Next: Eleonora decides which benchmark H2 progress is judged against.
