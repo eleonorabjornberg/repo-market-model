@@ -630,7 +630,11 @@ def read_features(rows, registry, last: date, horizon: int, fields: Sequence[str
             timed_rows, rule, minimum_history=61, refit_every=len(timed_rows), entry="off_risk_day_624", end=last
         ):
             out[dates[fold.index].isoformat()] = {
-                field: (None if fold.feature_row.values.get(field) is None else float(fold.feature_row.values[field])) for field in fields
+                field: (
+                    # the spread is the row's own property (sofr less iorb as of the decision instant), not a key of its values
+                    fold.feature_row.spread_bps if field == "spread_bps"
+                    else (None if fold.feature_row.values.get(field) is None else float(fold.feature_row.values[field]))
+                ) for field in fields
             }
     return out
 

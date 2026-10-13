@@ -9,6 +9,9 @@ Recorded mutations, 13 October 2026, in a disposable copy of `scripts/off_risk_d
    with `AssertionError: ValueError not raised`.
 4. in `cell_statistics`, the `probability` switch ignored (the Brier skill and the reliability fit taken of the raw spread).
    `test_a_raw_spread_has_a_ranking_and_no_probability_statistics` then fails with `AssertionError: 0.16552444444444436 is not None`.
+5. in `read_features`, the spread read taken off the scored day's own row (`timed_rows[fold.index].spread_bps`) in place of the as-of fold's
+   `fold.feature_row.spread_bps`. `test_the_lead_one_read_is_the_spread_two_rows_back` then fails with
+   `AssertionError: 17.000000000000014 != -5.000000000000004 within 9 places`.
 
 The as-of read of the spread is `off_risk_day_624.read_features`, the reader of step 2 (`asof.InformationRule` with the leakage and staleness guards of
 `baseline._as_of_folds`); `spread_bps` is an input already declared in `metadata/sources.json`, so no new availability declaration is made.
@@ -154,6 +157,43 @@ class MarkdownTests(unittest.TestCase):
     def test_a_level_has_no_zero_forecast_count_in_the_row_table(self):
         text = SCRIPT.markdown(self.document())
         self.assertIn("n/a (a level)", text)
+
+
+class AsOfSpreadTests(unittest.TestCase):
+    """The spread read for a lead-1 scored day is the spread of the row two rows back (what is public at its decision instant), never the day's own (the leakage guard of the new reference row)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        import tempfile
+
+        cls.tmp = tempfile.TemporaryDirectory()
+        panel = Path(cls.tmp.name) / "panel.csv"
+        env = {**__import__("os").environ, "PYTHONPATH": str(ROOT / "src"), "PYTHONDONTWRITEBYTECODE": "1"}
+        subprocess.run(
+            [sys.executable, "-B", "-m", "repo_model.cli", "build", "--raw-root", str(ROOT / "tests" / "fixtures" / "snapshots" / "funding_inputs"),
+             "--output", str(panel), "--build-cutoff", "2026-09-08T21:31:42+00:00", "--decision-time", "16:00:00"],
+            check=True, capture_output=True, env=env, cwd=ROOT,
+        )
+        from repo_model import measurement_fields
+        from repo_model.data import load_daily_panel
+
+        cls.rows = load_daily_panel(panel)
+        cls.registry = measurement_fields.load_registry()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def test_the_lead_one_read_is_the_spread_two_rows_back(self):
+        from datetime import date
+
+        reads = SCRIPT.read_features(self.rows, self.registry, date(2019, 12, 31), 1, fields=("spread_bps",))
+        by_date = {row.date.isoformat(): row for row in self.rows}
+        ordered = [row.date.isoformat() for row in self.rows]
+        self.assertGreater(len(reads), 100)
+        for day, read in reads.items():
+            self.assertAlmostEqual(read["spread_bps"], by_date[ordered[ordered.index(day) - 2]].spread_bps, places=9, msg=day)
 
 
 if __name__ == "__main__":
