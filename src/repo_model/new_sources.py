@@ -44,10 +44,10 @@ import io
 import json
 from datetime import date, datetime, time
 from pathlib import Path
-from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
 from urllib.parse import urlencode
 
-from .data import DailyObservation
+from .data import WEEKLY_CARRY_MAX_STALENESS_DAYS, DailyObservation
 from .ingest import (
     SnapshotArtifact,
     _download,
@@ -70,6 +70,8 @@ __all__ = [
     "parse_dts_debt_cash",
     "parse_on_rrp_counterparties",
     "parse_pd_export",
+    "parse_pd_suppressed",
+    "summarise_suppressed",
     "require_result_public",
     "require_unamended",
 ]
@@ -129,34 +131,69 @@ COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
 #: Columns placed on a panel day by their own date, against those placed on the last panel day at
 #: or before their weekly as-of date.
 WEEKLY_COLUMNS = tuple(PD_SERIES)
+#: What the export writes in place of a figure withheld for confidentiality (`ingest.FR2004_SUPPRESSED`).
+PD_SUPPRESSED = "*"
 
 
 # -- Primary Dealer Statistics ---------------------------------------------------------------
 
 
-def parse_pd_export(payload: bytes, end: date = END) -> Dict[str, Dict[date, float]]:
-    """`{column: {as_of_date: USD billions}}` for the series of `PD_SERIES`.
-
-    A value of `*` is a figure the New York Fed withheld for confidentiality and is skipped. A day
-    after `end` is not read. Raises `ValueError` if the response is not the export's CSV.
-    """
+def _pd_rows(payload: bytes, end: date) -> Iterator[Tuple[str, date, str]]:
+    """`(column, as_of_date, raw value)` for each row of `PD_SERIES` up to `end`."""
 
     reader = csv.DictReader(io.StringIO(payload.decode("utf-8-sig")))
     needed = {"As Of Date", "Time Series", "Value (millions)"}
     if not reader.fieldnames or not needed.issubset(reader.fieldnames):
         raise ValueError(f"primary dealer export must carry the columns {sorted(needed)}")
     wanted = {series: column for column, series in PD_SERIES.items()}
-    out: Dict[str, Dict[date, float]] = {column: {} for column in PD_SERIES}
     for row in reader:
         column = wanted.get(row["Time Series"])
         if column is None:
             continue
         day = date.fromisoformat(row["As Of Date"])
-        raw = row["Value (millions)"].strip()
-        if day > end or raw == "*":
-            continue
-        out[column][day] = float(raw.replace(",", "")) / 1000.0
+        if day <= end:
+            yield column, day, row["Value (millions)"].strip()
+
+
+def parse_pd_export(payload: bytes, end: date = END) -> Dict[str, Dict[date, float]]:
+    """`{column: {as_of_date: USD billions}}` for the series of `PD_SERIES`.
+
+    A value of `*` is a figure the New York Fed withheld for confidentiality: it yields no value
+    here, and `parse_pd_suppressed` lists it. A day after `end` is not read. Raises `ValueError` if
+    the response is not the export's CSV.
+    """
+
+    out: Dict[str, Dict[date, float]] = {column: {} for column in PD_SERIES}
+    for column, day, raw in _pd_rows(payload, end):
+        if raw != PD_SUPPRESSED:
+            out[column][day] = float(raw.replace(",", "")) / 1000.0
     return out
+
+
+def parse_pd_suppressed(payload: bytes, end: date = END) -> Dict[str, Tuple[date, ...]]:
+    """`{column: as-of dates the New York Fed withheld (`*`)}`, oldest first, as the FR 2004 reader
+    in `ingest.py` records a withheld cell as `suppressed` instead of dropping it unseen."""
+
+    out: Dict[str, List[date]] = {column: [] for column in PD_SERIES}
+    for column, day, raw in _pd_rows(payload, end):
+        if raw == PD_SUPPRESSED:
+            out[column].append(day)
+    return {column: tuple(sorted(days)) for column, days in out.items()}
+
+
+def summarise_suppressed(days: Sequence[date]) -> Dict[str, object]:
+    """The count of withheld weekly dates, the longest run of consecutive weeks, and the count by year."""
+
+    ordered = sorted(days)
+    longest = run = 0
+    previous: Optional[date] = None
+    by_year: Dict[int, int] = {}
+    for day in ordered:
+        run = run + 1 if previous is not None and (day - previous).days == 7 else 1
+        longest = max(longest, run)
+        previous = day
+        by_year[day.year] = by_year.get(day.year, 0) + 1
+    return {"count": len(ordered), "longest_run_weeks": longest, "by_year": by_year}
 
 
 # -- Treasury auction results ----------------------------------------------------------------
@@ -374,7 +411,7 @@ def add_columns(
 
     A weekly column (`WEEKLY_COLUMNS`) is carried forward as the panel carries its weekly columns: an
     as-of date's value starts on the first panel day at or after that date and stays until the next
-    value. Any other column is placed on its own day. A day with no value
+    value, or until `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` after its as-of date, whichever is first. Any other column is placed on its own day. A day with no value
     is `None`. Raises `LookAheadError` for a panel day after `END`.
     """
 
@@ -392,12 +429,16 @@ def add_columns(
             # counted from the row never makes it public before it was) and stays until the next.
             starts = sorted(values)
             current: Optional[float] = None
+            current_day: Optional[date] = None
             cursor = 0
             for day in dates:
                 while cursor < len(starts) and starts[cursor] <= day:
                     current = values[starts[cursor]]
+                    current_day = starts[cursor]
                     cursor += 1
-                if current is not None:
+                # The carry stops after the decided bound (`docs/decisions/weekly-carry.md`), counted from
+                # the value's own as-of date: beyond it the cell is a hole, not yesterday's print.
+                if current is not None and current_day is not None and (day - current_day).days <= WEEKLY_CARRY_MAX_STALENESS_DAYS:
                     target[day] = current
         else:
             target = {day: value for day, value in values.items() if day in present}
