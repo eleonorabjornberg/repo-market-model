@@ -1,0 +1,4240 @@
+{
+  "base": {
+    "pressure_days_per_window": 1.4695890410958905,
+    "share_of_pressure_days_on_a_scheduled_risk_date": 0.3642803877703207,
+    "share_of_window_days_on_a_scheduled_risk_date": 0.16268493150684932,
+    "share_of_windows_with_a_pressure_day": 0.2389041095890411,
+    "windows": 1825,
+    "windows_with_a_pressure_day": 436
+  },
+  "block_length": 20.0,
+  "composition": {
+    "calendar": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.8840182648401884
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.6436164383561651
+      }
+    },
+    "climatology": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.29202247448686663
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.2402201224253199
+      }
+    },
+    "model_median": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.14784404001563356
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.14510267595098073
+      }
+    },
+    "model_prob": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.16130091591230666
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.16179347441932793
+      }
+    },
+    "persistence": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.16024191966008783
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.16076298266341513
+      }
+    }
+  },
+  "declaration": "metadata/ranking_694.json",
+  "draws": 10000,
+  "fit": {
+    "phi": {
+      "max": 0.97,
+      "median": 0.57,
+      "min": 0.25
+    }
+  },
+  "issue": 694,
+  "label": "development, not a verdict",
+  "means": {
+    "calendar": {
+      "3": {
+        "precision_all_windows": 0.1550684931506849,
+        "precision_windows_with_a_pressure_day": 0.6490825688073393,
+        "recall_windows_with_a_pressure_day": 0.43505909958453165
+      },
+      "5": {
+        "precision_all_windows": 0.1304109589041094,
+        "precision_windows_with_a_pressure_day": 0.5458715596330267,
+        "recall_windows_with_a_pressure_day": 0.5677291497852747
+      }
+    },
+    "climatology": {
+      "3": {
+        "precision_all_windows": 0.10958569301308604,
+        "precision_windows_with_a_pressure_day": 0.45870158199284866,
+        "recall_windows_with_a_pressure_day": 0.2842179947227567
+      },
+      "5": {
+        "precision_all_windows": 0.09524639445780679,
+        "precision_windows_with_a_pressure_day": 0.3986804355171959,
+        "recall_windows_with_a_pressure_day": 0.3827122199603281
+      }
+    },
+    "model_median": {
+      "3": {
+        "precision_all_windows": 0.0728880191345944,
+        "precision_windows_with_a_pressure_day": 0.3050931993592541,
+        "recall_windows_with_a_pressure_day": 0.14705169639229276
+      },
+      "5": {
+        "precision_all_windows": 0.06945422918025662,
+        "precision_windows_with_a_pressure_day": 0.2907201106742393,
+        "recall_windows_with_a_pressure_day": 0.23081683206312187
+      }
+    },
+    "model_prob": {
+      "3": {
+        "precision_all_windows": 0.08038644556596963,
+        "precision_windows_with_a_pressure_day": 0.33647996137131786,
+        "recall_windows_with_a_pressure_day": 0.17001998954336195
+      },
+      "5": {
+        "precision_all_windows": 0.07858519586637827,
+        "precision_windows_with_a_pressure_day": 0.3289403267342669,
+        "recall_windows_with_a_pressure_day": 0.2815530154796851
+      }
+    },
+    "persistence": {
+      "3": {
+        "precision_all_windows": 0.07982567685992335,
+        "precision_windows_with_a_pressure_day": 0.3341327070398168,
+        "recall_windows_with_a_pressure_day": 0.16083013312010924
+      },
+      "5": {
+        "precision_all_windows": 0.07725995572159955,
+        "precision_windows_with_a_pressure_day": 0.3233931632842183,
+        "recall_windows_with_a_pressure_day": 0.26257755533593213
+      }
+    }
+  },
+  "notes": {
+    "decision_days_offered": 1915,
+    "first": "2018-08-09",
+    "last": "2025-12-02",
+    "last_target": "2025-12-31",
+    "refits": 87,
+    "scored_decision_days": 1825,
+    "skipped_for_history_or_type": 90
+  },
+  "paired": {
+    "all": {
+      "model_median": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.15506849315068472,
+            "candidate_mean": 0.0728880191345943,
+            "days": 1825,
+            "gain": -0.08218047401609041,
+            "gain_interval": [
+              -0.1207432702761452,
+              -0.04761406827571175
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.10958569301308496,
+            "candidate_mean": 0.07288801913459335,
+            "days": 1825,
+            "gain": -0.03669767387849161,
+            "gain_interval": [
+              -0.05688101282169389,
+              -0.018510609611144438
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07982567685992292,
+            "candidate_mean": 0.07288801913459397,
+            "days": 1825,
+            "gain": -0.006937657725328954,
+            "gain_interval": [
+              -0.01571722673571983,
+              0.0018617375648196162
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.13041095890411125,
+            "candidate_mean": 0.06945422918025809,
+            "days": 1825,
+            "gain": -0.06095672972385315,
+            "gain_interval": [
+              -0.08837608175690487,
+              -0.0362802348336617
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.09524639445780592,
+            "candidate_mean": 0.06945422918025533,
+            "days": 1825,
+            "gain": -0.02579216527755059,
+            "gain_interval": [
+              -0.03996099685151628,
+              -0.012885188787844021
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07725995572159927,
+            "candidate_mean": 0.0694542291802563,
+            "days": 1825,
+            "gain": -0.007805726541342975,
+            "gain_interval": [
+              -0.01576509942872965,
+              -0.000568404989226891
+            ]
+          }
+        },
+        "recall@3": {
+          "calendar": {
+            "benchmark_mean": 0.43505909958453126,
+            "candidate_mean": 0.14705169639229254,
+            "days": 436,
+            "gain": -0.2880074031922387,
+            "gain_interval": [
+              -0.36626746326430926,
+              -0.21498348996898725
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.2842179947227558,
+            "candidate_mean": 0.147051696392292,
+            "days": 436,
+            "gain": -0.1371662983304638,
+            "gain_interval": [
+              -0.1950942992635424,
+              -0.08461114403972
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.16083013312010808,
+            "candidate_mean": 0.14705169639229146,
+            "days": 436,
+            "gain": -0.01377843672781662,
+            "gain_interval": [
+              -0.040160429869524346,
+              0.012706684734973165
+            ]
+          }
+        },
+        "recall@5": {
+          "calendar": {
+            "benchmark_mean": 0.5677291497852746,
+            "candidate_mean": 0.2308168320631212,
+            "days": 436,
+            "gain": -0.33691231772215335,
+            "gain_interval": [
+              -0.41413382334633403,
+              -0.2637766063686859
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.3827122199603289,
+            "candidate_mean": 0.23081683206312273,
+            "days": 436,
+            "gain": -0.15189538789720616,
+            "gain_interval": [
+              -0.21270554277876766,
+              -0.0982355052232221
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.2625775553359331,
+            "candidate_mean": 0.23081683206312276,
+            "days": 436,
+            "gain": -0.03176072327281033,
+            "gain_interval": [
+              -0.06516175363748085,
+              0.0012377622429101459
+            ]
+          }
+        }
+      },
+      "model_prob": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.15506849315068472,
+            "candidate_mean": 0.08038644556596954,
+            "days": 1825,
+            "gain": -0.07468204758471518,
+            "gain_interval": [
+              -0.1122773612112471,
+              -0.04200550348473718
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.10958569301308496,
+            "candidate_mean": 0.0803864455659686,
+            "days": 1825,
+            "gain": -0.029199247447116362,
+            "gain_interval": [
+              -0.04947306996338602,
+              -0.011578543682153122
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07982567685992292,
+            "candidate_mean": 0.0803864455659692,
+            "days": 1825,
+            "gain": 0.0005607687060462823,
+            "gain_interval": [
+              -0.004132910420509545,
+              0.005307857560741472
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.13041095890411125,
+            "candidate_mean": 0.07858519586637988,
+            "days": 1825,
+            "gain": -0.05182576303773138,
+            "gain_interval": [
+              -0.07687158135063564,
+              -0.02987595529920626
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.09524639445780592,
+            "candidate_mean": 0.07858519586637705,
+            "days": 1825,
+            "gain": -0.01666119859142887,
+            "gain_interval": [
+              -0.028212326973087086,
+              -0.00636997177674245
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07725995572159927,
+            "candidate_mean": 0.078585195866378,
+            "days": 1825,
+            "gain": 0.00132524014477872,
+            "gain_interval": [
+              -0.002781282320579375,
+              0.0055226092836907215
+            ]
+          }
+        },
+        "recall@3": {
+          "calendar": {
+            "benchmark_mean": 0.43505909958453126,
+            "candidate_mean": 0.17001998954336212,
+            "days": 436,
+            "gain": -0.26503911004116915,
+            "gain_interval": [
+              -0.3449383501890411,
+              -0.1920988122853336
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.2842179947227558,
+            "candidate_mean": 0.1700199895433611,
+            "days": 436,
+            "gain": -0.11419800517939468,
+            "gain_interval": [
+              -0.17978347683573492,
+              -0.056656672076599426
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.16083013312010808,
+            "candidate_mean": 0.17001998954336078,
+            "days": 436,
+            "gain": 0.009189856423252702,
+            "gain_interval": [
+              -0.009420036365889123,
+              0.030769754807104997
+            ]
+          }
+        },
+        "recall@5": {
+          "calendar": {
+            "benchmark_mean": 0.5677291497852746,
+            "candidate_mean": 0.2815530154796842,
+            "days": 436,
+            "gain": -0.28617613430559036,
+            "gain_interval": [
+              -0.3624739734400183,
+              -0.2127564271945851
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.3827122199603289,
+            "candidate_mean": 0.2815530154796859,
+            "days": 436,
+            "gain": -0.10115920448064297,
+            "gain_interval": [
+              -0.16333950548452775,
+              -0.044727262954385505
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.2625775553359331,
+            "candidate_mean": 0.28155301547968575,
+            "days": 436,
+            "gain": 0.018975460143752693,
+            "gain_interval": [
+              -0.003243971973383983,
+              0.04426019984117401
+            ]
+          }
+        }
+      }
+    },
+    "pressure_windows_precision": {
+      "model_median": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.6490825688073389,
+            "candidate_mean": 0.30509319935925405,
+            "days": 436,
+            "gain": -0.3439893694480849,
+            "gain_interval": [
+              -0.4186874726955002,
+              -0.26746896388524805
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.45870158199284816,
+            "candidate_mean": 0.3050931993592537,
+            "days": 436,
+            "gain": -0.15360838263359447,
+            "gain_interval": [
+              -0.20597003189789265,
+              -0.10004670274072885
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.33413270703981723,
+            "candidate_mean": 0.30509319935925455,
+            "days": 436,
+            "gain": -0.029039507680562706,
+            "gain_interval": [
+              -0.06420237695323701,
+              0.00801894959865143
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.5458715596330268,
+            "candidate_mean": 0.2907201106742378,
+            "days": 436,
+            "gain": -0.255151448958789,
+            "gain_interval": [
+              -0.3035459443716314,
+              -0.2071782619775749
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.3986804355171961,
+            "candidate_mean": 0.2907201106742378,
+            "days": 436,
+            "gain": -0.10796032484295831,
+            "gain_interval": [
+              -0.1448984594964658,
+              -0.07055685861983632
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.3233931632842173,
+            "candidate_mean": 0.2907201106742381,
+            "days": 436,
+            "gain": -0.03267305260997919,
+            "gain_interval": [
+              -0.06302150063875966,
+              -0.0030426508697723024
+            ]
+          }
+        }
+      },
+      "model_prob": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.6490825688073389,
+            "candidate_mean": 0.3364799613713178,
+            "days": 436,
+            "gain": -0.31260260743602114,
+            "gain_interval": [
+              -0.393948776758409,
+              -0.23466873893449308
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.45870158199284816,
+            "candidate_mean": 0.3364799613713175,
+            "days": 436,
+            "gain": -0.12222162062153065,
+            "gain_interval": [
+              -0.18340859127867018,
+              -0.06480830766503733
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.33413270703981723,
+            "candidate_mean": 0.3364799613713183,
+            "days": 436,
+            "gain": 0.002347254331501067,
+            "gain_interval": [
+              -0.017544665610892685,
+              0.02204442580015971
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.5458715596330268,
+            "candidate_mean": 0.3289403267342659,
+            "days": 436,
+            "gain": -0.21693123289876093,
+            "gain_interval": [
+              -0.2697646064703047,
+              -0.1693988914373089
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.3986804355171961,
+            "candidate_mean": 0.32894032673426565,
+            "days": 436,
+            "gain": -0.06974010878293048,
+            "gain_interval": [
+              -0.1051140115168063,
+              -0.03738642253738745
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.3233931632842173,
+            "candidate_mean": 0.3289403267342658,
+            "days": 436,
+            "gain": 0.005547163450048541,
+            "gain_interval": [
+              -0.01175186042932602,
+              0.022477975916124774
+            ]
+          }
+        }
+      }
+    }
+  },
+  "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "primary": {
+    "benchmark_mean": 0.13041095890411125,
+    "candidate_mean": 0.07858519586637988,
+    "comparison": "model_prob precision@5 minus calendar precision@5",
+    "days": 1825,
+    "gain": -0.05182576303773138,
+    "gain_interval": [
+      -0.07687158135063564,
+      -0.02987595529920626
+    ],
+    "interval_wholly_above_zero": false,
+    "kill_condition_met": true
+  },
+  "seed": 694,
+  "splits": {
+    "regime": {
+      "2018-19": {
+        "days": 347,
+        "days_with_a_pressure_day": 289,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.6272814601344852,
+              "recall": 0.47513208770332765
+            },
+            "5": {
+              "precision": 0.5187319884726224,
+              "recall": 0.5814852594315244
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.4364570745297636,
+              "recall": 0.31220575399465744
+            },
+            "5": {
+              "precision": 0.3815856665736211,
+              "recall": 0.4191348839750932
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.29682997118155596,
+              "recall": 0.1465990132512624
+            },
+            "5": {
+              "precision": 0.2801152737752162,
+              "recall": 0.23368873504991972
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.3141210374639769,
+              "recall": 0.15403499100578286
+            },
+            "5": {
+              "precision": 0.3102785782901057,
+              "recall": 0.27156329452787853
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.3124246790673304,
+              "recall": 0.1566707130138333
+            },
+            "5": {
+              "precision": 0.3036418944488109,
+              "recall": 0.26084510878526757
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.6272814601344865,
+                "candidate_mean": 0.2968299711815567,
+                "days": 347,
+                "gain": -0.3304514889529298,
+                "gain_interval": [
+                  -0.4178674351585011,
+                  -0.23631123919308325
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4364570745297637,
+                "candidate_mean": 0.29682997118155674,
+                "days": 347,
+                "gain": -0.13962710334820697,
+                "gain_interval": [
+                  -0.19566372054998596,
+                  -0.07906563523668585
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3124246790673304,
+                "candidate_mean": 0.29682997118155624,
+                "days": 347,
+                "gain": -0.015594707885774165,
+                "gain_interval": [
+                  -0.05207928398850591,
+                  0.024824178383256144
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.5187319884726218,
+                "candidate_mean": 0.2801152737752152,
+                "days": 347,
+                "gain": -0.23861671469740658,
+                "gain_interval": [
+                  -0.3020172910662833,
+                  -0.17002881844380469
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3815856665736219,
+                "candidate_mean": 0.2801152737752163,
+                "days": 347,
+                "gain": -0.10147039279840563,
+                "gain_interval": [
+                  -0.14168384737483658,
+                  -0.05927563638074712
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.30364189444881096,
+                "candidate_mean": 0.2801152737752162,
+                "days": 347,
+                "gain": -0.023526620673594723,
+                "gain_interval": [
+                  -0.05707221037048122,
+                  0.008235327752618765
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.47513208770332716,
+                "candidate_mean": 0.14659901325126207,
+                "days": 289,
+                "gain": -0.3285330744520651,
+                "gain_interval": [
+                  -0.44485259262075794,
+                  -0.21921567184313936
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3122057539946582,
+                "candidate_mean": 0.14659901325126337,
+                "days": 289,
+                "gain": -0.16560674074339485,
+                "gain_interval": [
+                  -0.24497642488088195,
+                  -0.09024776080848904
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.15667071301383373,
+                "candidate_mean": 0.14659901325126282,
+                "days": 289,
+                "gain": -0.010071699762570923,
+                "gain_interval": [
+                  -0.038637034726135076,
+                  0.020141119764058833
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5814852594315242,
+                "candidate_mean": 0.23368873504991916,
+                "days": 289,
+                "gain": -0.347796524381605,
+                "gain_interval": [
+                  -0.4591413637304652,
+                  -0.24450109888246
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4191348839750949,
+                "candidate_mean": 0.23368873504992074,
+                "days": 289,
+                "gain": -0.18544614892517416,
+                "gain_interval": [
+                  -0.26961598143477544,
+                  -0.1101186041828499
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26084510878526834,
+                "candidate_mean": 0.23368873504992047,
+                "days": 289,
+                "gain": -0.02715637373534788,
+                "gain_interval": [
+                  -0.06185894377915546,
+                  0.009296422383919898
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.6272814601344865,
+                "candidate_mean": 0.3141210374639773,
+                "days": 347,
+                "gain": -0.3131604226705092,
+                "gain_interval": [
+                  -0.4111431316042273,
+                  -0.2151777137367918
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4364570745297637,
+                "candidate_mean": 0.31412103746397746,
+                "days": 347,
+                "gain": -0.12233603706578619,
+                "gain_interval": [
+                  -0.19547463689454747,
+                  -0.05169494317436441
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3124246790673304,
+                "candidate_mean": 0.31412103746397696,
+                "days": 347,
+                "gain": 0.0016963583966465778,
+                "gain_interval": [
+                  -0.01699666487850927,
+                  0.020286749753608505
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.5187319884726218,
+                "candidate_mean": 0.31027857829010486,
+                "days": 347,
+                "gain": -0.20845341018251695,
+                "gain_interval": [
+                  -0.2770413064361189,
+                  -0.1421709894332374
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3815856665736219,
+                "candidate_mean": 0.31027857829010597,
+                "days": 347,
+                "gain": -0.07130708828351598,
+                "gain_interval": [
+                  -0.11232043465801286,
+                  -0.030527455218398482
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.30364189444881096,
+                "candidate_mean": 0.31027857829010574,
+                "days": 347,
+                "gain": 0.0066366838412948,
+                "gain_interval": [
+                  -0.012595694491227606,
+                  0.024800358463182702
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.47513208770332716,
+                "candidate_mean": 0.15403499100578233,
+                "days": 289,
+                "gain": -0.3210970966975448,
+                "gain_interval": [
+                  -0.44071527511037506,
+                  -0.20692838361459892
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3122057539946582,
+                "candidate_mean": 0.15403499100578366,
+                "days": 289,
+                "gain": -0.15817076298887456,
+                "gain_interval": [
+                  -0.2476327528009444,
+                  -0.07431401917409224
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.15667071301383373,
+                "candidate_mean": 0.1540349910057832,
+                "days": 289,
+                "gain": -0.002635722008050532,
+                "gain_interval": [
+                  -0.018795234526368772,
+                  0.012973138979944891
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5814852594315242,
+                "candidate_mean": 0.27156329452787775,
+                "days": 289,
+                "gain": -0.30992196490364643,
+                "gain_interval": [
+                  -0.4215215400651998,
+                  -0.2050620760674449
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4191348839750949,
+                "candidate_mean": 0.2715632945278795,
+                "days": 289,
+                "gain": -0.14757158944721543,
+                "gain_interval": [
+                  -0.23148831267461362,
+                  -0.06980829290341453
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26084510878526834,
+                "candidate_mean": 0.2715632945278791,
+                "days": 289,
+                "gain": 0.010718185742610744,
+                "gain_interval": [
+                  -0.009432843020900169,
+                  0.031113573868179003
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2020": {
+        "days": 251,
+        "days_with_a_pressure_day": 29,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.02656042496679946,
+              "recall": 0.23275862068965517
+            },
+            "5": {
+              "precision": 0.023107569721115544,
+              "recall": 0.33620689655172414
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0069321155922120485,
+              "recall": 0.06224037104254891
+            },
+            "5": {
+              "precision": 0.011169357657090937,
+              "recall": 0.17256503327283726
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.014608233731739705,
+              "recall": 0.14367816091954022
+            },
+            "5": {
+              "precision": 0.01593625498007968,
+              "recall": 0.2471264367816092
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.017264276228419653,
+              "recall": 0.22701149425287356
+            },
+            "5": {
+              "precision": 0.016733067729083666,
+              "recall": 0.3304597701149425
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.018592297476759626,
+              "recall": 0.21839080459770116
+            },
+            "5": {
+              "precision": 0.017264276228419657,
+              "recall": 0.33045977011494254
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.026560424966799667,
+                "candidate_mean": 0.014608233731739913,
+                "days": 251,
+                "gain": -0.011952191235059754,
+                "gain_interval": [
+                  -0.030544488711819407,
+                  0.0013280212483399545
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.006932115592212185,
+                "candidate_mean": 0.014608233731739844,
+                "days": 251,
+                "gain": 0.0076761181395276585,
+                "gain_interval": [
+                  -0.0015462516406110495,
+                  0.022439947811094783
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01859229747675961,
+                "candidate_mean": 0.014608233731739688,
+                "days": 251,
+                "gain": -0.003984063745019924,
+                "gain_interval": [
+                  -0.02257636122177954,
+                  0.01195219123505976
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.023107569721115606,
+                "candidate_mean": 0.01593625498007975,
+                "days": 251,
+                "gain": -0.007171314741035856,
+                "gain_interval": [
+                  -0.01912350597609562,
+                  0.0007968127490039813
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657091039,
+                "candidate_mean": 0.015936254980079785,
+                "days": 251,
+                "gain": 0.004766897322988748,
+                "gain_interval": [
+                  -0.0024114070035646867,
+                  0.014741035856573709
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01726427622841953,
+                "candidate_mean": 0.015936254980079556,
+                "days": 251,
+                "gain": -0.0013280212483399714,
+                "gain_interval": [
+                  -0.01593625498007968,
+                  0.012749003984063742
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.23275862068965492,
+                "candidate_mean": 0.14367816091954,
+                "days": 29,
+                "gain": -0.08908045977011492,
+                "gain_interval": [
+                  -0.1551724137931034,
+                  -0.02586206896551721
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.14367816091954072,
+                "days": 29,
+                "gain": 0.0814377898769913,
+                "gain_interval": [
+                  -0.020074611816898593,
+                  0.18164851784633967
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.14367816091954017,
+                "days": 29,
+                "gain": -0.07471264367816094,
+                "gain_interval": [
+                  -0.23275862068965517,
+                  0.08045977011494249
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.3362068965517241,
+                "candidate_mean": 0.24712643678160917,
+                "days": 29,
+                "gain": -0.08908045977011493,
+                "gain_interval": [
+                  -0.16379310344827586,
+                  -0.017241379310344813
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.24712643678160962,
+                "days": 29,
+                "gain": 0.07456140350877195,
+                "gain_interval": [
+                  -0.04310344827586204,
+                  0.18950393224440415
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.2471264367816093,
+                "days": 29,
+                "gain": -0.08333333333333334,
+                "gain_interval": [
+                  -0.3103448275862069,
+                  0.14367816091954022
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.026560424966799667,
+                "candidate_mean": 0.017264276228419854,
+                "days": 251,
+                "gain": -0.009296148738379811,
+                "gain_interval": [
+                  -0.03452855245683931,
+                  0.010624169986719792
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.006932115592212185,
+                "candidate_mean": 0.017264276228419792,
+                "days": 251,
+                "gain": 0.010332160636207609,
+                "gain_interval": [
+                  -0.0031274123777792952,
+                  0.028629497604125424
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01859229747675961,
+                "candidate_mean": 0.01726427622841964,
+                "days": 251,
+                "gain": -0.001328021248339974,
+                "gain_interval": [
+                  -0.00664010624169987,
+                  0.0039840637450199185
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.023107569721115606,
+                "candidate_mean": 0.016733067729083735,
+                "days": 251,
+                "gain": -0.00637450199203187,
+                "gain_interval": [
+                  -0.027091633466135454,
+                  0.010358565737051805
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657091039,
+                "candidate_mean": 0.01673306772908377,
+                "days": 251,
+                "gain": 0.005563710071992729,
+                "gain_interval": [
+                  -0.004794855665059068,
+                  0.018431537009855323
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01726427622841953,
+                "candidate_mean": 0.016733067729083537,
+                "days": 251,
+                "gain": -0.0005312084993359897,
+                "gain_interval": [
+                  -0.00398406374501992,
+                  0.002656042496679946
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.23275862068965492,
+                "candidate_mean": 0.22701149425287334,
+                "days": 29,
+                "gain": -0.005747126436781566,
+                "gain_interval": [
+                  -0.1954022988505746,
+                  0.18678160919540227
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.2270114942528742,
+                "days": 29,
+                "gain": 0.16477112321032478,
+                "gain_interval": [
+                  0.034523089332526805,
+                  0.2940814680379109
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.2270114942528735,
+                "days": 29,
+                "gain": 0.008620689655172414,
+                "gain_interval": [
+                  -0.05172413793103448,
+                  0.06896551724137931
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.3362068965517241,
+                "candidate_mean": 0.33045977011494254,
+                "days": 29,
+                "gain": -0.005747126436781558,
+                "gain_interval": [
+                  -0.2701149425287355,
+                  0.26149425287356326
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.33045977011494276,
+                "days": 29,
+                "gain": 0.1578947368421051,
+                "gain_interval": [
+                  -0.00877192982456153,
+                  0.32169540229885046
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.33045977011494265,
+                "days": 29,
+                "gain": 7.656710514656252e-18,
+                "gain_interval": [
+                  -0.05172413793103447,
+                  0.05172413793103448
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2021-23": {
+        "days": 748,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2024": {
+        "days": 250,
+        "days_with_a_pressure_day": 44,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.03733333333333334,
+              "recall": 0.303030303030303
+            },
+            "5": {
+              "precision": 0.051200000000000016,
+              "recall": 0.6250000000000001
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.04176557734204795,
+              "recall": 0.3038237769855418
+            },
+            "5": {
+              "precision": 0.03226535947712418,
+              "recall": 0.39382179639532566
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.016933333333333335,
+              "recall": 0.17500000000000002
+            },
+            "5": {
+              "precision": 0.0124,
+              "recall": 0.20454545454545456
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.022821052631578947,
+              "recall": 0.198225677830941
+            },
+            "5": {
+              "precision": 0.020605263157894745,
+              "recall": 0.28414074960127594
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.020533333333333334,
+              "recall": 0.16401515151515153
+            },
+            "5": {
+              "precision": 0.019066666666666673,
+              "recall": 0.2518939393939394
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.03733333333333344,
+                "candidate_mean": 0.016933333333333443,
+                "days": 250,
+                "gain": -0.020399999999999998,
+                "gain_interval": [
+                  -0.046999999999999986,
+                  0.00039999999999999856
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.041765577342047666,
+                "candidate_mean": 0.016933333333333064,
+                "days": 250,
+                "gain": -0.024832244008714602,
+                "gain_interval": [
+                  -0.06372014161220045,
+                  0.0031999999999999993
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333403,
+                "candidate_mean": 0.016933333333333404,
+                "days": 250,
+                "gain": -0.0035999999999999986,
+                "gain_interval": [
+                  -0.013999999999999997,
+                  0.005266666666666668
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.05119999999999947,
+                "candidate_mean": 0.012399999999999467,
+                "days": 250,
+                "gain": -0.0388,
+                "gain_interval": [
+                  -0.07840000000000001,
+                  -0.0071999999999999955
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.032265359477123945,
+                "candidate_mean": 0.012399999999999765,
+                "days": 250,
+                "gain": -0.01986535947712418,
+                "gain_interval": [
+                  -0.04757976470588235,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666343,
+                "candidate_mean": 0.012399999999999679,
+                "days": 250,
+                "gain": -0.0066666666666666645,
+                "gain_interval": [
+                  -0.016799999999999992,
+                  0.001200000000000001
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3030303030303032,
+                "candidate_mean": 0.17500000000000016,
+                "days": 44,
+                "gain": -0.12803030303030305,
+                "gain_interval": [
+                  -0.20795454545454548,
+                  -0.048087121212121456
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3038237769855415,
+                "candidate_mean": 0.17499999999999982,
+                "days": 44,
+                "gain": -0.1288237769855417,
+                "gain_interval": [
+                  -0.24044204297880775,
+                  -0.017779882154882166
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515111,
+                "candidate_mean": 0.1749999999999996,
+                "days": 44,
+                "gain": 0.010984848484848486,
+                "gain_interval": [
+                  -0.05454545454545456,
+                  0.07916666666666666
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.6249999999999998,
+                "candidate_mean": 0.20454545454545447,
+                "days": 44,
+                "gain": -0.4204545454545453,
+                "gain_interval": [
+                  -0.5075757575757573,
+                  -0.32954545454545453
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3938217963953261,
+                "candidate_mean": 0.20454545454545492,
+                "days": 44,
+                "gain": -0.1892763418498712,
+                "gain_interval": [
+                  -0.3077410130718954,
+                  -0.07124139681124973
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.25189393939393945,
+                "candidate_mean": 0.2045454545454546,
+                "days": 44,
+                "gain": -0.04734848484848484,
+                "gain_interval": [
+                  -0.11553030303030302,
+                  0.024621212121212113
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.03733333333333344,
+                "candidate_mean": 0.022821052631579058,
+                "days": 250,
+                "gain": -0.014512280701754383,
+                "gain_interval": [
+                  -0.03509228070175439,
+                  0.0032899999999999687
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.041765577342047666,
+                "candidate_mean": 0.022821052631578676,
+                "days": 250,
+                "gain": -0.01894452471046899,
+                "gain_interval": [
+                  -0.0466983671597294,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333403,
+                "candidate_mean": 0.022821052631579016,
+                "days": 250,
+                "gain": 0.002287719298245614,
+                "gain_interval": [
+                  -0.0019999999999999996,
+                  0.007996491228070174
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.05119999999999947,
+                "candidate_mean": 0.020605263157894196,
+                "days": 250,
+                "gain": -0.030594736842105272,
+                "gain_interval": [
+                  -0.060194210526315836,
+                  -0.005999999999999993
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.032265359477123945,
+                "candidate_mean": 0.020605263157894498,
+                "days": 250,
+                "gain": -0.011660096319229447,
+                "gain_interval": [
+                  -0.028902419676642588,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666343,
+                "candidate_mean": 0.02060526315789441,
+                "days": 250,
+                "gain": 0.0015385964912280699,
+                "gain_interval": [
+                  -0.0011947368421052636,
+                  0.004871929824561404
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3030303030303032,
+                "candidate_mean": 0.19822567783094114,
+                "days": 44,
+                "gain": -0.10480462519936208,
+                "gain_interval": [
+                  -0.1923046251993621,
+                  -0.014647129186603013
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3038237769855415,
+                "candidate_mean": 0.1982256778309408,
+                "days": 44,
+                "gain": -0.10559809915460071,
+                "gain_interval": [
+                  -0.1876123203135587,
+                  -0.023000841750841727
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515111,
+                "candidate_mean": 0.19822567783094058,
+                "days": 44,
+                "gain": 0.034210526315789476,
+                "gain_interval": [
+                  -0.012001594896331734,
+                  0.08496810207336523
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.6249999999999998,
+                "candidate_mean": 0.2841407496012757,
+                "days": 44,
+                "gain": -0.34085925039872406,
+                "gain_interval": [
+                  -0.41088516746411474,
+                  -0.2679425837320574
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3938217963953261,
+                "candidate_mean": 0.2841407496012763,
+                "days": 44,
+                "gain": -0.10968104679404983,
+                "gain_interval": [
+                  -0.1966362606977931,
+                  -0.021338383838383834
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.25189393939393945,
+                "candidate_mean": 0.284140749601276,
+                "days": 44,
+                "gain": 0.032246810207336524,
+                "gain_interval": [
+                  -0.007618122009569343,
+                  0.07580741626794259
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2025-26": {
+        "days": 229,
+        "days_with_a_pressure_day": 74,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.21542940320232898,
+              "recall": 0.43634136134136126
+            },
+            "5": {
+              "precision": 0.17205240174672498,
+              "recall": 0.570684720684721
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.15878571850610057,
+              "recall": 0.250248187122542
+            },
+            "5": {
+              "precision": 0.13338251066917228,
+              "recall": 0.316216235508031
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.09659665904207387,
+              "recall": 0.13352375852375847
+            },
+            "5": {
+              "precision": 0.09805226311776526,
+              "recall": 0.22883010383010374
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.12081513828238719,
+              "recall": 0.1933424308424308
+            },
+            "5": {
+              "precision": 0.1152838427947598,
+              "recall": 0.29986211236211224
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.11995850058077132,
+              "recall": 0.15262299972121401
+            },
+            "5": {
+              "precision": 0.11587633981738785,
+              "recall": 0.24909339217374923
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.21542940320232928,
+                "candidate_mean": 0.09659665904207422,
+                "days": 229,
+                "gain": -0.11883274416025506,
+                "gain_interval": [
+                  -0.2242205586747072,
+                  -0.029458653912802356
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.1587857185061008,
+                "candidate_mean": 0.0965966590420741,
+                "days": 229,
+                "gain": -0.06218905946402669,
+                "gain_interval": [
+                  -0.12791238999366444,
+                  -0.008569746318303182
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1199585005807714,
+                "candidate_mean": 0.09659665904207396,
+                "days": 229,
+                "gain": -0.02336184153869744,
+                "gain_interval": [
+                  -0.055946368446368466,
+                  0.002523799284170444
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.17205240174672454,
+                "candidate_mean": 0.09805226311776494,
+                "days": 229,
+                "gain": -0.0740001386289596,
+                "gain_interval": [
+                  -0.1418936715879948,
+                  -0.016593886462882113
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.13338251066917128,
+                "candidate_mean": 0.0980522631177643,
+                "days": 229,
+                "gain": -0.03533024755140699,
+                "gain_interval": [
+                  -0.07909722141748753,
+                  -0.0009214465492011617
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738721,
+                "candidate_mean": 0.09805226311776466,
+                "days": 229,
+                "gain": -0.017824076699622556,
+                "gain_interval": [
+                  -0.04293485226563829,
+                  0.0030263135093920755
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.4363413613413616,
+                "candidate_mean": 0.13352375852375897,
+                "days": 74,
+                "gain": -0.3028176028176026,
+                "gain_interval": [
+                  -0.47320529695529673,
+                  -0.14084888647388646
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.25024818712254193,
+                "candidate_mean": 0.13352375852375842,
+                "days": 74,
+                "gain": -0.11672442859878353,
+                "gain_interval": [
+                  -0.18133036559507143,
+                  -0.05517021907888777
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.1335237585237588,
+                "days": 74,
+                "gain": -0.019099241197455485,
+                "gain_interval": [
+                  -0.05341242613564042,
+                  0.017933267163177828
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5706847206847203,
+                "candidate_mean": 0.2288301038301035,
+                "days": 74,
+                "gain": -0.3418546168546168,
+                "gain_interval": [
+                  -0.5410508804258805,
+                  -0.1467361861111863
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.31621623550803146,
+                "candidate_mean": 0.2288301038301041,
+                "days": 74,
+                "gain": -0.08738613167792736,
+                "gain_interval": [
+                  -0.1517374820867468,
+                  -0.025034612625556955
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.228830103830104,
+                "days": 74,
+                "gain": -0.02026328834364548,
+                "gain_interval": [
+                  -0.06416136411672127,
+                  0.026510053362731868
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.21542940320232928,
+                "candidate_mean": 0.12081513828238753,
+                "days": 229,
+                "gain": -0.09461426491994175,
+                "gain_interval": [
+                  -0.1790393013100436,
+                  -0.023216885007279035
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.1587857185061008,
+                "candidate_mean": 0.12081513828238741,
+                "days": 229,
+                "gain": -0.037970580223713385,
+                "gain_interval": [
+                  -0.08517606481418892,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1199585005807714,
+                "candidate_mean": 0.12081513828238727,
+                "days": 229,
+                "gain": 0.0008566377016158668,
+                "gain_interval": [
+                  -0.023429886565803595,
+                  0.023043930939673284
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.17205240174672454,
+                "candidate_mean": 0.11528384279475948,
+                "days": 229,
+                "gain": -0.05676855895196506,
+                "gain_interval": [
+                  -0.11091703056768558,
+                  -0.009606986899563331
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.13338251066917128,
+                "candidate_mean": 0.11528384279475883,
+                "days": 229,
+                "gain": -0.01809866787441246,
+                "gain_interval": [
+                  -0.04895178104950706,
+                  0.005959414333418956
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738721,
+                "candidate_mean": 0.11528384279475917,
+                "days": 229,
+                "gain": -0.0005924970226280306,
+                "gain_interval": [
+                  -0.01806354089869374,
+                  0.01567577285644971
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.4363413613413616,
+                "candidate_mean": 0.19334243084243122,
+                "days": 74,
+                "gain": -0.24299893049893037,
+                "gain_interval": [
+                  -0.38413603288603276,
+                  -0.10762966762966754
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.25024818712254193,
+                "candidate_mean": 0.19334243084243063,
+                "days": 74,
+                "gain": -0.0569057562801113,
+                "gain_interval": [
+                  -0.1302851024726025,
+                  0.01508672923565849
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.19334243084243113,
+                "days": 74,
+                "gain": 0.04071943112121683,
+                "gain_interval": [
+                  -0.009655460336263876,
+                  0.09381297930405069
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5706847206847203,
+                "candidate_mean": 0.2998621123621121,
+                "days": 74,
+                "gain": -0.27082260832260824,
+                "gain_interval": [
+                  -0.44632446382446384,
+                  -0.10557161869661855
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.31621623550803146,
+                "candidate_mean": 0.29986211236211263,
+                "days": 74,
+                "gain": -0.01635412314591883,
+                "gain_interval": [
+                  -0.0946697850267897,
+                  0.0671579906603125
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.2998621123621125,
+                "days": 74,
+                "gain": 0.050768720188363016,
+                "gain_interval": [
+                  -0.014919779596118864,
+                  0.12083847030275595
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "year": {
+      "2018": {
+        "days": 97,
+        "days_with_a_pressure_day": 50,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.41580756013745707,
+              "recall": 0.4863571428571431
+            },
+            "5": {
+              "precision": 0.3298969072164949,
+              "recall": 0.597119047619048
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.2395482465006259,
+              "recall": 0.23566892107720283
+            },
+            "5": {
+              "precision": 0.18083324594080719,
+              "recall": 0.31055457884908355
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.140893470790378,
+              "recall": 0.13164285714285717
+            },
+            "5": {
+              "precision": 0.11752577319587626,
+              "recall": 0.1966984126984127
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.10996563573883161,
+              "recall": 0.1314047619047619
+            },
+            "5": {
+              "precision": 0.12164948453608246,
+              "recall": 0.24300793650793642
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.1020332187857961,
+              "recall": 0.12255555555555558
+            },
+            "5": {
+              "precision": 0.11218213058419241,
+              "recall": 0.22525396825396826
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.4158075601374571,
+                "candidate_mean": 0.14089347079037817,
+                "days": 97,
+                "gain": -0.27491408934707895,
+                "gain_interval": [
+                  -0.4536082474226804,
+                  -0.10309278350515463
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.23954824650062678,
+                "candidate_mean": 0.1408934707903789,
+                "days": 97,
+                "gain": -0.0986547757102479,
+                "gain_interval": [
+                  -0.173044705161259,
+                  -0.027720461896098662
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.10203321878579596,
+                "candidate_mean": 0.14089347079037787,
+                "days": 97,
+                "gain": 0.0388602520045819,
+                "gain_interval": [
+                  -0.05335051546391752,
+                  0.1372279495990836
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.3298969072164949,
+                "candidate_mean": 0.11752577319587637,
+                "days": 97,
+                "gain": -0.21237113402061852,
+                "gain_interval": [
+                  -0.36701030927835054,
+                  -0.06804123711340207
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.18083324594080707,
+                "candidate_mean": 0.1175257731958762,
+                "days": 97,
+                "gain": -0.06330747274493087,
+                "gain_interval": [
+                  -0.1126407735910425,
+                  -0.016493249117335507
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.11218213058419269,
+                "candidate_mean": 0.11752577319587652,
+                "days": 97,
+                "gain": 0.005343642611683841,
+                "gain_interval": [
+                  -0.061392611683848824,
+                  0.07388316151202749
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.48635714285714293,
+                "candidate_mean": 0.13164285714285734,
+                "days": 50,
+                "gain": -0.3547142857142856,
+                "gain_interval": [
+                  -0.4293420634920634,
+                  -0.2796857142857143
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.2356689210772024,
+                "candidate_mean": 0.13164285714285673,
+                "days": 50,
+                "gain": -0.10402606393434567,
+                "gain_interval": [
+                  -0.13473847691123236,
+                  -0.07366781414320114
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.12255555555555542,
+                "candidate_mean": 0.131642857142857,
+                "days": 50,
+                "gain": 0.009087301587301578,
+                "gain_interval": [
+                  -0.06742559523809523,
+                  0.08791031746031736
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5971190476190478,
+                "candidate_mean": 0.19669841269841287,
+                "days": 50,
+                "gain": -0.4004206349206349,
+                "gain_interval": [
+                  -0.43666746031746034,
+                  -0.3650297619047619
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3105545788490831,
+                "candidate_mean": 0.1966984126984123,
+                "days": 50,
+                "gain": -0.11385616615067082,
+                "gain_interval": [
+                  -0.147950029178338,
+                  -0.08005376554130429
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.22525396825396815,
+                "candidate_mean": 0.1966984126984126,
+                "days": 50,
+                "gain": -0.02855555555555556,
+                "gain_interval": [
+                  -0.13008571428571428,
+                  0.07339126984126981
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.4158075601374571,
+                "candidate_mean": 0.10996563573883172,
+                "days": 97,
+                "gain": -0.3058419243986254,
+                "gain_interval": [
+                  -0.5326460481099653,
+                  -0.09621993127147765
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.23954824650062678,
+                "candidate_mean": 0.1099656357388325,
+                "days": 97,
+                "gain": -0.12958261076179428,
+                "gain_interval": [
+                  -0.27654691262469894,
+                  0.0062302349347527685
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.10203321878579596,
+                "candidate_mean": 0.10996563573883147,
+                "days": 97,
+                "gain": 0.007932416953035508,
+                "gain_interval": [
+                  -0.016985967926689573,
+                  0.03694158075601373
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.3298969072164949,
+                "candidate_mean": 0.12164948453608249,
+                "days": 97,
+                "gain": -0.2082474226804124,
+                "gain_interval": [
+                  -0.3917525773195876,
+                  -0.041237113402061855
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.18083324594080707,
+                "candidate_mean": 0.1216494845360824,
+                "days": 97,
+                "gain": -0.059183761404724665,
+                "gain_interval": [
+                  -0.14868610333444282,
+                  0.021650289497242178
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.11218213058419269,
+                "candidate_mean": 0.12164948453608272,
+                "days": 97,
+                "gain": 0.009467353951890042,
+                "gain_interval": [
+                  -0.010721649484536069,
+                  0.03328436426116836
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.48635714285714293,
+                "candidate_mean": 0.13140476190476202,
+                "days": 50,
+                "gain": -0.3549523809523809,
+                "gain_interval": [
+                  -0.4449531746031746,
+                  -0.2655238095238095
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.2356689210772024,
+                "candidate_mean": 0.13140476190476144,
+                "days": 50,
+                "gain": -0.10426415917244095,
+                "gain_interval": [
+                  -0.20737916062623882,
+                  -0.000699213925336354
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.12255555555555542,
+                "candidate_mean": 0.13140476190476177,
+                "days": 50,
+                "gain": 0.008849206349206344,
+                "gain_interval": [
+                  -0.036037896825396834,
+                  0.05524107142857131
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5971190476190478,
+                "candidate_mean": 0.24300793650793673,
+                "days": 50,
+                "gain": -0.35411111111111104,
+                "gain_interval": [
+                  -0.4880186507936506,
+                  -0.21941706349206352
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3105545788490831,
+                "candidate_mean": 0.24300793650793612,
+                "days": 50,
+                "gain": -0.06754664234114698,
+                "gain_interval": [
+                  -0.18257212086589028,
+                  0.04494446625141273
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.22525396825396815,
+                "candidate_mean": 0.2430079365079364,
+                "days": 50,
+                "gain": 0.017753968253968255,
+                "gain_interval": [
+                  -0.0228297619047619,
+                  0.059719246031746005
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2019": {
+        "days": 250,
+        "days_with_a_pressure_day": 239,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.7093333333333325,
+              "recall": 0.47278374980504
+            },
+            "5": {
+              "precision": 0.5919999999999989,
+              "recall": 0.5782145924466868
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.512857699805068,
+              "recall": 0.3282176437263424
+            },
+            "5": {
+              "precision": 0.45947760577915375,
+              "recall": 0.4418504289805347
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.3573333333333332,
+              "recall": 0.1497279162028115
+            },
+            "5": {
+              "precision": 0.3432,
+              "recall": 0.24142729621132294
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.39333333333333315,
+              "recall": 0.15876934855829763
+            },
+            "5": {
+              "precision": 0.38346666666666696,
+              "recall": 0.27753721879983273
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.39405656565656566,
+              "recall": 0.16380777524359844
+            },
+            "5": {
+              "precision": 0.37792828282828295,
+              "recall": 0.2682909540847026
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.7093333333333331,
+                "candidate_mean": 0.3573333333333333,
+                "days": 250,
+                "gain": -0.35199999999999987,
+                "gain_interval": [
+                  -0.43199999999999955,
+                  -0.26133333333333303
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.5128576998050679,
+                "candidate_mean": 0.35733333333333295,
+                "days": 250,
+                "gain": -0.15552436647173498,
+                "gain_interval": [
+                  -0.21987532163742696,
+                  -0.08129031189083852
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.39405656565656566,
+                "candidate_mean": 0.35733333333333334,
+                "days": 250,
+                "gain": -0.036723232323232324,
+                "gain_interval": [
+                  -0.07169963924963926,
+                  -0.003814978354978322
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.592,
+                "candidate_mean": 0.3431999999999996,
+                "days": 250,
+                "gain": -0.24880000000000038,
+                "gain_interval": [
+                  -0.3024000000000001,
+                  -0.19200000000000045
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4594776057791534,
+                "candidate_mean": 0.34319999999999967,
+                "days": 250,
+                "gain": -0.11627760577915375,
+                "gain_interval": [
+                  -0.16478200980392155,
+                  -0.06260188854489174
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3779282828282827,
+                "candidate_mean": 0.3431999999999999,
+                "days": 250,
+                "gain": -0.034728282828282823,
+                "gain_interval": [
+                  -0.07416798556998545,
+                  0.0003954069264069478
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.47278374980503957,
+                "candidate_mean": 0.1497279162028115,
+                "days": 239,
+                "gain": -0.32305583360222806,
+                "gain_interval": [
+                  -0.4698343934622549,
+                  -0.19068600926926088
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.32821764372634255,
+                "candidate_mean": 0.1497279162028119,
+                "days": 239,
+                "gain": -0.17848972752353065,
+                "gain_interval": [
+                  -0.28802298638705776,
+                  -0.07878238224784227
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1638077752435988,
+                "candidate_mean": 0.14972791620281187,
+                "days": 239,
+                "gain": -0.01407985904078693,
+                "gain_interval": [
+                  -0.03698271179418116,
+                  0.009293732095494956
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5782145924466868,
+                "candidate_mean": 0.24142729621132247,
+                "days": 239,
+                "gain": -0.33678729623536435,
+                "gain_interval": [
+                  -0.47243930058783606,
+                  -0.21505222846519426
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4418504289805347,
+                "candidate_mean": 0.24142729621132228,
+                "days": 239,
+                "gain": -0.20042313276921245,
+                "gain_interval": [
+                  -0.31616546078680313,
+                  -0.09964016801884405
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26829095408470294,
+                "candidate_mean": 0.24142729621132317,
+                "days": 239,
+                "gain": -0.02686365787337976,
+                "gain_interval": [
+                  -0.05541605545005124,
+                  0.0025555757539513025
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.7093333333333331,
+                "candidate_mean": 0.3933333333333332,
+                "days": 250,
+                "gain": -0.31599999999999995,
+                "gain_interval": [
+                  -0.38533333333333303,
+                  -0.2386666666666665
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.5128576998050679,
+                "candidate_mean": 0.3933333333333331,
+                "days": 250,
+                "gain": -0.11952436647173478,
+                "gain_interval": [
+                  -0.18986200779727094,
+                  -0.04609662768031197
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.39405656565656566,
+                "candidate_mean": 0.3933333333333333,
+                "days": 250,
+                "gain": -0.0007232323232323297,
+                "gain_interval": [
+                  -0.025269985569985574,
+                  0.024085324675324666
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.592,
+                "candidate_mean": 0.38346666666666657,
+                "days": 250,
+                "gain": -0.2085333333333334,
+                "gain_interval": [
+                  -0.25199999999999934,
+                  -0.16585333333333346
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4594776057791534,
+                "candidate_mean": 0.3834666666666663,
+                "days": 250,
+                "gain": -0.0760109391124871,
+                "gain_interval": [
+                  -0.11875764705882363,
+                  -0.034633441692466384
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3779282828282827,
+                "candidate_mean": 0.38346666666666657,
+                "days": 250,
+                "gain": 0.005538383838383838,
+                "gain_interval": [
+                  -0.019555802308802307,
+                  0.029862219336219308
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.47278374980503957,
+                "candidate_mean": 0.1587693485582975,
+                "days": 239,
+                "gain": -0.31401440124674207,
+                "gain_interval": [
+                  -0.47001871269130663,
+                  -0.17489670537095448
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.32821764372634255,
+                "candidate_mean": 0.15876934855829783,
+                "days": 239,
+                "gain": -0.16944829516804472,
+                "gain_interval": [
+                  -0.2894744719177664,
+                  -0.0617664693826708
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1638077752435988,
+                "candidate_mean": 0.15876934855829788,
+                "days": 239,
+                "gain": -0.005038426685300924,
+                "gain_interval": [
+                  -0.022854305471444913,
+                  0.011952999811124954
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5782145924466868,
+                "candidate_mean": 0.2775372187998324,
+                "days": 239,
+                "gain": -0.30067737364685443,
+                "gain_interval": [
+                  -0.4419596615121779,
+                  -0.17686053805562207
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4418504289805347,
+                "candidate_mean": 0.2775372187998322,
+                "days": 239,
+                "gain": -0.16431321018070258,
+                "gain_interval": [
+                  -0.287177317298509,
+                  -0.05948307495935854
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26829095408470294,
+                "candidate_mean": 0.277537218799833,
+                "days": 239,
+                "gain": 0.009246264715130096,
+                "gain_interval": [
+                  -0.01392000239917428,
+                  0.03332326560778442
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2020": {
+        "days": 251,
+        "days_with_a_pressure_day": 29,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.02656042496679946,
+              "recall": 0.23275862068965517
+            },
+            "5": {
+              "precision": 0.023107569721115544,
+              "recall": 0.33620689655172414
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0069321155922120485,
+              "recall": 0.06224037104254891
+            },
+            "5": {
+              "precision": 0.011169357657090937,
+              "recall": 0.17256503327283726
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.014608233731739705,
+              "recall": 0.14367816091954022
+            },
+            "5": {
+              "precision": 0.01593625498007968,
+              "recall": 0.2471264367816092
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.017264276228419653,
+              "recall": 0.22701149425287356
+            },
+            "5": {
+              "precision": 0.016733067729083666,
+              "recall": 0.3304597701149425
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.018592297476759626,
+              "recall": 0.21839080459770116
+            },
+            "5": {
+              "precision": 0.017264276228419657,
+              "recall": 0.33045977011494254
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.026560424966799667,
+                "candidate_mean": 0.014608233731739913,
+                "days": 251,
+                "gain": -0.011952191235059754,
+                "gain_interval": [
+                  -0.030544488711819407,
+                  0.0013280212483399545
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.006932115592212185,
+                "candidate_mean": 0.014608233731739844,
+                "days": 251,
+                "gain": 0.0076761181395276585,
+                "gain_interval": [
+                  -0.0015462516406110495,
+                  0.022439947811094783
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01859229747675961,
+                "candidate_mean": 0.014608233731739688,
+                "days": 251,
+                "gain": -0.003984063745019924,
+                "gain_interval": [
+                  -0.02257636122177954,
+                  0.01195219123505976
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.023107569721115606,
+                "candidate_mean": 0.01593625498007975,
+                "days": 251,
+                "gain": -0.007171314741035856,
+                "gain_interval": [
+                  -0.01912350597609562,
+                  0.0007968127490039813
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657091039,
+                "candidate_mean": 0.015936254980079785,
+                "days": 251,
+                "gain": 0.004766897322988748,
+                "gain_interval": [
+                  -0.0024114070035646867,
+                  0.014741035856573709
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01726427622841953,
+                "candidate_mean": 0.015936254980079556,
+                "days": 251,
+                "gain": -0.0013280212483399714,
+                "gain_interval": [
+                  -0.01593625498007968,
+                  0.012749003984063742
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.23275862068965492,
+                "candidate_mean": 0.14367816091954,
+                "days": 29,
+                "gain": -0.08908045977011492,
+                "gain_interval": [
+                  -0.1551724137931034,
+                  -0.02586206896551721
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.14367816091954072,
+                "days": 29,
+                "gain": 0.0814377898769913,
+                "gain_interval": [
+                  -0.020074611816898593,
+                  0.18164851784633967
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.14367816091954017,
+                "days": 29,
+                "gain": -0.07471264367816094,
+                "gain_interval": [
+                  -0.23275862068965517,
+                  0.08045977011494249
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.3362068965517241,
+                "candidate_mean": 0.24712643678160917,
+                "days": 29,
+                "gain": -0.08908045977011493,
+                "gain_interval": [
+                  -0.16379310344827586,
+                  -0.017241379310344813
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.24712643678160962,
+                "days": 29,
+                "gain": 0.07456140350877195,
+                "gain_interval": [
+                  -0.04310344827586204,
+                  0.18950393224440415
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.2471264367816093,
+                "days": 29,
+                "gain": -0.08333333333333334,
+                "gain_interval": [
+                  -0.3103448275862069,
+                  0.14367816091954022
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.026560424966799667,
+                "candidate_mean": 0.017264276228419854,
+                "days": 251,
+                "gain": -0.009296148738379811,
+                "gain_interval": [
+                  -0.03452855245683931,
+                  0.010624169986719792
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.006932115592212185,
+                "candidate_mean": 0.017264276228419792,
+                "days": 251,
+                "gain": 0.010332160636207609,
+                "gain_interval": [
+                  -0.0031274123777792952,
+                  0.028629497604125424
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01859229747675961,
+                "candidate_mean": 0.01726427622841964,
+                "days": 251,
+                "gain": -0.001328021248339974,
+                "gain_interval": [
+                  -0.00664010624169987,
+                  0.0039840637450199185
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.023107569721115606,
+                "candidate_mean": 0.016733067729083735,
+                "days": 251,
+                "gain": -0.00637450199203187,
+                "gain_interval": [
+                  -0.027091633466135454,
+                  0.010358565737051805
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657091039,
+                "candidate_mean": 0.01673306772908377,
+                "days": 251,
+                "gain": 0.005563710071992729,
+                "gain_interval": [
+                  -0.004794855665059068,
+                  0.018431537009855323
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.01726427622841953,
+                "candidate_mean": 0.016733067729083537,
+                "days": 251,
+                "gain": -0.0005312084993359897,
+                "gain_interval": [
+                  -0.00398406374501992,
+                  0.002656042496679946
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.23275862068965492,
+                "candidate_mean": 0.22701149425287334,
+                "days": 29,
+                "gain": -0.005747126436781566,
+                "gain_interval": [
+                  -0.1954022988505746,
+                  0.18678160919540227
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.2270114942528742,
+                "days": 29,
+                "gain": 0.16477112321032478,
+                "gain_interval": [
+                  0.034523089332526805,
+                  0.2940814680379109
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.2270114942528735,
+                "days": 29,
+                "gain": 0.008620689655172414,
+                "gain_interval": [
+                  -0.05172413793103448,
+                  0.06896551724137931
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.3362068965517241,
+                "candidate_mean": 0.33045977011494254,
+                "days": 29,
+                "gain": -0.005747126436781558,
+                "gain_interval": [
+                  -0.2701149425287355,
+                  0.26149425287356326
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.33045977011494276,
+                "days": 29,
+                "gain": 0.1578947368421051,
+                "gain_interval": [
+                  -0.00877192982456153,
+                  0.32169540229885046
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.33045977011494265,
+                "days": 29,
+                "gain": 7.656710514656252e-18,
+                "gain_interval": [
+                  -0.05172413793103447,
+                  0.05172413793103448
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2021": {
+        "days": 250,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2022": {
+        "days": 249,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2023": {
+        "days": 249,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2024": {
+        "days": 250,
+        "days_with_a_pressure_day": 44,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.03733333333333334,
+              "recall": 0.303030303030303
+            },
+            "5": {
+              "precision": 0.051200000000000016,
+              "recall": 0.6250000000000001
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.04176557734204795,
+              "recall": 0.3038237769855418
+            },
+            "5": {
+              "precision": 0.03226535947712418,
+              "recall": 0.39382179639532566
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.016933333333333335,
+              "recall": 0.17500000000000002
+            },
+            "5": {
+              "precision": 0.0124,
+              "recall": 0.20454545454545456
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.022821052631578947,
+              "recall": 0.198225677830941
+            },
+            "5": {
+              "precision": 0.020605263157894745,
+              "recall": 0.28414074960127594
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.020533333333333334,
+              "recall": 0.16401515151515153
+            },
+            "5": {
+              "precision": 0.019066666666666673,
+              "recall": 0.2518939393939394
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.03733333333333344,
+                "candidate_mean": 0.016933333333333443,
+                "days": 250,
+                "gain": -0.020399999999999998,
+                "gain_interval": [
+                  -0.046999999999999986,
+                  0.00039999999999999856
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.041765577342047666,
+                "candidate_mean": 0.016933333333333064,
+                "days": 250,
+                "gain": -0.024832244008714602,
+                "gain_interval": [
+                  -0.06372014161220045,
+                  0.0031999999999999993
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333403,
+                "candidate_mean": 0.016933333333333404,
+                "days": 250,
+                "gain": -0.0035999999999999986,
+                "gain_interval": [
+                  -0.013999999999999997,
+                  0.005266666666666668
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.05119999999999947,
+                "candidate_mean": 0.012399999999999467,
+                "days": 250,
+                "gain": -0.0388,
+                "gain_interval": [
+                  -0.07840000000000001,
+                  -0.0071999999999999955
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.032265359477123945,
+                "candidate_mean": 0.012399999999999765,
+                "days": 250,
+                "gain": -0.01986535947712418,
+                "gain_interval": [
+                  -0.04757976470588235,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666343,
+                "candidate_mean": 0.012399999999999679,
+                "days": 250,
+                "gain": -0.0066666666666666645,
+                "gain_interval": [
+                  -0.016799999999999992,
+                  0.001200000000000001
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3030303030303032,
+                "candidate_mean": 0.17500000000000016,
+                "days": 44,
+                "gain": -0.12803030303030305,
+                "gain_interval": [
+                  -0.20795454545454548,
+                  -0.048087121212121456
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3038237769855415,
+                "candidate_mean": 0.17499999999999982,
+                "days": 44,
+                "gain": -0.1288237769855417,
+                "gain_interval": [
+                  -0.24044204297880775,
+                  -0.017779882154882166
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515111,
+                "candidate_mean": 0.1749999999999996,
+                "days": 44,
+                "gain": 0.010984848484848486,
+                "gain_interval": [
+                  -0.05454545454545456,
+                  0.07916666666666666
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.6249999999999998,
+                "candidate_mean": 0.20454545454545447,
+                "days": 44,
+                "gain": -0.4204545454545453,
+                "gain_interval": [
+                  -0.5075757575757573,
+                  -0.32954545454545453
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3938217963953261,
+                "candidate_mean": 0.20454545454545492,
+                "days": 44,
+                "gain": -0.1892763418498712,
+                "gain_interval": [
+                  -0.3077410130718954,
+                  -0.07124139681124973
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.25189393939393945,
+                "candidate_mean": 0.2045454545454546,
+                "days": 44,
+                "gain": -0.04734848484848484,
+                "gain_interval": [
+                  -0.11553030303030302,
+                  0.024621212121212113
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.03733333333333344,
+                "candidate_mean": 0.022821052631579058,
+                "days": 250,
+                "gain": -0.014512280701754383,
+                "gain_interval": [
+                  -0.03509228070175439,
+                  0.0032899999999999687
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.041765577342047666,
+                "candidate_mean": 0.022821052631578676,
+                "days": 250,
+                "gain": -0.01894452471046899,
+                "gain_interval": [
+                  -0.0466983671597294,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333403,
+                "candidate_mean": 0.022821052631579016,
+                "days": 250,
+                "gain": 0.002287719298245614,
+                "gain_interval": [
+                  -0.0019999999999999996,
+                  0.007996491228070174
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.05119999999999947,
+                "candidate_mean": 0.020605263157894196,
+                "days": 250,
+                "gain": -0.030594736842105272,
+                "gain_interval": [
+                  -0.060194210526315836,
+                  -0.005999999999999993
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.032265359477123945,
+                "candidate_mean": 0.020605263157894498,
+                "days": 250,
+                "gain": -0.011660096319229447,
+                "gain_interval": [
+                  -0.028902419676642588,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666343,
+                "candidate_mean": 0.02060526315789441,
+                "days": 250,
+                "gain": 0.0015385964912280699,
+                "gain_interval": [
+                  -0.0011947368421052636,
+                  0.004871929824561404
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3030303030303032,
+                "candidate_mean": 0.19822567783094114,
+                "days": 44,
+                "gain": -0.10480462519936208,
+                "gain_interval": [
+                  -0.1923046251993621,
+                  -0.014647129186603013
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3038237769855415,
+                "candidate_mean": 0.1982256778309408,
+                "days": 44,
+                "gain": -0.10559809915460071,
+                "gain_interval": [
+                  -0.1876123203135587,
+                  -0.023000841750841727
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515111,
+                "candidate_mean": 0.19822567783094058,
+                "days": 44,
+                "gain": 0.034210526315789476,
+                "gain_interval": [
+                  -0.012001594896331734,
+                  0.08496810207336523
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.6249999999999998,
+                "candidate_mean": 0.2841407496012757,
+                "days": 44,
+                "gain": -0.34085925039872406,
+                "gain_interval": [
+                  -0.41088516746411474,
+                  -0.2679425837320574
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3938217963953261,
+                "candidate_mean": 0.2841407496012763,
+                "days": 44,
+                "gain": -0.10968104679404983,
+                "gain_interval": [
+                  -0.1966362606977931,
+                  -0.021338383838383834
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.25189393939393945,
+                "candidate_mean": 0.284140749601276,
+                "days": 44,
+                "gain": 0.032246810207336524,
+                "gain_interval": [
+                  -0.007618122009569343,
+                  0.07580741626794259
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2025": {
+        "days": 229,
+        "days_with_a_pressure_day": 74,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.21542940320232898,
+              "recall": 0.43634136134136126
+            },
+            "5": {
+              "precision": 0.17205240174672498,
+              "recall": 0.570684720684721
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.15878571850610057,
+              "recall": 0.250248187122542
+            },
+            "5": {
+              "precision": 0.13338251066917228,
+              "recall": 0.316216235508031
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.09659665904207387,
+              "recall": 0.13352375852375847
+            },
+            "5": {
+              "precision": 0.09805226311776526,
+              "recall": 0.22883010383010374
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.12081513828238719,
+              "recall": 0.1933424308424308
+            },
+            "5": {
+              "precision": 0.1152838427947598,
+              "recall": 0.29986211236211224
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.11995850058077132,
+              "recall": 0.15262299972121401
+            },
+            "5": {
+              "precision": 0.11587633981738785,
+              "recall": 0.24909339217374923
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.21542940320232928,
+                "candidate_mean": 0.09659665904207422,
+                "days": 229,
+                "gain": -0.11883274416025506,
+                "gain_interval": [
+                  -0.2242205586747072,
+                  -0.029458653912802356
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.1587857185061008,
+                "candidate_mean": 0.0965966590420741,
+                "days": 229,
+                "gain": -0.06218905946402669,
+                "gain_interval": [
+                  -0.12791238999366444,
+                  -0.008569746318303182
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1199585005807714,
+                "candidate_mean": 0.09659665904207396,
+                "days": 229,
+                "gain": -0.02336184153869744,
+                "gain_interval": [
+                  -0.055946368446368466,
+                  0.002523799284170444
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.17205240174672454,
+                "candidate_mean": 0.09805226311776494,
+                "days": 229,
+                "gain": -0.0740001386289596,
+                "gain_interval": [
+                  -0.1418936715879948,
+                  -0.016593886462882113
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.13338251066917128,
+                "candidate_mean": 0.0980522631177643,
+                "days": 229,
+                "gain": -0.03533024755140699,
+                "gain_interval": [
+                  -0.07909722141748753,
+                  -0.0009214465492011617
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738721,
+                "candidate_mean": 0.09805226311776466,
+                "days": 229,
+                "gain": -0.017824076699622556,
+                "gain_interval": [
+                  -0.04293485226563829,
+                  0.0030263135093920755
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.4363413613413616,
+                "candidate_mean": 0.13352375852375897,
+                "days": 74,
+                "gain": -0.3028176028176026,
+                "gain_interval": [
+                  -0.47320529695529673,
+                  -0.14084888647388646
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.25024818712254193,
+                "candidate_mean": 0.13352375852375842,
+                "days": 74,
+                "gain": -0.11672442859878353,
+                "gain_interval": [
+                  -0.18133036559507143,
+                  -0.05517021907888777
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.1335237585237588,
+                "days": 74,
+                "gain": -0.019099241197455485,
+                "gain_interval": [
+                  -0.05341242613564042,
+                  0.017933267163177828
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5706847206847203,
+                "candidate_mean": 0.2288301038301035,
+                "days": 74,
+                "gain": -0.3418546168546168,
+                "gain_interval": [
+                  -0.5410508804258805,
+                  -0.1467361861111863
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.31621623550803146,
+                "candidate_mean": 0.2288301038301041,
+                "days": 74,
+                "gain": -0.08738613167792736,
+                "gain_interval": [
+                  -0.1517374820867468,
+                  -0.025034612625556955
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.228830103830104,
+                "days": 74,
+                "gain": -0.02026328834364548,
+                "gain_interval": [
+                  -0.06416136411672127,
+                  0.026510053362731868
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.21542940320232928,
+                "candidate_mean": 0.12081513828238753,
+                "days": 229,
+                "gain": -0.09461426491994175,
+                "gain_interval": [
+                  -0.1790393013100436,
+                  -0.023216885007279035
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.1587857185061008,
+                "candidate_mean": 0.12081513828238741,
+                "days": 229,
+                "gain": -0.037970580223713385,
+                "gain_interval": [
+                  -0.08517606481418892,
+                  0.0
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1199585005807714,
+                "candidate_mean": 0.12081513828238727,
+                "days": 229,
+                "gain": 0.0008566377016158668,
+                "gain_interval": [
+                  -0.023429886565803595,
+                  0.023043930939673284
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.17205240174672454,
+                "candidate_mean": 0.11528384279475948,
+                "days": 229,
+                "gain": -0.05676855895196506,
+                "gain_interval": [
+                  -0.11091703056768558,
+                  -0.009606986899563331
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.13338251066917128,
+                "candidate_mean": 0.11528384279475883,
+                "days": 229,
+                "gain": -0.01809866787441246,
+                "gain_interval": [
+                  -0.04895178104950706,
+                  0.005959414333418956
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738721,
+                "candidate_mean": 0.11528384279475917,
+                "days": 229,
+                "gain": -0.0005924970226280306,
+                "gain_interval": [
+                  -0.01806354089869374,
+                  0.01567577285644971
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.4363413613413616,
+                "candidate_mean": 0.19334243084243122,
+                "days": 74,
+                "gain": -0.24299893049893037,
+                "gain_interval": [
+                  -0.38413603288603276,
+                  -0.10762966762966754
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.25024818712254193,
+                "candidate_mean": 0.19334243084243063,
+                "days": 74,
+                "gain": -0.0569057562801113,
+                "gain_interval": [
+                  -0.1302851024726025,
+                  0.01508672923565849
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.19334243084243113,
+                "days": 74,
+                "gain": 0.04071943112121683,
+                "gain_interval": [
+                  -0.009655460336263876,
+                  0.09381297930405069
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5706847206847203,
+                "candidate_mean": 0.2998621123621121,
+                "days": 74,
+                "gain": -0.27082260832260824,
+                "gain_interval": [
+                  -0.44632446382446384,
+                  -0.10557161869661855
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.31621623550803146,
+                "candidate_mean": 0.29986211236211263,
+                "days": 74,
+                "gain": -0.01635412314591883,
+                "gain_interval": [
+                  -0.0946697850267897,
+                  0.0671579906603125
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.2998621123621125,
+                "days": 74,
+                "gain": 0.050768720188363016,
+                "gain_interval": [
+                  -0.014919779596118864,
+                  0.12083847030275595
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

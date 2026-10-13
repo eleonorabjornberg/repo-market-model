@@ -291,6 +291,17 @@ def render(r: dict) -> str:
             lines.append(f"| {label} | {entry['days']} | {entry['days_with_a_pressure_day']} | "
                          f"{pct(means['model_prob']['5']['precision'])} | {pct(means['calendar']['5']['precision'])} | "
                          f"{gain_text(cell['calendar'])} | {gain_text(cell['climatology'])} | {gain_text(cell['persistence'])} |")
+    lines += [
+        "", "## Reading", "",
+        "- The model reads no calendar: its 20 scores are the reverted deviation of the last spread plus lead-specific residual quantiles, "
+        "so within a window its ranking follows the lead, and it cannot place a quarter-end, a tax date or a coupon settlement "
+        "above a quiet day. The calendar benchmark and the climatology by day type can; that is the comparison the kill rule is stated against.",
+        "- The calendar benchmark breaks its ties by date (the earliest first), as declared; the other rankers break ties by their expected value.",
+        "- A window with no pressure day scores zero precision for every ranker, so years with none (2021-23) add decision days and no information; "
+        "recall is taken on the windows that have one.",
+        "- The risk-date definition is `pressure_judge._scheduled_risk_date`; #682 (one shared definition) had not merged.",
+        "- Development data only, nothing registered, no published figure moves.", "",
+    ]
     lines += ["", f"Phi across refits: {r['fit']['phi']['min']:.2f} to {r['fit']['phi']['max']:.2f}, median {r['fit']['phi']['median']:.2f}.", ""]
     return "\n".join(lines)
 
