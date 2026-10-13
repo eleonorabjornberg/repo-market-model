@@ -5,9 +5,12 @@ What is covered:
 * `StatisticsTests` -- the AUROC, the Brier score, the interval and the blocks, to hand-worked values.
 * `EmbargoTests` -- the walk-forward's training set holds only rows public at the block's first decision instant, and a row after it is a
   `LookAheadError`.
+* `CrossFitEmbargoTests` -- the cross-fitted ceiling (deviation 1 of the declaration): a block is scored by a fit that holds no row of the block and no
+  row inside the embargo before it (the walk-forward's) or after it (its mirror); a row inside it is a `LookAheadError`.
 * `DeclarationTests` -- `metadata/upper_bound_635.json` is committed, the script writes it unchanged, it lists the inputs, key columns, settings
   and the reading rule the script uses, and it reads no day after 2025-12-31.
-* `ReadingTests` -- the pre-registered reading maps the three cases of the issue to their verdicts.
+* `ReadingTests` -- the pre-registered reading maps the three cases of the issue to their verdicts; the indicator is read against persistence-logistic
+  (deviation 2) and the 0.6 line is a secondary reading that decides nothing.
 * `RunTests` -- `fit` refuses a panel past 2025-12-31.
 
 **Recorded mutations** (disposable copy of the tree, `/opt/rmm-venv`, `PYTHONDONTWRITEBYTECODE=1`, the killing test run alone, each confirmed
@@ -24,6 +27,14 @@ applied by `grep` and restored before the next):
 4. `fit_command`: the line `if rows[-1].date > date.fromisoformat(LAST_DAY):` -> `if False:`, so a panel that runs into the locked tiers is
    accepted. `RunTests.test_a_panel_past_the_last_day_is_refused` errors with `ValueError: the row carries no 'days_to_month_end'` (the run goes
    on to read the panel instead of exiting).
+5. `require_crossfit_embargo`: the line `if position >= stop and anchors[position] < label_rows[stop - 1]:` -> `... < label_rows[stop - 1] - 5:`, so a
+   row that reads up to five rows before the block's last scored row passes the guard. `CrossFitEmbargoTests.test_a_row_inside_the_embargo_is_refused`
+   fails with `AssertionError: LookAheadError not raised` (subtest `chosen=[5]`).
+6. `require_crossfit_embargo`: the line `if position < start and label_rows[position] > anchors[start]:` -> `... > anchors[start] + 5:`, so a row that labels
+   a panel row up to five rows after the block's first anchor passes the guard. The same test fails with `AssertionError: LookAheadError not raised`.
+7. `crossfit_positions`: the line `after = [p for p in range(stop, len(label_rows)) if anchors[p] >= label_rows[stop - 1]]` -> `... >= label_rows[stop - 1] - 5]`,
+   so the selection takes rows inside the embargo. `CrossFitEmbargoTests.test_the_training_set_is_the_rows_public_before_the_block_and_the_rows_that_start_after_it`
+   errors with `LookAheadError` (the guard behind the selection stops it).
 """
 
 from __future__ import annotations
@@ -97,27 +108,28 @@ class EmbargoTests(unittest.TestCase):
 class CrossFitEmbargoTests(unittest.TestCase):
     """The cross-fitted ceiling (deviation 1): a block is scored by a fit on the other blocks, less the embargo before and after it."""
 
-    #: eight scored days at lead 1: the label row of position p is 10 + p, the last public row at its decision instant is one row earlier
+    #: eight scored days: the label row of position p is 10 + p; at lead 1 the last public row at its decision instant is one row earlier, at lead 3 three
     LABELS = [10, 11, 12, 13, 14, 15, 16, 17]
-    ANCHORS = [9, 10, 11, 12, 13, 14, 15, 16]
+    LEAD1 = [9, 10, 11, 12, 13, 14, 15, 16]
+    LEAD3 = [7, 8, 9, 10, 11, 12, 13, 14]
 
     def test_the_training_set_is_the_rows_public_before_the_block_and_the_rows_that_start_after_it(self):
-        # the block holds positions 3 and 4 (label rows 13, 14); before it, label rows up to the block's first anchor (12); after it, rows whose own
-        # anchor is at or after the block's last label row (14)
-        self.assertEqual(script.crossfit_positions(self.LABELS, self.ANCHORS, 3, 5), [0, 1, 2, 5, 6, 7])
+        # the block holds positions 3 and 4 (label rows 13, 14). Before it: label rows up to the block's first anchor (12 at lead 1, 10 at lead 3).
+        # After it: rows whose own anchor is at or after the block's last label row (14).
+        self.assertEqual(script.crossfit_positions(self.LABELS, self.LEAD1, 3, 5), [0, 1, 2, 5, 6, 7])
+        self.assertEqual(script.crossfit_positions(self.LABELS, self.LEAD3, 3, 5), [0, 7])
 
     def test_the_first_block_has_no_rows_before_it_and_the_last_none_after_it(self):
-        self.assertEqual(script.crossfit_positions(self.LABELS, self.ANCHORS, 0, 2), [4, 5, 6, 7])
-        self.assertEqual(script.crossfit_positions(self.LABELS, self.ANCHORS, 6, 8), [0, 1, 2, 3, 4])
+        self.assertEqual(script.crossfit_positions(self.LABELS, self.LEAD1, 0, 2), [2, 3, 4, 5, 6, 7])
+        self.assertEqual(script.crossfit_positions(self.LABELS, self.LEAD1, 6, 8), [0, 1, 2, 3, 4, 5])
 
     def test_a_row_inside_the_embargo_is_refused(self):
-        # before the block: a label row after the block's first anchor; after the block: an anchor before the block's last label row; in the block
-        for chosen in ([3], [4], [5], [0, 1, 2, 5, 6, 7, 3]):
+        # lead 3, block (3, 5): position 1 labels row 11, after the block's first anchor (10); position 5 reads up to row 12, before the block's last
+        # label row (14); positions 3 and 4 are the block itself
+        for chosen in ([1], [5], [3], [4], [0, 7, 3]):
             with self.subTest(chosen=chosen), self.assertRaises(LookAheadError):
-                script.require_crossfit_embargo(self.LABELS, self.ANCHORS, chosen, 3, 5)
-        script.require_crossfit_embargo(self.LABELS, self.ANCHORS, [0, 1, 2], 3, 5)
-        with self.assertRaises(LookAheadError):
-            script.require_crossfit_embargo(self.LABELS, self.ANCHORS, [0, 1, 2, 6, 7], 3, 6)
+                script.require_crossfit_embargo(self.LABELS, self.LEAD3, chosen, 3, 5)
+        script.require_crossfit_embargo(self.LABELS, self.LEAD3, [0, 7], 3, 5)
 
 
 class DeclarationTests(unittest.TestCase):

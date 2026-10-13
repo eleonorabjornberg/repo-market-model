@@ -18,12 +18,14 @@ day of a locked tier is read (`docs/decisions/lockbox.md`; `require_unlocked`).
 * **Targets.** (1) `spread_bps` at the scored day, as a 23-level quantile law (the grid of protocol v1), led 1 to 5 business days. (2) the +5 bp
   indicator (strictly above on whole basis points, `repo_model.data.exceeds_bp`) on ordinary days, the days the risk-date part does not serve.
 * **Fits.** Two families on the same inputs: gradient-boosted (quantile regression, and a classifier) and regularised linear with declared pairwise
-  interactions (a ridge location-scale law, and an L2 logistic regression). (i) the **ceiling** is fitted on every scored day and scored on the
-  same days, with the generous settings; (ii) the **reachable** line is refitted every 21 scored days on the rows public at the block's first
-  decision instant, with the project's settings, and scored on the days after.
+  interactions (a ridge location-scale law, and an L2 logistic regression). (i) the **ceiling** is cross-fitted (deviation 1 of the declaration, Eleonora's
+  ruling of 13 October 2026 on #703): the walk-forward's blocks of 21 scored days, each scored by a fit on the other blocks less the embargo before and
+  after it (`crossfit_positions`), with the generous settings; the first declaration's in-sample fit is kept as **memorised**, reported and labelled,
+  with no reading. (ii) the **reachable** line is refitted every 21 scored days on the rows public at the block's first decision instant, with the
+  project's settings, and scored on the days after.
 * **Scores.** The spread: grid CRPS averaged over leads 1 to 5 per decision day (`scoring_protocol`), against B1 (as-of persistence) and B2 (calendar
   climatology) (`protocol_benchmarks`), the paired stationary bootstrap of protocol v1. Ordinary days: AUROC and Brier skill against walk-forward
-  (in-sample, for the ceiling) climatology and a persistence-logistic model.
+  climatology and a persistence-logistic model; the headline is read against persistence-logistic (deviation 2).
 """
 
 from __future__ import annotations
@@ -81,6 +83,8 @@ KEY_COLUMNS = (
 SPREAD_ASOF = "spread_asof"
 MODELS = ("gbm", "ridge")
 FITS = ("reachable", "ceiling")
+#: the fits that are scored: the ceiling is cross-fitted (deviation 1); `memorised` is the first declaration's in-sample ceiling, reported beside it
+ALL_FITS = FITS + ("memorised",)
 
 
 def _load(name: str):
@@ -264,6 +268,39 @@ def training_positions(label_rows: Sequence[int], anchor_row: int) -> List[int]:
     return chosen
 
 
+def require_crossfit_embargo(label_rows: Sequence[int], anchors: Sequence[int], chosen: Sequence[int], start: int, stop: int) -> None:
+    """Refuse a cross-fit training set that holds a row of the block or a row inside its embargo.
+
+    Before the block the embargo is the walk-forward's: the row's scored row is at or before the last public row of the block's first decision
+    instant. After it, the mirror: the row's own last public row is at or after the block's last scored row.
+    """
+
+    from repo_model.splits import LookAheadError
+
+    for position in chosen:
+        if start <= position < stop:
+            raise LookAheadError(f"the training row at position {position} is in the scored block [{start}, {stop})")
+        if position < start and label_rows[position] > anchors[start]:
+            raise LookAheadError(
+                f"the training row at position {position} labels panel row {label_rows[position]}, after row {anchors[start]}, "
+                "the last row public at the block's first decision instant"
+            )
+        if position >= stop and anchors[position] < label_rows[stop - 1]:
+            raise LookAheadError(
+                f"the training row at position {position} reads up to panel row {anchors[position]}, before row {label_rows[stop - 1]}, the block's last scored row"
+            )
+
+
+def crossfit_positions(label_rows: Sequence[int], anchors: Sequence[int], start: int, stop: int) -> List[int]:
+    """Positions of the scored days outside the block `[start, stop)` and outside its embargo, in order, checked."""
+
+    before = [p for p in range(start) if label_rows[p] <= anchors[start]]
+    after = [p for p in range(stop, len(label_rows)) if anchors[p] >= label_rows[stop - 1]]
+    chosen = before + after
+    require_crossfit_embargo(label_rows, anchors, chosen, start, stop)
+    return chosen
+
+
 def blocks(count: int, every: int = REFIT_EVERY) -> List[Tuple[int, int]]:
     """Half-open runs of `every` scored positions, the last one short."""
 
@@ -372,12 +409,17 @@ def _fit_task(task):
     state = _STATE
     x_all, y, valid, ordinary, label, rows_of, anchor = (state[k] for k in ("x", "y", "valid", "ordinary", "label", "rows", "anchors"))
     x_lead, anchor_lead = x_all[lead], anchor[lead]
-    settings = ml.UPPER_BOUND_SETTINGS[fit]
+    settings = ml.UPPER_BOUND_SETTINGS["reachable" if fit == "reachable" else "ceiling"]
     key_index = state["key_index"]
     asof_index = state["asof_index"]
-    if fit == "ceiling":
+    if fit == "memorised":
         train = [p for p in range(len(y)) if valid[p]]
         serve = list(train)
+    elif fit == "ceiling":
+        train = [p for p in crossfit_positions(rows_of, anchor_lead, start, stop) if valid[p]]
+        serve = [p for p in range(start, stop) if valid[p]]
+        if len(train) < MINIMUM_TRAIN or not serve:
+            return task, None
     else:
         trainable = training_positions(rows_of, anchor_lead[start])
         train = [p for p in trainable if valid[p]]
@@ -440,9 +482,9 @@ def fit_command(args) -> int:
         key_index=[inputs.index(name) for name in KEY_COLUMNS],
         asof_index=inputs.index(SPREAD_ASOF),
     )
-    tasks = [("ceiling", lead, 0, len(scored)) for lead in LEADS]
+    tasks = [("memorised", lead, 0, len(scored)) for lead in LEADS]
     for lead in LEADS:
-        tasks += [("reachable", lead, a, b) for a, b in blocks(len(scored))]
+        tasks += [(fit, lead, a, b) for fit in ("reachable", "ceiling") for a, b in blocks(len(scored))]
     results = []
     with multiprocessing.get_context("fork").Pool(args.workers) as pool:
         for done, (task, result) in enumerate(pool.imap_unordered(_fit_task, tasks, chunksize=1), 1):
@@ -508,9 +550,9 @@ def mean_of(values: Sequence[Optional[float]]) -> Optional[float]:
 def unpack(fits: Mapping) -> dict:
     """The fit tasks as `forecast[fit][model][lead][position]` quantiles and `prob[fit][model][lead][position]` probabilities."""
 
-    forecast = {f: {m: {h: {} for h in LEADS} for m in MODELS} for f in FITS}
-    prob = {f: {m: {h: {} for h in LEADS} for m in MODELS + ("persistence_logistic", "climatology")} for f in FITS}
-    train_rows: Dict[str, Dict[int, list]] = {f: {h: [] for h in LEADS} for f in FITS}
+    forecast = {f: {m: {h: {} for h in LEADS} for m in MODELS} for f in ALL_FITS}
+    prob = {f: {m: {h: {} for h in LEADS} for m in MODELS + ("persistence_logistic", "climatology")} for f in ALL_FITS}
+    train_rows: Dict[str, Dict[int, list]] = {f: {h: [] for h in LEADS} for f in ALL_FITS}
     for task in fits["tasks"]:
         result = task["result"]
         if result is None:
@@ -584,9 +626,9 @@ def score_command(args) -> int:
     document = {"declaration_sha256": hashlib.sha256(DECLARATION.read_bytes()).hexdigest(), "fits_panel_sha256": fits["panel_sha256"]}
 
     # -- the spread -----------------------------------------------------------------------------------------------
-    models = {(f, m): decision_forecasts(data["forecast"][f][m], scored_rows, dates) for f in FITS for m in MODELS}
+    models = {(f, m): decision_forecasts(data["forecast"][f][m], scored_rows, dates) for f in ALL_FITS for m in MODELS}
     walk_days = sorted(set(models[("reachable", "gbm")]) & set(models[("reachable", "ridge")]))
-    full_days = sorted(set(models[("ceiling", "gbm")]) & set(models[("ceiling", "ridge")]))
+    full_days = sorted(set(models[("ceiling", "gbm")]) & set(models[("ceiling", "ridge")]) & set(models[("memorised", "gbm")]) & set(models[("memorised", "ridge")]))
     if not set(walk_days) <= set(full_days):
         raise SystemExit("a walk-forward decision day has no ceiling forecast")
     b1 = pb.forecasts(pb.b1_forecast, panel, full_days, registry=registry, decision_time=time(*DECISION_TIME))
@@ -638,12 +680,12 @@ def score_command(args) -> int:
         "walk": {
             "B1": restrict(b1, walk_days),
             "B2": restrict(b2, walk_days),
-            **{f"{f} {m}": restrict(models[(f, m)], walk_days) for f in FITS for m in MODELS},
+            **{f"{f} {m}": restrict(models[(f, m)], walk_days) for f in ALL_FITS for m in MODELS},
         },
         "full": {
             "B1": b1,
             "B2": b2,
-            **{f"ceiling {m}": models[("ceiling", m)] for m in MODELS},
+            **{f"{f} {m}": models[(f, m)] for f in ("ceiling", "memorised") for m in MODELS},
         },
     }
     spread_doc: Dict[str, dict] = {}
@@ -665,13 +707,14 @@ def score_command(args) -> int:
                 pairs, keys = [], []
                 for bench in ("B1", "B2"):
                     for key in scores:
-                        if key.startswith(("reachable", "ceiling")):
+                        if key.startswith(("reachable", "ceiling", "memorised")):
                             pairs.append((scores[bench], scores[key]))
                             keys.append((bench, key))
                 if window == "walk":
                     for m in MODELS:
-                        pairs.append((scores[f"reachable {m}"], scores[f"ceiling {m}"]))
-                        keys.append((f"reachable {m}", f"ceiling {m}"))
+                        for upper in ("ceiling", "memorised"):
+                            pairs.append((scores[f"reachable {m}"], scores[f"{upper} {m}"]))
+                            keys.append((f"reachable {m}", f"{upper} {m}"))
                 draws = PROTOCOL_DRAWS if name in ("all", "ordinary") and kind == "crps" else SPLIT_DRAWS
                 tests = sp.paired_tests(pairs, seed=SEED, draws=draws)
                 cell = {"n": len(days), "draws": draws, "means": {k: sum(v.values()) / len(v) for k, v in scores.items()}, "tests": {}}
@@ -697,7 +740,7 @@ def score_command(args) -> int:
             keep = {k: {d: v[d] for d in days} for k, v in keep.items()}
             pairs, keys = [], []
             for key in keep:
-                if key.startswith(("reachable", "ceiling")):
+                if key.startswith(("reachable", "ceiling", "memorised")):
                     pairs.append((keep["B1"], keep[key]))
                     keys.append(key)
             tests = sp.paired_tests(pairs, seed=SEED, draws=SPLIT_DRAWS)
@@ -732,6 +775,8 @@ def indicator_document(fits, data, ordinary, label, regimes, splits) -> dict:
         ("reachable", "walk"): {h: set(prob["reachable"]["gbm"][h]) for h in LEADS},
         ("ceiling", "walk"): {h: set(prob["reachable"]["gbm"][h]) for h in LEADS},
         ("ceiling", "full"): {h: set(prob["ceiling"]["gbm"][h]) for h in LEADS},
+        ("memorised", "walk"): {h: set(prob["reachable"]["gbm"][h]) for h in LEADS},
+        ("memorised", "full"): {h: set(prob["memorised"]["gbm"][h]) for h in LEADS},
     }
     rng = random.Random(SEED)
     draws = [stationary_bootstrap_indices(n, BLOCK, rng) for _ in range(RESAMPLES)]
@@ -765,7 +810,7 @@ def indicator_document(fits, data, ordinary, label, regimes, splits) -> dict:
     identity = list(range(n))
     for (fit, window) in window_positions:
         for split_name, mask_by_lead in mask_sets.items():
-            if window == "full" and split_name != "ordinary, pooled":
+            if (window == "full" or fit == "memorised") and split_name != "ordinary, pooled":
                 continue
             point = {row: metrics_for(fit, window, row, identity, mask_by_lead) for row in INDICATOR_ROWS}
             sample = {row: [] for row in INDICATOR_ROWS}
@@ -823,7 +868,7 @@ def indicator_document(fits, data, ordinary, label, regimes, splits) -> dict:
 
 
 def reading(document: Mapping) -> dict:
-    """The pre-registered reading applied to the numbers (`READING_RULE`); every quantity it uses is in the document."""
+    """The pre-registered reading applied to the numbers (`READING_RULE`, as amended by the deviations); every quantity it uses is in the document."""
 
     spread = document["spread"]
     walk_ord = spread["walk"]["ordinary"]["crps"]
@@ -834,13 +879,20 @@ def reading(document: Mapping) -> dict:
         model = max(rows, key=lambda m: rows[m]["skill"])
         return model, rows[model]
 
+    windows = {
+        "ceiling": "all scored days, cross-fitted",
+        "reachable": "walk-forward days",
+        "memorised": "all scored days, in-sample (memorising; reported, no reading)",
+    }
     out: Dict[str, dict] = {"spread": {}, "indicator": {}}
-    for fit, cell in (("ceiling", full_ord), ("reachable", walk_ord)):
+    for fit, cell in (("ceiling", full_ord), ("reachable", walk_ord), ("memorised", full_ord)):
+        if f"B1 -> {fit} gbm" not in cell["tests"]:
+            continue
         model, row = best(cell, fit)
         low, high = row["skill_interval_90"]
         out["spread"][fit] = {
             "model": model,
-            "window": "all in-sample scored days" if fit == "ceiling" else "walk-forward days",
+            "window": windows[fit],
             "skill": row["skill"],
             "interval_90": [low, high],
             "barely_above": bool(low <= 0.0),
@@ -850,19 +902,32 @@ def reading(document: Mapping) -> dict:
     for m in MODELS:
         gap[m] = walk_ord["tests"][f"reachable {m} -> ceiling {m}"]
     out["spread"]["gap"] = gap
+    out["spread"]["gap_memorised"] = {m: walk_ord["tests"][f"reachable {m} -> memorised {m}"] for m in MODELS if f"reachable {m} -> memorised {m}" in walk_ord["tests"]}
     cells = document["indicator"]["cells"]
-    for fit, window in (("ceiling", "full"), ("reachable", "walk")):
+    for fit, window in (("ceiling", "full"), ("reachable", "walk"), ("memorised", "full")):
+        if f"{fit} | {window} | ordinary, pooled" not in cells:
+            continue
         cell = cells[f"{fit} | {window} | ordinary, pooled"]
         rows = {m: cell[m] for m in ("gbm", "ridge")}
         model = max(rows, key=lambda m: rows[m]["auroc"] if rows[m]["auroc"] is not None else -1.0)
         value = rows[model]["auroc"]
+        diff = rows[model].get("auroc_minus_persistence_logistic") or {}
+        brier_skill = rows[model].get("brier_skill_vs_persistence_logistic") or {}
+        diff_interval, brier_interval = diff.get("interval_90"), brier_skill.get("interval_90")
         out["indicator"][fit] = {
             "model": model,
-            "window": "all in-sample ordinary days" if fit == "ceiling" else "walk-forward ordinary days",
+            "window": windows[fit],
             "auroc": value,
             "interval_90": rows[model]["auroc_interval_90"],
             "persistence_logistic_auroc": cell["persistence_logistic"]["auroc"],
-            "barely_above": bool(value is None or value < AUROC_LINE),
+            "auroc_minus_persistence_logistic": diff.get("value"),
+            "auroc_difference_interval_90": diff_interval,
+            "brier_skill_vs_persistence_logistic": brier_skill.get("value"),
+            "brier_skill_interval_90": brier_interval,
+            # the headline (deviation 2): barely above persistence-logistic unless both intervals lie above 0 (an unformed interval is not above 0)
+            "barely_above": bool(not diff_interval or diff_interval[0] <= 0.0 or not brier_interval or brier_interval[0] <= 0.0),
+            # the issue's own line, reported beside the headline and deciding nothing
+            "secondary_barely_above": bool(value is None or value < AUROC_LINE),
         }
 
     def verdict(target: Mapping) -> str:
@@ -902,7 +967,7 @@ def report_command(args) -> int:
         "# Upper-bound study: tables (#635)",
         "",
         f"Scored days {scope['scored_days']} (2018-06-29 to 2025-12-31), of which ordinary {scope['ordinary_scored_days']}; ordinary pressure days {scope['pressure_days_ordinary']} of {scope['pressure_days_all']}.",
-        f"Decision days with all five leads: {scope['decision_days_full']} in the ceiling window, {scope['decision_days_walk_forward']} on the walk-forward days (first {scope['first_walk_forward_decision_day']}).",
+        f"Decision days with all five leads: {scope['decision_days_full']} in the ceiling window (cross-fitted ceiling; `memorised` is the first declaration's in-sample fit), {scope['decision_days_walk_forward']} on the walk-forward days (first {scope['first_walk_forward_decision_day']}).",
         "",
     ]
 
@@ -926,8 +991,8 @@ def report_command(args) -> int:
     lines += spread_table("Walk-forward days, ordinary days (the primary cell)", "walk", "ordinary")
     lines += spread_table("Walk-forward days, all days", "walk", "all")
     lines += spread_table("Walk-forward days, risk dates", "walk", "risk dates")
-    lines += spread_table("Ceiling window (all in-sample scored days), ordinary days", "full", "ordinary")
-    lines += spread_table("Ceiling window (all in-sample scored days), all days", "full", "all")
+    lines += spread_table("Ceiling window (all scored days; ceiling cross-fitted, memorised in-sample), ordinary days", "full", "ordinary")
+    lines += spread_table("Ceiling window (all scored days; ceiling cross-fitted, memorised in-sample), all days", "full", "all")
     lines += ["## Splits (walk-forward days; grid CRPS, 2000 draws)", ""]
     for name in spread["walk"]:
         if name.startswith(("regime", "day type")):
@@ -965,12 +1030,19 @@ def report_command(args) -> int:
     reading_ = document["reading"]
     lines += ["", "## The reading", ""]
     for target in ("spread", "indicator"):
-        for fit in ("ceiling", "reachable"):
+        for fit in ("ceiling", "reachable", "memorised"):
+            if fit not in reading_[target]:
+                continue
             r = reading_[target][fit]
+            decides = "" if fit != "memorised" else " Reported only: it carries no reading."
             if target == "spread":
-                lines.append(f"* {target}, {fit} ({r['window']}, {r['model']}): skill against B1 {_f(r['skill'], 3, True)} {_iv(r['interval_90'])}; barely above: {'yes' if r['barely_above'] else 'no'}.")
+                lines.append(f"* {target}, {fit} ({r['window']}, {r['model']}): skill against B1 {_f(r['skill'], 3, True)} {_iv(r['interval_90'])}; barely above: {'yes' if r['barely_above'] else 'no'}.{decides}")
             else:
-                lines.append(f"* {target}, {fit} ({r['window']}, {r['model']}): AUROC {_f(r['auroc'])} {_iv(r['interval_90']).replace('+', '')} (persistence-logistic {_f(r['persistence_logistic_auroc'])}); barely above: {'yes' if r['barely_above'] else 'no'}.")
+                lines.append(
+                    f"* {target}, {fit} ({r['window']}, {r['model']}): AUROC minus persistence-logistic {_f(r['auroc_minus_persistence_logistic'], 3, True)} {_iv(r['auroc_difference_interval_90'])}, "
+                    f"Brier skill against persistence-logistic {_f(r['brier_skill_vs_persistence_logistic'], 3, True)} {_iv(r['brier_skill_interval_90'])}; barely above: {'yes' if r['barely_above'] else 'no'}. "
+                    f"Secondary: AUROC {_f(r['auroc'])} {_iv(r['interval_90']).replace('+', '')} (persistence-logistic {_f(r['persistence_logistic_auroc'])}), under the 0.6 line: {'yes' if r['secondary_barely_above'] else 'no'}.{decides}"
+                )
         lines.append(f"* {target} verdict: **{reading_[target]['verdict']}**.")
     lines += ["", f"**{reading_['line']}**", ""]
     args.output.write_text("\n".join(lines) + "\n", encoding="utf-8")
