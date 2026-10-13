@@ -14346,6 +14346,15 @@ class UpperBoundModelTests(unittest.TestCase):
             self.assertEqual(len(row), len(self.LEVELS))
             self.assertEqual(list(row), sorted(row))
 
+    def test_a_column_that_is_missing_in_every_training_row_is_ignored(self):
+        xs, ys = self._data()
+        xs = [(row[0], row[1], None) for row in xs]
+        served = [(0.5, 0.0, 1.0)]
+        settings = ml.UPPER_BOUND_SETTINGS["reachable"]["gbm"]
+        self.assertEqual(len(ml.grid_quantiles_gbm(xs, ys, served, self.LEVELS, settings)[0]), len(self.LEVELS))
+        labels = [1 if y > 1.5 else 0 for y in ys]
+        self.assertEqual(len(ml.gbm_probabilities(xs, labels, served, settings)), 1)
+
     def test_ridge_quantiles_are_sorted_and_centre_on_the_signal(self):
         xs, ys = self._data()
         served = [(1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)]

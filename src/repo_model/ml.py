@@ -10277,6 +10277,15 @@ def _upper_bound_matrix(rows: Sequence[Sequence[Optional[float]]], width: Option
     return out
 
 
+def _observed_columns(train: Any, served: Any) -> Tuple[Any, Any]:
+    """The columns with at least one training value: the estimator's binning fails on a column that is missing in every row."""
+
+    import numpy
+
+    keep = ~numpy.isnan(train).all(axis=0)
+    return train[:, keep], served[:, keep]
+
+
 def _check_levels(levels: Sequence[float]) -> None:
     if not levels or any(not 0.0 < float(a) < 1.0 for a in levels) or list(levels) != sorted(levels):
         raise ValueError(f"quantile levels are ascending and inside (0, 1), got {list(levels)}")
@@ -10304,6 +10313,7 @@ def grid_quantiles_gbm(
         raise ValueError(f"{len(xs)} training rows but {len(ys)} labels")
     x = _upper_bound_matrix(xs, None, "training rows")
     z = _upper_bound_matrix(zs, x.shape[1], "served rows")
+    x, z = _observed_columns(x, z)
     y = numpy.asarray(ys, dtype=float)
     columns = []
     for level in levels:
@@ -10433,6 +10443,7 @@ def gbm_probabilities(
     y = numpy.asarray(labels, dtype=int)
     if len(set(y.tolist())) < 2:
         return [float(y[0])] * len(zs)
+    x, z = _observed_columns(x, z)
     model = HistGradientBoostingClassifier(
         learning_rate=settings["learning_rate"],
         max_iter=settings["max_iter"],
