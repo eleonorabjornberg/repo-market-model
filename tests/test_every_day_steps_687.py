@@ -221,5 +221,27 @@ class LostDaysTests(unittest.TestCase):
             SCRIPT.lost_pressure_days([1], [0.1, 0.2], [0.1], [0.1])
 
 
+class ReportTests(unittest.TestCase):
+    CELL = {"pressure_days": 5, "auroc": 0.8, "brier_skill": 0.1, "slope": 1.0, "pressure_days_on_zero": 2,
+            "intervals": {"auroc": {"lower": 0.7, "upper": 0.9}, "brier_skill": {"lower": 0.0, "upper": 0.2}}}
+
+    def test_the_ladder_prints_a_row_with_its_interval_and_a_missing_cell_is_left_out(self):
+        document = {"rows": {"r": {"1": {"cells": {"all": self.CELL}}, "2": {"cells": {}}}}}
+        text = SCRIPT.ladder_markdown(document)
+        self.assertIn("| `r` | 1 | 5 | 0.800 [0.700, 0.900] | 0.100 [0.000, 0.200] | 1.000 | 2 |", text)
+        self.assertNotIn("| `r` | 2 |", text)
+
+    def test_the_paired_table_signs_the_difference(self):
+        pair = {"auroc": {"difference": -0.1, "lower": -0.2, "upper": 0.0}, "brier_skill": None}
+        document = {"rows": {"r": {"1": {"cells": {"all": self.CELL}, "paired_with_ref": {"all": pair}}}, "ref": {"1": {"cells": {"all": self.CELL}}}}}
+        text = SCRIPT.paired_ladder_markdown(document)
+        self.assertIn("-0.100 [-0.200, +0.000]", text)
+        self.assertIn("Reference: `ref`", text)
+
+    def test_the_block_table_shows_an_undefined_difference_as_a_dash(self):
+        entry = dict(blocks=3, pooled_auroc=None, within_block_auroc=None, difference=None, lower=None, upper=None)
+        self.assertIn("| – | – | – |", SCRIPT.blocks_markdown({"rows": {"r": {"1": entry}}}))
+
+
 if __name__ == "__main__":
     unittest.main()

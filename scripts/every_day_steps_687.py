@@ -495,6 +495,98 @@ def losses_command(args) -> int:
     return 0
 
 
+# -- report: the tables of the result page -----------------------------------------------------------------
+
+
+def _fmt(x, digits=3):
+    return "–" if x is None else f"{x:.{digits}f}"
+
+
+def ladder_markdown(document: Mapping, cell: str = "all") -> str:
+    """Per row and lead: the ordinary-day AUROC and the Brier skill against the walk-forward climatology, each with its 90% interval, in `cell`."""
+
+    out = [
+        f"Ordinary-day AUROC [90%] and Brier skill against the walk-forward climatology [90%], cell `{cell}`.", "",
+        "| row | lead | pressure days | AUROC [90%] | Brier skill [90%] | slope | pressure days on a forecast of 0 |", "|---|---|---|---|---|---|---|",
+    ]
+    for name, by_lead in document["rows"].items():
+        for h, entry in by_lead.items():
+            c = entry["cells"].get(cell)
+            if c is None:
+                continue
+            iv = c["intervals"]
+            out.append(
+                f"| `{name}` | {h} | {c['pressure_days']} | {odr._iv(c['auroc'], iv.get('auroc'))} | {odr._iv(c['brier_skill'], iv.get('brier_skill'))} "
+                f"| {_fmt(c['slope'])} | {c['pressure_days_on_zero']} |"
+            )
+    return "\n".join(out) + "\n"
+
+
+def paired_ladder_markdown(document: Mapping, cells: Sequence[str] = ("all", "regime 2018-19", "regime 2025-26")) -> str:
+    """Per row, lead and cell: the row less the reference it is paired with, for the AUROC and the Brier skill, with the 90% interval (positive favours the row)."""
+
+    out: List[str] = []
+    for name, by_lead in document["rows"].items():
+        key = _paired_key_of(by_lead)
+        if key is None:
+            continue
+        reference = key[len("paired_with_"):]
+        out += [f"Reference: `{reference}`. Positive favours the row.", "",
+                "| row | cell | lead | pressure days | AUROC difference [90%] | Brier skill difference [90%] |", "|---|---|---|---|---|---|"]
+        break
+    for name, by_lead in document["rows"].items():
+        key = _paired_key_of(by_lead)
+        if key is None:
+            continue
+        for cell in cells:
+            for h, entry in by_lead.items():
+                c, pair = entry["cells"].get(cell), entry[key].get(cell)
+                if c is None or pair is None:
+                    continue
+                out.append(f"| `{name}` | {cell} | {h} | {c['pressure_days']} | {odr._diff(pair.get('auroc'))} | {odr._diff(pair.get('brier_skill'))} |")
+    return "\n".join(out) + "\n"
+
+
+def _paired_key_of(by_lead: Mapping) -> Optional[str]:
+    return next((k for k in next(iter(by_lead.values())) if k.startswith("paired_with_")), None)
+
+
+def blocks_markdown(document: Mapping) -> str:
+    out = [
+        "Pooled ordinary-day AUROC, AUROC over the pairs inside refit blocks, and within less pooled with its 90% interval (positive: the level shifts between refits cost ranking).", "",
+        "| row | lead | blocks | pooled AUROC | within-block AUROC | within less pooled [90%] |", "|---|---|---|---|---|---|",
+    ]
+    for name, by_lead in document["rows"].items():
+        for h, e in by_lead.items():
+            diff = "–" if e["difference"] is None else (
+                f"{e['difference']:+.3f}" + ("" if e["lower"] is None else f" [{e['lower']:+.3f}, {e['upper']:+.3f}]")
+            )
+            out.append(f"| `{name}` | {h} | {e['blocks']} | {_fmt(e['pooled_auroc'])} | {_fmt(e['within_block_auroc'])} | {diff} |")
+    return "\n".join(out) + "\n"
+
+
+def losses_markdown(document: Mapping) -> str:
+    out = [
+        "Ordinary pressure days (+5 bp) each row loses against the raw component: `zeroed` (forecast of 0 where the component forecast above 0) and `below cut` "
+        "(above the component's own walk-forward gate cut on the raw component, at or below it on the row; days with a cut only). The last column is the days on a forecast of 0.", "",
+        "| row | lead | pressure days | days with a cut | zeroed | below cut | on forecast 0 |", "|---|---|---|---|---|---|---|",
+    ]
+    for name, by_lead in document["rows"].items():
+        for h, e in by_lead.items():
+            out.append(
+                f"| `{name}` | {h} | {e['pressure_days']} | {e['days_with_cut']} | {'–' if e['zeroed'] is None else e['zeroed']} | "
+                f"{'–' if e['below_cut'] is None else e['below_cut']} | {e['pressure_days_on_zero']} |"
+            )
+    return "\n".join(out) + "\n"
+
+
+def report_command(args) -> int:
+    kinds = {"ladder": ladder_markdown, "paired": paired_ladder_markdown, "blocks": blocks_markdown, "losses": losses_markdown}
+    document = json.loads(args.input.read_text(encoding="utf-8"))
+    args.output.write_text(kinds[args.kind](document), encoding="utf-8")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -523,6 +615,11 @@ def main(argv=None) -> int:
     l.add_argument("--input", required=True, help="template with {h}")
     l.add_argument("--output", type=Path, required=True)
     l.set_defaults(func=losses_command)
+    t = sub.add_parser("report")
+    t.add_argument("--kind", choices=("ladder", "paired", "blocks", "losses"), required=True)
+    t.add_argument("--input", type=Path, required=True)
+    t.add_argument("--output", type=Path, required=True)
+    t.set_defaults(func=report_command)
     args = parser.parse_args(argv)
     return args.func(args)
 
