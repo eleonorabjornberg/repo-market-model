@@ -623,8 +623,8 @@ def declaration_document() -> dict:
             "the same days read at their own decision instants. No outcome after the block's fit enters a training label or the trailing rate"
         ),
         "satiation_distance_version": (
-            "built per H.4.1 release (scripts/off_risk_day_624.py panel), as #622 requires; #623 had not landed. It differs from the old-lag build "
-            "(scripts/satiation_distance_598.py panel) on the rows #622 counts. The parent row's own forecasts are #598's, on the old-lag build, unchanged"
+            "built per H.4.1 release (scripts/off_risk_day_624.py panel), as #622 requires, and #623 has landed: scripts/satiation_distance_598.py panel "
+            "makes the same build. The parent row's forecasts are re-scored on it with scripts/satiation_distance_598.py run, the same build as the variants"
         ),
         "constants": {
             "minimum_pairs": gc.GROUP_MINIMUM_PAIRS,

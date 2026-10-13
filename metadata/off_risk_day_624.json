@@ -73,7 +73,7 @@
     "scarcity_state": "the reserve-scarcity state 0 to 3 as of the decision instant, each leg at its own latest public row (#586); a day whose state is unknown is not served"
   },
   "inputs_reading": "each input is read at the decision instant of the day's own lead through asof.InformationRule, on the 'both' arm of #541 (settlements dated from the auction announcement, the H.4.1 per release), with the leakage and staleness guards of baseline._as_of_folds. The days that train a block are the same days read at their own decision instants. No outcome after the block's fit enters a training label or the trailing rate",
-  "satiation_distance_version": "built per H.4.1 release (scripts/off_risk_day_624.py panel), as #622 requires; #623 had not landed. It differs from the old-lag build (scripts/satiation_distance_598.py panel) on the rows #622 counts. The parent row's own forecasts are #598's, on the old-lag build, unchanged",
+  "satiation_distance_version": "built per H.4.1 release (scripts/off_risk_day_624.py panel), as #622 requires, and #623 has landed: scripts/satiation_distance_598.py panel makes the same build. The parent row's forecasts are re-scored on it with scripts/satiation_distance_598.py run, the same build as the variants",
   "constants": {
     "minimum_pairs": 60,
     "minimum_events": 3,
