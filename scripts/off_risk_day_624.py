@@ -77,6 +77,10 @@ CAP = ROW + "+tailcap75"
 FLOORS = {"floor": CAP + "+floor", "state_floor": CAP + "+state_floor", "recent_floor": CAP + "+recent_floor"}
 #: row name -> the forecast file kind that holds it
 ROWS = {ROW: "iorb", CAP: "cap", **{name: "floors" for name in FLOORS.values()}}
+#: the reference rows of #681: the persistence-logistic benchmark (a probability) and the raw as-of spread (a level in bp, ranked only)
+PERSISTENCE = "persistence_logistic"
+SPREAD_REFERENCE = "spread_bps_asof"
+STEP_THREE_DECLARATION = REPO / "metadata" / "off_risk_day_681.json"
 #: a forecast this small is read as 0 by the reliability fit (the rows forecast exactly 0 on the days they leave out)
 RELIABILITY_FLOOR = 1e-4
 
@@ -165,11 +169,20 @@ def reliability(probabilities: Sequence[float], outcomes: Sequence[int], *, iter
     return None
 
 
-def cell_statistics(probabilities: Sequence[float], outcomes: Sequence[int], reference: Sequence[Optional[float]]) -> dict:
+def cell_statistics(
+    probabilities: Sequence[float], outcomes: Sequence[int], reference: Sequence[Optional[float]], *, probability: bool = True
+) -> dict:
     """The step 1 statistics of one cell of days: the outcomes, the reference being the walk-forward climatology.
 
-    The Brier skill is taken on the days on which the reference exists.
+    The Brier skill is taken on the days on which the reference exists. With `probability` false the column is a level, not a probability
+    (the raw as-of spread of #681): only its ranking is a statistic, and the Brier skill and the reliability fit are None.
     """
+
+    if not probability:
+        return {
+            "days": len(outcomes), "pressure_days": int(sum(outcomes)), "auroc": pj.auroc(list(probabilities), list(outcomes)),
+            "brier_skill": None, "skill_days": 0, "positive_days": 0, "pressure_days_on_zero": 0, "intercept": None, "slope": None,
+        }
 
     paired = [(p, y, r) for p, y, r in zip(probabilities, outcomes, reference) if r is not None]
     p, y, r = [x[0] for x in paired], [x[1] for x in paired], [x[2] for x in paired]
@@ -257,6 +270,72 @@ def intervals(
     return out
 
 
+def paired_cells(
+    cells: Mapping[str, Sequence[int]],
+    row: Sequence[float],
+    other: Sequence[float],
+    outcomes: Sequence[int],
+    reference: Sequence[Optional[float]],
+    *,
+    seed: int,
+    replications: int,
+    block_length: float,
+    level: float,
+) -> Dict[str, dict]:
+    """The row less `other` (AUROC and Brier skill against the climatology), per cell, with a 90% interval from paired resamples.
+
+    Both rows are scored on the same days; a resample draws day positions once (the seed, block length and replications of `intervals`, so
+    the draws are the ones that gave each row's own interval) and both rows keep the same drawn days of a cell. Positive favours the row.
+    A difference undefined on a resample (a cell with no pressure day, say) is left out of that cell's draws and counted beside the interval.
+
+    Raises:
+        ValueError: for columns of different lengths.
+    """
+
+    n = len(outcomes)
+    if not len(row) == len(other) == len(reference) == n:
+        raise ValueError("the two rows, the outcomes and the reference must be one per day")
+    member = {name: [False] * n for name in cells}
+    for name, positions in cells.items():
+        for i in positions:
+            member[name][i] = True
+
+    def differences(keep: Sequence[int]) -> Dict[str, Optional[float]]:
+        a, b = pj.auroc([row[i] for i in keep], [outcomes[i] for i in keep]), pj.auroc([other[i] for i in keep], [outcomes[i] for i in keep])
+        paired = [i for i in keep if reference[i] is not None]
+        ys, rs = [outcomes[i] for i in paired], [reference[i] for i in paired]
+        s = brier_skill([row[i] for i in paired], ys, rs)
+        t = brier_skill([other[i] for i in paired], ys, rs)
+        return {"auroc": None if a is None or b is None else a - b, "brier_skill": None if s is None or t is None else s - t}
+
+    points = {name: differences(positions) for name, positions in cells.items()}
+    draws: Dict[str, Dict[str, List[float]]] = {name: {"auroc": [], "brier_skill": []} for name in cells}
+    rng = random.Random(seed)
+    for _ in range(replications):
+        drawn = stationary_bootstrap_indices(n, block_length, rng)
+        for name in cells:
+            keep = [i for i in drawn if member[name][i]]
+            if not keep:
+                continue
+            for stat, value in differences(keep).items():
+                if value is not None:
+                    draws[name][stat].append(value)
+    tail = (1.0 - level) / 2.0
+    out: Dict[str, dict] = {}
+    for name in cells:
+        out[name] = {}
+        for stat, values in draws[name].items():
+            if not values or points[name][stat] is None:
+                out[name][stat] = None
+                continue
+            ordered = sorted(values)
+            out[name][stat] = {
+                "difference": points[name][stat], "lower": _quantile(ordered, tail), "upper": _quantile(ordered, 1.0 - tail),
+                "draws": len(ordered), "left_out": replications - len(ordered),
+            }
+    return out
+
+
 # -- the grid ---------------------------------------------------------------------------------------------
 
 
@@ -308,15 +387,19 @@ def split_cells(table: Mapping, minimum_days: int = 1) -> Dict[str, List[int]]:
     return cells
 
 
-def measure_row(table: Mapping, bootstrap: Mapping) -> dict:
+def measure_row(table: Mapping, bootstrap: Mapping, *, probability: bool = True) -> dict:
     cells = split_cells(table)
+    # a level has no climatology to skill-score against and no reliability curve: its reference is empty and no cell is refit
+    clim = table["clim"] if probability else [None] * len(table["y"])
     ci = intervals(
-        cells, table["p"], table["y"], table["clim"], seed=bootstrap["seed"], replications=bootstrap["replications"],
-        block_length=bootstrap["block_length"], level=bootstrap["level"],
+        cells, table["p"], table["y"], clim, seed=bootstrap["seed"], replications=bootstrap["replications"],
+        block_length=bootstrap["block_length"], level=bootstrap["level"], reliability_cells=("all",) if probability else (),
     )
     out = {}
     for name, positions in cells.items():
-        stats = cell_statistics([table["p"][i] for i in positions], [table["y"][i] for i in positions], [table["clim"][i] for i in positions])
+        stats = cell_statistics(
+            [table["p"][i] for i in positions], [table["y"][i] for i in positions], [clim[i] for i in positions], probability=probability
+        )
         stats["intervals"] = ci[name]
         out[name] = stats
     return out
@@ -547,9 +630,32 @@ def read_features(rows, registry, last: date, horizon: int, fields: Sequence[str
             timed_rows, rule, minimum_history=61, refit_every=len(timed_rows), entry="off_risk_day_624", end=last
         ):
             out[dates[fold.index].isoformat()] = {
-                field: (None if fold.feature_row.values.get(field) is None else float(fold.feature_row.values[field])) for field in fields
+                field: (
+                    # the spread is the row's own property (sofr less iorb as of the decision instant), not a key of its values
+                    fold.feature_row.spread_bps if field == "spread_bps"
+                    else (None if fold.feature_row.values.get(field) is None else float(fold.feature_row.values[field]))
+                ) for field in fields
             }
     return out
+
+
+def asof_spread_document(reads: Mapping[str, Mapping[str, Optional[float]]], days: Sequence[str], horizon: int) -> dict:
+    """The raw as-of spread (bp) as a forecast document, so that `day_table` reads it like any row (#681): the level is the "forecast" at
+    +5 bp. It is a level, not a probability, and is only ranked.
+
+    `reads` is `read_features`'s as-of read of each scored day.
+
+    Raises:
+        ValueError: if a scored day is not on the read grid or its spread is a hole.
+    """
+
+    column: Dict[str, float] = {}
+    for day in days:
+        value = reads.get(day, {}).get("spread_bps")
+        if value is None:
+            raise ValueError(f"{day}: no as-of spread_bps read")
+        column[day] = float(value)
+    return {"horizon": horizon, "forecasts": {SPREAD_REFERENCE: {f"{TAU:g}": column}}}
 
 
 BEST = "risk_gbm+settle+h41+dist_roll"
@@ -685,6 +791,55 @@ def declare_command(args) -> int:
     return 0
 
 
+def persistence_declaration_document() -> dict:
+    """The declaration of #681 (`metadata/off_risk_day_681.json`), written before any score of a reference row."""
+
+    step_one = json.loads(STEP_ONE_DECLARATION.read_text(encoding="utf-8"))
+    return {
+        "status": (
+            "declared by the pull request that closes #681 before any score of a reference row; a measurement, not a record. It adds two reference rows to "
+            "the off-risk-day measurement of #624 (finding #667): CLAUDE.md requires a pressure probability to be stated against climatology and a "
+            "persistence-logistic model, and #624 stated it against climatology only. Nothing is published: no rule, threshold or declaration changes, no day "
+            "after 2025-12-31 is scored, and the live record and pin do not move. The days read are 2018-2025, so a result describes that history and does not "
+            "confirm anything (ruling of 11 October 2026 on #567). Exploration on development data, not a verdict (scoring protocol v1, #640)"
+        ),
+        "issue": 681,
+        "serves": "H2 (the data we hold carries signal for ordinary-day pressure) and H5",
+        "scoring": step_one["scoring"],
+        "bootstrap": step_one["bootstrap"],
+        "population": step_one["population"],
+        "outcome": step_one["outcome"],
+        "statistics": step_one["statistics"],
+        "reference_rows": {
+            PERSISTENCE: (
+                "the persistence-logistic benchmark of the judge (scripts/pressure_judge.py forecasts: pressure_judge.persistence_logistic_exceedance, a logistic "
+                "regression of a pressure day at +5 bp on the as-of spread_bps, walk-forward on the judge's fold grid). A probability, so it has every statistic of "
+                "step 1"
+            ),
+            SPREAD_REFERENCE: (
+                "the raw as-of spread_bps in bp at the decision instant of the day's own lead, read through asof.InformationRule on the 'both' arm of #541 "
+                "(off_risk_day_624.read_features, with its leakage and staleness guards). A level and not a probability: only its AUROC is a statistic; the Brier "
+                "skill and the reliability curve are not defined for it and are reported as not applicable"
+            ),
+        },
+        "pairing": (
+            "every probability row of step 1 and step 2 is paired against persistence_logistic on the same days (the same population, the same climatology): the "
+            "row less persistence_logistic for AUROC and for the Brier skill against the walk-forward climatology, pooled, by the judge's regimes (2018-19, 2020, 2021-23, 2024, 2025-26), "
+            "by as-of scarcity state, at leads 1 to 5, with a 90% stationary-bootstrap interval from resamples shared by the two rows (the "
+            "seed and block length of step 1). A positive difference favours the row"
+        ),
+        "near_empty_cells": "a cell of fewer than 10 pressure days is called near-empty on the page, and a gain that sits only in such cells is reported as such",
+        "no_hindsight_regimes": "the regimes are the judge's, by calendar date; no regime label enters any forecast (ruling on #515)",
+        "published": "nothing",
+    }
+
+
+def declare_persistence_command(args) -> int:
+    STEP_THREE_DECLARATION.write_text(json.dumps(persistence_declaration_document(), indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"written": [str(STEP_THREE_DECLARATION)]}, indent=1))
+    return 0
+
+
 def declared_document() -> dict:
     return rds.committed_declaration(STEP_TWO_DECLARATION)
 
@@ -799,7 +954,11 @@ def passthrough_command(args) -> int:
 
 
 def measure_command(args) -> int:
-    """Each `--row NAME=TEMPLATE`: the forecasts of row NAME are in the files TEMPLATE names (with `{h}` for the lead)."""
+    """Each `--row NAME=TEMPLATE`: the forecasts of row NAME are in the files TEMPLATE names (with `{h}` for the lead).
+
+    A template `asof:spread_bps` is the raw as-of spread read through the information rule (a level, ranked only; #681). With
+    `--pair-with NAME`, every other probability row is also paired against row NAME on the same days (`paired_cells`).
+    """
 
     declared = rds.committed_declaration(args.declaration)
     scoring = declared["scoring"]
@@ -810,21 +969,48 @@ def measure_command(args) -> int:
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
     templates = dict(item.split("=", 1) for item in args.row)
+    if args.pair_with and args.pair_with not in templates:
+        raise SystemExit(f"--pair-with {args.pair_with!r} is not one of the rows")
     pj_script = _load("pressure_judge")
+    bootstrap = declared["bootstrap"]
     result: Dict[str, dict] = {}
     for h in LEADS:
         states = pj_script._scarcity_states(h, last)
         documents: Dict[str, dict] = {}
+        tables: Dict[str, dict] = {}
         for name, template in templates.items():
-            path = template.format(h=h)
-            if path not in documents:
-                document = json.loads(Path(path).read_text(encoding="utf-8"))
-                if document["horizon"] != h or document["panel_sha256"] != panel_sha256(args.panel):
-                    raise SystemExit(f"{path} is not the forecasts at h = {h} on this panel")
-                documents[path] = document
+            if template.startswith("asof:"):
+                if template != "asof:spread_bps" or name != SPREAD_REFERENCE:
+                    raise SystemExit(f"{template!r}: only the raw as-of spread_bps, as {SPREAD_REFERENCE!r}, is read from the panel")
+                if template not in documents:
+                    grid_days = [d.isoformat() for d in grid(rows, splits, scoring, h, [TAU], last)[0]]
+                    reads = read_features(rows, measurement_fields.load_registry(), last, h, fields=("spread_bps",))
+                    documents[template] = asof_spread_document(reads, grid_days, h)
+                path = template
+            else:
+                path = template.format(h=h)
+                if path not in documents:
+                    document = json.loads(Path(path).read_text(encoding="utf-8"))
+                    if document["horizon"] != h or document["panel_sha256"] != panel_sha256(args.panel):
+                        raise SystemExit(f"{path} is not the forecasts at h = {h} on this panel")
+                    documents[path] = document
             table = day_table(name, documents[path], h, rows, splits, scoring, states, last)
-            result.setdefault(name, {})[str(h)] = {"scored_days": table["scored_days"], "cells": measure_row(table, declared["bootstrap"])}
+            tables[name] = table
+            result.setdefault(name, {})[str(h)] = {
+                "scored_days": table["scored_days"], "cells": measure_row(table, bootstrap, probability=name != SPREAD_REFERENCE),
+            }
             print(json.dumps({"row": name, "horizon": h, "off_risk_days": len(table["y"])}), flush=True)
+        if args.pair_with:
+            other = tables[args.pair_with]
+            for name, table in tables.items():
+                if name in (args.pair_with, SPREAD_REFERENCE):
+                    continue
+                if table["dates"] != other["dates"] or table["y"] != other["y"] or table["clim"] != other["clim"]:
+                    raise SystemExit(f"h = {h}: {name} and {args.pair_with} are not scored on the same days")
+                result[name][str(h)]["paired_with_" + args.pair_with] = paired_cells(
+                    split_cells(table), table["p"], other["p"], table["y"], table["clim"], seed=bootstrap["seed"],
+                    replications=bootstrap["replications"], block_length=bootstrap["block_length"], level=bootstrap["level"],
+                )
     document = {
         "declaration": declared, "panel_sha256": panel_sha256(args.panel), "scratch_panel_sha256": panel_sha256(args.scratch), "rows": result,
     }
@@ -861,7 +1047,7 @@ def markdown(document: Mapping, title: str = "Step 1: skill on the days that are
             c = entry["cells"]["all"]
             ci = c["intervals"]
             out.append(
-                f"| {h} | {c['days']} | {c['pressure_days']} | {c['pressure_days_on_zero']} of {c['days'] - c['positive_days']} zero days | "
+                f"| {h} | {c['days']} | {c['pressure_days']} | {'n/a (a level)' if name == SPREAD_REFERENCE else str(c['pressure_days_on_zero']) + ' of ' + str(c['days'] - c['positive_days']) + ' zero days'} | "
                 f"{_iv(c['auroc'], ci['auroc'])} | {_iv(c['brier_skill'], ci['brier_skill'])} | {_iv(c['slope'], ci['slope'])} | {_iv(c['intercept'], ci['intercept'])} |"
             )
         out.append("")
@@ -876,6 +1062,111 @@ def markdown(document: Mapping, title: str = "Step 1: skill on the days that are
                 )
             out.append("")
     return "\n".join(out)
+
+
+def _diff(entry) -> str:
+    if entry is None:
+        return "–"
+    return f"{entry['difference']:+.3f} [{entry['lower']:+.3f}, {entry['upper']:+.3f}]"
+
+
+def _paired_key(by_lead: Mapping) -> Optional[str]:
+    return next((k for k in next(iter(by_lead.values())) if k.startswith("paired_with_")), None)
+
+
+def paired_markdown(document: Mapping, cells: Sequence[str] = ("all", "regime 2018-19", "regime 2020", "regime 2021-23", "regime 2024", "regime 2025-26")) -> str:
+    """Per probability row, lead and cell: the row, the reference it is paired with, and their difference (positive favours the row), with
+    the pressure days of the cell, so that a near-empty cell shows. The reference is the row named by `--pair-with`."""
+
+    out: List[str] = []
+    rows = document["rows"]
+    for name, by_lead in rows.items():
+        key = _paired_key(by_lead)
+        if key is None:
+            continue
+        reference = key[len("paired_with_"):]
+        out += [
+            f"## `{name}` against `{reference}`", "",
+            "Positive favours the row. Intervals are 90% stationary-bootstrap intervals of the difference, from resamples shared by the two rows.", "",
+            "| cell | lead | pressure days | AUROC row | AUROC reference | AUROC difference [90%] | Brier skill row | Brier skill reference | Brier skill difference [90%] | slope row | slope reference |",
+            "|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        for cell in cells:
+            for h, entry in by_lead.items():
+                c, r = entry["cells"].get(cell), rows[reference][h]["cells"].get(cell)
+                if c is None or r is None:
+                    continue
+                pair = entry[key].get(cell) or {}
+                out.append(
+                    f"| {cell} | {h} | {c['pressure_days']} | {_f(c['auroc'])} | {_f(r['auroc'])} | {_diff(pair.get('auroc'))} | {_f(c['brier_skill'])} | "
+                    f"{_f(r['brier_skill'])} | {_diff(pair.get('brier_skill'))} | {_f(c['slope'])} | {_f(r['slope'])} |"
+                )
+        out.append("")
+    return "\n".join(out)
+
+
+def _short(name: str) -> str:
+    return name.replace(ROW, "ROW").replace(BEST, "DR")
+
+
+def paired_table_markdown(documents: Sequence[Mapping], cell: str, reference: str = PERSISTENCE) -> str:
+    """One table over the rows of several `measure --pair-with` outputs: per row and lead, the cell's AUROC, Brier skill and reliability slope of the
+    row and of `reference`, and the row less the reference with its 90% interval. A row in more than one output is shown once, from the first."""
+
+    out = [
+        f"| row | lead | pressure days | AUROC row | AUROC {reference} | AUROC difference [90%] | Brier skill row | Brier skill {reference} | Brier skill difference [90%] | slope row | slope {reference} |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    seen = set()
+    for document in documents:
+        rows = document["rows"]
+        for name, by_lead in rows.items():
+            key = "paired_with_" + reference
+            if name in seen or name in (reference, SPREAD_REFERENCE) or key not in next(iter(by_lead.values())):
+                continue
+            seen.add(name)
+            for h, entry in by_lead.items():
+                c, r = entry["cells"].get(cell), rows[reference][h]["cells"].get(cell)
+                if c is None or r is None:
+                    continue
+                pair = entry[key].get(cell) or {}
+                out.append(
+                    f"| `{_short(name)}` | {h} | {c['pressure_days']} | {_f(c['auroc'])} | {_f(r['auroc'])} | {_diff(pair.get('auroc'))} | {_f(c['brier_skill'])} | "
+                    f"{_f(r['brier_skill'])} | {_diff(pair.get('brier_skill'))} | {_f(c['slope'])} | {_f(r['slope'])} |"
+                )
+    return "\n".join(out) + "\n"
+
+
+def reference_table_markdown(document: Mapping, cells: Sequence[str]) -> str:
+    """The two reference rows by lead and cell: the persistence-logistic AUROC, Brier skill and slope, and the raw spread's AUROC, each with its 90% interval."""
+
+    out = ["| cell | lead | pressure days | persistence-logistic AUROC [90%] | Brier skill [90%] | slope [90%] | raw as-of spread AUROC [90%] |", "|---|---|---|---|---|---|---|"]
+    for cell in cells:
+        for h in document["rows"][PERSISTENCE]:
+            p, s_ = document["rows"][PERSISTENCE][h]["cells"][cell], document["rows"][SPREAD_REFERENCE][h]["cells"][cell]
+            pi, si = p["intervals"], s_["intervals"]
+            out.append(
+                f"| {cell} | {h} | {p['pressure_days']} | {_iv(p['auroc'], pi['auroc'])} | {_iv(p['brier_skill'], pi['brier_skill'])} | {_iv(p['slope'], pi['slope'])} | "
+                f"{_iv(s_['auroc'], si['auroc'])} |"
+            )
+    return "\n".join(out) + "\n"
+
+
+def tables_command(args) -> int:
+    documents = [json.loads(path.read_text(encoding="utf-8")) for path in args.input]
+    parts = [f"# {args.title}", "", "Generated by `scripts/off_risk_day_624.py tables`; not edited by hand.", "", "ROW is `" + ROW + "`; DR is `" + BEST + "`.", ""]
+    parts += ["## The reference rows", "", reference_table_markdown(documents[0], args.cell)]
+    for cell in args.cell:
+        parts += [f"## Rows paired against `{PERSISTENCE}`: {cell}", "", paired_table_markdown(documents, cell)]
+    args.output.write_text("\n".join(parts), encoding="utf-8")
+    return 0
+
+
+def persistence_command(args) -> int:
+    document = json.loads(args.input.read_text(encoding="utf-8"))
+    text = f"# {args.title}\n\nGenerated by `scripts/off_risk_day_624.py paired`; not edited by hand.\n\n" + paired_markdown(document)
+    args.output.write_text(text, encoding="utf-8")
+    return 0
 
 
 def summary_markdown(document: Mapping, within: str = "regime 2018-19") -> str:
@@ -967,6 +1258,7 @@ def main(argv=None) -> int:
     m.add_argument("--scratch", type=Path, required=True)
     m.add_argument("--declaration", type=Path, default=STEP_ONE_DECLARATION, help="the committed declaration whose scoring and bootstrap are used")
     m.add_argument("--row", action="append", required=True, help="NAME=TEMPLATE, TEMPLATE with {h}: the file of the row's forecasts at each lead")
+    m.add_argument("--pair-with", help="a row NAME: every other probability row is also paired against it on the same days (#681)")
     m.add_argument("--title", default="Step 1: skill on the days that are not risk dates (#624)")
     m.add_argument("--output", type=Path, required=True)
     m.add_argument("--markdown", type=Path)
@@ -991,10 +1283,22 @@ def main(argv=None) -> int:
     t.add_argument("rest", nargs=argparse.REMAINDER)
     t.set_defaults(func=passthrough_command)
     sub.add_parser("declare").set_defaults(func=declare_command)
+    sub.add_parser("declare-persistence", help="the declaration of #681").set_defaults(func=declare_persistence_command)
     k = sub.add_parser("calibration")
     k.add_argument("--judge", type=Path, required=True)
     k.add_argument("--output", type=Path, required=True)
     k.set_defaults(func=calibration_command)
+    pr = sub.add_parser("paired", help="the paired differences against the --pair-with row of a measure output")
+    pr.add_argument("--input", type=Path, required=True)
+    pr.add_argument("--title", default="Paired against persistence-logistic (#681)")
+    pr.add_argument("--output", type=Path, required=True)
+    pr.set_defaults(func=persistence_command)
+    tb = sub.add_parser("tables", help="the compact tables of the page: the reference rows, then every row paired against persistence-logistic, per cell")
+    tb.add_argument("--input", type=Path, action="append", required=True, help="a measure output made with --pair-with; the first holds the reference rows")
+    tb.add_argument("--cell", action="append", required=True)
+    tb.add_argument("--title", default="Every row paired against persistence-logistic (#681)")
+    tb.add_argument("--output", type=Path, required=True)
+    tb.set_defaults(func=tables_command)
     sm = sub.add_parser("summary")
     sm.add_argument("--input", type=Path, required=True)
     sm.add_argument("--within", default="regime 2018-19")
