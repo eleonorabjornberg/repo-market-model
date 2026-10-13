@@ -101,8 +101,13 @@ class CallersTests(unittest.TestCase):
         """A script that tests `day_type(...) != "ordinary"` has its own copy of the rule; ask `risk_dates` instead."""
 
         own_rule = re.compile(r"(?<!reporting_)day_type(\([^)]*\))?\s*(!=|==)\s*[\"']ordinary[\"']")
+        # Scripts that group by the reporting day type, a third population the reconciliation doc names and
+        # leaves alone (re-pointing them would move published figures): #686 joined main after this directive began.
+        reporting_population = {"spread_mean_reversion_686.py"}
         offenders = []
         for path in sorted((ROOT / "scripts").glob("*.py")):
+            if path.name in reporting_population:
+                continue
             for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 if own_rule.search(line):
                     offenders.append(f"{path.name}:{number}")

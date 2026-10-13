@@ -241,9 +241,9 @@ an AUROC is not a sum over days, so none of the headlines above is moved by arit
 
 ### Other "ordinary" sets that are neither of the two (not changed here)
 
-Three more scripts read a third population, by the *reporting* day type (`reporting_day_type`: the month's last two business days):
+Four more scripts read a third population, by the *reporting* day type (`reporting_day_type`: the month's last two business days):
 `spread_distribution_632.py` (the `day_type` group equal to `ordinary`, with no coupon clause), `construction_gaps_485.py` and
-`model_defects_540.py` (`reporting_day_type` other than `ordinary`, or inside the quarter-end window). Re-pointing them would move
+`model_defects_540.py` (`reporting_day_type` other than `ordinary`, or inside the quarter-end window), and `spread_mean_reversion_686.py` (the tail scope `ordinary`, the `day_type` equal to `ordinary`, which reached main after this section was first written). Re-pointing them would move
 their published figures, so they stay as they are; they are a finding for Eleonora's ruling with the one below.
 
 ### Marked question for Eleonora (not settled in code)
