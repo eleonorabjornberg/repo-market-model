@@ -790,6 +790,8 @@ def screen_text(screen: Mapping) -> str:
         header = "| regime | " + " | ".join(f"lead {lead}" for lead in by_lead) + " |"
         lines += [header, "|---|" + "---|" * len(by_lead)]
         for label in screen["regimes"]:
+            if all(f"regime:{label}" not in splits for splits in by_lead.values()):
+                continue
             row = []
             for lead, splits in by_lead.items():
                 cell = splits.get(f"regime:{label}")
