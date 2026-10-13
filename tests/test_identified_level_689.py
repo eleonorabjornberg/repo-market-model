@@ -16,6 +16,8 @@ What is covered:
 * `PredictorTests` -- both forms forecast every day under the fold loop's guards, record the level, its interval and its
   minima at every refit, and a refit's level is unmoved by rows after its training end.
 * `DeclarationTests` -- `metadata/identified_level_689.json` says what the module computes.
+* `ScriptTests` -- `scripts/identified_level_689.py`: the path statistics, the Brier skill, the as-of warning rule and the
+  guards that refuse a scored day in a locked tier (`docs/decisions/lockbox.md`).
 
 **Recorded mutations** (disposable copy of the tree, `/opt/rmm-venv`, `PYTHONDONTWRITEBYTECODE=1`, the killing test run
 alone, each confirmed applied by `grep` and restored before the next):
@@ -25,19 +27,33 @@ alone, each confirmed applied by `grep` and restored before the next):
    then reads the rows it forecasts, which are after its training end;
    `PredictorTests.test_a_profile_level_is_unmoved_by_rows_after_the_training_end` fails with an `AssertionError` (the refit's
    profile interval, `[0.115, 0.2]` for `kinked_profile`, differs from the unmutated refit's).
+2. `run_command`: replace `require_unlocked([last], where="identified_level_689")` by `pass`;
+   `ScriptTests.test_run_refuses_a_locked_last_day` fails with `FileNotFoundError` (the guard is skipped and the run goes on
+   to read the panel).
+3. `report_command`: replace `require_unlocked([end], where="identified_level_689")` by `pass`;
+   `ScriptTests.test_report_refuses_a_locked_last_day` fails with `FileNotFoundError` (the guard is skipped and the report
+   goes on to read the panel).
+4. `warned`: replace `past = [p_by_day[d] for d in days[max(0, position - WARNING_WINDOW): position]]` by
+   `... position + 1]]` (the day's own forecast joins the window it is compared with);
+   `ScriptTests.test_a_forecast_is_compared_with_the_days_before_it_only` fails with `AssertionError: False is not true`.
 """
 
 from __future__ import annotations
 
+import argparse
+import importlib.util
 import json
 import random
+import sys
 import unittest
 from datetime import date, time
 from pathlib import Path
+from unittest import mock
 
 from repo_model import satiation as sat, scarcity, structural_liquidity as sl
 from repo_model.baseline import rolling_exceedance_backtest
 from repo_model.data import DailyObservation
+from repo_model.splits import LookAheadError
 from test_satiation import SPLITS, _Measured, _panel, _require_extra
 
 REPO = Path(__file__).resolve().parents[1]
@@ -235,6 +251,82 @@ class DeclarationTests(unittest.TestCase):
             self.assertIn(spec["form"], sl.KINKED_FORMS)
         self.assertEqual(self.document["scoring"]["last_day"], "2025-12-31")
         self.assertEqual(self.document["horizons"], [1, 2, 3, 4, 5])
+
+
+def _script():
+    sys.path.insert(0, str(REPO / "src"))
+    spec = importlib.util.spec_from_file_location("identified_level_689_script", REPO / "scripts" / "identified_level_689.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["identified_level_689_script"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+SCRIPT = _script()
+
+
+class ScriptTests(unittest.TestCase):
+    def args(self):
+        missing = REPO / "no-such-panel.csv"
+        return argparse.Namespace(
+            horizon=1, panel=missing, published=missing, scratch=missing, output=REPO / "no-such-output.json", bench="x", rows="x",
+            markdown=None,
+        )
+
+    def locked(self):
+        declared = json.loads(DECLARATION.read_text())
+        declared["scoring"]["last_day"] = "2026-09-10"
+        return declared
+
+    def test_run_refuses_a_locked_last_day(self):
+        with mock.patch.object(SCRIPT, "declared_document", return_value=self.locked()):
+            with self.assertRaises(LookAheadError):
+                SCRIPT.run_command(self.args())
+
+    def test_report_refuses_a_locked_last_day(self):
+        with mock.patch.object(SCRIPT, "declared_document", return_value=self.locked()):
+            with self.assertRaises(LookAheadError):
+                SCRIPT.report_command(self.args())
+
+    def test_the_declared_last_day_is_not_refused(self):
+        with mock.patch.object(SCRIPT, "declared_document", return_value=json.loads(DECLARATION.read_text())), mock.patch.object(
+            SCRIPT, "load_daily_panel", side_effect=FileNotFoundError
+        ):
+            with self.assertRaises(FileNotFoundError):  # past the guard, into the panel
+                SCRIPT.run_command(self.args())
+
+    def test_the_path_statistics(self):
+        s = SCRIPT.stability([0.12, 0.12, 0.14, 0.13])
+        self.assertEqual(s["refits"], 4)
+        self.assertEqual(s["distinct_levels"], 3)
+        self.assertAlmostEqual(s["max_abs_change"], 0.02)
+        self.assertAlmostEqual(s["mean_abs_change"], (0.0 + 0.02 + 0.01) / 3)
+        self.assertEqual(s["changes_of_0.01_or_more"], 2)
+        self.assertEqual(s["last"], 0.13)
+        self.assertIsNone(SCRIPT.stability([0.12])["max_abs_change"])
+
+    def test_the_brier_skill_is_one_minus_the_ratio_of_scores(self):
+        y = [0, 0, 1, 0]
+        clim = [0.25] * 4
+        self.assertAlmostEqual(SCRIPT.brier_skill(clim, clim, y), 0.0)
+        self.assertAlmostEqual(SCRIPT.brier_skill([0.0, 0.0, 1.0, 0.0], clim, y), 1.0)
+        self.assertIsNone(SCRIPT.brier_skill([0.5] * 4, [0.0] * 4, [0, 0, 0, 0]))
+
+    def test_a_forecast_is_compared_with_the_days_before_it_only(self):
+        days = [date.fromordinal(date(2024, 1, 1).toordinal() + k) for k in range(100)]
+        p = {d: float(k) for k, d in enumerate(days[:63])}  # 0 .. 62: the as-of 90th percentile is 55.8
+        p[days[63]] = 56.0
+        self.assertTrue(SCRIPT.warned(p, days, days[63]))  # 56 > 55.8; had its own value joined the window the quantile would be 56
+        self.assertIsNone(SCRIPT.warned(p, days, days[10]))
+        p[days[64]] = 55.0
+        self.assertFalse(SCRIPT.warned(p, days, days[64]))
+
+    def test_the_declared_rows_are_the_five_the_run_scores(self):
+        declared = json.loads(DECLARATION.read_text())
+        wanted = declared["rows"]["controls"] + declared["rows"]["references"] + declared["rows"]["new"]
+        self.assertEqual([name for name, _form in SCRIPT.ROWS], wanted)
+        for name, form in SCRIPT.ROWS:
+            self.assertIn(form, sl.STRUCTURAL_FORMS)
 
 
 if __name__ == "__main__":
