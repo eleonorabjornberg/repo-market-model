@@ -254,3 +254,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: grid CRPS 1.778 bp over 1,855 decision days to 2025-12-31: skill +22.3% [+13.7%, +29.5%] against B1 and +29.4% [+21.4%, +37.3%] against B2; upper-tail twCRPS +32.4% and +17.8%. Against the published distribution on five levels: +1.2% [-2.3%, +4.8%], a tie. Weak spots: 2021-23 (-2.6% vs B1) and quarter-end days. It narrows B1's over-forecast of P(> +5 bp) on ordinary days (2018-19 -0.113 to -0.071, 2025-26 -0.049 to -0.028) without closing it.
 - Against kill: not applicable (no verdict; development data). It does not beat the published distribution, so it adds nothing over the incumbent on CRPS.
 - Next: Eleonora decides whether a reverting level is worth adding to #634's candidates; #707 diagnoses 2021-23 and the upper tail.
+
+### 2026-10-13 [H5] step 6 · eleonorabjornberg/repo-market-model#718
+- Directive: #717
+- Step: 6 (new: the validation report rewritten for the chosen candidate; plan amendment, nothing scored)
+- Tier: development
+- Pins: published panel `4ddc3882…`; no score, no panel built; base `bd7f573`
+- Tried: plan: validation report added. `docs/research/hypotheses/H5.md` gains step 6 and milestone M5a (the report is a rewrite of `docs/model/validation.md`, goes to Eleonora with the registration, and is updated at each checkpoint). Variants: 0.
+- Result: not applicable (a plan edit; no experiment).
+- Against kill: not applicable.
+- Next: the step is carried out once step 5 has chosen the primary candidate.
