@@ -22,7 +22,8 @@ applied by `grep` and restored before the next):
 3. `read_inputs`: the line `require_unlocked((dates[i] for i in scored), where="upper_bound_635")` -> `pass`, so a scored day in a locked tier is
    read. `ReadingTests.test_a_locked_day_is_refused` fails with `AssertionError: LookAheadError not raised`.
 4. `fit_command`: the line `if rows[-1].date > date.fromisoformat(LAST_DAY):` -> `if False:`, so a panel that runs into the locked tiers is
-   accepted. `RunTests.test_a_panel_past_the_last_day_is_refused` fails with `AssertionError: SystemExit not raised`.
+   accepted. `RunTests.test_a_panel_past_the_last_day_is_refused` errors with `ValueError: the row carries no 'days_to_month_end'` (the run goes
+   on to read the panel instead of exiting).
 """
 
 from __future__ import annotations

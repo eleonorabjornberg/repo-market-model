@@ -568,12 +568,24 @@ def score_command(args) -> int:
     if not set(walk_days) <= set(full_days):
         raise SystemExit("a walk-forward decision day has no ceiling forecast")
     b1 = pb.forecasts(pb.b1_forecast, panel, full_days, registry=registry, decision_time=time(*DECISION_TIME))
-    b2 = pb.forecasts(pb.b2_forecast, panel, full_days, registry=registry, decision_time=time(*DECISION_TIME), splits=splits)
+    # B2 is not formed where the year before the decision day holds no day of the target's type (the first decision days of the panel): those
+    # decision days are left out of every window, so that every candidate and both benchmarks score the same days
+    b2, b2_missing = {}, []
+    for day in full_days:
+        try:
+            b2.update(pb.forecasts(pb.b2_forecast, panel, [day], registry=registry, decision_time=time(*DECISION_TIME), splits=splits))
+        except sp.ProtocolError:
+            b2_missing.append(day)
+    full_days = [d for d in full_days if d in b2]
+    walk_days = [d for d in walk_days if d in b2]
+    models = {key: {d: v for d, v in forecasts.items() if d in b2} for key, forecasts in models.items()}
+    b1 = {d: v for d, v in b1.items() if d in b2}
     document["spread_scope"] = {
         "decision_days_full": len(full_days),
         "decision_days_walk_forward": len(walk_days),
         "first_walk_forward_decision_day": walk_days[0].isoformat(),
         "last_decision_day": full_days[-1].isoformat(),
+        "decision_days_without_b2": [d.isoformat() for d in b2_missing],
         "scored_days": len(scored_rows),
         "ordinary_scored_days": int(sum(ordinary)),
         "pressure_days_ordinary": int(sum(l for l, o in zip(label, ordinary) if o)),
@@ -916,6 +928,8 @@ def report_command(args) -> int:
         "|---|---|---|---|---|---|---|---|",
     ]
     for key, cell in indicator["cells"].items():
+        if not any(cell["n_by_lead"].values()):
+            continue  # a split with no ordinary day in the window (a regime label that holds none)
         for row in INDICATOR_ROWS:
             r = cell[row]
             diff = r.get("auroc_minus_persistence_logistic") or {}
@@ -923,7 +937,7 @@ def report_command(args) -> int:
             vs_p = r.get("brier_skill_vs_persistence_logistic") or {}
             counts = " / ".join(f"{cell['n_by_lead'][str(h)]}/{cell['positives_by_lead'][str(h)]}" for h in LEADS) if row == "gbm" else ""
             lines.append(
-                f"| {key} | {row} | {_f(r['auroc'])} {_iv(r['auroc_interval_90']).replace('+', '')} | {_f(diff.get('value'), 3, True)} {_iv(diff.get('interval_90'))} | {_f(r['brier'], 4)} | "
+                f"| {key.replace(' | ', ', ')} | {row} | {_f(r['auroc'])} {_iv(r['auroc_interval_90']).replace('+', '')} | {_f(diff.get('value'), 3, True)} {_iv(diff.get('interval_90'))} | {_f(r['brier'], 4)} | "
                 f"{_f(vs_c.get('value'), 3, True)} {_iv(vs_c.get('interval_90'))} | {_f(vs_p.get('value'), 3, True)} {_iv(vs_p.get('interval_90'))} | {counts} |"
             )
     reading_ = document["reading"]
