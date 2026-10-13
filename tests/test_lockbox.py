@@ -511,6 +511,10 @@ NOT_ENTRY_POINTS = {
         "diagnostic of the unwarned onsets (#560); compares nothing, and walks "
         "_as_of_folds, which refuses a locked day (tests/test_unwarned_onsets.py)"
     ),
+    "scripts/spread_distribution_634.walk": (
+        "the #634 measurement's walk of a variant at one lead, as distribution_walk is; it refuses a locked "
+        "scored day itself (refuse_locked, tests/test_spread_distribution_634_script.py, LockboxTests) before any fit"
+    ),
     "scripts/final_test_opening.distribution_walk": (
         "the final test opening's walk of the published distribution and as-of "
         "persistence at h = 2 to 5 (#151), reported only; it refuses a locked "
