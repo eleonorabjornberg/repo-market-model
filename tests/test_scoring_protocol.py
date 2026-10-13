@@ -226,44 +226,96 @@ class FirstPublishedTests(unittest.TestCase):
             sp.first_published([self.observation(day, 13, 2.40), self.observation(day, 13, 2.41)], "sofr")
 
 
+def hac_variance(values, lag=10):
+    """The Newey-West (Bartlett) long-run variance, written out term by term."""
+
+    n = len(values)
+    mean = sum(values) / n
+    c = [v - mean for v in values]
+    gamma = [sum(c[t] * c[t - k] for t in range(k, n)) / n for k in range(lag + 1)]
+    return gamma[0] + 2 * sum((1 - k / (lag + 1)) * gamma[k] for k in range(1, lag + 1))
+
+
 class BootstrapTests(unittest.TestCase):
+    """The studentized stationary bootstrap of mean(d) (ruling of 13 October 2026, PR #660).
+
+    Each resample's mean is studentized by its own HAC standard error (Newey-West, lag 10):
+    `t* = (mean* - mean) / se*`, and the one-sided lower bound at level `a` is
+    `mean - q_{1-a}(t*) * se`, with `se` the original series' HAC standard error.
+    """
+
     def setUp(self):
         rng = random.Random(3)
         self.days = weekdays(date(2015, 1, 2), 300)
         self.bench = {day: 2.0 + rng.random() for day in self.days}
         self.cand = {day: self.bench[day] - 0.1 + 0.3 * rng.gauss(0, 1) for day in self.days}
+        self.d = [self.bench[day] - self.cand[day] for day in self.days]
+        self.b = [self.bench[day] for day in self.days]
 
-    def test_resampled_means_match_the_resamples_themselves(self):
-        """The segment arithmetic gives exactly the mean over the resampled rows."""
+    def naive_t_draws(self, draws, seed=7):
+        rng = random.Random(seed)
+        n = len(self.d)
+        mean = sum(self.d) / n
+        out = []
+        for _ in range(draws):
+            indices = stationary_bootstrap_indices(n, 10, rng)
+            resample = [self.d[i] for i in indices]
+            out.append((sum(resample) / n - mean) / math.sqrt(hac_variance(resample) / n))
+        return sorted(out)
 
+    def test_the_studentized_draws_match_a_direct_computation(self):
         test = sp.paired_test(self.bench, self.cand, seed=7, draws=50)
-        rng = random.Random(7)
-        d = [self.bench[day] - self.cand[day] for day in self.days]
-        naive = []
-        for _ in range(50):
-            indices = stationary_bootstrap_indices(len(d), 10, rng)
-            naive.append(sum(d[i] for i in indices) / len(d))
-        for got, want in zip(test.mean_difference_draws, sorted(naive)):
-            self.assertAlmostEqual(got, want, places=10)
+        for got, want in zip(test.t_draws, self.naive_t_draws(50)):
+            self.assertAlmostEqual(got, want, places=9)
 
     def test_the_point_values(self):
         test = sp.paired_test(self.bench, self.cand, seed=7, draws=200)
-        d = [self.bench[day] - self.cand[day] for day in self.days]
-        b = [self.bench[day] for day in self.days]
-        self.assertAlmostEqual(test.mean_difference, sum(d) / 300)
-        self.assertAlmostEqual(test.skill, sum(d) / sum(b))
-        self.assertEqual(test.n, 300)
+        n = len(self.d)
+        self.assertAlmostEqual(test.mean_difference, sum(self.d) / n)
+        self.assertAlmostEqual(test.skill, sum(self.d) / sum(self.b))
+        self.assertAlmostEqual(test.standard_error, math.sqrt(hac_variance(self.d) / n))
+        self.assertAlmostEqual(test.dm_statistic, test.mean_difference / test.standard_error)
+        self.assertEqual(test.n, n)
 
     def test_the_defaults_are_the_protocols(self):
         self.assertEqual((sp.BLOCK_LENGTH, sp.DRAWS, sp.ALPHA, sp.HAC_LAG), (10, 10_000, 0.05, 10))
+        self.assertEqual(sp.INTERIM_DRAWS, 100_000)
         self.assertEqual(sp.CHECKPOINTS, (60, 125, 250))
 
-    def test_the_bound_is_the_draws_quantile(self):
+    def test_the_lower_bound_is_the_studentized_one(self):
         test = sp.paired_test(self.bench, self.cand, seed=7, draws=1000)
-        ordered = test.mean_difference_draws
-        position = 0.05 * 999
+        ordered = self.naive_t_draws(1000)
+        position = 0.95 * 999
         low, weight = int(position), position - int(position)
-        self.assertAlmostEqual(test.lower_mean_difference(), ordered[low] * (1 - weight) + ordered[low + 1] * weight)
+        quantile = ordered[low] * (1 - weight) + ordered[low + 1] * weight
+        self.assertAlmostEqual(
+            test.lower_mean_difference(), test.mean_difference - quantile * test.standard_error, places=9
+        )
+
+    def test_the_p_value_is_the_share_of_draws_beyond_the_observed_statistic(self):
+        test = sp.paired_test(self.bench, self.cand, seed=7, draws=1000)
+        observed = test.mean_difference / test.standard_error
+        expected = sum(1 for t in self.naive_t_draws(1000) if t >= observed) / 1000
+        self.assertAlmostEqual(test.p_value, expected)
+
+    def test_the_skill_bound_is_studentized_on_the_linearised_series(self):
+        """skill = mean(d) / mean(b); its standard error is the HAC one of d - skill * b, over mean(b)."""
+
+        test = sp.paired_test(self.bench, self.cand, seed=7, draws=1000)
+        z = [d - test.skill * b for d, b in zip(self.d, self.b)]
+        n = len(z)
+        se = math.sqrt(hac_variance(z) / n) / (sum(self.b) / n)
+        self.assertAlmostEqual(test.skill_standard_error, se)
+        self.assertGreater(test.upper_skill(), test.skill)
+        self.assertAlmostEqual(
+            test.upper_skill(), test.skill - sp._bound(test.skill_t_draws, 0.05, 1000) * se, places=12
+        )
+
+    def test_skill_can_be_left_out(self):
+        test = sp.paired_test(self.bench, self.cand, seed=7, draws=100, with_skill=False)
+        test.lower_mean_difference()
+        with self.assertRaises(sp.ProtocolError):
+            test.upper_skill()
 
     def test_a_level_finer_than_the_draws_is_refused(self):
         test = sp.paired_test(self.bench, self.cand, seed=7, draws=1000)
@@ -342,7 +394,7 @@ class SpendingTests(unittest.TestCase):
 class VerdictTests(unittest.TestCase):
     def test_from_scores(self):
         rng = random.Random(9)
-        days = weekdays(date(2015, 1, 2), 125)
+        days = weekdays(date(2015, 1, 2), 250)
 
         def scores(level, noise=0.05):
             return {day: level + noise * rng.gauss(0, 1) for day in days}
@@ -350,18 +402,26 @@ class VerdictTests(unittest.TestCase):
         b1, b2 = scores(1.0), scores(1.2)
         strong, weak = scores(0.80), scores(0.9999)
         tests = sp.paired_tests([(b1, strong), (b2, strong), (b1, weak), (b2, weak)], seed=1)
-        self.assertEqual(sp.verdict(tests[0], tests[1], look=2, futility_level=0.05), sp.SUPPORTED)
-        self.assertEqual(sp.verdict(tests[2], tests[3], look=2, futility_level=0.05), sp.KILLED)
+        self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
+        self.assertEqual(sp.verdict(tests[2], tests[3], look=3, futility_level=0.05), sp.KILLED)
 
-    def test_the_first_look_cannot_be_read_at_ten_thousand_draws(self):
-        """Look 1's nominal level is about 6e-5: under one draw in 10,000."""
+    def test_the_first_look_resolves_at_the_interim_draws(self):
+        """Look 1's nominal level is about 6e-5: about six draws in 100,000 (ruling of 13 October)."""
 
         days = weekdays(date(2015, 1, 2), 60)
         rng = random.Random(2)
         b = {day: 1 + rng.random() for day in days}
-        c = {day: 0.5 + rng.random() for day in days}
-        tests = sp.paired_tests([(b, c), (b, c)], seed=1)
-        with self.assertRaises(sp.UnresolvedLevel):
+        c = {day: 0.5 + 0.2 * rng.random() for day in days}
+        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=sp.INTERIM_DRAWS)
+        self.assertEqual(sp.verdict(tests[0], tests[1], look=1, futility_level=0.05), sp.SUPPORTED)
+
+    def test_an_interim_look_on_too_few_draws_is_refused(self):
+        days = weekdays(date(2015, 1, 2), 60)
+        rng = random.Random(2)
+        b = {day: 1 + rng.random() for day in days}
+        c = {day: 0.5 + 0.2 * rng.random() for day in days}
+        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=1000)
+        with self.assertRaises(sp.ProtocolError):
             sp.verdict(tests[0], tests[1], look=1, futility_level=0.05)
 
     def test_a_test_off_the_checkpoint_is_refused(self):
@@ -370,7 +430,42 @@ class VerdictTests(unittest.TestCase):
         c = {day: 0.9 + 0.02 * (i % 3) for i, day in enumerate(days)}
         tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=100)
         with self.assertRaises(sp.ProtocolError):
-            sp.verdict(tests[0], tests[1], look=2, futility_level=0.05)
+            sp.verdict(tests[0], tests[1], look=3, futility_level=0.05)
+
+
+class SecondaryLevelsTests(unittest.TestCase):
+    """B3 is scored on its own five levels against the candidate's same five (ruling, PR #660)."""
+
+    FIVE = (0.05, 0.25, 0.5, 0.75, 0.95)
+
+    def test_the_five_levels_are_on_the_grid(self):
+        for level in self.FIVE:
+            self.assertIn(level, sp.GRID)
+
+    def test_a_candidate_is_read_at_the_five_levels(self):
+        quantiles = spread(0.0, 2.0)
+        reduced = sp.on_levels(quantiles, self.FIVE)
+        self.assertEqual(reduced, [quantiles[sp.GRID.index(level)] for level in self.FIVE])
+
+    def test_the_five_level_score_is_twice_the_mean_pinball_loss(self):
+        values = [-3.0, -1.0, 0.0, 1.0, 3.0]
+        score = sp.level_crps(self.FIVE)
+        expected = 2.0 * sum(pinball_loss(l, q, 0.7) for l, q in zip(self.FIVE, values)) / 5
+        self.assertAlmostEqual(score(values, 0.7), expected)
+
+    def test_levels_off_the_grid_or_short_vectors_are_refused(self):
+        with self.assertRaises(sp.ProtocolError):
+            sp.on_levels(spread(0.0), (0.05, 0.33))
+        with self.assertRaises(sp.ProtocolError):
+            sp.level_crps(self.FIVE)([0.0, 1.0], 0.0)
+
+    def test_day_scores_take_the_five_level_score(self):
+        calendar = weekdays(date(2019, 1, 2), 12)
+        outcomes = {day: 0.0 for day in calendar}
+        forecasts = {calendar[2]: {h: [-1.0, -0.5, 0.0, 0.5, 1.0] for h in sp.HORIZONS}}
+        scores = sp.day_scores(forecasts, outcomes, calendar, score=sp.level_crps(self.FIVE))
+        expected = 2.0 * sum(pinball_loss(l, q, 0.0) for l, q in zip(self.FIVE, [-1.0, -0.5, 0.0, 0.5, 1.0])) / 5
+        self.assertAlmostEqual(scores[calendar[2]], expected)
 
 
 class HolmTests(unittest.TestCase):
