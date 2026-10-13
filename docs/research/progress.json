@@ -1,11 +1,10 @@
 {
   "_about": "What no other tracked source holds (#645): which milestones are done, each with the tracked file that shows it, and a step floor for a hypothesis whose work predates the log. A step is one of the six in docs/research/plan.md. A change to this file is a statement about progress and is reviewed like the plan.",
   "steps": {
-    "H1": 3
+    "H1": 2
   },
   "milestones": {
     "H1.M1": {"evidence": "tests/test_scoring_protocol_synthetic.py"},
-    "H1.M2": {"evidence": "src/repo_model/scoring_protocol.py"},
-    "H1.M3": {"evidence": "tests/test_scoring_protocol_coverage.py"}
+    "H1.M2": {"evidence": "src/repo_model/scoring_protocol.py"}
   }
 }
