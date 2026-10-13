@@ -247,9 +247,11 @@ def report_command(args) -> int:
                 "path": [(e["last_training_row"], e["satiation_level"]) for e in log],
                 "stability": stability([e["satiation_level"] for e in used]),
                 "median_interval_width": statistics.median(widths) if widths else None,
-                "share_interval_at_the_grid_edge": (
-                    sum(1 for e in used if e["interval"][0] <= min(sat.KINK_GRID) + 1e-9 or e["interval"][1] >= max(sat.KINK_GRID) - 1e-9)
-                    / len(used) if used else None
+                "share_interval_reaching_the_grid_maximum": (
+                    sum(1 for e in used if e["interval"][1] >= max(sat.KINK_GRID) - 1e-9) / len(used) if used else None
+                ),
+                "share_interval_reaching_the_grid_minimum": (
+                    sum(1 for e in used if e["interval"][0] <= min(sat.KINK_GRID) + 1e-9) / len(used) if used else None
                 ),
                 "share_of_levels_at_the_grid_maximum": (
                     sum(1 for e in used if e["satiation_level"] >= max(sat.KINK_GRID) - 1e-9) / len(used) if used else None
@@ -374,14 +376,14 @@ def report_text(result: dict) -> str:
                 f"{s['changes_of_0.01_or_more']} | {_f(s['sd'], 4)} | {_f(s['last'], 4)} |"
             )
     lines += ["", "## How well the profile identifies the level", "",
-              "| h | estimator | median width of the 1.92-nat interval | share of refits whose interval touches the grid edge | share of levels at the grid maximum | share with several local minima | median excess of the fixed 0.12 (nats) |",
-              "|---|---|---|---|---|---|---|"]
+              "| h | estimator | median width of the 1.92-nat interval | share of refits whose interval reaches the grid maximum | reaches the grid minimum | share of levels at the grid maximum | share with several local minima | median excess of the fixed 0.12 (nats) |",
+              "|---|---|---|---|---|---|---|---|"]
     for h, cell in sorted(result["paths"].items()):
         for name in NEW:
             e = cell[name]
             lines.append(
-                f"| {h} | {name} | {_f(e['median_interval_width'], 4)} | {_f(e['share_interval_at_the_grid_edge'], 2)} | "
-                f"{_f(e['share_of_levels_at_the_grid_maximum'], 2)} | {_f(e['share_with_several_local_minima'], 2)} | {_f(e['median_excess_at_fixed_nats'], 2)} |"
+                f"| {h} | {name} | {_f(e['median_interval_width'], 4)} | {_f(e['share_interval_reaching_the_grid_maximum'], 2)} | "
+                f"{_f(e['share_interval_reaching_the_grid_minimum'], 2)} | {_f(e['share_of_levels_at_the_grid_maximum'], 2)} | {_f(e['share_with_several_local_minima'], 2)} | {_f(e['median_excess_at_fixed_nats'], 2)} |"
             )
     lines += ["", "## Days that are not risk dates, +5 bp: AUROC, Brier skill against the calendar climatology, reliability line", "",
               "90% stationary-bootstrap intervals. The differences are against `structural_kinked_fitted` and `structural_kinked_rolling`, on shared resamples.", ""]
