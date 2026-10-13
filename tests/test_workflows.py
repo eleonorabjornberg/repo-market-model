@@ -93,7 +93,7 @@ class WorkflowFileTests(unittest.TestCase):
                     )
 
     def test_jobs_are_found(self):
-        self.assertEqual(set(jobs(next(p for p in WORKFLOWS if p.name == "tests.yml"))), {"suite", "ml", "owner-attested"})
+        self.assertEqual(set(jobs(next(p for p in WORKFLOWS if p.name == "tests.yml"))), {"suite", "ml", "owner-attested", "research-log"})
 
     def test_tests_yml_checks_out_the_whole_history(self):
         path = next(p for p in WORKFLOWS if p.name == "tests.yml")
