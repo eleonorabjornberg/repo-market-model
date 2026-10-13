@@ -13,7 +13,7 @@ Serves H4 (longer history fixes part of 2018-19), step 1 of #633. The table belo
 > start of that day), and `backfill.require_posting_established` refuses every fit whose training ends before it
 > (`tests/test_backfill.py`, `TheRuledPostingInstant`). The first fit that trains on the back-fill in the measurements
 > so far ends on 2018-06-27, so every scored day from 2018-06-29 may train on it. The measurement is
-> [`posting-dates-h4-measurement.md`](posting-dates-h4-measurement.md). The other rows of the table are unchanged.
+> [`posting-dates-h4-result.md`](posting-dates-h4-result.md). The other rows of the table are unchanged.
 
 Rule used (the directive's): a series is usable only if the instant it became public is established from a source that
 is cited here. Where the evidence is ambiguous it is marked not usable and listed for Eleonora. No pattern is inferred.
