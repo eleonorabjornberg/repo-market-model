@@ -20,8 +20,8 @@ AUROC with the AUROC inside refit blocks. The statistics, the pairing and the in
     # PUBLISHED.csv and AUG2.csv, AUG2D.csv, AUG2R.csv: the scratch panels of scripts/off_risk_day_624.py's docstring; OUT/bench_h?.json are
     # pressure_judge.py forecasts; OUT/iorb_h?.json and OUT/cap_h?.json the published control row and its cap (iorb_every_day_579.py, every_day_conditioning_601.py)
     PYTHONPATH=src python3 scripts/every_day_steps_687.py declare
-    for h in 1 2 3 4 5: OMP_NUM_THREADS=1 PYTHONPATH=src python3 scripts/every_day_steps_687.py run --panel AUG2.csv --published PUBLISHED.csv \\
-        --horizon $h --output OUT/steps_h$h.json
+    for h in 1 2 3 4 5: OMP_NUM_THREADS=1 PYTHONPATH=src python3 scripts/every_day_steps_687.py run --panel AUG2.csv --day-panel AUG2R.csv \\
+        --published PUBLISHED.csv --horizon $h --output OUT/steps_h$h.json
     PYTHONPATH=src python3 scripts/every_day_steps_687.py check --input 'OUT/steps_h{h}.json' --iorb 'OUT/iorb_h{h}.json' --cap 'OUT/cap_h{h}.json'
     PYTHONPATH=src python3 scripts/every_day_steps_687.py measure ...   (see the result page for the exact commands)
     PYTHONPATH=src python3 scripts/every_day_steps_687.py blocks --panel PUBLISHED.csv --scratch AUG2.csv --input 'OUT/steps_h{h}.json' --output OUT/blocks.json
@@ -343,7 +343,9 @@ def run_command(args) -> int:
         raise SystemExit(f"lead {h}: the component's scored days are not the grid's")
     states = odr._load("pressure_judge")._scarcity_states(h, last)
     state_value = [None if states.get(d) is None else float(states[d]) for d in scored]
-    reads = odr.read_features(rows, registry, last, h)
+    day_rows = load_daily_panel(args.day_panel)
+    audit_panel(day_rows)
+    reads = odr.read_features(day_rows, registry, last, h)
     base = odr.design_rows([reads[d] for d in days], state_value)
     step_two = json.loads(odr.STEP_TWO_DECLARATION.read_text(encoding="utf-8"))
     for name, form in DAY_ROWS.items():
@@ -357,7 +359,7 @@ def run_command(args) -> int:
         forecasts[name] = {f"{tau:g}": {d: (monotone[tau][k] if off[k] else 0.0) for k, d in enumerate(days)} for tau in taus_day}
         print(json.dumps({"horizon": h, "row": name, "served_days": sum(1 for k, x in enumerate(designs) if off[k] and x is not None)}), flush=True)
     document = {
-        "horizon": h, "panel_sha256": panel_sha256(args.published), "scratch_panel_sha256": panel_sha256(args.panel),
+        "horizon": h, "panel_sha256": panel_sha256(args.published), "scratch_panel_sha256": panel_sha256(args.panel), "day_panel_sha256": panel_sha256(args.day_panel),
         "declaration": declared, "forecasts": forecasts,
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
@@ -494,6 +496,7 @@ def main(argv=None) -> int:
     sub.add_parser("declare").set_defaults(func=declare_command)
     r = sub.add_parser("run")
     r.add_argument("--panel", type=Path, required=True, help="the scratch panel (AUG2.csv)")
+    r.add_argument("--day-panel", type=Path, required=True, help="the scratch panel with the satiation distance built per release (AUG2R.csv)")
     r.add_argument("--published", type=Path, required=True)
     r.add_argument("--horizon", type=int, required=True)
     r.add_argument("--output", type=Path, required=True)
