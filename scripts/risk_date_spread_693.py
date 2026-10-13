@@ -474,7 +474,16 @@ def page(args) -> int:
         lines.append(f"| {LABEL[m]} | {q['means'][m]:.3f} | | |")
     for c in CANDIDATES:
         lines.append(f"| {LABEL[c]} | {q['means'][c]:.3f} | {skill_text(q['vs'][c]['B1'])} | {skill_text(q['vs'][c]['calendar'])} |")
+    crps_b1 = p["vs"][A]["B1"]
+    three = r["splits"]["regime_three"]
+    parts = ", ".join(
+        f"{label} {skill_text(cell['grid_crps']['vs'][A]['B1'])}" for label, cell in three.items() if "grid_crps" in cell
+    )
     lines += ["", verdict_words(r), "",
+              f"How firm that is: the lower bound of the first candidate's pooled CRPS skill against B1 is {100.0 * crps_b1['skill_interval'][0]:+.2f}% "
+              f"(the Diebold-Mariano p-value is {crps_b1['dm_p_value']:.3f}), and its MAE has no skill against B1. By regime its CRPS skill against B1 is {parts}: "
+              "the pooled figure leans on the regimes where it is positive. Its skill against the calendar benchmark is large and the type x state model is "
+              "worse than the calendar benchmark.", "",
               "The splits by risk type, regime and scarcity state, the per-lead tables and the sketch of the severity calendar (when the rule leaves the "
               "hypothesis standing) are in `docs/pivot/evidence/risk-date-spread/report.md`.", ""]
     Path(args.output).write_text("\n".join(lines), encoding="utf-8")
