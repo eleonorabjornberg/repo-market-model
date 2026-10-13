@@ -545,19 +545,23 @@
       "publication": "Treasury auction results: announced at the close of competitive bidding on the auction date (closing_time_comp), served in Fiscal Data's auctions_query."
     },
     "coverage": [
-      "accepted amount, primary dealer and indirect bidder accepted amounts and total tendered, per auction, summed over the auctions of an auction date"
+      "accepted amount, primary dealer and indirect bidder accepted amounts, total tendered, and the Fed rollover (SOMA) accepted and tendered, per auction, summed over the auctions of an auction date (SOMA added by #690: the shares and the cover leave it out)"
     ],
     "field_frequencies": {
       "total_accepted": "event",
       "primary_dealer_accepted": "event",
       "indirect_bidder_accepted": "event",
-      "total_tendered": "event"
+      "total_tendered": "event",
+      "soma_accepted": "event",
+      "soma_tendered": "event"
     },
     "fields": [
       "total_accepted",
       "primary_dealer_accepted",
       "indirect_bidder_accepted",
-      "total_tendered"
+      "total_tendered",
+      "soma_accepted",
+      "soma_tendered"
     ],
     "frequency": "event",
     "limitation": "Off in every published declaration (#630). A column has a value only on a day with an auction that has a result, and is empty on every other day. Amounts are US dollars in the table and USD billions (accepted) or shares and a ratio (the others) in the columns. The table's record_date is the settlement date; the columns are dated by auction_date.",
