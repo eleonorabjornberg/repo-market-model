@@ -130,8 +130,9 @@ from repo_model.scarcity import (  # noqa: E402
 )
 from repo_model.splits import LookAheadError  # noqa: E402
 
-sys.path.insert(0, str(ROOT / "scripts"))
-import research_view  # noqa: E402
+_spec = importlib.util.spec_from_file_location("research_view", ROOT / "scripts" / "research_view.py")
+research_view = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(research_view)
 
 # #115's measurement panel, loaded from its script by path: scripts/ is not a package.
 _spec = importlib.util.spec_from_file_location("scarcity_validation", ROOT / "scripts" / "scarcity_validation.py")
@@ -3449,8 +3450,8 @@ def generate(repo, commit=None):
     research_provenance = dict(provenance, inputs={
         rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.LOG, research_view.PROGRESS,
                                             *sorted(str(p.relative_to(repo)) for p in
-                                                    (repo / research_view.HYPOTHESES).glob("H*.md")),
-                                            FINAL_TEST)})
+                                                    (repo / research_view.HYPOTHESES).glob("H*.md")))},
+        incumbent_from=f"{DATA_DIR}/final_test.json")
     daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})
     own = {"research": research_provenance, "model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
            "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}

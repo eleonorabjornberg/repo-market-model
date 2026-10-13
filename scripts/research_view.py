@@ -15,13 +15,14 @@ carries the label `DEV_LABEL`. Standard library only.
 from __future__ import annotations
 
 import html
+import importlib.util
 import json
 import re
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import check_research_log  # noqa: E402
+_spec = importlib.util.spec_from_file_location("check_research_log", Path(__file__).with_name("check_research_log.py"))
+check_research_log = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(check_research_log)
 
 PLAN = "docs/research/plan.md"
 LOG = "docs/research/log.md"
@@ -34,7 +35,6 @@ NOT_MEASURED = "not measured"
 #: The six steps every hypothesis follows (`docs/research/plan.md`, "Every hypothesis follows the same steps").
 STEPS = ("Question", "Groundwork", "Development", "Registration", "Confirmation", "Verdict")
 REPOSITORY = "eleonorabjornberg/repo-market-model"
-ISSUE = "https://github.com/{}/issues/{}"
 
 
 class ResearchError(ValueError):
@@ -45,14 +45,31 @@ def esc(text):
     return html.escape(text, quote=True)
 
 
+REF_LIST = re.compile(r"#\d+(?:,\s*(?:and\s+)?#\d+)+")
+REF_PARENS = re.compile(r"\s*\(\s*#\d+(?:[,;\s]+(?:and\s+)?#\d+)*\s*\)")
+GITHUB_ITEM = re.compile(r"\[([^\]]+)\]\(https://github\.com/[^)\s]*/(?:issues|pull)/\d+[^)\s]*\)")
+
+
+def lay(text):
+    """The text without issue or pull request numbers: the page is for a lay reader (`LayReaderPageTests`).
+
+    A link to an issue keeps its words and loses its target; a reference becomes "a tracked directive" (or
+    "tracked directives"), and a parenthesis holding only references goes. Returns None when no words are left.
+    """
+    out = GITHUB_ITEM.sub(r"\1", text)
+    out = REF_PARENS.sub("", out)
+    out = REF_LIST.sub("tracked directives", out)
+    out = re.sub(r"(?<![\w&/])#\d+\b", "a tracked directive", out)
+    out = re.sub(r"\bThe a tracked directive\b", "A tracked directive", out)
+    words = re.sub(r"tracked directives?|a tracked directive", "", out)
+    return out.strip() if re.search(r"[A-Za-z0-9]", words) else None
+
+
 def inline(text):
-    """Escape a Markdown fragment, rendering `code`, **bold** and [text](url) (an absolute URL only)."""
-    out = esc(text)
-    out = re.sub(r"\[([^\]]+)\]\((https://[^)\s]+)\)", r'<a href="\2">\1</a>', out)
+    """Escape a Markdown fragment, rendering `code` and **bold**; issue numbers are removed (`lay`)."""
+    out = esc(lay(text) or "")
     out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
-    out = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", out)
-    out = re.sub(r"(?<![\w&/])#(\d+)\b", lambda m: f'<a href="{ISSUE.format(REPOSITORY, m.group(1))}">#{m.group(1)}</a>', out)
-    return out
+    return re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", out)
 
 
 def read(repo, rel):
@@ -250,8 +267,7 @@ def log_html(h):
         return '<p class="rs-note">No log entry yet.</p>'
     items = []
     for e in h["log"]:
-        repo, _, num = e["ref"].partition("#")
-        link = f'<a href="https://github.com/{esc(repo)}/pull/{num}">{esc(e["ref"])}</a>'
+        link = f'<a href="{BLOB}{LOG}#L{e["line"]}">log entry</a>'
         f = e["fields"]
         items.append(
             f'<li><b>{e["date"]}</b>, step {e["step"]}, {link}, tier {esc(f.get("Tier", ""))}'
@@ -260,12 +276,17 @@ def log_html(h):
     return '<ul class="rs-log">' + "".join(items) + '</ul>'
 
 
+def row(label, text):
+    """A definition row, or nothing when the text is empty once issue numbers are gone."""
+    return f"<dt>{label}</dt><dd>{inline(text)}</dd>" if text and lay(text) else ""
+
+
 def hypothesis_html(h):
     m, p = h["manual"], h["plan"]
     goal = p.get("target") or p.get("targets")
     open_questions = p.get("open questions")
     kill = p.get("kill") or p.get("kill or fix") or NOT_MEASURED
-    tests = p.get("test") or p.get("tests") or NOT_MEASURED
+    tests = p.get("test") or p.get("tests")
     miles = "".join(
         f'<li class="{"done" if mid in h["done"] else "open"}"><b>{mid}</b> '
         f'<span class="rs-state">{"done" if mid in h["done"] else "open"}</span> {inline(text)}'
@@ -278,16 +299,14 @@ def hypothesis_html(h):
         f'<article class="rs-h" id="{h["id"].lower()}" aria-labelledby="{h["id"].lower()}-t">'
         f'<h3 id="{h["id"].lower()}-t">{h["id"]}. {inline(h["title"])}{role}</h3>'
         f'<dl><dt>Question</dt><dd>{inline(m["question"])}</dd>'
-        + (f'<dt>Goal</dt><dd>{inline(goal)}</dd>' if goal else "")
-        + (f'<dt>Open questions</dt><dd>{inline(open_questions)}</dd>' if open_questions else "")
-        + f'<dt>Test</dt><dd>{inline(tests)}</dd>'
-        f'<dt>Kill criterion</dt><dd>{inline(kill[:1].upper() + kill[1:])}</dd>'
+        + row("Goal", goal) + row("Open questions", open_questions) + row("Test", tests)
+        + f'<dt>Kill criterion</dt><dd>{inline(kill[:1].upper() + kill[1:])}</dd>'
         f'<dt>Owner</dt><dd>{inline(m["owner"] or NOT_MEASURED)}</dd>'
         f'<dt>Step</dt><dd>{h["step"]} of {len(STEPS)}: {STEPS[h["step"] - 1]}; status {esc(h["status_text"] or "open")}</dd>'
         f'<dt>Milestones</dt><dd><ul class="rs-miles">{miles}</ul></dd>'
         f'<dt>Progress markers</dt><dd><ul>{markers}</ul></dd>'
         f'<dt>Development variants</dt><dd><span class="rs-nm">{NOT_MEASURED}</span> '
-        f'(the running count is the progress page&rsquo;s, <a href="{ISSUE.format(REPOSITORY, 637)}">#637</a>)</dd>'
+        f'(the running count belongs to the progress page, which is not built yet)</dd>'
         f'</dl><details><summary>Research log for {h["id"]}</summary>{log_html(h)}</details></article>')
 
 
@@ -305,7 +324,7 @@ def payload(hypotheses):
              "milestones": [{"id": mid, "text": text, "done": mid in h["done"],
                              "evidence": h["evidence"].get(mid)} for mid, text in h["manual"]["milestones"]],
              "markers": h["manual"]["markers"],
-             "log": [{"date": e["date"], "step": e["step"], "ref": e["ref"], "line": e["line"]} for e in h["log"]]}
+             "log": [{"step": e["step"], "line": e["line"]} for e in h["log"]]}
             for h in hypotheses]
 
 
