@@ -372,6 +372,36 @@ def _long_run_variance(values: Sequence[float], lag: int) -> float:
     return variance / n
 
 
+# Prefix-sum resampling helpers, kept for `repo_model.richer_targets` (#702), which reads them.
+
+
+def _segments(indices: Sequence[int], n: int) -> Tuple[List[int], List[int]]:
+    """A stationary resample as runs of consecutive rows: their starts and (exclusive) ends.
+
+    A run that wraps past the last row is split in two, so no segment wraps, and the
+    resampled sum of a series is `sum(prefix[end]) - sum(prefix[start])` over the segments.
+    """
+
+    starts, ends = [indices[0]], []
+    for previous, current in zip(indices, indices[1:]):
+        if current != previous + 1:
+            ends.append(previous + 1)
+            starts.append(current)
+    ends.append(indices[-1] + 1)
+    return starts, ends
+
+
+def _resampled_sum(prefix: Sequence[float], starts: Sequence[int], ends: Sequence[int]) -> float:
+    return sum(map(prefix.__getitem__, ends)) - sum(map(prefix.__getitem__, starts))
+
+
+def _prefix(values: Sequence[float]) -> List[float]:
+    out = [0.0]
+    for value in values:
+        out.append(out[-1] + value)
+    return out
+
+
 def _bound(ordered: Sequence[float], level: float, draws: int) -> float:
     """The `level` quantile of sorted draws, refused where the draws cannot resolve it."""
 
