@@ -8,13 +8,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0012735148439895734,
+       "lower": -0.001350797962499059,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.0017539023651300801
+       "upper": 0.0023230923379938986
       },
-      "mean": 0.00016323251147023934
+      "mean": 0.0004298421250825279
      }
     },
     "day_type month_end": {
@@ -23,13 +23,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": 8.853126066042294e-05,
+       "lower": 0.0008398012193125593,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.003875871432033453
+       "upper": 0.00808438849434243
       },
-      "mean": 0.001804919976986649
+      "mean": 0.00430230242084742
      }
     },
     "day_type ordinary": {
@@ -38,13 +38,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0006972207328543326,
+       "lower": -0.0011350398058918723,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.002415888406443294
+       "upper": 0.0022872297380499454
       },
-      "mean": 0.0006825013002535436
+      "mean": 0.00043135723363813363
      }
     },
     "day_type quarter_end": {
@@ -53,13 +53,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.052475948564941505,
+       "lower": -0.041462155533866576,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": -0.0014898121461717373
+       "upper": 0.005456151952867787
       },
-      "mean": -0.024493065286624073
+      "mean": -0.015249009397747537
      }
     },
     "day_type tax_date": {
@@ -68,13 +68,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.019084877156879752,
+       "lower": -0.02286167989184461,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.00867409243294721
+       "upper": 0.0180308592043285
       },
-      "mean": -0.003368180482981143
+      "mean": -0.0006628923262842039
      }
     },
     "regime 2018-19": {
@@ -83,13 +83,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.005549859993119462,
+       "lower": -0.0075337370134465394,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.005641391788698726
+       "upper": 0.00643818258224902
       },
-      "mean": -0.0002571068297060988
+      "mean": -0.0007307127406622841
      }
     },
     "regime 2020": {
@@ -98,13 +98,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.003617661672550236,
+       "lower": -0.004133727694207906,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.008660407174458543
+       "upper": 0.008956834464076373
       },
-      "mean": 0.0017762833682556374
+      "mean": 0.0017277593263136796
      }
     },
     "regime 2021-23": {
@@ -113,13 +113,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.00012523582199156603,
+       "lower": -0.00012490288632070192,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.00035402876926936484
+       "upper": 0.00014324480424152946
       },
-      "mean": 5.998465664949086e-05
+      "mean": -1.092271002102689e-05
      }
     },
     "regime 2024": {
@@ -128,13 +128,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.005148700273720318,
+       "lower": -0.004557203311169862,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 4.916942535762836e-05
+       "upper": -7.074885427773128e-07
       },
-      "mean": -0.0017394896295321355
+      "mean": -0.0015672311222527113
      }
     },
     "regime 2025-26": {
@@ -143,13 +143,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0012747335706145956,
+       "lower": 0.0008345762292570673,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2062174535,
-       "upper": 0.004432277433115559
+       "upper": 0.008257977476134937
       },
-      "mean": 0.0013907884092393397
+      "mean": 0.004198481746112865
      }
     }
    },
@@ -160,13 +160,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.001868133928271205,
+       "lower": -0.0014783264415202555,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 0.002654427405980817
+       "upper": 0.002660730341808885
       },
-      "mean": 0.00033207534310905027
+      "mean": 0.0005544828006555811
      }
     },
     "day_type month_end": {
@@ -175,13 +175,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0026484899592384764,
+       "lower": -0.00495144180274506,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 0.0076148112785316205
+       "upper": 0.01144900424234453
       },
-      "mean": 0.0019085362028196857
+      "mean": 0.003176163127200597
      }
     },
     "day_type ordinary": {
@@ -190,13 +190,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0005573416845300209,
+       "lower": -0.0005779189931227926,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 0.003092303444000437
+       "upper": 0.0029455033277953208
       },
-      "mean": 0.001187954345402928
+      "mean": 0.0010790731291575799
      }
     },
     "day_type quarter_end": {
@@ -205,13 +205,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.08024810263207593,
+       "lower": -0.08395648778413879,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 0.031291230876741474
+       "upper": 0.016263162372632086
       },
-      "mean": -0.020738499572218207
+      "mean": -0.02863985914435197
      }
     },
     "day_type tax_date": {
@@ -220,13 +220,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.023030206369892562,
+       "lower": -0.013653132098285914,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": -0.0007482230250862463
+       "upper": 0.006736172916603654
       },
-      "mean": -0.010637878838619712
+      "mean": -0.003471810314178438
      }
     },
     "regime 2018-19": {
@@ -235,13 +235,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.002784948070527737,
+       "lower": -0.00026254920810635316,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 0.016815424401317846
+       "upper": 0.017049339740190742
       },
-      "mean": 0.006379168373759804
+      "mean": 0.008297724047012485
      }
     },
     "regime 2020": {
@@ -250,13 +250,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.007386580182361031,
+       "lower": -0.009495004787162803,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 0.00416270164950619
+       "upper": 0.00269146085812018
       },
-      "mean": -0.0018186066230508272
+      "mean": -0.003549753797805288
      }
     },
     "regime 2021-23": {
@@ -265,13 +265,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.00014432251425170305,
+       "lower": -0.0001414381736376322,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": -5.908813302479253e-05
+       "upper": -5.615674695939703e-05
       },
-      "mean": -9.931450240126906e-05
+      "mean": -9.648373827430639e-05
      }
     },
     "regime 2024": {
@@ -280,13 +280,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.004134986948053052,
+       "lower": -0.003572590907074183,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 1.1107500305823118e-05
+       "upper": 2.574104284651146e-06
       },
-      "mean": -0.0013160997848198006
+      "mean": -0.001144084422099299
      }
     },
     "regime 2025-26": {
@@ -295,13 +295,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.009439199890782006,
+       "lower": -0.007482363718224067,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 2131827028,
-       "upper": 0.0010208301676114266
+       "upper": 9.276820513422649e-05
       },
-      "mean": -0.003632054108831998
+      "mean": -0.003277822673703965
      }
     }
    },
@@ -312,13 +312,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.003982552492672459,
+       "lower": -0.0036574372386854598,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.0010423002075776843
+       "upper": 0.00043061447436387723
       },
-      "mean": -0.0014169479350366193
+      "mean": -0.0015251695137989427
      }
     },
     "day_type month_end": {
@@ -327,13 +327,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.016834027440991498,
+       "lower": -0.012154622230649417,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.012636876139248512
+       "upper": 0.0048510410699075844
       },
-      "mean": -0.0017234814971830673
+      "mean": -0.0028533602211029976
      }
     },
     "day_type ordinary": {
@@ -342,13 +342,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.002650884478180752,
+       "lower": -0.002384786981177609,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.0013062362611349734
+       "upper": 0.0008888000904658906
       },
-      "mean": -0.0006616796761436382
+      "mean": -0.0007722174497802333
      }
     },
     "day_type quarter_end": {
@@ -357,13 +357,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.026594419747066014,
+       "lower": -0.028557986224487873,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.032086054613549214
+       "upper": -0.0004828254480710612
       },
-      "mean": 0.0016463168006230293
+      "mean": -0.01383516029950079
      }
     },
     "day_type tax_date": {
@@ -372,13 +372,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.04527685379008425,
+       "lower": -0.03333917877629249,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.016013339444436656
+       "upper": 0.01236382174007848
       },
-      "mean": -0.015527708142838624
+      "mean": -0.008690347905836107
      }
     },
     "regime 2018-19": {
@@ -387,13 +387,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.00858230839052718,
+       "lower": -0.005958027940297895,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.009980981120794085
+       "upper": 0.008519160255920331
       },
-      "mean": 0.0005648146248646314
+      "mean": 0.001187119369675479
      }
     },
     "regime 2020": {
@@ -402,13 +402,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.012507979952011564,
+       "lower": -0.012373851906114265,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.0011579727437986836
+       "upper": -0.000275351291427969
       },
-      "mean": -0.004729007957576325
+      "mean": -0.005190131724856913
      }
     },
     "regime 2021-23": {
@@ -417,13 +417,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0005683297481925832,
+       "lower": -0.000554051533692141,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": -0.00019966274910344808
+       "upper": -0.00014543063631258205
       },
-      "mean": -0.0003732946736030585
+      "mean": -0.000346137692524634
      }
     },
     "regime 2024": {
@@ -432,13 +432,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0021478804238763537,
+       "lower": -0.0016480153190754194,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 1.0266949090332776e-05
+       "upper": 0.00030292614854217267
       },
-      "mean": -0.0006928305163896068
+      "mean": -0.0004557461992516987
      }
     },
     "regime 2025-26": {
@@ -447,13 +447,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.016242131792126,
+       "lower": -0.015235882335960805,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 596936170,
-       "upper": 0.00556473879411448
+       "upper": 0.001059948003358013
       },
-      "mean": -0.004909126101300707
+      "mean": -0.006509305535929065
      }
     }
    },
@@ -464,13 +464,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0015633109470106026,
+       "lower": -0.001277575366951989,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.0019819136047038765
+       "upper": 0.0029971509610919643
       },
-      "mean": 0.00022003610984400957
+      "mean": 0.0007661155527824967
      }
     },
     "day_type month_end": {
@@ -479,13 +479,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.020446535911384914,
+       "lower": -0.013886884079359355,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.004744600039872215
+       "upper": 0.00867372217337947
       },
-      "mean": -0.006869757207552136
+      "mean": -0.0021088666054212366
      }
     },
     "day_type ordinary": {
@@ -494,13 +494,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0001196046017557667,
+       "lower": -0.0008999172816958422,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.002810166849057251
+       "upper": 0.0029053837117536977
       },
-      "mean": 0.0012120444843449925
+      "mean": 0.000893406857623832
      }
     },
     "day_type quarter_end": {
@@ -509,13 +509,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.018327562017002533,
+       "lower": -0.015102368043511906,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.01955555860945862
+       "upper": 0.07612489914971118
       },
-      "mean": -6.586327977741347e-05
+      "mean": 0.026182683423397354
      }
     },
     "day_type tax_date": {
@@ -524,13 +524,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.017323061542446755,
+       "lower": -0.01667866846572349,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.005451420023225866
+       "upper": 0.004582032763532574
       },
-      "mean": -0.005579508028111136
+      "mean": -0.005245604575744048
      }
     },
     "regime 2018-19": {
@@ -539,13 +539,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": 0.00013518133684289093,
+       "lower": 0.00010927993182336162,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.01114906934601639
+       "upper": 0.017220093435372938
       },
-      "mean": 0.005279807162171754
+      "mean": 0.008070681403117062
      }
     },
     "regime 2020": {
@@ -554,13 +554,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.00323878326625531,
+       "lower": -0.009826866737112536,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.004364495087627487
+       "upper": 0.0032124843698790404
       },
-      "mean": 0.00022897374993629396
+      "mean": -0.003196865761819147
      }
     },
     "regime 2021-23": {
@@ -569,13 +569,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.00026762028510715267,
+       "lower": -0.0002766556084096747,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 1.457810331199619e-05
+       "upper": 0.0009555907456554716
       },
-      "mean": -0.00012621402045700768
+      "mean": 0.0001964875257878947
      }
     },
     "regime 2024": {
@@ -584,13 +584,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -7.2192714841641295e-06,
+       "lower": 4.0181004577800164e-07,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.002468390015198308
+       "upper": 0.002133315080474475
       },
-      "mean": 0.000920688666593313
+      "mean": 0.0008281392968260078
      }
     },
     "regime 2025-26": {
@@ -599,13 +599,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.015457685725389983,
+       "lower": -0.009776373459321794,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1292617155,
-       "upper": 0.000418084401563423
+       "upper": -0.00028319364667580817
       },
-      "mean": -0.007011474817269442
+      "mean": -0.004503018415805289
      }
     }
    },
@@ -616,13 +616,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0008909144529533433,
+       "lower": -0.002018897071187974,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.0025275780658428086
+       "upper": 0.0018058074760577832
       },
-      "mean": 0.0007183438704713313
+      "mean": -0.000150804882877912
      }
     },
     "day_type month_end": {
@@ -631,13 +631,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.009429871481008992,
+       "lower": -0.012321869485284163,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.0051932742014962
+       "upper": 0.008426521417407584
       },
-      "mean": -0.0016822659553502196
+      "mean": -0.0019117865920313009
      }
     },
     "day_type ordinary": {
@@ -646,13 +646,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.00024493989663649466,
+       "lower": -0.0010898873868640164,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.002603040485516457
+       "upper": 0.0024719535631343775
       },
-      "mean": 0.0010731015209627824
+      "mean": 0.0006154448009422695
      }
     },
     "day_type quarter_end": {
@@ -661,13 +661,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.024765333449861687,
+       "lower": -0.02730749419693372,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.0013914489707204196
+       "upper": 0.008571938854594445
       },
-      "mean": -0.010605613216915393
+      "mean": -0.009429502993863605
      }
     },
     "day_type tax_date": {
@@ -676,13 +676,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.01606703997818783,
+       "lower": -0.024880125611355584,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.024963385863388303
+       "upper": 0.011358576770916201
       },
-      "mean": 0.0022037140469714643
+      "mean": -0.007830482348155593
      }
     },
     "regime 2018-19": {
@@ -691,13 +691,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": 0.0017508109355976154,
+       "lower": -0.0012581475269816571,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.014113578305249758
+       "upper": 0.014092524489555735
       },
-      "mean": 0.007474758842833364
+      "mean": 0.006053745515861004
      }
     },
     "regime 2020": {
@@ -706,13 +706,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.004982612417574333,
+       "lower": -0.009177279319870424,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.00016389945963475523
+       "upper": -0.0016225660951902578
       },
-      "mean": -0.00215377354459385
+      "mean": -0.005213178523047843
      }
     },
     "regime 2021-23": {
@@ -721,13 +721,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0003870629729700167,
+       "lower": -0.00036627479593394385,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": -6.840432615014994e-05
+       "upper": -4.75186487438184e-05
       },
-      "mean": -0.0002029282547831167
+      "mean": -0.00018593272254992295
      }
     },
     "regime 2024": {
@@ -736,13 +736,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.0016047790576015064,
+       "lower": -0.001570138214692773,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.0008953091930763635
+       "upper": 0.00026766634046207765
       },
-      "mean": -0.0001968527310836955
+      "mean": -0.00043373628820831566
      }
     },
     "regime 2025-26": {
@@ -751,13 +751,13 @@
       "interval": {
        "block_length": 10,
        "level": 0.9,
-       "lower": -0.01026946587756007,
+       "lower": -0.011388776761353926,
        "method": "stationary_bootstrap",
        "replications": 2000,
        "seed": 1228314988,
-       "upper": 0.005359198369157799
+       "upper": 0.0026690023354159985
       },
-      "mean": -0.002766868111399639
+      "mean": -0.00390270825172217
      }
     }
    }
@@ -3331,7 +3331,8 @@
    "2025-10-15": {
     "is_onset": true,
     "leads_flagged": [
-     2
+     2,
+     3
     ]
    },
    "2025-12-26": {
@@ -3382,7 +3383,7 @@
    "2025-10-15": {
     "is_onset": true,
     "leads_flagged": [
-     2
+     3
     ]
    },
    "2025-12-26": {
@@ -3433,7 +3434,7 @@
    "2025-10-15": {
     "is_onset": true,
     "leads_flagged": [
-     2
+     3
     ]
    },
    "2025-12-26": {
@@ -3508,7 +3509,7 @@
    }
   },
   "ruling_567": "these variants were built after seeing 2018-2025; a pass is not a confirmation, and a variant can replace a shortlist slot only by Eleonora's decision before the 2026 window opens",
-  "satiation_distance_version": "built per H.4.1 release (scripts/off_risk_day_624.py panel), as #622 requires; #623 had not landed. It differs from the old-lag build (scripts/satiation_distance_598.py panel) on the rows #622 counts. The parent row's own forecasts are #598's, on the old-lag build, unchanged",
+  "satiation_distance_version": "built per H.4.1 release (scripts/off_risk_day_624.py panel), as #622 requires, and #623 has landed: scripts/satiation_distance_598.py panel makes the same build. The parent row's forecasts are re-scored on it with scripts/satiation_distance_598.py run, the same build as the variants",
   "scoring": {
    "decision_time": "16:00",
    "first_day": "2018-06-29",
@@ -3940,110 +3941,110 @@
   },
   "risk_gbm+settle+h41+dist_roll": {
    "1": {
-    "false_alarms": 39,
-    "false_alarms_per_onset": 1.4444444444444444,
-    "flags": 81,
+    "false_alarms": 33,
+    "false_alarms_per_onset": 1.2222222222222223,
+    "flags": 75,
     "onsets": 27,
     "onsets_flagged": 13
    },
    "2": {
-    "false_alarms": 22,
-    "false_alarms_per_onset": 0.8461538461538461,
-    "flags": 63,
+    "false_alarms": 23,
+    "false_alarms_per_onset": 0.8846153846153846,
+    "flags": 61,
     "onsets": 26,
-    "onsets_flagged": 12
+    "onsets_flagged": 11
    },
    "3": {
-    "false_alarms": 25,
-    "false_alarms_per_onset": 0.9615384615384616,
-    "flags": 65,
+    "false_alarms": 32,
+    "false_alarms_per_onset": 1.2307692307692308,
+    "flags": 72,
     "onsets": 26,
-    "onsets_flagged": 9
+    "onsets_flagged": 11
    },
    "4": {
     "false_alarms": 22,
     "false_alarms_per_onset": 0.8461538461538461,
-    "flags": 60,
+    "flags": 58,
     "onsets": 26,
-    "onsets_flagged": 10
+    "onsets_flagged": 8
    },
    "5": {
-    "false_alarms": 25,
-    "false_alarms_per_onset": 0.9615384615384616,
-    "flags": 63,
+    "false_alarms": 19,
+    "false_alarms_per_onset": 0.7307692307692307,
+    "flags": 56,
     "onsets": 26,
     "onsets_flagged": 11
    }
   },
   "risk_gbm+settle+h41+dist_roll+offday": {
    "1": {
-    "false_alarms": 132,
-    "false_alarms_per_onset": 4.888888888888889,
-    "flags": 232,
+    "false_alarms": 128,
+    "false_alarms_per_onset": 4.7407407407407405,
+    "flags": 229,
     "onsets": 27,
     "onsets_flagged": 15
    },
    "2": {
-    "false_alarms": 109,
-    "false_alarms_per_onset": 4.1923076923076925,
-    "flags": 197,
-    "onsets": 26,
-    "onsets_flagged": 14
-   },
-   "3": {
-    "false_alarms": 112,
-    "false_alarms_per_onset": 4.3076923076923075,
+    "false_alarms": 108,
+    "false_alarms_per_onset": 4.153846153846154,
     "flags": 196,
     "onsets": 26,
-    "onsets_flagged": 10
+    "onsets_flagged": 13
    },
-   "4": {
-    "false_alarms": 96,
-    "false_alarms_per_onset": 3.6923076923076925,
-    "flags": 168,
+   "3": {
+    "false_alarms": 97,
+    "false_alarms_per_onset": 3.730769230769231,
+    "flags": 171,
     "onsets": 26,
     "onsets_flagged": 11
    },
-   "5": {
-    "false_alarms": 82,
-    "false_alarms_per_onset": 3.1538461538461537,
-    "flags": 153,
+   "4": {
+    "false_alarms": 103,
+    "false_alarms_per_onset": 3.9615384615384617,
+    "flags": 177,
     "onsets": 26,
-    "onsets_flagged": 12
+    "onsets_flagged": 10
+   },
+   "5": {
+    "false_alarms": 105,
+    "false_alarms_per_onset": 4.038461538461538,
+    "flags": 184,
+    "onsets": 26,
+    "onsets_flagged": 13
    }
   },
   "risk_gbm+settle+h41+dist_roll+offday_mono": {
    "1": {
-    "false_alarms": 93,
-    "false_alarms_per_onset": 3.4444444444444446,
-    "flags": 178,
+    "false_alarms": 89,
+    "false_alarms_per_onset": 3.2962962962962963,
+    "flags": 174,
     "onsets": 27,
     "onsets_flagged": 15
    },
    "2": {
-    "false_alarms": 72,
-    "false_alarms_per_onset": 2.769230769230769,
+    "false_alarms": 73,
+    "false_alarms_per_onset": 2.8076923076923075,
     "flags": 140,
+    "onsets": 26,
+    "onsets_flagged": 10
+   },
+   "3": {
+    "false_alarms": 98,
+    "false_alarms_per_onset": 3.769230769230769,
+    "flags": 172,
     "onsets": 26,
     "onsets_flagged": 12
    },
-   "3": {
-    "false_alarms": 103,
-    "false_alarms_per_onset": 3.9615384615384617,
-    "flags": 180,
-    "onsets": 26,
-    "onsets_flagged": 9
-   },
    "4": {
-    "false_alarms": 85,
-    "false_alarms_per_onset": 3.269230769230769,
-    "flags": 153,
-    "onsets": 26,
-    "onsets_flagged": 13
-   },
-   "5": {
     "false_alarms": 84,
     "false_alarms_per_onset": 3.230769230769231,
+    "flags": 150,
+    "onsets": 26,
+    "onsets_flagged": 11
+   },
+   "5": {
+    "false_alarms": 83,
+    "false_alarms_per_onset": 3.1923076923076925,
     "flags": 153,
     "onsets": 26,
     "onsets_flagged": 13
@@ -4051,37 +4052,37 @@
   },
   "risk_gbm+settle+h41+dist_roll+offday_rate": {
    "1": {
-    "false_alarms": 117,
-    "false_alarms_per_onset": 4.333333333333333,
-    "flags": 209,
+    "false_alarms": 114,
+    "false_alarms_per_onset": 4.222222222222222,
+    "flags": 205,
     "onsets": 27,
     "onsets_flagged": 16
    },
    "2": {
-    "false_alarms": 111,
-    "false_alarms_per_onset": 4.269230769230769,
-    "flags": 201,
+    "false_alarms": 113,
+    "false_alarms_per_onset": 4.346153846153846,
+    "flags": 200,
     "onsets": 26,
-    "onsets_flagged": 15
+    "onsets_flagged": 13
    },
    "3": {
     "false_alarms": 118,
     "false_alarms_per_onset": 4.538461538461538,
-    "flags": 204,
-    "onsets": 26,
-    "onsets_flagged": 10
-   },
-   "4": {
-    "false_alarms": 113,
-    "false_alarms_per_onset": 4.346153846153846,
-    "flags": 197,
+    "flags": 207,
     "onsets": 26,
     "onsets_flagged": 13
    },
+   "4": {
+    "false_alarms": 110,
+    "false_alarms_per_onset": 4.230769230769231,
+    "flags": 191,
+    "onsets": 26,
+    "onsets_flagged": 11
+   },
    "5": {
-    "false_alarms": 115,
-    "false_alarms_per_onset": 4.423076923076923,
-    "flags": 196,
+    "false_alarms": 112,
+    "false_alarms_per_onset": 4.3076923076923075,
+    "flags": 193,
     "onsets": 26,
     "onsets_flagged": 14
    }

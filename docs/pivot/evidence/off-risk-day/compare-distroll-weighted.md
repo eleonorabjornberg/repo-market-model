@@ -97,12 +97,12 @@ Table 2. Flags at +5 bp, by horizon: flags (false alarms); onsets flagged of ons
 | calendar_climatology | 258(174); 12/27; 6.44 | 213(144); 10/26; 5.54 | 213(145); 10/26; 5.58 | 213(146); 10/26; 5.62 | 213(147); 10/26; 5.65 |
 | persistence_logistic | 286(183); 11/27; 6.78 | 215(124); 7/26; 4.77 | 243(154); 10/26; 5.92 | 222(140); 8/26; 5.38 | 199(118); 8/26; 4.54 |
 | risk_gbm+every_day+gate+settle+h41+iorb+tailcap75 | 92(48); 14/27; 1.78 | 84(39); 12/26; 1.50 | 95(51); 11/26; 1.96 | 89(46); 12/26; 1.77 | 93(48); 14/26; 1.85 |
-| risk_gbm+settle+h41+dist_roll | 81(39); 13/27; 1.44 | 63(22); 12/26; 0.85 | 65(25); 9/26; 0.96 | 60(22); 10/26; 0.85 | 63(25); 11/26; 0.96 |
-| risk_gbm+settle+h41+dist_roll+offday | 232(132); 15/27; 4.89 | 197(109); 14/26; 4.19 | 196(112); 10/26; 4.31 | 168(96); 11/26; 3.69 | 153(82); 12/26; 3.15 |
-| risk_gbm+settle+h41+dist_roll+offday_mono | 178(93); 15/27; 3.44 | 140(72); 12/26; 2.77 | 180(103); 9/26; 3.96 | 153(85); 13/26; 3.27 | 153(84); 13/26; 3.23 |
-| risk_gbm+settle+h41+dist_roll+offday_rate | 209(117); 16/27; 4.33 | 201(111); 15/26; 4.27 | 204(118); 10/26; 4.54 | 197(113); 13/26; 4.35 | 196(115); 14/26; 4.42 |
+| risk_gbm+settle+h41+dist_roll | 75(33); 13/27; 1.22 | 61(23); 11/26; 0.88 | 72(32); 11/26; 1.23 | 58(22); 8/26; 0.85 | 56(19); 11/26; 0.73 |
+| risk_gbm+settle+h41+dist_roll+offday | 229(128); 15/27; 4.74 | 196(108); 13/26; 4.15 | 171(97); 11/26; 3.73 | 177(103); 10/26; 3.96 | 184(105); 13/26; 4.04 |
+| risk_gbm+settle+h41+dist_roll+offday_mono | 174(89); 15/27; 3.30 | 140(73); 10/26; 2.81 | 172(98); 12/26; 3.77 | 150(84); 11/26; 3.23 | 153(83); 13/26; 3.19 |
+| risk_gbm+settle+h41+dist_roll+offday_rate | 205(114); 16/27; 4.22 | 200(113); 13/26; 4.35 | 207(118); 13/26; 4.54 | 191(110); 11/26; 4.23 | 193(112); 14/26; 4.31 |
 
-Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error less the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
+Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
 
 | cell | days | difference |
 |---|---|---|
@@ -117,7 +117,7 @@ Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday` again
 | day_type quarter_end | 31 | +0.0000 [+0.0000, +0.0000] |
 | day_type tax_date | 89 | +0.0000 [+0.0000, +0.0000] |
 
-Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_mono` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error less the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
+Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_mono` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
 
 | cell | days | difference |
 |---|---|---|
@@ -132,7 +132,7 @@ Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_mono` 
 | day_type quarter_end | 31 | +0.0000 [+0.0000, +0.0000] |
 | day_type tax_date | 89 | +0.0000 [+0.0000, +0.0000] |
 
-Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_rate` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error less the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
+Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_rate` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
 
 | cell | days | difference |
 |---|---|---|
@@ -147,17 +147,17 @@ Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_rate` 
 | day_type quarter_end | 31 | +0.0000 [+0.0000, +0.0000] |
 | day_type tax_date | 89 | +0.0000 [+0.0000, +0.0000] |
 
-Table 3. Paired Brier difference of `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error less the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
+Table 3. Paired Brier difference of `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75` against `risk_gbm+settle+h41+dist_roll`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
 
 | cell | days | difference |
 |---|---|---|
-| all | 1873 | +0.0002 [-0.0013, +0.0018] |
-| regime 2018-19 | 375 | -0.0003 [-0.0055, +0.0056] |
-| regime 2020 | 251 | +0.0018 [-0.0036, +0.0087] |
-| regime 2021-23 | 748 | +0.0001 [-0.0001, +0.0004] |
-| regime 2024 | 250 | -0.0017 [-0.0051, +0.0000] |
-| regime 2025-26 | 249 | +0.0014 [-0.0013, +0.0044] |
-| day_type month_end | 150 | +0.0018 [+0.0001, +0.0039] |
-| day_type ordinary | 1603 | +0.0007 [-0.0007, +0.0024] |
-| day_type quarter_end | 31 | -0.0245 [-0.0525, -0.0015] |
-| day_type tax_date | 89 | -0.0034 [-0.0191, +0.0087] |
+| all | 1873 | +0.0004 [-0.0014, +0.0023] |
+| regime 2018-19 | 375 | -0.0007 [-0.0075, +0.0064] |
+| regime 2020 | 251 | +0.0017 [-0.0041, +0.0090] |
+| regime 2021-23 | 748 | -0.0000 [-0.0001, +0.0001] |
+| regime 2024 | 250 | -0.0016 [-0.0046, -0.0000] |
+| regime 2025-26 | 249 | +0.0042 [+0.0008, +0.0083] |
+| day_type month_end | 150 | +0.0043 [+0.0008, +0.0081] |
+| day_type ordinary | 1603 | +0.0004 [-0.0011, +0.0023] |
+| day_type quarter_end | 31 | -0.0152 [-0.0415, +0.0055] |
+| day_type tax_date | 89 | -0.0007 [-0.0229, +0.0180] |

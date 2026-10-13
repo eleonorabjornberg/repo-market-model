@@ -130,20 +130,17 @@
    ],
    "risk_gbm+settle+h41+dist_roll+offday": [
     1,
-    2,
-    4,
+    3,
     5
    ],
    "risk_gbm+settle+h41+dist_roll+offday_mono": [
     1,
-    2,
-    4,
+    3,
     5
    ],
    "risk_gbm+settle+h41+dist_roll+offday_rate": [
     1,
-    2,
-    4,
+    3,
     5
    ]
   },
@@ -206,21 +203,18 @@
     1,
     2,
     3,
-    4,
     5
    ],
    "risk_gbm+settle+h41+dist_roll+offday_mono": [
     1,
     2,
     3,
-    4,
     5
    ],
    "risk_gbm+settle+h41+dist_roll+offday_rate": [
     1,
     2,
     3,
-    4,
     5
    ]
   },
@@ -238,7 +232,9 @@
    "risk_gbm+settle+h41+dist_roll+offday": [
     1,
     2,
-    3
+    3,
+    4,
+    5
    ],
    "risk_gbm+settle+h41+dist_roll+offday_mono": [
     4
@@ -326,7 +322,6 @@
    "risk_gbm+settle+h41+dist_roll+offday": [
     1,
     2,
-    3,
     4,
     5
    ],
@@ -452,12 +447,14 @@
    "risk_gbm+settle+h41+dist_roll+offday_mono": [
     1,
     2,
+    3,
     4,
     5
    ],
    "risk_gbm+settle+h41+dist_roll+offday_rate": [
     1,
     2,
+    3,
     4,
     5
    ]
@@ -596,13 +593,14 @@
    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": [],
    "risk_gbm+settle+h41": [],
    "risk_gbm+settle+h41+dist_roll+offday": [
-    2
+    2,
+    3
    ],
    "risk_gbm+settle+h41+dist_roll+offday_mono": [
-    2
+    3
    ],
    "risk_gbm+settle+h41+dist_roll+offday_rate": [
-    2
+    3
    ]
   },
   {

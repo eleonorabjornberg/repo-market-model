@@ -74,51 +74,51 @@ Table 2. Flags at +5 bp, by horizon: flags (false alarms); onsets flagged of ons
 | calendar_climatology | 258(174); 12/27; 6.44 | 213(144); 10/26; 5.54 | 213(145); 10/26; 5.58 | 213(146); 10/26; 5.62 | 213(147); 10/26; 5.65 |
 | persistence_logistic | 286(183); 11/27; 6.78 | 215(124); 7/26; 4.77 | 243(154); 10/26; 5.92 | 222(140); 8/26; 5.38 | 199(118); 8/26; 4.54 |
 | risk_gbm+every_day+gate+settle+h41+iorb+tailcap75 | 92(48); 14/27; 1.78 | 84(39); 12/26; 1.50 | 95(51); 11/26; 1.96 | 89(46); 12/26; 1.77 | 93(48); 14/26; 1.85 |
-| risk_gbm+settle+h41+dist_roll+offday | 232(132); 15/27; 4.89 | 197(109); 14/26; 4.19 | 196(112); 10/26; 4.31 | 168(96); 11/26; 3.69 | 153(82); 12/26; 3.15 |
-| risk_gbm+settle+h41+dist_roll+offday_mono | 178(93); 15/27; 3.44 | 140(72); 12/26; 2.77 | 180(103); 9/26; 3.96 | 153(85); 13/26; 3.27 | 153(84); 13/26; 3.23 |
-| risk_gbm+settle+h41+dist_roll+offday_rate | 209(117); 16/27; 4.33 | 201(111); 15/26; 4.27 | 204(118); 10/26; 4.54 | 197(113); 13/26; 4.35 | 196(115); 14/26; 4.42 |
+| risk_gbm+settle+h41+dist_roll+offday | 229(128); 15/27; 4.74 | 196(108); 13/26; 4.15 | 171(97); 11/26; 3.73 | 177(103); 10/26; 3.96 | 184(105); 13/26; 4.04 |
+| risk_gbm+settle+h41+dist_roll+offday_mono | 174(89); 15/27; 3.30 | 140(73); 10/26; 2.81 | 172(98); 12/26; 3.77 | 150(84); 11/26; 3.23 | 153(83); 13/26; 3.19 |
+| risk_gbm+settle+h41+dist_roll+offday_rate | 205(114); 16/27; 4.22 | 200(113); 13/26; 4.35 | 207(118); 13/26; 4.54 | 191(110); 11/26; 4.23 | 193(112); 14/26; 4.31 |
 
-Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday` against `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`, +5 bp (the reference's squared error less the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
-
-| cell | days | difference |
-|---|---|---|
-| all | 1873 | +0.0111 [+0.0042, +0.0192] |
-| regime 2018-19 | 375 | +0.0497 [+0.0204, +0.0815] |
-| regime 2020 | 251 | -0.0039 [-0.0130, +0.0027] |
-| regime 2021-23 | 748 | -0.0001 [-0.0003, +0.0001] |
-| regime 2024 | 250 | +0.0018 [-0.0000, +0.0053] |
-| regime 2025-26 | 249 | +0.0110 [-0.0063, +0.0340] |
-| day_type month_end | 150 | +0.0046 [-0.0024, +0.0145] |
-| day_type ordinary | 1603 | +0.0119 [+0.0041, +0.0209] |
-| day_type quarter_end | 31 | +0.0245 [+0.0007, +0.0524] |
-| day_type tax_date | 89 | +0.0034 [-0.0090, +0.0187] |
-
-Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_mono` against `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`, +5 bp (the reference's squared error less the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
+Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday` against `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
 
 | cell | days | difference |
 |---|---|---|
-| all | 1873 | +0.0081 [+0.0011, +0.0164] |
-| regime 2018-19 | 375 | +0.0433 [+0.0126, +0.0788] |
-| regime 2020 | 251 | -0.0030 [-0.0099, +0.0026] |
-| regime 2021-23 | 748 | -0.0001 [-0.0003, +0.0001] |
-| regime 2024 | 250 | +0.0017 [-0.0001, +0.0053] |
-| regime 2025-26 | 249 | -0.0028 [-0.0209, +0.0138] |
-| day_type month_end | 150 | +0.0028 [-0.0029, +0.0115] |
-| day_type ordinary | 1603 | +0.0085 [+0.0006, +0.0178] |
-| day_type quarter_end | 31 | +0.0245 [+0.0013, +0.0534] |
-| day_type tax_date | 89 | +0.0034 [-0.0094, +0.0188] |
+| all | 1873 | +0.0108 [+0.0038, +0.0189] |
+| regime 2018-19 | 375 | +0.0502 [+0.0201, +0.0821] |
+| regime 2020 | 251 | -0.0039 [-0.0136, +0.0032] |
+| regime 2021-23 | 748 | +0.0000 [-0.0001, +0.0001] |
+| regime 2024 | 250 | +0.0016 [+0.0000, +0.0048] |
+| regime 2025-26 | 249 | +0.0082 [-0.0096, +0.0310] |
+| day_type month_end | 150 | +0.0021 [-0.0056, +0.0123] |
+| day_type ordinary | 1603 | +0.0121 [+0.0044, +0.0211] |
+| day_type quarter_end | 31 | +0.0152 [-0.0058, +0.0417] |
+| day_type tax_date | 89 | +0.0007 [-0.0183, +0.0221] |
 
-Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_rate` against `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`, +5 bp (the reference's squared error less the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
+Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_mono` against `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
 
 | cell | days | difference |
 |---|---|---|
-| all | 1873 | +0.0091 [+0.0010, +0.0181] |
-| regime 2018-19 | 375 | +0.0392 [+0.0018, +0.0794] |
-| regime 2020 | 251 | -0.0023 [-0.0088, +0.0029] |
-| regime 2021-23 | 748 | -0.0001 [-0.0004, +0.0001] |
-| regime 2024 | 250 | +0.0018 [-0.0000, +0.0056] |
-| regime 2025-26 | 249 | +0.0105 [-0.0076, +0.0323] |
-| day_type month_end | 150 | +0.0067 [-0.0030, +0.0188] |
-| day_type ordinary | 1603 | +0.0094 [+0.0002, +0.0193] |
-| day_type quarter_end | 31 | +0.0245 [+0.0011, +0.0539] |
-| day_type tax_date | 89 | +0.0034 [-0.0085, +0.0183] |
+| all | 1873 | +0.0078 [+0.0008, +0.0163] |
+| regime 2018-19 | 375 | +0.0437 [+0.0131, +0.0796] |
+| regime 2020 | 251 | -0.0029 [-0.0103, +0.0031] |
+| regime 2021-23 | 748 | +0.0000 [-0.0001, +0.0001] |
+| regime 2024 | 250 | +0.0015 [-0.0001, +0.0047] |
+| regime 2025-26 | 249 | -0.0057 [-0.0242, +0.0112] |
+| day_type month_end | 150 | +0.0004 [-0.0067, +0.0092] |
+| day_type ordinary | 1603 | +0.0088 [+0.0009, +0.0181] |
+| day_type quarter_end | 31 | +0.0152 [-0.0059, +0.0421] |
+| day_type tax_date | 89 | +0.0007 [-0.0185, +0.0215] |
+
+Table 3. Paired Brier difference of `risk_gbm+settle+h41+dist_roll+offday_rate` against `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.
+
+| cell | days | difference |
+|---|---|---|
+| all | 1873 | +0.0089 [+0.0009, +0.0179] |
+| regime 2018-19 | 375 | +0.0397 [+0.0021, +0.0799] |
+| regime 2020 | 251 | -0.0022 [-0.0093, +0.0033] |
+| regime 2021-23 | 748 | +0.0000 [-0.0002, +0.0001] |
+| regime 2024 | 250 | +0.0016 [+0.0000, +0.0050] |
+| regime 2025-26 | 249 | +0.0077 [-0.0109, +0.0297] |
+| day_type month_end | 150 | +0.0042 [-0.0057, +0.0165] |
+| day_type ordinary | 1603 | +0.0096 [+0.0008, +0.0194] |
+| day_type quarter_end | 31 | +0.0152 [-0.0059, +0.0413] |
+| day_type tax_date | 89 | +0.0007 [-0.0179, +0.0215] |

@@ -110,11 +110,14 @@ No regime label enters a fit (ruling on #515) and no back-filled 2014-2018 histo
 * `+offday_rate` (c), chosen from step 1: as (a) with the trailing rate of pressure days over the 60 most recent earlier such days observable at the
   block's fit as one more input (the only row of step 1 whose pooled figures separate from the climatology at every lead).
 
-**The satiation distance was built per H.4.1 release, as #622 requires** (`scripts/off_risk_day_624.py panel`); #623 had not landed. The build
-differs from the old-lag build of `scripts/satiation_distance_598.py panel` on 1,592 rows, the count #622 gives. The parent
-row's own forecasts (the risk-date part) are #598's and are unchanged, so the parent here is the row as it stands on main; the figures for it
-(`+dist_roll`, `+tailcap75`) reproduce the merged pages (for example 15 of 26 onsets at 1.27 false alarms per onset for `+dist_roll`, and 18 of 26
-at 1.88 for `+tailcap75`, weighted).
+**The satiation distance was built per H.4.1 release, as #622 requires** (`scripts/off_risk_day_624.py panel`), and #623 has landed. The
+build is the one `scripts/satiation_distance_598.py panel` now makes on this tree (the two files are identical, 0 rows differ), so the parent
+`+dist_roll` is re-scored here on the same build as the variants: its forecasts (`satiation_distance_598.py run`) and every row the judge reads
+were regenerated on this tree, not carried from #598. Its figures reproduce the merged pages at this head (`docs/pivot/evidence/satiation-distance/report.md`,
+`docs/pivot/audit-fixes-623-result.md`): 15 of 26 onsets at 1.17 weighted (1.81 flat) false alarms per onset. Against the earlier version of this
+page, which carried the parent on the old lag at 1.27 (1.85 flat), that figure and the tier-1 figures of the three variants have moved; the paired
+differences against the parent on all days did not, because a variant keeps the parent's forecast on every risk date and the two differ only on the
+days that are not risk dates.
 
 ### Under the judge in force
 
@@ -125,16 +128,16 @@ tiers 3 and 5, under the weighted rule in force with the flat rule beside it. Th
 |---|---|---|---|---|---|---|---|
 | risk_gbm+settle+h41 | flat | 14 of 26, 0.538 [0.353, 0.710], 2.00 | yes | 11 of 26, 0.423 [0.250, 0.607], 1.58 | no | no | no |
 | risk_gbm+settle+h41 | weighted | 14 of 26, 0.538 [0.353, 0.710], 1.44 | yes | 11 of 26, 0.423 [0.250, 0.607], 1.23 | no | no | no |
-| risk_gbm+settle+h41+dist_roll | flat | 15 of 26, 0.577 [0.400, 0.762], 1.85 | yes | 12 of 26, 0.462 [0.286, 0.643], 1.35 | no | no | no |
-| risk_gbm+settle+h41+dist_roll | weighted | 15 of 26, 0.577 [0.400, 0.762], 1.27 | yes | 12 of 26, 0.462 [0.286, 0.643], 0.87 | no | no | no |
+| risk_gbm+settle+h41+dist_roll | flat | 15 of 26, 0.577 [0.400, 0.762], 1.81 | yes | 12 of 26, 0.462 [0.286, 0.643], 1.54 | no | no | no |
+| risk_gbm+settle+h41+dist_roll | weighted | 15 of 26, 0.577 [0.400, 0.762], 1.17 | yes | 12 of 26, 0.462 [0.286, 0.643], 0.96 | no | no | no |
 | risk_gbm+every_day+gate+settle+h41+iorb+tailcap75 | flat | 17 of 26, 0.654 [0.480, 0.818], 2.62 | no | 13 of 26, 0.500 [0.312, 0.692], 2.23 | no | no | no |
 | risk_gbm+every_day+gate+settle+h41+iorb+tailcap75 | weighted | 18 of 26, 0.692 [0.522, 0.852], 1.88 | yes | 14 of 26, 0.538 [0.344, 0.731], 1.62 | no | no | no |
-| risk_gbm+settle+h41+dist_roll+offday | flat | 16 of 26, 0.615 [0.429, 0.792], 3.58 | no | 12 of 26, 0.462 [0.280, 0.667], 3.08 | no | no | no |
-| risk_gbm+settle+h41+dist_roll+offday | weighted | 17 of 26, 0.654 [0.476, 0.828], 2.55 | no | 13 of 26, 0.500 [0.316, 0.700], 2.08 | no | no | no |
-| risk_gbm+settle+h41+dist_roll+offday_mono | flat | 18 of 26, 0.692 [0.500, 0.862], 4.65 | no | 14 of 26, 0.538 [0.350, 0.733], 3.54 | no | no | no |
-| risk_gbm+settle+h41+dist_roll+offday_mono | weighted | 18 of 26, 0.692 [0.500, 0.862], 2.88 | no | 14 of 26, 0.538 [0.350, 0.733], 2.09 | no | no | no |
-| risk_gbm+settle+h41+dist_roll+offday_rate | flat | 17 of 26, 0.654 [0.478, 0.824], 3.85 | no | 14 of 26, 0.538 [0.333, 0.733], 3.50 | yes | no | no |
-| risk_gbm+settle+h41+dist_roll+offday_rate | weighted | 18 of 26, 0.692 [0.519, 0.864], 2.42 | no | 14 of 26, 0.538 [0.333, 0.733], 2.08 | yes | no | no |
+| risk_gbm+settle+h41+dist_roll+offday | flat | 16 of 26, 0.615 [0.429, 0.792], 3.69 | no | 12 of 26, 0.462 [0.292, 0.645], 3.08 | no | no | no |
+| risk_gbm+settle+h41+dist_roll+offday | weighted | 17 of 26, 0.654 [0.476, 0.828], 2.47 | no | 14 of 26, 0.538 [0.355, 0.731], 2.04 | no | no | no |
+| risk_gbm+settle+h41+dist_roll+offday_mono | flat | 17 of 26, 0.654 [0.474, 0.828], 4.50 | no | 14 of 26, 0.538 [0.350, 0.733], 3.69 | no | no | no |
+| risk_gbm+settle+h41+dist_roll+offday_mono | weighted | 18 of 26, 0.692 [0.500, 0.862], 2.88 | no | 15 of 26, 0.577 [0.391, 0.767], 2.14 | no | no | no |
+| risk_gbm+settle+h41+dist_roll+offday_rate | flat | 17 of 26, 0.654 [0.478, 0.824], 3.88 | no | 14 of 26, 0.538 [0.333, 0.733], 3.50 | yes | no | no |
+| risk_gbm+settle+h41+dist_roll+offday_rate | weighted | 18 of 26, 0.692 [0.519, 0.864], 2.28 | no | 15 of 26, 0.577 [0.387, 0.769], 2.02 | yes | no | no |
 
 Tier 1 per lead: flags (false alarms); onsets flagged of onsets; false alarms per onset, +5 bp, weighted rule.
 
@@ -145,15 +148,15 @@ Table 2. Flags at +5 bp, by horizon: flags (false alarms); onsets flagged of ons
 | calendar_climatology | 258(174); 12/27; 6.44 | 213(144); 10/26; 5.54 | 213(145); 10/26; 5.58 | 213(146); 10/26; 5.62 | 213(147); 10/26; 5.65 |
 | persistence_logistic | 286(183); 11/27; 6.78 | 215(124); 7/26; 4.77 | 243(154); 10/26; 5.92 | 222(140); 8/26; 5.38 | 199(118); 8/26; 4.54 |
 | risk_gbm+every_day+gate+settle+h41+iorb+tailcap75 | 92(48); 14/27; 1.78 | 84(39); 12/26; 1.50 | 95(51); 11/26; 1.96 | 89(46); 12/26; 1.77 | 93(48); 14/26; 1.85 |
-| risk_gbm+settle+h41+dist_roll | 81(39); 13/27; 1.44 | 63(22); 12/26; 0.85 | 65(25); 9/26; 0.96 | 60(22); 10/26; 0.85 | 63(25); 11/26; 0.96 |
-| risk_gbm+settle+h41+dist_roll+offday | 232(132); 15/27; 4.89 | 197(109); 14/26; 4.19 | 196(112); 10/26; 4.31 | 168(96); 11/26; 3.69 | 153(82); 12/26; 3.15 |
-| risk_gbm+settle+h41+dist_roll+offday_mono | 178(93); 15/27; 3.44 | 140(72); 12/26; 2.77 | 180(103); 9/26; 3.96 | 153(85); 13/26; 3.27 | 153(84); 13/26; 3.23 |
-| risk_gbm+settle+h41+dist_roll+offday_rate | 209(117); 16/27; 4.33 | 201(111); 15/26; 4.27 | 204(118); 10/26; 4.54 | 197(113); 13/26; 4.35 | 196(115); 14/26; 4.42 |
+| risk_gbm+settle+h41+dist_roll | 75(33); 13/27; 1.22 | 61(23); 11/26; 0.88 | 72(32); 11/26; 1.23 | 58(22); 8/26; 0.85 | 56(19); 11/26; 0.73 |
+| risk_gbm+settle+h41+dist_roll+offday | 229(128); 15/27; 4.74 | 196(108); 13/26; 4.15 | 171(97); 11/26; 3.73 | 177(103); 10/26; 3.96 | 184(105); 13/26; 4.04 |
+| risk_gbm+settle+h41+dist_roll+offday_mono | 174(89); 15/27; 3.30 | 140(73); 10/26; 2.81 | 172(98); 12/26; 3.77 | 150(84); 11/26; 3.23 | 153(83); 13/26; 3.19 |
+| risk_gbm+settle+h41+dist_roll+offday_rate | 205(114); 16/27; 4.22 | 200(113); 13/26; 4.35 | 207(118); 13/26; 4.54 | 191(110); 11/26; 4.23 | 193(112); 14/26; 4.31 |
 
 Tier 3 per lead and tier 5 (calibration and the Brier difference against climatology) are in `docs/pivot/evidence/off-risk-day/calibration.md`:
-tier 3 holds at every lead in both regimes for `+offday_rate` only; `+offday_mono` holds in 2018-19 at leads 3 to 5 only; `+offday` fails 2018-19
-at every lead. Tier 5's calibration condition fails for all three (each under-forecasts: realised less predicted is +0.037, +0.028 and +0.032,
-intervals above 0), and its Brier difference against climatology is +0.063 for each, against +0.047 for the parent.
+tier 3 holds at every lead in both regimes for `+offday_rate` only; `+offday_mono` holds in 2018-19 at leads 3 and 4 only; `+offday` fails 2018-19
+at every lead. Tier 5's calibration condition fails for all three (each under-forecasts: realised less predicted is +0.040, +0.030 and +0.035,
+intervals above 0), and its Brier difference against climatology is +0.063 or +0.064 for each, against +0.048 for the parent.
 
 ### On the days that are not risk dates
 
@@ -195,7 +198,7 @@ Paired Brier difference at +5 bp, h = 1, 90% stationary bootstrap, positive favo
 `+dist_roll`: `+offday` +0.0113 [+0.0042, +0.0194] over all days and +0.0494 [+0.0200, +0.0843] inside 2018-19; `+offday_mono` +0.0083
 [+0.0012, +0.0164] and +0.0430 [+0.0106, +0.0792]; `+offday_rate` +0.0093 [+0.0018, +0.0185] and +0.0389 [+0.0048, +0.0821]. In 2025-26 none of
 the three differs from the parent (intervals hold 0), and the quarter-end and tax-date days, which are risk dates, do not move at all. Against
-`+tailcap75`: +0.0111 [+0.0042, +0.0192], +0.0081 [+0.0011, +0.0164] and +0.0091 [+0.0010, +0.0181] over all days. The tables for both references, by
+`+tailcap75`: +0.0108 [+0.0038, +0.0189], +0.0078 [+0.0008, +0.0163] and +0.0089 [+0.0009, +0.0179] over all days. The tables for both references, by
 regime and by pressure-day type, and under the flat rule, are `compare-distroll-*.md` and `compare-tailcap-*.md` in the evidence folder.
 
 ### Onsets kept and lost, by date (weighted rule, any lead 1 to 5)
@@ -207,8 +210,8 @@ an onset. Against `+tailcap75` (18 of 26): each gains 2025-10-15, each loses 202
 ### What step 2 says
 
 * **None of the three passes the judge.** Each raises onset recall (17 or 18 of 26 against 15) and each fails tier 1 on the pooled false-alarm count
-  (2.42 to 2.88 per onset against a limit of 2, weighted; 3.58 to 4.65 flat): a model that puts mass on every ordinary day flags many of them (flags
-  at the first lead rise from 81 to 178 to 232). `+tailcap75` passes tier 1 under the weighted rule and none of the three does.
+  (2.47 to 2.88 per onset against a limit of 2, weighted; 3.69 to 4.50 flat): a model that puts mass on every ordinary day flags many of them (flags
+  at the first lead rise from 75 to 174 to 229). `+tailcap75` passes tier 1 under the weighted rule and none of the three does.
 * **They do rank the days, which the constant floors did not.** AUROC on the days that are not risk dates is 0.83 to 0.89 over all days, and 0.68 to
   0.79 inside 2018-19 with intervals above 0.5 at every lead for all three. Inside 2018-19 only `+offday` has a Brier skill whose interval excludes 0
   (leads 1 and 2: 0.146 [0.055, 0.231] and 0.081 [0.009, 0.142]); the other two have none there. So a gain in the mean is not a gain in skill at every
@@ -217,7 +220,7 @@ an onset. Against `+tailcap75` (18 of 26): each gains 2025-10-15, each loses 202
 * **A pass through the mean is reported as such.** `+offday_rate` passes tier 3 at every lead. Inside 2018-19 its Brier skill over the climatology
   is not distinguishable from 0 at any lead, so its tier 3 pass comes from the calibration of the mean (the trailing rate carries the level of a
   regime) and not from a gain in skill beyond the base rate there; it ranks the days (AUROC 0.68 to 0.74) without beating the base rate by Brier score.
-  `+offday_mono` passes tier 3 in 2018-19 at leads 3 to 5, where its Brier skill is also not distinguishable from 0 (it is below 0 in point estimate).
+  `+offday_mono` passes tier 3 in 2018-19 at leads 3 and 4, where its Brier skill is also not distinguishable from 0 (it is below 0 in point estimate).
 * **Tier 5 does not move.** Its calibration condition still fails for all three, and its Brier difference against climatology was already met.
 * **A monotone constraint on the state did not help.** `+offday_mono` has the lowest Brier skill on the days that are not risk dates and the
   flattest reliability slope (0.32 to 0.46), against `+offday`.
