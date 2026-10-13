@@ -4,13 +4,13 @@
 
 | row | (a) as declared | (b1) best horizon | (b2) pooled | (e) outside 2018-19 |
 |---|---|---|---|---|
-| risk_gbm+combined | 10 / 1.12 fail | fail | 10 / 2.12 fail | 2 / 0.89 fail |
-| risk_gbm+combined_nogate | 12 / 1.92 fail | fail | 12 / 3.15 fail | 3 / 0.44 fail |
-| risk_logistic+combined | 10 / 1.62 fail | fail | 10 / 2.81 fail | 3 / 1.78 fail |
-| risk_logistic+combined_nogate | 10 / 1.58 fail | fail | 10 / 2.69 fail | 2 / 0.44 fail |
-| risk_gbm+combined_no_factor | 10 / 1.12 fail | fail | 10 / 2.12 fail | 2 / 0.89 fail |
-| risk_gbm+combined_no_structural | 10 / 0.88 fail | fail | 10 / 1.54 fail | 2 / 0.89 fail |
-| risk_gbm+combined_no_projected | 11 / 1.31 fail | fail | 11 / 2.19 fail | 2 / 0.89 fail |
+| risk_gbm+combined | 10 / 1.12 fail | fail | 10 / 1.92 fail | 2 / 0.89 fail |
+| risk_gbm+combined_nogate | 11 / 1.69 fail | fail | 11 / 2.65 fail | 3 / 0.44 fail |
+| risk_logistic+combined | 11 / 1.31 fail | fail | 11 / 2.50 fail | 4 / 2.11 fail |
+| risk_logistic+combined_nogate | 9 / 1.54 fail | fail | 9 / 2.58 fail | 2 / 0.44 fail |
+| risk_gbm+combined_no_factor | 10 / 1.08 fail | fail | 10 / 2.04 fail | 2 / 0.89 fail |
+| risk_gbm+combined_no_structural | 9 / 0.73 fail | fail | 9 / 1.38 fail | 2 / 0.89 fail |
+| risk_gbm+combined_no_projected | 11 / 1.23 fail | fail | 11 / 2.12 fail | 2 / 0.89 fail |
 | risk_gbm | 13 / 1.35 pass | pass (h = 1) | 13 / 2.00 pass | 3 / 1.56 fail |
 | risk_logistic | 14 / 1.85 pass | pass (h = 1) | 14 / 2.42 fail | 4 / 2.89 fail |
 | risk_gbm_base | 14 / 1.50 pass | pass (h = 1) | 14 / 2.04 fail | 4 / 2.00 fail |
@@ -28,13 +28,13 @@
 
 | row | (a) as declared | (b1) best horizon | (b2) pooled | (e) outside 2018-19 |
 |---|---|---|---|---|
-| risk_gbm+combined | 10 / 1.06 fail | fail | 10 / 1.67 fail | 2 / 1.81 fail |
-| risk_gbm+combined_nogate | 13 / 1.84 pass | pass (h = 1) | 13 / 2.41 fail | 3 / 0.61 fail |
-| risk_logistic+combined | 11 / 1.67 fail | fail | 11 / 3.17 fail | 4 / 3.83 fail |
-| risk_logistic+combined_nogate | 13 / 1.93 pass | fail | 13 / 2.28 fail | 3 / 1.08 fail |
-| risk_gbm+combined_no_factor | 10 / 1.01 fail | fail | 10 / 1.72 fail | 2 / 1.81 fail |
-| risk_gbm+combined_no_structural | 10 / 0.94 fail | fail | 10 / 1.92 fail | 2 / 1.81 fail |
-| risk_gbm+combined_no_projected | 11 / 1.06 fail | fail | 11 / 1.93 fail | 2 / 1.81 fail |
+| risk_gbm+combined | 10 / 1.06 fail | fail | 10 / 1.76 fail | 2 / 1.81 fail |
+| risk_gbm+combined_nogate | 13 / 1.78 pass | pass (h = 1) | 13 / 2.41 fail | 3 / 0.61 fail |
+| risk_logistic+combined | 11 / 1.86 fail | fail | 11 / 3.07 fail | 4 / 4.39 fail |
+| risk_logistic+combined_nogate | 13 / 1.92 pass | fail | 13 / 2.38 fail | 3 / 1.08 fail |
+| risk_gbm+combined_no_factor | 10 / 1.01 fail | fail | 10 / 1.79 fail | 2 / 1.81 fail |
+| risk_gbm+combined_no_structural | 10 / 0.96 fail | fail | 10 / 1.81 fail | 2 / 1.81 fail |
+| risk_gbm+combined_no_projected | 11 / 1.03 fail | fail | 11 / 1.88 fail | 2 / 1.81 fail |
 | risk_gbm | 13 / 0.80 pass | pass (h = 1) | 13 / 1.48 pass | 3 / 1.61 fail |
 | risk_logistic | 16 / 1.74 pass | pass (h = 1) | 16 / 2.55 fail | 6 / 4.39 fail |
 | risk_gbm_base | 14 / 0.97 pass | pass (h = 1) | 14 / 1.59 pass | 4 / 2.06 fail |
@@ -52,13 +52,13 @@
 
 | row | (a) as declared | (b1) best horizon | (b2) pooled | (e) outside 2018-19 |
 |---|---|---|---|---|
-| risk_gbm+combined | 10 / 0.87 fail | fail | 10 / 1.81 fail | 2 / 0.97 fail |
-| risk_gbm+combined_nogate | 13 / 2.26 fail | fail | 13 / 3.15 fail | 3 / 0.69 fail |
-| risk_logistic+combined | 11 / 1.65 fail | fail | 11 / 2.99 fail | 4 / 2.47 fail |
-| risk_logistic+combined_nogate | 12 / 2.23 fail | fail | 12 / 3.10 fail | 2 / 1.11 fail |
-| risk_gbm+combined_no_factor | 10 / 0.95 fail | fail | 10 / 1.85 fail | 2 / 1.19 fail |
-| risk_gbm+combined_no_structural | 10 / 0.69 fail | fail | 10 / 1.55 fail | 2 / 0.97 fail |
-| risk_gbm+combined_no_projected | 11 / 0.89 fail | fail | 11 / 1.84 fail | 2 / 0.97 fail |
+| risk_gbm+combined | 10 / 0.88 fail | fail | 10 / 1.73 fail | 2 / 1.19 fail |
+| risk_gbm+combined_nogate | 13 / 2.09 fail | fail | 13 / 3.15 fail | 3 / 0.69 fail |
+| risk_logistic+combined | 11 / 1.40 fail | fail | 11 / 2.64 fail | 4 / 2.92 fail |
+| risk_logistic+combined_nogate | 11 / 2.15 fail | fail | 11 / 2.97 fail | 2 / 1.11 fail |
+| risk_gbm+combined_no_factor | 10 / 0.85 fail | fail | 10 / 1.81 fail | 2 / 1.08 fail |
+| risk_gbm+combined_no_structural | 10 / 0.66 fail | fail | 10 / 1.38 fail | 2 / 0.97 fail |
+| risk_gbm+combined_no_projected | 11 / 0.88 fail | fail | 11 / 1.80 fail | 2 / 1.19 fail |
 | risk_gbm | 13 / 0.95 pass | pass (h = 1) | 13 / 1.64 pass | 3 / 1.78 fail |
 | risk_logistic | 16 / 1.90 pass | pass (h = 1) | 16 / 2.70 fail | 6 / 4.31 fail |
 | risk_gbm_base | 14 / 1.08 pass | pass (h = 1) | 14 / 1.72 pass | 4 / 2.22 fail |
@@ -82,17 +82,17 @@ Table 1. Tiers at +5 bp, h = 1 to 5; 90% stationary-bootstrap intervals. The pas
 | persistence_logistic | 7 of 26 | 0.269 [0.111, 0.444] | 0.269 | 5.73 flat / 2.23 weighted (tier 1 on the flat count) | 0.7 / 0.0 | 1 of 2 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
 | ngboost_laplace | 15 of 26 | 0.577 [0.400, 0.759] | 0.250 | 4.38 flat / 1.84 weighted (tier 1 on the flat count) | 0.2 / 0.0 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
 | risk_gbm | 13 of 26 | 0.500 [0.310, 0.667] | 0.192 | 2.00 flat / 1.37 weighted (tier 1 on the flat count) | 1.2 / 0.3 | 0 of 2 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_gbm+combined | 10 of 26 | 0.385 [0.212, 0.571] | 0.192 | 2.12 flat / 1.12 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_no_factor | 10 of 26 | 0.385 [0.212, 0.571] | 0.192 | 2.12 flat / 1.10 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_no_projected | 11 of 26 | 0.423 [0.235, 0.618] | 0.192 | 2.19 flat / 1.04 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_no_structural | 10 of 26 | 0.385 [0.217, 0.562] | 0.154 | 1.54 flat / 0.88 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_nogate | 12 of 26 | 0.462 [0.276, 0.650] | 0.231 | 3.15 flat / 1.49 weighted (tier 1 on the flat count) | 0.2 / 0.0 | 1 of 2 | yes, yes | fail (tiers no / no / yes) | fail (no / no / yes) |
+| risk_gbm+combined | 10 of 26 | 0.385 [0.212, 0.571] | 0.192 | 1.92 flat / 1.06 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_no_factor | 10 of 26 | 0.385 [0.212, 0.571] | 0.192 | 2.04 flat / 1.12 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_no_projected | 11 of 26 | 0.423 [0.235, 0.618] | 0.192 | 2.12 flat / 1.01 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_no_structural | 9 of 26 | 0.346 [0.190, 0.522] | 0.154 | 1.38 flat / 0.79 weighted (tier 1 on the flat count) | 0.0 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_nogate | 11 of 26 | 0.423 [0.250, 0.600] | 0.231 | 2.65 flat / 1.31 weighted (tier 1 on the flat count) | 0.2 / 0.0 | 1 of 2 | yes, yes | fail (tiers no / no / yes) | fail (no / no / yes) |
 | risk_gbm+every_day+gate+settle+h41 | 15 of 26 | 0.577 [0.417, 0.741] | 0.242 | 4.31 flat / 2.04 weighted (tier 1 on the flat count) | 1.2 / 0.0 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
 | risk_gbm+settle+h41 | 14 of 26 | 0.538 [0.353, 0.710] | 0.192 | 2.00 flat / 1.29 weighted (tier 1 on the flat count) | 0.5 / 0.3 | 0 of 2 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
 | risk_gbm_base | 14 of 26 | 0.538 [0.360, 0.719] | 0.192 | 2.04 flat / 1.43 weighted (tier 1 on the flat count) | 0.5 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (yes / no / no) |
 | risk_logistic | 14 of 26 | 0.538 [0.350, 0.724] | 0.192 | 2.42 flat / 1.75 weighted (tier 1 on the flat count) | 1.7 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (yes / no / no) |
-| risk_logistic+combined | 10 of 26 | 0.385 [0.227, 0.565] | 0.231 | 2.81 flat / 1.69 weighted (tier 1 on the flat count) | 0.5 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_logistic+combined_nogate | 10 of 26 | 0.385 [0.238, 0.533] | 0.231 | 2.69 flat / 1.29 weighted (tier 1 on the flat count) | 0.7 / 0.0 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / yes) |
+| risk_logistic+combined | 11 of 26 | 0.423 [0.258, 0.606] | 0.231 | 2.50 flat / 1.67 weighted (tier 1 on the flat count) | 1.2 / 1.3 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_logistic+combined_nogate | 9 of 26 | 0.346 [0.200, 0.500] | 0.231 | 2.58 flat / 1.31 weighted (tier 1 on the flat count) | 0.7 / 0.0 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / yes) |
 | risk_logistic+every_day+gate+settle+h41 | 14 of 26 | 0.538 [0.351, 0.708] | 0.269 | 5.12 flat / 2.32 weighted (tier 1 on the flat count) | 1.2 / 0.0 | 1 of 2 | yes, yes | fail (tiers no / no / yes) | fail (no / no / no) |
 | risk_logistic+settle+h41 | 15 of 26 | 0.577 [0.391, 0.760] | 0.192 | 2.42 flat / 1.77 weighted (tier 1 on the flat count) | 2.2 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (yes / no / no) |
 | risk_logistic_base | 13 of 26 | 0.500 [0.333, 0.680] | 0.192 | 2.04 flat / 1.41 weighted (tier 1 on the flat count) | 0.7 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (yes / no / no) |
@@ -162,10 +162,10 @@ risk_gbm+combined:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 6 | 0.231 [0.095, 0.391] | 0.808 [0.417, 1.348] | 0.462 [0.214, 0.810] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.158, 0.478] | 0.692 [0.353, 1.160] | 0.404 [0.177, 0.738] |
-| lead 3 alone (fail) | 26 | 7 | 0.269 [0.125, 0.440] | 0.885 [0.450, 1.500] | 0.567 [0.242, 1.037] |
-| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.000 [0.500, 1.682] | 0.625 [0.264, 1.143] |
-| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.524] | 1.115 [0.595, 1.833] | 0.577 [0.279, 0.987] |
-| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.714] | 2.471 [1.250, 4.413] | 1.162 [0.470, 2.286] |
+| lead 3 alone (fail) | 26 | 9 | 0.346 [0.182, 0.522] | 0.808 [0.415, 1.333] | 0.529 [0.230, 0.954] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.154, 0.477] | 1.115 [0.480, 2.030] | 0.702 [0.261, 1.368] |
+| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.524] | 0.885 [0.414, 1.538] | 0.529 [0.213, 0.981] |
+| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.714] | 2.176 [0.952, 4.000] | 1.059 [0.359, 2.195] |
 | outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 1.444 (no interval) | 1.056 (no interval) |
 
 Recall with equal weight per regime: 0.218 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
@@ -176,10 +176,10 @@ risk_gbm+combined_no_factor:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 6 | 0.231 [0.100, 0.381] | 0.885 [0.474, 1.500] | 0.481 [0.240, 0.859] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.158, 0.474] | 0.615 [0.312, 1.050] | 0.356 [0.156, 0.643] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.182, 0.522] | 0.885 [0.464, 1.478] | 0.567 [0.250, 1.038] |
-| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.519] | 0.885 [0.452, 1.524] | 0.558 [0.239, 1.027] |
-| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.115 [0.600, 1.833] | 0.587 [0.287, 1.024] |
-| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.700] | 2.412 [1.188, 4.308] | 1.103 [0.467, 2.146] |
+| lead 3 alone (fail) | 26 | 9 | 0.346 [0.182, 0.522] | 0.846 [0.458, 1.375] | 0.538 [0.250, 0.969] |
+| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.519] | 1.077 [0.483, 1.957] | 0.702 [0.262, 1.395] |
+| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 0.962 [0.464, 1.657] | 0.567 [0.243, 1.039] |
+| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.700] | 2.294 [1.000, 4.222] | 1.147 [0.400, 2.405] |
 | outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 1.556 (no interval) | 1.083 (no interval) |
 
 Recall with equal weight per regime: 0.218 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
@@ -190,10 +190,10 @@ risk_gbm+combined_no_projected:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 8 | 0.308 [0.156, 0.476] | 0.846 [0.480, 1.400] | 0.442 [0.228, 0.783] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.150, 0.476] | 0.692 [0.367, 1.172] | 0.375 [0.171, 0.696] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.176, 0.524] | 0.962 [0.524, 1.600] | 0.548 [0.261, 1.011] |
-| lead 4 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 1.154 [0.631, 1.948] | 0.596 [0.323, 1.026] |
-| lead 5 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 1.308 [0.719, 2.158] | 0.587 [0.330, 0.967] |
-| inside 2018-2019 | 17 | 9 | 0.529 [0.294, 0.778] | 2.588 [1.500, 4.308] | 1.029 [0.548, 1.783] |
+| lead 3 alone (fail) | 26 | 10 | 0.385 [0.214, 0.571] | 0.885 [0.514, 1.462] | 0.510 [0.256, 0.938] |
+| lead 4 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 1.038 [0.560, 1.750] | 0.558 [0.293, 0.975] |
+| lead 5 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 1.231 [0.640, 2.087] | 0.567 [0.304, 0.955] |
+| inside 2018-2019 | 17 | 9 | 0.529 [0.294, 0.778] | 2.471 [1.414, 4.154] | 0.985 [0.525, 1.688] |
 | outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 1.444 (no interval) | 1.056 (no interval) |
 
 Recall with equal weight per regime: 0.232 (2018-19 9/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
@@ -204,13 +204,13 @@ risk_gbm+combined_no_structural:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 6 | 0.231 [0.100, 0.385] | 0.423 [0.190, 0.778] | 0.260 [0.107, 0.491] |
 | lead 2 alone (fail) | 26 | 6 | 0.231 [0.103, 0.389] | 0.423 [0.200, 0.760] | 0.231 [0.100, 0.438] |
-| lead 3 alone (fail) | 26 | 7 | 0.269 [0.120, 0.440] | 0.692 [0.371, 1.121] | 0.404 [0.188, 0.726] |
-| lead 4 alone (fail) | 26 | 8 | 0.308 [0.166, 0.471] | 0.885 [0.441, 1.542] | 0.548 [0.228, 1.011] |
-| lead 5 alone (fail) | 26 | 9 | 0.346 [0.179, 0.520] | 0.731 [0.250, 1.429] | 0.481 [0.125, 1.026] |
-| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.692] | 1.588 [0.727, 2.882] | 0.838 [0.286, 1.751] |
-| outside 2018-2019 | 9 | 2 | 0.222 [0.000, 0.500] | 1.444 [0.600, 3.333] | 0.972 [0.375, 2.551] |
+| lead 3 alone (fail) | 26 | 7 | 0.269 [0.120, 0.440] | 0.615 [0.312, 1.053] | 0.337 [0.143, 0.636] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.166, 0.471] | 0.731 [0.375, 1.280] | 0.471 [0.200, 0.869] |
+| lead 5 alone (fail) | 26 | 7 | 0.269 [0.125, 0.423] | 0.654 [0.278, 1.208] | 0.423 [0.159, 0.831] |
+| inside 2018-2019 | 17 | 7 | 0.412 [0.211, 0.632] | 1.294 [0.600, 2.333] | 0.632 [0.229, 1.250] |
+| outside 2018-2019 | 9 | 2 | 0.222 [0.000, 0.500] | 1.556 [0.667, 3.667] | 1.083 [0.425, 2.833] |
 
-Recall with equal weight per regime: 0.218 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
+Recall with equal weight per regime: 0.203 (2018-19 7/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
 
 risk_gbm+combined_nogate:
 
@@ -218,13 +218,13 @@ risk_gbm+combined_nogate:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 10 | 0.385 [0.200, 0.571] | 0.885 [0.290, 1.786] | 0.375 [0.131, 0.733] |
 | lead 2 alone (fail) | 26 | 10 | 0.385 [0.214, 0.556] | 1.346 [0.600, 2.467] | 0.663 [0.299, 1.237] |
-| lead 3 alone (fail) | 26 | 8 | 0.308 [0.154, 0.471] | 1.731 [0.927, 2.914] | 0.779 [0.420, 1.312] |
-| lead 4 alone (fail) | 26 | 11 | 0.423 [0.238, 0.621] | 1.923 [1.071, 3.126] | 0.885 [0.493, 1.500] |
-| lead 5 alone (fail) | 26 | 10 | 0.385 [0.200, 0.571] | 0.846 [0.280, 1.739] | 0.596 [0.188, 1.296] |
-| inside 2018-2019 | 17 | 9 | 0.529 [0.292, 0.765] | 4.353 [2.555, 7.375] | 1.853 [0.984, 3.282] |
-| outside 2018-2019 | 9 | 3 | 0.333 (no interval) | 0.889 (no interval) | 0.806 (no interval) |
+| lead 3 alone (fail) | 26 | 8 | 0.308 [0.154, 0.471] | 1.692 [0.889, 2.924] | 0.788 [0.400, 1.363] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.143, 0.480] | 1.462 [0.654, 2.577] | 0.817 [0.365, 1.531] |
+| lead 5 alone (fail) | 26 | 10 | 0.385 [0.200, 0.571] | 0.731 [0.263, 1.429] | 0.481 [0.177, 0.970] |
+| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.709] | 3.529 [1.882, 6.201] | 1.515 [0.722, 2.795] |
+| outside 2018-2019 | 9 | 3 | 0.333 (no interval) | 1.000 (no interval) | 0.917 (no interval) |
 
-Recall with equal weight per regime: 0.282 (2018-19 9/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
+Recall with equal weight per regime: 0.268 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
 
 risk_gbm+every_day+gate+settle+h41:
 
@@ -288,13 +288,13 @@ risk_logistic+combined:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 9 | 0.346 [0.192, 0.524] | 1.308 [0.805, 2.042] | 0.788 [0.425, 1.329] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.160, 0.481] | 1.115 [0.667, 1.800] | 0.721 [0.375, 1.250] |
-| lead 3 alone (fail) | 26 | 7 | 0.269 [0.130, 0.429] | 1.038 [0.609, 1.688] | 0.769 [0.414, 1.310] |
-| lead 4 alone (fail) | 26 | 8 | 0.308 [0.156, 0.500] | 1.615 [0.840, 2.773] | 0.913 [0.410, 1.660] |
-| lead 5 alone (fail) | 26 | 8 | 0.308 [0.160, 0.474] | 0.846 [0.483, 1.375] | 0.452 [0.240, 0.778] |
-| inside 2018-2019 | 17 | 7 | 0.412 [0.214, 0.643] | 2.765 [1.500, 4.728] | 1.294 [0.542, 2.472] |
-| outside 2018-2019 | 9 | 3 | 0.333 (no interval) | 2.889 (no interval) | 2.444 (no interval) |
+| lead 3 alone (fail) | 26 | 7 | 0.269 [0.130, 0.429] | 1.154 [0.686, 1.895] | 0.904 [0.490, 1.583] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.156, 0.500] | 1.038 [0.567, 1.750] | 0.692 [0.379, 1.188] |
+| lead 5 alone (fail) | 26 | 8 | 0.308 [0.160, 0.474] | 0.885 [0.481, 1.467] | 0.538 [0.272, 0.922] |
+| inside 2018-2019 | 17 | 7 | 0.412 [0.214, 0.643] | 1.765 [1.000, 2.900] | 0.809 [0.383, 1.462] |
+| outside 2018-2019 | 9 | 4 | 0.444 (no interval) | 3.889 (no interval) | 3.306 (no interval) |
 
-Recall with equal weight per regime: 0.253 (2018-19 7/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
+Recall with equal weight per regime: 0.378 (2018-19 7/17, 2020 0/2, 2024 1/2, 2025-26 3/5).
 
 risk_logistic+combined_nogate:
 
@@ -303,12 +303,12 @@ risk_logistic+combined_nogate:
 | lead 1 alone (fail) | 26 | 5 | 0.192 [0.066, 0.333] | 1.500 [0.765, 2.458] | 0.644 [0.318, 1.065] |
 | lead 2 alone (fail) | 26 | 3 | 0.115 [0.000, 0.227] | 0.192 [0.043, 0.393] | 0.163 [0.033, 0.350] |
 | lead 3 alone (fail) | 26 | 5 | 0.192 [0.071, 0.333] | 0.654 [0.300, 1.167] | 0.327 [0.157, 0.578] |
-| lead 4 alone (fail) | 26 | 8 | 0.308 [0.167, 0.458] | 1.577 [0.838, 2.583] | 0.750 [0.358, 1.294] |
-| lead 5 alone (fail) | 26 | 2 | 0.077 [0.000, 0.167] | 0.308 [0.120, 0.577] | 0.163 [0.056, 0.321] |
-| inside 2018-2019 | 17 | 8 | 0.471 [0.273, 0.667] | 3.647 [2.091, 6.064] | 1.544 [0.833, 2.596] |
+| lead 4 alone (fail) | 26 | 7 | 0.269 [0.125, 0.412] | 1.538 [0.679, 2.677] | 0.827 [0.333, 1.531] |
+| lead 5 alone (fail) | 26 | 2 | 0.077 [0.000, 0.167] | 0.385 [0.185, 0.667] | 0.221 [0.096, 0.406] |
+| inside 2018-2019 | 17 | 7 | 0.412 [0.214, 0.615] | 3.471 [1.889, 5.883] | 1.574 [0.750, 2.795] |
 | outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 0.889 (no interval) | 0.806 (no interval) |
 
-Recall with equal weight per regime: 0.218 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
+Recall with equal weight per regime: 0.203 (2018-19 7/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
 
 risk_logistic+every_day+gate+settle+h41:
 
@@ -425,17 +425,17 @@ Table 1. Tiers at +5 bp, h = 1 to 5; 90% stationary-bootstrap intervals. The pas
 | persistence_logistic | 12 of 26 | 0.462 [0.273, 0.650] | 0.423 | 8.46 flat / 4.09 weighted (tier 1 on the weighted count) | 1.5 / 0.0 | 1 of 2 | yes, no | fail (tiers no / no / no) | fail (no / no / no) |
 | ngboost_laplace | 17 of 26 | 0.654 [0.467, 0.826] | 0.269 | 5.31 flat / 2.34 weighted (tier 1 on the weighted count) | 0.2 / 0.0 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
 | risk_gbm | 13 of 26 | 0.500 [0.310, 0.667] | 0.192 | 2.12 flat / 1.48 weighted (tier 1 on the weighted count) | 1.5 / 0.7 | 0 of 2 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
-| risk_gbm+combined | 10 of 26 | 0.385 [0.212, 0.571] | 0.231 | 2.81 flat / 1.67 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_no_factor | 10 of 26 | 0.385 [0.212, 0.571] | 0.231 | 2.88 flat / 1.72 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_no_projected | 11 of 26 | 0.423 [0.235, 0.618] | 0.231 | 3.65 flat / 1.93 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_no_structural | 10 of 26 | 0.385 [0.217, 0.562] | 0.231 | 3.46 flat / 1.92 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_gbm+combined_nogate | 13 of 26 | 0.500 [0.308, 0.684] | 0.269 | 4.96 flat / 2.41 weighted (tier 1 on the weighted count) | 0.5 / 0.0 | 1 of 2 | yes, yes | fail (tiers no / no / yes) | fail (no / no / yes) |
+| risk_gbm+combined | 10 of 26 | 0.385 [0.212, 0.571] | 0.231 | 2.77 flat / 1.76 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_no_factor | 10 of 26 | 0.385 [0.212, 0.571] | 0.231 | 2.85 flat / 1.79 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_no_projected | 11 of 26 | 0.423 [0.235, 0.618] | 0.231 | 3.50 flat / 1.88 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_no_structural | 10 of 26 | 0.385 [0.217, 0.562] | 0.231 | 3.27 flat / 1.81 weighted (tier 1 on the weighted count) | 0.7 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_gbm+combined_nogate | 13 of 26 | 0.500 [0.308, 0.684] | 0.269 | 5.04 flat / 2.41 weighted (tier 1 on the weighted count) | 0.5 / 0.0 | 1 of 2 | yes, yes | fail (tiers no / no / yes) | fail (no / no / yes) |
 | risk_gbm+every_day+gate+settle+h41 | 18 of 26 | 0.692 [0.524, 0.857] | 0.375 | 6.96 flat / 3.39 weighted (tier 1 on the weighted count) | 2.9 / 0.3 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
 | risk_gbm+settle+h41 | 14 of 26 | 0.538 [0.353, 0.710] | 0.192 | 2.15 flat / 1.44 weighted (tier 1 on the weighted count) | 0.7 / 0.3 | 0 of 2 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
 | risk_gbm_base | 14 of 26 | 0.538 [0.360, 0.719] | 0.192 | 2.19 flat / 1.59 weighted (tier 1 on the weighted count) | 0.5 / 0.0 | 0 of 2 | no, yes | fail (tiers yes / no / no) | fail (yes / no / no) |
 | risk_logistic | 16 of 26 | 0.615 [0.435, 0.800] | 0.231 | 3.31 flat / 2.55 weighted (tier 1 on the weighted count) | 2.9 / 0.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (yes / no / no) |
-| risk_logistic+combined | 11 of 26 | 0.423 [0.258, 0.606] | 0.258 | 4.46 flat / 3.17 weighted (tier 1 on the weighted count) | 4.1 / 5.4 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
-| risk_logistic+combined_nogate | 13 of 26 | 0.500 [0.333, 0.667] | 0.269 | 4.77 flat / 2.28 weighted (tier 1 on the weighted count) | 1.0 / 0.0 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / yes) |
+| risk_logistic+combined | 11 of 26 | 0.423 [0.258, 0.606] | 0.231 | 4.04 flat / 3.07 weighted (tier 1 on the weighted count) | 4.8 / 6.4 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / no) |
+| risk_logistic+combined_nogate | 13 of 26 | 0.500 [0.333, 0.667] | 0.269 | 4.96 flat / 2.38 weighted (tier 1 on the weighted count) | 0.7 / 0.0 | 1 of 2 | no, yes | fail (tiers no / no / no) | fail (no / no / yes) |
 | risk_logistic+every_day+gate+settle+h41 | 18 of 26 | 0.692 [0.519, 0.857] | 0.401 | 7.73 flat / 3.91 weighted (tier 1 on the weighted count) | 3.9 / 0.3 | 1 of 2 | yes, yes | fail (tiers no / no / yes) | fail (no / no / no) |
 | risk_logistic+settle+h41 | 16 of 26 | 0.615 [0.429, 0.800] | 0.231 | 3.54 flat / 2.83 weighted (tier 1 on the weighted count) | 4.6 / 2.7 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (yes / no / no) |
 | risk_logistic_base | 15 of 26 | 0.577 [0.391, 0.762] | 0.231 | 2.88 flat / 2.18 weighted (tier 1 on the weighted count) | 1.5 / 0.0 | 0 of 2 | no, yes | fail (tiers no / no / no) | fail (yes / no / no) |
@@ -505,11 +505,11 @@ risk_gbm+combined:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 8 | 0.308 [0.158, 0.478] | 0.962 [0.560, 1.524] | 0.500 [0.250, 0.850] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.158, 0.478] | 1.538 [0.929, 2.500] | 1.058 [0.576, 1.834] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.182, 0.522] | 1.192 [0.692, 1.929] | 0.788 [0.392, 1.379] |
-| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.154 [0.629, 1.875] | 0.712 [0.337, 1.250] |
-| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.524] | 1.192 [0.655, 1.923] | 0.625 [0.316, 1.062] |
-| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.714] | 2.765 [1.499, 4.818] | 1.324 [0.588, 2.521] |
-| outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 2.889 (no interval) | 2.333 (no interval) |
+| lead 3 alone (fail) | 26 | 9 | 0.346 [0.182, 0.522] | 1.115 [0.645, 1.790] | 0.750 [0.371, 1.306] |
+| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.462 [0.750, 2.522] | 0.981 [0.448, 1.772] |
+| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.524] | 1.346 [0.769, 2.174] | 0.904 [0.481, 1.533] |
+| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.714] | 2.471 [1.214, 4.429] | 1.221 [0.472, 2.412] |
+| outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 3.333 (no interval) | 2.778 (no interval) |
 
 Recall with equal weight per regime: 0.218 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
 
@@ -519,11 +519,11 @@ risk_gbm+combined_no_factor:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 8 | 0.308 [0.152, 0.474] | 1.038 [0.611, 1.667] | 0.519 [0.274, 0.895] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.158, 0.474] | 1.462 [0.875, 2.400] | 1.010 [0.540, 1.761] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.182, 0.522] | 1.192 [0.700, 1.952] | 0.788 [0.406, 1.404] |
-| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.519] | 1.077 [0.583, 1.778] | 0.683 [0.337, 1.207] |
-| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.423 [0.818, 2.286] | 0.808 [0.435, 1.382] |
-| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.700] | 2.706 [1.458, 4.667] | 1.265 [0.580, 2.365] |
-| outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 3.222 (no interval) | 2.583 (no interval) |
+| lead 3 alone (fail) | 26 | 9 | 0.346 [0.182, 0.522] | 1.154 [0.682, 1.857] | 0.760 [0.398, 1.339] |
+| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.519] | 1.269 [0.636, 2.185] | 0.827 [0.361, 1.554] |
+| lead 5 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.423 [0.800, 2.334] | 0.942 [0.492, 1.647] |
+| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.700] | 2.588 [1.286, 4.668] | 1.309 [0.524, 2.604] |
+| outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 3.333 (no interval) | 2.694 (no interval) |
 
 Recall with equal weight per regime: 0.218 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
 
@@ -533,11 +533,11 @@ risk_gbm+combined_no_projected:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 8 | 0.308 [0.156, 0.476] | 1.500 [0.920, 2.375] | 0.644 [0.386, 1.069] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.150, 0.476] | 1.538 [0.954, 2.531] | 1.029 [0.575, 1.829] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.176, 0.524] | 1.269 [0.750, 2.087] | 0.769 [0.403, 1.389] |
-| lead 4 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 1.885 [1.143, 3.077] | 1.058 [0.614, 1.810] |
-| lead 5 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 2.038 [1.272, 3.200] | 1.048 [0.643, 1.714] |
-| inside 2018-2019 | 17 | 9 | 0.529 [0.294, 0.778] | 3.059 [1.833, 5.003] | 1.250 [0.700, 2.131] |
-| outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 4.778 (no interval) | 3.222 (no interval) |
+| lead 3 alone (fail) | 26 | 10 | 0.385 [0.214, 0.571] | 1.192 [0.727, 1.924] | 0.731 [0.391, 1.333] |
+| lead 4 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 1.692 [1.031, 2.750] | 0.942 [0.536, 1.621] |
+| lead 5 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 1.808 [1.077, 2.941] | 0.971 [0.562, 1.639] |
+| inside 2018-2019 | 17 | 9 | 0.529 [0.294, 0.778] | 2.941 [1.750, 4.848] | 1.206 [0.676, 2.062] |
+| outside 2018-2019 | 9 | 2 | 0.222 (no interval) | 4.556 (no interval) | 3.139 (no interval) |
 
 Recall with equal weight per regime: 0.232 (2018-19 9/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
 
@@ -547,11 +547,11 @@ risk_gbm+combined_no_structural:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 8 | 0.308 [0.158, 0.469] | 1.731 [0.905, 2.955] | 0.673 [0.371, 1.120] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.160, 0.471] | 1.346 [0.793, 2.208] | 0.913 [0.474, 1.643] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.000 [0.591, 1.600] | 0.625 [0.319, 1.114] |
-| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.385 [0.781, 2.250] | 0.942 [0.477, 1.648] |
-| lead 5 alone (fail) | 26 | 9 | 0.346 [0.179, 0.520] | 1.077 [0.545, 1.833] | 0.663 [0.271, 1.260] |
-| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.692] | 2.176 [1.100, 3.734] | 1.088 [0.429, 2.063] |
-| outside 2018-2019 | 9 | 2 | 0.222 [0.000, 0.500] | 5.889 [3.182, 12.667] | 3.500 [1.867, 8.191] |
+| lead 3 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.038 [0.618, 1.667] | 0.635 [0.327, 1.125] |
+| lead 4 alone (fail) | 26 | 9 | 0.346 [0.185, 0.520] | 1.231 [0.697, 2.033] | 0.865 [0.435, 1.528] |
+| lead 5 alone (fail) | 26 | 9 | 0.346 [0.179, 0.520] | 1.538 [0.828, 2.524] | 0.962 [0.511, 1.618] |
+| inside 2018-2019 | 17 | 8 | 0.471 [0.250, 0.692] | 1.824 [0.941, 3.111] | 0.853 [0.354, 1.583] |
+| outside 2018-2019 | 9 | 2 | 0.222 [0.000, 0.500] | 6.000 [3.250, 12.802] | 3.611 [1.917, 8.439] |
 
 Recall with equal weight per regime: 0.218 (2018-19 8/17, 2020 0/2, 2024 0/2, 2025-26 2/5).
 
@@ -561,10 +561,10 @@ risk_gbm+combined_nogate:
 |---|---|---|---|---|---|
 | lead 1 alone (pass) | 26 | 13 | 0.500 [0.308, 0.684] | 3.231 [1.814, 5.316] | 1.481 [0.767, 2.532] |
 | lead 2 alone (pass) | 26 | 13 | 0.500 [0.308, 0.684] | 3.154 [1.844, 5.120] | 1.365 [0.781, 2.236] |
-| lead 3 alone (fail) | 26 | 12 | 0.462 [0.267, 0.655] | 3.500 [2.000, 5.765] | 1.654 [0.909, 2.804] |
-| lead 4 alone (fail) | 26 | 12 | 0.462 [0.267, 0.655] | 3.577 [2.071, 5.740] | 1.615 [0.892, 2.733] |
-| lead 5 alone (fail) | 26 | 12 | 0.462 [0.267, 0.655] | 3.808 [2.269, 6.056] | 1.837 [1.037, 3.063] |
-| inside 2018-2019 | 17 | 10 | 0.588 [0.346, 0.818] | 6.647 [4.182, 10.702] | 2.971 [1.708, 5.016] |
+| lead 3 alone (fail) | 26 | 12 | 0.462 [0.267, 0.655] | 3.615 [2.115, 5.896] | 1.702 [0.948, 2.876] |
+| lead 4 alone (fail) | 26 | 12 | 0.462 [0.267, 0.655] | 3.885 [2.273, 6.218] | 1.779 [0.991, 2.986] |
+| lead 5 alone (fail) | 26 | 12 | 0.462 [0.267, 0.655] | 3.654 [2.185, 5.800] | 1.683 [0.974, 2.795] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.346, 0.818] | 6.765 [4.249, 10.843] | 2.971 [1.750, 4.951] |
 | outside 2018-2019 | 9 | 3 | 0.333 (no interval) | 1.778 (no interval) | 1.361 (no interval) |
 
 Recall with equal weight per regime: 0.297 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
@@ -631,11 +631,11 @@ risk_logistic+combined:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 9 | 0.346 [0.192, 0.524] | 2.077 [1.300, 3.389] | 1.500 [0.821, 2.667] |
 | lead 2 alone (fail) | 26 | 10 | 0.385 [0.226, 0.565] | 1.692 [1.083, 2.625] | 1.115 [0.636, 1.882] |
-| lead 3 alone (fail) | 26 | 7 | 0.269 [0.130, 0.429] | 2.038 [1.194, 3.445] | 1.673 [0.890, 2.950] |
-| lead 4 alone (fail) | 26 | 10 | 0.385 [0.226, 0.563] | 2.385 [1.454, 3.750] | 1.510 [0.866, 2.501] |
-| lead 5 alone (fail) | 26 | 9 | 0.346 [0.193, 0.520] | 1.346 [0.781, 2.179] | 0.788 [0.450, 1.315] |
-| inside 2018-2019 | 17 | 7 | 0.412 [0.214, 0.643] | 3.059 [1.708, 5.125] | 1.456 [0.662, 2.688] |
-| outside 2018-2019 | 9 | 4 | 0.444 (no interval) | 7.111 (no interval) | 6.417 (no interval) |
+| lead 3 alone (fail) | 26 | 8 | 0.308 [0.167, 0.474] | 2.231 [1.333, 3.765] | 1.856 [1.029, 3.279] |
+| lead 4 alone (fail) | 26 | 9 | 0.346 [0.188, 0.526] | 1.538 [0.926, 2.500] | 1.058 [0.605, 1.819] |
+| lead 5 alone (fail) | 26 | 9 | 0.346 [0.193, 0.520] | 1.808 [1.091, 3.000] | 1.337 [0.740, 2.309] |
+| inside 2018-2019 | 17 | 7 | 0.412 [0.214, 0.643] | 2.059 [1.222, 3.333] | 0.941 [0.453, 1.684] |
+| outside 2018-2019 | 9 | 4 | 0.444 (no interval) | 7.778 (no interval) | 7.083 (no interval) |
 
 Recall with equal weight per regime: 0.378 (2018-19 7/17, 2020 0/2, 2024 1/2, 2025-26 3/5).
 
@@ -645,10 +645,10 @@ risk_logistic+combined_nogate:
 |---|---|---|---|---|---|
 | lead 1 alone (fail) | 26 | 9 | 0.346 [0.192, 0.500] | 3.654 [2.120, 5.835] | 1.702 [0.958, 2.813] |
 | lead 2 alone (fail) | 26 | 8 | 0.308 [0.167, 0.478] | 2.385 [1.171, 4.167] | 1.173 [0.598, 2.017] |
-| lead 3 alone (fail) | 26 | 7 | 0.269 [0.125, 0.429] | 2.769 [1.405, 4.801] | 1.317 [0.621, 2.397] |
-| lead 4 alone (fail) | 26 | 11 | 0.423 [0.273, 0.583] | 3.962 [2.405, 6.200] | 1.933 [1.125, 3.130] |
-| lead 5 alone (fail) | 26 | 7 | 0.269 [0.129, 0.429] | 2.538 [1.178, 4.500] | 1.163 [0.490, 2.205] |
-| inside 2018-2019 | 17 | 10 | 0.588 [0.375, 0.800] | 6.412 [4.055, 10.200] | 2.779 [1.640, 4.625] |
+| lead 3 alone (fail) | 26 | 7 | 0.269 [0.125, 0.429] | 2.577 [1.318, 4.534] | 1.240 [0.567, 2.292] |
+| lead 4 alone (fail) | 26 | 10 | 0.385 [0.222, 0.548] | 3.923 [2.345, 6.138] | 1.923 [1.100, 3.150] |
+| lead 5 alone (fail) | 26 | 8 | 0.308 [0.161, 0.474] | 2.538 [1.250, 4.317] | 1.202 [0.571, 2.179] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.375, 0.800] | 6.706 [4.273, 10.468] | 2.926 [1.750, 4.834] |
 | outside 2018-2019 | 9 | 3 | 0.333 (no interval) | 1.667 (no interval) | 1.333 (no interval) |
 
 Recall with equal weight per regime: 0.297 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
@@ -786,13 +786,13 @@ Table 3. Brier difference against calendar climatology at h = 1 (+5 bp), by regi
 
 | row | h = 1 Brier / log loss | h = 2 Brier / log loss | h = 3 Brier / log loss | h = 4 Brier / log loss | h = 5 Brier / log loss |
 |---|---|---|---|---|---|
-| risk_gbm+combined | 0.0599 / 0.5426 | 0.0628 / 0.5966 | 0.0644 / 0.5940 | 0.0645 / 0.5991 | 0.0629 / 0.6055 |
-| risk_gbm+combined_nogate | 0.0501 / 0.1970 | 0.0528 / 0.2115 | 0.0553 / 0.2134 | 0.0541 / 0.2215 | 0.0589 / 0.2418 |
-| risk_logistic+combined | 0.0606 / 0.5524 | 0.0621 / 0.5887 | 0.0644 / 0.5964 | 0.0646 / 0.5921 | 0.0653 / 0.6150 |
-| risk_logistic+combined_nogate | 0.0525 / 0.2141 | 0.0540 / 0.2198 | 0.0534 / 0.2061 | 0.0553 / 0.2253 | 0.0598 / 0.2435 |
-| risk_gbm+combined_no_factor | 0.0599 / 0.5425 | 0.0627 / 0.5863 | 0.0642 / 0.5938 | 0.0644 / 0.5983 | 0.0625 / 0.5925 |
-| risk_gbm+combined_no_structural | 0.0606 / 0.5332 | 0.0647 / 0.6017 | 0.0648 / 0.6059 | 0.0650 / 0.6181 | 0.0644 / 0.6225 |
-| risk_gbm+combined_no_projected | 0.0594 / 0.5437 | 0.0632 / 0.6453 | 0.0631 / 0.6128 | 0.0630 / 0.5416 | 0.0618 / 0.5193 |
+| risk_gbm+combined | 0.0599 / 0.5426 | 0.0628 / 0.5966 | 0.0635 / 0.5899 | 0.0645 / 0.6049 | 0.0627 / 0.6106 |
+| risk_gbm+combined_nogate | 0.0501 / 0.1970 | 0.0528 / 0.2115 | 0.0560 / 0.2163 | 0.0549 / 0.2288 | 0.0611 / 0.2666 |
+| risk_logistic+combined | 0.0606 / 0.5524 | 0.0621 / 0.5887 | 0.0635 / 0.5923 | 0.0646 / 0.5979 | 0.0651 / 0.6201 |
+| risk_logistic+combined_nogate | 0.0525 / 0.2141 | 0.0540 / 0.2198 | 0.0541 / 0.2091 | 0.0561 / 0.2326 | 0.0620 / 0.2683 |
+| risk_gbm+combined_no_factor | 0.0599 / 0.5425 | 0.0627 / 0.5863 | 0.0633 / 0.5855 | 0.0641 / 0.6037 | 0.0624 / 0.5982 |
+| risk_gbm+combined_no_structural | 0.0606 / 0.5332 | 0.0647 / 0.6017 | 0.0647 / 0.6058 | 0.0652 / 0.6239 | 0.0642 / 0.6203 |
+| risk_gbm+combined_no_projected | 0.0594 / 0.5437 | 0.0632 / 0.6453 | 0.0625 / 0.5948 | 0.0629 / 0.5483 | 0.0619 / 0.5739 |
 | risk_gbm | 0.0577 / 0.6598 | 0.0687 / 0.8020 | 0.0667 / 0.7889 | 0.0668 / 0.7921 | 0.0696 / 0.8044 |
 | risk_logistic | 0.0606 / 0.6775 | 0.0676 / 0.8012 | 0.0689 / 0.8060 | 0.0688 / 0.8073 | 0.0690 / 0.8166 |
 | risk_gbm_base | 0.0592 / 0.6599 | 0.0691 / 0.8045 | 0.0677 / 0.7914 | 0.0668 / 0.7890 | 0.0696 / 0.8085 |
@@ -819,9 +819,9 @@ Warned by a passer and not by risk_gbm+combined: 2019-01-15, 2019-01-31, 2024-09
 |---|---|---|---|---|---|---|---|
 | 1 | 90 | 1 | 1 | 7 | 0 | 1326 of 1873 | 529 |
 | 2 | 90 | 1 | 1 | 7 | 0 | 1369 of 1872 | 484 |
-| 3 | 90 | 1 | 1 | 7 | 1 | 1363 of 1871 | 489 |
-| 4 | 90 | 2 | 1 | 7 | 1 | 1379 of 1870 | 467 |
-| 5 | 89 | 1 | 1 | 7 | 0 | 1350 of 1869 | 497 |
+| 3 | 90 | 1 | 1 | 7 | 1 | 1361 of 1871 | 491 |
+| 4 | 90 | 2 | 1 | 7 | 1 | 1372 of 1870 | 474 |
+| 5 | 89 | 1 | 1 | 7 | 0 | 1368 of 1869 | 479 |
 
 ## risk_gbm+combined_nogate: onsets only this row warns
 
@@ -840,7 +840,7 @@ Warned by a passer and not by risk_gbm+combined_nogate: 2019-01-15, 2019-01-31, 
 | 2 | 90 | 0 | 0 | 7 | 3 | 0 of 1872 | 1847 |
 | 3 | 90 | 0 | 0 | 7 | 4 | 0 of 1871 | 1845 |
 | 4 | 90 | 1 | 0 | 7 | 5 | 0 of 1870 | 1845 |
-| 5 | 89 | 0 | 0 | 7 | 3 | 0 of 1869 | 1844 |
+| 5 | 89 | 0 | 0 | 7 | 2 | 0 of 1869 | 1844 |
 
 ## risk_logistic+combined: onsets only this row warns
 
@@ -855,9 +855,9 @@ Warned by a passer and not by risk_logistic+combined: 2019-01-15, 2019-01-31, 20
 |---|---|---|---|---|---|---|---|
 | 1 | 90 | 1 | 1 | 7 | 0 | 1326 of 1873 | 547 |
 | 2 | 90 | 1 | 1 | 7 | 1 | 1369 of 1872 | 504 |
-| 3 | 90 | 1 | 1 | 7 | 1 | 1363 of 1871 | 509 |
-| 4 | 90 | 2 | 1 | 7 | 1 | 1379 of 1870 | 492 |
-| 5 | 89 | 1 | 1 | 7 | 0 | 1350 of 1869 | 520 |
+| 3 | 90 | 1 | 1 | 7 | 1 | 1361 of 1871 | 511 |
+| 4 | 90 | 2 | 1 | 7 | 1 | 1372 of 1870 | 499 |
+| 5 | 89 | 1 | 1 | 7 | 0 | 1368 of 1869 | 502 |
 
 ## risk_logistic+combined_nogate: onsets only this row warns
 
@@ -875,7 +875,7 @@ Warned by a passer and not by risk_logistic+combined_nogate: 2019-03-15, 2019-08
 | 1 | 90 | 0 | 0 | 6 | 3 | 0 of 1873 | 1873 |
 | 2 | 90 | 0 | 0 | 7 | 1 | 0 of 1872 | 1872 |
 | 3 | 90 | 0 | 0 | 7 | 3 | 0 of 1871 | 1871 |
-| 4 | 90 | 1 | 0 | 6 | 2 | 0 of 1870 | 1870 |
+| 4 | 90 | 1 | 0 | 6 | 1 | 0 of 1870 | 1870 |
 | 5 | 89 | 0 | 0 | 7 | 0 | 0 of 1869 | 1869 |
 
 ## risk_gbm+combined_no_factor: onsets only this row warns
@@ -891,9 +891,9 @@ Warned by a passer and not by risk_gbm+combined_no_factor: 2019-01-15, 2019-01-3
 |---|---|---|---|---|---|---|---|
 | 1 | 90 | 1 | 1 | 7 | 0 | 1326 of 1873 | 530 |
 | 2 | 90 | 1 | 1 | 7 | 0 | 1349 of 1872 | 504 |
-| 3 | 90 | 1 | 1 | 7 | 1 | 1359 of 1871 | 493 |
-| 4 | 90 | 2 | 1 | 7 | 1 | 1374 of 1870 | 472 |
-| 5 | 89 | 1 | 1 | 7 | 0 | 1337 of 1869 | 510 |
+| 3 | 90 | 1 | 1 | 7 | 1 | 1342 of 1871 | 510 |
+| 4 | 90 | 2 | 1 | 7 | 1 | 1359 of 1870 | 487 |
+| 5 | 89 | 1 | 1 | 7 | 0 | 1356 of 1869 | 491 |
 
 ## risk_gbm+combined_no_structural: onsets only this row warns
 
@@ -908,15 +908,15 @@ Warned by a passer and not by risk_gbm+combined_no_structural: 2019-01-15, 2019-
 |---|---|---|---|---|---|---|---|
 | 1 | 90 | 1 | 1 | 7 | 0 | 1207 of 1873 | 649 |
 | 2 | 90 | 1 | 1 | 7 | 0 | 1271 of 1872 | 582 |
-| 3 | 90 | 1 | 1 | 7 | 1 | 1288 of 1871 | 564 |
-| 4 | 90 | 2 | 1 | 7 | 1 | 1287 of 1870 | 559 |
-| 5 | 89 | 1 | 1 | 7 | 0 | 1302 of 1869 | 545 |
+| 3 | 90 | 1 | 1 | 7 | 1 | 1287 of 1871 | 565 |
+| 4 | 90 | 2 | 1 | 7 | 1 | 1297 of 1870 | 549 |
+| 5 | 89 | 1 | 1 | 7 | 0 | 1316 of 1869 | 531 |
 
 ## risk_gbm+combined_no_projected: onsets only this row warns
 
 risk_gbm+combined_no_projected warns 11 of 26 onsets; at least one of the five passers warns 16. 1 are warned by risk_gbm+combined_no_projected and by none of the five passers:
 
-* 2019-08-13 (flagged at h = 4, 5)
+* 2019-08-13 (flagged at h = 3, 4, 5)
 
 Warned by a passer and not by risk_gbm+combined_no_projected: 2019-01-15, 2019-01-31, 2024-09-30, 2025-09-15, 2025-09-30, 2025-10-15
 
@@ -926,9 +926,9 @@ Warned by a passer and not by risk_gbm+combined_no_projected: 2019-01-15, 2019-0
 |---|---|---|---|---|---|---|---|
 | 1 | 90 | 1 | 1 | 7 | 0 | 1416 of 1873 | 439 |
 | 2 | 90 | 1 | 1 | 7 | 0 | 1442 of 1872 | 411 |
-| 3 | 90 | 1 | 1 | 7 | 1 | 1431 of 1871 | 421 |
-| 4 | 90 | 2 | 1 | 7 | 1 | 1395 of 1870 | 451 |
-| 5 | 89 | 1 | 1 | 7 | 0 | 1392 of 1869 | 455 |
+| 3 | 90 | 1 | 1 | 7 | 1 | 1430 of 1871 | 422 |
+| 4 | 90 | 2 | 1 | 7 | 1 | 1383 of 1870 | 463 |
+| 5 | 89 | 1 | 1 | 7 | 0 | 1396 of 1869 | 451 |
 
 ## risk_gbm+combined against risk_gbm
 
@@ -938,7 +938,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.002 [-0.006, 0.002] |
 | 2 | 0.006 [0.001, 0.011] |
-| 3 | 0.002 [-0.001, 0.006] |
+| 3 | 0.003 [-0.001, 0.007] |
 | 4 | 0.002 [-0.001, 0.006] |
 | 5 | 0.007 [0.003, 0.011] |
 
@@ -946,7 +946,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.004 [-0.019, 0.012] | 0.011 [-0.006, 0.027] | 0.019 [0.004, 0.035] |
+| 2018-19 | 375 | -0.004 [-0.019, 0.012] | 0.015 [-0.004, 0.034] | 0.020 [0.005, 0.035] |
 | 2020 | 251 | 0.003 [-0.000, 0.006] | 0.000 [-0.001, 0.001] | 0.001 [-0.002, 0.004] |
 | 2021-23 | 748 | 0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.008, 0.000] | -0.003 [-0.009, 0.000] | -0.001 [-0.002, 0.000] |
@@ -957,7 +957,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.025 [-0.049, -0.003] | -0.007 [-0.022, 0.007] | 0.019 [0.007, 0.031] |
-| ordinary | 1603 | 0.002 [-0.001, 0.006] | 0.004 [0.001, 0.007] | 0.004 [0.002, 0.008] |
+| ordinary | 1603 | 0.002 [-0.001, 0.006] | 0.005 [0.002, 0.009] | 0.005 [0.002, 0.008] |
 | quarter_end | 31 | -0.011 [-0.067, 0.049] | -0.002 [-0.061, 0.062] | 0.037 [-0.000, 0.081] |
 | tax_date | 89 | -0.039 [-0.073, -0.010] | -0.015 [-0.058, 0.021] | 0.018 [-0.035, 0.075] |
 
@@ -966,9 +966,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | 0.000 [-0.001, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [-0.000, 0.000] |
-| 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.001] | 0.001 [-0.001, 0.002] |
+| 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.001] | 0.001 [-0.001, 0.002] |
 | 2 | 41 | 0.000 [–] | -0.007 [–] | 0.019 [–] |
-| 3 | 478 | -0.008 [-0.023, 0.005] | 0.010 [-0.004, 0.023] | 0.024 [0.009, 0.040] |
+| 3 | 478 | -0.008 [-0.023, 0.005] | 0.013 [-0.002, 0.028] | 0.025 [0.010, 0.040] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.115 [-0.231, 0.000] on 26 onsets.
 
@@ -1002,15 +1002,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.014 [-0.023, -0.006] |
 | 2 | -0.006 [-0.015, 0.002] |
-| 3 | -0.005 [-0.014, 0.003] |
+| 3 | -0.004 [-0.013, 0.004] |
 | 4 | -0.003 [-0.012, 0.005] |
-| 5 | 0.001 [-0.009, 0.009] |
+| 5 | 0.001 [-0.009, 0.010] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.056 [-0.096, -0.022] | -0.027 [-0.071, 0.013] | -0.006 [-0.052, 0.035] |
+| 2018-19 | 375 | -0.056 [-0.096, -0.022] | -0.023 [-0.068, 0.019] | -0.005 [-0.052, 0.037] |
 | 2020 | 251 | 0.009 [0.005, 0.014] | -0.001 [-0.006, 0.003] | 0.002 [-0.006, 0.009] |
 | 2021-23 | 748 | -0.000 [-0.000, -0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.010, 0.000] | -0.003 [-0.007, 0.000] | -0.001 [-0.001, 0.000] |
@@ -1021,7 +1021,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.018 [-0.039, -0.000] | 0.008 [-0.008, 0.025] | 0.024 [0.004, 0.046] |
-| ordinary | 1603 | -0.012 [-0.022, -0.003] | -0.006 [-0.016, 0.002] | -0.002 [-0.013, 0.007] |
+| ordinary | 1603 | -0.012 [-0.022, -0.003] | -0.005 [-0.015, 0.003] | -0.002 [-0.013, 0.007] |
 | quarter_end | 31 | -0.026 [-0.089, 0.029] | -0.011 [-0.074, 0.055] | 0.010 [-0.035, 0.059] |
 | tax_date | 89 | -0.038 [-0.076, -0.007] | 0.000 [-0.033, 0.028] | 0.017 [-0.013, 0.048] |
 
@@ -1032,7 +1032,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | -0.001 [-0.002, 0.000] | -0.001 [-0.001, 0.000] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | 0.003 [0.002, 0.005] | 0.000 [-0.000, 0.000] | 0.001 [0.000, 0.003] |
 | 2 | 41 | -0.057 [–] | -0.017 [–] | 0.008 [–] |
-| 3 | 478 | -0.049 [-0.083, -0.020] | -0.017 [-0.052, 0.016] | 0.002 [-0.036, 0.035] |
+| 3 | 478 | -0.049 [-0.083, -0.020] | -0.013 [-0.050, 0.019] | 0.002 [-0.037, 0.036] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.269 [-0.435, -0.107] on 26 onsets.
 
@@ -1066,7 +1066,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.012 [0.006, 0.017] |
 | 2 | 0.008 [0.002, 0.014] |
-| 3 | 0.006 [0.000, 0.012] |
+| 3 | 0.007 [0.001, 0.013] |
 | 4 | 0.006 [0.000, 0.012] |
 | 5 | 0.008 [0.003, 0.013] |
 
@@ -1074,7 +1074,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.002 [-0.024, 0.019] | -0.025 [-0.048, -0.005] | -0.019 [-0.040, 0.002] |
+| 2018-19 | 375 | -0.002 [-0.024, 0.019] | -0.021 [-0.044, 0.000] | -0.018 [-0.039, 0.003] |
 | 2020 | 251 | 0.042 [0.035, 0.050] | 0.038 [0.028, 0.048] | 0.037 [0.026, 0.047] |
 | 2021-23 | 748 | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] |
 | 2024 | 250 | 0.001 [-0.005, 0.005] | 0.001 [-0.005, 0.005] | 0.001 [-0.005, 0.005] |
@@ -1085,7 +1085,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.030 [0.017, 0.045] | 0.020 [0.011, 0.029] | 0.032 [0.020, 0.046] |
-| ordinary | 1603 | 0.007 [0.002, 0.012] | 0.002 [-0.003, 0.007] | 0.002 [-0.003, 0.007] |
+| ordinary | 1603 | 0.007 [0.002, 0.012] | 0.003 [-0.002, 0.008] | 0.002 [-0.003, 0.007] |
 | quarter_end | 31 | 0.105 [0.012, 0.193] | 0.077 [-0.016, 0.181] | 0.100 [0.003, 0.197] |
 | tax_date | 89 | 0.029 [-0.003, 0.058] | 0.038 [0.007, 0.067] | 0.044 [0.014, 0.073] |
 
@@ -1096,7 +1096,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.009 [0.007, 0.011] | 0.009 [0.007, 0.011] | 0.009 [0.008, 0.011] |
 | 1 | 313 | 0.032 [0.025, 0.038] | 0.031 [0.024, 0.038] | 0.029 [0.022, 0.036] |
 | 2 | 41 | -0.011 [–] | -0.031 [–] | -0.012 [–] |
-| 3 | 478 | 0.006 [-0.012, 0.024] | -0.013 [-0.034, 0.006] | -0.007 [-0.026, 0.011] |
+| 3 | 478 | 0.006 [-0.012, 0.024] | -0.009 [-0.030, 0.009] | -0.006 [-0.025, 0.012] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.273, 0.125] on 26 onsets.
 
@@ -1130,7 +1130,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.004 [-0.012, 0.003] |
 | 2 | -0.002 [-0.009, 0.005] |
-| 3 | -0.000 [-0.007, 0.006] |
+| 3 | 0.001 [-0.006, 0.007] |
 | 4 | -0.002 [-0.009, 0.004] |
 | 5 | 0.001 [-0.006, 0.007] |
 
@@ -1138,7 +1138,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.019 [-0.051, 0.011] | -0.025 [-0.052, -0.001] | -0.016 [-0.043, 0.009] |
+| 2018-19 | 375 | -0.019 [-0.051, 0.011] | -0.021 [-0.048, 0.003] | -0.015 [-0.042, 0.010] |
 | 2020 | 251 | 0.019 [0.013, 0.026] | 0.026 [0.018, 0.032] | 0.020 [0.011, 0.026] |
 | 2021-23 | 748 | 0.001 [0.000, 0.001] | 0.004 [0.003, 0.005] | 0.002 [0.002, 0.003] |
 | 2024 | 250 | 0.001 [-0.002, 0.005] | 0.001 [-0.002, 0.002] | 0.001 [-0.001, 0.003] |
@@ -1149,7 +1149,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.009 [-0.016, 0.031] | 0.011 [-0.001, 0.023] | 0.023 [0.008, 0.040] |
-| ordinary | 1603 | -0.005 [-0.014, 0.002] | -0.002 [-0.010, 0.004] | -0.004 [-0.012, 0.003] |
+| ordinary | 1603 | -0.005 [-0.014, 0.002] | -0.001 [-0.009, 0.005] | -0.004 [-0.012, 0.003] |
 | quarter_end | 31 | 0.045 [-0.007, 0.106] | 0.042 [-0.011, 0.102] | 0.074 [0.019, 0.144] |
 | tax_date | 89 | -0.006 [-0.037, 0.017] | 0.011 [-0.008, 0.030] | 0.018 [-0.003, 0.042] |
 
@@ -1160,7 +1160,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.001 [0.000, 0.002] | 0.003 [0.002, 0.003] | 0.002 [0.001, 0.002] |
 | 1 | 313 | 0.009 [0.007, 0.012] | 0.020 [0.016, 0.024] | 0.014 [0.011, 0.018] |
 | 2 | 41 | -0.044 [–] | -0.064 [–] | -0.069 [–] |
-| 3 | 478 | -0.018 [-0.047, 0.007] | -0.014 [-0.036, 0.007] | -0.005 [-0.030, 0.017] |
+| 3 | 478 | -0.018 [-0.047, 0.007] | -0.010 [-0.033, 0.011] | -0.004 [-0.029, 0.017] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.238, 0.111] on 26 onsets.
 
@@ -1194,15 +1194,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.002 [-0.006, 0.002] |
 | 2 | -0.004 [-0.008, 0.001] |
-| 3 | -0.003 [-0.007, 0.000] |
+| 3 | -0.002 [-0.006, 0.001] |
 | 4 | -0.006 [-0.009, -0.002] |
-| 5 | -0.004 [-0.007, -0.001] |
+| 5 | -0.003 [-0.007, -0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.004 [-0.020, 0.012] | -0.016 [-0.031, -0.002] | -0.021 [-0.034, -0.008] |
+| 2018-19 | 375 | -0.004 [-0.020, 0.012] | -0.012 [-0.027, 0.004] | -0.020 [-0.033, -0.008] |
 | 2020 | 251 | 0.004 [0.001, 0.008] | 0.005 [-0.004, 0.015] | 0.007 [0.002, 0.012] |
 | 2021-23 | 748 | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.000 [-0.001, 0.000] | -0.003 [-0.009, 0.000] | -0.000 [-0.000, 0.000] |
@@ -1213,7 +1213,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.024 [-0.047, -0.002] | -0.012 [-0.030, 0.007] | -0.011 [-0.023, -0.001] |
-| ordinary | 1603 | 0.003 [-0.001, 0.006] | -0.001 [-0.004, 0.001] | -0.001 [-0.003, 0.001] |
+| ordinary | 1603 | 0.003 [-0.001, 0.006] | -0.000 [-0.003, 0.003] | -0.001 [-0.003, 0.001] |
 | quarter_end | 31 | -0.020 [-0.077, 0.033] | -0.032 [-0.093, 0.028] | 0.006 [-0.026, 0.047] |
 | tax_date | 89 | -0.040 [-0.076, -0.008] | -0.014 [-0.055, 0.023] | -0.036 [-0.083, 0.005] |
 
@@ -1224,7 +1224,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.000, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.003, 0.003] |
 | 2 | 41 | -0.007 [–] | -0.001 [–] | -0.006 [–] |
-| 3 | 478 | -0.008 [-0.023, 0.007] | -0.014 [-0.026, -0.002] | -0.014 [-0.025, -0.003] |
+| 3 | 478 | -0.008 [-0.023, 0.007] | -0.011 [-0.024, 0.003] | -0.013 [-0.024, -0.002] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.154 [-0.304, -0.038] on 26 onsets.
 
@@ -1258,15 +1258,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.001 [-0.004, 0.005] |
 | 2 | -0.002 [-0.008, 0.003] |
-| 3 | -0.005 [-0.010, -0.001] |
+| 3 | -0.004 [-0.009, -0.000] |
 | 4 | -0.004 [-0.009, -0.000] |
-| 5 | -0.003 [-0.007, 0.001] |
+| 5 | -0.002 [-0.007, 0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.000 [-0.019, 0.020] | -0.016 [-0.034, 0.002] | -0.013 [-0.032, 0.005] |
+| 2018-19 | 375 | -0.000 [-0.019, 0.020] | -0.012 [-0.031, 0.008] | -0.012 [-0.031, 0.005] |
 | 2020 | 251 | 0.016 [0.003, 0.032] | 0.000 [-0.004, 0.003] | 0.004 [-0.000, 0.009] |
 | 2021-23 | 748 | -0.000 [-0.000, -0.000] | -0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.004 [-0.012, 0.000] | -0.004 [-0.013, 0.000] | -0.002 [-0.006, 0.000] |
@@ -1277,7 +1277,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.001 [-0.029, 0.029] | -0.011 [-0.034, 0.011] | 0.007 [-0.014, 0.030] |
-| ordinary | 1603 | 0.003 [-0.000, 0.007] | -0.002 [-0.005, 0.001] | -0.001 [-0.003, 0.001] |
+| ordinary | 1603 | 0.003 [-0.000, 0.007] | -0.001 [-0.004, 0.002] | -0.001 [-0.003, 0.001] |
 | quarter_end | 31 | 0.014 [-0.099, 0.136] | -0.048 [-0.157, 0.059] | -0.040 [-0.135, 0.049] |
 | tax_date | 89 | -0.047 [-0.107, 0.003] | -0.036 [-0.096, 0.018] | -0.029 [-0.090, 0.026] |
 
@@ -1287,8 +1287,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | -0.000 [-0.002, 0.001] | -0.000 [-0.002, 0.001] | 0.001 [-0.000, 0.001] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [-0.000, 0.001] | -0.002 [-0.006, 0.001] |
-| 2 | 41 | 0.023 [–] | -0.042 [–] | -0.032 [–] |
-| 3 | 478 | -0.000 [-0.017, 0.017] | -0.016 [-0.031, -0.002] | -0.007 [-0.023, 0.008] |
+| 2 | 41 | 0.023 [–] | -0.043 [–] | -0.032 [–] |
+| 3 | 478 | -0.000 [-0.017, 0.017] | -0.013 [-0.028, 0.003] | -0.007 [-0.022, 0.008] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.400, -0.077] on 26 onsets.
 
@@ -1322,7 +1322,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.010 [-0.018, -0.003] |
 | 2 | -0.008 [-0.016, -0.002] |
-| 3 | -0.007 [-0.014, -0.001] |
+| 3 | -0.007 [-0.013, -0.000] |
 | 4 | -0.011 [-0.020, -0.004] |
 | 5 | -0.009 [-0.017, -0.002] |
 
@@ -1330,7 +1330,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.044 [-0.074, -0.017] | -0.040 [-0.069, -0.014] | -0.049 [-0.082, -0.021] |
+| 2018-19 | 375 | -0.044 [-0.074, -0.017] | -0.036 [-0.064, -0.010] | -0.048 [-0.081, -0.019] |
 | 2020 | 251 | 0.011 [0.001, 0.025] | 0.006 [-0.002, 0.015] | 0.007 [-0.000, 0.015] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.001] |
 | 2024 | 250 | 0.002 [-0.000, 0.006] | -0.001 [-0.007, 0.004] | 0.002 [0.001, 0.005] |
@@ -1341,7 +1341,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.030 [-0.055, -0.006] | -0.012 [-0.030, 0.006] | -0.014 [-0.025, -0.002] |
-| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.006 [-0.013, -0.000] | -0.007 [-0.016, -0.000] |
+| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.005 [-0.012, 0.001] | -0.007 [-0.015, -0.000] |
 | quarter_end | 31 | -0.020 [-0.074, 0.031] | -0.032 [-0.095, 0.023] | 0.006 [-0.026, 0.049] |
 | tax_date | 89 | -0.040 [-0.075, -0.008] | -0.014 [-0.054, 0.021] | -0.036 [-0.085, 0.003] |
 
@@ -1351,8 +1351,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.002 [0.001, 0.003] | 0.001 [0.000, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.004, 0.003] |
-| 2 | 41 | -0.048 [–] | -0.045 [–] | -0.061 [–] |
-| 3 | 478 | -0.039 [-0.066, -0.013] | -0.031 [-0.055, -0.009] | -0.034 [-0.063, -0.008] |
+| 2 | 41 | -0.048 [–] | -0.046 [–] | -0.061 [–] |
+| 3 | 478 | -0.039 [-0.066, -0.013] | -0.027 [-0.050, -0.006] | -0.033 [-0.062, -0.007] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.308 [-0.462, -0.154] on 26 onsets.
 
@@ -1386,15 +1386,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.008 [-0.016, 0.001] |
 | 2 | -0.007 [-0.016, 0.000] |
-| 3 | -0.009 [-0.017, -0.003] |
+| 3 | -0.008 [-0.016, -0.002] |
 | 4 | -0.010 [-0.019, -0.002] |
-| 5 | -0.008 [-0.017, -0.001] |
+| 5 | -0.008 [-0.016, -0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.040 [-0.073, -0.010] | -0.040 [-0.073, -0.011] | -0.041 [-0.076, -0.012] |
+| 2018-19 | 375 | -0.040 [-0.073, -0.010] | -0.036 [-0.068, -0.007] | -0.040 [-0.076, -0.011] |
 | 2020 | 251 | 0.023 [0.004, 0.049] | 0.001 [-0.003, 0.004] | 0.004 [-0.003, 0.011] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.001 [-0.010, 0.005] | -0.002 [-0.010, 0.003] | -0.000 [-0.004, 0.003] |
@@ -1405,7 +1405,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.006 [-0.037, 0.024] | -0.011 [-0.033, 0.012] | 0.005 [-0.018, 0.028] |
-| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.007 [-0.014, -0.001] | -0.008 [-0.016, -0.001] |
+| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.006 [-0.013, 0.000] | -0.007 [-0.016, -0.001] |
 | quarter_end | 31 | 0.014 [-0.098, 0.132] | -0.048 [-0.155, 0.054] | -0.040 [-0.130, 0.052] |
 | tax_date | 89 | -0.047 [-0.107, 0.003] | -0.036 [-0.092, 0.020] | -0.029 [-0.092, 0.027] |
 
@@ -1415,8 +1415,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.001 [-0.001, 0.002] | 0.002 [0.000, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [0.000, 0.001] | -0.002 [-0.006, 0.001] |
-| 2 | 41 | -0.017 [–] | -0.086 [–] | -0.087 [–] |
-| 3 | 478 | -0.031 [-0.060, -0.004] | -0.033 [-0.059, -0.009] | -0.027 [-0.058, -0.003] |
+| 2 | 41 | -0.017 [–] | -0.087 [–] | -0.087 [–] |
+| 3 | 478 | -0.031 [-0.060, -0.004] | -0.029 [-0.055, -0.006] | -0.027 [-0.057, -0.002] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.308 [-0.474, -0.158] on 26 onsets.
 
@@ -1450,17 +1450,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.008 [-0.001, 0.018] |
 | 2 | 0.016 [0.004, 0.030] |
-| 3 | 0.011 [-0.000, 0.024] |
-| 4 | 0.013 [0.002, 0.025] |
-| 5 | 0.011 [-0.000, 0.023] |
+| 3 | 0.011 [-0.001, 0.024] |
+| 4 | 0.012 [0.001, 0.024] |
+| 5 | 0.009 [-0.002, 0.021] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.047 [0.003, 0.098] | 0.068 [0.014, 0.125] | 0.074 [0.023, 0.129] |
-| 2020 | 251 | -0.015 [-0.022, -0.009] | -0.021 [-0.036, -0.007] | -0.039 [-0.053, -0.028] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.047 [0.003, 0.098] | 0.065 [0.011, 0.125] | 0.061 [0.011, 0.115] |
+| 2020 | 251 | -0.015 [-0.022, -0.009] | -0.023 [-0.037, -0.008] | -0.039 [-0.053, -0.027] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | -0.002 [-0.007, 0.000] | 0.000 [-0.000, 0.001] | -0.000 [-0.001, 0.000] |
 | 2025-26 | 249 | 0.007 [0.001, 0.014] | 0.008 [0.000, 0.019] | 0.028 [0.008, 0.053] |
 
@@ -1468,8 +1468,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.002 [-0.004, 0.011] | 0.007 [-0.009, 0.021] | 0.032 [0.014, 0.053] |
-| ordinary | 1603 | 0.009 [-0.002, 0.021] | 0.012 [-0.001, 0.027] | 0.006 [-0.006, 0.019] |
+| month_end | 150 | 0.002 [-0.004, 0.011] | 0.007 [-0.009, 0.021] | 0.033 [0.014, 0.053] |
+| ordinary | 1603 | 0.009 [-0.002, 0.021] | 0.011 [-0.002, 0.027] | 0.003 [-0.008, 0.016] |
 | quarter_end | 31 | 0.009 [-0.032, 0.049] | 0.031 [-0.018, 0.087] | 0.031 [-0.001, 0.066] |
 | tax_date | 89 | 0.000 [-0.004, 0.004] | -0.000 [-0.027, 0.022] | 0.055 [0.021, 0.094] |
 
@@ -1478,9 +1478,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | -0.001 [-0.002, 0.000] | -0.000 [-0.001, -0.000] | -0.002 [-0.003, -0.001] |
-| 1 | 313 | -0.008 [-0.009, -0.006] | -0.012 [-0.019, -0.008] | -0.023 [-0.029, -0.017] |
-| 2 | 41 | 0.013 [–] | -0.007 [–] | 0.022 [–] |
-| 3 | 478 | 0.035 [-0.000, 0.077] | 0.054 [0.011, 0.101] | 0.060 [0.018, 0.107] |
+| 1 | 313 | -0.008 [-0.009, -0.006] | -0.013 [-0.020, -0.008] | -0.021 [-0.027, -0.014] |
+| 2 | 41 | 0.013 [–] | -0.008 [–] | 0.022 [–] |
+| 3 | 478 | 0.035 [-0.000, 0.077] | 0.052 [0.007, 0.100] | 0.050 [0.009, 0.095] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.000 [-0.147, 0.143] on 26 onsets.
 
@@ -1514,17 +1514,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.004 [-0.009, 0.001] |
 | 2 | 0.004 [-0.003, 0.011] |
-| 3 | 0.004 [-0.003, 0.013] |
-| 4 | 0.007 [0.000, 0.016] |
-| 5 | 0.005 [-0.002, 0.013] |
+| 3 | 0.004 [-0.004, 0.012] |
+| 4 | 0.007 [-0.000, 0.015] |
+| 5 | 0.003 [-0.003, 0.009] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.006 [-0.030, 0.019] | 0.030 [-0.005, 0.068] | 0.049 [0.023, 0.079] |
-| 2020 | 251 | -0.008 [-0.017, 0.000] | -0.023 [-0.033, -0.012] | -0.038 [-0.048, -0.030] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | -0.006 [-0.030, 0.019] | 0.027 [-0.009, 0.065] | 0.036 [0.013, 0.060] |
+| 2020 | 251 | -0.008 [-0.017, 0.000] | -0.024 [-0.035, -0.013] | -0.038 [-0.048, -0.029] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | -0.003 [-0.008, 0.000] | 0.000 [-0.003, 0.004] | -0.000 [-0.001, -0.000] |
 | 2025-26 | 249 | -0.006 [-0.015, 0.003] | 0.012 [-0.002, 0.030] | 0.019 [0.004, 0.037] |
 
@@ -1533,7 +1533,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.009 [-0.002, 0.020] | 0.022 [0.002, 0.045] | 0.037 [0.016, 0.063] |
-| ordinary | 1603 | -0.005 [-0.011, -0.000] | 0.002 [-0.005, 0.009] | -0.001 [-0.007, 0.006] |
+| ordinary | 1603 | -0.005 [-0.011, -0.000] | 0.001 [-0.006, 0.008] | -0.003 [-0.009, 0.001] |
 | quarter_end | 31 | -0.006 [-0.051, 0.033] | 0.021 [-0.073, 0.103] | 0.005 [-0.061, 0.066] |
 | tax_date | 89 | 0.002 [-0.032, 0.033] | 0.014 [-0.020, 0.052] | 0.054 [0.017, 0.100] |
 
@@ -1542,9 +1542,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | -0.001 [-0.003, -0.000] | -0.001 [-0.002, 0.000] | -0.002 [-0.003, -0.001] |
-| 1 | 313 | -0.004 [-0.006, -0.003] | -0.013 [-0.020, -0.008] | -0.023 [-0.028, -0.016] |
-| 2 | 41 | -0.044 [–] | -0.017 [–] | 0.011 [–] |
-| 3 | 478 | -0.005 [-0.025, 0.014] | 0.028 [-0.002, 0.061] | 0.038 [0.013, 0.063] |
+| 1 | 313 | -0.004 [-0.006, -0.003] | -0.013 [-0.020, -0.008] | -0.021 [-0.027, -0.013] |
+| 2 | 41 | -0.044 [–] | -0.018 [–] | 0.010 [–] |
+| 3 | 478 | -0.005 [-0.025, 0.014] | 0.025 [-0.005, 0.058] | 0.028 [0.006, 0.048] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.154 [-0.308, 0.000] on 26 onsets.
 
@@ -1578,26 +1578,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.021 [0.013, 0.031] |
 | 2 | 0.018 [0.010, 0.028] |
-| 3 | 0.015 [0.008, 0.024] |
-| 4 | 0.017 [0.010, 0.024] |
-| 5 | 0.012 [0.005, 0.019] |
+| 3 | 0.015 [0.007, 0.024] |
+| 4 | 0.016 [0.009, 0.023] |
+| 5 | 0.010 [0.003, 0.017] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.049 [0.009, 0.089] | 0.031 [-0.006, 0.073] | 0.036 [0.006, 0.071] |
-| 2020 | 251 | 0.025 [0.014, 0.034] | 0.016 [0.006, 0.027] | -0.003 [-0.015, 0.008] |
-| 2021-23 | 748 | 0.013 [0.011, 0.015] | 0.013 [0.011, 0.014] | 0.008 [0.006, 0.010] |
+| 2018-19 | 375 | 0.049 [0.009, 0.089] | 0.029 [-0.010, 0.071] | 0.024 [-0.009, 0.059] |
+| 2020 | 251 | 0.025 [0.014, 0.034] | 0.015 [0.004, 0.026] | -0.002 [-0.014, 0.008] |
+| 2021-23 | 748 | 0.013 [0.011, 0.015] | 0.013 [0.011, 0.014] | 0.009 [0.007, 0.011] |
 | 2024 | 250 | 0.001 [-0.004, 0.005] | 0.004 [0.000, 0.007] | 0.001 [-0.004, 0.005] |
-| 2025-26 | 249 | 0.023 [0.003, 0.047] | 0.010 [-0.004, 0.028] | 0.014 [0.003, 0.026] |
+| 2025-26 | 249 | 0.023 [0.003, 0.047] | 0.010 [-0.004, 0.028] | 0.013 [0.003, 0.026] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.057 [0.035, 0.082] | 0.034 [0.017, 0.051] | 0.046 [0.028, 0.066] |
-| ordinary | 1603 | 0.013 [0.005, 0.023] | 0.010 [0.001, 0.019] | 0.004 [-0.003, 0.011] |
+| month_end | 150 | 0.057 [0.035, 0.082] | 0.034 [0.018, 0.051] | 0.046 [0.029, 0.066] |
+| ordinary | 1603 | 0.013 [0.005, 0.023] | 0.009 [0.000, 0.019] | 0.001 [-0.007, 0.009] |
 | quarter_end | 31 | 0.125 [0.043, 0.207] | 0.109 [0.028, 0.193] | 0.094 [0.009, 0.177] |
 | tax_date | 89 | 0.069 [0.040, 0.097] | 0.053 [0.028, 0.078] | 0.081 [0.056, 0.107] |
 
@@ -1606,9 +1606,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | 0.008 [0.006, 0.010] | 0.009 [0.007, 0.011] | 0.007 [0.006, 0.009] |
-| 1 | 313 | 0.024 [0.018, 0.030] | 0.018 [0.013, 0.024] | 0.005 [0.000, 0.011] |
-| 2 | 41 | 0.002 [–] | -0.031 [–] | -0.009 [–] |
-| 3 | 478 | 0.050 [0.018, 0.083] | 0.032 [0.002, 0.065] | 0.029 [0.003, 0.055] |
+| 1 | 313 | 0.024 [0.018, 0.030] | 0.018 [0.012, 0.024] | 0.007 [0.002, 0.013] |
+| 2 | 41 | 0.002 [–] | -0.032 [–] | -0.009 [–] |
+| 3 | 478 | 0.050 [0.018, 0.083] | 0.029 [-0.001, 0.063] | 0.019 [-0.008, 0.046] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.038 [-0.143, 0.227] on 26 onsets.
 
@@ -1642,17 +1642,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.006 [-0.001, 0.014] |
 | 2 | 0.008 [0.000, 0.017] |
-| 3 | 0.009 [0.001, 0.017] |
-| 4 | 0.008 [0.001, 0.016] |
-| 5 | 0.005 [-0.003, 0.012] |
+| 3 | 0.008 [0.000, 0.016] |
+| 4 | 0.008 [0.000, 0.015] |
+| 5 | 0.002 [-0.005, 0.009] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.032 [0.003, 0.063] | 0.031 [-0.004, 0.068] | 0.039 [0.009, 0.068] |
-| 2020 | 251 | 0.001 [-0.008, 0.012] | 0.004 [-0.006, 0.013] | -0.020 [-0.030, -0.012] |
-| 2021-23 | 748 | -0.000 [-0.001, -0.000] | 0.003 [0.002, 0.004] | -0.004 [-0.005, -0.002] |
+| 2018-19 | 375 | 0.032 [0.003, 0.063] | 0.029 [-0.007, 0.065] | 0.026 [-0.005, 0.056] |
+| 2020 | 251 | 0.001 [-0.008, 0.012] | 0.003 [-0.008, 0.012] | -0.020 [-0.029, -0.011] |
+| 2021-23 | 748 | -0.000 [-0.001, -0.000] | 0.003 [0.002, 0.004] | -0.003 [-0.004, -0.002] |
 | 2024 | 250 | 0.002 [-0.001, 0.005] | 0.004 [0.001, 0.008] | 0.001 [-0.001, 0.003] |
 | 2025-26 | 249 | -0.003 [-0.029, 0.021] | 0.004 [-0.018, 0.028] | 0.006 [-0.016, 0.027] |
 
@@ -1661,7 +1661,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.035 [0.013, 0.059] | 0.024 [0.006, 0.043] | 0.037 [0.017, 0.058] |
-| ordinary | 1603 | 0.001 [-0.006, 0.008] | 0.005 [-0.002, 0.013] | -0.002 [-0.009, 0.004] |
+| ordinary | 1603 | 0.001 [-0.006, 0.008] | 0.005 [-0.003, 0.012] | -0.005 [-0.012, 0.002] |
 | quarter_end | 31 | 0.064 [-0.007, 0.142] | 0.074 [-0.019, 0.164] | 0.068 [-0.012, 0.149] |
 | tax_date | 89 | 0.033 [-0.001, 0.075] | 0.025 [-0.011, 0.062] | 0.055 [0.017, 0.099] |
 
@@ -1669,10 +1669,10 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1041 | 0.000 [-0.001, 0.001] | 0.003 [0.001, 0.004] | -0.000 [-0.002, 0.000] |
-| 1 | 313 | 0.002 [-0.000, 0.004] | 0.007 [0.001, 0.011] | -0.009 [-0.014, -0.005] |
+| 0 | 1041 | 0.000 [-0.001, 0.001] | 0.003 [0.001, 0.004] | -0.000 [-0.001, 0.000] |
+| 1 | 313 | 0.002 [-0.000, 0.004] | 0.007 [0.000, 0.011] | -0.008 [-0.012, -0.003] |
 | 2 | 41 | -0.031 [–] | -0.064 [–] | -0.066 [–] |
-| 3 | 478 | 0.026 [0.000, 0.053] | 0.031 [0.002, 0.060] | 0.031 [0.005, 0.056] |
+| 3 | 478 | 0.026 [0.000, 0.053] | 0.029 [-0.001, 0.058] | 0.021 [-0.006, 0.047] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.038 [-0.115, 0.208] on 26 onsets.
 
@@ -1706,17 +1706,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.008 [-0.001, 0.019] |
 | 2 | 0.007 [-0.003, 0.018] |
-| 3 | 0.006 [-0.003, 0.016] |
-| 4 | 0.005 [-0.003, 0.015] |
-| 5 | 0.000 [-0.008, 0.010] |
+| 3 | 0.005 [-0.004, 0.016] |
+| 4 | 0.004 [-0.004, 0.014] |
+| 5 | -0.002 [-0.010, 0.008] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.047 [0.001, 0.097] | 0.041 [-0.003, 0.088] | 0.034 [-0.006, 0.081] |
-| 2020 | 251 | -0.013 [-0.020, -0.008] | -0.016 [-0.023, -0.010] | -0.033 [-0.042, -0.025] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.047 [0.001, 0.097] | 0.038 [-0.007, 0.085] | 0.021 [-0.020, 0.068] |
+| 2020 | 251 | -0.013 [-0.020, -0.008] | -0.018 [-0.024, -0.010] | -0.033 [-0.042, -0.024] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2025-26 | 249 | 0.005 [0.001, 0.011] | 0.003 [0.000, 0.006] | 0.003 [0.000, 0.006] |
 
@@ -1724,8 +1724,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.003 [-0.003, 0.011] | 0.002 [-0.002, 0.008] | 0.002 [-0.003, 0.011] |
-| ordinary | 1603 | 0.009 [-0.002, 0.021] | 0.007 [-0.004, 0.018] | 0.000 [-0.010, 0.012] |
+| month_end | 150 | 0.003 [-0.003, 0.011] | 0.002 [-0.002, 0.008] | 0.003 [-0.003, 0.011] |
+| ordinary | 1603 | 0.009 [-0.002, 0.021] | 0.006 [-0.005, 0.018] | -0.002 [-0.012, 0.009] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -1734,9 +1734,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | -0.000 [-0.000, -0.000] | -0.000 [-0.001, -0.000] | -0.002 [-0.003, -0.001] |
-| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.012, -0.007] | -0.024 [-0.027, -0.019] |
-| 2 | 41 | 0.005 [–] | -0.001 [–] | -0.003 [–] |
-| 3 | 478 | 0.036 [-0.000, 0.077] | 0.030 [-0.005, 0.069] | 0.022 [-0.011, 0.059] |
+| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.013, -0.007] | -0.022 [-0.026, -0.017] |
+| 2 | 41 | 0.005 [–] | -0.001 [–] | -0.004 [–] |
+| 3 | 478 | 0.036 [-0.000, 0.077] | 0.028 [-0.008, 0.068] | 0.012 [-0.020, 0.050] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.195, 0.120] on 26 onsets.
 
@@ -1770,17 +1770,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.010 [0.000, 0.023] |
 | 2 | 0.008 [-0.002, 0.019] |
-| 3 | 0.004 [-0.005, 0.014] |
-| 4 | 0.006 [-0.003, 0.016] |
-| 5 | 0.001 [-0.007, 0.012] |
+| 3 | 0.003 [-0.006, 0.014] |
+| 4 | 0.005 [-0.004, 0.015] |
+| 5 | -0.001 [-0.010, 0.009] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.050 [0.003, 0.104] | 0.041 [-0.004, 0.086] | 0.042 [-0.000, 0.088] |
-| 2020 | 251 | -0.002 [-0.015, 0.014] | -0.022 [-0.034, -0.010] | -0.036 [-0.046, -0.027] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.050 [0.003, 0.104] | 0.038 [-0.006, 0.085] | 0.029 [-0.013, 0.076] |
+| 2020 | 251 | -0.002 [-0.015, 0.014] | -0.023 [-0.035, -0.011] | -0.036 [-0.046, -0.027] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | -0.004 [-0.011, 0.000] | -0.001 [-0.003, 0.000] | -0.002 [-0.006, 0.000] |
 | 2025-26 | 249 | 0.010 [0.001, 0.021] | -0.005 [-0.016, 0.005] | 0.004 [-0.006, 0.012] |
 
@@ -1789,7 +1789,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.026 [0.008, 0.048] | 0.003 [-0.012, 0.018] | 0.021 [0.003, 0.041] |
-| ordinary | 1603 | 0.009 [-0.002, 0.023] | 0.006 [-0.004, 0.017] | 0.000 [-0.010, 0.011] |
+| ordinary | 1603 | 0.009 [-0.002, 0.023] | 0.005 [-0.005, 0.017] | -0.003 [-0.012, 0.009] |
 | quarter_end | 31 | 0.034 [-0.065, 0.129] | -0.016 [-0.091, 0.060] | -0.045 [-0.121, 0.022] |
 | tax_date | 89 | -0.008 [-0.050, 0.031] | -0.022 [-0.056, 0.012] | 0.008 [-0.021, 0.040] |
 
@@ -1798,9 +1798,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | -0.001 [-0.003, -0.000] | -0.000 [-0.001, 0.000] | -0.002 [-0.003, -0.001] |
-| 1 | 313 | -0.006 [-0.008, -0.003] | -0.013 [-0.019, -0.007] | -0.026 [-0.032, -0.020] |
-| 2 | 41 | 0.036 [–] | -0.042 [–] | -0.029 [–] |
-| 3 | 478 | 0.044 [0.007, 0.087] | 0.028 [-0.007, 0.067] | 0.029 [-0.005, 0.068] |
+| 1 | 313 | -0.006 [-0.008, -0.003] | -0.013 [-0.020, -0.008] | -0.024 [-0.030, -0.018] |
+| 2 | 41 | 0.036 [–] | -0.043 [–] | -0.030 [–] |
+| 3 | 478 | 0.044 [0.007, 0.087] | 0.026 [-0.009, 0.065] | 0.019 [-0.015, 0.057] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.115 [-0.290, 0.053] on 26 onsets.
 
@@ -1834,26 +1834,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.000 [-0.007, 0.006] |
 | 2 | 0.002 [-0.005, 0.008] |
-| 3 | 0.002 [-0.005, 0.009] |
-| 4 | -0.001 [-0.007, 0.005] |
-| 5 | -0.005 [-0.011, 0.001] |
+| 3 | 0.001 [-0.006, 0.008] |
+| 4 | -0.002 [-0.008, 0.005] |
+| 5 | -0.007 [-0.014, -0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.007 [-0.023, 0.035] | 0.017 [-0.014, 0.048] | 0.006 [-0.018, 0.032] |
-| 2020 | 251 | -0.006 [-0.018, 0.011] | -0.016 [-0.023, -0.008] | -0.033 [-0.042, -0.025] |
-| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.000 [-0.001, 0.000] | -0.006 [-0.008, -0.003] |
+| 2018-19 | 375 | 0.007 [-0.023, 0.035] | 0.014 [-0.017, 0.046] | -0.007 [-0.033, 0.020] |
+| 2020 | 251 | -0.006 [-0.018, 0.011] | -0.017 [-0.024, -0.009] | -0.033 [-0.042, -0.024] |
+| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.001 [-0.001, 0.000] | -0.005 [-0.006, -0.003] |
 | 2024 | 250 | 0.003 [0.001, 0.007] | 0.002 [0.001, 0.004] | 0.002 [0.001, 0.005] |
-| 2025-26 | 249 | -0.006 [-0.021, 0.006] | 0.002 [-0.013, 0.017] | 0.001 [-0.019, 0.020] |
+| 2025-26 | 249 | -0.006 [-0.021, 0.006] | 0.002 [-0.013, 0.017] | 0.001 [-0.020, 0.020] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.003 [-0.008, 0.001] | 0.002 [-0.002, 0.008] | 0.000 [-0.003, 0.004] |
-| ordinary | 1603 | -0.000 [-0.007, 0.007] | 0.002 [-0.006, 0.010] | -0.006 [-0.013, 0.002] |
+| ordinary | 1603 | -0.000 [-0.007, 0.007] | 0.001 [-0.007, 0.009] | -0.008 [-0.016, -0.001] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -1862,9 +1862,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | 0.001 [0.000, 0.002] | 0.001 [0.000, 0.003] | -0.001 [-0.002, 0.001] |
-| 1 | 313 | -0.008 [-0.009, -0.006] | -0.009 [-0.012, -0.007] | -0.024 [-0.027, -0.019] |
-| 2 | 41 | -0.035 [–] | -0.045 [–] | -0.058 [–] |
-| 3 | 478 | 0.005 [-0.020, 0.029] | 0.014 [-0.012, 0.039] | 0.002 [-0.019, 0.025] |
+| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.012, -0.007] | -0.022 [-0.026, -0.017] |
+| 2 | 41 | -0.035 [–] | -0.046 [–] | -0.059 [–] |
+| 3 | 478 | 0.005 [-0.020, 0.029] | 0.011 [-0.014, 0.038] | -0.008 [-0.031, 0.016] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.333, -0.067] on 26 onsets.
 
@@ -1898,17 +1898,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.002 [-0.004, 0.009] |
 | 2 | 0.003 [-0.004, 0.011] |
-| 3 | -0.000 [-0.007, 0.007] |
-| 4 | 0.000 [-0.006, 0.007] |
-| 5 | -0.004 [-0.010, 0.003] |
+| 3 | -0.001 [-0.008, 0.006] |
+| 4 | -0.000 [-0.007, 0.006] |
+| 5 | -0.006 [-0.013, 0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.010 [-0.019, 0.040] | 0.017 [-0.014, 0.050] | 0.014 [-0.012, 0.043] |
-| 2020 | 251 | 0.005 [-0.014, 0.030] | -0.021 [-0.034, -0.009] | -0.036 [-0.045, -0.028] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.000] | -0.001 [-0.001, 0.000] | -0.006 [-0.008, -0.003] |
+| 2018-19 | 375 | 0.010 [-0.019, 0.040] | 0.014 [-0.016, 0.047] | 0.001 [-0.027, 0.032] |
+| 2020 | 251 | 0.005 [-0.014, 0.030] | -0.022 [-0.035, -0.010] | -0.036 [-0.045, -0.027] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.000] | -0.001 [-0.001, 0.000] | -0.005 [-0.006, -0.003] |
 | 2024 | 250 | -0.001 [-0.009, 0.005] | 0.001 [-0.001, 0.003] | 0.000 [-0.004, 0.003] |
 | 2025-26 | 249 | -0.001 [-0.020, 0.016] | -0.006 [-0.030, 0.015] | 0.001 [-0.020, 0.022] |
 
@@ -1916,8 +1916,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.020 [0.004, 0.041] | 0.003 [-0.012, 0.018] | 0.019 [0.001, 0.037] |
-| ordinary | 1603 | 0.000 [-0.007, 0.008] | 0.001 [-0.007, 0.009] | -0.006 [-0.013, 0.001] |
+| month_end | 150 | 0.020 [0.004, 0.041] | 0.003 [-0.012, 0.018] | 0.019 [0.002, 0.037] |
+| ordinary | 1603 | 0.000 [-0.007, 0.008] | 0.000 [-0.007, 0.008] | -0.009 [-0.016, -0.001] |
 | quarter_end | 31 | 0.034 [-0.062, 0.126] | -0.016 [-0.095, 0.064] | -0.045 [-0.117, 0.025] |
 | tax_date | 89 | -0.008 [-0.047, 0.030] | -0.022 [-0.056, 0.012] | 0.008 [-0.022, 0.042] |
 
@@ -1925,10 +1925,10 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1041 | 0.000 [-0.001, 0.001] | 0.001 [0.000, 0.003] | -0.000 [-0.002, 0.002] |
-| 1 | 313 | -0.006 [-0.008, -0.003] | -0.012 [-0.019, -0.007] | -0.026 [-0.032, -0.020] |
-| 2 | 41 | -0.004 [–] | -0.086 [–] | -0.083 [–] |
-| 3 | 478 | 0.012 [-0.012, 0.037] | 0.012 [-0.014, 0.039] | 0.009 [-0.013, 0.033] |
+| 0 | 1041 | 0.000 [-0.001, 0.001] | 0.001 [0.000, 0.003] | -0.000 [-0.001, 0.002] |
+| 1 | 313 | -0.006 [-0.008, -0.003] | -0.013 [-0.020, -0.008] | -0.024 [-0.030, -0.017] |
+| 2 | 41 | -0.004 [–] | -0.087 [–] | -0.084 [–] |
+| 3 | 478 | 0.012 [-0.012, 0.037] | 0.009 [-0.016, 0.037] | -0.001 [-0.026, 0.023] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.333, -0.067] on 26 onsets.
 
@@ -1962,17 +1962,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.010 [0.001, 0.019] |
 | 2 | 0.010 [0.000, 0.021] |
-| 3 | 0.009 [-0.001, 0.020] |
-| 4 | 0.010 [0.001, 0.022] |
-| 5 | 0.004 [-0.006, 0.016] |
+| 3 | 0.008 [-0.002, 0.018] |
+| 4 | 0.010 [-0.000, 0.021] |
+| 5 | 0.002 [-0.008, 0.013] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.051 [0.010, 0.093] | 0.057 [0.010, 0.109] | 0.055 [0.012, 0.106] |
-| 2020 | 251 | -0.017 [-0.027, -0.010] | -0.022 [-0.035, -0.008] | -0.040 [-0.051, -0.029] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.051 [0.010, 0.093] | 0.050 [0.004, 0.100] | 0.041 [-0.002, 0.093] |
+| 2020 | 251 | -0.017 [-0.027, -0.010] | -0.023 [-0.037, -0.009] | -0.039 [-0.051, -0.028] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | 0.000 [-0.000, 0.001] | 0.003 [-0.000, 0.009] | 0.000 [-0.000, 0.000] |
 | 2025-26 | 249 | 0.018 [0.002, 0.038] | 0.005 [-0.003, 0.015] | 0.005 [-0.001, 0.013] |
 
@@ -1980,8 +1980,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.027 [0.005, 0.052] | 0.014 [-0.007, 0.034] | 0.014 [0.001, 0.028] |
-| ordinary | 1603 | 0.006 [-0.003, 0.017] | 0.008 [-0.002, 0.019] | 0.001 [-0.009, 0.014] |
+| month_end | 150 | 0.027 [0.005, 0.052] | 0.014 [-0.007, 0.034] | 0.014 [0.002, 0.028] |
+| ordinary | 1603 | 0.006 [-0.003, 0.017] | 0.006 [-0.004, 0.018] | -0.001 [-0.011, 0.011] |
 | quarter_end | 31 | 0.020 [-0.032, 0.079] | 0.032 [-0.021, 0.090] | -0.006 [-0.047, 0.027] |
 | tax_date | 89 | 0.040 [0.009, 0.077] | 0.014 [-0.021, 0.054] | 0.036 [-0.005, 0.083] |
 
@@ -1989,10 +1989,10 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1041 | -0.001 [-0.002, -0.000] | -0.000 [-0.001, 0.001] | -0.002 [-0.003, -0.001] |
-| 1 | 313 | -0.008 [-0.009, -0.006] | -0.013 [-0.019, -0.008] | -0.024 [-0.030, -0.017] |
-| 2 | 41 | 0.013 [–] | 0.000 [–] | 0.003 [–] |
-| 3 | 478 | 0.044 [0.010, 0.079] | 0.044 [0.007, 0.086] | 0.036 [-0.001, 0.080] |
+| 0 | 1041 | -0.001 [-0.002, -0.000] | -0.000 [-0.001, 0.001] | -0.002 [-0.003, -0.002] |
+| 1 | 313 | -0.008 [-0.009, -0.006] | -0.013 [-0.020, -0.008] | -0.022 [-0.028, -0.015] |
+| 2 | 41 | 0.013 [–] | -0.000 [–] | 0.002 [–] |
+| 3 | 478 | 0.044 [0.010, 0.079] | 0.039 [0.001, 0.078] | 0.025 [-0.011, 0.067] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.115 [0.000, 0.226] on 26 onsets.
 
@@ -2026,7 +2026,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.003 [-0.007, 0.001] |
 | 2 | 0.007 [0.002, 0.012] |
-| 3 | 0.002 [-0.001, 0.005] |
+| 3 | 0.003 [-0.000, 0.007] |
 | 4 | 0.002 [-0.001, 0.005] |
 | 5 | 0.004 [0.001, 0.008] |
 
@@ -2034,7 +2034,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.007 [-0.024, 0.011] | 0.005 [-0.009, 0.019] | 0.007 [-0.007, 0.020] |
+| 2018-19 | 375 | -0.007 [-0.024, 0.011] | 0.010 [-0.006, 0.025] | 0.008 [-0.006, 0.021] |
 | 2020 | 251 | -0.006 [-0.016, 0.002] | 0.000 [-0.000, 0.001] | 0.002 [-0.001, 0.004] |
 | 2021-23 | 748 | 0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | 0.001 [-0.000, 0.003] | -0.001 [-0.003, 0.001] | -0.000 [-0.001, 0.001] |
@@ -2045,7 +2045,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.028 [-0.049, -0.009] | -0.007 [-0.025, 0.010] | 0.006 [-0.015, 0.026] |
-| ordinary | 1603 | 0.001 [-0.002, 0.005] | 0.003 [0.000, 0.006] | 0.003 [0.001, 0.005] |
+| ordinary | 1603 | 0.001 [-0.002, 0.005] | 0.004 [0.001, 0.008] | 0.003 [0.001, 0.005] |
 | quarter_end | 31 | -0.049 [-0.129, 0.026] | 0.006 [-0.063, 0.083] | 0.029 [-0.035, 0.101] |
 | tax_date | 89 | -0.020 [-0.042, -0.001] | -0.002 [-0.030, 0.024] | 0.024 [-0.020, 0.068] |
 
@@ -2055,8 +2055,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.001 [0.000, 0.002] | 0.000 [-0.000, 0.001] | 0.000 [0.000, 0.000] |
 | 1 | 313 | -0.002 [-0.004, 0.000] | 0.000 [-0.000, 0.001] | 0.001 [-0.001, 0.002] |
-| 2 | 41 | -0.016 [–] | 0.018 [–] | 0.045 [–] |
-| 3 | 478 | -0.011 [-0.025, 0.004] | 0.007 [-0.005, 0.018] | 0.012 [-0.001, 0.025] |
+| 2 | 41 | -0.016 [–] | 0.018 [–] | 0.044 [–] |
+| 3 | 478 | -0.011 [-0.025, 0.004] | 0.010 [-0.003, 0.024] | 0.013 [0.000, 0.025] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.211, 0.053] on 26 onsets.
 
@@ -2090,26 +2090,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.014 [-0.023, -0.007] |
 | 2 | -0.005 [-0.013, 0.002] |
-| 3 | -0.005 [-0.015, 0.004] |
+| 3 | -0.004 [-0.014, 0.005] |
 | 4 | -0.003 [-0.013, 0.005] |
-| 5 | -0.002 [-0.012, 0.008] |
+| 5 | -0.001 [-0.012, 0.008] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.060 [-0.099, -0.025] | -0.033 [-0.079, 0.009] | -0.017 [-0.070, 0.031] |
+| 2018-19 | 375 | -0.060 [-0.099, -0.025] | -0.028 [-0.075, 0.015] | -0.016 [-0.069, 0.032] |
 | 2020 | 251 | 0.000 [-0.009, 0.007] | -0.001 [-0.006, 0.004] | 0.003 [-0.004, 0.009] |
 | 2021-23 | 748 | -0.000 [-0.000, -0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | 0.001 [-0.000, 0.002] | -0.001 [-0.003, 0.001] | -0.000 [-0.000, 0.000] |
-| 2025-26 | 249 | -0.019 [-0.033, -0.006] | 0.014 [0.003, 0.027] | 0.011 [0.003, 0.020] |
+| 2025-26 | 249 | -0.019 [-0.033, -0.006] | 0.013 [0.003, 0.026] | 0.011 [0.003, 0.020] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.022 [-0.041, -0.004] | 0.009 [-0.009, 0.029] | 0.011 [-0.011, 0.034] |
-| ordinary | 1603 | -0.013 [-0.022, -0.004] | -0.007 [-0.018, 0.002] | -0.004 [-0.015, 0.005] |
+| ordinary | 1603 | -0.013 [-0.022, -0.004] | -0.006 [-0.017, 0.003] | -0.004 [-0.015, 0.005] |
 | quarter_end | 31 | -0.064 [-0.142, 0.005] | -0.004 [-0.091, 0.084] | 0.002 [-0.070, 0.068] |
 | tax_date | 89 | -0.019 [-0.044, 0.004] | 0.013 [-0.007, 0.035] | 0.023 [-0.009, 0.066] |
 
@@ -2120,7 +2120,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [0.000, 0.001] | -0.000 [-0.001, 0.000] | 0.000 [0.000, 0.000] |
 | 1 | 313 | 0.002 [-0.001, 0.004] | -0.000 [-0.001, 0.000] | 0.001 [0.000, 0.003] |
 | 2 | 41 | -0.073 [–] | 0.008 [–] | 0.033 [–] |
-| 3 | 478 | -0.052 [-0.083, -0.023] | -0.020 [-0.057, 0.014] | -0.010 [-0.052, 0.027] |
+| 3 | 478 | -0.052 [-0.083, -0.023] | -0.016 [-0.055, 0.019] | -0.009 [-0.052, 0.029] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.393, -0.056] on 26 onsets.
 
@@ -2154,7 +2154,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.011 [0.006, 0.015] |
 | 2 | 0.009 [0.003, 0.014] |
-| 3 | 0.006 [0.000, 0.012] |
+| 3 | 0.007 [0.001, 0.013] |
 | 4 | 0.006 [0.000, 0.012] |
 | 5 | 0.006 [-0.001, 0.011] |
 
@@ -2162,7 +2162,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.006 [-0.025, 0.014] | -0.031 [-0.053, -0.011] | -0.030 [-0.055, -0.006] |
+| 2018-19 | 375 | -0.006 [-0.025, 0.014] | -0.027 [-0.049, -0.005] | -0.029 [-0.054, -0.005] |
 | 2020 | 251 | 0.033 [0.024, 0.042] | 0.038 [0.028, 0.047] | 0.038 [0.027, 0.047] |
 | 2021-23 | 748 | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] |
 | 2024 | 250 | 0.005 [0.001, 0.009] | 0.003 [-0.000, 0.005] | 0.001 [-0.004, 0.005] |
@@ -2173,7 +2173,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.026 [0.012, 0.041] | 0.021 [0.006, 0.036] | 0.019 [0.000, 0.039] |
-| ordinary | 1603 | 0.006 [0.001, 0.010] | 0.001 [-0.005, 0.006] | 0.000 [-0.006, 0.005] |
+| ordinary | 1603 | 0.006 [0.001, 0.010] | 0.002 [-0.004, 0.007] | 0.000 [-0.006, 0.006] |
 | quarter_end | 31 | 0.067 [-0.013, 0.144] | 0.084 [0.015, 0.148] | 0.092 [-0.008, 0.193] |
 | tax_date | 89 | 0.048 [0.029, 0.068] | 0.051 [0.031, 0.070] | 0.050 [0.026, 0.075] |
 
@@ -2184,7 +2184,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.010 [0.008, 0.011] | 0.010 [0.008, 0.011] | 0.010 [0.008, 0.011] |
 | 1 | 313 | 0.030 [0.024, 0.036] | 0.031 [0.024, 0.037] | 0.029 [0.022, 0.036] |
 | 2 | 41 | -0.026 [–] | -0.006 [–] | 0.014 [–] |
-| 3 | 478 | 0.003 [-0.013, 0.019] | -0.016 [-0.035, 0.003] | -0.019 [-0.041, 0.001] |
+| 3 | 478 | 0.003 [-0.013, 0.019] | -0.013 [-0.032, 0.007] | -0.018 [-0.040, 0.002] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.250, 0.182] on 26 onsets.
 
@@ -2218,15 +2218,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.004 [-0.012, 0.002] |
 | 2 | -0.001 [-0.008, 0.005] |
-| 3 | -0.000 [-0.007, 0.006] |
+| 3 | 0.001 [-0.006, 0.007] |
 | 4 | -0.002 [-0.010, 0.004] |
-| 5 | -0.002 [-0.009, 0.004] |
+| 5 | -0.002 [-0.009, 0.005] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.022 [-0.053, 0.004] | -0.031 [-0.060, -0.004] | -0.027 [-0.056, -0.001] |
+| 2018-19 | 375 | -0.022 [-0.053, 0.004] | -0.027 [-0.056, 0.001] | -0.026 [-0.055, 0.001] |
 | 2020 | 251 | 0.010 [0.000, 0.018] | 0.026 [0.018, 0.033] | 0.020 [0.012, 0.027] |
 | 2021-23 | 748 | 0.001 [0.000, 0.001] | 0.004 [0.003, 0.005] | 0.002 [0.002, 0.003] |
 | 2024 | 250 | 0.005 [0.001, 0.011] | 0.003 [0.002, 0.005] | 0.002 [-0.000, 0.004] |
@@ -2237,7 +2237,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.005 [-0.012, 0.023] | 0.011 [-0.001, 0.024] | 0.010 [-0.010, 0.030] |
-| ordinary | 1603 | -0.006 [-0.015, 0.001] | -0.003 [-0.012, 0.004] | -0.006 [-0.014, 0.002] |
+| ordinary | 1603 | -0.006 [-0.015, 0.001] | -0.002 [-0.011, 0.005] | -0.006 [-0.013, 0.002] |
 | quarter_end | 31 | 0.006 [-0.104, 0.111] | 0.049 [-0.042, 0.138] | 0.066 [-0.025, 0.163] |
 | tax_date | 89 | 0.013 [-0.013, 0.038] | 0.024 [0.008, 0.040] | 0.024 [0.002, 0.057] |
 
@@ -2247,8 +2247,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.002 [0.001, 0.003] | 0.003 [0.003, 0.004] | 0.002 [0.001, 0.002] |
 | 1 | 313 | 0.008 [0.005, 0.010] | 0.020 [0.016, 0.023] | 0.014 [0.011, 0.018] |
-| 2 | 41 | -0.060 [–] | -0.038 [–] | -0.043 [–] |
-| 3 | 478 | -0.021 [-0.048, 0.002] | -0.017 [-0.041, 0.007] | -0.017 [-0.043, 0.005] |
+| 2 | 41 | -0.060 [–] | -0.039 [–] | -0.044 [–] |
+| 3 | 478 | -0.021 [-0.048, 0.002] | -0.013 [-0.038, 0.010] | -0.016 [-0.042, 0.006] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.227, 0.167] on 26 onsets.
 
@@ -2282,15 +2282,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.003 [-0.007, 0.001] |
 | 2 | -0.003 [-0.007, 0.002] |
-| 3 | -0.003 [-0.008, 0.000] |
+| 3 | -0.002 [-0.007, 0.002] |
 | 4 | -0.006 [-0.010, -0.002] |
-| 5 | -0.006 [-0.011, -0.002] |
+| 5 | -0.006 [-0.010, -0.002] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.007 [-0.026, 0.011] | -0.022 [-0.038, -0.006] | -0.032 [-0.049, -0.017] |
+| 2018-19 | 375 | -0.007 [-0.026, 0.011] | -0.017 [-0.035, -0.000] | -0.031 [-0.048, -0.016] |
 | 2020 | 251 | -0.005 [-0.014, 0.003] | 0.005 [-0.004, 0.015] | 0.007 [0.001, 0.014] |
 | 2021-23 | 748 | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | 0.003 [-0.000, 0.010] | -0.001 [-0.004, 0.001] | 0.000 [-0.000, 0.001] |
@@ -2301,7 +2301,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.027 [-0.048, -0.008] | -0.011 [-0.032, 0.009] | -0.024 [-0.042, -0.009] |
-| ordinary | 1603 | 0.002 [-0.002, 0.006] | -0.002 [-0.006, 0.001] | -0.003 [-0.006, -0.000] |
+| ordinary | 1603 | 0.002 [-0.002, 0.006] | -0.001 [-0.005, 0.003] | -0.003 [-0.006, -0.000] |
 | quarter_end | 31 | -0.058 [-0.146, 0.027] | -0.025 [-0.073, 0.025] | -0.002 [-0.068, 0.067] |
 | tax_date | 89 | -0.020 [-0.043, 0.000] | -0.002 [-0.035, 0.028] | -0.030 [-0.062, -0.003] |
 
@@ -2311,8 +2311,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.001 [0.000, 0.003] | 0.000 [-0.001, 0.001] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | -0.002 [-0.005, 0.000] | 0.003 [-0.000, 0.009] | 0.000 [-0.003, 0.003] |
-| 2 | 41 | -0.023 [–] | 0.025 [–] | 0.019 [–] |
-| 3 | 478 | -0.010 [-0.026, 0.005] | -0.017 [-0.032, -0.004] | -0.026 [-0.040, -0.012] |
+| 2 | 41 | -0.023 [–] | 0.024 [–] | 0.019 [–] |
+| 3 | 478 | -0.010 [-0.026, 0.005] | -0.014 [-0.029, 0.001] | -0.025 [-0.039, -0.011] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.115 [-0.258, 0.038] on 26 onsets.
 
@@ -2346,7 +2346,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.000 [-0.004, 0.004] |
 | 2 | -0.002 [-0.006, 0.003] |
-| 3 | -0.005 [-0.009, -0.002] |
+| 3 | -0.004 [-0.008, -0.001] |
 | 4 | -0.004 [-0.008, -0.001] |
 | 5 | -0.005 [-0.009, -0.002] |
 
@@ -2354,7 +2354,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.004 [-0.021, 0.015] | -0.022 [-0.038, -0.006] | -0.024 [-0.039, -0.009] |
+| 2018-19 | 375 | -0.004 [-0.021, 0.015] | -0.017 [-0.035, 0.001] | -0.023 [-0.038, -0.009] |
 | 2020 | 251 | 0.007 [-0.000, 0.015] | 0.000 [-0.004, 0.005] | 0.004 [-0.000, 0.010] |
 | 2021-23 | 748 | -0.000 [-0.000, -0.000] | -0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.000 [-0.001, 0.000] | -0.002 [-0.007, 0.000] | -0.002 [-0.006, 0.000] |
@@ -2365,7 +2365,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.004 [-0.023, 0.015] | -0.010 [-0.027, 0.006] | -0.005 [-0.018, 0.007] |
-| ordinary | 1603 | 0.002 [-0.001, 0.006] | -0.003 [-0.006, -0.000] | -0.003 [-0.006, -0.001] |
+| ordinary | 1603 | 0.002 [-0.001, 0.006] | -0.002 [-0.006, 0.002] | -0.003 [-0.006, -0.001] |
 | quarter_end | 31 | -0.024 [-0.088, 0.024] | -0.041 [-0.113, 0.020] | -0.048 [-0.120, 0.014] |
 | tax_date | 89 | -0.028 [-0.068, 0.006] | -0.023 [-0.070, 0.016] | -0.023 [-0.065, 0.015] |
 
@@ -2376,7 +2376,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.000, 0.001] | 0.000 [-0.001, 0.001] | 0.001 [0.000, 0.001] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | -0.002 [-0.005, 0.000] |
 | 2 | 41 | 0.007 [–] | -0.017 [–] | -0.007 [–] |
-| 3 | 478 | -0.003 [-0.017, 0.012] | -0.019 [-0.033, -0.006] | -0.019 [-0.033, -0.007] |
+| 3 | 478 | -0.003 [-0.017, 0.012] | -0.016 [-0.031, -0.002] | -0.019 [-0.031, -0.007] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.333, -0.065] on 26 onsets.
 
@@ -2410,7 +2410,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.011 [-0.019, -0.004] |
 | 2 | -0.008 [-0.015, -0.001] |
-| 3 | -0.007 [-0.015, -0.001] |
+| 3 | -0.007 [-0.014, -0.000] |
 | 4 | -0.011 [-0.020, -0.004] |
 | 5 | -0.011 [-0.020, -0.004] |
 
@@ -2418,7 +2418,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.047 [-0.080, -0.020] | -0.046 [-0.078, -0.018] | -0.060 [-0.096, -0.029] |
+| 2018-19 | 375 | -0.047 [-0.080, -0.020] | -0.042 [-0.074, -0.015] | -0.059 [-0.095, -0.027] |
 | 2020 | 251 | 0.002 [-0.008, 0.014] | 0.006 [-0.003, 0.016] | 0.007 [-0.000, 0.017] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.001] |
 | 2024 | 250 | 0.006 [0.001, 0.014] | 0.001 [-0.002, 0.004] | 0.003 [0.001, 0.006] |
@@ -2429,7 +2429,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.033 [-0.056, -0.012] | -0.011 [-0.030, 0.008] | -0.026 [-0.044, -0.010] |
-| ordinary | 1603 | -0.007 [-0.016, -0.000] | -0.007 [-0.015, -0.000] | -0.009 [-0.018, -0.002] |
+| ordinary | 1603 | -0.007 [-0.016, -0.000] | -0.006 [-0.014, 0.000] | -0.009 [-0.017, -0.001] |
 | quarter_end | 31 | -0.058 [-0.150, 0.026] | -0.025 [-0.076, 0.026] | -0.002 [-0.068, 0.066] |
 | tax_date | 89 | -0.020 [-0.043, 0.000] | -0.002 [-0.033, 0.030] | -0.030 [-0.060, -0.003] |
 
@@ -2440,7 +2440,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.003 [0.001, 0.005] | 0.002 [0.001, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | -0.002 [-0.004, 0.000] | 0.003 [-0.000, 0.009] | 0.000 [-0.003, 0.003] |
 | 2 | 41 | -0.063 [–] | -0.020 [–] | -0.036 [–] |
-| 3 | 478 | -0.042 [-0.069, -0.017] | -0.034 [-0.060, -0.010] | -0.046 [-0.076, -0.019] |
+| 3 | 478 | -0.042 [-0.069, -0.017] | -0.030 [-0.057, -0.007] | -0.045 [-0.075, -0.018] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.269 [-0.438, -0.095] on 26 onsets.
 
@@ -2474,15 +2474,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.008 [-0.016, -0.001] |
 | 2 | -0.006 [-0.014, 0.001] |
-| 3 | -0.009 [-0.017, -0.003] |
+| 3 | -0.008 [-0.016, -0.002] |
 | 4 | -0.010 [-0.018, -0.003] |
-| 5 | -0.011 [-0.019, -0.004] |
+| 5 | -0.010 [-0.019, -0.003] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.044 [-0.073, -0.014] | -0.046 [-0.079, -0.019] | -0.052 [-0.084, -0.024] |
+| 2018-19 | 375 | -0.044 [-0.073, -0.014] | -0.041 [-0.074, -0.014] | -0.051 [-0.084, -0.022] |
 | 2020 | 251 | 0.014 [0.001, 0.030] | 0.001 [-0.003, 0.005] | 0.004 [-0.002, 0.011] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | 0.003 [0.000, 0.007] | 0.000 [-0.004, 0.004] | 0.000 [-0.004, 0.004] |
@@ -2493,7 +2493,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.010 [-0.030, 0.011] | -0.010 [-0.027, 0.007] | -0.007 [-0.020, 0.005] |
-| ordinary | 1603 | -0.007 [-0.015, 0.000] | -0.008 [-0.016, -0.001] | -0.009 [-0.018, -0.002] |
+| ordinary | 1603 | -0.007 [-0.015, 0.000] | -0.007 [-0.015, -0.000] | -0.009 [-0.018, -0.002] |
 | quarter_end | 31 | -0.024 [-0.086, 0.024] | -0.041 [-0.113, 0.018] | -0.048 [-0.124, 0.015] |
 | tax_date | 89 | -0.028 [-0.069, 0.006] | -0.023 [-0.071, 0.015] | -0.023 [-0.064, 0.014] |
 
@@ -2504,7 +2504,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.002 [0.001, 0.003] | 0.002 [0.001, 0.003] | 0.002 [0.001, 0.004] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | -0.002 [-0.006, 0.000] |
 | 2 | 41 | -0.033 [–] | -0.061 [–] | -0.061 [–] |
-| 3 | 478 | -0.034 [-0.059, -0.008] | -0.036 [-0.063, -0.013] | -0.039 [-0.069, -0.014] |
+| 3 | 478 | -0.034 [-0.059, -0.008] | -0.032 [-0.059, -0.010] | -0.039 [-0.068, -0.013] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.269 [-0.433, -0.095] on 26 onsets.
 
@@ -2538,17 +2538,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.005 [-0.005, 0.017] |
 | 2 | 0.015 [0.002, 0.029] |
-| 3 | 0.013 [0.002, 0.026] |
-| 4 | 0.012 [0.000, 0.024] |
-| 5 | 0.010 [-0.001, 0.022] |
+| 3 | 0.013 [0.001, 0.026] |
+| 4 | 0.011 [-0.000, 0.023] |
+| 5 | 0.008 [-0.003, 0.020] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.043 [-0.006, 0.093] | 0.068 [0.015, 0.127] | 0.066 [0.014, 0.119] |
-| 2020 | 251 | -0.026 [-0.045, -0.012] | -0.016 [-0.026, -0.006] | -0.036 [-0.050, -0.024] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.043 [-0.006, 0.093] | 0.065 [0.011, 0.125] | 0.053 [0.003, 0.105] |
+| 2020 | 251 | -0.026 [-0.045, -0.012] | -0.018 [-0.028, -0.006] | -0.036 [-0.049, -0.024] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | 0.001 [-0.000, 0.004] | 0.002 [-0.000, 0.004] | 0.002 [-0.000, 0.005] |
 | 2025-26 | 249 | 0.002 [-0.009, 0.012] | 0.016 [0.001, 0.036] | 0.027 [0.007, 0.052] |
 
@@ -2557,7 +2557,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.021 [-0.040, -0.003] | 0.006 [-0.016, 0.028] | 0.014 [-0.014, 0.040] |
-| ordinary | 1603 | 0.008 [-0.003, 0.021] | 0.013 [0.000, 0.028] | 0.006 [-0.006, 0.020] |
+| ordinary | 1603 | 0.008 [-0.003, 0.021] | 0.012 [-0.001, 0.027] | 0.004 [-0.008, 0.017] |
 | quarter_end | 31 | -0.025 [-0.111, 0.056] | 0.046 [-0.049, 0.144] | 0.076 [0.001, 0.155] |
 | tax_date | 89 | 0.008 [-0.030, 0.046] | 0.021 [-0.007, 0.052] | 0.047 [0.008, 0.094] |
 
@@ -2565,10 +2565,10 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1041 | 0.000 [-0.000, 0.001] | -0.000 [-0.001, 0.000] | -0.002 [-0.004, -0.001] |
-| 1 | 313 | -0.009 [-0.013, -0.006] | -0.009 [-0.012, -0.007] | -0.021 [-0.025, -0.015] |
-| 2 | 41 | -0.017 [–] | 0.034 [–] | 0.048 [–] |
-| 3 | 478 | 0.028 [-0.013, 0.070] | 0.056 [0.013, 0.104] | 0.054 [0.011, 0.098] |
+| 0 | 1041 | 0.000 [-0.000, 0.001] | -0.000 [-0.001, 0.000] | -0.002 [-0.003, -0.002] |
+| 1 | 313 | -0.009 [-0.013, -0.006] | -0.010 [-0.013, -0.007] | -0.019 [-0.024, -0.013] |
+| 2 | 41 | -0.017 [–] | 0.034 [–] | 0.047 [–] |
+| 3 | 478 | 0.028 [-0.013, 0.070] | 0.054 [0.009, 0.103] | 0.044 [0.002, 0.087] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.000 [-0.125, 0.125] on 26 onsets.
 
@@ -2602,17 +2602,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.006 [-0.012, -0.000] |
 | 2 | 0.003 [-0.004, 0.010] |
-| 3 | 0.006 [-0.002, 0.015] |
-| 4 | 0.006 [-0.001, 0.015] |
-| 5 | 0.004 [-0.004, 0.012] |
+| 3 | 0.005 [-0.003, 0.015] |
+| 4 | 0.005 [-0.002, 0.014] |
+| 5 | 0.002 [-0.005, 0.009] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.010 [-0.034, 0.017] | 0.030 [-0.006, 0.070] | 0.041 [0.011, 0.076] |
-| 2020 | 251 | -0.020 [-0.037, -0.005] | -0.017 [-0.023, -0.012] | -0.035 [-0.044, -0.028] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.001, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | -0.010 [-0.034, 0.017] | 0.027 [-0.011, 0.068] | 0.029 [0.003, 0.057] |
+| 2020 | 251 | -0.020 [-0.037, -0.005] | -0.019 [-0.025, -0.013] | -0.035 [-0.044, -0.027] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | 0.001 [-0.000, 0.003] | 0.001 [-0.002, 0.007] | 0.002 [-0.000, 0.005] |
 | 2025-26 | 249 | -0.011 [-0.018, -0.005] | 0.021 [0.003, 0.042] | 0.018 [0.004, 0.036] |
 
@@ -2620,8 +2620,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | -0.015 [-0.039, 0.008] | 0.021 [-0.001, 0.046] | 0.018 [-0.008, 0.047] |
-| ordinary | 1603 | -0.006 [-0.011, -0.001] | 0.002 [-0.004, 0.010] | -0.001 [-0.006, 0.005] |
+| month_end | 150 | -0.015 [-0.039, 0.008] | 0.021 [-0.001, 0.046] | 0.019 [-0.008, 0.047] |
+| ordinary | 1603 | -0.006 [-0.011, -0.001] | 0.002 [-0.006, 0.009] | -0.003 [-0.008, 0.001] |
 | quarter_end | 31 | -0.040 [-0.140, 0.048] | 0.037 [-0.079, 0.152] | 0.050 [-0.040, 0.138] |
 | tax_date | 89 | 0.009 [-0.023, 0.048] | 0.036 [-0.008, 0.088] | 0.046 [-0.006, 0.108] |
 
@@ -2629,10 +2629,10 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1041 | -0.001 [-0.001, 0.000] | -0.001 [-0.002, 0.001] | -0.003 [-0.004, -0.002] |
-| 1 | 313 | -0.006 [-0.009, -0.004] | -0.010 [-0.012, -0.007] | -0.020 [-0.025, -0.013] |
-| 2 | 41 | -0.074 [–] | 0.024 [–] | 0.037 [–] |
-| 3 | 478 | -0.013 [-0.033, 0.009] | 0.030 [-0.000, 0.063] | 0.031 [0.004, 0.062] |
+| 0 | 1041 | -0.001 [-0.001, 0.000] | -0.001 [-0.002, 0.001] | -0.003 [-0.003, -0.002] |
+| 1 | 313 | -0.006 [-0.009, -0.004] | -0.010 [-0.013, -0.008] | -0.018 [-0.024, -0.011] |
+| 2 | 41 | -0.074 [–] | 0.024 [–] | 0.036 [–] |
+| 3 | 478 | -0.013 [-0.033, 0.009] | 0.027 [-0.004, 0.061] | 0.021 [-0.002, 0.046] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.154 [-0.296, -0.029] on 26 onsets.
 
@@ -2667,16 +2667,16 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 | 1 | 0.019 [0.010, 0.028] |
 | 2 | 0.017 [0.009, 0.026] |
 | 3 | 0.017 [0.009, 0.026] |
-| 4 | 0.015 [0.009, 0.023] |
-| 5 | 0.011 [0.004, 0.018] |
+| 4 | 0.015 [0.008, 0.022] |
+| 5 | 0.009 [0.002, 0.016] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.045 [0.007, 0.087] | 0.031 [-0.008, 0.071] | 0.029 [-0.005, 0.062] |
-| 2020 | 251 | 0.013 [-0.002, 0.027] | 0.021 [0.012, 0.030] | 0.000 [-0.013, 0.012] |
-| 2021-23 | 748 | 0.013 [0.011, 0.014] | 0.013 [0.011, 0.014] | 0.008 [0.006, 0.010] |
+| 2018-19 | 375 | 0.045 [0.007, 0.087] | 0.029 [-0.011, 0.070] | 0.016 [-0.016, 0.049] |
+| 2020 | 251 | 0.013 [-0.002, 0.027] | 0.020 [0.011, 0.029] | 0.001 [-0.012, 0.013] |
+| 2021-23 | 748 | 0.013 [0.011, 0.014] | 0.013 [0.011, 0.014] | 0.009 [0.007, 0.011] |
 | 2024 | 250 | 0.005 [0.001, 0.009] | 0.005 [0.002, 0.009] | 0.003 [0.000, 0.006] |
 | 2025-26 | 249 | 0.018 [0.003, 0.036] | 0.018 [0.003, 0.035] | 0.013 [0.003, 0.025] |
 
@@ -2684,8 +2684,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.033 [0.007, 0.062] | 0.033 [0.012, 0.055] | 0.027 [0.003, 0.053] |
-| ordinary | 1603 | 0.013 [0.005, 0.023] | 0.011 [0.002, 0.020] | 0.004 [-0.003, 0.011] |
+| month_end | 150 | 0.033 [0.007, 0.062] | 0.033 [0.012, 0.055] | 0.027 [0.004, 0.053] |
+| ordinary | 1603 | 0.013 [0.005, 0.023] | 0.010 [0.001, 0.019] | 0.001 [-0.006, 0.009] |
 | quarter_end | 31 | 0.091 [0.009, 0.165] | 0.125 [0.066, 0.186] | 0.139 [0.068, 0.212] |
 | tax_date | 89 | 0.076 [0.045, 0.114] | 0.074 [0.037, 0.115] | 0.073 [0.031, 0.114] |
 
@@ -2694,9 +2694,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | 0.009 [0.007, 0.011] | 0.009 [0.007, 0.011] | 0.007 [0.005, 0.008] |
-| 1 | 313 | 0.022 [0.017, 0.028] | 0.021 [0.016, 0.027] | 0.008 [0.002, 0.013] |
-| 2 | 41 | -0.028 [–] | 0.010 [–] | 0.017 [–] |
-| 3 | 478 | 0.042 [0.011, 0.077] | 0.033 [0.002, 0.067] | 0.022 [-0.004, 0.051] |
+| 1 | 313 | 0.022 [0.017, 0.028] | 0.021 [0.016, 0.027] | 0.010 [0.005, 0.015] |
+| 2 | 41 | -0.028 [–] | 0.010 [–] | 0.016 [–] |
+| 3 | 478 | 0.042 [0.011, 0.077] | 0.031 [-0.001, 0.066] | 0.012 [-0.013, 0.040] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.038 [-0.118, 0.192] on 26 onsets.
 
@@ -2730,17 +2730,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.004 [-0.003, 0.012] |
 | 2 | 0.007 [-0.001, 0.016] |
-| 3 | 0.011 [0.003, 0.019] |
-| 4 | 0.007 [0.000, 0.015] |
-| 5 | 0.004 [-0.004, 0.011] |
+| 3 | 0.010 [0.003, 0.019] |
+| 4 | 0.006 [-0.001, 0.014] |
+| 5 | 0.001 [-0.006, 0.008] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.028 [-0.003, 0.061] | 0.031 [-0.005, 0.069] | 0.031 [0.000, 0.063] |
-| 2020 | 251 | -0.010 [-0.028, 0.005] | 0.009 [0.004, 0.013] | -0.017 [-0.027, -0.009] |
-| 2021-23 | 748 | -0.000 [-0.001, -0.000] | 0.003 [0.002, 0.004] | -0.004 [-0.005, -0.002] |
+| 2018-19 | 375 | 0.028 [-0.003, 0.061] | 0.029 [-0.008, 0.067] | 0.018 [-0.013, 0.050] |
+| 2020 | 251 | -0.010 [-0.028, 0.005] | 0.008 [0.003, 0.012] | -0.017 [-0.027, -0.008] |
+| 2021-23 | 748 | -0.000 [-0.001, -0.000] | 0.003 [0.002, 0.004] | -0.003 [-0.004, -0.002] |
 | 2024 | 250 | 0.005 [0.001, 0.012] | 0.005 [0.002, 0.011] | 0.003 [0.001, 0.007] |
 | 2025-26 | 249 | -0.008 [-0.030, 0.011] | 0.012 [-0.006, 0.031] | 0.005 [-0.017, 0.028] |
 
@@ -2748,8 +2748,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.012 [-0.012, 0.037] | 0.023 [0.003, 0.045] | 0.018 [-0.009, 0.044] |
-| ordinary | 1603 | 0.000 [-0.006, 0.007] | 0.006 [-0.001, 0.014] | -0.002 [-0.009, 0.004] |
+| month_end | 150 | 0.012 [-0.012, 0.037] | 0.024 [0.003, 0.045] | 0.018 [-0.009, 0.044] |
+| ordinary | 1603 | 0.000 [-0.006, 0.007] | 0.005 [-0.002, 0.013] | -0.005 [-0.012, 0.002] |
 | quarter_end | 31 | 0.030 [-0.091, 0.151] | 0.090 [-0.035, 0.221] | 0.114 [0.004, 0.227] |
 | tax_date | 89 | 0.041 [0.005, 0.089] | 0.047 [-0.001, 0.106] | 0.047 [-0.002, 0.105] |
 
@@ -2758,9 +2758,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | 0.001 [-0.000, 0.003] | 0.002 [0.001, 0.004] | -0.001 [-0.002, 0.000] |
-| 1 | 313 | -0.000 [-0.003, 0.002] | 0.010 [0.008, 0.012] | -0.007 [-0.011, -0.002] |
-| 2 | 41 | -0.061 [–] | -0.023 [–] | -0.040 [–] |
-| 3 | 478 | 0.018 [-0.007, 0.045] | 0.033 [0.004, 0.063] | 0.024 [-0.002, 0.052] |
+| 1 | 313 | -0.000 [-0.003, 0.002] | 0.010 [0.008, 0.011] | -0.005 [-0.009, -0.001] |
+| 2 | 41 | -0.061 [–] | -0.023 [–] | -0.041 [–] |
+| 3 | 478 | 0.018 [-0.007, 0.045] | 0.030 [0.001, 0.062] | 0.014 [-0.012, 0.041] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.038 [-0.174, 0.241] on 26 onsets.
 
@@ -2794,17 +2794,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.005 [-0.005, 0.017] |
 | 2 | 0.005 [-0.004, 0.016] |
-| 3 | 0.008 [-0.002, 0.018] |
-| 4 | 0.004 [-0.005, 0.014] |
-| 5 | -0.001 [-0.010, 0.010] |
+| 3 | 0.007 [-0.002, 0.018] |
+| 4 | 0.003 [-0.006, 0.013] |
+| 5 | -0.003 [-0.012, 0.007] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.043 [-0.006, 0.094] | 0.041 [-0.005, 0.091] | 0.026 [-0.017, 0.073] |
-| 2020 | 251 | -0.025 [-0.042, -0.012] | -0.011 [-0.018, -0.004] | -0.030 [-0.042, -0.019] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.043 [-0.006, 0.094] | 0.038 [-0.009, 0.089] | 0.013 [-0.030, 0.060] |
+| 2020 | 251 | -0.025 [-0.042, -0.012] | -0.013 [-0.020, -0.005] | -0.030 [-0.042, -0.018] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | 0.004 [-0.000, 0.011] | 0.001 [-0.000, 0.003] | 0.002 [-0.000, 0.007] |
 | 2025-26 | 249 | 0.000 [-0.010, 0.009] | 0.011 [-0.001, 0.027] | 0.002 [-0.005, 0.011] |
 
@@ -2812,8 +2812,8 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | -0.021 [-0.041, -0.002] | 0.001 [-0.013, 0.017] | -0.017 [-0.038, 0.002] |
-| ordinary | 1603 | 0.008 [-0.002, 0.021] | 0.007 [-0.003, 0.019] | 0.001 [-0.009, 0.012] |
+| month_end | 150 | -0.021 [-0.041, -0.002] | 0.001 [-0.013, 0.017] | -0.016 [-0.037, 0.003] |
+| ordinary | 1603 | 0.008 [-0.002, 0.021] | 0.007 [-0.004, 0.019] | -0.002 [-0.012, 0.009] |
 | quarter_end | 31 | -0.034 [-0.133, 0.061] | 0.016 [-0.059, 0.091] | 0.045 [-0.023, 0.118] |
 | tax_date | 89 | 0.008 [-0.028, 0.047] | 0.022 [-0.012, 0.056] | -0.008 [-0.039, 0.021] |
 
@@ -2821,10 +2821,10 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1041 | 0.000 [-0.001, 0.002] | -0.000 [-0.001, 0.000] | -0.003 [-0.004, -0.002] |
-| 1 | 313 | -0.009 [-0.013, -0.006] | -0.006 [-0.011, -0.001] | -0.021 [-0.025, -0.016] |
+| 0 | 1041 | 0.000 [-0.001, 0.002] | -0.000 [-0.001, 0.000] | -0.003 [-0.003, -0.002] |
+| 1 | 313 | -0.009 [-0.013, -0.006] | -0.007 [-0.011, -0.001] | -0.019 [-0.024, -0.014] |
 | 2 | 41 | -0.025 [–] | 0.040 [–] | 0.022 [–] |
-| 3 | 478 | 0.028 [-0.011, 0.070] | 0.032 [-0.004, 0.073] | 0.016 [-0.020, 0.053] |
+| 3 | 478 | 0.028 [-0.011, 0.070] | 0.030 [-0.008, 0.071] | 0.006 [-0.030, 0.043] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.174, 0.100] on 26 onsets.
 
@@ -2858,26 +2858,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.008 [-0.001, 0.019] |
 | 2 | 0.007 [-0.003, 0.018] |
-| 3 | 0.006 [-0.003, 0.016] |
-| 4 | 0.005 [-0.004, 0.014] |
-| 5 | 0.000 [-0.008, 0.011] |
+| 3 | 0.005 [-0.004, 0.015] |
+| 4 | 0.004 [-0.004, 0.014] |
+| 5 | -0.002 [-0.010, 0.008] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.047 [0.001, 0.098] | 0.041 [-0.002, 0.089] | 0.034 [-0.008, 0.080] |
-| 2020 | 251 | -0.013 [-0.019, -0.007] | -0.016 [-0.023, -0.010] | -0.033 [-0.042, -0.025] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.047 [0.001, 0.098] | 0.038 [-0.005, 0.087] | 0.021 [-0.021, 0.068] |
+| 2020 | 251 | -0.013 [-0.019, -0.007] | -0.018 [-0.025, -0.011] | -0.033 [-0.042, -0.024] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
-| 2025-26 | 249 | 0.005 [0.000, 0.011] | 0.003 [0.000, 0.006] | 0.003 [0.000, 0.007] |
+| 2025-26 | 249 | 0.005 [0.000, 0.011] | 0.003 [0.000, 0.006] | 0.003 [0.000, 0.006] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | 0.003 [-0.003, 0.010] | 0.002 [-0.002, 0.008] | 0.002 [-0.003, 0.011] |
-| ordinary | 1603 | 0.009 [-0.002, 0.022] | 0.007 [-0.004, 0.018] | 0.000 [-0.009, 0.012] |
+| month_end | 150 | 0.003 [-0.003, 0.010] | 0.002 [-0.002, 0.008] | 0.003 [-0.003, 0.011] |
+| ordinary | 1603 | 0.009 [-0.002, 0.022] | 0.006 [-0.004, 0.017] | -0.002 [-0.012, 0.009] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -2886,9 +2886,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | -0.000 [-0.000, -0.000] | -0.000 [-0.001, -0.000] | -0.002 [-0.003, -0.001] |
-| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.012, -0.007] | -0.024 [-0.027, -0.019] |
-| 2 | 41 | 0.005 [–] | -0.001 [–] | -0.003 [–] |
-| 3 | 478 | 0.036 [0.000, 0.078] | 0.030 [-0.004, 0.069] | 0.022 [-0.011, 0.060] |
+| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.013, -0.007] | -0.022 [-0.026, -0.017] |
+| 2 | 41 | 0.005 [–] | -0.001 [–] | -0.004 [–] |
+| 3 | 478 | 0.036 [0.000, 0.078] | 0.028 [-0.007, 0.068] | 0.012 [-0.021, 0.050] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.115 [-0.286, 0.042] on 26 onsets.
 
@@ -2922,26 +2922,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.003 [-0.010, 0.005] |
 | 2 | 0.000 [-0.006, 0.008] |
-| 3 | 0.004 [-0.004, 0.011] |
-| 4 | -0.002 [-0.009, 0.005] |
-| 5 | -0.006 [-0.013, 0.001] |
+| 3 | 0.003 [-0.004, 0.010] |
+| 4 | -0.003 [-0.009, 0.004] |
+| 5 | -0.008 [-0.015, -0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.003 [-0.027, 0.035] | 0.017 [-0.017, 0.050] | -0.002 [-0.031, 0.027] |
-| 2020 | 251 | -0.018 [-0.035, -0.001] | -0.011 [-0.018, -0.003] | -0.030 [-0.043, -0.018] |
-| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.000 [-0.001, 0.000] | -0.005 [-0.008, -0.003] |
+| 2018-19 | 375 | 0.003 [-0.027, 0.035] | 0.014 [-0.020, 0.048] | -0.015 [-0.044, 0.014] |
+| 2020 | 251 | -0.018 [-0.035, -0.001] | -0.012 [-0.019, -0.004] | -0.030 [-0.043, -0.018] |
+| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.000 [-0.001, 0.000] | -0.005 [-0.006, -0.003] |
 | 2024 | 250 | 0.007 [0.001, 0.015] | 0.004 [0.001, 0.007] | 0.005 [0.001, 0.009] |
-| 2025-26 | 249 | -0.011 [-0.026, 0.003] | 0.010 [-0.004, 0.026] | 0.000 [-0.023, 0.022] |
+| 2025-26 | 249 | -0.011 [-0.026, 0.003] | 0.010 [-0.004, 0.026] | -0.000 [-0.023, 0.022] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| month_end | 150 | -0.026 [-0.045, -0.009] | 0.001 [-0.014, 0.017] | -0.019 [-0.039, -0.002] |
-| ordinary | 1603 | -0.000 [-0.007, 0.007] | 0.003 [-0.005, 0.010] | -0.006 [-0.013, 0.002] |
+| month_end | 150 | -0.026 [-0.045, -0.009] | 0.001 [-0.013, 0.017] | -0.019 [-0.039, -0.002] |
+| ordinary | 1603 | -0.000 [-0.007, 0.007] | 0.002 [-0.006, 0.010] | -0.008 [-0.015, -0.001] |
 | quarter_end | 31 | -0.034 [-0.125, 0.059] | 0.016 [-0.061, 0.090] | 0.045 [-0.022, 0.121] |
 | tax_date | 89 | 0.008 [-0.031, 0.048] | 0.022 [-0.011, 0.057] | -0.008 [-0.039, 0.021] |
 
@@ -2949,10 +2949,10 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 0 | 1041 | 0.002 [0.000, 0.004] | 0.001 [-0.000, 0.003] | -0.001 [-0.003, 0.001] |
-| 1 | 313 | -0.009 [-0.013, -0.006] | -0.006 [-0.011, -0.001] | -0.021 [-0.026, -0.016] |
-| 2 | 41 | -0.065 [–] | -0.004 [–] | -0.032 [–] |
-| 3 | 478 | -0.003 [-0.029, 0.025] | 0.016 [-0.012, 0.042] | -0.004 [-0.029, 0.021] |
+| 0 | 1041 | 0.002 [0.000, 0.004] | 0.001 [-0.000, 0.003] | -0.001 [-0.002, 0.001] |
+| 1 | 313 | -0.009 [-0.013, -0.006] | -0.007 [-0.011, -0.001] | -0.019 [-0.024, -0.014] |
+| 2 | 41 | -0.065 [–] | -0.004 [–] | -0.033 [–] |
+| 3 | 478 | -0.003 [-0.029, 0.025] | 0.013 [-0.015, 0.040] | -0.014 [-0.039, 0.011] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.324, -0.077] on 26 onsets.
 
@@ -2986,17 +2986,17 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.000 [-0.006, 0.006] |
 | 2 | 0.002 [-0.005, 0.008] |
-| 3 | 0.002 [-0.005, 0.008] |
-| 4 | -0.001 [-0.006, 0.005] |
-| 5 | -0.005 [-0.011, 0.001] |
+| 3 | 0.001 [-0.006, 0.008] |
+| 4 | -0.002 [-0.007, 0.004] |
+| 5 | -0.007 [-0.013, -0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.007 [-0.019, 0.037] | 0.017 [-0.015, 0.046] | 0.006 [-0.018, 0.033] |
-| 2020 | 251 | -0.006 [-0.018, 0.010] | -0.016 [-0.023, -0.009] | -0.033 [-0.042, -0.025] |
-| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.000 [-0.001, 0.000] | -0.006 [-0.008, -0.003] |
+| 2018-19 | 375 | 0.007 [-0.019, 0.037] | 0.014 [-0.018, 0.043] | -0.007 [-0.033, 0.020] |
+| 2020 | 251 | -0.006 [-0.018, 0.010] | -0.017 [-0.024, -0.009] | -0.033 [-0.042, -0.024] |
+| 2021-23 | 748 | -0.001 [-0.001, -0.000] | -0.001 [-0.001, 0.000] | -0.005 [-0.006, -0.003] |
 | 2024 | 250 | 0.003 [0.001, 0.007] | 0.002 [0.001, 0.004] | 0.002 [0.001, 0.005] |
 | 2025-26 | 249 | -0.006 [-0.023, 0.006] | 0.002 [-0.013, 0.016] | 0.001 [-0.020, 0.020] |
 
@@ -3005,7 +3005,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.003 [-0.008, 0.001] | 0.002 [-0.002, 0.008] | 0.000 [-0.003, 0.004] |
-| ordinary | 1603 | -0.000 [-0.006, 0.008] | 0.002 [-0.006, 0.010] | -0.006 [-0.013, 0.001] |
+| ordinary | 1603 | -0.000 [-0.006, 0.008] | 0.001 [-0.007, 0.009] | -0.008 [-0.015, -0.001] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -3014,9 +3014,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | 0.001 [0.000, 0.002] | 0.001 [0.000, 0.003] | -0.001 [-0.002, 0.001] |
-| 1 | 313 | -0.008 [-0.009, -0.006] | -0.009 [-0.012, -0.007] | -0.024 [-0.027, -0.019] |
-| 2 | 41 | -0.035 [–] | -0.045 [–] | -0.058 [–] |
-| 3 | 478 | 0.005 [-0.017, 0.030] | 0.014 [-0.012, 0.037] | 0.002 [-0.020, 0.026] |
+| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.012, -0.007] | -0.022 [-0.026, -0.017] |
+| 2 | 41 | -0.035 [–] | -0.046 [–] | -0.059 [–] |
+| 3 | 478 | 0.005 [-0.017, 0.030] | 0.011 [-0.015, 0.036] | -0.008 [-0.030, 0.015] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.321, -0.077] on 26 onsets.
 
@@ -3050,26 +3050,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.008 [-0.001, 0.018] |
 | 2 | 0.008 [-0.002, 0.020] |
-| 3 | 0.011 [0.001, 0.023] |
-| 4 | 0.009 [-0.001, 0.021] |
-| 5 | 0.006 [-0.005, 0.018] |
+| 3 | 0.009 [-0.001, 0.021] |
+| 4 | 0.009 [-0.001, 0.020] |
+| 5 | 0.003 [-0.007, 0.015] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.050 [0.009, 0.096] | 0.062 [0.012, 0.117] | 0.058 [0.012, 0.112] |
-| 2020 | 251 | -0.020 [-0.032, -0.009] | -0.017 [-0.027, -0.007] | -0.038 [-0.050, -0.026] |
-| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.006 [-0.008, -0.004] |
+| 2018-19 | 375 | 0.050 [0.009, 0.096] | 0.055 [0.007, 0.110] | 0.045 [-0.002, 0.099] |
+| 2020 | 251 | -0.020 [-0.032, -0.009] | -0.018 [-0.028, -0.008] | -0.037 [-0.050, -0.025] |
+| 2021-23 | 748 | -0.001 [-0.002, -0.001] | -0.001 [-0.002, -0.001] | -0.005 [-0.007, -0.004] |
 | 2024 | 250 | 0.000 [-0.000, 0.001] | 0.002 [-0.000, 0.007] | 0.002 [-0.000, 0.006] |
-| 2025-26 | 249 | 0.008 [-0.000, 0.018] | 0.007 [-0.002, 0.016] | 0.007 [-0.001, 0.017] |
+| 2025-26 | 249 | 0.008 [-0.000, 0.018] | 0.007 [-0.001, 0.016] | 0.007 [-0.001, 0.017] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.007 [-0.014, 0.027] | 0.012 [-0.004, 0.029] | 0.008 [-0.006, 0.023] |
-| ordinary | 1603 | 0.007 [-0.003, 0.018] | 0.010 [-0.002, 0.023] | 0.004 [-0.007, 0.017] |
+| ordinary | 1603 | 0.007 [-0.003, 0.018] | 0.008 [-0.003, 0.021] | 0.001 [-0.009, 0.013] |
 | quarter_end | 31 | 0.024 [-0.025, 0.089] | 0.041 [-0.021, 0.112] | 0.048 [-0.013, 0.125] |
 | tax_date | 89 | 0.028 [-0.006, 0.070] | 0.023 [-0.016, 0.070] | 0.023 [-0.014, 0.064] |
 
@@ -3078,9 +3078,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | -0.001 [-0.002, -0.000] | -0.001 [-0.002, 0.001] | -0.003 [-0.004, -0.002] |
-| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.012, -0.007] | -0.021 [-0.026, -0.015] |
+| 1 | 313 | -0.008 [-0.009, -0.006] | -0.010 [-0.013, -0.008] | -0.019 [-0.025, -0.013] |
 | 2 | 41 | -0.002 [–] | 0.016 [–] | 0.003 [–] |
-| 3 | 478 | 0.039 [0.004, 0.075] | 0.049 [0.010, 0.094] | 0.041 [0.002, 0.087] |
+| 3 | 478 | 0.039 [0.004, 0.075] | 0.044 [0.004, 0.088] | 0.031 [-0.008, 0.076] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.077 [-0.080, 0.222] on 26 onsets.
 
@@ -3114,15 +3114,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.002 [-0.006, 0.002] |
 | 2 | 0.006 [0.001, 0.011] |
-| 3 | 0.002 [-0.001, 0.006] |
-| 4 | 0.002 [-0.001, 0.006] |
+| 3 | 0.003 [-0.000, 0.007] |
+| 4 | 0.003 [-0.000, 0.006] |
 | 5 | 0.007 [0.003, 0.012] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.004 [-0.019, 0.013] | 0.012 [-0.004, 0.028] | 0.020 [0.006, 0.036] |
+| 2018-19 | 375 | -0.004 [-0.019, 0.013] | 0.016 [-0.001, 0.034] | 0.021 [0.007, 0.036] |
 | 2020 | 251 | 0.003 [-0.000, 0.006] | 0.000 [-0.001, 0.001] | 0.001 [-0.003, 0.004] |
 | 2021-23 | 748 | 0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.009, 0.000] | -0.003 [-0.009, 0.000] | -0.001 [-0.002, 0.000] |
@@ -3133,7 +3133,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.025 [-0.050, -0.002] | -0.007 [-0.022, 0.007] | 0.019 [0.008, 0.032] |
-| ordinary | 1603 | 0.002 [-0.001, 0.006] | 0.004 [0.001, 0.008] | 0.005 [0.002, 0.008] |
+| ordinary | 1603 | 0.002 [-0.001, 0.006] | 0.005 [0.002, 0.010] | 0.005 [0.002, 0.008] |
 | quarter_end | 31 | -0.011 [-0.067, 0.044] | -0.002 [-0.066, 0.064] | 0.037 [0.000, 0.080] |
 | tax_date | 89 | -0.039 [-0.077, -0.012] | -0.015 [-0.058, 0.022] | 0.018 [-0.036, 0.075] |
 
@@ -3144,7 +3144,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.001, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.001] | 0.001 [-0.001, 0.002] |
 | 2 | 41 | 0.000 [–] | -0.007 [–] | 0.019 [–] |
-| 3 | 478 | -0.009 [-0.024, 0.006] | 0.011 [-0.002, 0.023] | 0.026 [0.012, 0.041] |
+| 3 | 478 | -0.009 [-0.024, 0.006] | 0.014 [0.000, 0.028] | 0.026 [0.012, 0.041] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.115 [-0.233, 0.000] on 26 onsets.
 
@@ -3178,15 +3178,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.014 [-0.023, -0.006] |
 | 2 | -0.006 [-0.014, 0.001] |
-| 3 | -0.005 [-0.013, 0.004] |
-| 4 | -0.003 [-0.012, 0.005] |
+| 3 | -0.004 [-0.013, 0.005] |
+| 4 | -0.003 [-0.011, 0.005] |
 | 5 | 0.001 [-0.008, 0.010] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.057 [-0.096, -0.023] | -0.026 [-0.069, 0.016] | -0.004 [-0.049, 0.038] |
+| 2018-19 | 375 | -0.057 [-0.096, -0.023] | -0.022 [-0.066, 0.020] | -0.004 [-0.049, 0.039] |
 | 2020 | 251 | 0.009 [0.005, 0.014] | -0.001 [-0.006, 0.003] | 0.002 [-0.006, 0.009] |
 | 2021-23 | 748 | -0.000 [-0.000, -0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.009, 0.000] | -0.003 [-0.007, 0.000] | -0.001 [-0.001, 0.000] |
@@ -3197,7 +3197,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.018 [-0.038, -0.001] | 0.008 [-0.007, 0.025] | 0.024 [0.004, 0.047] |
-| ordinary | 1603 | -0.012 [-0.021, -0.004] | -0.006 [-0.015, 0.002] | -0.002 [-0.012, 0.007] |
+| ordinary | 1603 | -0.012 [-0.021, -0.004] | -0.005 [-0.014, 0.003] | -0.002 [-0.012, 0.007] |
 | quarter_end | 31 | -0.026 [-0.093, 0.026] | -0.011 [-0.075, 0.055] | 0.010 [-0.039, 0.057] |
 | tax_date | 89 | -0.038 [-0.073, -0.008] | 0.000 [-0.034, 0.028] | 0.017 [-0.013, 0.049] |
 
@@ -3208,7 +3208,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | -0.001 [-0.002, 0.000] | -0.001 [-0.001, 0.000] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | 0.003 [0.002, 0.005] | 0.000 [-0.000, 0.000] | 0.001 [0.000, 0.003] |
 | 2 | 41 | -0.057 [–] | -0.017 [–] | 0.008 [–] |
-| 3 | 478 | -0.050 [-0.081, -0.022] | -0.016 [-0.050, 0.017] | 0.003 [-0.033, 0.037] |
+| 3 | 478 | -0.050 [-0.081, -0.022] | -0.012 [-0.048, 0.021] | 0.003 [-0.033, 0.038] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.269 [-0.429, -0.111] on 26 onsets.
 
@@ -3242,15 +3242,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.011 [0.007, 0.016] |
 | 2 | 0.008 [0.002, 0.014] |
-| 3 | 0.006 [0.000, 0.012] |
-| 4 | 0.006 [0.000, 0.012] |
-| 5 | 0.008 [0.003, 0.013] |
+| 3 | 0.007 [0.001, 0.013] |
+| 4 | 0.007 [0.001, 0.012] |
+| 5 | 0.008 [0.003, 0.014] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.002 [-0.023, 0.018] | -0.024 [-0.047, -0.004] | -0.017 [-0.038, 0.004] |
+| 2018-19 | 375 | -0.002 [-0.023, 0.018] | -0.020 [-0.043, 0.001] | -0.016 [-0.039, 0.004] |
 | 2020 | 251 | 0.042 [0.034, 0.050] | 0.038 [0.028, 0.047] | 0.037 [0.026, 0.047] |
 | 2021-23 | 748 | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] |
 | 2024 | 250 | 0.001 [-0.005, 0.005] | 0.001 [-0.005, 0.005] | 0.001 [-0.005, 0.005] |
@@ -3261,7 +3261,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.030 [0.017, 0.045] | 0.020 [0.011, 0.028] | 0.032 [0.020, 0.047] |
-| ordinary | 1603 | 0.007 [0.002, 0.011] | 0.002 [-0.003, 0.007] | 0.002 [-0.003, 0.007] |
+| ordinary | 1603 | 0.007 [0.002, 0.011] | 0.003 [-0.002, 0.008] | 0.003 [-0.003, 0.007] |
 | quarter_end | 31 | 0.105 [0.018, 0.199] | 0.077 [-0.018, 0.173] | 0.100 [0.003, 0.194] |
 | tax_date | 89 | 0.029 [-0.003, 0.057] | 0.038 [0.007, 0.065] | 0.044 [0.013, 0.073] |
 
@@ -3272,7 +3272,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.009 [0.007, 0.011] | 0.009 [0.007, 0.011] | 0.009 [0.008, 0.011] |
 | 1 | 313 | 0.032 [0.025, 0.038] | 0.031 [0.025, 0.038] | 0.029 [0.021, 0.036] |
 | 2 | 41 | -0.010 [–] | -0.031 [–] | -0.012 [–] |
-| 3 | 478 | 0.006 [-0.011, 0.023] | -0.012 [-0.033, 0.006] | -0.006 [-0.025, 0.012] |
+| 3 | 478 | 0.006 [-0.011, 0.023] | -0.009 [-0.030, 0.010] | -0.006 [-0.025, 0.012] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.273, 0.120] on 26 onsets.
 
@@ -3306,15 +3306,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.004 [-0.012, 0.003] |
 | 2 | -0.002 [-0.009, 0.005] |
-| 3 | 0.000 [-0.006, 0.006] |
-| 4 | -0.002 [-0.009, 0.004] |
+| 3 | 0.001 [-0.006, 0.007] |
+| 4 | -0.002 [-0.008, 0.004] |
 | 5 | 0.001 [-0.005, 0.007] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.019 [-0.052, 0.009] | -0.024 [-0.051, 0.001] | -0.014 [-0.040, 0.011] |
+| 2018-19 | 375 | -0.019 [-0.052, 0.009] | -0.020 [-0.047, 0.005] | -0.014 [-0.040, 0.011] |
 | 2020 | 251 | 0.019 [0.013, 0.026] | 0.026 [0.018, 0.032] | 0.020 [0.011, 0.026] |
 | 2021-23 | 748 | 0.001 [0.000, 0.001] | 0.004 [0.003, 0.005] | 0.002 [0.002, 0.003] |
 | 2024 | 250 | 0.001 [-0.002, 0.004] | 0.001 [-0.001, 0.002] | 0.001 [-0.001, 0.003] |
@@ -3325,7 +3325,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.009 [-0.016, 0.033] | 0.011 [-0.002, 0.023] | 0.023 [0.009, 0.041] |
-| ordinary | 1603 | -0.006 [-0.014, 0.002] | -0.002 [-0.010, 0.005] | -0.004 [-0.011, 0.003] |
+| ordinary | 1603 | -0.006 [-0.014, 0.002] | -0.001 [-0.009, 0.006] | -0.003 [-0.011, 0.003] |
 | quarter_end | 31 | 0.045 [-0.009, 0.106] | 0.042 [-0.012, 0.103] | 0.074 [0.018, 0.143] |
 | tax_date | 89 | -0.006 [-0.036, 0.018] | 0.011 [-0.008, 0.032] | 0.018 [-0.003, 0.042] |
 
@@ -3336,7 +3336,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.001 [0.000, 0.002] | 0.003 [0.002, 0.003] | 0.002 [0.001, 0.002] |
 | 1 | 313 | 0.009 [0.007, 0.012] | 0.020 [0.016, 0.024] | 0.014 [0.010, 0.018] |
 | 2 | 41 | -0.044 [–] | -0.064 [–] | -0.069 [–] |
-| 3 | 478 | -0.018 [-0.047, 0.007] | -0.013 [-0.036, 0.009] | -0.004 [-0.026, 0.018] |
+| 3 | 478 | -0.018 [-0.047, 0.007] | -0.009 [-0.033, 0.012] | -0.004 [-0.026, 0.018] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.242, 0.103] on 26 onsets.
 
@@ -3370,7 +3370,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.002 [-0.006, 0.002] |
 | 2 | -0.003 [-0.008, 0.001] |
-| 3 | -0.003 [-0.006, 0.000] |
+| 3 | -0.002 [-0.006, 0.001] |
 | 4 | -0.005 [-0.009, -0.002] |
 | 5 | -0.003 [-0.006, -0.000] |
 
@@ -3378,7 +3378,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.004 [-0.020, 0.013] | -0.015 [-0.029, -0.000] | -0.019 [-0.032, -0.007] |
+| 2018-19 | 375 | -0.004 [-0.020, 0.013] | -0.011 [-0.026, 0.006] | -0.019 [-0.031, -0.007] |
 | 2020 | 251 | 0.004 [0.001, 0.008] | 0.005 [-0.003, 0.014] | 0.007 [0.002, 0.012] |
 | 2021-23 | 748 | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.000 [-0.001, 0.000] | -0.003 [-0.009, 0.000] | -0.000 [-0.000, 0.000] |
@@ -3389,7 +3389,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.024 [-0.046, -0.001] | -0.012 [-0.030, 0.007] | -0.011 [-0.023, -0.000] |
-| ordinary | 1603 | 0.002 [-0.001, 0.006] | -0.001 [-0.004, 0.002] | -0.001 [-0.003, 0.001] |
+| ordinary | 1603 | 0.002 [-0.001, 0.006] | -0.000 [-0.003, 0.003] | -0.001 [-0.003, 0.001] |
 | quarter_end | 31 | -0.020 [-0.077, 0.033] | -0.032 [-0.093, 0.026] | 0.006 [-0.026, 0.050] |
 | tax_date | 89 | -0.040 [-0.075, -0.008] | -0.014 [-0.054, 0.022] | -0.036 [-0.083, 0.004] |
 
@@ -3400,7 +3400,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.000, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.003, 0.003] |
 | 2 | 41 | -0.007 [–] | -0.001 [–] | -0.006 [–] |
-| 3 | 478 | -0.008 [-0.023, 0.007] | -0.013 [-0.025, -0.001] | -0.012 [-0.025, -0.001] |
+| 3 | 478 | -0.008 [-0.023, 0.007] | -0.010 [-0.023, 0.004] | -0.012 [-0.024, -0.001] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.154 [-0.292, -0.036] on 26 onsets.
 
@@ -3434,7 +3434,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.000 [-0.004, 0.005] |
 | 2 | -0.002 [-0.007, 0.003] |
-| 3 | -0.005 [-0.009, -0.001] |
+| 3 | -0.004 [-0.008, 0.000] |
 | 4 | -0.004 [-0.008, -0.000] |
 | 5 | -0.002 [-0.006, 0.001] |
 
@@ -3442,7 +3442,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.001 [-0.021, 0.020] | -0.015 [-0.032, 0.002] | -0.011 [-0.029, 0.006] |
+| 2018-19 | 375 | -0.001 [-0.021, 0.020] | -0.011 [-0.029, 0.008] | -0.011 [-0.029, 0.006] |
 | 2020 | 251 | 0.016 [0.003, 0.032] | 0.000 [-0.004, 0.003] | 0.004 [-0.000, 0.009] |
 | 2021-23 | 748 | -0.000 [-0.000, -0.000] | -0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.004 [-0.012, 0.000] | -0.004 [-0.012, 0.000] | -0.002 [-0.006, 0.000] |
@@ -3453,7 +3453,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.001 [-0.029, 0.028] | -0.011 [-0.032, 0.011] | 0.007 [-0.013, 0.029] |
-| ordinary | 1603 | 0.003 [-0.001, 0.007] | -0.002 [-0.005, 0.001] | -0.001 [-0.003, 0.001] |
+| ordinary | 1603 | 0.003 [-0.001, 0.007] | -0.001 [-0.004, 0.002] | -0.001 [-0.003, 0.001] |
 | quarter_end | 31 | 0.014 [-0.099, 0.131] | -0.048 [-0.155, 0.058] | -0.040 [-0.133, 0.048] |
 | tax_date | 89 | -0.047 [-0.106, 0.003] | -0.036 [-0.091, 0.016] | -0.029 [-0.090, 0.026] |
 
@@ -3464,7 +3464,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | -0.000 [-0.002, 0.001] | -0.000 [-0.002, 0.001] | 0.001 [-0.000, 0.001] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [-0.000, 0.001] | -0.002 [-0.006, 0.001] |
 | 2 | 41 | 0.023 [–] | -0.042 [–] | -0.032 [–] |
-| 3 | 478 | -0.000 [-0.018, 0.017] | -0.015 [-0.030, -0.001] | -0.006 [-0.022, 0.008] |
+| 3 | 478 | -0.000 [-0.018, 0.017] | -0.012 [-0.028, 0.003] | -0.006 [-0.021, 0.008] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.394, -0.083] on 26 onsets.
 
@@ -3498,7 +3498,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.010 [-0.018, -0.003] |
 | 2 | -0.008 [-0.015, -0.002] |
-| 3 | -0.007 [-0.014, -0.001] |
+| 3 | -0.006 [-0.013, -0.001] |
 | 4 | -0.011 [-0.020, -0.004] |
 | 5 | -0.009 [-0.017, -0.002] |
 
@@ -3506,7 +3506,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.044 [-0.076, -0.017] | -0.039 [-0.067, -0.014] | -0.047 [-0.079, -0.019] |
+| 2018-19 | 375 | -0.044 [-0.076, -0.017] | -0.035 [-0.063, -0.010] | -0.047 [-0.079, -0.018] |
 | 2020 | 251 | 0.011 [0.002, 0.026] | 0.006 [-0.002, 0.015] | 0.007 [-0.000, 0.015] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.001] |
 | 2024 | 250 | 0.002 [-0.000, 0.007] | -0.001 [-0.007, 0.004] | 0.002 [0.001, 0.005] |
@@ -3517,7 +3517,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.030 [-0.055, -0.006] | -0.012 [-0.031, 0.007] | -0.014 [-0.026, -0.002] |
-| ordinary | 1603 | -0.006 [-0.015, 0.001] | -0.006 [-0.013, 0.000] | -0.007 [-0.015, -0.000] |
+| ordinary | 1603 | -0.006 [-0.015, 0.001] | -0.005 [-0.012, 0.001] | -0.007 [-0.015, -0.000] |
 | quarter_end | 31 | -0.020 [-0.079, 0.033] | -0.032 [-0.094, 0.025] | 0.006 [-0.027, 0.047] |
 | tax_date | 89 | -0.040 [-0.077, -0.009] | -0.014 [-0.056, 0.024] | -0.036 [-0.080, 0.004] |
 
@@ -3528,7 +3528,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.002 [0.001, 0.003] | 0.001 [0.000, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.003, 0.003] |
 | 2 | 41 | -0.047 [–] | -0.045 [–] | -0.061 [–] |
-| 3 | 478 | -0.039 [-0.067, -0.014] | -0.030 [-0.053, -0.009] | -0.032 [-0.060, -0.008] |
+| 3 | 478 | -0.039 [-0.067, -0.014] | -0.027 [-0.050, -0.006] | -0.032 [-0.061, -0.007] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.308 [-0.469, -0.160] on 26 onsets.
 
@@ -3562,15 +3562,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.008 [-0.016, 0.001] |
 | 2 | -0.007 [-0.015, 0.000] |
-| 3 | -0.009 [-0.017, -0.002] |
-| 4 | -0.010 [-0.019, -0.003] |
-| 5 | -0.008 [-0.015, -0.001] |
+| 3 | -0.008 [-0.016, -0.001] |
+| 4 | -0.010 [-0.018, -0.002] |
+| 5 | -0.008 [-0.015, -0.000] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.041 [-0.073, -0.009] | -0.039 [-0.072, -0.009] | -0.039 [-0.072, -0.008] |
+| 2018-19 | 375 | -0.041 [-0.073, -0.009] | -0.035 [-0.067, -0.006] | -0.039 [-0.072, -0.008] |
 | 2020 | 251 | 0.023 [0.004, 0.048] | 0.001 [-0.003, 0.004] | 0.004 [-0.003, 0.011] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.001 [-0.010, 0.005] | -0.002 [-0.010, 0.003] | -0.000 [-0.005, 0.003] |
@@ -3581,7 +3581,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.006 [-0.037, 0.024] | -0.011 [-0.032, 0.010] | 0.005 [-0.016, 0.028] |
-| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.007 [-0.014, -0.000] | -0.007 [-0.015, -0.001] |
+| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.006 [-0.013, 0.001] | -0.007 [-0.015, -0.001] |
 | quarter_end | 31 | 0.014 [-0.097, 0.132] | -0.048 [-0.158, 0.057] | -0.040 [-0.132, 0.055] |
 | tax_date | 89 | -0.047 [-0.107, 0.005] | -0.036 [-0.095, 0.016] | -0.029 [-0.090, 0.030] |
 
@@ -3591,8 +3591,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.001 [-0.001, 0.002] | 0.001 [0.000, 0.003] | 0.002 [0.001, 0.004] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [0.000, 0.001] | -0.002 [-0.006, 0.001] |
-| 2 | 41 | -0.017 [–] | -0.087 [–] | -0.086 [–] |
-| 3 | 478 | -0.032 [-0.061, -0.003] | -0.032 [-0.059, -0.007] | -0.026 [-0.055, 0.001] |
+| 2 | 41 | -0.017 [–] | -0.087 [–] | -0.087 [–] |
+| 3 | 478 | -0.032 [-0.061, -0.003] | -0.029 [-0.055, -0.005] | -0.026 [-0.055, 0.001] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.308 [-0.465, -0.156] on 26 onsets.
 
@@ -3626,26 +3626,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.000 [-0.001, 0.001] |
 | 2 | 0.000 [-0.000, 0.000] |
-| 3 | 0.000 [-0.000, 0.000] |
-| 4 | 0.000 [0.000, 0.000] |
-| 5 | 0.000 [-0.000, 0.001] |
+| 3 | 0.000 [-0.000, 0.001] |
+| 4 | 0.000 [-0.000, 0.001] |
+| 5 | 0.000 [0.000, 0.000] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.001 [-0.003, 0.003] | 0.001 [-0.000, 0.003] | 0.002 [-0.000, 0.004] |
+| 2018-19 | 375 | -0.001 [-0.003, 0.003] | 0.001 [-0.001, 0.003] | 0.001 [0.000, 0.002] |
 | 2020 | 251 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2021-23 | 748 | -0.000 [-0.000, 0.000] | -0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] |
 | 2024 | 250 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
-| 2025-26 | 249 | 0.000 [0.000, 0.000] | -0.000 [-0.000, -0.000] | 0.000 [-0.000, 0.000] |
+| 2025-26 | 249 | 0.000 [0.000, 0.000] | -0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] | 0.000 [0.000, 0.000] |
-| ordinary | 1603 | -0.000 [-0.001, 0.001] | 0.000 [-0.000, 0.001] | 0.000 [-0.000, 0.001] |
+| ordinary | 1603 | -0.000 [-0.001, 0.001] | 0.000 [-0.000, 0.001] | 0.000 [0.000, 0.001] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -3654,9 +3654,9 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | scarcity_state | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | 0 | 1041 | -0.000 [-0.000, 0.000] | -0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] |
-| 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | -0.000 [-0.000, 0.000] |
-| 2 | 41 | 0.000 [–] | -0.000 [–] | 0.000 [–] |
-| 3 | 478 | -0.000 [-0.003, 0.002] | 0.001 [-0.000, 0.002] | 0.001 [-0.000, 0.003] |
+| 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.000] |
+| 2 | 41 | 0.000 [–] | 0.000 [–] | 0.000 [–] |
+| 3 | 478 | -0.000 [-0.003, 0.002] | 0.001 [-0.001, 0.002] | 0.001 [0.000, 0.002] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.000 [0.000, 0.000] on 26 onsets.
 
@@ -3692,13 +3692,13 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 | 2 | 0.004 [-0.000, 0.008] |
 | 3 | 0.002 [-0.001, 0.005] |
 | 4 | 0.002 [-0.001, 0.005] |
-| 5 | 0.005 [0.001, 0.010] |
+| 5 | 0.005 [0.001, 0.011] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.007 [-0.027, 0.011] | 0.009 [-0.005, 0.024] | 0.011 [-0.008, 0.030] |
+| 2018-19 | 375 | -0.007 [-0.027, 0.011] | 0.010 [-0.004, 0.024] | 0.012 [-0.008, 0.031] |
 | 2020 | 251 | 0.003 [0.000, 0.006] | 0.000 [-0.001, 0.001] | 0.001 [-0.003, 0.004] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | -0.000 [-0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.008, 0.000] | -0.003 [-0.008, 0.000] | -0.001 [-0.002, 0.000] |
@@ -3709,7 +3709,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.024 [-0.047, -0.001] | -0.007 [-0.022, 0.007] | 0.019 [0.008, 0.032] |
-| ordinary | 1603 | 0.001 [-0.003, 0.006] | 0.004 [0.001, 0.006] | 0.003 [-0.001, 0.007] |
+| ordinary | 1603 | 0.001 [-0.003, 0.006] | 0.004 [0.001, 0.007] | 0.003 [-0.001, 0.007] |
 | quarter_end | 31 | -0.011 [-0.068, 0.044] | -0.002 [-0.061, 0.064] | 0.037 [0.002, 0.081] |
 | tax_date | 89 | -0.039 [-0.074, -0.010] | -0.015 [-0.058, 0.022] | 0.018 [-0.035, 0.075] |
 
@@ -3720,7 +3720,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.001, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.001] | 0.001 [-0.001, 0.002] |
 | 2 | 41 | 0.001 [–] | -0.007 [–] | 0.019 [–] |
-| 3 | 478 | -0.011 [-0.029, 0.005] | 0.008 [-0.003, 0.020] | 0.018 [0.001, 0.037] |
+| 3 | 478 | -0.011 [-0.029, 0.005] | 0.009 [-0.003, 0.020] | 0.019 [0.002, 0.037] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.115 [-0.227, 0.000] on 26 onsets.
 
@@ -3756,13 +3756,13 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 | 2 | -0.008 [-0.017, -0.000] |
 | 3 | -0.005 [-0.015, 0.003] |
 | 4 | -0.004 [-0.013, 0.005] |
-| 5 | -0.001 [-0.011, 0.008] |
+| 5 | -0.000 [-0.010, 0.008] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.060 [-0.102, -0.025] | -0.029 [-0.075, 0.011] | -0.013 [-0.063, 0.030] |
+| 2018-19 | 375 | -0.060 [-0.102, -0.025] | -0.029 [-0.074, 0.011] | -0.013 [-0.061, 0.031] |
 | 2020 | 251 | 0.009 [0.005, 0.014] | -0.001 [-0.006, 0.003] | 0.002 [-0.005, 0.009] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.009, 0.000] | -0.003 [-0.007, 0.000] | -0.001 [-0.001, -0.000] |
@@ -3784,7 +3784,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | -0.001 [-0.002, 0.000] | -0.001 [-0.001, 0.000] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | 0.003 [0.002, 0.005] | 0.000 [-0.000, 0.000] | 0.001 [0.000, 0.003] |
 | 2 | 41 | -0.056 [–] | -0.017 [–] | 0.008 [–] |
-| 3 | 478 | -0.052 [-0.086, -0.023] | -0.018 [-0.055, 0.014] | -0.004 [-0.043, 0.031] |
+| 3 | 478 | -0.052 [-0.086, -0.023] | -0.018 [-0.054, 0.014] | -0.004 [-0.042, 0.031] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.269 [-0.440, -0.120] on 26 onsets.
 
@@ -3818,15 +3818,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.011 [0.005, 0.016] |
 | 2 | 0.006 [0.000, 0.012] |
-| 3 | 0.006 [-0.000, 0.012] |
-| 4 | 0.006 [-0.000, 0.011] |
-| 5 | 0.007 [0.000, 0.013] |
+| 3 | 0.006 [0.000, 0.012] |
+| 4 | 0.006 [-0.001, 0.011] |
+| 5 | 0.007 [0.001, 0.013] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.006 [-0.029, 0.016] | -0.027 [-0.051, -0.006] | -0.026 [-0.049, -0.002] |
+| 2018-19 | 375 | -0.006 [-0.029, 0.016] | -0.027 [-0.051, -0.006] | -0.025 [-0.048, -0.002] |
 | 2020 | 251 | 0.042 [0.035, 0.050] | 0.038 [0.027, 0.047] | 0.037 [0.026, 0.048] |
 | 2021-23 | 748 | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] |
 | 2024 | 250 | 0.001 [-0.005, 0.005] | 0.001 [-0.005, 0.005] | 0.001 [-0.005, 0.005] |
@@ -3837,7 +3837,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.030 [0.017, 0.043] | 0.020 [0.011, 0.029] | 0.032 [0.020, 0.047] |
-| ordinary | 1603 | 0.006 [0.001, 0.011] | 0.001 [-0.004, 0.006] | 0.000 [-0.006, 0.006] |
+| ordinary | 1603 | 0.006 [0.001, 0.011] | 0.002 [-0.004, 0.006] | 0.000 [-0.006, 0.006] |
 | quarter_end | 31 | 0.105 [0.015, 0.195] | 0.077 [-0.019, 0.173] | 0.100 [0.007, 0.193] |
 | tax_date | 89 | 0.029 [-0.003, 0.058] | 0.038 [0.008, 0.066] | 0.044 [0.013, 0.074] |
 
@@ -3848,7 +3848,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.009 [0.007, 0.011] | 0.009 [0.007, 0.011] | 0.009 [0.008, 0.011] |
 | 1 | 313 | 0.032 [0.025, 0.038] | 0.031 [0.024, 0.038] | 0.029 [0.022, 0.036] |
 | 2 | 41 | -0.010 [–] | -0.031 [–] | -0.012 [–] |
-| 3 | 478 | 0.003 [-0.017, 0.021] | -0.014 [-0.035, 0.005] | -0.013 [-0.034, 0.008] |
+| 3 | 478 | 0.003 [-0.017, 0.021] | -0.014 [-0.035, 0.005] | -0.013 [-0.033, 0.008] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.267, 0.120] on 26 onsets.
 
@@ -3883,14 +3883,14 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 | 1 | -0.004 [-0.012, 0.003] |
 | 2 | -0.004 [-0.011, 0.003] |
 | 3 | -0.000 [-0.007, 0.006] |
-| 4 | -0.003 [-0.009, 0.004] |
+| 4 | -0.003 [-0.010, 0.004] |
 | 5 | -0.001 [-0.008, 0.005] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.023 [-0.054, 0.006] | -0.027 [-0.054, -0.003] | -0.023 [-0.053, 0.002] |
+| 2018-19 | 375 | -0.023 [-0.054, 0.006] | -0.027 [-0.054, -0.003] | -0.023 [-0.052, 0.003] |
 | 2020 | 251 | 0.019 [0.013, 0.026] | 0.026 [0.018, 0.032] | 0.020 [0.010, 0.026] |
 | 2021-23 | 748 | 0.001 [0.001, 0.001] | 0.004 [0.003, 0.005] | 0.002 [0.002, 0.003] |
 | 2024 | 250 | 0.001 [-0.002, 0.004] | 0.001 [-0.002, 0.002] | 0.001 [-0.001, 0.003] |
@@ -3901,7 +3901,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.009 [-0.017, 0.032] | 0.011 [-0.002, 0.023] | 0.023 [0.008, 0.041] |
-| ordinary | 1603 | -0.006 [-0.015, 0.001] | -0.003 [-0.011, 0.004] | -0.006 [-0.015, 0.002] |
+| ordinary | 1603 | -0.006 [-0.015, 0.001] | -0.003 [-0.011, 0.004] | -0.006 [-0.014, 0.002] |
 | quarter_end | 31 | 0.045 [-0.007, 0.108] | 0.042 [-0.011, 0.107] | 0.074 [0.019, 0.141] |
 | tax_date | 89 | -0.006 [-0.036, 0.017] | 0.011 [-0.007, 0.030] | 0.018 [-0.002, 0.043] |
 
@@ -3912,7 +3912,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.001 [0.000, 0.002] | 0.003 [0.002, 0.003] | 0.002 [0.001, 0.002] |
 | 1 | 313 | 0.009 [0.007, 0.012] | 0.020 [0.016, 0.024] | 0.014 [0.010, 0.018] |
 | 2 | 41 | -0.043 [–] | -0.064 [–] | -0.069 [–] |
-| 3 | 478 | -0.021 [-0.049, 0.004] | -0.015 [-0.039, 0.006] | -0.011 [-0.036, 0.011] |
+| 3 | 478 | -0.021 [-0.049, 0.004] | -0.015 [-0.038, 0.006] | -0.011 [-0.035, 0.011] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.235, 0.095] on 26 onsets.
 
@@ -3946,7 +3946,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.003 [-0.007, 0.001] |
 | 2 | -0.005 [-0.010, -0.001] |
-| 3 | -0.004 [-0.007, -0.000] |
+| 3 | -0.004 [-0.007, 0.000] |
 | 4 | -0.006 [-0.010, -0.003] |
 | 5 | -0.005 [-0.009, -0.001] |
 
@@ -3954,9 +3954,9 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.008 [-0.027, 0.010] | -0.018 [-0.033, -0.004] | -0.028 [-0.045, -0.012] |
+| 2018-19 | 375 | -0.008 [-0.027, 0.010] | -0.018 [-0.032, -0.004] | -0.028 [-0.044, -0.011] |
 | 2020 | 251 | 0.004 [0.000, 0.008] | 0.005 [-0.003, 0.014] | 0.007 [0.002, 0.012] |
-| 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.000] |
+| 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.000 [-0.001, 0.000] | -0.003 [-0.009, 0.000] | -0.000 [-0.000, 0.000] |
 | 2025-26 | 249 | -0.012 [-0.028, 0.001] | -0.002 [-0.010, 0.004] | -0.002 [-0.008, 0.004] |
 
@@ -3965,7 +3965,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.024 [-0.047, -0.001] | -0.012 [-0.030, 0.007] | -0.011 [-0.023, -0.001] |
-| ordinary | 1603 | 0.002 [-0.002, 0.006] | -0.002 [-0.004, 0.001] | -0.003 [-0.007, 0.000] |
+| ordinary | 1603 | 0.002 [-0.002, 0.006] | -0.002 [-0.004, 0.001] | -0.003 [-0.006, 0.000] |
 | quarter_end | 31 | -0.020 [-0.075, 0.032] | -0.032 [-0.091, 0.029] | 0.006 [-0.027, 0.046] |
 | tax_date | 89 | -0.040 [-0.074, -0.008] | -0.014 [-0.055, 0.024] | -0.036 [-0.082, 0.005] |
 
@@ -3976,7 +3976,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.000, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.004, 0.003] |
 | 2 | 41 | -0.007 [–] | -0.001 [–] | -0.006 [–] |
-| 3 | 478 | -0.011 [-0.027, 0.006] | -0.016 [-0.028, -0.003] | -0.020 [-0.034, -0.005] |
+| 3 | 478 | -0.011 [-0.027, 0.006] | -0.015 [-0.028, -0.003] | -0.019 [-0.033, -0.005] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.154 [-0.296, -0.037] on 26 onsets.
 
@@ -4018,7 +4018,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.004 [-0.027, 0.018] | -0.018 [-0.036, 0.001] | -0.020 [-0.045, 0.003] |
+| 2018-19 | 375 | -0.004 [-0.027, 0.018] | -0.017 [-0.036, 0.001] | -0.020 [-0.043, 0.003] |
 | 2020 | 251 | 0.016 [0.003, 0.032] | 0.000 [-0.004, 0.003] | 0.004 [-0.000, 0.009] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.004 [-0.011, 0.000] | -0.004 [-0.012, 0.000] | -0.002 [-0.007, 0.000] |
@@ -4029,7 +4029,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.001 [-0.031, 0.029] | -0.011 [-0.033, 0.011] | 0.007 [-0.013, 0.029] |
-| ordinary | 1603 | 0.002 [-0.002, 0.007] | -0.002 [-0.006, 0.000] | -0.003 [-0.007, -0.000] |
+| ordinary | 1603 | 0.002 [-0.002, 0.007] | -0.002 [-0.005, 0.000] | -0.003 [-0.007, 0.000] |
 | quarter_end | 31 | 0.014 [-0.099, 0.132] | -0.048 [-0.155, 0.056] | -0.040 [-0.131, 0.051] |
 | tax_date | 89 | -0.047 [-0.109, 0.002] | -0.036 [-0.094, 0.018] | -0.029 [-0.087, 0.027] |
 
@@ -4040,7 +4040,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | -0.000 [-0.002, 0.001] | -0.000 [-0.002, 0.001] | 0.001 [-0.000, 0.001] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [-0.000, 0.001] | -0.002 [-0.006, 0.001] |
 | 2 | 41 | 0.024 [–] | -0.042 [–] | -0.032 [–] |
-| 3 | 478 | -0.003 [-0.022, 0.015] | -0.018 [-0.034, -0.002] | -0.013 [-0.033, 0.005] |
+| 3 | 478 | -0.003 [-0.022, 0.015] | -0.017 [-0.033, -0.002] | -0.013 [-0.033, 0.006] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.391, -0.077] on 26 onsets.
 
@@ -4082,7 +4082,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.048 [-0.080, -0.018] | -0.042 [-0.073, -0.015] | -0.056 [-0.089, -0.027] |
+| 2018-19 | 375 | -0.048 [-0.080, -0.018] | -0.042 [-0.073, -0.014] | -0.056 [-0.088, -0.026] |
 | 2020 | 251 | 0.011 [0.001, 0.026] | 0.006 [-0.003, 0.015] | 0.007 [-0.001, 0.016] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.001] |
 | 2024 | 250 | 0.003 [-0.000, 0.007] | -0.001 [-0.008, 0.004] | 0.002 [0.001, 0.004] |
@@ -4093,7 +4093,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.030 [-0.056, -0.005] | -0.012 [-0.030, 0.008] | -0.014 [-0.026, -0.003] |
-| ordinary | 1603 | -0.007 [-0.015, 0.000] | -0.007 [-0.014, -0.000] | -0.009 [-0.017, -0.002] |
+| ordinary | 1603 | -0.007 [-0.015, 0.000] | -0.006 [-0.014, -0.000] | -0.009 [-0.017, -0.002] |
 | quarter_end | 31 | -0.020 [-0.079, 0.030] | -0.032 [-0.094, 0.025] | 0.006 [-0.027, 0.050] |
 | tax_date | 89 | -0.040 [-0.076, -0.009] | -0.014 [-0.056, 0.022] | -0.036 [-0.082, 0.004] |
 
@@ -4104,7 +4104,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.002 [0.001, 0.003] | 0.001 [0.000, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.003, 0.003] |
 | 2 | 41 | -0.047 [–] | -0.045 [–] | -0.061 [–] |
-| 3 | 478 | -0.042 [-0.070, -0.015] | -0.032 [-0.058, -0.009] | -0.040 [-0.069, -0.013] |
+| 3 | 478 | -0.042 [-0.070, -0.015] | -0.032 [-0.058, -0.009] | -0.039 [-0.068, -0.012] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.308 [-0.474, -0.154] on 26 onsets.
 
@@ -4138,15 +4138,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.008 [-0.017, -0.001] |
 | 2 | -0.009 [-0.018, -0.001] |
-| 3 | -0.010 [-0.018, -0.003] |
-| 4 | -0.011 [-0.019, -0.003] |
-| 5 | -0.010 [-0.018, -0.002] |
+| 3 | -0.010 [-0.017, -0.002] |
+| 4 | -0.011 [-0.020, -0.003] |
+| 5 | -0.009 [-0.018, -0.002] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.044 [-0.077, -0.014] | -0.042 [-0.074, -0.012] | -0.048 [-0.083, -0.015] |
+| 2018-19 | 375 | -0.044 [-0.077, -0.014] | -0.042 [-0.074, -0.012] | -0.048 [-0.082, -0.015] |
 | 2020 | 251 | 0.023 [0.005, 0.048] | 0.001 [-0.003, 0.004] | 0.004 [-0.003, 0.011] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.001 [-0.010, 0.005] | -0.002 [-0.010, 0.003] | -0.000 [-0.004, 0.003] |
@@ -4157,7 +4157,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.006 [-0.037, 0.023] | -0.011 [-0.032, 0.011] | 0.005 [-0.016, 0.028] |
-| ordinary | 1603 | -0.007 [-0.015, 0.000] | -0.007 [-0.015, -0.001] | -0.009 [-0.018, -0.002] |
+| ordinary | 1603 | -0.007 [-0.015, 0.000] | -0.007 [-0.015, -0.001] | -0.009 [-0.017, -0.002] |
 | quarter_end | 31 | 0.014 [-0.103, 0.126] | -0.048 [-0.156, 0.059] | -0.040 [-0.133, 0.047] |
 | tax_date | 89 | -0.047 [-0.110, 0.002] | -0.036 [-0.096, 0.016] | -0.029 [-0.089, 0.027] |
 
@@ -4168,7 +4168,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.001 [-0.001, 0.002] | 0.002 [0.000, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [0.000, 0.001] | -0.002 [-0.006, 0.001] |
 | 2 | 41 | -0.017 [–] | -0.086 [–] | -0.087 [–] |
-| 3 | 478 | -0.034 [-0.065, -0.008] | -0.034 [-0.062, -0.009] | -0.033 [-0.064, -0.005] |
+| 3 | 478 | -0.034 [-0.065, -0.008] | -0.034 [-0.062, -0.009] | -0.033 [-0.062, -0.005] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.308 [-0.467, -0.158] on 26 onsets.
 
@@ -4202,15 +4202,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.001 [-0.003, 0.001] |
 | 2 | -0.002 [-0.005, 0.001] |
-| 3 | -0.000 [-0.002, 0.001] |
-| 4 | -0.001 [-0.002, 0.001] |
-| 5 | -0.001 [-0.004, 0.000] |
+| 3 | -0.001 [-0.004, 0.001] |
+| 4 | -0.001 [-0.002, 0.000] |
+| 5 | -0.002 [-0.004, -0.000] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.004 [-0.014, 0.005] | -0.002 [-0.012, 0.007] | -0.007 [-0.019, 0.001] |
+| 2018-19 | 375 | -0.004 [-0.014, 0.005] | -0.006 [-0.020, 0.006] | -0.008 [-0.019, -0.000] |
 | 2020 | 251 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | 0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] | -0.000 [-0.000, -0.000] |
@@ -4221,7 +4221,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
-| ordinary | 1603 | -0.001 [-0.003, 0.001] | -0.000 [-0.003, 0.002] | -0.002 [-0.004, 0.000] |
+| ordinary | 1603 | -0.001 [-0.003, 0.001] | -0.001 [-0.005, 0.001] | -0.002 [-0.004, -0.000] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -4231,8 +4231,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 1 | 313 | 0.000 [-0.000, 0.000] | -0.000 [-0.000, 0.000] | -0.000 [-0.000, -0.000] |
-| 2 | 41 | 0.001 [–] | 0.000 [–] | 0.000 [–] |
-| 3 | 478 | -0.003 [-0.011, 0.004] | -0.001 [-0.009, 0.006] | -0.006 [-0.015, 0.001] |
+| 2 | 41 | 0.001 [–] | 0.001 [–] | 0.000 [–] |
+| 3 | 478 | -0.003 [-0.011, 0.004] | -0.005 [-0.016, 0.004] | -0.006 [-0.015, -0.000] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.000 [0.000, 0.000] on 26 onsets.
 
@@ -4266,15 +4266,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.002 [-0.006, 0.002] |
 | 2 | 0.005 [0.000, 0.011] |
-| 3 | 0.004 [0.000, 0.008] |
-| 4 | 0.004 [0.000, 0.007] |
+| 3 | 0.004 [-0.000, 0.009] |
+| 4 | 0.004 [0.001, 0.007] |
 | 5 | 0.008 [0.004, 0.012] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.001 [-0.018, 0.017] | 0.018 [0.001, 0.038] | 0.025 [0.010, 0.039] |
+| 2018-19 | 375 | -0.001 [-0.018, 0.017] | 0.021 [-0.001, 0.047] | 0.024 [0.010, 0.039] |
 | 2020 | 251 | 0.003 [0.000, 0.006] | 0.000 [-0.001, 0.001] | 0.001 [-0.002, 0.004] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | -0.000 [-0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.008, 0.000] | -0.003 [-0.009, 0.000] | -0.001 [-0.002, 0.000] |
@@ -4285,7 +4285,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.025 [-0.048, -0.003] | -0.007 [-0.023, 0.007] | 0.019 [0.007, 0.032] |
-| ordinary | 1603 | 0.003 [-0.001, 0.007] | 0.006 [0.002, 0.010] | 0.006 [0.002, 0.009] |
+| ordinary | 1603 | 0.003 [-0.001, 0.007] | 0.006 [0.002, 0.012] | 0.006 [0.002, 0.009] |
 | quarter_end | 31 | -0.011 [-0.068, 0.044] | -0.002 [-0.067, 0.058] | 0.037 [0.001, 0.079] |
 | tax_date | 89 | -0.039 [-0.075, -0.009] | -0.015 [-0.059, 0.023] | 0.018 [-0.035, 0.078] |
 
@@ -4296,7 +4296,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.001, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.001] | 0.001 [-0.001, 0.002] |
 | 2 | 41 | -0.002 [–] | -0.010 [–] | 0.017 [–] |
-| 3 | 478 | -0.007 [-0.021, 0.009] | 0.015 [0.001, 0.030] | 0.029 [0.015, 0.044] |
+| 3 | 478 | -0.007 [-0.021, 0.009] | 0.018 [0.000, 0.038] | 0.028 [0.014, 0.043] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.077 [-0.214, 0.050] on 26 onsets.
 
@@ -4330,26 +4330,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.013 [-0.022, -0.006] |
 | 2 | -0.006 [-0.015, 0.001] |
-| 3 | -0.004 [-0.013, 0.004] |
-| 4 | -0.002 [-0.010, 0.006] |
+| 3 | -0.003 [-0.013, 0.006] |
+| 4 | -0.001 [-0.010, 0.006] |
 | 5 | 0.002 [-0.007, 0.010] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.054 [-0.094, -0.020] | -0.020 [-0.067, 0.020] | 0.000 [-0.045, 0.039] |
+| 2018-19 | 375 | -0.054 [-0.094, -0.020] | -0.017 [-0.065, 0.025] | -0.000 [-0.046, 0.039] |
 | 2020 | 251 | 0.009 [0.005, 0.014] | -0.001 [-0.006, 0.003] | 0.002 [-0.006, 0.009] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [-0.000, 0.000] |
 | 2024 | 250 | -0.003 [-0.009, 0.000] | -0.003 [-0.007, 0.000] | -0.001 [-0.001, 0.000] |
-| 2025-26 | 249 | -0.024 [-0.043, -0.008] | 0.006 [-0.003, 0.019] | 0.013 [0.001, 0.028] |
+| 2025-26 | 249 | -0.024 [-0.043, -0.008] | 0.007 [-0.003, 0.019] | 0.013 [0.001, 0.028] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.018 [-0.038, -0.001] | 0.008 [-0.007, 0.026] | 0.023 [0.004, 0.045] |
-| ordinary | 1603 | -0.011 [-0.021, -0.003] | -0.005 [-0.015, 0.003] | -0.001 [-0.011, 0.008] |
+| ordinary | 1603 | -0.011 [-0.021, -0.003] | -0.004 [-0.014, 0.005] | -0.001 [-0.011, 0.008] |
 | quarter_end | 31 | -0.026 [-0.090, 0.028] | -0.011 [-0.078, 0.057] | 0.010 [-0.037, 0.058] |
 | tax_date | 89 | -0.038 [-0.076, -0.007] | 0.000 [-0.035, 0.027] | 0.017 [-0.012, 0.049] |
 
@@ -4360,7 +4360,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | -0.001 [-0.002, 0.000] | -0.001 [-0.002, 0.000] | 0.000 [-0.000, 0.000] |
 | 1 | 313 | 0.003 [0.002, 0.005] | 0.000 [-0.000, 0.000] | 0.001 [0.000, 0.003] |
 | 2 | 41 | -0.059 [–] | -0.020 [–] | 0.005 [–] |
-| 3 | 478 | -0.047 [-0.079, -0.020] | -0.011 [-0.049, 0.020] | 0.006 [-0.030, 0.038] |
+| 3 | 478 | -0.047 [-0.079, -0.020] | -0.009 [-0.048, 0.025] | 0.006 [-0.032, 0.038] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.231 [-0.412, -0.061] on 26 onsets.
 
@@ -4394,26 +4394,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.012 [0.007, 0.017] |
 | 2 | 0.008 [0.001, 0.014] |
-| 3 | 0.008 [0.001, 0.013] |
-| 4 | 0.008 [0.002, 0.013] |
+| 3 | 0.008 [0.002, 0.014] |
+| 4 | 0.008 [0.003, 0.013] |
 | 5 | 0.009 [0.004, 0.014] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.000 [-0.020, 0.020] | -0.019 [-0.043, 0.003] | -0.013 [-0.031, 0.006] |
+| 2018-19 | 375 | 0.000 [-0.020, 0.020] | -0.015 [-0.042, 0.011] | -0.013 [-0.032, 0.006] |
 | 2020 | 251 | 0.042 [0.035, 0.050] | 0.038 [0.027, 0.047] | 0.037 [0.026, 0.047] |
 | 2021-23 | 748 | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] | 0.014 [0.012, 0.016] |
 | 2024 | 250 | 0.001 [-0.004, 0.005] | 0.001 [-0.005, 0.005] | 0.001 [-0.005, 0.005] |
-| 2025-26 | 249 | 0.004 [-0.005, 0.015] | 0.004 [-0.008, 0.018] | 0.007 [-0.003, 0.019] |
+| 2025-26 | 249 | 0.004 [-0.005, 0.015] | 0.004 [-0.007, 0.018] | 0.007 [-0.003, 0.019] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.030 [0.017, 0.044] | 0.020 [0.011, 0.029] | 0.032 [0.020, 0.046] |
-| ordinary | 1603 | 0.008 [0.003, 0.012] | 0.003 [-0.002, 0.008] | 0.003 [-0.001, 0.008] |
+| ordinary | 1603 | 0.008 [0.003, 0.012] | 0.004 [-0.002, 0.010] | 0.003 [-0.002, 0.008] |
 | quarter_end | 31 | 0.105 [0.017, 0.195] | 0.077 [-0.022, 0.175] | 0.100 [0.002, 0.200] |
 | tax_date | 89 | 0.029 [-0.002, 0.058] | 0.038 [0.009, 0.068] | 0.044 [0.011, 0.074] |
 
@@ -4424,7 +4424,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.009 [0.007, 0.011] | 0.009 [0.007, 0.011] | 0.009 [0.008, 0.011] |
 | 1 | 313 | 0.032 [0.025, 0.038] | 0.031 [0.025, 0.038] | 0.029 [0.022, 0.036] |
 | 2 | 41 | -0.013 [–] | -0.034 [–] | -0.014 [–] |
-| 3 | 478 | 0.008 [-0.010, 0.024] | -0.008 [-0.028, 0.011] | -0.003 [-0.019, 0.014] |
+| 3 | 478 | 0.008 [-0.010, 0.024] | -0.005 [-0.027, 0.017] | -0.003 [-0.020, 0.014] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.222, 0.143] on 26 onsets.
 
@@ -4458,15 +4458,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.003 [-0.011, 0.004] |
 | 2 | -0.002 [-0.010, 0.004] |
-| 3 | 0.001 [-0.005, 0.007] |
+| 3 | 0.002 [-0.005, 0.008] |
 | 4 | -0.001 [-0.007, 0.005] |
-| 5 | 0.002 [-0.004, 0.007] |
+| 5 | 0.002 [-0.005, 0.007] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.016 [-0.047, 0.012] | -0.019 [-0.045, 0.006] | -0.010 [-0.034, 0.012] |
+| 2018-19 | 375 | -0.016 [-0.047, 0.012] | -0.015 [-0.043, 0.010] | -0.010 [-0.036, 0.012] |
 | 2020 | 251 | 0.019 [0.013, 0.026] | 0.026 [0.018, 0.032] | 0.020 [0.011, 0.027] |
 | 2021-23 | 748 | 0.001 [0.001, 0.001] | 0.004 [0.003, 0.005] | 0.002 [0.002, 0.003] |
 | 2024 | 250 | 0.001 [-0.002, 0.005] | 0.001 [-0.001, 0.002] | 0.001 [-0.001, 0.003] |
@@ -4477,7 +4477,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | 0.008 [-0.018, 0.033] | 0.011 [-0.001, 0.024] | 0.023 [0.008, 0.040] |
-| ordinary | 1603 | -0.005 [-0.013, 0.003] | -0.001 [-0.008, 0.006] | -0.003 [-0.010, 0.004] |
+| ordinary | 1603 | -0.005 [-0.013, 0.003] | -0.000 [-0.007, 0.007] | -0.003 [-0.010, 0.004] |
 | quarter_end | 31 | 0.045 [-0.011, 0.104] | 0.042 [-0.012, 0.103] | 0.074 [0.016, 0.138] |
 | tax_date | 89 | -0.006 [-0.035, 0.018] | 0.011 [-0.009, 0.030] | 0.018 [-0.002, 0.043] |
 
@@ -4488,7 +4488,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.001 [0.000, 0.002] | 0.003 [0.002, 0.003] | 0.002 [0.001, 0.002] |
 | 1 | 313 | 0.009 [0.007, 0.012] | 0.020 [0.016, 0.024] | 0.014 [0.011, 0.018] |
 | 2 | 41 | -0.046 [–] | -0.067 [–] | -0.071 [–] |
-| 3 | 478 | -0.016 [-0.043, 0.009] | -0.008 [-0.031, 0.013] | -0.001 [-0.023, 0.019] |
+| 3 | 478 | -0.016 [-0.043, 0.009] | -0.006 [-0.030, 0.016] | -0.001 [-0.024, 0.019] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.038 [-0.200, 0.125] on 26 onsets.
 
@@ -4522,26 +4522,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.002 [-0.006, 0.003] |
 | 2 | -0.004 [-0.009, 0.001] |
-| 3 | -0.002 [-0.006, 0.002] |
+| 3 | -0.001 [-0.006, 0.004] |
 | 4 | -0.004 [-0.008, -0.001] |
-| 5 | -0.002 [-0.005, 0.000] |
+| 5 | -0.003 [-0.005, 0.000] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.001 [-0.017, 0.016] | -0.009 [-0.025, 0.008] | -0.015 [-0.027, -0.003] |
+| 2018-19 | 375 | -0.001 [-0.017, 0.016] | -0.006 [-0.026, 0.017] | -0.015 [-0.028, -0.003] |
 | 2020 | 251 | 0.004 [0.001, 0.008] | 0.005 [-0.003, 0.015] | 0.007 [0.002, 0.012] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.000 [-0.001, 0.000] | -0.003 [-0.009, 0.000] | -0.000 [-0.000, 0.000] |
-| 2025-26 | 249 | -0.013 [-0.029, 0.000] | -0.003 [-0.012, 0.003] | -0.003 [-0.010, 0.003] |
+| 2025-26 | 249 | -0.013 [-0.029, 0.000] | -0.003 [-0.011, 0.003] | -0.003 [-0.010, 0.003] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.024 [-0.048, -0.003] | -0.012 [-0.030, 0.007] | -0.012 [-0.022, -0.000] |
-| ordinary | 1603 | 0.003 [-0.001, 0.007] | 0.000 [-0.003, 0.004] | 0.000 [-0.002, 0.002] |
+| ordinary | 1603 | 0.003 [-0.001, 0.007] | 0.001 [-0.003, 0.006] | -0.000 [-0.002, 0.002] |
 | quarter_end | 31 | -0.020 [-0.077, 0.030] | -0.032 [-0.092, 0.026] | 0.006 [-0.027, 0.048] |
 | tax_date | 89 | -0.040 [-0.076, -0.009] | -0.014 [-0.054, 0.022] | -0.036 [-0.083, 0.005] |
 
@@ -4552,7 +4552,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.000 [-0.000, 0.001] | -0.000 [-0.002, 0.001] | 0.000 [0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.003, 0.003] |
 | 2 | 41 | -0.009 [–] | -0.004 [–] | -0.009 [–] |
-| 3 | 478 | -0.006 [-0.021, 0.010] | -0.009 [-0.023, 0.005] | -0.009 [-0.020, 0.002] |
+| 3 | 478 | -0.006 [-0.021, 0.010] | -0.006 [-0.024, 0.012] | -0.010 [-0.020, 0.001] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.115 [-0.269, 0.040] on 26 onsets.
 
@@ -4586,7 +4586,7 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.001 [-0.004, 0.006] |
 | 2 | -0.003 [-0.009, 0.003] |
-| 3 | -0.004 [-0.008, 0.000] |
+| 3 | -0.003 [-0.008, 0.002] |
 | 4 | -0.003 [-0.007, 0.001] |
 | 5 | -0.002 [-0.006, 0.002] |
 
@@ -4594,7 +4594,7 @@ By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.002 [-0.017, 0.023] | -0.009 [-0.027, 0.010] | -0.007 [-0.026, 0.012] |
+| 2018-19 | 375 | 0.002 [-0.017, 0.023] | -0.006 [-0.028, 0.018] | -0.007 [-0.027, 0.012] |
 | 2020 | 251 | 0.016 [0.003, 0.033] | 0.000 [-0.004, 0.003] | 0.004 [-0.000, 0.009] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [-0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.004 [-0.012, 0.000] | -0.004 [-0.013, 0.000] | -0.002 [-0.006, 0.000] |
@@ -4605,7 +4605,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.001 [-0.029, 0.029] | -0.011 [-0.033, 0.011] | 0.007 [-0.014, 0.029] |
-| ordinary | 1603 | 0.004 [-0.000, 0.008] | -0.001 [-0.004, 0.003] | -0.000 [-0.003, 0.002] |
+| ordinary | 1603 | 0.004 [-0.000, 0.008] | 0.000 [-0.004, 0.005] | -0.000 [-0.003, 0.002] |
 | quarter_end | 31 | 0.014 [-0.099, 0.131] | -0.048 [-0.162, 0.055] | -0.040 [-0.134, 0.056] |
 | tax_date | 89 | -0.047 [-0.106, 0.003] | -0.036 [-0.095, 0.016] | -0.029 [-0.089, 0.028] |
 
@@ -4616,7 +4616,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | -0.000 [-0.002, 0.001] | -0.000 [-0.002, 0.001] | 0.001 [-0.000, 0.001] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [-0.000, 0.001] | -0.002 [-0.006, 0.001] |
 | 2 | 41 | 0.021 [–] | -0.045 [–] | -0.034 [–] |
-| 3 | 478 | 0.002 [-0.014, 0.019] | -0.011 [-0.026, 0.004] | -0.003 [-0.019, 0.012] |
+| 3 | 478 | 0.002 [-0.014, 0.019] | -0.008 [-0.027, 0.010] | -0.003 [-0.019, 0.012] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.192 [-0.367, -0.034] on 26 onsets.
 
@@ -4650,15 +4650,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.010 [-0.018, -0.003] |
 | 2 | -0.009 [-0.016, -0.002] |
-| 3 | -0.006 [-0.013, -0.000] |
+| 3 | -0.005 [-0.012, 0.000] |
 | 4 | -0.010 [-0.018, -0.003] |
-| 5 | -0.008 [-0.015, -0.001] |
+| 5 | -0.008 [-0.016, -0.001] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.041 [-0.072, -0.014] | -0.033 [-0.064, -0.008] | -0.043 [-0.073, -0.017] |
+| 2018-19 | 375 | -0.041 [-0.072, -0.014] | -0.030 [-0.062, -0.005] | -0.043 [-0.074, -0.017] |
 | 2020 | 251 | 0.011 [0.002, 0.026] | 0.006 [-0.002, 0.015] | 0.007 [-0.001, 0.016] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.001] |
 | 2024 | 250 | 0.002 [-0.000, 0.007] | -0.001 [-0.007, 0.004] | 0.002 [0.001, 0.005] |
@@ -4669,7 +4669,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.030 [-0.056, -0.006] | -0.012 [-0.030, 0.007] | -0.014 [-0.025, -0.003] |
-| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.005 [-0.012, 0.001] | -0.006 [-0.013, 0.000] |
+| ordinary | 1603 | -0.006 [-0.014, 0.001] | -0.004 [-0.011, 0.002] | -0.006 [-0.014, 0.000] |
 | quarter_end | 31 | -0.020 [-0.075, 0.033] | -0.032 [-0.094, 0.022] | 0.006 [-0.026, 0.045] |
 | tax_date | 89 | -0.040 [-0.076, -0.008] | -0.014 [-0.053, 0.025] | -0.036 [-0.083, 0.004] |
 
@@ -4679,8 +4679,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.002 [0.001, 0.003] | 0.001 [0.001, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.003 [0.000, 0.009] | 0.000 [-0.003, 0.003] |
-| 2 | 41 | -0.049 [–] | -0.048 [–] | -0.063 [–] |
-| 3 | 478 | -0.037 [-0.065, -0.012] | -0.026 [-0.051, -0.005] | -0.029 [-0.055, -0.005] |
+| 2 | 41 | -0.049 [–] | -0.048 [–] | -0.064 [–] |
+| 3 | 478 | -0.037 [-0.065, -0.012] | -0.023 [-0.049, -0.002] | -0.030 [-0.056, -0.005] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.269 [-0.429, -0.118] on 26 onsets.
 
@@ -4714,26 +4714,26 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | -0.007 [-0.015, 0.000] |
 | 2 | -0.007 [-0.015, -0.000] |
-| 3 | -0.008 [-0.016, -0.002] |
-| 4 | -0.009 [-0.017, -0.001] |
+| 3 | -0.007 [-0.015, -0.001] |
+| 4 | -0.008 [-0.017, -0.001] |
 | 5 | -0.007 [-0.015, -0.000] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | -0.038 [-0.071, -0.008] | -0.033 [-0.065, -0.006] | -0.035 [-0.067, -0.006] |
+| 2018-19 | 375 | -0.038 [-0.071, -0.008] | -0.030 [-0.061, -0.003] | -0.035 [-0.067, -0.006] |
 | 2020 | 251 | 0.023 [0.004, 0.048] | 0.001 [-0.003, 0.004] | 0.004 [-0.003, 0.011] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.001 [0.000, 0.001] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | -0.001 [-0.010, 0.005] | -0.002 [-0.010, 0.003] | -0.000 [-0.005, 0.003] |
-| 2025-26 | 249 | -0.019 [-0.046, 0.002] | -0.012 [-0.040, 0.010] | -0.005 [-0.031, 0.019] |
+| 2025-26 | 249 | -0.019 [-0.046, 0.002] | -0.012 [-0.039, 0.010] | -0.005 [-0.031, 0.019] |
 
 By day_type, Brier difference at h = 1 / 3 / 5:
 
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.007 [-0.038, 0.024] | -0.011 [-0.033, 0.010] | 0.005 [-0.017, 0.029] |
-| ordinary | 1603 | -0.005 [-0.013, 0.001] | -0.005 [-0.013, 0.000] | -0.006 [-0.013, -0.000] |
+| ordinary | 1603 | -0.005 [-0.013, 0.001] | -0.005 [-0.012, 0.001] | -0.006 [-0.014, -0.000] |
 | quarter_end | 31 | 0.014 [-0.097, 0.130] | -0.048 [-0.154, 0.056] | -0.040 [-0.134, 0.054] |
 | tax_date | 89 | -0.047 [-0.111, 0.003] | -0.036 [-0.097, 0.016] | -0.029 [-0.092, 0.028] |
 
@@ -4744,7 +4744,7 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 | 0 | 1041 | 0.001 [-0.001, 0.002] | 0.002 [0.000, 0.003] | 0.002 [0.001, 0.003] |
 | 1 | 313 | 0.002 [0.000, 0.005] | 0.000 [0.000, 0.001] | -0.002 [-0.006, 0.000] |
 | 2 | 41 | -0.019 [–] | -0.089 [–] | -0.089 [–] |
-| 3 | 478 | -0.029 [-0.059, -0.003] | -0.028 [-0.054, -0.006] | -0.023 [-0.050, 0.002] |
+| 3 | 478 | -0.029 [-0.059, -0.003] | -0.025 [-0.051, -0.003] | -0.023 [-0.051, 0.002] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: -0.269 [-0.429, -0.120] on 26 onsets.
 
@@ -4778,15 +4778,15 @@ Brier difference, reference minus row (positive: the row is better), 90% interva
 |---|---|
 | 1 | 0.000 [-0.000, 0.001] |
 | 2 | -0.000 [-0.002, 0.001] |
-| 3 | 0.001 [0.000, 0.003] |
-| 4 | 0.001 [0.000, 0.003] |
-| 5 | 0.001 [-0.000, 0.003] |
+| 3 | 0.001 [-0.001, 0.003] |
+| 4 | 0.002 [0.000, 0.003] |
+| 5 | 0.001 [-0.000, 0.002] |
 
 By regime, Brier difference at h = 1 / 3 / 5:
 
 | regime | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
-| 2018-19 | 375 | 0.002 [-0.000, 0.006] | 0.007 [0.002, 0.014] | 0.006 [-0.002, 0.014] |
+| 2018-19 | 375 | 0.002 [-0.000, 0.006] | 0.006 [-0.004, 0.015] | 0.005 [-0.002, 0.011] |
 | 2020 | 251 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2021-23 | 748 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 2024 | 250 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
@@ -4797,7 +4797,7 @@ By day_type, Brier difference at h = 1 / 3 / 5:
 | day_type | days | h = 1 | h = 3 | h = 5 |
 |---|---|---|---|---|
 | month_end | 150 | -0.000 [-0.000, 0.000] | -0.000 [-0.000, 0.000] | -0.000 [-0.000, 0.000] |
-| ordinary | 1603 | 0.001 [-0.000, 0.001] | 0.001 [0.000, 0.003] | 0.001 [-0.000, 0.003] |
+| ordinary | 1603 | 0.001 [-0.000, 0.001] | 0.001 [-0.001, 0.003] | 0.001 [-0.001, 0.003] |
 | quarter_end | 31 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | tax_date | 89 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 
@@ -4807,8 +4807,8 @@ By scarcity_state, Brier difference at h = 1 / 3 / 5:
 |---|---|---|---|---|
 | 0 | 1041 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | 1 | 313 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
-| 2 | 41 | -0.002 [–] | -0.003 [-0.006, 0.000] | -0.002 [–] |
-| 3 | 478 | 0.002 [-0.000, 0.005] | 0.005 [0.001, 0.010] | 0.005 [-0.001, 0.010] |
+| 2 | 41 | -0.002 [–] | -0.002 [-0.006, 0.000] | -0.002 [–] |
+| 3 | 478 | 0.002 [-0.000, 0.005] | 0.004 [-0.003, 0.012] | 0.003 [-0.002, 0.009] |
 
 Onset recall difference, row minus reference (each at its own cut-offs, any horizon), pooled: 0.038 [0.000, 0.115] on 26 onsets.
 
@@ -4841,14 +4841,14 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | cell | days | predicted | realised |
 |---|---|---|---|
-| all | 9355 | 0.0153 | 0.0741 |
-| day type month_end | 750 | 0.0387 | 0.1133 |
-| day type ordinary | 8009 | 0.0099 | 0.0627 |
+| all | 9355 | 0.0150 | 0.0741 |
+| day type month_end | 750 | 0.0386 | 0.1133 |
+| day type ordinary | 8009 | 0.0096 | 0.0627 |
 | day type quarter_end | 151 | 0.1053 | 0.2715 |
 | day type tax_date | 445 | 0.0423 | 0.1461 |
-| regime 2018-19 | 1865 | 0.0585 | 0.2697 |
+| regime 2018-19 | 1865 | 0.0573 | 0.2697 |
 | regime 2020 | 1255 | 0.0071 | 0.0159 |
-| regime 2021-23 | 3740 | 0.0009 | 0.0000 |
+| regime 2021-23 | 3740 | 0.0010 | 0.0000 |
 | regime 2024 | 1250 | 0.0001 | 0.0200 |
 | regime 2025-26 | 1245 | 0.0171 | 0.1165 |
 
@@ -4856,27 +4856,27 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | cell | days | predicted | realised |
 |---|---|---|---|
-| all | 9355 | 0.0959 | 0.0741 |
-| day type month_end | 750 | 0.1023 | 0.1133 |
-| day type ordinary | 8009 | 0.0921 | 0.0627 |
+| all | 9355 | 0.0953 | 0.0741 |
+| day type month_end | 750 | 0.1021 | 0.1133 |
+| day type ordinary | 8009 | 0.0915 | 0.0627 |
 | day type quarter_end | 151 | 0.1996 | 0.2715 |
 | day type tax_date | 445 | 0.1168 | 0.1461 |
-| regime 2018-19 | 1865 | 0.2783 | 0.2697 |
-| regime 2020 | 1255 | 0.1562 | 0.0159 |
-| regime 2021-23 | 3740 | 0.0323 | 0.0000 |
-| regime 2024 | 1250 | 0.0065 | 0.0200 |
-| regime 2025-26 | 1245 | 0.0424 | 0.1165 |
+| regime 2018-19 | 1865 | 0.2776 | 0.2697 |
+| regime 2020 | 1255 | 0.1538 | 0.0159 |
+| regime 2021-23 | 3740 | 0.0321 | 0.0000 |
+| regime 2024 | 1250 | 0.0064 | 0.0200 |
+| regime 2025-26 | 1245 | 0.0423 | 0.1165 |
 
 ### risk_logistic+combined
 
 | cell | days | predicted | realised |
 |---|---|---|---|
-| all | 9355 | 0.0160 | 0.0741 |
-| day type month_end | 750 | 0.0392 | 0.1133 |
-| day type ordinary | 8009 | 0.0080 | 0.0627 |
+| all | 9355 | 0.0158 | 0.0741 |
+| day type month_end | 750 | 0.0391 | 0.1133 |
+| day type ordinary | 8009 | 0.0078 | 0.0627 |
 | day type quarter_end | 151 | 0.2212 | 0.2715 |
 | day type tax_date | 445 | 0.0510 | 0.1461 |
-| regime 2018-19 | 1865 | 0.0581 | 0.2697 |
+| regime 2018-19 | 1865 | 0.0570 | 0.2697 |
 | regime 2020 | 1255 | 0.0085 | 0.0159 |
 | regime 2021-23 | 3740 | 0.0010 | 0.0000 |
 | regime 2024 | 1250 | 0.0022 | 0.0200 |
@@ -4886,29 +4886,29 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | cell | days | predicted | realised |
 |---|---|---|---|
-| all | 9355 | 0.0987 | 0.0741 |
-| day type month_end | 750 | 0.1026 | 0.1133 |
-| day type ordinary | 8009 | 0.0920 | 0.0627 |
+| all | 9355 | 0.0981 | 0.0741 |
+| day type month_end | 750 | 0.1023 | 0.1133 |
+| day type ordinary | 8009 | 0.0914 | 0.0627 |
 | day type quarter_end | 151 | 0.3278 | 0.2715 |
 | day type tax_date | 445 | 0.1338 | 0.1461 |
-| regime 2018-19 | 1865 | 0.2886 | 0.2697 |
-| regime 2020 | 1255 | 0.1555 | 0.0159 |
-| regime 2021-23 | 3740 | 0.0324 | 0.0000 |
+| regime 2018-19 | 1865 | 0.2879 | 0.2697 |
+| regime 2020 | 1255 | 0.1531 | 0.0159 |
+| regime 2021-23 | 3740 | 0.0322 | 0.0000 |
 | regime 2024 | 1250 | 0.0106 | 0.0200 |
-| regime 2025-26 | 1245 | 0.0442 | 0.1165 |
+| regime 2025-26 | 1245 | 0.0440 | 0.1165 |
 
 ### risk_gbm+combined_no_factor
 
 | cell | days | predicted | realised |
 |---|---|---|---|
-| all | 9355 | 0.0150 | 0.0741 |
-| day type month_end | 750 | 0.0388 | 0.1133 |
-| day type ordinary | 8009 | 0.0096 | 0.0627 |
+| all | 9355 | 0.0149 | 0.0741 |
+| day type month_end | 750 | 0.0387 | 0.1133 |
+| day type ordinary | 8009 | 0.0094 | 0.0627 |
 | day type quarter_end | 151 | 0.1053 | 0.2715 |
 | day type tax_date | 445 | 0.0423 | 0.1461 |
-| regime 2018-19 | 1865 | 0.0569 | 0.2697 |
+| regime 2018-19 | 1865 | 0.0559 | 0.2697 |
 | regime 2020 | 1255 | 0.0071 | 0.0159 |
-| regime 2021-23 | 3740 | 0.0011 | 0.0000 |
+| regime 2021-23 | 3740 | 0.0012 | 0.0000 |
 | regime 2024 | 1250 | 0.0001 | 0.0200 |
 | regime 2025-26 | 1245 | 0.0171 | 0.1165 |
 
@@ -4916,27 +4916,27 @@ Onset recall difference, row minus reference (each at its own cut-offs, any hori
 
 | cell | days | predicted | realised |
 |---|---|---|---|
-| all | 9355 | 0.0156 | 0.0741 |
-| day type month_end | 750 | 0.0383 | 0.1133 |
-| day type ordinary | 8009 | 0.0103 | 0.0627 |
+| all | 9355 | 0.0154 | 0.0741 |
+| day type month_end | 750 | 0.0382 | 0.1133 |
+| day type ordinary | 8009 | 0.0101 | 0.0627 |
 | day type quarter_end | 151 | 0.1053 | 0.2715 |
 | day type tax_date | 445 | 0.0423 | 0.1461 |
-| regime 2018-19 | 1865 | 0.0607 | 0.2697 |
+| regime 2018-19 | 1865 | 0.0598 | 0.2697 |
 | regime 2020 | 1255 | 0.0071 | 0.0159 |
 | regime 2021-23 | 3740 | 0.0003 | 0.0000 |
-| regime 2024 | 1250 | 0.0004 | 0.0200 |
+| regime 2024 | 1250 | 0.0003 | 0.0200 |
 | regime 2025-26 | 1245 | 0.0178 | 0.1165 |
 
 ### risk_gbm+combined_no_projected
 
 | cell | days | predicted | realised |
 |---|---|---|---|
-| all | 9355 | 0.0154 | 0.0741 |
+| all | 9355 | 0.0153 | 0.0741 |
 | day type month_end | 750 | 0.0386 | 0.1133 |
 | day type ordinary | 8009 | 0.0100 | 0.0627 |
 | day type quarter_end | 151 | 0.1053 | 0.2715 |
 | day type tax_date | 445 | 0.0423 | 0.1461 |
-| regime 2018-19 | 1865 | 0.0619 | 0.2697 |
+| regime 2018-19 | 1865 | 0.0617 | 0.2697 |
 | regime 2020 | 1255 | 0.0071 | 0.0159 |
 | regime 2021-23 | 3740 | 0.0002 | 0.0000 |
 | regime 2024 | 1250 | 0.0001 | 0.0200 |
