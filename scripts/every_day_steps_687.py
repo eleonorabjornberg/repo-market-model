@@ -329,7 +329,9 @@ def run_command(args) -> int:
     missing = [d for d in days if d not in levels_by_day]
     if missing:
         raise SystemExit(f"lead {h}: {len(missing)} scored days are not on the fold grid, the first {missing[0]}")
-    keep = cond.tail_cap([levels_by_day[d] for d in days], off_arm, **{k: declared["steps"]["cap"][k] for k in ("quantile", "window", "minimum_earlier")})
+    # the cap is the one of `every_day_conditioning_601.cap_command`, whose risk dates are the plain panel's (one day at lead 5 differs from the arm's)
+    off = [not ann.risk_flag(splits, by_date[date.fromisoformat(day)].values, True) for day in days]
+    keep = cond.tail_cap([levels_by_day[d] for d in days], off, **{k: declared["steps"]["cap"][k] for k in ("quantile", "window", "minimum_earlier")})
     controls = {s: {k: v for k, v in declared["steps"][s].items() if k != "rule"} for s in ("persist", "gate")}
     forecasts: Dict[str, dict] = {}
     for steps in subsets():
@@ -339,7 +341,6 @@ def run_command(args) -> int:
     # the cut-off is stored with the forecasts at +5 bp, the threshold the page scores
     forecasts[CUT] = {keys[0]: dict(zip(days, [None if c is None else c for c in cut]))}
     # the day-level rows: #624's step 2 (a) with its construction taken apart
-    off = [not ann.risk_flag(splits, by_date[date.fromisoformat(day)].values, True) for day in days]
     scoring = declared["scoring"]
     taus_day = tuple(taus)
     scored, train_ends, outcomes = odr.grid(rows, splits, scoring, h, taus_day, last)
