@@ -143,6 +143,45 @@ class CalibrationTests(unittest.TestCase):
         self.assertAlmostEqual(test.calibrated_level(0.05), 0.07, places=9)
 
 
+class EmpiricalCalibrationCoverageTests(unittest.TestCase):
+    """H1 check 2 under the empirically calibrated critical value (ruling of 13 October 2026, PR #695,
+    comment 6149326627).
+
+    The critical value is calibrated on one set of resampled 250-day windows and its coverage is
+    measured on a fresh set (another seed), so the check is out of sample. The bound covers when the
+    window's studentized mean is at or below the critical value. Check 2 passes when coverage is at
+    least 0.95 on the real series and the iid control still passes.
+    """
+
+    WINDOWS = 20_000
+    #: Three binomial standard errors at the nominal rate, for these windows.
+    WINDOW_TOLERANCE = 3.0 * math.sqrt(0.95 * 0.05 / 20_000)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.real = real_differences()
+        noise = random.Random(5)
+        cls.control = [noise.gauss(0.0, 1.0) for _ in cls.real]
+
+    def coverage(self, series, critical_value):
+        t = sp.window_t_statistics(series, days=DAYS, windows=self.WINDOWS, seed=2)
+        return sum(1 for value in t if value <= critical_value) / len(t)
+
+    def test_the_real_series_own_calibration_covers_out_of_sample(self):
+        c = sp.calibrate_critical_value(self.real, days=DAYS, level=LEVEL, windows=self.WINDOWS, seed=1)
+        self.assertAlmostEqual(self.coverage(self.real, c), 1.0 - LEVEL, delta=self.WINDOW_TOLERANCE)
+
+    def test_check_2_passes_at_the_protocols_value(self):
+        c = sp.CRITICAL_VALUES[DAYS]
+        self.assertGreaterEqual(self.coverage(self.real, c), 1.0 - LEVEL)
+        self.assertGreaterEqual(self.coverage(self.control, c), 1.0 - LEVEL)
+
+    def test_the_control_calibrates_to_its_nominal_rate(self):
+        c = sp.calibrate_critical_value(self.control, days=DAYS, level=LEVEL, windows=self.WINDOWS, seed=1)
+        self.assertAlmostEqual(self.coverage(self.control, c), 1.0 - LEVEL, delta=self.WINDOW_TOLERANCE)
+        self.assertAlmostEqual(c, sp._NORMAL.inv_cdf(1.0 - LEVEL), delta=0.1)
+
+
 #: The coverage measured on the seeds above under the studentized bootstrap, 13 October 2026
 #: (0.81 under the percentile bootstrap it replaced).
 RECORDED_REAL_COVERAGE = 0.8533

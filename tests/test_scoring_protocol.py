@@ -9,10 +9,12 @@ verdict.
 
 from __future__ import annotations
 
+import json
 import math
 import random
 import unittest
 from unittest import mock
+from pathlib import Path
 from datetime import date, datetime, timedelta, timezone
 from statistics import NormalDist
 
@@ -22,6 +24,7 @@ from repo_model.metrics import pinball_loss, stationary_bootstrap_indices
 from repo_model.splits import LookAheadError
 
 NORMAL = NormalDist()
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def weekdays(start, count):
@@ -413,17 +416,69 @@ class CalibrationTests(unittest.TestCase):
         with self.assertRaises(sp.UnresolvedLevel):
             test.lower_mean_difference(1e-4)
 
-    def test_the_protocol_inner_draws(self):
-        self.assertGreaterEqual(sp.INNER_DRAWS, 100)
+class EmpiricalCalibrationTests(unittest.TestCase):
+    """The critical value calibrated on the development history (ruling of 13 October 2026, PR #695,
+    comment 6149326627; a protocol change under §13).
 
-    def test_verdict_refuses_an_uncalibrated_test(self):
-        days = weekdays(date(2015, 1, 2), 250)
-        rng = random.Random(9)
-        b = {day: 1 + 0.05 * rng.gauss(0, 1) for day in days}
-        c = {day: 0.8 + 0.05 * rng.gauss(0, 1) for day in days}
-        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=200)
-        with self.assertRaises(sp.ProtocolError):
-            sp.verdict(tests[0], tests[1], look=3, futility_level=0.05)
+    For a series d and a window length n, windows of n days are drawn from d by circular blocks of
+    10 consecutive days at uniform random starts. Each window's studentized mean
+    `t = (mean_w - mean(d)) / se_w` (Newey-West, lag 10) is computed, and the critical value at
+    level a is the `1 - a` quantile of those t. The bound `mean - c * se` then covers mean(d) on a
+    `1 - a` share of the windows.
+    """
+
+    def setUp(self):
+        rng = random.Random(8)
+        self.series = [rng.gauss(0, 1) + (8.0 if rng.random() < 0.01 else 0.0) for _ in range(400)]
+
+    def naive_t(self, n, windows, seed):
+        rng = random.Random(seed)
+        mean = sum(self.series) / len(self.series)
+        out = []
+        for _ in range(windows):
+            x = []
+            while len(x) < n:
+                start = rng.randrange(len(self.series))
+                x.extend(self.series[(start + k) % len(self.series)] for k in range(10))
+            x = x[:n]
+            out.append((sum(x) / n - mean) / math.sqrt(hac_variance(x) / n))
+        return sorted(out)
+
+    def test_the_window_statistics_match_a_direct_computation(self):
+        got = sp.window_t_statistics(self.series, days=60, windows=50, seed=3)
+        for a, b in zip(got, self.naive_t(60, 50, 3)):
+            self.assertAlmostEqual(a, b, places=9)
+
+    def test_the_critical_value_is_the_quantile(self):
+        ordered = self.naive_t(60, 400, 3)
+        self.assertAlmostEqual(
+            sp.calibrate_critical_value(self.series, days=60, level=0.05, windows=400, seed=3),
+            CalibrationTests.quantile(ordered, 0.95),
+            places=9,
+        )
+
+    def test_a_level_the_windows_cannot_resolve_is_refused(self):
+        with self.assertRaises(sp.UnresolvedLevel):
+            sp.calibrate_critical_value(self.series, days=60, level=0.001, windows=400, seed=3)
+
+    def test_the_bound_at_a_critical_value(self):
+        days = weekdays(date(2015, 1, 2), 100)
+        rng = random.Random(1)
+        b = {day: 1 + rng.random() for day in days}
+        c = {day: 0.9 + rng.random() for day in days}
+        test = sp.paired_test(b, c, seed=1, draws=20)
+        self.assertAlmostEqual(test.lower_bound(2.5), test.mean_difference - 2.5 * test.standard_error)
+
+    def test_the_protocol_values_are_the_recorded_calibration(self):
+        """`CRITICAL_VALUES` is the largest calibrated value across the benchmark pairs, per checkpoint,
+        as `scripts/protocol_coverage.py calibrate` recorded it."""
+
+        record = json.loads((ROOT / "docs" / "research" / "protocol-calibration" / "result.json").read_text())
+        for look, n in enumerate(sp.CHECKPOINTS):
+            recorded = record["protocol_critical_values"][str(n)]
+            with self.subTest(days=n):
+                self.assertEqual(sp.CRITICAL_VALUES[n], recorded)
+        self.assertIsNone(sp.CRITICAL_VALUES[sp.CHECKPOINTS[0]])
 
 
 class DieboldMarianoTests(unittest.TestCase):
@@ -485,45 +540,46 @@ class SpendingTests(unittest.TestCase):
 
 
 class VerdictTests(unittest.TestCase):
-    """Verdicts read calibrated tests. The protocol's draw counts are patched down to keep these fast."""
+    """Verdicts read the calibrated critical values (`CRITICAL_VALUES`), not the bootstrap quantile."""
 
-    def test_from_scores(self):
+    def setUp(self):
         rng = random.Random(9)
-        days = weekdays(date(2015, 1, 2), 250)
+        self.days = weekdays(date(2015, 1, 2), 250)
 
         def scores(level, noise=0.05):
-            return {day: level + noise * rng.gauss(0, 1) for day in days}
+            return {day: level + noise * rng.gauss(0, 1) for day in self.days}
 
-        b1, b2 = scores(1.0), scores(1.2)
-        strong, weak = scores(0.80), scores(0.9999)
-        with mock.patch.object(sp, "INNER_DRAWS", 20):
-            tests = sp.paired_tests(
-                [(b1, strong), (b2, strong), (b1, weak), (b2, weak)], seed=1, draws=500, inner_draws=20
-            )
+        self.b1, self.b2 = scores(1.0), scores(1.2)
+        self.strong, self.weak = scores(0.80), scores(0.9999)
+
+    def test_from_scores(self):
+        tests = sp.paired_tests(
+            [(self.b1, self.strong), (self.b2, self.strong), (self.b1, self.weak), (self.b2, self.weak)],
+            seed=1, draws=200,
+        )
+        self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
+        self.assertEqual(sp.verdict(tests[2], tests[3], look=3, futility_level=0.05), sp.KILLED)
+
+    def test_the_verdict_reads_the_calibrated_value(self):
+        """The same tests are supported under a small critical value and not under one that puts the
+        bound below zero."""
+
+        tests = sp.paired_tests([(self.b1, self.strong), (self.b2, self.strong)], seed=1, draws=200)
+        t_stat = min(t.mean_difference / t.standard_error for t in tests)
+        with mock.patch.dict(sp.CRITICAL_VALUES, {250: t_stat * 0.9}):
             self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
-            self.assertEqual(sp.verdict(tests[2], tests[3], look=3, futility_level=0.05), sp.KILLED)
+        with mock.patch.dict(sp.CRITICAL_VALUES, {250: t_stat * 1.1}):
+            self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
 
-    def test_the_first_look_cannot_be_calibrated(self):
-        """Look 1's nominal level is about 6e-5. A prepivot is a share of the inner draws, so the
-        calibrated level needs more than one prepivot in about 16,000 below 1, which no feasible
-        inner count gives: the bound is refused, not read at the ceiling. A question for Eleonora."""
+    def test_the_first_look_has_no_calibrated_value(self):
+        """Look 1 is not calibrated (Q-B in the pull request): its efficacy bound is refused."""
 
         days = weekdays(date(2015, 1, 2), 60)
         rng = random.Random(2)
         b = {day: 1 + rng.random() for day in days}
         c = {day: 0.5 + 0.2 * rng.random() for day in days}
-        with mock.patch.object(sp, "INTERIM_DRAWS", 2000), mock.patch.object(sp, "INNER_DRAWS", 20):
-            tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=2000, inner_draws=20)
-            with self.assertRaises(sp.UnresolvedLevel):
-                sp.verdict(tests[0], tests[1], look=1, futility_level=0.05)
-
-    def test_an_interim_look_on_too_few_draws_is_refused(self):
-        days = weekdays(date(2015, 1, 2), 60)
-        rng = random.Random(2)
-        b = {day: 1 + rng.random() for day in days}
-        c = {day: 0.5 + 0.2 * rng.random() for day in days}
-        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=1000)
-        with self.assertRaises(sp.ProtocolError):
+        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=100)
+        with self.assertRaises(sp.UnresolvedLevel):
             sp.verdict(tests[0], tests[1], look=1, futility_level=0.05)
 
     def test_a_test_off_the_checkpoint_is_refused(self):
