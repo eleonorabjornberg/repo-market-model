@@ -66,6 +66,23 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(len(names), DECLARED["series"]["count"])
 
 
+class DeclarationOptionTests(unittest.TestCase):
+    """`run` reads the committed declaration it is told to, by default the original (#692).
+
+    A re-run on re-built data (a changed Fed repo take-up column moves the scratch panel's sha256) names its own
+    committed declaration, identical but for the panel's pin. The pin itself stays checked.
+    """
+
+    ARGS = ["run", "--panel", "p.csv", "--output", "o.json", "--matrices", "m"]
+
+    def test_the_default_is_the_original_declaration(self):
+        self.assertEqual(SCRIPT.build_parser().parse_args(self.ARGS).declaration, SCRIPT.DECLARATION)
+
+    def test_another_committed_declaration_can_be_named(self):
+        args = SCRIPT.build_parser().parse_args(self.ARGS + ["--declaration", "metadata/other.json"])
+        self.assertEqual(str(args.declaration), "metadata/other.json")
+
+
 class PanelGuardTests(unittest.TestCase):
     def test_a_panel_past_the_last_day_is_refused(self):
         with self.assertRaises(LookAheadError):

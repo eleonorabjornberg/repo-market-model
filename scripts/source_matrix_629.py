@@ -675,7 +675,7 @@ def make_resamples(splits: Mapping[int, Mapping[str, Sequence[int]]]) -> Dict[Tu
 
 
 def run_command(args) -> int:
-    declared = committed_declaration(DECLARATION)
+    declared = committed_declaration(args.declaration)
     rows = load_daily_panel(args.panel)
     require_panel_window(rows)
     require_no_backfill(rows)
@@ -835,7 +835,7 @@ def run_command(args) -> int:
             "onsets": len(onset_days), "onsets_on_ordinary_days": len(ordinary_onsets), "onset_dates": [d.isoformat() for d in ordinary_onsets],
             "pre_onset_days": sum(pre_flag), "leads": list(LEADS), "series": n_series, "period_regimes": period_labels,
             "regime_days_ordinary": {split: len(idx) for split, idx in split_positions[1].items()},
-            "panel_sha256": panel_sha, "declaration_sha256": hashlib.sha256(DECLARATION.read_bytes()).hexdigest(),
+            "panel_sha256": panel_sha, "declaration_sha256": hashlib.sha256(args.declaration.read_bytes()).hexdigest(),
             "tests": {
                 "matrix_pairs": n_matrix_cells,
                 "spearman_cells": n_series * len(LEADS) * len(TARGETS) * len(split_positions[1]),
@@ -1213,7 +1213,7 @@ def report_command(args) -> int:
     return 0
 
 
-def main(argv=None) -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     declare = sub.add_parser("declare", help="write the declaration (the series list) from the panel, before any statistic")
@@ -1224,12 +1224,18 @@ def main(argv=None) -> int:
     run.add_argument("--output", type=Path, required=True)
     run.add_argument("--matrices", type=Path, required=True, help="directory for the matrices (CSV, JSON) and heatmaps (SVG)")
     run.add_argument("--workers", type=int, default=4)
+    run.add_argument("--declaration", type=Path, default=DECLARATION,
+                     help="the committed declaration the panel is checked against (a re-run on re-built data names its own, #692)")
     run.set_defaults(func=run_command)
     report = sub.add_parser("report", help="write the tables")
     report.add_argument("result", type=Path)
     report.add_argument("--output", type=Path, required=True)
     report.set_defaults(func=report_command)
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv=None) -> int:
+    args = build_parser().parse_args(argv)
     return args.func(args)
 
 
