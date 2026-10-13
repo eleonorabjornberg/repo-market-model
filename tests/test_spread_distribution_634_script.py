@@ -101,6 +101,32 @@ class OnGridTests(unittest.TestCase):
         self.assertGreater(out[-1], self.LAW[-1])
 
 
+class FiveLevelTests(unittest.TestCase):
+    """B3 is scored on its own five levels, as a secondary benchmark (Eleonora, #660 and #700): no placement on the grid."""
+
+    def test_a_grid_law_is_read_at_the_five_published_levels_exactly(self):
+        law = [float(k) for k in range(len(sp.GRID))]
+        five = script.five_levels(law)
+        self.assertEqual(five, [law[sp.GRID.index(level)] for level in script.REPORT_LEVELS])
+
+    def test_a_five_level_law_is_kept_as_it_is(self):
+        law = [-6.0, -3.0, -1.0, 0.0, 4.0]
+        self.assertEqual(script.five_levels(law), law)
+
+    def test_any_other_length_is_refused(self):
+        with self.assertRaises(ValueError):
+            script.five_levels([0.0] * 7)
+
+    def test_the_five_level_score_is_twice_the_mean_pinball_over_the_five_levels(self):
+        law = [-6.0, -3.0, -1.0, 0.0, 4.0]
+        expected = 2.0 * sum(script.pinball(level, q, 1.5) for level, q in zip(script.REPORT_LEVELS, law)) / 5.0
+        self.assertAlmostEqual(script.five_crps(law, 1.5), expected)
+
+    def test_the_five_level_upper_tail_score_floors_both_at_zero_bp(self):
+        law = [-6.0, -3.0, -1.0, 0.0, 4.0]
+        self.assertAlmostEqual(script.five_twcrps(law, -2.0), script.five_crps([max(q, 0.0) for q in law], 0.0))
+
+
 class LockboxTests(unittest.TestCase):
     def test_a_locked_day_is_refused(self):
         with self.assertRaises(LookAheadError):
