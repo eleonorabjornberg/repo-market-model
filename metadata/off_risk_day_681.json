@@ -1,0 +1,37 @@
+{
+  "status": "declared by the pull request that closes #681 before any score of a reference row; a measurement, not a record. It adds two reference rows to the off-risk-day measurement of #624 (finding #667): CLAUDE.md requires a pressure probability to be stated against climatology and a persistence-logistic model, and #624 stated it against climatology only. Nothing is published: no rule, threshold or declaration changes, no day after 2025-12-31 is scored, and the live record and pin do not move. The days read are 2018-2025, so a result describes that history and does not confirm anything (ruling of 11 October 2026 on #567). Exploration on development data, not a verdict (scoring protocol v1, #640)",
+  "issue": 681,
+  "serves": "H2 (the data we hold carries signal for ordinary-day pressure) and H5",
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5
+  },
+  "bootstrap": {
+    "level": 0.9,
+    "replications": 2000,
+    "block_length": 10,
+    "seed": 624,
+    "resampling": "the judge's stationary bootstrap over the date-ordered days that are not risk dates (metrics.stationary_bootstrap_indices), one resample per replication shared by every cell. A statistic that is undefined on a resample is left out of that cell's draws and counted beside the interval. The reliability fit is bootstrapped for the pooled cell only"
+  },
+  "population": "every scored day of 2018-06-29 to 2025-12-31 at the lead on which announcement_dating_rescore.risk_flag(splits, values, True) is false (the settlement columns and their coupon clause are read at every lead, as the rows are scored), at each lead 1 to 5 apart",
+  "outcome": "the day is a pressure day at +5 bp, the judge's primary threshold and outcome, read from the judge's own fold grid",
+  "statistics": {
+    "auroc": "the chance that a pressure day's forecast is above a non-pressure day's, ties half (pressure_judge.auroc); 0.5 is no ranking",
+    "brier_skill": "1 less the row's Brier score over that of the walk-forward climatology, on the days on which the climatology exists",
+    "walk_forward_climatology": "per judge refit block, the pooled rate of pressure days among the earlier scored days that were not risk dates and whose outcome was observable at the block's fit (probability_calibration.past_positions); none while those days number fewer than 60 (group_calibration.GROUP_MINIMUM_PAIRS). It reads no later day (group_calibration.fit_floor refuses a pair after the fit)",
+    "reliability": "the logistic recalibration of the outcome on the logit of the forecast, by Newton's method, on the days on which the forecast is above 1e-4 (the row forecasts exactly 0 on the others; their number and the pressure days on them are reported beside it). A calibrated forecast has intercept 0 and slope 1; a slope of 0 ranks nothing",
+    "clip": "a forecast is clipped to [1e-4, 1 - 1e-4] before its logit"
+  },
+  "reference_rows": {
+    "persistence_logistic": "the persistence-logistic benchmark of the judge (scripts/pressure_judge.py forecasts: pressure_judge.persistence_logistic_exceedance, a logistic regression of a pressure day at +5 bp on the as-of spread_bps, walk-forward on the judge's fold grid). A probability, so it has every statistic of step 1",
+    "spread_bps_asof": "the raw as-of spread_bps in bp at the decision instant of the day's own lead, read through asof.InformationRule on the 'both' arm of #541 (off_risk_day_624.read_features, with its leakage and staleness guards). A level and not a probability: only its AUROC is a statistic; the Brier skill and the reliability curve are not defined for it and are reported as not applicable"
+  },
+  "pairing": "every probability row of step 1 and step 2 is paired against persistence_logistic on the same days (the same population, the same climatology): the row less persistence_logistic for AUROC and for the Brier skill against the walk-forward climatology, pooled, by the judge's regimes (2018-19, 2020, 2021-23, 2024, 2025-26), by as-of scarcity state, at leads 1 to 5, with a 90% stationary-bootstrap interval from resamples shared by the two rows (the seed and block length of step 1). A positive difference favours the row",
+  "near_empty_cells": "a cell of fewer than 10 pressure days is called near-empty on the page, and a gain that sits only in such cells is reported as such",
+  "no_hindsight_regimes": "the regimes are the judge's, by calendar date; no regime label enters any forecast (ruling on #515)",
+  "published": "nothing"
+}
