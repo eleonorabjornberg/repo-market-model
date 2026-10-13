@@ -1,7 +1,7 @@
 # Archive
 
-These are documents superseded on 30 September 2026. **Nothing here is binding**, and nothing here describes how the
-project works now. The current state is in `CLAUDE.md`, `docs/process/AGENT_CONTRACT.md`, `docs/decisions/` and `docs/pivot/`.
+These are documents superseded on 30 September 2026 and 12 October 2026. **Nothing here is binding**, and nothing here describes how the
+project works now. The current state is in `CLAUDE.md`, `docs/process/AGENT_CONTRACT.md`, `docs/decisions/` and `docs/pivot/next-session.md`, which points to the current direction.
 
 | File | What it was |
 |---|---|
@@ -9,6 +9,8 @@ project works now. The current state is in `CLAUDE.md`, `docs/process/AGENT_CONT
 | [`AGENT_CONTRACT-two-track.md`](AGENT_CONTRACT-two-track.md) | The contract as it stood under the two-track workflow, with each decision's full reasoning. Its interface and data rules were carried into the current `docs/process/AGENT_CONTRACT.md`, and code that cites a section by name finds the reasoning here |
 | [`pull_request_template-two-track.md`](pull_request_template-two-track.md) | The earlier pull-request template |
 | [`directive-02-streamline.md`](directive-02-streamline.md) | A completed directive (the README lead, the Colab notebook, the overview figure, and the status pages folded into `METHODOLOGY.md`), merged as PR #24 |
+| [`pivot-plan-2026-09-30.md`](pivot-plan-2026-09-30.md) | The 30 September plan (`docs/pivot/plan.md`), archived 12 October 2026 (#641): superseded by the research plan H1–H10 and the scoring protocol (#640) |
+| [`directives-2026-09/`](directives-2026-09) | The briefs `01`–`06` of that plan, archived 12 October 2026 (#641) |
 | [`obvious/`](obvious) | Configuration for a coding tool no longer used on the project |
 
 The detailed working logs from before the pivot (round log and error log) are kept outside the repository, in the

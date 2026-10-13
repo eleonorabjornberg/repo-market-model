@@ -1,6 +1,6 @@
 # Pressure-day judge (#375)
 
-Mode: development. Declaration `metadata/pressure_judge.json` sha256 `6bf8f9de81aa…`. Scored days 2018-06-29 to 2025-12-31. Pass rule: tier 1 (onset warning) at lead >= 1, tier 3 (no crying wolf) at every lead, and tier 5 (week-ahead window), at +5 bp; 90% stationary bootstrap intervals.
+Mode: development. Declaration `metadata/pressure_judge.json` sha256 `992ae13f56e3…`. Scored days 2018-06-29 to 2025-12-31. Pass rule: tier 1 (onset warning) at lead >= 1, tier 3 (no crying wolf) at every lead, and tier 5 (week-ahead window), at +5 bp; 90% stationary bootstrap intervals.
 
 ## calendar_climatology (benchmark): FAIL at +5 bp
 
@@ -205,6 +205,74 @@ Knowledge holdouts at h = 1 (descriptive):
 |---|---|---|---|---|---|---|
 | sep-2019 | 5 | 5 | 1.000 | 1.000 | 0.1286 | 0.4822 |
 | mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2328 | 0.2213 |
+
+## published_v1 (baseline): FAIL at +5 bp
+
+Tier 1 no, tier 3 yes, tier 5 no. Scarce regime alone (state >= 2, reported only): fail (tier 1 no, tier 3 yes, tier 5 no; 23 onsets).
+
+| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
+|---|---|---|---|---|---|---|
+| lead_at_least_1 | 26 | 2 | 0.077 [0.000, 0.185] | 0.231 | 3.92 flat / 1.47 weighted | recall no, recall_above_climatology no, false_alarms no |
+| lead_at_least_3 | 26 | 2 | 0.077 [0.000, 0.185] | 0.231 | 2.65 flat / 1.04 weighted | reported only; meets far recall: no |
+
+Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
+
+| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
+|---|---|---|---|---|---|
+| lead 1 alone (fail) | 26 | 2 | 0.077 [0.000, 0.185] | 2.346 [1.409, 3.561] | 0.788 [0.431, 1.250] |
+| lead 2 alone (fail) | 26 | 0 | 0.000 [0.000, 0.000] | 1.538 [0.833, 2.548] | 0.481 [0.261, 0.786] |
+| lead 3 alone (fail) | 26 | 0 | 0.000 [0.000, 0.000] | 1.192 [0.562, 2.077] | 0.385 [0.183, 0.663] |
+| lead 4 alone (fail) | 26 | 2 | 0.077 [0.000, 0.185] | 1.269 [0.407, 2.364] | 0.538 [0.146, 1.042] |
+| lead 5 alone (fail) | 26 | 2 | 0.077 [0.000, 0.185] | 1.462 [0.581, 2.618] | 0.615 [0.212, 1.159] |
+| inside 2018-2019 | 17 | 2 | 0.118 [0.000, 0.280] | 4.529 [2.666, 7.418] | 1.779 [0.909, 3.132] |
+| outside 2018-2019 | 9 | 0 | 0.000 [0.000, 0.000] | 2.778 [0.916, 6.167] | 0.889 [0.273, 1.938] |
+
+Recall with equal weight per regime: 0.029 (2018-19 2/17, 2020 0/2, 2024 0/2, 2025-26 0/5).
+
+| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.445 (147 of 1873 days never flag) | 123 | 0.443 | 0.504 | 0.0496 | +0.0219 [+0.0139, +0.0309] | +0.0068 [+0.0022, +0.0122] | 0.898 | 0.408 | yes |
+| 2 | 0.41 (231 of 1872 days never flag) | 85 | 0.324 | 0.529 | 0.0530 | +0.0180 [+0.0112, +0.0255] | +0.0080 [+0.0029, +0.0135] | 0.881 | 0.301 | yes |
+| 3 | 0.539 (147 of 1871 days never flag) | 62 | 0.225 | 0.500 | 0.0541 | +0.0166 [+0.0099, +0.0244] | +0.0103 [+0.0052, +0.0164] | 0.887 | 0.207 | yes |
+| 4 | 0.25 (1785 of 1870 days never flag) | 48 | 0.109 | 0.312 | 0.0567 | +0.0141 [+0.0078, +0.0213] | +0.0057 [+0.0011, +0.0112] | 0.871 | 0.090 | yes |
+| 5 | 0.387 (1764 of 1869 days never flag) | 57 | 0.138 | 0.333 | 0.0574 | +0.0136 [+0.0066, +0.0208] | +0.0060 [+0.0007, +0.0117] | 0.876 | 0.116 | yes |
+
+Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
+
+- h = 1: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 yes, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 2: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 yes, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 yes, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 yes, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 yes, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.712 (climatology 0.512, difference +0.1996 [+0.0727, +0.2914]); meets 0.75: no, beats climatology: yes.
+
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0856, ΔBrier vs climatology +0.0439 [+0.0302, +0.0598], realised minus predicted +0.0422 [+0.0127, +0.0756]; calibrated no, beats_climatology_brier yes.
+
+By group at h = 1:
+
+| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
+|---|---|---|---|---|---|---|---|---|
+| regime | 2018-19 | 375 | 102 | 0.510 | 0.515 | 0.2612 | 0.2720 | +0.0460 [+0.0127, +0.0833] |
+| regime | 2020 | 251 | 4 | 0.000 | 0.000 | 0.0935 | 0.0159 | +0.0328 [+0.0266, +0.0391] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0320 | 0.0000 | +0.0127 [+0.0111, +0.0144] |
+| regime | 2024 | 250 | 5 | 0.000 | 0.000 | 0.0255 | 0.0200 | +0.0010 [-0.0043, +0.0050] |
+| regime | 2025-26 | 249 | 29 | 0.345 | 0.526 | 0.1116 | 0.1165 | +0.0229 [-0.0053, +0.0574] |
+| scarcity_state | 0 | 1041 | 5 | 0.000 | 0.000 | 0.0293 | 0.0048 | +0.0080 [+0.0061, +0.0098] |
+| scarcity_state | 1 | 313 | 0 | – | – | 0.0627 | 0.0000 | +0.0267 [+0.0212, +0.0319] |
+| scarcity_state | 2 | 41 | 10 | 0.000 | 0.000 | 0.1266 | 0.2439 | 0.0248 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.496 | 0.517 | 0.2599 | 0.2615 | +0.0485 [+0.0200, +0.0816] |
+| day_type | month_end | 150 | 17 | 0.412 | 0.700 | 0.1021 | 0.1133 | +0.0421 [+0.0202, +0.0713] |
+| day_type | ordinary | 1603 | 101 | 0.465 | 0.452 | 0.0934 | 0.0630 | +0.0169 [+0.0088, +0.0259] |
+| day_type | quarter_end | 31 | 9 | 0.333 | 1.000 | 0.1348 | 0.2903 | +0.0922 [+0.0137, +0.1746] |
+| day_type | tax_date | 89 | 13 | 0.385 | 0.833 | 0.1164 | 0.1461 | +0.0534 [+0.0285, +0.0795] |
+
+Knowledge holdouts at h = 1 (descriptive):
+
+| window | days | events | recall | precision | Brier | climatology Brier |
+|---|---|---|---|---|---|---|
+| sep-2019 | 5 | 5 | 1.000 | 1.000 | 0.1018 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.000 | 0.000 | 0.2480 | 0.2213 |
 
 ## risk_gbm (candidate): FAIL at +5 bp
 
@@ -416,135 +484,135 @@ Tier 1 yes, tier 3 no, tier 5 no. Scarce regime alone (state >= 2, reported only
 
 | tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
 |---|---|---|---|---|---|---|
-| lead_at_least_1 | 26 | 15 | 0.577 [0.400, 0.762] | 0.192 | 1.85 flat / 1.18 weighted | recall yes, recall_above_climatology yes, false_alarms yes |
-| lead_at_least_3 | 26 | 12 | 0.462 [0.286, 0.643] | 0.115 | 1.35 flat / 0.83 weighted | reported only; meets far recall: yes |
+| lead_at_least_1 | 26 | 15 | 0.577 [0.400, 0.762] | 0.192 | 1.81 flat / 1.17 weighted | recall yes, recall_above_climatology yes, false_alarms yes |
+| lead_at_least_3 | 26 | 12 | 0.462 [0.286, 0.643] | 0.154 | 1.54 flat / 0.96 weighted | reported only; meets far recall: yes |
 
 Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
 
 | tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
 |---|---|---|---|---|---|
-| lead 1 alone (pass) | 26 | 13 | 0.500 [0.323, 0.688] | 1.385 [0.961, 2.053] | 0.788 [0.482, 1.278] |
-| lead 2 alone (fail) | 26 | 12 | 0.462 [0.286, 0.656] | 0.846 [0.516, 1.346] | 0.433 [0.242, 0.736] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.190, 0.526] | 0.962 [0.609, 1.529] | 0.529 [0.289, 0.929] |
-| lead 4 alone (fail) | 26 | 10 | 0.385 [0.211, 0.571] | 0.846 [0.520, 1.333] | 0.529 [0.295, 0.891] |
-| lead 5 alone (fail) | 26 | 11 | 0.423 [0.250, 0.607] | 0.885 [0.550, 1.381] | 0.510 [0.281, 0.859] |
-| inside 2018-2019 | 17 | 10 | 0.588 [0.367, 0.824] | 1.235 [0.750, 2.083] | 0.544 [0.290, 1.000] |
-| outside 2018-2019 | 9 | 5 | 0.556 [0.200, 0.875] | 3.000 [1.778, 6.500] | 2.389 [1.268, 5.750] |
+| lead 1 alone (pass) | 26 | 13 | 0.500 [0.323, 0.688] | 1.269 [0.865, 1.900] | 0.731 [0.452, 1.188] |
+| lead 2 alone (fail) | 26 | 11 | 0.423 [0.250, 0.611] | 0.846 [0.519, 1.320] | 0.433 [0.250, 0.726] |
+| lead 3 alone (fail) | 26 | 11 | 0.423 [0.261, 0.600] | 1.231 [0.833, 1.864] | 0.692 [0.414, 1.118] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.158, 0.474] | 0.846 [0.512, 1.375] | 0.510 [0.277, 0.898] |
+| lead 5 alone (fail) | 26 | 11 | 0.423 [0.250, 0.607] | 0.731 [0.429, 1.167] | 0.452 [0.235, 0.774] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.367, 0.824] | 1.176 [0.696, 2.000] | 0.529 [0.281, 1.000] |
+| outside 2018-2019 | 9 | 5 | 0.556 [0.200, 0.875] | 3.000 [1.777, 6.400] | 2.389 [1.300, 5.750] |
 
 Recall with equal weight per regime: 0.397 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 5/5).
 
 | h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 0.107 (105 of 1873 days never flag) | 78 | 0.300 | 0.538 | 0.0571 | +0.0143 [+0.0088, +0.0198] | -0.0008 [-0.0091, +0.0069] | 0.643 | 0.279 | no |
-| 2 | 0.111 (147 of 1872 days never flag) | 61 | 0.281 | 0.639 | 0.0586 | +0.0125 [+0.0071, +0.0173] | +0.0025 [-0.0049, +0.0089] | 0.640 | 0.268 | no |
-| 3 | 0.115 (147 of 1871 days never flag) | 65 | 0.290 | 0.615 | 0.0594 | +0.0113 [+0.0060, +0.0164] | +0.0050 [-0.0015, +0.0108] | 0.637 | 0.275 | no |
-| 4 | 0.12 (147 of 1870 days never flag) | 60 | 0.275 | 0.633 | 0.0582 | +0.0126 [+0.0076, +0.0175] | +0.0042 [-0.0021, +0.0100] | 0.635 | 0.263 | no |
-| 5 | 0.133 (147 of 1869 days never flag) | 60 | 0.268 | 0.617 | 0.0586 | +0.0123 [+0.0073, +0.0172] | +0.0048 [-0.0013, +0.0105] | 0.633 | 0.255 | no |
+| 1 | 0.0833 (105 of 1873 days never flag) | 75 | 0.300 | 0.560 | 0.0574 | +0.0140 [+0.0084, +0.0196] | -0.0011 [-0.0094, +0.0068] | 0.643 | 0.281 | no |
+| 2 | 0.111 (147 of 1872 days never flag) | 60 | 0.273 | 0.633 | 0.0588 | +0.0122 [+0.0070, +0.0170] | +0.0022 [-0.0049, +0.0083] | 0.639 | 0.261 | no |
+| 3 | 0.129 (147 of 1871 days never flag) | 72 | 0.290 | 0.556 | 0.0593 | +0.0114 [+0.0061, +0.0165] | +0.0051 [-0.0014, +0.0110] | 0.637 | 0.271 | no |
+| 4 | 0.108 (147 of 1870 days never flag) | 58 | 0.261 | 0.621 | 0.0588 | +0.0121 [+0.0070, +0.0171] | +0.0036 [-0.0028, +0.0097] | 0.634 | 0.248 | no |
+| 5 | 0.12 (147 of 1869 days never flag) | 56 | 0.268 | 0.661 | 0.0578 | +0.0132 [+0.0082, +0.0181] | +0.0056 [-0.0003, +0.0114] | 0.634 | 0.257 | no |
 
 Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
 
-- h = 1: scarcity_state_0: 1.7 over 1041 days; regime_2021-23: 0.7 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 1: scarcity_state_0: 1.5 over 1041 days; regime_2021-23: 0.3 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
 - h = 2: scarcity_state_0: 0.5 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
-- h = 3: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
-- h = 4: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.3 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
-- h = 5: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 1.2 over 1041 days; regime_2021-23: 0.3 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 1.2 over 1041 days; regime_2021-23: 0.7 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 0.5 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
 
-Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.706 (climatology 0.512, difference +0.1940 [+0.0389, +0.3300]); meets 0.75: no, beats climatology: yes.
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.764 (climatology 0.512, difference +0.2522 [+0.0976, +0.3902]); meets 0.75: yes, beats climatology: yes.
 
-Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0821, ΔBrier vs climatology +0.0474 [+0.0337, +0.0611], realised minus predicted +0.0617 [+0.0342, +0.0931]; calibrated no, beats_climatology_brier yes.
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0815, ΔBrier vs climatology +0.0479 [+0.0344, +0.0614], realised minus predicted +0.0647 [+0.0366, +0.0960]; calibrated no, beats_climatology_brier yes.
 
 By group at h = 1:
 
 | grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
 |---|---|---|---|---|---|---|---|---|
-| regime | 2018-19 | 375 | 102 | 0.304 | 0.608 | 0.0927 | 0.2720 | +0.0044 [-0.0178, +0.0255] |
-| regime | 2020 | 251 | 4 | 0.250 | 0.167 | 0.0083 | 0.0159 | +0.0404 [+0.0317, +0.0486] |
-| regime | 2021-23 | 748 | 0 | – | 0.000 | 0.0009 | 0.0000 | +0.0137 [+0.0120, +0.0156] |
-| regime | 2024 | 250 | 5 | 0.200 | 1.000 | 0.0022 | 0.0200 | +0.0031 [-0.0007, +0.0058] |
-| regime | 2025-26 | 249 | 29 | 0.310 | 0.500 | 0.0481 | 0.1165 | +0.0161 [-0.0010, +0.0381] |
-| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.143 | 0.0024 | 0.0048 | +0.0089 [+0.0072, +0.0106] |
-| scarcity_state | 1 | 313 | 0 | – | – | 0.0012 | 0.0000 | +0.0318 [+0.0252, +0.0382] |
-| scarcity_state | 2 | 41 | 10 | 0.100 | 0.250 | 0.0654 | 0.2439 | -0.0084 (no interval) |
-| scarcity_state | 3 | 478 | 125 | 0.320 | 0.597 | 0.0930 | 0.2615 | +0.0166 [-0.0036, +0.0356] |
-| day_type | month_end | 150 | 17 | 0.706 | 0.500 | 0.0988 | 0.1133 | +0.0520 [+0.0286, +0.0755] |
-| day_type | ordinary | 1603 | 101 | 0.149 | 0.536 | 0.0122 | 0.0630 | +0.0049 [-0.0004, +0.0101] |
-| day_type | quarter_end | 31 | 9 | 0.667 | 0.600 | 0.2194 | 0.2903 | +0.1492 [+0.0706, +0.2227] |
-| day_type | tax_date | 89 | 13 | 0.692 | 0.562 | 0.1001 | 0.1461 | +0.0722 [+0.0427, +0.0972] |
+| regime | 2018-19 | 375 | 102 | 0.304 | 0.633 | 0.0901 | 0.2720 | +0.0049 [-0.0172, +0.0261] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.167 | 0.0069 | 0.0159 | +0.0404 [+0.0316, +0.0489] |
+| regime | 2021-23 | 748 | 0 | – | 0.000 | 0.0007 | 0.0000 | +0.0137 [+0.0121, +0.0157] |
+| regime | 2024 | 250 | 5 | 0.200 | 1.000 | 0.0015 | 0.0200 | +0.0029 [-0.0009, +0.0056] |
+| regime | 2025-26 | 249 | 29 | 0.310 | 0.500 | 0.0462 | 0.1165 | +0.0132 [-0.0037, +0.0350] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.167 | 0.0022 | 0.0048 | +0.0086 [+0.0068, +0.0105] |
+| scarcity_state | 1 | 313 | 0 | – | – | 0.0016 | 0.0000 | +0.0318 [+0.0252, +0.0382] |
+| scarcity_state | 2 | 41 | 10 | 0.100 | 0.250 | 0.0554 | 0.2439 | -0.0113 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.320 | 0.615 | 0.0897 | 0.2615 | +0.0163 [-0.0035, +0.0355] |
+| day_type | month_end | 150 | 17 | 0.706 | 0.545 | 0.0950 | 0.1133 | +0.0495 [+0.0271, +0.0720] |
+| day_type | ordinary | 1603 | 101 | 0.149 | 0.536 | 0.0114 | 0.0630 | +0.0052 [-0.0001, +0.0104] |
+| day_type | quarter_end | 31 | 9 | 0.667 | 0.600 | 0.2041 | 0.2903 | +0.1399 [+0.0543, +0.2200] |
+| day_type | tax_date | 89 | 13 | 0.692 | 0.600 | 0.1015 | 0.1461 | +0.0695 [+0.0361, +0.0979] |
 
 Knowledge holdouts at h = 1 (descriptive):
 
 | window | days | events | recall | precision | Brier | climatology Brier |
 |---|---|---|---|---|---|---|
-| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.5660 | 0.4822 |
-| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2315 | 0.2213 |
+| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.5238 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2424 | 0.2213 |
 
 ## risk_gbm+settle+h41+hinge_roll (candidate): FAIL at +5 bp
 
-Tier 1 no, tier 3 no, tier 5 no. Scarce regime alone (state >= 2, reported only): fail (tier 1 yes, tier 3 no, tier 5 no; 23 onsets).
+Tier 1 yes, tier 3 no, tier 5 no. Scarce regime alone (state >= 2, reported only): fail (tier 1 yes, tier 3 no, tier 5 no; 23 onsets).
 
 | tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
 |---|---|---|---|---|---|---|
-| lead_at_least_1 | 26 | 15 | 0.577 [0.400, 0.760] | 0.192 | 2.04 flat / 1.38 weighted | recall yes, recall_above_climatology yes, false_alarms no |
-| lead_at_least_3 | 26 | 12 | 0.462 [0.281, 0.654] | 0.154 | 1.54 flat / 1.04 weighted | reported only; meets far recall: yes |
+| lead_at_least_1 | 26 | 15 | 0.577 [0.400, 0.760] | 0.192 | 1.77 flat / 1.12 weighted | recall yes, recall_above_climatology yes, false_alarms yes |
+| lead_at_least_3 | 26 | 12 | 0.462 [0.286, 0.667] | 0.115 | 1.35 flat / 0.83 weighted | reported only; meets far recall: yes |
 
 Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
 
 | tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
 |---|---|---|---|---|---|
-| lead 1 alone (pass) | 26 | 13 | 0.500 [0.333, 0.677] | 1.346 [0.903, 1.955] | 0.731 [0.443, 1.171] |
-| lead 2 alone (fail) | 26 | 12 | 0.462 [0.286, 0.654] | 0.808 [0.467, 1.273] | 0.394 [0.205, 0.659] |
-| lead 3 alone (fail) | 26 | 9 | 0.346 [0.185, 0.529] | 0.923 [0.561, 1.438] | 0.490 [0.272, 0.837] |
-| lead 4 alone (fail) | 26 | 10 | 0.385 [0.208, 0.579] | 0.846 [0.500, 1.333] | 0.529 [0.295, 0.895] |
-| lead 5 alone (fail) | 26 | 11 | 0.423 [0.250, 0.619] | 1.077 [0.615, 1.792] | 0.721 [0.362, 1.315] |
-| inside 2018-2019 | 17 | 10 | 0.588 [0.381, 0.812] | 1.294 [0.759, 2.091] | 0.574 [0.298, 1.021] |
-| outside 2018-2019 | 9 | 5 | 0.556 [0.200, 0.889] | 3.444 [1.998, 8.000] | 2.889 [1.470, 7.375] |
+| lead 1 alone (pass) | 26 | 13 | 0.500 [0.333, 0.677] | 1.231 [0.806, 1.800] | 0.673 [0.405, 1.087] |
+| lead 2 alone (fail) | 26 | 12 | 0.462 [0.281, 0.667] | 0.808 [0.462, 1.278] | 0.423 [0.221, 0.711] |
+| lead 3 alone (fail) | 26 | 10 | 0.385 [0.231, 0.571] | 1.000 [0.621, 1.526] | 0.519 [0.295, 0.859] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.151, 0.480] | 0.731 [0.417, 1.167] | 0.394 [0.194, 0.691] |
+| lead 5 alone (fail) | 26 | 11 | 0.423 [0.250, 0.619] | 0.846 [0.522, 1.316] | 0.538 [0.292, 0.917] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.381, 0.812] | 1.235 [0.706, 2.000] | 0.559 [0.286, 1.000] |
+| outside 2018-2019 | 9 | 5 | 0.556 [0.200, 0.889] | 2.778 [1.619, 6.000] | 2.167 [1.115, 5.250] |
 
 Recall with equal weight per regime: 0.397 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 5/5).
 
 | h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 0.107 (105 of 1873 days never flag) | 76 | 0.293 | 0.539 | 0.0574 | +0.0140 [+0.0084, +0.0195] | -0.0010 [-0.0094, +0.0067] | 0.643 | 0.273 | no |
-| 2 | 0.111 (147 of 1872 days never flag) | 61 | 0.288 | 0.656 | 0.0585 | +0.0126 [+0.0073, +0.0176] | +0.0026 [-0.0046, +0.0094] | 0.640 | 0.276 | no |
-| 3 | 0.129 (147 of 1871 days never flag) | 63 | 0.283 | 0.619 | 0.0593 | +0.0113 [+0.0060, +0.0165] | +0.0050 [-0.0014, +0.0110] | 0.638 | 0.269 | no |
-| 4 | 0.12 (147 of 1870 days never flag) | 60 | 0.275 | 0.633 | 0.0585 | +0.0124 [+0.0070, +0.0173] | +0.0039 [-0.0026, +0.0098] | 0.635 | 0.263 | no |
-| 5 | 0.27 (147 of 1869 days never flag) | 65 | 0.268 | 0.569 | 0.0591 | +0.0118 [+0.0071, +0.0164] | +0.0043 [-0.0018, +0.0101] | 0.633 | 0.252 | no |
+| 1 | 0.107 (105 of 1873 days never flag) | 74 | 0.300 | 0.568 | 0.0577 | +0.0137 [+0.0083, +0.0188] | -0.0014 [-0.0095, +0.0062] | 0.643 | 0.282 | no |
+| 2 | 0.111 (147 of 1872 days never flag) | 60 | 0.281 | 0.650 | 0.0592 | +0.0119 [+0.0067, +0.0167] | +0.0019 [-0.0053, +0.0083] | 0.640 | 0.268 | no |
+| 3 | 0.129 (147 of 1871 days never flag) | 65 | 0.283 | 0.600 | 0.0597 | +0.0110 [+0.0058, +0.0161] | +0.0047 [-0.0016, +0.0108] | 0.637 | 0.268 | no |
+| 4 | 0.108 (147 of 1870 days never flag) | 53 | 0.246 | 0.642 | 0.0589 | +0.0119 [+0.0066, +0.0169] | +0.0035 [-0.0033, +0.0094] | 0.634 | 0.235 | no |
+| 5 | 0.12 (147 of 1869 days never flag) | 59 | 0.268 | 0.627 | 0.0583 | +0.0126 [+0.0079, +0.0171] | +0.0051 [-0.0011, +0.0108] | 0.633 | 0.255 | no |
 
 Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
 
 - h = 1: scarcity_state_0: 1.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
 - h = 2: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
 - h = 3: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.3 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
-- h = 4: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.3 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
-- h = 5: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 0.5 over 1041 days; regime_2021-23: 0.3 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
 
-Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.706 (climatology 0.512, difference +0.1940 [+0.0329, +0.3252]); meets 0.75: no, beats climatology: yes.
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.746 (climatology 0.512, difference +0.2340 [+0.0705, +0.3713]); meets 0.75: no, beats climatology: yes.
 
-Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0830, ΔBrier vs climatology +0.0465 [+0.0336, +0.0603], realised minus predicted +0.0632 [+0.0336, +0.0943]; calibrated no, beats_climatology_brier yes.
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0822, ΔBrier vs climatology +0.0472 [+0.0349, +0.0609], realised minus predicted +0.0662 [+0.0371, +0.0976]; calibrated no, beats_climatology_brier yes.
 
 By group at h = 1:
 
 | grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
 |---|---|---|---|---|---|---|---|---|
-| regime | 2018-19 | 375 | 102 | 0.304 | 0.596 | 0.0947 | 0.2720 | +0.0042 [-0.0180, +0.0249] |
-| regime | 2020 | 251 | 4 | 0.250 | 0.167 | 0.0150 | 0.0159 | +0.0380 [+0.0285, +0.0469] |
-| regime | 2021-23 | 748 | 0 | – | – | 0.0004 | 0.0000 | +0.0138 [+0.0120, +0.0157] |
-| regime | 2024 | 250 | 5 | 0.000 | 0.000 | 0.0010 | 0.0200 | +0.0014 [-0.0033, +0.0051] |
-| regime | 2025-26 | 249 | 29 | 0.310 | 0.529 | 0.0411 | 0.1165 | +0.0181 [+0.0006, +0.0398] |
-| scarcity_state | 0 | 1041 | 5 | 0.000 | 0.000 | 0.0013 | 0.0048 | +0.0088 [+0.0070, +0.0105] |
-| scarcity_state | 1 | 313 | 0 | – | – | 0.0013 | 0.0000 | +0.0318 [+0.0253, +0.0382] |
-| scarcity_state | 2 | 41 | 10 | 0.100 | 0.250 | 0.0458 | 0.2439 | -0.0015 (no interval) |
-| scarcity_state | 3 | 478 | 125 | 0.320 | 0.588 | 0.0971 | 0.2615 | +0.0152 [-0.0049, +0.0346] |
-| day_type | month_end | 150 | 17 | 0.706 | 0.545 | 0.0936 | 0.1133 | +0.0530 [+0.0287, +0.0774] |
-| day_type | ordinary | 1603 | 101 | 0.149 | 0.500 | 0.0130 | 0.0630 | +0.0047 [-0.0006, +0.0095] |
-| day_type | quarter_end | 31 | 9 | 0.556 | 0.625 | 0.2014 | 0.2903 | +0.1346 [+0.0572, +0.2116] |
-| day_type | tax_date | 89 | 13 | 0.692 | 0.562 | 0.1005 | 0.1461 | +0.0752 [+0.0498, +0.1012] |
+| regime | 2018-19 | 375 | 102 | 0.304 | 0.620 | 0.0918 | 0.2720 | +0.0042 [-0.0178, +0.0247] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.167 | 0.0137 | 0.0159 | +0.0383 [+0.0299, +0.0468] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0002 | 0.0000 | +0.0138 [+0.0121, +0.0157] |
+| regime | 2024 | 250 | 5 | 0.200 | 1.000 | 0.0006 | 0.0200 | +0.0016 [-0.0030, +0.0052] |
+| regime | 2025-26 | 249 | 29 | 0.310 | 0.529 | 0.0435 | 0.1165 | +0.0149 [-0.0003, +0.0329] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.250 | 0.0011 | 0.0048 | +0.0088 [+0.0070, +0.0106] |
+| scarcity_state | 1 | 313 | 0 | – | – | 0.0014 | 0.0000 | +0.0318 [+0.0253, +0.0382] |
+| scarcity_state | 2 | 41 | 10 | 0.100 | 0.250 | 0.0526 | 0.2439 | -0.0043 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.320 | 0.606 | 0.0947 | 0.2615 | +0.0140 [-0.0051, +0.0326] |
+| day_type | month_end | 150 | 17 | 0.706 | 0.571 | 0.0926 | 0.1133 | +0.0484 [+0.0251, +0.0710] |
+| day_type | ordinary | 1603 | 101 | 0.149 | 0.536 | 0.0122 | 0.0630 | +0.0049 [-0.0003, +0.0096] |
+| day_type | quarter_end | 31 | 9 | 0.667 | 0.667 | 0.2009 | 0.2903 | +0.1332 [+0.0564, +0.2107] |
+| day_type | tax_date | 89 | 13 | 0.692 | 0.562 | 0.1047 | 0.1461 | +0.0721 [+0.0439, +0.0989] |
 
 Knowledge holdouts at h = 1 (descriptive):
 
 | window | days | events | recall | precision | Brier | climatology Brier |
 |---|---|---|---|---|---|---|
-| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.5730 | 0.4822 |
-| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2025 | 0.2213 |
+| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.5223 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2131 | 0.2213 |
 
 ## risk_gbm_base (candidate): FAIL at +5 bp
 
@@ -756,30 +824,30 @@ Tier 1 yes, tier 3 no, tier 5 no. Scarce regime alone (state >= 2, reported only
 
 | tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
 |---|---|---|---|---|---|---|
-| lead_at_least_1 | 26 | 15 | 0.577 [0.387, 0.760] | 0.192 | 1.77 flat / 1.18 weighted | recall yes, recall_above_climatology yes, false_alarms yes |
-| lead_at_least_3 | 26 | 10 | 0.385 [0.208, 0.577] | 0.154 | 1.58 flat / 1.05 weighted | reported only; meets far recall: yes |
+| lead_at_least_1 | 26 | 15 | 0.577 [0.387, 0.760] | 0.154 | 1.46 flat / 0.88 weighted | recall yes, recall_above_climatology yes, false_alarms yes |
+| lead_at_least_3 | 26 | 10 | 0.385 [0.208, 0.577] | 0.115 | 1.19 flat / 0.69 weighted | reported only; meets far recall: yes |
 
 Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
 
 | tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
 |---|---|---|---|---|---|
-| lead 1 alone (pass) | 26 | 14 | 0.538 [0.357, 0.720] | 1.038 [0.667, 1.591] | 0.510 [0.278, 0.893] |
-| lead 2 alone (fail) | 26 | 10 | 0.385 [0.211, 0.560] | 1.038 [0.639, 1.609] | 0.538 [0.294, 0.930] |
-| lead 3 alone (fail) | 26 | 8 | 0.308 [0.148, 0.478] | 1.038 [0.636, 1.667] | 0.615 [0.331, 1.109] |
-| lead 4 alone (fail) | 26 | 9 | 0.346 [0.176, 0.524] | 1.115 [0.690, 1.773] | 0.692 [0.398, 1.207] |
-| lead 5 alone (fail) | 26 | 10 | 0.385 [0.200, 0.567] | 1.308 [0.806, 2.105] | 0.837 [0.464, 1.488] |
-| inside 2018-2019 | 17 | 10 | 0.588 [0.357, 0.818] | 1.294 [0.722, 2.214] | 0.647 [0.304, 1.273] |
-| outside 2018-2019 | 9 | 5 | 0.556 (no interval) | 2.667 (no interval) | 2.194 (no interval) |
+| lead 1 alone (pass) | 26 | 15 | 0.577 [0.387, 0.760] | 1.038 [0.654, 1.588] | 0.538 [0.307, 0.910] |
+| lead 2 alone (fail) | 26 | 10 | 0.385 [0.208, 0.556] | 1.038 [0.640, 1.611] | 0.538 [0.295, 0.934] |
+| lead 3 alone (fail) | 26 | 9 | 0.346 [0.176, 0.520] | 1.038 [0.643, 1.637] | 0.558 [0.304, 0.968] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.154, 0.476] | 0.885 [0.525, 1.423] | 0.519 [0.270, 0.938] |
+| lead 5 alone (fail) | 26 | 9 | 0.346 [0.176, 0.524] | 0.808 [0.480, 1.300] | 0.471 [0.250, 0.827] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.357, 0.818] | 1.235 [0.706, 2.077] | 0.588 [0.292, 1.103] |
+| outside 2018-2019 | 9 | 5 | 0.556 (no interval) | 1.889 (no interval) | 1.417 (no interval) |
 
 Recall with equal weight per regime: 0.397 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 5/5).
 
 | h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 0.107 (105 of 1873 days never flag) | 70 | 0.307 | 0.614 | 0.0582 | +0.0132 [+0.0076, +0.0182] | -0.0019 [-0.0098, +0.0052] | 0.643 | 0.292 | no |
-| 2 | 0.125 (147 of 1872 days never flag) | 65 | 0.273 | 0.585 | 0.0592 | +0.0118 [+0.0065, +0.0170] | +0.0018 [-0.0054, +0.0083] | 0.640 | 0.258 | no |
-| 3 | 0.124 (147 of 1871 days never flag) | 65 | 0.275 | 0.585 | 0.0596 | +0.0111 [+0.0060, +0.0160] | +0.0048 [-0.0013, +0.0105] | 0.637 | 0.260 | no |
-| 4 | 0.209 (147 of 1870 days never flag) | 65 | 0.261 | 0.554 | 0.0598 | +0.0110 [+0.0058, +0.0161] | +0.0025 [-0.0039, +0.0088] | 0.632 | 0.244 | no |
-| 5 | 0.27 (147 of 1869 days never flag) | 70 | 0.261 | 0.514 | 0.0601 | +0.0108 [+0.0056, +0.0158] | +0.0033 [-0.0033, +0.0090] | 0.632 | 0.241 | no |
+| 1 | 0.107 (105 of 1873 days never flag) | 69 | 0.300 | 0.609 | 0.0584 | +0.0131 [+0.0075, +0.0179] | -0.0020 [-0.0101, +0.0050] | 0.643 | 0.284 | no |
+| 2 | 0.125 (147 of 1872 days never flag) | 66 | 0.281 | 0.591 | 0.0605 | +0.0106 [+0.0053, +0.0160] | +0.0006 [-0.0064, +0.0071] | 0.639 | 0.265 | no |
+| 3 | 0.172 (147 of 1871 days never flag) | 65 | 0.275 | 0.585 | 0.0585 | +0.0121 [+0.0072, +0.0168] | +0.0058 [-0.0002, +0.0114] | 0.637 | 0.260 | no |
+| 4 | 0.133 (147 of 1870 days never flag) | 58 | 0.254 | 0.603 | 0.0599 | +0.0109 [+0.0060, +0.0159] | +0.0024 [-0.0039, +0.0084] | 0.632 | 0.240 | no |
+| 5 | 0.12 (147 of 1869 days never flag) | 56 | 0.254 | 0.625 | 0.0594 | +0.0116 [+0.0061, +0.0166] | +0.0040 [-0.0027, +0.0100] | 0.632 | 0.241 | no |
 
 Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
 
@@ -789,34 +857,34 @@ Tier 3 detail (flags per 252 business days in the abundant stretches; calibratio
 - h = 4: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
 - h = 5: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
 
-Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.739 (climatology 0.512, difference +0.2272 [+0.0798, +0.3638]); meets 0.75: no, beats climatology: yes.
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.751 (climatology 0.512, difference +0.2387 [+0.1035, +0.3627]); meets 0.75: yes, beats climatology: yes.
 
-Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0846, ΔBrier vs climatology +0.0449 [+0.0313, +0.0606], realised minus predicted +0.0574 [+0.0290, +0.0903]; calibrated no, beats_climatology_brier yes.
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0840, ΔBrier vs climatology +0.0455 [+0.0325, +0.0603], realised minus predicted +0.0627 [+0.0342, +0.0960]; calibrated no, beats_climatology_brier yes.
 
 By group at h = 1:
 
 | grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
 |---|---|---|---|---|---|---|---|---|
-| regime | 2018-19 | 375 | 102 | 0.294 | 0.612 | 0.0965 | 0.2720 | -0.0027 [-0.0237, +0.0163] |
-| regime | 2020 | 251 | 4 | 0.250 | 0.167 | 0.0150 | 0.0159 | +0.0384 [+0.0285, +0.0477] |
+| regime | 2018-19 | 375 | 102 | 0.304 | 0.620 | 0.0922 | 0.2720 | -0.0018 [-0.0237, +0.0172] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.143 | 0.0138 | 0.0159 | +0.0385 [+0.0293, +0.0475] |
 | regime | 2021-23 | 748 | 0 | – | – | 0.0003 | 0.0000 | +0.0138 [+0.0121, +0.0156] |
 | regime | 2024 | 250 | 5 | 0.000 | – | 0.0002 | 0.0200 | +0.0011 [-0.0041, +0.0053] |
-| regime | 2025-26 | 249 | 29 | 0.414 | 0.800 | 0.0432 | 0.1165 | +0.0222 [+0.0076, +0.0387] |
-| scarcity_state | 0 | 1041 | 5 | 0.000 | – | 0.0003 | 0.0048 | +0.0090 [+0.0070, +0.0108] |
-| scarcity_state | 1 | 313 | 0 | – | – | 0.0028 | 0.0000 | +0.0317 [+0.0247, +0.0383] |
-| scarcity_state | 2 | 41 | 10 | 0.300 | 0.750 | 0.0548 | 0.2439 | 0.0379 (no interval) |
-| scarcity_state | 3 | 478 | 125 | 0.320 | 0.606 | 0.0995 | 0.2615 | +0.0083 [-0.0107, +0.0261] |
-| day_type | month_end | 150 | 17 | 0.706 | 0.571 | 0.0934 | 0.1133 | +0.0409 [+0.0189, +0.0623] |
-| day_type | ordinary | 1603 | 101 | 0.158 | 0.571 | 0.0129 | 0.0630 | +0.0053 [-0.0000, +0.0101] |
-| day_type | quarter_end | 31 | 9 | 0.556 | 0.833 | 0.1853 | 0.2903 | +0.1287 [+0.0454, +0.2085] |
-| day_type | tax_date | 89 | 13 | 0.769 | 0.667 | 0.1184 | 0.1461 | +0.0691 [+0.0459, +0.0941] |
+| regime | 2025-26 | 249 | 29 | 0.345 | 0.833 | 0.0417 | 0.1165 | +0.0196 [+0.0065, +0.0346] |
+| scarcity_state | 0 | 1041 | 5 | 0.000 | – | 0.0002 | 0.0048 | +0.0090 [+0.0070, +0.0108] |
+| scarcity_state | 1 | 313 | 0 | – | 0.000 | 0.0024 | 0.0000 | +0.0317 [+0.0248, +0.0383] |
+| scarcity_state | 2 | 41 | 10 | 0.300 | 1.000 | 0.0447 | 0.2439 | 0.0390 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.312 | 0.600 | 0.0959 | 0.2615 | +0.0076 [-0.0115, +0.0248] |
+| day_type | month_end | 150 | 17 | 0.647 | 0.524 | 0.0914 | 0.1133 | +0.0401 [+0.0182, +0.0613] |
+| day_type | ordinary | 1603 | 101 | 0.158 | 0.593 | 0.0123 | 0.0630 | +0.0054 [+0.0001, +0.0101] |
+| day_type | quarter_end | 31 | 9 | 0.556 | 0.833 | 0.1604 | 0.2903 | +0.1221 [+0.0333, +0.2062] |
+| day_type | tax_date | 89 | 13 | 0.769 | 0.667 | 0.1159 | 0.1461 | +0.0675 [+0.0404, +0.0948] |
 
 Knowledge holdouts at h = 1 (descriptive):
 
 | window | days | events | recall | precision | Brier | climatology Brier |
 |---|---|---|---|---|---|---|
-| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4367 | 0.4822 |
-| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2073 | 0.2213 |
+| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4304 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2158 | 0.2213 |
 
 ## risk_logistic (candidate): FAIL at +5 bp
 
@@ -886,6 +954,142 @@ Knowledge holdouts at h = 1 (descriptive):
 | sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4000 | 0.4822 |
 | mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2020 | 0.2213 |
 
+## risk_logistic+every_day+gate+settle+h41 (candidate): FAIL at +5 bp
+
+Tier 1 no, tier 3 no, tier 5 yes. Scarce regime alone (state >= 2, reported only): fail (tier 1 no, tier 3 no, tier 5 no; 23 onsets).
+
+| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
+|---|---|---|---|---|---|---|
+| lead_at_least_1 | 26 | 14 | 0.538 [0.351, 0.708] | 0.269 | 5.12 flat / 2.32 weighted | recall yes, recall_above_climatology yes, false_alarms no |
+| lead_at_least_3 | 26 | 12 | 0.462 [0.294, 0.625] | 0.231 | 3.38 flat / 1.60 weighted | reported only; meets far recall: yes |
+
+Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
+
+| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
+|---|---|---|---|---|---|
+| lead 1 alone (fail) | 26 | 9 | 0.346 [0.185, 0.500] | 2.500 [1.667, 3.720] | 1.125 [0.738, 1.719] |
+| lead 2 alone (fail) | 26 | 7 | 0.269 [0.125, 0.424] | 1.577 [0.765, 2.678] | 0.587 [0.282, 1.000] |
+| lead 3 alone (fail) | 26 | 5 | 0.192 [0.074, 0.323] | 0.846 [0.469, 1.369] | 0.423 [0.224, 0.739] |
+| lead 4 alone (fail) | 26 | 8 | 0.308 [0.158, 0.458] | 1.423 [0.810, 2.286] | 0.548 [0.321, 0.864] |
+| lead 5 alone (fail) | 26 | 10 | 0.385 [0.219, 0.562] | 2.692 [1.767, 4.000] | 1.269 [0.847, 1.897] |
+| inside 2018-2019 | 17 | 11 | 0.647 [0.417, 0.864] | 5.353 [3.455, 8.308] | 2.162 [1.395, 3.429] |
+| outside 2018-2019 | 9 | 3 | 0.333 (no interval) | 4.667 (no interval) | 2.611 (no interval) |
+
+Recall with equal weight per regime: 0.312 (2018-19 11/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
+
+| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.388 (105 of 1873 days never flag) | 130 | 0.464 | 0.500 | 0.0523 | +0.0191 [+0.0123, +0.0264] | +0.0040 [-0.0014, +0.0097] | 0.801 | 0.427 | no |
+| 2 | 0.875 (126 of 1872 days never flag) | 82 | 0.295 | 0.500 | 0.0557 | +0.0154 [+0.0098, +0.0216] | +0.0054 [+0.0004, +0.0108] | 0.800 | 0.271 | no |
+| 3 | 0.421 (147 of 1871 days never flag) | 52 | 0.217 | 0.577 | 0.0551 | +0.0156 [+0.0100, +0.0211] | +0.0093 [+0.0042, +0.0146] | 0.779 | 0.205 | no |
+| 4 | 0.786 (126 of 1870 days never flag) | 89 | 0.377 | 0.584 | 0.0544 | +0.0164 [+0.0113, +0.0217] | +0.0079 [+0.0035, +0.0127] | 0.805 | 0.355 | no |
+| 5 | 0.334 (126 of 1869 days never flag) | 130 | 0.435 | 0.462 | 0.0548 | +0.0161 [+0.0109, +0.0217] | +0.0086 [+0.0041, +0.0134] | 0.804 | 0.394 | no |
+
+Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
+
+- h = 1: scarcity_state_0: 1.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 2: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 1.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 1.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.700 (climatology 0.512, difference +0.1880 [+0.0711, +0.2804]); meets 0.75: no, beats climatology: yes.
+
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0722, ΔBrier vs climatology +0.0573 [+0.0396, +0.0772], realised minus predicted +0.0195 [-0.0043, +0.0462]; calibrated yes, beats_climatology_brier yes.
+
+By group at h = 1:
+
+| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
+|---|---|---|---|---|---|---|---|---|
+| regime | 2018-19 | 375 | 102 | 0.520 | 0.541 | 0.1820 | 0.2720 | +0.0382 [+0.0132, +0.0653] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.100 | 0.0359 | 0.0159 | +0.0193 [-0.0049, +0.0375] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0042 | 0.0000 | +0.0136 [+0.0119, +0.0156] |
+| regime | 2024 | 250 | 5 | 0.200 | 0.500 | 0.0182 | 0.0200 | +0.0021 [-0.0046, +0.0081] |
+| regime | 2025-26 | 249 | 29 | 0.345 | 0.500 | 0.0821 | 0.1165 | +0.0236 [+0.0017, +0.0507] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.200 | 0.0107 | 0.0048 | +0.0080 [+0.0057, +0.0100] |
+| scarcity_state | 1 | 313 | 0 | – | 0.000 | 0.0059 | 0.0000 | +0.0299 [+0.0235, +0.0359] |
+| scarcity_state | 2 | 41 | 10 | 0.100 | 0.200 | 0.1517 | 0.2439 | 0.0066 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.504 | 0.529 | 0.1802 | 0.2615 | +0.0373 [+0.0146, +0.0618] |
+| day_type | month_end | 150 | 17 | 0.647 | 0.611 | 0.1046 | 0.1133 | +0.0362 [+0.0093, +0.0647] |
+| day_type | ordinary | 1603 | 101 | 0.396 | 0.455 | 0.0422 | 0.0630 | +0.0129 [+0.0066, +0.0200] |
+| day_type | quarter_end | 31 | 9 | 0.667 | 0.545 | 0.3546 | 0.2903 | +0.0906 [+0.0222, +0.1607] |
+| day_type | tax_date | 89 | 13 | 0.615 | 0.615 | 0.1246 | 0.1461 | +0.0764 [+0.0442, +0.1149] |
+
+Knowledge holdouts at h = 1 (descriptive):
+
+| window | days | events | recall | precision | Brier | climatology Brier |
+|---|---|---|---|---|---|---|
+| sep-2019 | 5 | 5 | 1.000 | 1.000 | 0.0000 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 0.333 | 0.3856 | 0.2213 |
+
+## risk_logistic+settle+h41 (candidate): FAIL at +5 bp
+
+Tier 1 no, tier 3 no, tier 5 no. Scarce regime alone (state >= 2, reported only): fail (tier 1 yes, tier 3 no, tier 5 no; 23 onsets).
+
+| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
+|---|---|---|---|---|---|---|
+| lead_at_least_1 | 26 | 15 | 0.577 [0.391, 0.760] | 0.192 | 2.42 flat / 1.77 weighted | recall yes, recall_above_climatology yes, false_alarms no |
+| lead_at_least_3 | 26 | 14 | 0.538 [0.361, 0.714] | 0.192 | 2.00 flat / 1.39 weighted | reported only; meets far recall: yes |
+
+Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
+
+| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
+|---|---|---|---|---|---|
+| lead 1 alone (pass) | 26 | 13 | 0.500 [0.324, 0.682] | 1.731 [1.160, 2.667] | 1.125 [0.687, 1.929] |
+| lead 2 alone (pass) | 26 | 14 | 0.538 [0.361, 0.719] | 1.538 [0.972, 2.450] | 1.000 [0.562, 1.763] |
+| lead 3 alone (fail) | 26 | 9 | 0.346 [0.167, 0.530] | 1.192 [0.697, 1.957] | 0.788 [0.425, 1.412] |
+| lead 4 alone (fail) | 26 | 12 | 0.462 [0.296, 0.633] | 1.577 [1.045, 2.444] | 1.048 [0.641, 1.759] |
+| lead 5 alone (pass) | 26 | 14 | 0.538 [0.364, 0.714] | 1.808 [1.192, 2.790] | 1.202 [0.725, 2.013] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.368, 0.810] | 1.471 [0.870, 2.417] | 0.706 [0.359, 1.333] |
+| outside 2018-2019 | 9 | 5 | 0.556 (no interval) | 4.222 (no interval) | 3.778 (no interval) |
+
+Recall with equal weight per regime: 0.397 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 5/5).
+
+| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.107 (105 of 1873 days never flag) | 88 | 0.307 | 0.489 | 0.0604 | +0.0110 [+0.0058, +0.0158] | -0.0041 [-0.0125, +0.0039] | 0.641 | 0.281 | no |
+| 2 | 0.131 (126 of 1872 days never flag) | 86 | 0.331 | 0.535 | 0.0606 | +0.0105 [+0.0053, +0.0154] | +0.0005 [-0.0068, +0.0073] | 0.639 | 0.308 | no |
+| 3 | 0.421 (147 of 1871 days never flag) | 72 | 0.297 | 0.569 | 0.0593 | +0.0114 [+0.0062, +0.0163] | +0.0051 [-0.0016, +0.0110] | 0.638 | 0.279 | no |
+| 4 | 0.092 (126 of 1870 days never flag) | 82 | 0.297 | 0.500 | 0.0601 | +0.0107 [+0.0055, +0.0154] | +0.0022 [-0.0044, +0.0083] | 0.632 | 0.273 | no |
+| 5 | 0.0786 (126 of 1869 days never flag) | 89 | 0.304 | 0.472 | 0.0602 | +0.0107 [+0.0058, +0.0156] | +0.0032 [-0.0032, +0.0094] | 0.633 | 0.277 | no |
+
+Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
+
+- h = 1: scarcity_state_0: 1.5 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 2: scarcity_state_0: 1.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 1.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 1.9 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 2.2 over 1041 days; regime_2021-23: 0.7 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.700 (climatology 0.512, difference +0.1877 [+0.0672, +0.2856]); meets 0.75: no, beats climatology: yes.
+
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0846, ΔBrier vs climatology +0.0449 [+0.0325, +0.0588], realised minus predicted +0.0458 [+0.0174, +0.0765]; calibrated no, beats_climatology_brier yes.
+
+By group at h = 1:
+
+| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
+|---|---|---|---|---|---|---|---|---|
+| regime | 2018-19 | 375 | 102 | 0.304 | 0.574 | 0.1103 | 0.2720 | -0.0019 [-0.0231, +0.0187] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.067 | 0.0283 | 0.0159 | +0.0266 [+0.0117, +0.0388] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0005 | 0.0000 | +0.0138 [+0.0120, +0.0157] |
+| regime | 2024 | 250 | 5 | 0.200 | 0.500 | 0.0058 | 0.0200 | +0.0050 [+0.0011, +0.0094] |
+| regime | 2025-26 | 249 | 29 | 0.345 | 0.588 | 0.0309 | 0.1165 | +0.0125 [+0.0008, +0.0272] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.167 | 0.0030 | 0.0048 | +0.0094 [+0.0076, +0.0111] |
+| scarcity_state | 1 | 313 | 0 | – | 0.000 | 0.0047 | 0.0000 | +0.0300 [+0.0240, +0.0358] |
+| scarcity_state | 2 | 41 | 10 | 0.100 | 0.250 | 0.0622 | 0.2439 | -0.0335 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.328 | 0.554 | 0.1062 | 0.2615 | +0.0061 [-0.0121, +0.0241] |
+| day_type | month_end | 150 | 17 | 0.765 | 0.481 | 0.1008 | 0.1133 | +0.0305 [+0.0038, +0.0576] |
+| day_type | ordinary | 1603 | 101 | 0.149 | 0.484 | 0.0129 | 0.0630 | +0.0040 [-0.0012, +0.0087] |
+| day_type | quarter_end | 31 | 9 | 0.667 | 0.462 | 0.3546 | 0.2903 | +0.0906 [+0.0189, +0.1627] |
+| day_type | tax_date | 89 | 13 | 0.692 | 0.529 | 0.1246 | 0.1461 | +0.0764 [+0.0461, +0.1173] |
+
+Knowledge holdouts at h = 1 (descriptive):
+
+| window | days | events | recall | precision | Brier | climatology Brier |
+|---|---|---|---|---|---|---|
+| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4000 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2036 | 0.2213 |
+
 ## risk_logistic_base (candidate): FAIL at +5 bp
 
 Tier 1 no, tier 3 no, tier 5 no. Scarce regime alone (state >= 2, reported only): fail (tier 1 yes, tier 3 no, tier 5 no; 23 onsets).
@@ -953,6 +1157,142 @@ Knowledge holdouts at h = 1 (descriptive):
 |---|---|---|---|---|---|---|
 | sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4001 | 0.4822 |
 | mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2040 | 0.2213 |
+
+## risk_logistic_base+every_day+gate+settle+h41 (candidate): FAIL at +5 bp
+
+Tier 1 no, tier 3 no, tier 5 yes. Scarce regime alone (state >= 2, reported only): fail (tier 1 no, tier 3 no, tier 5 no; 23 onsets).
+
+| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
+|---|---|---|---|---|---|---|
+| lead_at_least_1 | 26 | 14 | 0.538 [0.357, 0.714] | 0.269 | 4.88 flat / 2.03 weighted | recall yes, recall_above_climatology yes, false_alarms no |
+| lead_at_least_3 | 26 | 13 | 0.500 [0.333, 0.667] | 0.231 | 3.54 flat / 1.56 weighted | reported only; meets far recall: yes |
+
+Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
+
+| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
+|---|---|---|---|---|---|
+| lead 1 alone (fail) | 26 | 9 | 0.346 [0.194, 0.500] | 2.154 [1.500, 3.133] | 0.865 [0.580, 1.318] |
+| lead 2 alone (fail) | 26 | 9 | 0.346 [0.200, 0.500] | 2.192 [1.312, 3.381] | 0.913 [0.568, 1.420] |
+| lead 3 alone (fail) | 26 | 7 | 0.269 [0.130, 0.417] | 1.154 [0.556, 1.971] | 0.519 [0.250, 0.908] |
+| lead 4 alone (fail) | 26 | 9 | 0.346 [0.188, 0.500] | 2.000 [1.333, 2.969] | 0.885 [0.571, 1.367] |
+| lead 5 alone (fail) | 26 | 8 | 0.308 [0.143, 0.478] | 2.231 [1.378, 3.462] | 1.029 [0.646, 1.600] |
+| inside 2018-2019 | 17 | 11 | 0.647 [0.435, 0.867] | 4.765 [3.000, 7.300] | 1.794 [1.156, 2.773] |
+| outside 2018-2019 | 9 | 3 | 0.333 (no interval) | 5.111 (no interval) | 2.472 (no interval) |
+
+Recall with equal weight per regime: 0.312 (2018-19 11/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
+
+| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.331 (84 of 1873 days never flag) | 118 | 0.443 | 0.525 | 0.0511 | +0.0203 [+0.0136, +0.0273] | +0.0052 [+0.0006, +0.0104] | 0.804 | 0.411 | no |
+| 2 | 0.386 (126 of 1872 days never flag) | 108 | 0.367 | 0.472 | 0.0542 | +0.0169 [+0.0113, +0.0231] | +0.0069 [+0.0020, +0.0124] | 0.802 | 0.334 | no |
+| 3 | 0.446 (126 of 1871 days never flag) | 60 | 0.217 | 0.500 | 0.0555 | +0.0152 [+0.0099, +0.0204] | +0.0089 [+0.0042, +0.0138] | 0.778 | 0.200 | no |
+| 4 | 0.492 (126 of 1870 days never flag) | 110 | 0.420 | 0.527 | 0.0552 | +0.0156 [+0.0107, +0.0207] | +0.0072 [+0.0028, +0.0120] | 0.805 | 0.390 | no |
+| 5 | 0.334 (147 of 1869 days never flag) | 115 | 0.413 | 0.496 | 0.0562 | +0.0147 [+0.0096, +0.0200] | +0.0072 [+0.0029, +0.0121] | 0.802 | 0.380 | no |
+
+Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
+
+- h = 1: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 2: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.700 (climatology 0.512, difference +0.1880 [+0.0929, +0.2860]); meets 0.75: no, beats climatology: yes.
+
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0735, ΔBrier vs climatology +0.0560 [+0.0382, +0.0746], realised minus predicted +0.0170 [-0.0075, +0.0428]; calibrated yes, beats_climatology_brier yes.
+
+By group at h = 1:
+
+| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
+|---|---|---|---|---|---|---|---|---|
+| regime | 2018-19 | 375 | 102 | 0.490 | 0.575 | 0.1825 | 0.2720 | +0.0394 [+0.0143, +0.0681] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.111 | 0.0331 | 0.0159 | +0.0238 [+0.0063, +0.0380] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0040 | 0.0000 | +0.0136 [+0.0118, +0.0156] |
+| regime | 2024 | 250 | 5 | 0.200 | 0.500 | 0.0151 | 0.0200 | +0.0011 [-0.0060, +0.0062] |
+| regime | 2025-26 | 249 | 29 | 0.345 | 0.500 | 0.0805 | 0.1165 | +0.0273 [+0.0044, +0.0556] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.333 | 0.0091 | 0.0048 | +0.0082 [+0.0060, +0.0103] |
+| scarcity_state | 1 | 313 | 0 | – | 0.000 | 0.0082 | 0.0000 | +0.0294 [+0.0232, +0.0351] |
+| scarcity_state | 2 | 41 | 10 | 0.100 | 0.200 | 0.1233 | 0.2439 | 0.0332 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.480 | 0.550 | 0.1809 | 0.2615 | +0.0395 [+0.0157, +0.0645] |
+| day_type | month_end | 150 | 17 | 0.647 | 0.611 | 0.1014 | 0.1133 | +0.0435 [+0.0162, +0.0734] |
+| day_type | ordinary | 1603 | 101 | 0.356 | 0.468 | 0.0419 | 0.0630 | +0.0137 [+0.0074, +0.0205] |
+| day_type | quarter_end | 31 | 9 | 0.778 | 0.700 | 0.3205 | 0.2903 | +0.0964 [+0.0448, +0.1452] |
+| day_type | tax_date | 89 | 13 | 0.615 | 0.615 | 0.1254 | 0.1461 | +0.0736 [+0.0406, +0.1103] |
+
+Knowledge holdouts at h = 1 (descriptive):
+
+| window | days | events | recall | precision | Brier | climatology Brier |
+|---|---|---|---|---|---|---|
+| sep-2019 | 5 | 5 | 1.000 | 1.000 | 0.0000 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 0.333 | 0.3919 | 0.2213 |
+
+## risk_logistic_base+settle+h41 (candidate): FAIL at +5 bp
+
+Tier 1 no, tier 3 no, tier 5 no. Scarce regime alone (state >= 2, reported only): fail (tier 1 yes, tier 3 no, tier 5 no; 23 onsets).
+
+| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
+|---|---|---|---|---|---|---|
+| lead_at_least_1 | 26 | 13 | 0.500 [0.333, 0.684] | 0.192 | 2.12 flat / 1.49 weighted | recall yes, recall_above_climatology yes, false_alarms no |
+| lead_at_least_3 | 26 | 13 | 0.500 [0.322, 0.680] | 0.192 | 1.88 flat / 1.28 weighted | reported only; meets far recall: yes |
+
+Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
+
+| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
+|---|---|---|---|---|---|
+| lead 1 alone (pass) | 26 | 13 | 0.500 [0.333, 0.684] | 1.692 [1.098, 2.625] | 1.087 [0.650, 1.796] |
+| lead 2 alone (pass) | 26 | 13 | 0.500 [0.333, 0.684] | 1.538 [0.966, 2.400] | 0.933 [0.516, 1.583] |
+| lead 3 alone (pass) | 26 | 13 | 0.500 [0.333, 0.684] | 1.654 [1.036, 2.571] | 1.115 [0.629, 1.924] |
+| lead 4 alone (fail) | 26 | 12 | 0.462 [0.303, 0.625] | 1.462 [0.867, 2.357] | 0.962 [0.493, 1.721] |
+| lead 5 alone (fail) | 26 | 10 | 0.385 [0.222, 0.560] | 1.385 [0.829, 2.214] | 0.837 [0.448, 1.472] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.375, 0.812] | 1.471 [0.809, 2.438] | 0.706 [0.337, 1.313] |
+| outside 2018-2019 | 9 | 3 | 0.333 [0.000, 0.636] | 3.333 [1.727, 7.750] | 2.972 [1.455, 7.375] |
+
+Recall with equal weight per regime: 0.297 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
+
+| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.134 (84 of 1873 days never flag) | 89 | 0.321 | 0.506 | 0.0592 | +0.0122 [+0.0071, +0.0170] | -0.0029 [-0.0110, +0.0041] | 0.643 | 0.296 | no |
+| 2 | 0.135 (126 of 1872 days never flag) | 84 | 0.317 | 0.524 | 0.0591 | +0.0120 [+0.0068, +0.0169] | +0.0020 [-0.0048, +0.0086] | 0.640 | 0.293 | no |
+| 3 | 0.446 (126 of 1871 days never flag) | 84 | 0.297 | 0.488 | 0.0597 | +0.0110 [+0.0057, +0.0156] | +0.0047 [-0.0018, +0.0106] | 0.638 | 0.272 | no |
+| 4 | 0.324 (126 of 1870 days never flag) | 75 | 0.268 | 0.493 | 0.0609 | +0.0099 [+0.0046, +0.0145] | +0.0015 [-0.0052, +0.0076] | 0.633 | 0.246 | no |
+| 5 | 0.161 (147 of 1869 days never flag) | 71 | 0.254 | 0.493 | 0.0616 | +0.0093 [+0.0043, +0.0138] | +0.0018 [-0.0049, +0.0077] | 0.633 | 0.233 | no |
+
+Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
+
+- h = 1: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 2: scarcity_state_0: 0.5 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.699 (climatology 0.512, difference +0.1871 [+0.0928, +0.2845]); meets 0.75: no, beats climatology: yes.
+
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0859, ΔBrier vs climatology +0.0436 [+0.0303, +0.0588], realised minus predicted +0.0440 [+0.0139, +0.0747]; calibrated no, beats_climatology_brier yes.
+
+By group at h = 1:
+
+| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
+|---|---|---|---|---|---|---|---|---|
+| regime | 2018-19 | 375 | 102 | 0.314 | 0.561 | 0.1108 | 0.2720 | -0.0007 [-0.0216, +0.0182] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.062 | 0.0255 | 0.0159 | +0.0310 [+0.0218, +0.0401] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0002 | 0.0000 | +0.0138 [+0.0120, +0.0156] |
+| regime | 2024 | 250 | 5 | 0.200 | 1.000 | 0.0027 | 0.0200 | +0.0040 [+0.0003, +0.0069] |
+| regime | 2025-26 | 249 | 29 | 0.379 | 0.733 | 0.0293 | 0.1165 | +0.0162 [+0.0036, +0.0324] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.333 | 0.0013 | 0.0048 | +0.0095 [+0.0080, +0.0110] |
+| scarcity_state | 1 | 313 | 0 | – | 0.000 | 0.0070 | 0.0000 | +0.0295 [+0.0234, +0.0357] |
+| scarcity_state | 2 | 41 | 10 | 0.100 | 0.500 | 0.0338 | 0.2439 | -0.0069 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.344 | 0.558 | 0.1069 | 0.2615 | +0.0083 [-0.0105, +0.0258] |
+| day_type | month_end | 150 | 17 | 0.765 | 0.500 | 0.0976 | 0.1133 | +0.0378 [+0.0124, +0.0646] |
+| day_type | ordinary | 1603 | 101 | 0.158 | 0.485 | 0.0127 | 0.0630 | +0.0048 [-0.0004, +0.0096] |
+| day_type | quarter_end | 31 | 9 | 0.778 | 0.500 | 0.3205 | 0.2903 | +0.0964 [+0.0455, +0.1424] |
+| day_type | tax_date | 89 | 13 | 0.692 | 0.562 | 0.1254 | 0.1461 | +0.0736 [+0.0422, +0.1116] |
+
+Knowledge holdouts at h = 1 (descriptive):
+
+| window | days | events | recall | precision | Brier | climatology Brier |
+|---|---|---|---|---|---|---|
+| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4000 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2099 | 0.2213 |
 
 ## risk_quantile_skewt (candidate): FAIL at +5 bp
 
@@ -1088,5 +1428,141 @@ Knowledge holdouts at h = 1 (descriptive):
 | window | days | events | recall | precision | Brier | climatology Brier |
 |---|---|---|---|---|---|---|
 | sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4054 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2000 | 0.2213 |
+
+## risk_quantile_skewt_base+every_day+gate+settle+h41 (candidate): FAIL at +5 bp
+
+Tier 1 no, tier 3 no, tier 5 yes. Scarce regime alone (state >= 2, reported only): fail (tier 1 no, tier 3 no, tier 5 yes; 23 onsets).
+
+| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
+|---|---|---|---|---|---|---|
+| lead_at_least_1 | 26 | 15 | 0.577 [0.405, 0.743] | 0.269 | 5.54 flat / 2.50 weighted | recall yes, recall_above_climatology yes, false_alarms no |
+| lead_at_least_3 | 26 | 15 | 0.577 [0.393, 0.750] | 0.238 | 4.31 flat / 1.90 weighted | reported only; meets far recall: yes |
+
+Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
+
+| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
+|---|---|---|---|---|---|
+| lead 1 alone (fail) | 26 | 8 | 0.308 [0.150, 0.474] | 2.192 [1.450, 3.333] | 1.048 [0.641, 1.734] |
+| lead 2 alone (fail) | 26 | 11 | 0.423 [0.267, 0.576] | 2.346 [1.500, 3.560] | 1.067 [0.700, 1.647] |
+| lead 3 alone (fail) | 26 | 10 | 0.385 [0.233, 0.533] | 2.500 [1.696, 3.667] | 1.096 [0.742, 1.643] |
+| lead 4 alone (fail) | 26 | 11 | 0.423 [0.250, 0.594] | 2.692 [1.694, 4.040] | 1.067 [0.671, 1.617] |
+| lead 5 alone (fail) | 26 | 13 | 0.500 [0.333, 0.667] | 2.269 [1.419, 3.500] | 1.038 [0.643, 1.667] |
+| inside 2018-2019 | 17 | 12 | 0.706 [0.500, 0.905] | 5.529 [3.642, 8.585] | 2.147 [1.392, 3.393] |
+| outside 2018-2019 | 9 | 3 | 0.333 [0.000, 0.625] | 5.556 [3.333, 11.114] | 3.167 [1.736, 7.062] |
+
+Recall with equal weight per regime: 0.326 (2018-19 12/17, 2020 0/2, 2024 0/2, 2025-26 3/5).
+
+| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.448 (63 of 1873 days never flag) | 112 | 0.393 | 0.491 | 0.0538 | +0.0177 [+0.0104, +0.0257] | +0.0026 [-0.0025, +0.0077] | 0.799 | 0.360 | no |
+| 2 | 0.399 (126 of 1872 days never flag) | 121 | 0.432 | 0.496 | 0.0549 | +0.0162 [+0.0100, +0.0228] | +0.0062 [+0.0005, +0.0125] | 0.800 | 0.396 | no |
+| 3 | 0.38 (126 of 1871 days never flag) | 130 | 0.471 | 0.500 | 0.0581 | +0.0125 [+0.0053, +0.0198] | +0.0062 [-0.0011, +0.0133] | 0.779 | 0.434 | no |
+| 4 | 0.67 (126 of 1870 days never flag) | 134 | 0.464 | 0.478 | 0.0544 | +0.0164 [+0.0102, +0.0228] | +0.0080 [+0.0023, +0.0141] | 0.807 | 0.423 | no |
+| 5 | 0.494 (126 of 1869 days never flag) | 123 | 0.464 | 0.520 | 0.0573 | +0.0136 [+0.0069, +0.0200] | +0.0061 [-0.0003, +0.0120] | 0.805 | 0.430 | no |
+
+Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
+
+- h = 1: scarcity_state_0: 1.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 2: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 1.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 0.5 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 yes. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.691 (climatology 0.512, difference +0.1787 [+0.0450, +0.3327]); meets 0.75: no, beats climatology: yes.
+
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0830, ΔBrier vs climatology +0.0465 [+0.0258, +0.0678], realised minus predicted -0.0017 [-0.0258, +0.0235]; calibrated yes, beats_climatology_brier yes.
+
+By group at h = 1:
+
+| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
+|---|---|---|---|---|---|---|---|---|
+| regime | 2018-19 | 375 | 102 | 0.402 | 0.532 | 0.1794 | 0.2720 | +0.0264 [-0.0007, +0.0546] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.077 | 0.0474 | 0.0159 | +0.0195 [+0.0030, +0.0334] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0065 | 0.0000 | +0.0134 [+0.0116, +0.0155] |
+| regime | 2024 | 250 | 5 | 0.200 | 0.333 | 0.0238 | 0.0200 | -0.0012 [-0.0083, +0.0045] |
+| regime | 2025-26 | 249 | 29 | 0.414 | 0.632 | 0.1022 | 0.1165 | +0.0343 [+0.0031, +0.0744] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.250 | 0.0132 | 0.0048 | +0.0075 [+0.0047, +0.0098] |
+| scarcity_state | 1 | 313 | 0 | – | 0.000 | 0.0212 | 0.0000 | +0.0242 [+0.0180, +0.0301] |
+| scarcity_state | 2 | 41 | 10 | 0.100 | 0.200 | 0.1516 | 0.2439 | 0.0411 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.424 | 0.541 | 0.1858 | 0.2615 | +0.0336 [+0.0072, +0.0605] |
+| day_type | month_end | 150 | 17 | 0.647 | 0.611 | 0.1303 | 0.1133 | +0.0283 [-0.0077, +0.0667] |
+| day_type | ordinary | 1603 | 101 | 0.307 | 0.437 | 0.0429 | 0.0630 | +0.0124 [+0.0061, +0.0195] |
+| day_type | quarter_end | 31 | 9 | 0.667 | 0.667 | 0.2995 | 0.2903 | +0.1011 [+0.0326, +0.1630] |
+| day_type | tax_date | 89 | 13 | 0.538 | 0.500 | 0.2003 | 0.1461 | +0.0655 [+0.0219, +0.1132] |
+
+Knowledge holdouts at h = 1 (descriptive):
+
+| window | days | events | recall | precision | Brier | climatology Brier |
+|---|---|---|---|---|---|---|
+| sep-2019 | 5 | 5 | 1.000 | 1.000 | 0.0014 | 0.4822 |
+| mar-2020 | 10 | 3 | 0.333 | 0.333 | 0.3820 | 0.2213 |
+
+## risk_quantile_skewt_base+settle+h41 (candidate): FAIL at +5 bp
+
+Tier 1 no, tier 3 no, tier 5 yes. Scarce regime alone (state >= 2, reported only): fail (tier 1 yes, tier 3 no, tier 5 no; 23 onsets).
+
+| tier 1 | onsets | flagged | recall [90%] | climatology recall at same false alarms | false alarms per onset (a day flagged at any horizon is one) | criteria |
+|---|---|---|---|---|---|---|
+| lead_at_least_1 | 26 | 15 | 0.577 [0.393, 0.750] | 0.231 | 2.69 flat / 1.98 weighted | recall yes, recall_above_climatology yes, false_alarms no |
+| lead_at_least_3 | 26 | 14 | 0.538 [0.361, 0.715] | 0.192 | 2.12 flat / 1.51 weighted | reported only; meets far recall: yes |
+
+Tier 1 at each lead alone, inside and outside the early years, and by regime (reported; not part of the pass rule):
+
+| tier 1 on | onsets | flagged | recall [90%] | false alarms per onset, flat [90%] | weighted [90%] |
+|---|---|---|---|---|---|
+| lead 1 alone (fail) | 26 | 14 | 0.538 [0.361, 0.710] | 2.269 [1.513, 3.572] | 1.625 [0.958, 2.797] |
+| lead 2 alone (fail) | 26 | 12 | 0.462 [0.296, 0.632] | 1.346 [0.818, 2.222] | 0.971 [0.531, 1.750] |
+| lead 3 alone (fail) | 26 | 12 | 0.462 [0.296, 0.632] | 1.885 [1.200, 3.002] | 1.308 [0.727, 2.286] |
+| lead 4 alone (pass) | 26 | 13 | 0.500 [0.333, 0.667] | 1.885 [1.166, 3.084] | 1.356 [0.727, 2.434] |
+| lead 5 alone (fail) | 26 | 12 | 0.462 [0.296, 0.632] | 1.538 [0.943, 2.500] | 1.000 [0.516, 1.790] |
+| inside 2018-2019 | 17 | 10 | 0.588 [0.375, 0.800] | 1.647 [1.000, 2.750] | 0.882 [0.450, 1.667] |
+| outside 2018-2019 | 9 | 5 | 0.556 (no interval) | 4.667 (no interval) | 4.056 (no interval) |
+
+Recall with equal weight per regime: 0.397 (2018-19 10/17, 2020 0/2, 2024 0/2, 2025-26 5/5).
+
+| h | cut-off | flags | recall | precision | Brier | ΔBrier vs climatology | ΔBrier vs persistence (tier 4) | AUROC | usefulness | tier 3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.231 (63 of 1873 days never flag) | 104 | 0.321 | 0.433 | 0.0618 | +0.0096 [+0.0036, +0.0151] | -0.0055 [-0.0141, +0.0021] | 0.642 | 0.287 | no |
+| 2 | 0.253 (126 of 1872 days never flag) | 77 | 0.302 | 0.545 | 0.0597 | +0.0113 [+0.0052, +0.0172] | +0.0013 [-0.0064, +0.0088] | 0.640 | 0.282 | no |
+| 3 | 0.38 (126 of 1871 days never flag) | 93 | 0.319 | 0.473 | 0.0623 | +0.0084 [+0.0014, +0.0152] | +0.0020 [-0.0062, +0.0100] | 0.641 | 0.291 | no |
+| 4 | 0.295 (126 of 1870 days never flag) | 92 | 0.312 | 0.467 | 0.0601 | +0.0107 [+0.0049, +0.0163] | +0.0023 [-0.0050, +0.0091] | 0.635 | 0.283 | no |
+| 5 | 0.494 (126 of 1869 days never flag) | 81 | 0.297 | 0.506 | 0.0627 | +0.0082 [+0.0022, +0.0144] | +0.0007 [-0.0067, +0.0078] | 0.634 | 0.274 | no |
+
+Tier 3 detail (flags per 252 business days in the abundant stretches; calibration by regime):
+
+- h = 1: scarcity_state_0: 0.7 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 2: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 3: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 4: scarcity_state_0: 0.0 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 no (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+- h = 5: scarcity_state_0: 0.2 over 1041 days; regime_2021-23: 0.0 over 748 days. Calibrated (regimes with enough pressure days): 2018-19 no, 2025-26 no. Reported, too few pressure days to test: 2020 yes (4 pressure days), 2021-23 no (0 pressure days), 2024 yes (5 pressure days).
+
+Tier 2 (reported only): h = 5, 81 risky dates in scarcity state >= 2, AUROC 0.690 (climatology 0.512, difference +0.1774 [+0.0369, +0.3325]); meets 0.75: no, beats climatology: yes.
+
+Tier 5 (week-ahead window): 1869 decision days, base rate 0.152, Brier 0.0955, ΔBrier vs climatology +0.0340 [+0.0187, +0.0500], realised minus predicted +0.0244 [-0.0049, +0.0534]; calibrated yes, beats_climatology_brier yes.
+
+By group at h = 1:
+
+| grouping | group | days | events | recall | precision | mean predicted | realised | ΔBrier vs climatology |
+|---|---|---|---|---|---|---|---|---|
+| regime | 2018-19 | 375 | 102 | 0.304 | 0.544 | 0.1077 | 0.2720 | -0.0137 [-0.0364, +0.0081] |
+| regime | 2020 | 251 | 4 | 0.250 | 0.036 | 0.0398 | 0.0159 | +0.0267 [+0.0162, +0.0369] |
+| regime | 2021-23 | 748 | 0 | – | – | 0.0027 | 0.0000 | +0.0136 [+0.0119, +0.0154] |
+| regime | 2024 | 250 | 5 | 0.200 | 0.500 | 0.0114 | 0.0200 | +0.0018 [-0.0044, +0.0054] |
+| regime | 2025-26 | 249 | 29 | 0.414 | 0.706 | 0.0510 | 0.1165 | +0.0232 [+0.0038, +0.0453] |
+| scarcity_state | 0 | 1041 | 5 | 0.200 | 0.333 | 0.0055 | 0.0048 | +0.0088 [+0.0069, +0.0106] |
+| scarcity_state | 1 | 313 | 0 | – | 0.000 | 0.0200 | 0.0000 | +0.0244 [+0.0178, +0.0303] |
+| scarcity_state | 2 | 41 | 10 | 0.200 | 0.400 | 0.0621 | 0.2439 | 0.0010 (no interval) |
+| scarcity_state | 3 | 478 | 125 | 0.336 | 0.553 | 0.1118 | 0.2615 | +0.0024 [-0.0197, +0.0248] |
+| day_type | month_end | 150 | 17 | 0.765 | 0.394 | 0.1265 | 0.1133 | +0.0226 [-0.0118, +0.0576] |
+| day_type | ordinary | 1603 | 101 | 0.168 | 0.447 | 0.0136 | 0.0630 | +0.0035 [-0.0020, +0.0084] |
+| day_type | quarter_end | 31 | 9 | 0.667 | 0.545 | 0.2995 | 0.2903 | +0.1011 [+0.0256, +0.1610] |
+| day_type | tax_date | 89 | 13 | 0.692 | 0.409 | 0.2003 | 0.1461 | +0.0655 [+0.0214, +0.1136] |
+
+Knowledge holdouts at h = 1 (descriptive):
+
+| window | days | events | recall | precision | Brier | climatology Brier |
+|---|---|---|---|---|---|---|
+| sep-2019 | 5 | 5 | 0.600 | 1.000 | 0.4014 | 0.4822 |
 | mar-2020 | 10 | 3 | 0.333 | 1.000 | 0.2000 | 0.2213 |
 

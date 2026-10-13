@@ -6,7 +6,9 @@ labels: directive
 
 **Goal.** <!-- One sentence. -->
 
-**Brief.** <!-- A file under docs/pivot/directives/, or the brief inline. -->
+**Brief.** <!-- The brief inline, or a file under docs/research/. -->
+
+**Hypothesis and step.** <!-- Which of H1–H10 this serves (the top block of #46), and the step. -->
 
 **Acceptance.** <!-- What must be true for the PR to merge. Name the test or the record. -->
 
