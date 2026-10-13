@@ -1,0 +1,80 @@
+{
+ "pd_fails_deliver_ust": {
+  "days_with_a_value_capped": 1935,
+  "days_with_a_value_uncapped": 1935,
+  "longest_run": null,
+  "weeks_in_extract": 666,
+  "withheld": {
+   "by_year": {},
+   "count": 0,
+   "longest_run_weeks": 0
+  }
+ },
+ "pd_fails_receive_ust": {
+  "days_with_a_value_capped": 1935,
+  "days_with_a_value_uncapped": 1935,
+  "longest_run": null,
+  "weeks_in_extract": 666,
+  "withheld": {
+   "by_year": {},
+   "count": 0,
+   "longest_run_weeks": 0
+  }
+ },
+ "pd_repo_mbs": {
+  "days_with_a_value_capped": 1935,
+  "days_with_a_value_uncapped": 1935,
+  "longest_run": [
+   "2022-08-03",
+   "2022-08-03"
+  ],
+  "weeks_in_extract": 666,
+  "withheld": {
+   "by_year": {
+    "2022": 1,
+    "2024": 1,
+    "2025": 1
+   },
+   "count": 3,
+   "longest_run_weeks": 1
+  }
+ },
+ "pd_repo_ust": {
+  "days_with_a_value_capped": 1682,
+  "days_with_a_value_uncapped": 1935,
+  "longest_run": [
+   "2025-01-08",
+   "2025-03-26"
+  ],
+  "weeks_in_extract": 666,
+  "withheld": {
+   "by_year": {
+    "2022": 15,
+    "2023": 16,
+    "2024": 21,
+    "2025": 33
+   },
+   "count": 85,
+   "longest_run_weeks": 12
+  }
+ },
+ "pd_reverse_repo_ust": {
+  "days_with_a_value_capped": 1736,
+  "days_with_a_value_uncapped": 1935,
+  "longest_run": [
+   "2025-04-16",
+   "2025-06-11"
+  ],
+  "weeks_in_extract": 666,
+  "withheld": {
+   "by_year": {
+    "2022": 17,
+    "2023": 13,
+    "2024": 16,
+    "2025": 26
+   },
+   "count": 72,
+   "longest_run_weeks": 9
+  }
+ }
+}

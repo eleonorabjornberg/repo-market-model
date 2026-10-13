@@ -63,7 +63,7 @@ reason.
   a snapshot would need a further request for each of nine years. It was judged not worth that for an unsecured-market volume that
   the secured volumes already held cover, and it is left as a lead for a later directive, not a verdict against the source.
 * **Row 4, primary dealer financing and fails: confirmed.** The full export (`api/pd/get/all/timeseries.csv`) carries the financing
-  (`PDSORA`, `PDSIRRA`) and fails (`PDFTD`, `PDFTR`) series weekly from 2013-04-03 with no gap in the five series read. The tri-party and
+  (`PDSORA`, `PDSIRRA`) and fails (`PDFTD`, `PDFTR`) series weekly from 2013-04-03. **Corrected by #680: that line said "no gap", and it was wrong for three of the five series.** The New York Fed withholds ('*') some weeks of the financing series: 85 of 666 weekly dates for `pd_repo_ust` (2022-01-12 onward; 15 in 2022, 16 in 2023, 21 in 2024, 33 in 2025; longest run 12 weeks, 2025-01-08 to 2025-03-26), 72 for `pd_reverse_repo_ust` (2022-07-13 onward; 17, 13, 16 and 26 in 2022 to 2025; longest run 9 weeks, 2025-04-16 to 2025-06-11) and 3 for `pd_repo_mbs` (one each in 2022, 2024 and 2025); `pd_fails_deliver_ust` and `pd_fails_receive_ust` have none. Counts and longest runs are in `docs/pivot/new-sources-withheld-weeks.md`. The tri-party and
   GCF financing sub-series start only in 2022; they are not read.
 * **Row 5, OFR collateral breakdown: not taken.** The metadata endpoint lists the tri-party series by collateral (`REPO-TRI_AR_T-F`,
   `REPO-TRI_TV_T-F` and the agency, corporate and other siblings), so the series exist. Their real-time start was not read from the
