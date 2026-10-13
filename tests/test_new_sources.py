@@ -98,6 +98,8 @@ class PrimaryDealerReaderTests(unittest.TestCase):
 
 def auction(day, closing, accepted, dealers, indirect, tendered, **extra):
     record = {
+        "soma_accepted": "0",
+        "soma_tendered": "0",
         "auction_date": day,
         "closing_time_comp": closing,
         "total_accepted": str(accepted),
@@ -126,6 +128,43 @@ class AuctionReaderTests(unittest.TestCase):
         self.assertAlmostEqual(got["auc_dealer_share"][day], 0.23)
         self.assertAlmostEqual(got["auc_indirect_share"][day], 0.40)
         self.assertAlmostEqual(got["auc_cover"][day], 2.5)
+
+    def test_shares_and_cover_leave_out_the_fed_portfolio(self):
+        """#690: the Fed's rollover (SOMA) is added to an auction and takes no bid; Treasury leaves it out of the bid-to-cover.
+
+        The dealer share is the dealers' accepted amount over the accepted amount outside SOMA, the indirect share likewise,
+        and the cover is (tendered - SOMA tendered) / (accepted - SOMA accepted), the definition that reproduces the
+        `bid_to_cover_ratio` field of every tracked result. `auc_accepted_bn` stays the whole accepted total.
+
+        Recorded mutation (#690): `outside = total - s["soma_accepted"]` replaced by `outside = total` in
+        `parse_auction_results`. This test then fails with an AssertionError (the dealer share is 0.2, not 1/3).
+        """
+
+        payload = auction_payload(
+            auction("2024-05-07", "11:30 AM", 100e9, 20e9, 30e9, 250e9, soma_accepted=str(40e9), soma_tendered=str(40e9)),
+        )
+        got = new_sources.parse_auction_results(payload)
+        day = date(2024, 5, 7)
+        self.assertAlmostEqual(got["auc_accepted_bn"][day], 100.0)
+        self.assertAlmostEqual(got["auc_dealer_share"][day], 20 / 60)
+        self.assertAlmostEqual(got["auc_indirect_share"][day], 30 / 60)
+        self.assertAlmostEqual(got["auc_cover"][day], 210 / 60)
+
+    def test_an_auction_wholly_in_the_fed_portfolio_is_skipped(self):
+        payload = auction_payload(
+            auction("2024-05-07", "11:30 AM", 10e9, 0, 0, 10e9, soma_accepted=str(10e9), soma_tendered=str(10e9))
+        )
+        self.assertEqual(new_sources.parse_auction_results(payload)["auc_dealer_share"], {})
+
+    def test_the_cover_reproduces_treasurys_field_on_the_tracked_results(self):
+        path = ROOT / "tests" / "fixtures" / "snapshots" / "treasury_auctions" / "auctions_2018_present.json"
+        for record in json.loads(path.read_bytes())["data"]:
+            if record["total_accepted"] == "null" or float(record["total_accepted"]) <= 0:
+                continue
+            cover = (float(record["total_tendered"]) - float(record["soma_tendered"])) / (
+                float(record["total_accepted"]) - float(record["soma_accepted"])
+            )
+            self.assertAlmostEqual(cover, float(record["bid_to_cover_ratio"]), delta=0.0051, msg=record["auction_date"])
 
     def test_an_auction_without_a_result_is_skipped(self):
         payload = auction_payload(
