@@ -11,6 +11,16 @@ for the plain studentized bound read off the same outer draws.
 
     python3 scripts/protocol_coverage.py coverage --series real --replications 300 --draws 500 --inner 100
     python3 scripts/protocol_coverage.py stability --draws 1000 2000 --inner 100 200
+    python3 scripts/protocol_coverage.py calibrate [--seed 1] [--write]
+    python3 scripts/protocol_coverage.py check-coverage [--windows 20000] [--seed 2]
+    python3 scripts/protocol_coverage.py null [--paths 400]
+
+`calibrate` computes the critical value at each checkpoint on each benchmark pair (B2 - B1 on the
+grid, B3 - B1 on B3's five levels, and each reversed) on the development history, as Eleonora ruled
+on 13 October 2026 (PR #695, comment 6149326627), and with `--write` records it in
+`docs/research/protocol-calibration/result.json`, which `scoring_protocol.CRITICAL_VALUES` must
+equal. `check-coverage` measures each value's coverage on fresh windows. `null` re-runs #699's
+post-hoc size check with the calibrated values.
 
 `--series` is `real`, `real-without-2019-09` (the real series less its one most negative day,
 a diagnostic only: the protocol never trims) or `control` (iid standard normal, as long as the
@@ -25,6 +35,7 @@ import argparse
 import contextlib
 import io
 import json
+import math
 import random
 import sys
 import tempfile
@@ -48,33 +59,77 @@ DEVELOPMENT_LAST = date(2026, 9, 3)
 GENERATOR_BLOCK = 10
 
 
-def real_differences():
-    """The real B2 - B1 daily differences, in decision-day order."""
+_ROWS = []
 
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "funding_panel.csv"
-        with contextlib.redirect_stdout(io.StringIO()):
-            code = cli_main(
-                ["build", "--raw-root", str(FIXTURES), "--output", str(path),
-                 "--build-cutoff", CUTOFF, "--decision-time", "16:00:00"]
-            )
-        if code != 0:
-            raise RuntimeError("the fixture panel did not build")
-        rows = load_daily_panel(path)
-    registry = json.loads((ROOT / "metadata" / "sources.json").read_text(encoding="utf-8"))
+
+def published_rows():
+    """The published panel, built once from the tracked fixtures."""
+
+    if not _ROWS:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "funding_panel.csv"
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = cli_main(
+                    ["build", "--raw-root", str(FIXTURES), "--output", str(path),
+                     "--build-cutoff", CUTOFF, "--decision-time", "16:00:00"]
+                )
+            if code != 0:
+                raise RuntimeError("the fixture panel did not build")
+            _ROWS.extend(load_daily_panel(path))
+    return _ROWS
+
+
+REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text(encoding="utf-8"))
+DECISION = clock(16, 0)
+
+
+def real_differences():
+    """The real B2 - B1 daily differences (d = S(B2) - S(B1), grid CRPS), in decision-day order."""
+
+    rows = published_rows()
     splits = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
     days = [row.date for row in rows]
     decisions = [
         day for i, day in enumerate(days)
         if DEVELOPMENT_FIRST <= day and i + 5 < len(days) and days[i + 5] <= DEVELOPMENT_LAST
     ]
-    settings = {"registry": registry, "decision_time": clock(16, 0)}
+    settings = {"registry": REGISTRY, "decision_time": DECISION}
     b1 = pb.forecasts(pb.b1_forecast, rows, decisions, **settings)
     b2 = pb.forecasts(pb.b2_forecast, rows, decisions, splits=splits, **settings)
     outcomes = {row.date: row.spread_bps for row in rows}
     s1 = sp.day_scores(b1, outcomes, days)
     s2 = sp.day_scores(b2, outcomes, days)
     return [s2[day] - s1[day] for day in sorted(s1)]
+
+
+def b3_differences():
+    """The real B3 - B1 daily differences on B3's five levels (d = S(B3) - S(B1)), in decision-day order.
+
+    B3 is the published declaration's daily forecasts (`docs/runs/published_distribution_daily_h*.json`,
+    dated by target day); a decision day enters when all five leads are there. B1 is read at the
+    same five levels (`scoring_protocol.on_levels`), and both are scored by `level_crps`.
+    """
+
+    rows = published_rows()
+    days = [row.date for row in rows]
+    position = {day: i for i, day in enumerate(days)}
+    b3 = {}
+    for h in sp.HORIZONS:
+        record = json.loads((ROOT / "docs" / "runs" / f"published_distribution_daily_h{h}.json").read_text())
+        for entry in record["days"]:
+            decision = days[position[date.fromisoformat(entry["date"])] - h]
+            b3.setdefault(decision, {})[h] = entry["quantiles_bps"]
+    levels = pb.incumbent()["levels"]
+    b3 = {day: pb.b3_forecast(levels, leads) for day, leads in b3.items() if len(leads) == len(sp.HORIZONS)}
+    b1 = pb.forecasts(pb.b1_forecast, rows, sorted(b3), registry=REGISTRY, decision_time=DECISION)
+    five = sp.level_crps(levels)
+    outcomes = {row.date: row.spread_bps for row in rows}
+    s1 = sp.day_scores(
+        {day: {h: sp.on_levels(q, levels) for h, q in leads.items()} for day, leads in b1.items()},
+        outcomes, days, score=five,
+    )
+    s3 = sp.day_scores(b3, outcomes, days, score=five)
+    return [s3[day] - s1[day] for day in sorted(set(s1) & set(s3))]
 
 
 def series(kind):
@@ -144,6 +199,140 @@ def stability(args):
             }), flush=True)
 
 
+CALIBRATION = ROOT / "docs" / "research" / "protocol-calibration" / "result.json"
+#: Windows per (pair, checkpoint); look 1's diagnostic needs many more to reach its level.
+CALIBRATION_WINDOWS = {60: 200_000, 125: 20_000, 250: 20_000}
+CALIBRATION_SEED = 1
+
+
+def calibration(seed=CALIBRATION_SEED, windows=None):
+    windows = dict(CALIBRATION_WINDOWS if windows is None else windows)
+    d21 = real_differences()
+    d31 = b3_differences()
+    pairs = {
+        "B2-B1": d21, "B3-B1 (five levels)": d31,
+        "B1-B2 (reversed, diagnostic)": [-v for v in d21],
+        "B1-B3 (reversed, diagnostic)": [-v for v in d31],
+    }
+    levels = dict(zip(sp.CHECKPOINTS, sp.nominal_levels()))
+    values = {}
+    for name, series_ in pairs.items():
+        values[name] = {
+            str(n): sp.calibrate_critical_value(series_, days=n, level=levels[n], windows=windows[n], seed=seed)
+            for n in sp.CHECKPOINTS
+        }
+    protocol = {}
+    for n in sp.CHECKPOINTS:
+        protocol[str(n)] = None if n == sp.CHECKPOINTS[0] else max(values[name][str(n)] for name in pairs)
+    return {
+        "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627",
+        "series_days": {name: len(series_) for name, series_ in pairs.items()},
+        "nominal_levels": {str(n): levels[n] for n in sp.CHECKPOINTS},
+        "studentized_normal_values": {str(n): sp._NORMAL.inv_cdf(1 - levels[n]) for n in sp.CHECKPOINTS},
+        "windows": {str(n): windows[n] for n in sp.CHECKPOINTS},
+        "window_block": sp.WINDOW_BLOCK,
+        "seed": seed,
+        "critical_values": values,
+        "protocol_critical_values": protocol,
+        "note": "protocol value: the largest across all four orientations; look 1 is left uncalibrated (Q-B)",
+    }
+
+
+def calibrate(args):
+    result = calibration(seed=args.seed)
+    if args.write:
+        CALIBRATION.parent.mkdir(parents=True, exist_ok=True)
+        CALIBRATION.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(result, sort_keys=True))
+
+
+def check_coverage(args):
+    """Out-of-sample coverage of each calibrated value, on fresh windows (another seed)."""
+
+    record = json.loads(CALIBRATION.read_text(encoding="utf-8"))
+    d21 = real_differences()
+    named = {
+        "B2-B1": d21,
+        "B2-B1 without its one most negative day (diagnostic)": series("real-without-2019-09"),
+        "B3-B1 (five levels)": b3_differences(),
+        "control": series("control"),
+    }
+    levels = dict(zip(sp.CHECKPOINTS, sp.nominal_levels()))
+    for name, values in named.items():
+        for n in (sp.CHECKPOINTS[-1],) + ((args.level_days,) if args.level_days else ()):
+            t = sp.window_t_statistics(values, days=n, windows=args.windows, seed=args.seed)
+            protocol = record["protocol_critical_values"][str(n)]
+            own = sp.calibrate_critical_value(values, days=n, level=args.level, windows=args.windows, seed=CALIBRATION_SEED)
+            print(json.dumps({
+                "series": name, "days": n, "level": args.level, "windows": args.windows, "seed": args.seed,
+                "own_calibrated_value": own,
+                "coverage_at_own_value": sum(1 for v in t if v <= own) / len(t),
+                "protocol_value": protocol,
+                "coverage_at_protocol_value": sum(1 for v in t if v <= protocol) / len(t),
+                "normal_value": sp._NORMAL.inv_cdf(1 - args.level),
+                "coverage_at_normal_value": sum(1 for v in t if v <= sp._NORMAL.inv_cdf(1 - args.level)) / len(t),
+            }), flush=True)
+
+
+def null(args):
+    """#699's post-hoc size check (docs/research/power-study-656-addendum.md on that branch), re-run with
+    the calibrated critical values: B1 against a candidate whose daily difference is the centred
+    B1 - B2 difference, so no true difference; paths of the protocol's 250 days by the stationary
+    bootstrap of the series; a false detection when the bound is above zero at look 2 or 3."""
+
+    rows = published_rows()
+    splits = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
+    first = pb.years_before(rows[0].date, -pb.B1_YEARS)
+    days = [row.date for row in rows]
+    decisions = [
+        row.date for t, row in enumerate(rows)
+        if row.date >= first and t + max(sp.HORIZONS) < len(rows) and rows[t + max(sp.HORIZONS)].date <= DEVELOPMENT_LAST
+    ]
+    settings = {"registry": REGISTRY, "decision_time": DECISION}
+    outcomes = {row.date: row.spread_bps for row in rows}
+    s1 = sp.day_scores(pb.forecasts(pb.b1_forecast, rows, decisions, **settings), outcomes, days)
+    s2 = sp.day_scores(pb.forecasts(pb.b2_forecast, rows, decisions, splits=splits, **settings), outcomes, days)
+    ordered = sorted(s1)
+    s1 = [s1[d] for d in ordered]
+    e = [a - s2[d] for a, d in zip(s1, ordered)]
+    centre = sum(e) / len(e)
+    diff = [x - centre for x in e]
+    record = json.loads(CALIBRATION.read_text(encoding="utf-8"))
+    readings = {
+        "protocol values": {n: record["protocol_critical_values"][str(n)] for n in sp.CHECKPOINTS},
+        "B2-B1 values alone (diagnostic)": {n: record["critical_values"]["B2-B1"][str(n)] for n in sp.CHECKPOINTS},
+        "normal values (uncalibrated, diagnostic)": {
+            n: sp._NORMAL.inv_cdf(1 - level) for n, level in zip(sp.CHECKPOINTS, sp.nominal_levels())
+        },
+    }
+    from repo_model.metrics import stationary_bootstrap_indices
+    out = {}
+    for name, critical in readings.items():
+        ungated = gated = 0
+        for i in range(args.paths):
+            seed = 656 * 100_003 + 7_000_000 + i
+            index = stationary_bootstrap_indices(len(s1), sp.BLOCK_LENGTH, random.Random(seed))[:sp.CHECKPOINTS[-1]]
+            bench = [s1[j] for j in index]
+            cand = [s1[j] - diff[j] for j in index]
+            hit = hit_gated = False
+            for n in sp.CHECKPOINTS[1:]:
+                d = [b - c for b, c in zip(bench[:n], cand[:n])]
+                mean = sum(d) / n
+                se = math.sqrt(sp._long_run_variance(d, sp.HAC_LAG) / n)
+                if mean - critical[n] * se > 0.0:
+                    hit = True
+                    if mean / (sum(bench[:n]) / n) >= sp.MME:
+                        hit_gated = True
+            ungated += hit
+            gated += hit_gated
+        out[name] = {
+            "false_detection_share_by_250": ungated / args.paths,
+            "with_the_mme_gate": gated / args.paths,
+            "monte_carlo_se": math.sqrt(max(ungated / args.paths, 1e-12) * (1 - ungated / args.paths) / args.paths),
+        }
+    print(json.dumps({"paths": args.paths, "series_days": len(s1), "nominal_overall_level": sp.ALPHA, "readings": out}, sort_keys=True))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -161,8 +350,19 @@ def main(argv=None):
     two.add_argument("--days", type=int, default=250)
     two.add_argument("--level", type=float, default=0.05)
     two.add_argument("--seed", type=int, default=42)
+    three = commands.add_parser("calibrate")
+    three.add_argument("--seed", type=int, default=CALIBRATION_SEED)
+    three.add_argument("--write", action="store_true")
+    four = commands.add_parser("check-coverage")
+    four.add_argument("--windows", type=int, default=20_000)
+    four.add_argument("--seed", type=int, default=2)
+    four.add_argument("--level", type=float, default=0.05)
+    four.add_argument("--level-days", type=int, default=0)
+    five = commands.add_parser("null")
+    five.add_argument("--paths", type=int, default=400)
     args = parser.parse_args(argv)
-    (coverage if args.command == "coverage" else stability)(args)
+    {"coverage": coverage, "stability": stability, "calibrate": calibrate,
+     "check-coverage": check_coverage, "null": null}[args.command](args)
     return 0
 
 

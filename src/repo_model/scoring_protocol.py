@@ -74,10 +74,18 @@ DRAWS = 10_000
 #: The draws at an interim checkpoint (60 and 125 days), whose nominal levels are finer than
 #: 10,000 draws resolve: Eleonora's ruling of 13 October 2026 (PR #660).
 INTERIM_DRAWS = 100_000
-#: Inner draws per outer resample of the double bootstrap that calibrates the studentized bound:
-#: Eleonora's ruling of 13 October 2026 (PR #695). The value is the implementing pull request's
-#: proposal, from its stability study.
+#: Inner draws per outer resample of the double bootstrap (a diagnostic since the ruling of
+#: 13 October 2026, PR #695 comment 6149326627, which calibrates the critical value empirically).
 INNER_DRAWS = 200
+#: The critical value of the one-sided bound at each checkpoint, calibrated on the development
+#: history (ruling of 13 October 2026, PR #695, comment 6149326627; a protocol change under §13):
+#: the largest, across the benchmark pairs, of the `1 - level` quantile of the studentized mean
+#: over resampled windows of the checkpoint's length, at the checkpoint's nominal level. Recorded
+#: by `scripts/protocol_coverage.py calibrate` in `docs/research/protocol-calibration/result.json`.
+#: Look 1 has none: its level cannot be calibrated from the windows the history gives (Q-B).
+CRITICAL_VALUES: Dict[int, Optional[float]] = {60: None, 125: 9.50052772574656, 250: 5.454950300123988}
+#: Consecutive days per block when windows are drawn from a series for calibration.
+WINDOW_BLOCK = 10
 #: §5, §6: the overall one-sided level.
 ALPHA = 0.05
 #: §5: the Diebold-Mariano statistic's Newey-West lag.
@@ -421,6 +429,11 @@ class PairedTest:
     def n(self) -> int:
         return len(self.days)
 
+    def lower_bound(self, critical_value: float) -> float:
+        """The one-sided lower bound of mean(d) at a calibrated critical value: `mean - c * se`."""
+
+        return self.mean_difference - float(critical_value) * self.standard_error
+
     def calibrated_level(self, level: Optional[float] = None) -> float:
         """The level the outer t-draws are read at so the bound covers `level`'s rate.
 
@@ -619,6 +632,53 @@ def paired_test(
     return paired_tests([(benchmark, candidate)], seed=seed, **settings)[0]
 
 
+def window_t_statistics(
+    series: Sequence[float],
+    *,
+    days: int,
+    windows: int,
+    seed: int,
+    block: int = WINDOW_BLOCK,
+    hac_lag: int = HAC_LAG,
+) -> List[float]:
+    """Sorted studentized means of `windows` windows of `days` days drawn from `series`.
+
+    Each window is built from circular blocks of `block` consecutive days at uniform random starts
+    (`random.Random(seed)`), cut to `days`. Its statistic is `(mean_w - mean(series)) / se_w`, with
+    `se_w` the window's Newey-West standard error at `hac_lag`.
+    """
+
+    values = [_finite(value, "a daily difference") for value in series]
+    if not values or days <= hac_lag:
+        raise ProtocolError(f"windows of {days} days cannot carry a lag-{hac_lag} long-run variance")
+    truth = sum(values) / len(values)
+    rng = random.Random(seed)
+    size = len(values)
+    out = []
+    for _ in range(windows):
+        window: List[float] = []
+        while len(window) < days:
+            start = rng.randrange(size)
+            window.extend(values[(start + k) % size] for k in range(block))
+        window = window[:days]
+        out.append((sum(window) / days - truth) / _standard_error(window, hac_lag, "a window"))
+    return sorted(out)
+
+
+def calibrate_critical_value(
+    series: Sequence[float], *, days: int, level: float, windows: int, seed: int, **settings
+) -> float:
+    """The `1 - level` quantile of `window_t_statistics`: the bound `mean - c * se` then covers the
+    series' mean on a `1 - level` share of its windows (ruling of 13 October 2026, PR #695).
+
+    Raises:
+        UnresolvedLevel: `level` is finer than `windows` windows resolve.
+    """
+
+    ordered = window_t_statistics(series, days=days, windows=windows, seed=seed, **settings)
+    return _bound(ordered, 1.0 - level, windows)
+
+
 def holm(p_values: Mapping[str, float], alpha: float = ALPHA) -> Dict[str, bool]:
     """Holm's step-down procedure: which hypotheses are rejected at family level `alpha`."""
 
@@ -742,8 +802,9 @@ def verdict(
 ) -> str:
     """§6: the verdict at checkpoint `look` (1-based) on the primary score.
 
-    Supported: the lower bound of mean(d), at the look's nominal level, is above zero against
-    B1 and against B2, and the point skill against B1 is at least the MME. Killed: the upper
+    Supported: the lower bound of mean(d), `mean - c * se` with `c` the checkpoint's calibrated
+    critical value (`CRITICAL_VALUES`), is above zero against B1 and against B2, and the point
+    skill against B1 is at least the MME. Killed: the upper
     bound of skill against B1, at `futility_level`, is below the MME. Otherwise inconclusive,
     or "not shown" at the last checkpoint.
 
@@ -752,7 +813,7 @@ def verdict(
 
     Raises:
         ProtocolError: the tests are not on the checkpoint's day count, or not on the same days.
-        UnresolvedLevel: the look's nominal level is finer than the draws resolve.
+        UnresolvedLevel: the checkpoint has no calibrated critical value.
     """
 
     if not 1 <= look <= len(checkpoints):
@@ -763,23 +824,15 @@ def verdict(
             raise ProtocolError(f"the test against {name} covers {test.n} days, not checkpoint {look}'s {days}")
     if against_b1.days != against_b2.days:
         raise ProtocolError("the tests against B1 and B2 must cover the same days")
-    for name, test in (("B1", against_b1), ("B2", against_b2)):
-        if test.inner_draws < INNER_DRAWS:
-            raise ProtocolError(
-                f"the test against {name} is calibrated on {test.inner_draws} inner draws; a verdict "
-                f"reads the double bootstrap on {INNER_DRAWS} (ruling of 13 October 2026, PR #695)"
-            )
-    if look < len(checkpoints):
-        for name, test in (("B1", against_b1), ("B2", against_b2)):
-            if test.draws < INTERIM_DRAWS:
-                raise ProtocolError(
-                    f"the test against {name} has {test.draws} draws; an interim look is read on "
-                    f"{INTERIM_DRAWS} (ruling of 13 October 2026, PR #660)"
-                )
-    level = nominal_levels(checkpoints, alpha)[look - 1]
+    critical = CRITICAL_VALUES.get(days)
+    if critical is None:
+        raise UnresolvedLevel(
+            f"checkpoint {look} ({days} days) has no calibrated critical value (ruling of 13 October "
+            f"2026, PR #695; how the first look works is a question for Eleonora)"
+        )
     if (
-        against_b1.lower_mean_difference(level) > 0.0
-        and against_b2.lower_mean_difference(level) > 0.0
+        against_b1.lower_bound(critical) > 0.0
+        and against_b2.lower_bound(critical) > 0.0
         and against_b1.skill >= mme
     ):
         return SUPPORTED

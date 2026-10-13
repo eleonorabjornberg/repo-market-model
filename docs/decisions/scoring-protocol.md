@@ -25,7 +25,7 @@ session on PR #660 (comment 6145669436); it is recorded here as relayed, and thi
 merges it.
 <https://github.com/eleonorabjornberg/repo-market-model/pull/660#issuecomment-6145669436>
 
-1. **The interval is the studentized stationary bootstrap.** H1's coverage check found the plain percentile
+1. **The interval is the studentized stationary bootstrap** (its critical value is now calibrated, item 5). H1's coverage check found the plain percentile
    bootstrap of §5 covering far below its nominal rate on a resampled real series of daily differences. §5's
    interval is therefore read as the studentized stationary bootstrap: each resample's mean(d) is studentized by its
    own Newey-West standard error at lag 10, with mean block 10 and 10,000 draws, and the one-sided bound is the
@@ -39,17 +39,31 @@ merges it.
    `docs/decisions/lockbox.md`. Scoring a registered candidate's prospective days at a checkpoint is the opening of
    those blind-tier days. Each opening is Eleonora's own attested action (#256); neither this record nor the relay
    opens any day.
-4. **Interim checkpoints use 100,000 draws.** The checkpoints stay at 60, 125 and 250 days with Lan-DeMets
+4. **Interim checkpoints use 100,000 draws** (for the bootstrap that is reported; the verdict reads item 5's calibrated value). The checkpoints stay at 60, 125 and 250 days with Lan-DeMets
    O'Brien-Fleming spending. The first checkpoint's nominal one-sided level is about 6 in 100,000, below what 10,000
    draws resolve, so the bootstrap at the 60- and 125-day checkpoints uses 100,000 draws. (The relay chose more
    draws over dropping the first checkpoint, which leaves the decided spending plan unchanged; she may override.)
-5. **The critical value is calibrated by resampling** (a second ruling of 13 October 2026, relayed on PR #695,
-   comment 6146940245, after the studentized bound still covered about 0.83 on the real series). The studentized
-   bound's critical value is calibrated by the double (iterated) stationary bootstrap on the same mean block: each
-   outer resample is itself resampled, and the outer t-draws are read at the level that makes the inner bound cover
-   its nominal rate in the bootstrap world. Nothing in d is trimmed or winsorized. The outer level keeps 100,000
-   draws at the interim checkpoints. Registration stays held until H1's coverage check passes and #656's power study
-   confirms it. <https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6146940245>
+5. **The critical value is calibrated on the development history. This is a protocol change under §13.** (A
+   third ruling of 13 October 2026, relayed on PR #695, comment 6149326627. It supersedes a second ruling the same
+   day, comment 6146940245, which asked for a double bootstrap: that calibration was measured and did not lift
+   coverage, because a window's own resamples lack the tail days the window lacks.) The evidence for the change is
+   §13's kind (a): a demonstration, H1's coverage check, that the bound of §5 covers about 0.83 of resampled
+   250-day development windows against its nominal 0.95.
+   - **The bound** at a checkpoint is mean(d) − c · se, with se the Newey-West standard error at lag 10 and c the
+     checkpoint's calibrated critical value. The bootstrap of §5 is still computed and reported, but c replaces its
+     quantile in the verdict.
+   - **c is calibrated** so that the bound covers the full-development-history mean of d on at least 95% (the
+     checkpoint's nominal level) of windows of the checkpoint's length drawn from the development history (to
+     2026-09-03; no locked day), each window built from circular blocks of 10 consecutive days. Nothing in d is
+     trimmed or winsorized.
+   - **On each benchmark pair the protocol scores**: B2 − B1 on the 23-level grid and B3 − B1 on B3's five levels,
+     and, as diagnostics, each reversed. The protocol uses the **largest** value, so the bound is never
+     anti-conservative for any of them. The values and the windows are recorded in
+     `docs/research/protocol-calibration/result.json` and set in `scoring_protocol.CRITICAL_VALUES`.
+   - **The first checkpoint has no calibrated value** until Eleonora rules how the interim looks work (the pull
+     request asks it).
+   - Registration stays held until H1's coverage check passes and #656's power study confirms it.
+   <https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627>
 6. **The other readings stand as the pull request proposed them**, unless she says otherwise:
    - the futility bound's level is not set by §6 and is given explicitly at each verdict;
    - the verdict reads the primary score alone at the spent level, and Holm across the primary and the key secondary
