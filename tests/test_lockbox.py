@@ -482,11 +482,6 @@ NOT_ENTRY_POINTS = {
         "exploratory H9 screen (#639); selects no model and scores no forecast, and the screen's `run` passes "
         "it only days that went through lockbox.require_unlocked (tests/test_richer_targets.py)"
     ),
-    "scripts/spread_distribution_634.walk": (
-        "one horizon's walk of the fold grid for the H5 re-score under protocol v1 (#634); calls `refuse_locked` "
-        "(lockbox.require_unlocked) on every scored day before it reads one, and the scoring itself goes through "
-        "the scorer's own guard (tests/test_spread_distribution_634_script.py)"
-    ),
     "scripts/richer_targets_639.run_command": (
         "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls lockbox.require_unlocked on every "
         "scored day before it reads one, refuses a panel past 2025-12-31 and fits and selects nothing"
