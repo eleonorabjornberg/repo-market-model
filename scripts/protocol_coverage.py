@@ -13,7 +13,8 @@ for the plain studentized bound read off the same outer draws.
     python3 scripts/protocol_coverage.py stability --draws 1000 2000 --inner 100 200
     python3 scripts/protocol_coverage.py calibrate [--seed 1] [--write]
     python3 scripts/protocol_coverage.py check-coverage [--windows 20000] [--seed 2]
-    python3 scripts/protocol_coverage.py null [--paths 400]
+    python3 scripts/protocol_coverage.py null [--paths 400] [--history post-2020-04|full]
+    python3 scripts/protocol_coverage.py power [--paths 400] [--delta 0.03 0.10] [--noise 1]
 
 `calibrate` computes the critical value at each checkpoint on each benchmark pair (B2 - B1 on the
 grid, B3 - B1 on B3's five levels, and each reversed) on the development history, as Eleonora ruled
@@ -274,15 +275,13 @@ def check_coverage(args):
             }), flush=True)
 
 
-def null(args):
-    """#699's post-hoc size check (docs/research/power-study-656-addendum.md on that branch), re-run with
-    the calibrated critical values: B1 against a candidate whose daily difference is the centred
-    B1 - B2 difference, so no true difference; paths of the protocol's 250 days by the stationary
-    bootstrap of the series; a false detection when the bound is above zero at look 2 or 3."""
+def development_scores(history):
+    """B1's and B2's day scores in decision-day order: `post-2020-04` is #699's series (decision days
+    from two years after the panel's first row), `full` the calibration's (from 2018-06-29)."""
 
     rows = published_rows()
     splits = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
-    first = pb.years_before(rows[0].date, -pb.B1_YEARS)
+    first = pb.years_before(rows[0].date, -pb.B1_YEARS) if history == "post-2020-04" else DEVELOPMENT_FIRST
     days = [row.date for row in rows]
     decisions = [
         row.date for t, row in enumerate(rows)
@@ -293,44 +292,79 @@ def null(args):
     s1 = sp.day_scores(pb.forecasts(pb.b1_forecast, rows, decisions, **settings), outcomes, days)
     s2 = sp.day_scores(pb.forecasts(pb.b2_forecast, rows, decisions, splits=splits, **settings), outcomes, days)
     ordered = sorted(s1)
-    s1 = [s1[d] for d in ordered]
-    e = [a - s2[d] for a, d in zip(s1, ordered)]
-    centre = sum(e) / len(e)
-    diff = [x - centre for x in e]
+    return [s1[d] for d in ordered], [s2[d] for d in ordered]
+
+
+def readings():
     record = json.loads(CALIBRATION.read_text(encoding="utf-8"))
-    readings = {
+    return {
         "protocol values": {n: record["protocol_critical_values"][str(n)] for n in sp.CHECKPOINTS},
         "B2-B1 values alone (diagnostic)": {n: record["critical_values"]["B2-B1"][str(n)] for n in sp.CHECKPOINTS},
         "normal values (uncalibrated, diagnostic)": {
             n: sp._NORMAL.inv_cdf(1 - level) for n, level in zip(sp.CHECKPOINTS, sp.nominal_levels())
         },
     }
+
+
+def detections(s1, s2, *, delta, noise, critical, paths):
+    """#699's paths (docs/research/power-study-656.md §3-§4 on that branch), read at calibrated values.
+
+    The candidate's daily difference against B1 is `delta * S1 + noise * (e - mean(e))`, `e = S1 - S2`,
+    so its true skill against B1 is `delta`. Each path is the first 250 days of a stationary-bootstrap
+    resample (mean block 10) of the series, seeded as #699 seeds them. A path is detected at the
+    first of looks 2 and 3 at which `mean - c * se > 0`, with and without the MME gate (point skill
+    at least the MME). Look 1 has no calibrated value and is not read.
+    """
+
     from repo_model.metrics import stationary_bootstrap_indices
-    out = {}
-    for name, critical in readings.items():
-        ungated = gated = 0
-        for i in range(args.paths):
-            seed = 656 * 100_003 + 7_000_000 + i
-            index = stationary_bootstrap_indices(len(s1), sp.BLOCK_LENGTH, random.Random(seed))[:sp.CHECKPOINTS[-1]]
-            bench = [s1[j] for j in index]
-            cand = [s1[j] - diff[j] for j in index]
-            hit = hit_gated = False
-            for n in sp.CHECKPOINTS[1:]:
-                d = [b - c for b, c in zip(bench[:n], cand[:n])]
-                mean = sum(d) / n
-                se = math.sqrt(sp._long_run_variance(d, sp.HAC_LAG) / n)
-                if mean - critical[n] * se > 0.0:
-                    hit = True
-                    if mean / (sum(bench[:n]) / n) >= sp.MME:
-                        hit_gated = True
-            ungated += hit
-            gated += hit_gated
-        out[name] = {
-            "false_detection_share_by_250": ungated / args.paths,
-            "with_the_mme_gate": gated / args.paths,
-            "monte_carlo_se": math.sqrt(max(ungated / args.paths, 1e-12) * (1 - ungated / args.paths) / args.paths),
-        }
-    print(json.dumps({"paths": args.paths, "series_days": len(s1), "nominal_overall_level": sp.ALPHA, "readings": out}, sort_keys=True))
+
+    e = [a - b for a, b in zip(s1, s2)]
+    centre = sum(e) / len(e)
+    diff = [delta * a + noise * (x - centre) for a, x in zip(s1, e)]
+    seed_base = 656 * 100_003 + (7_000_000 if delta == 0.0 else 0)
+    ungated = {n: 0 for n in sp.CHECKPOINTS[1:]}
+    gated = {n: 0 for n in sp.CHECKPOINTS[1:]}
+    for i in range(paths):
+        index = stationary_bootstrap_indices(len(s1), sp.BLOCK_LENGTH, random.Random(seed_base + i))[:sp.CHECKPOINTS[-1]]
+        bench = [s1[j] for j in index]
+        d = [diff[j] for j in index]
+        first_ungated = first_gated = None
+        for n in sp.CHECKPOINTS[1:]:
+            window = d[:n]
+            mean = sum(window) / n
+            se = math.sqrt(sp._long_run_variance(window, sp.HAC_LAG) / n)
+            if mean - critical[n] * se > 0.0:
+                first_ungated = first_ungated or n
+                if mean / (sum(bench[:n]) / n) >= sp.MME:
+                    first_gated = first_gated or n
+        for n in ungated:
+            ungated[n] += first_ungated is not None and first_ungated <= n
+            gated[n] += first_gated is not None and first_gated <= n
+    return {
+        "ungated": {str(n): v / paths for n, v in ungated.items()},
+        "with_the_mme_gate": {str(n): v / paths for n, v in gated.items()},
+    }
+
+
+def null(args):
+    """#699's post-hoc size check re-run at the calibrated values (no true difference)."""
+
+    s1, s2 = development_scores(args.history)
+    out = {name: detections(s1, s2, delta=0.0, noise=1.0, critical=critical, paths=args.paths)
+           for name, critical in readings().items()}
+    print(json.dumps({"history": args.history, "series_days": len(s1), "paths": args.paths, "delta": 0.0,
+                      "nominal_overall_level": sp.ALPHA, "false_detection_share": out}, sort_keys=True))
+
+
+def power(args):
+    """#699's power study (true skill `--delta` against B1, noise `--noise`) at the calibrated values."""
+
+    s1, s2 = development_scores(args.history)
+    for delta in args.delta:
+        out = {name: detections(s1, s2, delta=delta, noise=args.noise, critical=critical, paths=args.paths)
+               for name, critical in readings().items()}
+        print(json.dumps({"history": args.history, "series_days": len(s1), "paths": args.paths, "delta": delta,
+                          "noise": args.noise, "power": out}, sort_keys=True), flush=True)
 
 
 def main(argv=None):
@@ -360,9 +394,15 @@ def main(argv=None):
     four.add_argument("--level-days", type=int, default=0)
     five = commands.add_parser("null")
     five.add_argument("--paths", type=int, default=400)
+    five.add_argument("--history", choices=("post-2020-04", "full"), default="post-2020-04")
+    six = commands.add_parser("power")
+    six.add_argument("--paths", type=int, default=400)
+    six.add_argument("--delta", type=float, nargs="+", default=[0.03, 0.10])
+    six.add_argument("--noise", type=float, default=1.0)
+    six.add_argument("--history", choices=("post-2020-04", "full"), default="post-2020-04")
     args = parser.parse_args(argv)
     {"coverage": coverage, "stability": stability, "calibrate": calibrate,
-     "check-coverage": check_coverage, "null": null}[args.command](args)
+     "check-coverage": check_coverage, "null": null, "power": power}[args.command](args)
     return 0
 
 
