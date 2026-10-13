@@ -153,6 +153,30 @@ request has no upper date bound). In particular, the
 FRED adapter currently acquires the latest revised vintage rather than a complete
 historical-vintage archive.
 
+### Snapshots of the new sources (#630)
+
+Four measurement sources, off in every published declaration, are read from tracked snapshots under
+`tests/fixtures/snapshots/new_sources/` and from two sets of snapshots already tracked:
+
+| source | snapshot | digest |
+|---|---|---|
+| `nyfed_pd_financing` | `new_sources/nyfed_pd_financing/pd_financing_extract.csv`, cut from the New York Fed's whole export (`https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv`, retrieved 12 October 2026) | export `ce3c70712759ec2259eb5edbafc57005742baac8ac3ec48dea809ab54bcc2826`; extract `d8b0eb182adcc8f277c79094f9ab1f7fde5d72d17a499d8bef58915323828098`, both in the sidecar `.manifest.json` |
+| `treasury_dts_debt_cash` | `new_sources/treasury_dts_debt_cash/*.json`, one per line name and year, 2018 to 2025 | each file's `.manifest.json` |
+| `treasury_auction_results` | `treasury_auctions/auctions_2018_present.json` (already tracked) | its manifest |
+| `nyfed_on_rrp_counterparties` | `on_rrp_inputs/nyfed_on_rrp/*.json` (already tracked) | each file's manifest |
+
+```bash
+PYTHONPATH=src python3 -m repo_model.cli fetch fr2004 --output-root /tmp/pd_export
+PYTHONPATH=src python3 scripts/new_sources.py extract-pd /tmp/pd_export/nyfed_fr2004/<export>.csv
+PYTHONPATH=src python3 scripts/new_sources.py fetch-dts
+```
+
+The export is large and is not tracked; the extract keeps five series up to 2025-12-31 and records the
+export's digest and size, so a clone can check the extract it has and, with a fresh export, recompute it
+(`extract-pd --check`; a fresh export carries later revisions and later days, so only the rows up to
+2025-12-31 are compared, and a restated row would show). The Fiscal Data and New York Fed APIs serve
+the current table, so a re-fetch does not reproduce these bytes.
+
 ## Requirements for a reportable experiment
 
 A result is reportable only when its run record identifies:

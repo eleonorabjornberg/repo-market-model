@@ -137,6 +137,7 @@ SNAPSHOT_INVENTORY: Mapping[str, Tuple[str, str]] = {
     "repo_ops_inputs": ("read", "the Desk's repo operations (fed_repo_* columns, both availability readings)"),
     "fed-iorb-announcements": ("read", "iorb_announced_change_bps, iorb_days_to_announced_change"),
     "fr2004": ("read", "dealer_treasury_position (FR 2004 weekly)"),
+    "new_sources": ("cannot", "snapshots of the new sources of #630 (primary dealer financing and fails, Treasury debt cash flows); read by scripts/new_sources.py, not by this screen"),
     "treasury_bill_rates_page": ("cannot", "the Treasury text-view page as served: evidence for #445 (its 3:30 pm quote time), not a data input; no series is built from it"),
     "nyfed-primary-dealer": ("cannot", "a hand-downloaded 'latest' CSV with no recorded retrieval time (its manifest says 'None'): the as-of rule cannot say when any row was public; its weekly positions are the FR 2004's, already read"),
     "frb_ddp": ("cannot", "the Board's H.15 and PRATES SDMX files, read only by repo_model.effr_history for the pre-SOFR study; EFFR and IOER are already read from the NY Fed and FRED, and the primary credit rate is a step series set by the policy register"),

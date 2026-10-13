@@ -478,5 +478,155 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/satiation_distance_598.json"
+  },
+  "nyfed_pd_financing": {
+    "access": "public",
+    "identities": [],
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "availability_provenance": {
+      "note": "Recorded 12 October 2026 for #630. The same release as nyfed_fr2004 (the New York Fed's Primary Dealer Statistics export, https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv, fetched 12 October 2026 with the repository's own fetch code), whose declaration this entry copies: see that entry's availability_provenance. The export keeps no vintages, so a later restatement cannot be seen; the six-business-day lag is the published schedule, not a measurement. The five series below run weekly from 2013-04-03 (the financing and fails series) without a gap in the tracked extract.",
+      "publication": "New York Fed Primary Dealer Statistics release schedule: the figures for a Wednesday as-of date are published on the Thursday of the following week, six business days later; 16:30 ET is the conservative instant taken within that day."
+    },
+    "coverage": [
+      "primary dealer financing of US Treasuries (excluding TIPS) by repurchase agreements and by reverse repurchase agreements",
+      "primary dealer financing of agency mortgage-backed securities by repurchase agreements",
+      "primary dealer fails to deliver and to receive US Treasuries (cumulative over the week)"
+    ],
+    "field_frequencies": {
+      "PDSORA-UTSETTOT": "weekly",
+      "PDSIRRA-UTSETTOT": "weekly",
+      "PDSORA-FGMTOT": "weekly",
+      "PDFTD-UST": "weekly",
+      "PDFTR-UST": "weekly"
+    },
+    "fields": [
+      "PDSORA-UTSETTOT",
+      "PDSIRRA-UTSETTOT",
+      "PDSORA-FGMTOT",
+      "PDFTD-UST",
+      "PDFTR-UST"
+    ],
+    "frequency": "weekly",
+    "limitation": "Off in every published declaration (#630), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. Values are USD millions in the export and USD billions in the columns. A value of '*' is a figure withheld for confidentiality and is skipped. The tracked extract (tests/fixtures/snapshots/new_sources/nyfed_pd_financing/) holds only these five series up to 2025-12-31, with the digest and size of the 27 MB export beside it. Fails are cumulative over the week to the as-of date. The series are the 'total' lines (UTSETTOT: Treasuries excluding TIPS; FGMTOT: agency MBS other than ... as the export defines them); the export's own names are the only definition used.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:30",
+      "basis": "ref_date",
+      "days": 6,
+      "note": "Copied from nyfed_fr2004.release_lag (#630): the financing and fails series are in the same weekly export as the positions that entry reads, published together. The lag rests on the New York Fed's published Primary Dealer Statistics release schedule and not on the snapshot, which cannot corroborate it: the tracked fixture's manifest records the url it was downloaded from, https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv, and the retrieved_at of that download, 2026-09-14T00:31:00.991705+00:00, but one download shows only that the latest as-of date it carries, 2026-09-02, had been published by then -- a bound on the lag and not a measurement of it. Six business days from a Wednesday as-of date is the Thursday of the following week -- 2026-08-26 becomes available 2026-09-03 -- which is the calendar-week-plus-a-day gap the documented schedule describes. The directive that queued this adapter asked for 'calendar days 8' and a worst case of 9, and neither is expressible: src/repo_model/contract.py pins UNIT_FOR_BASIS['ref_date'] to 'business_days', so a calendar_days count on this basis is refused outright, and validate_release_lag requires worst_case_calendar_days to be at least days + 5, which puts the smallest admissible bound at 11 rather than 9. Six business days and eight calendar days name the same Thursday on a week with no holiday, and the business-day form is the one that shifts to Friday when one intervenes, which is what the directive's '(Thursday-holiday shift)' worst case describes. contract.py is human-owned, so both refusals are recorded here rather than worked around; 11 is conservative against 9 in the direction splits.py establishes as safe. Business days are counted on metadata/market_holidays.json, as for every other business-day source (#201), and the widest span on that table is 2018-12-21 to 2019-01-02, 12 calendar days, which is why worst_case_calendar_days is 12 and not 11 (#361, from #350).",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 12
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the FR 2004 reporting instructions; the empty declaration is not a finding.",
+    "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
+  },
+  "treasury_auction_results": {
+    "access": "public",
+    "identities": [],
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "availability_provenance": {
+      "note": "Recorded 12 October 2026 for #630, from the tracked snapshot tests/fixtures/snapshots/treasury_auctions/auctions_2018_present.json (Fiscal Data auctions_query). Every auction in it with a result closes its competitive bidding at 14:30 ET or earlier (closing_time_comp: 11:30 AM for most bills, 01:00 PM for notes and bonds, 02:30 PM for two bills, and earlier times for a few), and the Treasury announces the results at the close, within minutes. The table serves the current rows and keeps no vintages, and a result is not restated. 15:00 ET on the auction date is declared, thirty minutes after the latest close, so the 16:00 decision of the auction day reads it; new_sources.require_result_public refuses a close later than 14:30.",
+      "publication": "Treasury auction results: announced at the close of competitive bidding on the auction date (closing_time_comp), served in Fiscal Data's auctions_query."
+    },
+    "coverage": [
+      "accepted amount, primary dealer and indirect bidder accepted amounts and total tendered, per auction, summed over the auctions of an auction date"
+    ],
+    "field_frequencies": {
+      "total_accepted": "event",
+      "primary_dealer_accepted": "event",
+      "indirect_bidder_accepted": "event",
+      "total_tendered": "event"
+    },
+    "fields": [
+      "total_accepted",
+      "primary_dealer_accepted",
+      "indirect_bidder_accepted",
+      "total_tendered"
+    ],
+    "frequency": "event",
+    "limitation": "Off in every published declaration (#630). A column has a value only on a day with an auction that has a result, and is empty on every other day. Amounts are US dollars in the table and USD billions (accepted) or shares and a ratio (the others) in the columns. The table's record_date is the settlement date; the columns are dated by auction_date.",
+    "provider": "US Department of the Treasury, Bureau of the Fiscal Service",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 12 October 2026 (#630). The results of an auction on date d are declared public at 15:00 New York time on d, so the 16:00 decision of d reads it (availability_provenance).",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 5
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the auction results schema; the empty declaration is not a finding.",
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query"
+  },
+  "nyfed_on_rrp_counterparties": {
+    "access": "public",
+    "identities": [],
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "availability_provenance": {
+      "note": "Recorded 12 October 2026 for #630. The same record as nyfed_on_rrp (the Desk's operation results, tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp), whose conservative declaration (16:00 ET on the next business day) this entry copies. participatingCpty is the number of counterparties that bid. A record the Desk wrote on a later day than its operation (lastUpdated after operationDate) is not read, because nothing shows which fields it changed; the Desk's counterparty-type split (propositions) is not read at all, because the Desk adds it a month later (tests/test_registry.py, A45).",
+      "publication": "New York Fed reverse repo operation results: the operation closes at 13:15 ET and the Desk's API carries the summary of results; 16:00 ET on the next business day is the conservative instant declared for the held amount accepted."
+    },
+    "coverage": [
+      "number of participating counterparties of the regular overnight reverse repo operation, per operation date"
+    ],
+    "field_frequencies": {
+      "participatingCpty": "business_daily"
+    },
+    "fields": [
+      "participatingCpty"
+    ],
+    "frequency": "business daily",
+    "limitation": "Off in every published declaration (#630). The largest participatingCpty among the regular Reverse Repo operations of an operationDate; repo operations and small-value exercises are left out; a date whose record was rewritten later is empty. The panel carries no value on a date without an operation.",
+    "provider": "Federal Reserve Bank of New York",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Copied from nyfed_on_rrp.release_lag (#630): the count of counterparties is a field of the same record as the amount accepted. Conservative, under docs/decisions/information-set.md (#45, step 3): a result is declared available at 16:00 ET on the next business day, not at its 13:15 close, because the Desk states no publication time. No value has been amended since publication: A45 compared 35 ALFRED vintages of RRPONTSYD against today's totalAmtAccepted on every single-operation day, and none differed. A record touched later (lastUpdated after the operation date) changed a note or the propositions, which are not read.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the operation-results schema; the empty declaration is not a finding.",
+    "url": "https://markets.newyorkfed.org/api/rp/results/search.json"
+  },
+  "treasury_dts_debt_cash": {
+    "access": "public",
+    "identities": [],
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "availability_provenance": {
+      "note": "Recorded 12 October 2026 for #630. The same statement as treasury_dts_tga, whose declaration this entry copies: see that entry's availability_provenance. The statement for a business day is published at 4:00 PM ET on the next business day, and 16:30 ET is declared. The API keeps no vintages. The two lines are Table II's 'Public Debt Cash Issues' and 'Public Debt Cash Redemp.' (USD millions in the table), spelled '(Table III-B)' up to 2022 and '(Table IIIB)' after it in the saved responses; the reader treats the two spellings as one series. The tracked snapshots (tests/fixtures/snapshots/new_sources/treasury_dts_debt_cash/) were fetched on 12 October 2026, one request per line name and year, 2018 to 2025.",
+      "publication": "Daily Treasury Statement (Bureau of the Fiscal Service), Table II, Deposits and Withdrawals of Operating Cash, served as Fiscal Data's accounting/dts/deposits_withdrawals_operating_cash; published at 4:00 PM ET on the business day after the date it describes."
+    },
+    "coverage": [
+      "cash issues of public debt (deposits) and cash redemptions of public debt (withdrawals), daily, 2018 onwards in the tracked snapshots"
+    ],
+    "field_frequencies": {
+      "debt_cash_issues": "business_daily",
+      "debt_cash_redemptions": "business_daily"
+    },
+    "fields": [
+      "debt_cash_issues",
+      "debt_cash_redemptions"
+    ],
+    "frequency": "business daily",
+    "limitation": "Off in every published declaration (#630). The fields are the two lines as new_sources.parse_dts_debt_cash names them (USD billions). dts_debt_net_bn is issues less redemptions on a day with both lines.",
+    "provider": "US Department of the Treasury, Bureau of the Fiscal Service",
+    "release_lag": {
+      "available_time": "16:30",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Copied from treasury_dts_tga.release_lag (#630): the deposits and withdrawals are Table II of the same Daily Treasury Statement as the balance. Declared 8 October 2026 (#377). The statement for a business day is published at 4:00 PM ET on the next business day (availability_provenance); 16:30 ET that day is declared, so the 16:00 ET decision of that day does not read it. The API states no publication time and keeps no vintages.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the statement; the empty declaration is not a finding.",
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/deposits_withdrawals_operating_cash"
   }
 }

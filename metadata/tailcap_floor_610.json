@@ -1,0 +1,77 @@
+{
+  "status": "declared by the pull request that closes #610 after step 1 was committed (docs/pivot/evidence/tailcap-floor-diagnosis/) and before any step 2 score; a measurement, not a record. Nothing here is published: no variant joins any published declaration, no day after 2025-12-31 is scored, no rule changes and the live record and pin do not move. The variants were built after seeing 2018-2025, so a pass here is not a confirmation (ruling of 11 October 2026 on #567)",
+  "issue": 610,
+  "diagnosis": "step 1 (docs/pivot/evidence/tailcap-floor-diagnosis/diagnosis.json): the 2018-19 shortfall of +tailcap75 at h = 1 is +0.1649, 94% of it on days that are not risk dates; the floor's start-up carries none of it (no pressure day falls before the floor can be fitted); a short training window accounts for about a third (the same row on a later stretch of equal length: +0.0570); every 2018-19 day is in scarcity state 3; the pooled floor lags a rate that rises within the year",
+  "parent": {
+    "row": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+    "from": "metadata/every_day_conditioning_601.json, variant cap75; its forecasts are not changed, only floored"
+  },
+  "second_parent": "risk_gbm+settle+h41+dist_roll",
+  "scoring": {
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00"
+  },
+  "thresholds_bp": [
+    5,
+    10
+  ],
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "variants": {
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor": {
+      "label": "(a) floor",
+      "parent": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+      "rule": "on a day that is not a risk date the forecast is raised to the walk-forward rate of pressure days among the earlier days that were not risk dates and whose outcome was observable at the block's fit (group_calibration.walk_forward_floor, #606); nothing is floored until those days number 60; a risk date keeps the forecast",
+      "implementation": "group_calibration.walk_forward_floor on the row's forecasts at each threshold, made non-increasing in tau (probability_calibration.monotone_curves)"
+    },
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor": {
+      "label": "(b) floor by state",
+      "parent": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+      "rule": "as (a), the rate taken per as-of reserve-scarcity state (0 to 3, or unknown; each leg at its own latest public row, #586) once the state holds 60 such days and 3 pressure days, the pooled rate before",
+      "implementation": "group_calibration.walk_forward_floor with the state label as the group"
+    },
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor": {
+      "label": "(c) recent floor, chosen from step 1",
+      "parent": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+      "rule": "as (a), with the rate taken over the most recent 60 earlier days that were not risk dates and whose outcome was observable at the block's fit, instead of over all of them; nothing is floored until 60 such days exist. Chosen from step 1: the pooled floor lags a rate that rises within the year, the warm-up and the state carry none of the shortfall",
+      "implementation": "scripts/tailcap_floor_610.py walk_forward_recent_floor, the window being group_calibration.GROUP_MINIMUM_PAIRS (60), declared and not searched"
+    }
+  },
+  "conditioning_variable": "the reserve-scarcity state as of the decision instant of each forecast at its own horizon (pressure_judge._scarcity_states); group_calibration.scarcity_state_label refuses any other value. No hindsight regime label (ruling on #515). The back-filled 2014-2018 history is not used (the guard of #572)",
+  "off_risk_rule": "a scored day for which announcement_dating_rescore.risk_flag(splits, values, True) is false, as in #606",
+  "cadence": "the judge's: a refit every 21 scored days from 61 days of history; a block's rate is fitted on the pairs whose scored day is at or before its last training label (probability_calibration.past_positions)",
+  "constants": {
+    "group_minimum_pairs": 60,
+    "group_minimum_events": 3,
+    "recent_window": 60,
+    "searched": "none"
+  },
+  "variants_declared": "these three, on +tailcap75; no other variant, window, quantile or input",
+  "rows": {
+    "controls": [
+      "risk_gbm+settle+h41",
+      "risk_gbm+settle+h41+dist_roll",
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75"
+    ],
+    "new": [
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor",
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor",
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor"
+    ],
+    "pairs": {
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75",
+      "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor": "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75"
+    }
+  },
+  "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), under the weighted rule in force and the flat rule beside it",
+  "pairing": "each variant against +tailcap75 and against risk_gbm+settle+h41+dist_roll, with 90% stationary-bootstrap intervals, split by regime and pressure-day type",
+  "published": "nothing; no variant joins any published declaration"
+}

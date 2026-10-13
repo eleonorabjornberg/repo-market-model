@@ -533,7 +533,7 @@ def comparison_markdown(document: dict, pairs) -> str:
             cells.append(f"{c['flags']}({c['false_alarms']}); {c['onsets_flagged']}/{c['onsets']}; {ann._f(c['false_alarms_per_onset'], 2)}")
         out.append(f"| {label} | " + " | ".join(cells) + " |")
     for _arm, name, ref in pairs:
-        out.append(f"\nTable 3. Paired Brier difference of `{name}` against `{ref}`, +5 bp (negative favours the row), 90% interval, h = 1: all days, by regime and by pressure-day type.\n")
+        out.append(f"\nTable 3. Paired Brier difference of `{name}` against `{ref}`, +5 bp (the reference's squared error minus the row's, so positive favours the row, #604), 90% interval, h = 1: all days, by regime and by pressure-day type.\n")
         out.append("| cell | days | difference |")
         out.append("|---|---|---|")
         for cell, c in document["brier"][name]["1"].items():

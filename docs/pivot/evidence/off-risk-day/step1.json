@@ -1,0 +1,6960 @@
+{
+ "declaration": {
+  "bootstrap": {
+   "block_length": 10,
+   "level": 0.9,
+   "replications": 2000,
+   "resampling": "the judge's stationary bootstrap over the date-ordered days that are not risk dates (metrics.stationary_bootstrap_indices), one resample per replication shared by every cell. A statistic that is undefined on a resample is left out of that cell's draws and counted beside the interval. The reliability fit is bootstrapped for the pooled cell only",
+   "seed": 624
+  },
+  "issue": 624,
+  "multiplicity": "five rows at five leads are read; at a 90% interval about one cell in ten with no skill would show an interval that excludes its null by chance",
+  "outcome": "the day is a pressure day at +5 bp, the judge's primary threshold and outcome, read from the judge's own fold grid",
+  "population": "every scored day of 2018-06-29 to 2025-12-31 at the lead on which announcement_dating_rescore.risk_flag(splits, values, True) is false (the settlement columns and their coupon clause are read at every lead, as the rows are scored), at each lead 1 to 5 apart",
+  "published": "nothing",
+  "rows": {
+   "risk_gbm+every_day+gate+settle+h41+iorb": "the control row of #579 (PR #582): the every-day part is a ridge logistic on the spread and the SOFR 75th and 99th percentiles above IORB, then the gate of #532",
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": "the same row with the tail-spread cap of #601 (PR #609), kept only at or below the 0.75 quantile of the trailing 250 scored days",
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor": "the cap row floored at the walk-forward rate of pressure days among the earlier days that were not risk dates (#610, PR #612)",
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor": "that floor over the most recent 60 earlier such days (#610, PR #612)",
+   "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor": "that floor per as-of reserve-scarcity state (#610, PR #612)"
+  },
+  "rows_reading": "the forecasts are those the repository scores, regenerated from the tracked fixtures with the commands in the result page. The risk-date part of every row is out of this measurement: only the days that are not risk dates are read",
+  "scoring": {
+   "decision_time": "16:00",
+   "first_day": "2018-06-29",
+   "last_day": "2025-12-31",
+   "minimum_history": 61,
+   "primary_threshold_bp": 5,
+   "refit_every": 21
+  },
+  "skill_beyond_the_base_rate": "a row has skill beyond the base rate at a lead if its Brier skill interval excludes 0 from above and its AUROC interval excludes 0.5 from above. Stated before the first score; either alone is reported as such",
+  "splits": {
+   "regime": "the judge's regime labels (metadata/evaluation_splits.json), by calendar date; no hindsight regime label (ruling on #515)",
+   "scarcity_state": "the reserve-scarcity state as of each forecast's decision instant at its own lead (pressure_judge._scarcity_states), 0 to 3 or unknown"
+  },
+  "statistics": {
+   "auroc": "the chance that a pressure day's forecast is above a non-pressure day's, ties half (pressure_judge.auroc); 0.5 is no ranking",
+   "brier_skill": "1 less the row's Brier score over that of the walk-forward climatology, on the days on which the climatology exists",
+   "clip": "a forecast is clipped to [1e-4, 1 - 1e-4] before its logit",
+   "reliability": "the logistic recalibration of the outcome on the logit of the forecast, by Newton's method, on the days on which the forecast is above 1e-4 (the row forecasts exactly 0 on the others; their number and the pressure days on them are reported beside it). A calibrated forecast has intercept 0 and slope 1; a slope of 0 ranks nothing",
+   "walk_forward_climatology": "per judge refit block, the pooled rate of pressure days among the earlier scored days that were not risk dates and whose outcome was observable at the block's fit (probability_calibration.past_positions); none while those days number fewer than 60 (group_calibration.GROUP_MINIMUM_PAIRS). It reads no later day (group_calibration.fit_floor refuses a pair after the fit)"
+  },
+  "status": "declared by the pull request that closes #624 before any score of step 1; a measurement, not a record. Step 1 only: it describes forecasts the repository already scores. Nothing here is published: no rule, threshold or availability time changes, no 2026 day is scored, and the live record and pin do not move. The days read are 2018-2025, so a result is a description of that history and not a confirmation (ruling of 11 October 2026 on #567)",
+  "step": 1
+ },
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "rows": {
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "1": {
+    "cells": {
+     "all": {
+      "auroc": 0.7360859549475091,
+      "brier_skill": 0.16563355765280297,
+      "days": 1469,
+      "intercept": -0.7837933044957747,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.6680232295132491,
+        "upper": 0.7882670756654155
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.05974323740757707,
+        "upper": 0.2696755096396135
+       },
+       "intercept": {
+        "draws": 1995,
+        "left_out": 5,
+        "lower": -1.576104768477359,
+        "upper": 0.0035882332269959972
+       },
+       "slope": {
+        "draws": 1995,
+        "left_out": 5,
+        "lower": 0.3149785301276084,
+        "upper": 0.8781580397195595
+       }
+      },
+      "positive_days": 222,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 37,
+      "skill_days": 1401,
+      "slope": 0.48734181001335725
+     },
+     "regime 2018-19": {
+      "auroc": 0.699944382647386,
+      "brier_skill": 0.09348322497388928,
+      "days": 294,
+      "intercept": -0.1356028321579995,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.6267770485417544,
+        "upper": 0.7635058819637423
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.052202949260113596,
+        "upper": 0.21041621304368097
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 73,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 29,
+      "skill_days": 226,
+      "slope": 0.2357314968045665
+     },
+     "regime 2020": {
+      "auroc": 0.6631944444444444,
+      "brier_skill": 0.5048251464201436,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.4904624542124542,
+        "upper": 1.0
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.02016278861866266,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 3,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 2,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.9769591315380658,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9619471203431117,
+        "upper": 0.9890720341652905
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 75,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.4230769230769231,
+      "brier_skill": -0.5761225351162464,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.3899721330856274,
+        "upper": 0.4506623200377626
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.6194703297304742,
+        "upper": 0.5457795865602841
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 30,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.8036630036630037,
+      "brier_skill": 0.08903661816812658,
+      "days": 197,
+      "intercept": -0.6802072419454884,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.6837007992007992,
+        "upper": 0.9260672604422604
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.48124669054822916,
+        "upper": 0.23579179963017008
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 41,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 4,
+      "skill_days": 197,
+      "slope": 0.4028020040661479
+     },
+     "scarcity state 0": {
+      "auroc": 0.43023255813953487,
+      "brier_skill": 0.3209501717328942,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.40901947596210086,
+        "upper": 0.45
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.07312107994308083,
+        "upper": 0.8619351884880774
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 114,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9940706861603201,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9808956942070781,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 5,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.74,
+      "brier_skill": 0.1679701777569228,
+      "days": 32,
+      "intercept": -0.7143082256573818,
+      "intervals": {
+       "auroc": {
+        "draws": 1656,
+        "left_out": 344,
+        "lower": 0.5690996503496503,
+        "upper": 0.9338709677419355
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": -1.0779135484168316,
+        "upper": 0.5993615331248017
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 14,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 1,
+      "skill_days": 32,
+      "slope": -0.39361140054828714
+     },
+     "scarcity state 3": {
+      "auroc": 0.6993583033723205,
+      "brier_skill": 0.0861208363064827,
+      "days": 374,
+      "intercept": -0.2567979237839288,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.6368502514882359,
+        "upper": 0.7538783636972576
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.050497420346947125,
+        "upper": 0.19967297640756929
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 89,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 34,
+      "skill_days": 306,
+      "slope": 0.2012610207537204
+     }
+    },
+    "scored_days": 1873
+   },
+   "2": {
+    "cells": {
+     "all": {
+      "auroc": 0.7354001441961067,
+      "brier_skill": 0.0892974668145955,
+      "days": 1469,
+      "intercept": -0.6471818580502884,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.648865248397501,
+        "upper": 0.8043837395479185
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.008647805938228222,
+        "upper": 0.195617405302935
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.4079821873292546,
+        "upper": 0.12688155985619326
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.37377876992814124,
+        "upper": 0.9502578032806124
+       }
+      },
+      "positive_days": 268,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 35,
+      "skill_days": 1401,
+      "slope": 0.5661426381723406
+     },
+     "regime 2018-19": {
+      "auroc": 0.6819382647385984,
+      "brier_skill": 0.002753985527077618,
+      "days": 294,
+      "intercept": -0.30205740998126224,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5848421407541272,
+        "upper": 0.7593735727222616
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.12741100885716425,
+        "upper": 0.10256796215751009
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 110,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 24,
+      "skill_days": 226,
+      "slope": 0.281971401696461
+     },
+     "regime 2020": {
+      "auroc": 0.4947916666666667,
+      "brier_skill": 0.4863410399990392,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.48590552750465055,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.08329634565579991,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 2,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 3,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.9740044852324689,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9571451840214837,
+        "upper": 0.9881733986129382
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 72,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.4128205128205128,
+      "brier_skill": -0.08684724579555891,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.37867043847241866,
+        "upper": 0.44267188646929284
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.33744211424763876,
+        "upper": 0.6635079044573567
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 34,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.7168498168498169,
+      "brier_skill": -0.09012824181366152,
+      "days": 197,
+      "intercept": -1.2552481320974853,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.5313290043290043,
+        "upper": 0.846701855754686
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.9108143227090071,
+        "upper": 0.14419000326754852
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 50,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 6,
+      "skill_days": 197,
+      "slope": 0.29303406617025135
+     },
+     "scarcity state 0": {
+      "auroc": 0.4254278728606357,
+      "brier_skill": 0.5967392907928746,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1276,
+        "left_out": 724,
+        "lower": 0.4025111397639033,
+        "upper": 0.44556871384518426
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.32498369684960277,
+        "upper": 0.8914720085781802
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 122,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 1,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": 0.49176954732510286,
+      "brier_skill": 0.8151881653538497,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1249,
+        "left_out": 751,
+        "lower": 0.48,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.544642073655956,
+        "upper": 0.9997847206295762
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 4,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 1,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.7142857142857143,
+      "brier_skill": 0.21387162187835917,
+      "days": 32,
+      "intercept": 0.08108506453487731,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.38769841269841254,
+        "upper": 0.9333723958333333
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": -1.7683791030346159,
+        "upper": 0.5992265774213601
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 15,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 2,
+      "skill_days": 32,
+      "slope": 0.7493005915371008
+     },
+     "scarcity state 3": {
+      "auroc": 0.6634050880626223,
+      "brier_skill": -0.035251046487606796,
+      "days": 374,
+      "intercept": -0.5874682654897225,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5781982273128107,
+        "upper": 0.7335888730461511
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.17032725135808338,
+        "upper": 0.07324408280462602
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 127,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 31,
+      "skill_days": 306,
+      "slope": 0.12016800005021006
+     }
+    },
+    "scored_days": 1872
+   },
+   "3": {
+    "cells": {
+     "all": {
+      "auroc": 0.7039407740869046,
+      "brier_skill": 0.07477695690859498,
+      "days": 1469,
+      "intercept": -0.8797983929518972,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.6014540653722585,
+        "upper": 0.7748715031157704
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.024942168174835407,
+        "upper": 0.17910763358981904
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.7150457671045853,
+        "upper": 0.19647003054194895
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.18935105204177616,
+        "upper": 1.0896574703144937
+       }
+      },
+      "positive_days": 244,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 40,
+      "skill_days": 1401,
+      "slope": 0.44545966278304927
+     },
+     "regime 2018-19": {
+      "auroc": 0.648428809788654,
+      "brier_skill": -0.03744031299526873,
+      "days": 294,
+      "intercept": -0.605176559920794,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5334679432697457,
+        "upper": 0.7297232702779635
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.18000417781177808,
+        "upper": 0.06735721272169941
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 105,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 28,
+      "skill_days": 226,
+      "slope": 0.10232626495388457
+     },
+     "regime 2020": {
+      "auroc": 0.4973958333333333,
+      "brier_skill": 0.5866672865364466,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.4921751644736842,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.2599898350161928,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 1,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 3,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.9047519157913737,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.8386706998061898,
+        "upper": 0.9569377277196598
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 70,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.441025641025641,
+      "brier_skill": -0.08109877287853862,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.4110828625235405,
+        "upper": 0.4669308936553365
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.29016002850980027,
+        "upper": 0.3533282308780613
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 23,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.6822344322344323,
+      "brier_skill": -0.0600595034799154,
+      "days": 197,
+      "intercept": -1.2093449544810997,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.4590711881950228,
+        "upper": 0.8367722442047224
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.8153025206655498,
+        "upper": 0.15749627695327467
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 45,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 7,
+      "skill_days": 197,
+      "slope": 0.29516142869561834
+     },
+     "scarcity state 0": {
+      "auroc": 0.43643031784841074,
+      "brier_skill": 0.40829145077282525,
+      "days": 820,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.41419712130854536,
+        "upper": 0.4568367653985033
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.11729169166492107,
+        "upper": 0.7852922785422326
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 104,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 820,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9928267798274006,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9787317298835324,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 4,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.7371428571428571,
+      "brier_skill": 0.21955037069483052,
+      "days": 32,
+      "intercept": 1.7591918362532066,
+      "intervals": {
+       "auroc": {
+        "draws": 1659,
+        "left_out": 341,
+        "lower": 0.3887096774193548,
+        "upper": 0.9173076923076917
+       },
+       "brier_skill": {
+        "draws": 1985,
+        "left_out": 15,
+        "lower": -0.4342264027620386,
+        "upper": 0.7146821076455456
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 14,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 2,
+      "skill_days": 32,
+      "slope": 1.6515439853367946
+     },
+     "scarcity state 3": {
+      "auroc": 0.6279524871433122,
+      "brier_skill": -0.044915121500581856,
+      "days": 374,
+      "intercept": -0.7764571946993877,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5305847078680119,
+        "upper": 0.7013960990887734
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.17201213962502887,
+        "upper": 0.0560017237348303
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 122,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 36,
+      "skill_days": 306,
+      "slope": 0.04726436374745808
+     }
+    },
+    "scored_days": 1871
+   },
+   "4": {
+    "cells": {
+     "all": {
+      "auroc": 0.7469248231443354,
+      "brier_skill": 0.10781377265951575,
+      "days": 1468,
+      "intercept": -0.5109734993490297,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.6643817003730945,
+        "upper": 0.8027060306376315
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.01916241268061998,
+        "upper": 0.20402243899987282
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.240312161766382,
+        "upper": 0.2682169913403552
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.3870585216659512,
+        "upper": 1.0760072294966156
+       }
+      },
+      "positive_days": 268,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 33,
+      "skill_days": 1400,
+      "slope": 0.6482397653229357
+     },
+     "regime 2018-19": {
+      "auroc": 0.6913489736070382,
+      "brier_skill": 0.028812981528356096,
+      "days": 293,
+      "intercept": -0.11057460843656879,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5970719724263945,
+        "upper": 0.760143731540739
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.061293714578265414,
+        "upper": 0.10151261941761491
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 109,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 23,
+      "skill_days": 225,
+      "slope": 0.3845372544500088
+     },
+     "regime 2020": {
+      "auroc": 0.4947916666666667,
+      "brier_skill": 0.5035968765011734,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1660,
+        "left_out": 340,
+        "lower": 0.48623853211009177,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.12628640496140317,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 2,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 3,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.95236973395026,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9198002637873498,
+        "upper": 0.9783044052901844
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 80,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.4307692307692308,
+      "brier_skill": -0.1284040914718354,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.3972602739726027,
+        "upper": 0.4594907045774098
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.4312190344431072,
+        "upper": 0.38922410362221244
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 27,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.7465201465201465,
+      "brier_skill": -0.0780435876663832,
+      "days": 197,
+      "intercept": -1.1810669714794386,
+      "intervals": {
+       "auroc": {
+        "draws": 1927,
+        "left_out": 73,
+        "lower": 0.5992191342843088,
+        "upper": 0.853253205128205
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.3549236968949567,
+        "upper": 0.19738092418641892
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 50,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 5,
+      "skill_days": 197,
+      "slope": 0.2584798376844704
+     },
+     "scarcity state 0": {
+      "auroc": 0.42717258261933905,
+      "brier_skill": 0.3731187876945725,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.40467488584474887,
+        "upper": 0.4494750868125656
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.029388584043611544,
+        "upper": 0.8107703845848194
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 119,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9923726696536941,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9755730711712068,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 5,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.7321428571428571,
+      "brier_skill": 0.2666631218882829,
+      "days": 31,
+      "intercept": 0.8293423712978529,
+      "intervals": {
+       "auroc": {
+        "draws": 1643,
+        "left_out": 357,
+        "lower": 0.34863636363636363,
+        "upper": 0.9166666666666666
+       },
+       "brier_skill": {
+        "draws": 1978,
+        "left_out": 22,
+        "lower": -2.3813698665379386,
+        "upper": 0.6741478748122286
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 14,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 2,
+      "skill_days": 31,
+      "slope": 1.201326280251059
+     },
+     "scarcity state 3": {
+      "auroc": 0.6734401310699495,
+      "brier_skill": -0.00374097000938467,
+      "days": 374,
+      "intercept": -0.5231751569847839,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5906752270178908,
+        "upper": 0.7336990552926151
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.11206257728728763,
+        "upper": 0.08060379979795158
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 130,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 29,
+      "skill_days": 306,
+      "slope": 0.14730784289272356
+     }
+    },
+    "scored_days": 1870
+   },
+   "5": {
+    "cells": {
+     "all": {
+      "auroc": 0.7439112441665933,
+      "brier_skill": 0.10325292026428201,
+      "days": 1467,
+      "intercept": -0.5821782696010277,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.656841278112938,
+        "upper": 0.8074108620920886
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.012403581094585097,
+        "upper": 0.2029281861754154
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.376138764038083,
+        "upper": 0.26310900882983446
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.3101475002722029,
+        "upper": 0.983184600641319
+       }
+      },
+      "positive_days": 250,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 34,
+      "skill_days": 1399,
+      "slope": 0.5587074118252724
+     },
+     "regime 2018-19": {
+      "auroc": 0.6815918653576437,
+      "brier_skill": -0.012548148363576539,
+      "days": 292,
+      "intercept": -0.35158451356083187,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5798689164165568,
+        "upper": 0.7685488834003624
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.12772673856843014,
+        "upper": 0.07857343394012677
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 94,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 25,
+      "skill_days": 224,
+      "slope": 0.07769308555829234
+     },
+     "regime 2020": {
+      "auroc": 0.6631944444444444,
+      "brier_skill": 0.6082402339958451,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1661,
+        "left_out": 339,
+        "lower": 0.4964788732394366,
+        "upper": 0.75
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.3179093253592885,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 2,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 2,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.963790066124986,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.939010522388842,
+        "upper": 0.9834613044138925
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 71,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.4230769230769231,
+      "brier_skill": -0.06701956336464088,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.387884012539185,
+        "upper": 0.453125
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.30985691386705405,
+        "upper": 0.565222402920233
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 30,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.7474358974358974,
+      "brier_skill": -0.02871349231041931,
+      "days": 197,
+      "intercept": -1.0972740996391435,
+      "intervals": {
+       "auroc": {
+        "draws": 1932,
+        "left_out": 68,
+        "lower": 0.5862871470192739,
+        "upper": 0.8709749562986973
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.1922773060992176,
+        "upper": 0.20721958455971023
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 53,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 5,
+      "skill_days": 197,
+      "slope": 0.4221504478673098
+     },
+     "scarcity state 0": {
+      "auroc": 0.4283965728274174,
+      "brier_skill": 0.45062309330316386,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.406404878859979,
+        "upper": 0.44888813373396286
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.1587499233227545,
+        "upper": 0.8517372921802665
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 117,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9966794186108319,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9898231328786529,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 4,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.6848958333333334,
+      "brier_skill": 0.2372682738854367,
+      "days": 32,
+      "intercept": 1.0203444181171597,
+      "intervals": {
+       "auroc": {
+        "draws": 1689,
+        "left_out": 311,
+        "lower": 0.3084249084249084,
+        "upper": 0.875
+       },
+       "brier_skill": {
+        "draws": 1981,
+        "left_out": 19,
+        "lower": -0.5450510002959982,
+        "upper": 0.7424181034503727
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 14,
+      "pressure_days": 8,
+      "pressure_days_on_zero": 3,
+      "skill_days": 32,
+      "slope": 1.3747023029702923
+     },
+     "scarcity state 3": {
+      "auroc": 0.6783637873754153,
+      "brier_skill": -0.019050523519577256,
+      "days": 373,
+      "intercept": -0.5193764329847284,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5947628600302747,
+        "upper": 0.7492044974977643
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.13258110102005638,
+        "upper": 0.07178283905496746
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 115,
+      "pressure_days": 72,
+      "pressure_days_on_zero": 29,
+      "skill_days": 305,
+      "slope": -0.004583368771538703
+     }
+    },
+    "scored_days": 1869
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+   "1": {
+    "cells": {
+     "all": {
+      "auroc": 0.49319904338192627,
+      "brier_skill": -0.004652124149292947,
+      "days": 1469,
+      "intercept": 0.32351978402253995,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.47323222881726246,
+        "upper": 0.5141374648791894
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09765057451498653,
+        "upper": 0.13891244409873235
+       },
+       "intercept": {
+        "draws": 1161,
+        "left_out": 839,
+        "lower": -0.9105481651191301,
+        "upper": 8.143391318356034
+       },
+       "slope": {
+        "draws": 1161,
+        "left_out": 839,
+        "lower": 1.4653288300047693,
+        "upper": 5.860387338007042
+       }
+      },
+      "positive_days": 75,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 79,
+      "skill_days": 1401,
+      "slope": 2.0347027280201657
+     },
+     "regime 2018-19": {
+      "auroc": 0.48623470522803114,
+      "brier_skill": -0.20151613108768585,
+      "days": 294,
+      "intercept": -0.5047110338074432,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4527760205900542,
+        "upper": 0.513911342238701
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.28285625360088884,
+        "upper": -0.09864972389224477
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 16,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 60,
+      "skill_days": 226,
+      "slope": 1.3888427793718692
+     },
+     "regime 2020": {
+      "auroc": 0.6666666666666666,
+      "brier_skill": 0.7395291941946478,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.5,
+        "upper": 1.0
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.46463952503441086,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 1,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 2,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.989811736933453,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9827992882728787,
+        "upper": 0.9950626905770902
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 57,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.49743589743589745,
+      "brier_skill": 0.1659877741207203,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.49242424242424243,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.024022229148452368,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 1,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.5,
+      "brier_skill": -0.07039042364499415,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0914861825818288,
+        "upper": 0.21754285503605447
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 15,
+      "skill_days": 197,
+      "slope": null
+     },
+     "scarcity state 0": {
+      "auroc": 0.4663402692778458,
+      "brier_skill": 0.6842590925170164,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.44749681916612605,
+        "upper": 0.48307746274220864
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4674513566123126,
+        "upper": 0.9890801021083541
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 55,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9997181544280582,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9990666678565333,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 3,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.5,
+      "brier_skill": -0.06524280495114576,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1656,
+        "left_out": 344,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": -0.099431583421383,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 7,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.4977927456423793,
+      "brier_skill": -0.1469340606090499,
+      "days": 374,
+      "intercept": -0.5045378260327006,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4701920513485598,
+        "upper": 0.5248028627258464
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2263709353296246,
+        "upper": -0.031197286601611057
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 17,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 70,
+      "skill_days": 306,
+      "slope": 1.3889653662184023
+     }
+    },
+    "scored_days": 1873
+   },
+   "2": {
+    "cells": {
+     "all": {
+      "auroc": 0.5196159459792147,
+      "brier_skill": 0.00022489146825122042,
+      "days": 1469,
+      "intercept": 2.876353926845507,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.48148509425727026,
+        "upper": 0.5567111985474668
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.08553328534072205,
+        "upper": 0.1352307057708899
+       },
+       "intercept": {
+        "draws": 1855,
+        "left_out": 145,
+        "lower": 0.5891914000935233,
+        "upper": 10.251916710996056
+       },
+       "slope": {
+        "draws": 1855,
+        "left_out": 145,
+        "lower": 1.5253507207313366,
+        "upper": 7.541565652412608
+       }
+      },
+      "positive_days": 96,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 74,
+      "skill_days": 1401,
+      "slope": 2.658815593571983
+     },
+     "regime 2018-19": {
+      "auroc": 0.5002085650723026,
+      "brier_skill": -0.17478257691584176,
+      "days": 294,
+      "intercept": 2.378637366459623,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.44262682875945847,
+        "upper": 0.5548704207920793
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2602575786644165,
+        "upper": -0.07257278539057102
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 40,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 54,
+      "skill_days": 226,
+      "slope": 2.3053986291571293
+     },
+     "regime 2020": {
+      "auroc": 0.5,
+      "brier_skill": 0.6108065997095737,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.2915804352465268,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 3,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.986376592208376,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9769191645290243,
+        "upper": 0.9934412071883435
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 56,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.5,
+      "brier_skill": 0.17056656444376106,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.027472192412029795,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.5,
+      "brier_skill": -0.0694161740508552,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09051380489644337,
+        "upper": 0.2177287979379068
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 15,
+      "skill_days": 197,
+      "slope": null
+     },
+     "scarcity state 0": {
+      "auroc": 0.4669926650366748,
+      "brier_skill": 0.8110026231186501,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1276,
+        "left_out": 724,
+        "lower": 0.4483949829931973,
+        "upper": 0.48373347865407557
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5926031935492138,
+        "upper": 0.991020184847047
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 54,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 1,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": 0.49588477366255146,
+      "brier_skill": 0.8211199516789561,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1249,
+        "left_out": 751,
+        "lower": 0.4871014092290688,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5511888755512278,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 2,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 1,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.5,
+      "brier_skill": -0.059257878623000027,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": -0.09877476250420486,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 7,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.5046875711099986,
+      "brier_skill": -0.140797454661453,
+      "days": 374,
+      "intercept": 2.378637366459623,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4582049893951834,
+        "upper": 0.5466501014273087
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2154182019513355,
+        "upper": -0.0421328157022741
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 40,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 65,
+      "skill_days": 306,
+      "slope": 2.3053986291571293
+     }
+    },
+    "scored_days": 1872
+   },
+   "3": {
+    "cells": {
+     "all": {
+      "auroc": 0.5009539803400918,
+      "brier_skill": -0.014483904586599872,
+      "days": 1469,
+      "intercept": 3.0667784712811876,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4703331104202422,
+        "upper": 0.5325878000732591
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.10422866875148044,
+        "upper": 0.12309770622772828
+       },
+       "intercept": {
+        "draws": 1576,
+        "left_out": 424,
+        "lower": 0.2764500414248706,
+        "upper": 10.138039616911241
+       },
+       "slope": {
+        "draws": 1576,
+        "left_out": 424,
+        "lower": 1.8386095849060864,
+        "upper": 8.704285185321876
+       }
+      },
+      "positive_days": 91,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 77,
+      "skill_days": 1401,
+      "slope": 3.185598932810583
+     },
+     "regime 2018-19": {
+      "auroc": 0.4735817575083426,
+      "brier_skill": -0.19503524883934653,
+      "days": 294,
+      "intercept": 1.8913191146879909,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.41988769290396705,
+        "upper": 0.5246381532204718
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2826932710056099,
+        "upper": -0.08900366486298965
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 37,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 57,
+      "skill_days": 226,
+      "slope": 2.314475816172332
+     },
+     "regime 2020": {
+      "auroc": 0.5,
+      "brier_skill": 0.6123077349591991,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.29354831088061073,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 3,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.9476939332041207,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9103483333650005,
+        "upper": 0.9758589387034797
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 54,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.5,
+      "brier_skill": 0.17090478435404788,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.02764211197871824,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.5,
+      "brier_skill": -0.0684436963319619,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.08958283395183426,
+        "upper": 0.21791846156117414
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 15,
+      "skill_days": 197,
+      "slope": null
+     },
+     "scarcity state 0": {
+      "auroc": 0.4682151589242054,
+      "brier_skill": 0.6555875986215711,
+      "days": 820,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.449536126028547,
+        "upper": 0.4849933771585557
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4461882134416537,
+        "upper": 0.9558276503057297
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 52,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 820,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9988287352563612,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.995994439336022,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 2,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.5,
+      "brier_skill": -0.05333982760457112,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1659,
+        "left_out": 341,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 1985,
+        "left_out": 15,
+        "lower": -0.09846059934041428,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 7,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.48254676193510215,
+      "brier_skill": -0.15706106345675397,
+      "days": 374,
+      "intercept": 1.8913191146879909,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4404969384239539,
+        "upper": 0.5234304252698878
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2337023949804382,
+        "upper": -0.05311650748467144
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 37,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 68,
+      "skill_days": 306,
+      "slope": 2.314475816172332
+     }
+    },
+    "scored_days": 1871
+   },
+   "4": {
+    "cells": {
+     "all": {
+      "auroc": 0.5189085981768908,
+      "brier_skill": -0.0030363515903146787,
+      "days": 1468,
+      "intercept": 1.5748389024167593,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.48240557570059983,
+        "upper": 0.5599962049173492
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09605661879712045,
+        "upper": 0.13898383946118978
+       },
+       "intercept": {
+        "draws": 1867,
+        "left_out": 133,
+        "lower": 0.15602756840857898,
+        "upper": 5.1903251752523385
+       },
+       "slope": {
+        "draws": 1867,
+        "left_out": 133,
+        "lower": 1.1444008422714846,
+        "upper": 3.8888266079355662
+       }
+      },
+      "positive_days": 97,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 74,
+      "skill_days": 1400,
+      "slope": 1.823858316428265
+     },
+     "regime 2018-19": {
+      "auroc": 0.5046082949308756,
+      "brier_skill": -0.1813780693957765,
+      "days": 293,
+      "intercept": -0.933575231488372,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.45551028210069017,
+        "upper": 0.5562086829166231
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2789758968358737,
+        "upper": -0.06739367056300374
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 36,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 54,
+      "skill_days": 225,
+      "slope": 0.1851506590708213
+     },
+     "regime 2020": {
+      "auroc": 0.5,
+      "brier_skill": 0.6152760204073936,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1660,
+        "left_out": 340,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.295127476807096,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 3,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.976469126040008,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9606010586480935,
+        "upper": 0.9888229771185669
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 61,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.5,
+      "brier_skill": 0.17155634387770835,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.028510022749014693,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.5,
+      "brier_skill": -0.06823018458964003,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1927,
+        "left_out": 73,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.08895895025098073,
+        "upper": 0.18622599752432809
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 15,
+      "skill_days": 197,
+      "slope": null
+     },
+     "scarcity state 0": {
+      "auroc": 0.4645042839657283,
+      "brier_skill": 0.6775050877177046,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.44523261638078093,
+        "upper": 0.48273396079076075
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.46911590922358426,
+        "upper": 0.9793150401612707
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 58,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9993785789880578,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9978931611464649,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 3,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.5,
+      "brier_skill": -0.0530585806011048,
+      "days": 31,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1643,
+        "left_out": 357,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 1978,
+        "left_out": 22,
+        "lower": -0.09793403120338762,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 7,
+      "skill_days": 31,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.5087379966322305,
+      "brier_skill": -0.14482419374798328,
+      "days": 374,
+      "intercept": -0.933575231488372,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4683551620313537,
+        "upper": 0.5505564021601697
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.23211276144499746,
+        "upper": -0.03873448708361889
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 36,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 65,
+      "skill_days": 306,
+      "slope": 0.1851506590708213
+     }
+    },
+    "scored_days": 1870
+   },
+   "5": {
+    "cells": {
+     "all": {
+      "auroc": 0.5282028704763582,
+      "brier_skill": 0.009587897746661245,
+      "days": 1467,
+      "intercept": 2.4181198884147177,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.493906170271737,
+        "upper": 0.5645317471902671
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.07595876507755533,
+        "upper": 0.14304299445023033
+       },
+       "intercept": {
+        "draws": 1856,
+        "left_out": 144,
+        "lower": 0.8424658120892593,
+        "upper": 5.590086404688326
+       },
+       "slope": {
+        "draws": 1856,
+        "left_out": 144,
+        "lower": 1.60899835539143,
+        "upper": 4.6416405949155815
+       }
+      },
+      "positive_days": 90,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 73,
+      "skill_days": 1399,
+      "slope": 2.3964020427418786
+     },
+     "regime 2018-19": {
+      "auroc": 0.5191444600280505,
+      "brier_skill": -0.16290722285595716,
+      "days": 292,
+      "intercept": 1.326692861773745,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4786818207233432,
+        "upper": 0.5647246108073666
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2480269365615034,
+        "upper": -0.06211650254609187
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 35,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 53,
+      "skill_days": 224,
+      "slope": 1.5812120379803187
+     },
+     "regime 2020": {
+      "auroc": 0.5,
+      "brier_skill": 0.6174213160588823,
+      "days": 195,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1661,
+        "left_out": 339,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.30303535507995655,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 3,
+      "skill_days": 195,
+      "slope": null
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.9814320697245227,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9680679212138161,
+        "upper": 0.9913554602420618
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 53,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.5,
+      "brier_skill": 0.171713327252634,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.02939328461261416,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.4945054945054945,
+      "brier_skill": -0.06920015600422325,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1932,
+        "left_out": 68,
+        "lower": 0.48815937070585264,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.08963934202953237,
+        "upper": 0.17245506279775943
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 2,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 15,
+      "skill_days": 197,
+      "slope": null
+     },
+     "scarcity state 0": {
+      "auroc": 0.46817625458996326,
+      "brier_skill": 0.6776857703897465,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.4496327325635971,
+        "upper": 0.4846193147548471
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4665086558484322,
+        "upper": 0.9812568832578383
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 52,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 2,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9993512281767108,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9977524697623957,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 3,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.5,
+      "brier_skill": -0.05916074921965153,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1689,
+        "left_out": 311,
+        "lower": 0.5,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 1981,
+        "left_out": 19,
+        "lower": -0.09912916865720556,
+        "upper": 1.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 0,
+      "pressure_days": 8,
+      "pressure_days_on_zero": 8,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.5213409007013659,
+      "brier_skill": -0.1292544881165021,
+      "days": 373,
+      "intercept": 1.326692861773745,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.48625353699686136,
+        "upper": 0.5573110148463628
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.2045178672907044,
+        "upper": -0.030565697259296535
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 35,
+      "pressure_days": 72,
+      "pressure_days_on_zero": 63,
+      "skill_days": 305,
+      "slope": 1.5812120379803187
+     }
+    },
+    "scored_days": 1869
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor": {
+   "1": {
+    "cells": {
+     "all": {
+      "auroc": 0.5737949953400039,
+      "brier_skill": 0.015025316433531222,
+      "days": 1469,
+      "intercept": -1.7287945158943714,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4024162094174962,
+        "upper": 0.715114164962649
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0020492378023791117,
+        "upper": 0.03606837861179552
+       },
+       "intercept": {
+        "draws": 1985,
+        "left_out": 15,
+        "lower": -3.9563733559680694,
+        "upper": -0.06344646566972939
+       },
+       "slope": {
+        "draws": 1985,
+        "left_out": 15,
+        "lower": -0.41679196610152053,
+        "upper": 1.2826836901759313
+       }
+      },
+      "positive_days": 1385,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 1,
+      "skill_days": 1401,
+      "slope": 0.46468450080839374
+     },
+     "regime 2018-19": {
+      "auroc": 0.6587875417130145,
+      "brier_skill": 0.01108201172831813,
+      "days": 294,
+      "intercept": -0.6445680441908963,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5152267552553671,
+        "upper": 0.7794585690355962
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.007267298782538944,
+        "upper": 0.03500999039823019
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 210,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": 0.11977974312944885
+     },
+     "regime 2020": {
+      "auroc": 0.8489583333333334,
+      "brier_skill": 0.0837505775979791,
+      "days": 195,
+      "intercept": 4.8042259702593135,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.6866543584745339,
+        "upper": 1.0
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.19087427019954623
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.204475582243038
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.07435897435897436,
+      "brier_skill": -0.003085241476537215,
+      "days": 197,
+      "intercept": -289.84038470166684,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.006902929860905593,
+        "upper": 0.1848568839614093
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.016176140869844147,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -99.3475384088782
+     },
+     "regime 2025-26": {
+      "auroc": 0.35036630036630034,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -35.76322984974916,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.08582010582010581,
+        "upper": 0.7103336612559434
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -11.272834584375266
+     },
+     "scarcity state 0": {
+      "auroc": 0.13372093023255813,
+      "brier_skill": -0.0011407661678286551,
+      "days": 819,
+      "intercept": -34.84099836784952,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.06416584700467672,
+        "upper": 0.21537186461956948
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.00358202536087493,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -10.329988271247714
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 244,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.49142857142857144,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -8.599062057518854,
+      "intervals": {
+       "auroc": {
+        "draws": 1656,
+        "left_out": 344,
+        "lower": 0.11989130434782608,
+        "upper": 0.772225935828877
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -2.516530932168052
+     },
+     "scarcity state 3": {
+      "auroc": 0.590861511855459,
+      "brier_skill": 0.01945700642761672,
+      "days": 374,
+      "intercept": -0.9612972063102792,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4621096209143654,
+        "upper": 0.7028994945470566
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0026751066951855485,
+        "upper": 0.047420456174478876
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 290,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": 0.07322017428095548
+     }
+    },
+    "scored_days": 1873
+   },
+   "2": {
+    "cells": {
+     "all": {
+      "auroc": 0.5739180895774351,
+      "brier_skill": 0.006139937775280324,
+      "days": 1469,
+      "intercept": -1.8961075097754803,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.39691700349104964,
+        "upper": 0.7195778784787987
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.002945381447452878,
+        "upper": 0.015331148392001214
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -5.030115715163704,
+        "upper": 0.17442232614697784
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.7792515107937928,
+        "upper": 1.4226522529443342
+       }
+      },
+      "positive_days": 1385,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 1,
+      "skill_days": 1401,
+      "slope": 0.38476333315011546
+     },
+     "regime 2018-19": {
+      "auroc": 0.6559719132369299,
+      "brier_skill": 0.009629753111301542,
+      "days": 294,
+      "intercept": -0.9090644365712657,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5206447172363311,
+        "upper": 0.7734696816764856
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.005753553009985957,
+        "upper": 0.02337948012895703
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 210,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": -0.007762453189194426
+     },
+     "regime 2020": {
+      "auroc": 0.7951388888888888,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 6.210863418056049,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.6073398784478728,
+        "upper": 0.933041237113402
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.9168033902380115
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.07051282051282051,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -322.3396698675419,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.004755134281200632,
+        "upper": 0.1774404055657426
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -110.63622660837703
+     },
+     "regime 2025-26": {
+      "auroc": 0.2846153846153846,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -60.73082028964481,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.06411658275645059,
+        "upper": 0.5772135819845177
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -19.700933735226656
+     },
+     "scarcity state 0": {
+      "auroc": 0.1558679706601467,
+      "brier_skill": 0.0,
+      "days": 819,
+      "intercept": -31.07223893399786,
+      "intervals": {
+       "auroc": {
+        "draws": 1276,
+        "left_out": 724,
+        "lower": 0.08147523877392367,
+        "upper": 0.24099293892883422
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -8.780809895830792
+     },
+     "scarcity state 1": {
+      "auroc": 0.11316872427983539,
+      "brier_skill": 0.0,
+      "days": 244,
+      "intercept": -15.798033546656578,
+      "intervals": {
+       "auroc": {
+        "draws": 1249,
+        "left_out": 751,
+        "lower": 0.026204394985209184,
+        "upper": 0.24052512004956883
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 244,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": -4.086117205008331
+     },
+     "scarcity state 2": {
+      "auroc": 0.38857142857142857,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -10.292673451592494,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.08590401785714286,
+        "upper": 0.6666666666666666
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -3.0987434145668638
+     },
+     "scarcity state 3": {
+      "auroc": 0.5850134255677423,
+      "brier_skill": 0.00790129698284081,
+      "days": 374,
+      "intercept": -1.4610155590569582,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4558300584825428,
+        "upper": 0.6972282216581499
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0042247174226104365,
+        "upper": 0.019417335639507288
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 290,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": -0.1711769209446769
+     }
+    },
+    "scored_days": 1872
+   },
+   "3": {
+    "cells": {
+     "all": {
+      "auroc": 0.5578674802609598,
+      "brier_skill": 0.0005988932436529204,
+      "days": 1469,
+      "intercept": -2.146959136160935,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.3841424579305589,
+        "upper": 0.7050968236639633
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.006265761821262017,
+        "upper": 0.006936482252020642
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -5.295925366830211,
+        "upper": -0.05228480788274171
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.8802740753919225,
+        "upper": 1.3031156154812171
+       }
+      },
+      "positive_days": 1384,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 1,
+      "skill_days": 1401,
+      "slope": 0.2731589134612326
+     },
+     "regime 2018-19": {
+      "auroc": 0.64755978865406,
+      "brier_skill": 0.0018059319822971709,
+      "days": 294,
+      "intercept": -0.9918554666654874,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5094917408650805,
+        "upper": 0.7679820424065921
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.009730569157524361,
+        "upper": 0.011622002367436872
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 209,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": -0.05058212537722576
+     },
+     "regime 2020": {
+      "auroc": 0.7899305555555556,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 5.813853517738363,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.6021340794382269,
+        "upper": 0.9287481424723693
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.655950044037046
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": -0.009091070023001802,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.017651900651621987,
+        "upper": -0.002644473592619948
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.06666666666666667,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -369.0240478784222,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.002388926862611073,
+        "upper": 0.17140654001528552
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -126.85106674060256
+     },
+     "regime 2025-26": {
+      "auroc": 0.2184981684981685,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -94.95825071879922,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.05116277169966596,
+        "upper": 0.43800867389394843
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -31.22149324342472
+     },
+     "scarcity state 0": {
+      "auroc": 0.1332518337408313,
+      "brier_skill": -0.006779023183902,
+      "days": 820,
+      "intercept": -34.71961271121419,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.06487194038689299,
+        "upper": 0.21306561965479706
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.014115713713878488,
+        "upper": -0.0018428011347194411
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 820,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 820,
+      "slope": -10.28863212300556
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 243,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.2914285714285714,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -15.494800722529906,
+      "intervals": {
+       "auroc": {
+        "draws": 1659,
+        "left_out": 341,
+        "lower": 0.05517241379310336,
+        "upper": 0.5529239766081869
+       },
+       "brier_skill": {
+        "draws": 1985,
+        "left_out": 15,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -4.851148335907336
+     },
+     "scarcity state 3": {
+      "auroc": 0.5744550129704638,
+      "brier_skill": 0.0014816326380929778,
+      "days": 374,
+      "intercept": -1.5462066747550234,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4410776319988366,
+        "upper": 0.6873825707417257
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.007380502641717237,
+        "upper": 0.009496366562346236
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 289,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": -0.21255981802229232
+     }
+    },
+    "scored_days": 1871
+   },
+   "4": {
+    "cells": {
+     "all": {
+      "auroc": 0.5643455460528631,
+      "brier_skill": 0.0035491104943107254,
+      "days": 1468,
+      "intercept": -1.878310448074003,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.39235095763821326,
+        "upper": 0.7179809149107151
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0024156041747209426,
+        "upper": 0.009700673397393117
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -4.774759120069452,
+        "upper": 0.25921823909910424
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.6564200547536103,
+        "upper": 1.438156782361629
+       }
+      },
+      "positive_days": 1383,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 2,
+      "skill_days": 1400,
+      "slope": 0.39773586771081687
+     },
+     "regime 2018-19": {
+      "auroc": 0.6469766792347438,
+      "brier_skill": 0.0055714134946965865,
+      "days": 293,
+      "intercept": -0.7893032759663783,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.514376140450801,
+        "upper": 0.7660810894709511
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.004457393483566685,
+        "upper": 0.014859555352061371
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 208,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 2,
+      "skill_days": 225,
+      "slope": 0.054651910628171596
+     },
+     "regime 2020": {
+      "auroc": 0.7847222222222222,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 5.388677351555254,
+      "intervals": {
+       "auroc": {
+        "draws": 1660,
+        "left_out": 340,
+        "lower": 0.5820300369493918,
+        "upper": 0.9271583383503913
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.391512002496383
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.06282051282051282,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -459.373532586721,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.0,
+        "upper": 0.16267087023488638
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -158.25865992049071
+     },
+     "regime 2025-26": {
+      "auroc": 0.20274725274725275,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -104.20343516787764,
+      "intervals": {
+       "auroc": {
+        "draws": 1927,
+        "left_out": 73,
+        "lower": 0.04202796656511209,
+        "upper": 0.4329315203884676
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -34.33511285372517
+     },
+     "scarcity state 0": {
+      "auroc": 0.13157894736842105,
+      "brier_skill": 0.0,
+      "days": 819,
+      "intercept": -34.894394544950046,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.061365178935981805,
+        "upper": 0.211822696190166
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -10.353189957336806
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 244,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.22916666666666666,
+      "brier_skill": 0.0,
+      "days": 31,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1643,
+        "left_out": 357,
+        "lower": 0.0,
+        "upper": 0.43324324324324315
+       },
+       "brier_skill": {
+        "draws": 1978,
+        "left_out": 22,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 31,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 31,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.5742047057752696,
+      "brier_skill": 0.00456767900987709,
+      "days": 374,
+      "intercept": -1.3948520131495534,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.445548213791483,
+        "upper": 0.6897378634262065
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.003349621154334204,
+        "upper": 0.01228576229433156
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 289,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 2,
+      "skill_days": 306,
+      "slope": -0.13165445802725012
+     }
+    },
+    "scored_days": 1870
+   },
+   "5": {
+    "cells": {
+     "all": {
+      "auroc": 0.5564321563793255,
+      "brier_skill": 0.004917436743563042,
+      "days": 1467,
+      "intercept": -1.7623161882173344,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.3796036773296048,
+        "upper": 0.7035749887573823
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0006341709368260285,
+        "upper": 0.010198011359970586
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -4.55073847590525,
+        "upper": 0.2504689887496568
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.6288885084383233,
+        "upper": 1.4577742283627741
+       }
+      },
+      "positive_days": 1382,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 3,
+      "skill_days": 1399,
+      "slope": 0.45593552809070076
+     },
+     "regime 2018-19": {
+      "auroc": 0.6578190743338008,
+      "brier_skill": 0.007879948932455472,
+      "days": 292,
+      "intercept": -0.6683072483831812,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5292057404119399,
+        "upper": 0.7724939592685224
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0008837167919049649,
+        "upper": 0.015873981333110142
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 207,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 3,
+      "skill_days": 224,
+      "slope": 0.12106723953417176
+     },
+     "regime 2020": {
+      "auroc": 0.8090277777777778,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 6.328483085287633,
+      "intervals": {
+       "auroc": {
+        "draws": 1661,
+        "left_out": 339,
+        "lower": 0.6228070175438597,
+        "upper": 0.9408185840707964
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 7.088315814338007
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.07948717948717948,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -290.5651275918743,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.01949999999999999,
+        "upper": 0.17135178889428523
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -99.80206897837543
+     },
+     "regime 2025-26": {
+      "auroc": 0.20201465201465202,
+      "brier_skill": -0.0005726785155928393,
+      "days": 197,
+      "intercept": -104.40940890271057,
+      "intervals": {
+       "auroc": {
+        "draws": 1932,
+        "left_out": 68,
+        "lower": 0.04254488031914894,
+        "upper": 0.4253396739130429
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.005247974585667363,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -34.41543307283816
+     },
+     "scarcity state 0": {
+      "auroc": 0.1438188494492044,
+      "brier_skill": -0.0012332413612519133,
+      "days": 819,
+      "intercept": -32.204906655513035,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.07402934614034627,
+        "upper": 0.2251820893179499
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.003122095308133577,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -9.421873129666368
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 243,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.2890625,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -16.336088088598924,
+      "intervals": {
+       "auroc": {
+        "draws": 1689,
+        "left_out": 311,
+        "lower": 0.0625,
+        "upper": 0.5198431372549019
+       },
+       "brier_skill": {
+        "draws": 1981,
+        "left_out": 19,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 8,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -5.1970196496830505
+     },
+     "scarcity state 3": {
+      "auroc": 0.589608711701735,
+      "brier_skill": 0.006551843421636061,
+      "days": 373,
+      "intercept": -1.2907549817614117,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4657783396329213,
+        "upper": 0.6964517192693318
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0006875831173640102,
+        "upper": 0.013102121188069112
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 288,
+      "pressure_days": 72,
+      "pressure_days_on_zero": 3,
+      "skill_days": 305,
+      "slope": -0.06581560056274942
+     }
+    },
+    "scored_days": 1869
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor": {
+   "1": {
+    "cells": {
+     "all": {
+      "auroc": 0.8697531081294951,
+      "brier_skill": 0.1540647329969076,
+      "days": 1469,
+      "intercept": -0.5811308346655555,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.8046520145002454,
+        "upper": 0.9164029865134283
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.06569272855426025,
+        "upper": 0.24991778461918995
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.3119454082994149,
+        "upper": 0.057239131211648385
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.32941699623675685,
+        "upper": 0.8626412556515115
+       }
+      },
+      "positive_days": 519,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 6,
+      "skill_days": 1401,
+      "slope": 0.5714739222663427
+     },
+     "regime 2018-19": {
+      "auroc": 0.6838153503893215,
+      "brier_skill": 0.04930183578468017,
+      "days": 294,
+      "intercept": -0.7242397304964259,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5557744179704619,
+        "upper": 0.7974060496236409
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.11984274571522811,
+        "upper": 0.163230086429646
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 210,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": 0.1319797428402778
+     },
+     "regime 2020": {
+      "auroc": 0.6545138888888888,
+      "brier_skill": 0.5547034531184947,
+      "days": 195,
+      "intercept": -2.8251330419576495,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.40321068548387096,
+        "upper": 1.0
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.3204952748557667,
+        "upper": 0.891013749732176
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 118,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 0.4137283367546125
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.989811736933453,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9827992882728787,
+        "upper": 0.9950626905770902
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 57,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.6564102564102564,
+      "brier_skill": 0.17566807652225347,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.3840263080343987,
+        "upper": 0.9401624689054726
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.038369871944885836,
+        "upper": 0.9795179195949759
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 37,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.7452380952380953,
+      "brier_skill": 0.02251550071841457,
+      "days": 197,
+      "intercept": 0.6923894086428887,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.5092676755467452,
+        "upper": 0.9575737410574559
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0522135107528269,
+        "upper": 0.18145226742584886
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 97,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 4,
+      "skill_days": 197,
+      "slope": 0.8864386737490755
+     },
+     "scarcity state 0": {
+      "auroc": 0.6496328029375765,
+      "brier_skill": 0.6855374089282734,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.40755717912898065,
+        "upper": 0.9011554789917758
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4725517137439528,
+        "upper": 0.9849422056341772
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 137,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9732605322803165,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9559621289225831,
+        "upper": 0.9909335011099668
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 84,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.6485714285714286,
+      "brier_skill": -0.021280403476971355,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1656,
+        "left_out": 344,
+        "lower": 0.3435267857142857,
+        "upper": 0.9550395256916997
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": -0.06382077961292404,
+        "upper": 0.9923784328546233
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 8,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 4,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.6618122240932053,
+      "brier_skill": 0.054549521229005915,
+      "days": 374,
+      "intercept": -0.8423432680614508,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5435029713158644,
+        "upper": 0.7606169224796943
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.07417701214301514,
+        "upper": 0.15051968396417292
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 290,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": 0.1835697939084711
+     }
+    },
+    "scored_days": 1873
+   },
+   "2": {
+    "cells": {
+     "all": {
+      "auroc": 0.8592813055023124,
+      "brier_skill": 0.13645078098579877,
+      "days": 1469,
+      "intercept": -0.6178096939622312,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.7855329081043578,
+        "upper": 0.9130927798441696
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.048804139716995404,
+        "upper": 0.23065800509173823
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.4198722801285188,
+        "upper": 0.03091253733614977
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.2797299505244708,
+        "upper": 0.8510994535739693
+       }
+      },
+      "positive_days": 518,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 7,
+      "skill_days": 1401,
+      "slope": 0.5492699940758922
+     },
+     "regime 2018-19": {
+      "auroc": 0.681277808676307,
+      "brier_skill": 0.04433137576808466,
+      "days": 294,
+      "intercept": -0.79102911321989,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5535476622002569,
+        "upper": 0.7952305633391153
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.12186428164418511,
+        "upper": 0.15490514652594958
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 210,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": 0.07735309842222644
+     },
+     "regime 2020": {
+      "auroc": 0.6006944444444444,
+      "brier_skill": 0.44597598740138533,
+      "days": 195,
+      "intercept": -5.7980068187258516,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.3838112256205673,
+        "upper": 0.8807209014217449
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.18364424265482507,
+        "upper": 0.8280308788961099
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 119,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": -0.6879324854008559
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.986376592208376,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9769191645290243,
+        "upper": 0.9934412071883435
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 56,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.6602564102564102,
+      "brier_skill": 0.18024328785858323,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.3888161086851043,
+        "upper": 0.9418780831571529
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.04067427435025067,
+        "upper": 0.991571624780408
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 36,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.6976190476190476,
+      "brier_skill": -0.0003596148116826736,
+      "days": 197,
+      "intercept": 0.404122427697085,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.4385454263478457,
+        "upper": 0.9479641791044775
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.06339744493190648,
+        "upper": 0.14569046372207695
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 97,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 5,
+      "skill_days": 197,
+      "slope": 0.8137353272177803
+     },
+     "scarcity state 0": {
+      "auroc": 0.41687041564792177,
+      "brier_skill": 0.8065652920015053,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1276,
+        "left_out": 724,
+        "lower": 0.3797692038188666,
+        "upper": 0.4497095657905578
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5894654927821423,
+        "upper": 0.9863656901033034
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 136,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 1,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": 0.7304526748971193,
+      "brier_skill": 0.8047447833497323,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1249,
+        "left_out": 751,
+        "lower": 0.5557333333333334,
+        "upper": 0.8809462710505213
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5484260719542381,
+        "upper": 0.986018582247177
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 84,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.5514285714285714,
+      "brier_skill": -0.03033845717487993,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.2925589836660616,
+        "upper": 0.8333333333333334
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": -0.07471616782485303,
+        "upper": 0.9890701234715695
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 8,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 5,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.6472716515723843,
+      "brier_skill": 0.033310397202920505,
+      "days": 374,
+      "intercept": -1.0045026089473053,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5268516725098293,
+        "upper": 0.747152054425155
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09803422027151971,
+        "upper": 0.1282835812008967
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 290,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": 0.0667312339856811
+     }
+    },
+    "scored_days": 1872
+   },
+   "3": {
+    "cells": {
+     "all": {
+      "auroc": 0.8476093340601755,
+      "brier_skill": 0.13080785852936905,
+      "days": 1469,
+      "intercept": -0.6980957163982963,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.7642737365750722,
+        "upper": 0.9088851478140217
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.043228533732461466,
+        "upper": 0.2230704374543929
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.558510713901251,
+        "upper": -0.03768439673170711
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.2336107980122824,
+        "upper": 0.8469721985402315
+       }
+      },
+      "positive_days": 515,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 8,
+      "skill_days": 1401,
+      "slope": 0.5261328423236095
+     },
+     "regime 2018-19": {
+      "auroc": 0.6834329810901001,
+      "brier_skill": 0.0462500193183395,
+      "days": 294,
+      "intercept": -0.789825766083497,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5591079906000194,
+        "upper": 0.7970312022536287
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.12226812793544099,
+        "upper": 0.15660027860496686
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 209,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": 0.07269713573736089
+     },
+     "regime 2020": {
+      "auroc": 0.5954861111111112,
+      "brier_skill": 0.438923138649283,
+      "days": 195,
+      "intercept": -5.824075165779238,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.3774123023715415,
+        "upper": 0.8775357744107741
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.17520692516864092,
+        "upper": 0.8244787161074203
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 120,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": -0.6950312396890956
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.9476939332041207,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9103483333650005,
+        "upper": 0.9758589387034797
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 54,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.6628205128205128,
+      "brier_skill": 0.18069271398320075,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.3929663131628197,
+        "upper": 0.9429230769230769
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.04086194255638208,
+        "upper": 0.9920045754451062
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 35,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.6496336996336997,
+      "brier_skill": -0.023193127192866037,
+      "days": 197,
+      "intercept": 0.052099680006388864,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.37462836297309615,
+        "upper": 0.9365671641791045
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.07719902094442482,
+        "upper": 0.11188780087380598
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 97,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 6,
+      "skill_days": 197,
+      "slope": 0.7246750596168401
+     },
+     "scarcity state 0": {
+      "auroc": 0.6512836185819071,
+      "brier_skill": 0.6567785773504066,
+      "days": 820,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.40938091856060604,
+        "upper": 0.9037559878886479
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4505597705781475,
+        "upper": 0.9505025894523075
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 136,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 820,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9723473119171402,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9548520454272983,
+        "upper": 0.9898495368054738
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 82,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.44857142857142857,
+      "brier_skill": -0.03929529656984343,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1659,
+        "left_out": 341,
+        "lower": 0.2164285714285714,
+        "upper": 0.6666666666666666
+       },
+       "brier_skill": {
+        "draws": 1985,
+        "left_out": 15,
+        "lower": -0.08561419594895323,
+        "upper": 0.9923784328546233
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 8,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 6,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.6430391844536476,
+      "brier_skill": 0.030307021403142453,
+      "days": 374,
+      "intercept": -1.042202054341012,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5195006552302147,
+        "upper": 0.7451261982748447
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09938376920806212,
+        "upper": 0.12672426456083505
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 289,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": 0.03915276568194942
+     }
+    },
+    "scored_days": 1871
+   },
+   "4": {
+    "cells": {
+     "all": {
+      "auroc": 0.8403283708161757,
+      "brier_skill": 0.13219070168387959,
+      "days": 1468,
+      "intercept": -0.625080777853677,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.7505000721599557,
+        "upper": 0.909892687089458
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.04281248750222839,
+        "upper": 0.23022515311066372
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.4330226712000536,
+        "upper": 0.05096572744422642
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.28735657978786416,
+        "upper": 0.895220358952856
+       }
+      },
+      "positive_days": 520,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 10,
+      "skill_days": 1400,
+      "slope": 0.5788771607538398
+     },
+     "regime 2018-19": {
+      "auroc": 0.6869152353023321,
+      "brier_skill": 0.04753886015459152,
+      "days": 293,
+      "intercept": -0.7328227588109351,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.571666636078892,
+        "upper": 0.7963945870620078
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.10885953894582294,
+        "upper": 0.16030258690145655
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 208,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 2,
+      "skill_days": 225,
+      "slope": 0.12882592098416323
+     },
+     "regime 2020": {
+      "auroc": 0.5902777777777778,
+      "brier_skill": 0.43409952409183594,
+      "days": 195,
+      "intercept": -5.8494582625987706,
+      "intervals": {
+       "auroc": {
+        "draws": 1660,
+        "left_out": 340,
+        "lower": 0.3656526494895479,
+        "upper": 0.8780487804878049
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.16543826481609253,
+        "upper": 0.8215356367388055
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 121,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": -0.7019388383035312
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.976469126040008,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9606010586480935,
+        "upper": 0.9888229771185669
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 61,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.6653846153846154,
+      "brier_skill": 0.18145164310361295,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.40221034734029637,
+        "upper": 0.95
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.04094547991854189,
+        "upper": 0.991166729518803
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 34,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.6065934065934065,
+      "brier_skill": -0.029932154268056177,
+      "days": 197,
+      "intercept": -0.05821794397442736,
+      "intervals": {
+       "auroc": {
+        "draws": 1927,
+        "left_out": 73,
+        "lower": 0.3369636611069247,
+        "upper": 0.9341855400696863
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.08102014403157902,
+        "upper": 0.11008983087480782
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 96,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 7,
+      "skill_days": 197,
+      "slope": 0.7291379372762912
+     },
+     "scarcity state 0": {
+      "auroc": 0.6474908200734394,
+      "brier_skill": 0.6788197922242214,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.4081428697884394,
+        "upper": 0.8990437384138171
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.47505315762263556,
+        "upper": 0.9750495516236938
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 139,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9728467316462991,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9550559226955291,
+        "upper": 0.9906179418207479
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 85,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.3541666666666667,
+      "brier_skill": -0.05368540118479603,
+      "days": 31,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1643,
+        "left_out": 357,
+        "lower": 0.07905263157894735,
+        "upper": 0.5
+       },
+       "brier_skill": {
+        "draws": 1978,
+        "left_out": 22,
+        "lower": -0.09793403120338762,
+        "upper": 0.9928036067573901
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 7,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 7,
+      "skill_days": 31,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.6437445956401038,
+      "brier_skill": 0.031143991886631084,
+      "days": 374,
+      "intercept": -1.0018406710003143,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5220054882209871,
+        "upper": 0.7456620051552341
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09633166206089486,
+        "upper": 0.12732881236594154
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 289,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 2,
+      "skill_days": 306,
+      "slope": 0.07736501900828996
+     }
+    },
+    "scored_days": 1870
+   },
+   "5": {
+    "cells": {
+     "all": {
+      "auroc": 0.8375935546359073,
+      "brier_skill": 0.13017427051712205,
+      "days": 1467,
+      "intercept": -0.6034547599038759,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.7461103174703735,
+        "upper": 0.9043175206152106
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.039795262735908096,
+        "upper": 0.2257488750193012
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -1.3816516361068347,
+        "upper": 0.09453347259038013
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.31838484580004,
+        "upper": 0.9099700393453226
+       }
+      },
+      "positive_days": 511,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 11,
+      "skill_days": 1399,
+      "slope": 0.5947671155864437
+     },
+     "regime 2018-19": {
+      "auroc": 0.6759467040673212,
+      "brier_skill": 0.04051829706838683,
+      "days": 292,
+      "intercept": -0.7213472209873807,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.551437535338403,
+        "upper": 0.7876701614118623
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.1402895053562217,
+        "upper": 0.1552277419735664
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 207,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 3,
+      "skill_days": 224,
+      "slope": 0.15038582046321292
+     },
+     "regime 2020": {
+      "auroc": 0.7126736111111112,
+      "brier_skill": 0.4539752005307024,
+      "days": 195,
+      "intercept": -3.5070440075461153,
+      "intervals": {
+       "auroc": {
+        "draws": 1661,
+        "left_out": 339,
+        "lower": 0.4876847290640394,
+        "upper": 0.9057971014492754
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.20399181285134554,
+        "upper": 0.8193693793867375
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 122,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 0.06322558059267339
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.9814320697245227,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9680679212138161,
+        "upper": 0.9913554602420618
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 53,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.6679487179487179,
+      "brier_skill": 0.18172179121499743,
+      "days": 197,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.40246042459197445,
+        "upper": 0.9525656814449918
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.043036091467865446,
+        "upper": 0.9932184341612953
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 33,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 197,
+      "slope": null
+     },
+     "regime 2025-26": {
+      "auroc": 0.6014652014652014,
+      "brier_skill": -0.03086190904356756,
+      "days": 197,
+      "intercept": -0.16005676468139035,
+      "intervals": {
+       "auroc": {
+        "draws": 1932,
+        "left_out": 68,
+        "lower": 0.33676167974650895,
+        "upper": 0.9261471518987342
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.08347220787136117,
+        "upper": 0.1038890249797495
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 96,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 7,
+      "skill_days": 197,
+      "slope": 0.7028495858082903
+     },
+     "scarcity state 0": {
+      "auroc": 0.6545287637698899,
+      "brier_skill": 0.6794323948023056,
+      "days": 819,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.41328286153170946,
+        "upper": 0.9090856420520383
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.471339343428988,
+        "upper": 0.977861671278422
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 131,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 1,
+      "skill_days": 819,
+      "slope": null
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.9731706551593822,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.9555916084755156,
+        "upper": 0.9905566663691739
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 84,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.4322916666666667,
+      "brier_skill": -0.046803873812088836,
+      "days": 32,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1689,
+        "left_out": 311,
+        "lower": 0.1988311688311688,
+        "upper": 0.6166666666666667
+       },
+       "brier_skill": {
+        "draws": 1981,
+        "left_out": 19,
+        "lower": -0.0876834453804416,
+        "upper": 0.9887964777218181
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 8,
+      "pressure_days": 8,
+      "pressure_days_on_zero": 7,
+      "skill_days": 32,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.6428110003691399,
+      "brier_skill": 0.028534484346086297,
+      "days": 373,
+      "intercept": -0.9500737975230813,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.523853626699722,
+        "upper": 0.7422115502345658
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.11525942428062609,
+        "upper": 0.12629157956735046
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 288,
+      "pressure_days": 72,
+      "pressure_days_on_zero": 3,
+      "skill_days": 305,
+      "slope": 0.13410397221626907
+     }
+    },
+    "scored_days": 1869
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor": {
+   "1": {
+    "cells": {
+     "all": {
+      "auroc": 0.6385117906694568,
+      "brier_skill": 0.030317394466972347,
+      "days": 1469,
+      "intercept": -1.1896284483704793,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5009894282175449,
+        "upper": 0.7564187736508226
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.004147570558852281,
+        "upper": 0.05962095443104704
+       },
+       "intercept": {
+        "draws": 1994,
+        "left_out": 6,
+        "lower": -2.8503437258250433,
+        "upper": 0.5960847746823595
+       },
+       "slope": {
+        "draws": 1994,
+        "left_out": 6,
+        "lower": 0.06777777962338766,
+        "upper": 1.636340362360995
+       }
+      },
+      "positive_days": 1385,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 1,
+      "skill_days": 1401,
+      "slope": 0.7251599910436529
+     },
+     "regime 2018-19": {
+      "auroc": 0.6587875417130145,
+      "brier_skill": 0.01108201172831813,
+      "days": 294,
+      "intercept": -0.6445680441908963,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5152267552553671,
+        "upper": 0.7794585690355962
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.007267298782538944,
+        "upper": 0.03500999039823019
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 210,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": 0.11977974312944885
+     },
+     "regime 2020": {
+      "auroc": 0.8489583333333334,
+      "brier_skill": 0.0837505775979791,
+      "days": 195,
+      "intercept": 4.8042259702593135,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.6866543584745339,
+        "upper": 1.0
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.19087427019954623
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.204475582243038
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.07435897435897436,
+      "brier_skill": -0.003085241476537215,
+      "days": 197,
+      "intercept": -289.84038470166684,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.006902929860905593,
+        "upper": 0.1848568839614093
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.016176140869844147,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -99.3475384088782
+     },
+     "regime 2025-26": {
+      "auroc": 0.5542124542124542,
+      "brier_skill": 0.08713115355575973,
+      "days": 197,
+      "intercept": 0.9099528646238144,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.20218517639613975,
+        "upper": 0.94919365761164
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09824567157534145,
+        "upper": 0.16902091719309645
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": 1.3590846000198367
+     },
+     "scarcity state 0": {
+      "auroc": 0.13372093023255813,
+      "brier_skill": -0.0011407661678286551,
+      "days": 819,
+      "intercept": -34.84099836784952,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.06416584700467672,
+        "upper": 0.21537186461956948
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.00358202536087493,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -10.329988271247714
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 244,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.49142857142857144,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -8.599062057518854,
+      "intervals": {
+       "auroc": {
+        "draws": 1656,
+        "left_out": 344,
+        "lower": 0.11989130434782608,
+        "upper": 0.772225935828877
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -2.516530932168052
+     },
+     "scarcity state 3": {
+      "auroc": 0.5722022482137168,
+      "brier_skill": 0.03913746296820775,
+      "days": 374,
+      "intercept": -0.9414249150912083,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.44804383991842306,
+        "upper": 0.6946038921032894
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.005218119940603655,
+        "upper": 0.08042571354201265
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 290,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": 0.09017316073925466
+     }
+    },
+    "scored_days": 1873
+   },
+   "2": {
+    "cells": {
+     "all": {
+      "auroc": 0.6414001090263246,
+      "brier_skill": 0.021426631156223452,
+      "days": 1469,
+      "intercept": -1.15814954895941,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.49878930018153894,
+        "upper": 0.7647530356881852
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.000253209237797238,
+        "upper": 0.04531213591930509
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -3.647236009273494,
+        "upper": 0.8396781485423308
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.24327427424603534,
+        "upper": 1.7989979363777504
+       }
+      },
+      "positive_days": 1385,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 1,
+      "skill_days": 1401,
+      "slope": 0.7342075996764815
+     },
+     "regime 2018-19": {
+      "auroc": 0.6559719132369299,
+      "brier_skill": 0.009629753111301542,
+      "days": 294,
+      "intercept": -0.9090644365712657,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5206447172363311,
+        "upper": 0.7734696816764856
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.005753553009985957,
+        "upper": 0.02337948012895703
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 210,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": -0.007762453189194426
+     },
+     "regime 2020": {
+      "auroc": 0.7951388888888888,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 6.210863418056049,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.6073398784478728,
+        "upper": 0.933041237113402
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.9168033902380115
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.07051282051282051,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -322.3396698675419,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.004755134281200632,
+        "upper": 0.1774404055657426
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -110.63622660837703
+     },
+     "regime 2025-26": {
+      "auroc": 0.5340659340659341,
+      "brier_skill": 0.0872212366465751,
+      "days": 197,
+      "intercept": 0.8947533446170592,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.1590756704980843,
+        "upper": 0.9418284824172072
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09822512243385516,
+        "upper": 0.1691305264266162
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": 1.3522563472862295
+     },
+     "scarcity state 0": {
+      "auroc": 0.1558679706601467,
+      "brier_skill": 0.0,
+      "days": 819,
+      "intercept": -31.07223893399786,
+      "intervals": {
+       "auroc": {
+        "draws": 1276,
+        "left_out": 724,
+        "lower": 0.08147523877392367,
+        "upper": 0.24099293892883422
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -8.780809895830792
+     },
+     "scarcity state 1": {
+      "auroc": 0.11316872427983539,
+      "brier_skill": 0.0,
+      "days": 244,
+      "intercept": -15.798033546656578,
+      "intervals": {
+       "auroc": {
+        "draws": 1249,
+        "left_out": 751,
+        "lower": 0.026204394985209184,
+        "upper": 0.24052512004956883
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 244,
+      "pressure_days": 1,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": -4.086117205008331
+     },
+     "scarcity state 2": {
+      "auroc": 0.38857142857142857,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -10.292673451592494,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.08590401785714286,
+        "upper": 0.6666666666666666
+       },
+       "brier_skill": {
+        "draws": 1984,
+        "left_out": 16,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -3.0987434145668638
+     },
+     "scarcity state 3": {
+      "auroc": 0.5730897009966778,
+      "brier_skill": 0.02757327228765938,
+      "days": 374,
+      "intercept": -1.4157624753897673,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4478835819555428,
+        "upper": 0.6905800560717636
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.00030501646125532963,
+        "upper": 0.06165261548029122
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 290,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": -0.16158895364965056
+     }
+    },
+    "scored_days": 1872
+   },
+   "3": {
+    "cells": {
+     "all": {
+      "auroc": 0.6265848383069267,
+      "brier_skill": 0.015891455172040936,
+      "days": 1469,
+      "intercept": -1.3833392428748836,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4836724496322354,
+        "upper": 0.753151086226658
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.004637159307105224,
+        "upper": 0.039913500677623254
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -3.9017754150917066,
+        "upper": 0.6120807944808935
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.3503761953817899,
+        "upper": 1.6881031386353593
+       }
+      },
+      "positive_days": 1384,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 1,
+      "skill_days": 1401,
+      "slope": 0.6273499640782197
+     },
+     "regime 2018-19": {
+      "auroc": 0.64755978865406,
+      "brier_skill": 0.0018059319822971709,
+      "days": 294,
+      "intercept": -0.9918554666654874,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5094917408650805,
+        "upper": 0.7679820424065921
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.009730569157524361,
+        "upper": 0.011622002367436872
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 209,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 1,
+      "skill_days": 226,
+      "slope": -0.05058212537722576
+     },
+     "regime 2020": {
+      "auroc": 0.7899305555555556,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 5.813853517738363,
+      "intervals": {
+       "auroc": {
+        "draws": 1658,
+        "left_out": 342,
+        "lower": 0.6021340794382269,
+        "upper": 0.9287481424723693
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.655950044037046
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": -0.009091070023001802,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.017651900651621987,
+        "upper": -0.002644473592619948
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.06666666666666667,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -369.0240478784222,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.002388926862611073,
+        "upper": 0.17140654001528552
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -126.85106674060256
+     },
+     "regime 2025-26": {
+      "auroc": 0.5142857142857142,
+      "brier_skill": 0.08731115590257865,
+      "days": 197,
+      "intercept": 0.8794821353931958,
+      "intervals": {
+       "auroc": {
+        "draws": 1924,
+        "left_out": 76,
+        "lower": 0.12842128348741472,
+        "upper": 0.9325688529448316
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09821610955904274,
+        "upper": 0.1692393869644914
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": 1.3454082669466534
+     },
+     "scarcity state 0": {
+      "auroc": 0.1332518337408313,
+      "brier_skill": -0.006779023183902,
+      "days": 820,
+      "intercept": -34.71961271121419,
+      "intervals": {
+       "auroc": {
+        "draws": 1735,
+        "left_out": 265,
+        "lower": 0.06487194038689299,
+        "upper": 0.21306561965479706
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.014115713713878488,
+        "upper": -0.0018428011347194411
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 820,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 820,
+      "slope": -10.28863212300556
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 243,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.2914285714285714,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -15.494800722529906,
+      "intervals": {
+       "auroc": {
+        "draws": 1659,
+        "left_out": 341,
+        "lower": 0.05517241379310336,
+        "upper": 0.5529239766081869
+       },
+       "brier_skill": {
+        "draws": 1985,
+        "left_out": 15,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -4.851148335907336
+     },
+     "scarcity state 3": {
+      "auroc": 0.5613025076229918,
+      "brier_skill": 0.02116346817564707,
+      "days": 374,
+      "intercept": -1.4967666916988975,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4322761113508848,
+        "upper": 0.6833086880003931
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.004951125611113095,
+        "upper": 0.05649212006416539
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 289,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 1,
+      "skill_days": 306,
+      "slope": -0.20441883251165754
+     }
+    },
+    "scored_days": 1871
+   },
+   "4": {
+    "cells": {
+     "all": {
+      "auroc": 0.6321138211382114,
+      "brier_skill": 0.018806813423480895,
+      "days": 1468,
+      "intercept": -1.125796645712244,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4922920395340875,
+        "upper": 0.7598800337779711
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.001661431477563703,
+        "upper": 0.041483562243750834
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -3.351350711373086,
+        "upper": 0.8220009297761022
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.13621654061705285,
+        "upper": 1.8105110588586621
+       }
+      },
+      "positive_days": 1383,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 2,
+      "skill_days": 1400,
+      "slope": 0.7549103621813119
+     },
+     "regime 2018-19": {
+      "auroc": 0.6469766792347438,
+      "brier_skill": 0.0055714134946965865,
+      "days": 293,
+      "intercept": -0.7893032759663783,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.514376140450801,
+        "upper": 0.7660810894709511
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.004457393483566685,
+        "upper": 0.014859555352061371
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 208,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 2,
+      "skill_days": 225,
+      "slope": 0.054651910628171596
+     },
+     "regime 2020": {
+      "auroc": 0.7847222222222222,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 5.388677351555254,
+      "intervals": {
+       "auroc": {
+        "draws": 1660,
+        "left_out": 340,
+        "lower": 0.5820300369493918,
+        "upper": 0.9271583383503913
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 6.391512002496383
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.06282051282051282,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -459.373532586721,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.0,
+        "upper": 0.16267087023488638
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -158.25865992049071
+     },
+     "regime 2025-26": {
+      "auroc": 0.5001831501831502,
+      "brier_skill": 0.08726226943812232,
+      "days": 197,
+      "intercept": 0.8695610783311206,
+      "intervals": {
+       "auroc": {
+        "draws": 1927,
+        "left_out": 73,
+        "lower": 0.11479412004400794,
+        "upper": 0.9341855400696863
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09738290737748236,
+        "upper": 0.17278098846099882
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": 1.3413048598002617
+     },
+     "scarcity state 0": {
+      "auroc": 0.13157894736842105,
+      "brier_skill": 0.0,
+      "days": 819,
+      "intercept": -34.894394544950046,
+      "intervals": {
+       "auroc": {
+        "draws": 1733,
+        "left_out": 267,
+        "lower": 0.061365178935981805,
+        "upper": 0.211822696190166
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -10.353189957336806
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 244,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 244,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 244,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.22916666666666666,
+      "brier_skill": 0.0,
+      "days": 31,
+      "intercept": null,
+      "intervals": {
+       "auroc": {
+        "draws": 1643,
+        "left_out": 357,
+        "lower": 0.0,
+        "upper": 0.43324324324324315
+       },
+       "brier_skill": {
+        "draws": 1978,
+        "left_out": 22,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 31,
+      "pressure_days": 7,
+      "pressure_days_on_zero": 0,
+      "skill_days": 31,
+      "slope": null
+     },
+     "scarcity state 3": {
+      "auroc": 0.5560005461247896,
+      "brier_skill": 0.02420423006126493,
+      "days": 374,
+      "intercept": -1.3410381777898441,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4288117004536755,
+        "upper": 0.677201797303726
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.002122253055394976,
+        "upper": 0.05813904795356859
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 289,
+      "pressure_days": 73,
+      "pressure_days_on_zero": 2,
+      "skill_days": 306,
+      "slope": -0.11447691602270951
+     }
+    },
+    "scored_days": 1870
+   },
+   "5": {
+    "cells": {
+     "all": {
+      "auroc": 0.6149203134630624,
+      "brier_skill": 0.017171598756515527,
+      "days": 1467,
+      "intercept": -1.13265610547866,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.46242212361262164,
+        "upper": 0.7428932131163328
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.00020115906207359568,
+        "upper": 0.0382092636871672
+       },
+       "intercept": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -3.4231411078834437,
+        "upper": 0.7620113691081309
+       },
+       "slope": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.18067810908997683,
+        "upper": 1.7585568222035413
+       }
+      },
+      "positive_days": 1382,
+      "pressure_days": 82,
+      "pressure_days_on_zero": 3,
+      "skill_days": 1399,
+      "slope": 0.7581126662562627
+     },
+     "regime 2018-19": {
+      "auroc": 0.6578190743338008,
+      "brier_skill": 0.007879948932455472,
+      "days": 292,
+      "intercept": -0.6683072483831812,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.5292057404119399,
+        "upper": 0.7724939592685224
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.0008837167919049649,
+        "upper": 0.015873981333110142
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 207,
+      "pressure_days": 62,
+      "pressure_days_on_zero": 3,
+      "skill_days": 224,
+      "slope": 0.12106723953417176
+     },
+     "regime 2020": {
+      "auroc": 0.8090277777777778,
+      "brier_skill": 0.0,
+      "days": 195,
+      "intercept": 6.328483085287633,
+      "intervals": {
+       "auroc": {
+        "draws": 1661,
+        "left_out": 339,
+        "lower": 0.6228070175438597,
+        "upper": 0.9408185840707964
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 195,
+      "pressure_days": 3,
+      "pressure_days_on_zero": 0,
+      "skill_days": 195,
+      "slope": 7.088315814338007
+     },
+     "regime 2021-23": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 586,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 586,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 586,
+      "slope": null
+     },
+     "regime 2024": {
+      "auroc": 0.07948717948717948,
+      "brier_skill": 0.0,
+      "days": 197,
+      "intercept": -290.5651275918743,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.01949999999999999,
+        "upper": 0.17135178889428523
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": -99.80206897837543
+     },
+     "regime 2025-26": {
+      "auroc": 0.45604395604395603,
+      "brier_skill": 0.06962223518410748,
+      "days": 197,
+      "intercept": 0.475057890674911,
+      "intervals": {
+       "auroc": {
+        "draws": 1932,
+        "left_out": 68,
+        "lower": 0.06441188391699092,
+        "upper": 0.9254560946271047
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.09546450592627846,
+        "upper": 0.16347788634835372
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 197,
+      "pressure_days": 15,
+      "pressure_days_on_zero": 0,
+      "skill_days": 197,
+      "slope": 1.1653773069971622
+     },
+     "scarcity state 0": {
+      "auroc": 0.1438188494492044,
+      "brier_skill": -0.0012332413612519133,
+      "days": 819,
+      "intercept": -32.204906655513035,
+      "intervals": {
+       "auroc": {
+        "draws": 1723,
+        "left_out": 277,
+        "lower": 0.07402934614034627,
+        "upper": 0.2251820893179499
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": -0.003122095308133577,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 819,
+      "pressure_days": 2,
+      "pressure_days_on_zero": 0,
+      "skill_days": 819,
+      "slope": -9.421873129666368
+     },
+     "scarcity state 1": {
+      "auroc": null,
+      "brier_skill": 0.0,
+      "days": 243,
+      "intercept": null,
+      "intervals": {
+       "auroc": null,
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 243,
+      "pressure_days": 0,
+      "pressure_days_on_zero": 0,
+      "skill_days": 243,
+      "slope": null
+     },
+     "scarcity state 2": {
+      "auroc": 0.2890625,
+      "brier_skill": 0.0,
+      "days": 32,
+      "intercept": -16.336088088598924,
+      "intervals": {
+       "auroc": {
+        "draws": 1689,
+        "left_out": 311,
+        "lower": 0.0625,
+        "upper": 0.5198431372549019
+       },
+       "brier_skill": {
+        "draws": 1981,
+        "left_out": 19,
+        "lower": 0.0,
+        "upper": 0.0
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 32,
+      "pressure_days": 8,
+      "pressure_days_on_zero": 0,
+      "skill_days": 32,
+      "slope": -5.1970196496830505
+     },
+     "scarcity state 3": {
+      "auroc": 0.5706902916205242,
+      "brier_skill": 0.022553591786026894,
+      "days": 373,
+      "intercept": -1.2769530235053035,
+      "intervals": {
+       "auroc": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.4512175144310819,
+        "upper": 0.6853155480966376
+       },
+       "brier_skill": {
+        "draws": 2000,
+        "left_out": 0,
+        "lower": 0.000382458609712608,
+        "upper": 0.05286429928627295
+       },
+       "intercept": null,
+       "slope": null
+      },
+      "positive_days": 288,
+      "pressure_days": 72,
+      "pressure_days_on_zero": 3,
+      "skill_days": 305,
+      "slope": -0.0637438986987478
+     }
+    },
+    "scored_days": 1869
+   }
+  }
+ },
+ "scratch_panel_sha256": "5821868c174b44877348a7f34fdbafad25a4aead66ec84372b92ab734283547b"
+}

@@ -596,6 +596,7 @@ from .splits import (
 )
 
 __all__ = [
+    "fit_off_risk_day_model",
     "paired_bootstrap_p_values",
     "PRESSURE_QRF_SETTINGS",
     "PRESSURE_NATURAL_GRADIENT_SETTINGS",
@@ -4901,6 +4902,30 @@ def _fit_classifier(
     )
     model.fit(x, y, **fit_weight)
     return [float(p) for p in model.predict_proba(z)[:, 1]]
+
+
+def fit_off_risk_day_model(
+    kind: str,
+    xs: Sequence[Sequence[float]],
+    labels: Sequence[int],
+    served: Sequence[Sequence[float]],
+    monotone: Optional[Sequence[int]] = None,
+) -> List[float]:
+    """P(label = 1) at `served` from one ridge logistic or gradient-boosted classifier, for a measurement of the days that are
+    not risk dates (#624).
+
+    The fits are `_fit_classifier`'s with the settings of the direct pressure models (`PRESSURE_LOGISTIC_SETTINGS`,
+    `PRESSURE_CLASSIFIER_SETTINGS`), nothing tuned. `monotone` is the classifier's only: one of -1, 0, +1 per design column.
+
+    Raises:
+        ValueError: for another kind, for labels of one class only, or for a constraint on the logistic.
+    """
+
+    if kind not in ("logistic", "gbm_classifier"):
+        raise ValueError(f"a day-level model is a logistic or a gbm_classifier, got {kind!r}")
+    if len(set(int(label) for label in labels)) < 2:
+        raise ValueError("a day-level model needs both classes among the training labels")
+    return _fit_classifier(kind, xs, labels, served, monotone=monotone)
 
 
 def _plain(value: Any) -> Any:

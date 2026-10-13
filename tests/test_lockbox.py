@@ -366,6 +366,11 @@ NOT_ENTRY_POINTS = {
         "last scored day through _as_of_folds, which calls require_unlocked, and `cap` calls require_unlocked on "
         "that day before it reads anything"
     ),
+    "scripts/off_risk_day_624.read_features": (
+        "reads the inputs of the day-level model at each scored day's decision (#624); scores no forecast, it ends at "
+        "the declared last scored day through _as_of_folds, which calls require_unlocked, and `run` calls "
+        "require_unlocked and pressure_judge.require_scored_days on that day before it reads anything"
+    ),
     "satiation._ratio_at": (
         "reads the reserves-to-assets ratio the as-of rule gives one panel row's decision (#587); scores nothing, "
         "`asof_ratios` and `build_columns` build no row after the declared last scored day, and "
@@ -444,9 +449,28 @@ NOT_ENTRY_POINTS = {
         "lockbox.require_unlocked on every day before it reads one, and the screen's `run` refuses "
         "a panel that runs past 2025-12-31 (tests/test_source_screen.py)"
     ),
+    "scripts/derived_features_631.read_all": (
+        "reads each derived series as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "screen of #631; selects no model and scores no forecast, calls lockbox.require_unlocked on every "
+        "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
+        "(tests/test_derived_features_631.py)"
+    ),
     "scripts/source_screen.probe": (
         "asks the as-of rule, on the one middle row of the panel, whether a column has a "
         "row-relative availability; reads one row, scores and selects nothing (#478)"
+    ),
+    "scripts/source_matrix_629.scored_grid": (
+        "the lead-1 fold grid of the exploratory source matrix (#629); scores and selects no model, and "
+        "calls lockbox.require_unlocked on every day before it returns one (tests/test_source_matrix_629.py)"
+    ),
+    "scripts/source_matrix_629.read_lead": (
+        "reads each series as of the decision instant at one lead on days scored_grid has already "
+        "passed through lockbox.require_unlocked (#629); selects no model and scores no forecast, and "
+        "the screen's `run` refuses a panel past 2025-12-31 (tests/test_source_matrix_629.py)"
+    ),
+    "scripts/source_matrix_629.read_derived": (
+        "forms the every-day inputs of #601 from the masked frames of the decisions on the screen's "
+        "scored days (#629); scores nothing, and walks _as_of_folds, which refuses a locked day"
     ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "

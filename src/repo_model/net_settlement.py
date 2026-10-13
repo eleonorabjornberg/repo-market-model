@@ -23,7 +23,9 @@ announcement instant on `t` (12:00 New York) and so read by the 16:00 decision o
   days after `t`, whatever was announced for them by that instant.
 
 An auction enters a column only when its `announcemt_date` is on or before `t`. A
-day partly announced reads low, which is what was known. `check_known_columns` is the
+class partly announced on a day nets its announced offerings alone, with no maturing amount (#620):
+the maturing total covers securities not yet announced, and subtracting it from part of
+the offering read a cash inflow. `check_known_columns` is the
 guard: a column that counts an auction announced after the instant raises
 `LookAheadError`, and one that leaves out an announced auction raises
 `StaleReadError`.
@@ -212,17 +214,27 @@ def net_for_day(auctions: Sequence[Auction], instant: datetime) -> Tuple[float, 
     carries one (counted). The maturing figure is one total for every security of the
     class maturing that day, repeated on each of its records, so Notes and Bonds
     settling together subtract it once.
+
+    A class that is partly announced (#620) is not netted against that total: it covers
+    securities whose offerings are not yet known, so subtracting it from the announced part alone reads
+    a cash inflow that is not there. The class counts its announced offerings only, with no maturing
+    amount. That a class has more auctions settling the day is read from `auctions`, the day's whole list,
+    as the Treasury's published schedule would show it; no unannounced offering enters any figure.
     """
 
     groups: Dict[bool, List[Auction]] = {}
+    everything: Dict[bool, List[Auction]] = {}
+    for auction in auctions:
+        everything.setdefault(auction.is_bill, []).append(auction)
     for auction in known_auctions(auctions, instant):
         groups.setdefault(auction.is_bill, []).append(auction)
     net = bills = 0.0
     unknown = 0
     for is_bill, members in groups.items():
+        partly_announced = len(members) < len(everything[is_bill])
         figures = [a.maturing for a in members if a.maturing is not None]
-        maturing = max(figures) if figures else 0.0
-        unknown += not figures
+        maturing = 0.0 if partly_announced else (max(figures) if figures else 0.0)
+        unknown += not figures and not partly_announced
         value = sum(a.offering for a in members) - maturing
         net += value
         if is_bill:

@@ -13,6 +13,23 @@ were declared in [`metadata/satiation_587.json`](../../metadata/satiation_587.js
 2025 onsets are among the days scored. A better 2025 here is therefore not a confirmation: only the 2026 confirmation window
 can confirm it, and it is not opened here.**
 
+> **Note of 12 October 2026 (#621): what the rolling satiation level is.** The "rolling satiation level" of #587 (PR #596) is the 10th percentile of the row's
+> own trailing 504 reserves-to-assets ratios (`metadata/satiation_587.json`; `satiation-result.md`). It is a two-year low in reserves, not a satiation level: it
+> says nothing about where the demand curve's kink is. The panel starts in 2018-04, so until early 2020 the window is mostly 2018-19's own falling reserves.
+> The hinge ("the ratio is below the level") is therefore on whenever reserves are at or near a two-year low, whatever their level. Share of days it is on, by year,
+> on the tracked fixture panel (`scripts/satiation_distance_598.py hinge-share`; first row the weekly lag the pages were scored on, second row the per-release read
+> of #622 that is now in force for the columns):
+>
+> | reserves read | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 |
+> |---|---|---|---|---|---|---|---|---|
+> | weekly lag (the first build, #598) | 54% (96 of 178) | 67% (167 of 250) | 0% (0 of 251) | 0% (0 of 250) | 30% (75 of 249) | 19% (48 of 249) | 2% (4 of 250) | 54% (134 of 249) |
+> | per H.4.1 release (#622, in force) | 55% (98 of 178) | 66% (164 of 250) | 0% (0 of 251) | 0% (0 of 250) | 30% (75 of 249) | 18% (46 of 249) | 2% (5 of 250) | 53% (133 of 249) |
+>
+> It is on for 30% of 2022 and 19% of 2023, years with no pressure days, which fits the false alarms the pages report for those years. Any steady run-off of the
+> balance sheet (QT) would turn it on whether or not reserves are near scarce, and the one 2025 onset it adds may come from the run-off of 2024-25 rather than from
+> closeness to the kink. Where the pages above say "satiation level", "moving satiation level" or "the gain in 2025 comes from the rolling form", read "two-year
+> reserves low". Nothing below is edited, and no figure on it moves.
+
 ## Why: the finding of #569
 
 The structural model multiplies every drain and calendar term by an elasticity `e = exp(-(reserves / assets - 0.12) / 0.01)`;

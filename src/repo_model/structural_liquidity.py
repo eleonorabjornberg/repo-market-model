@@ -15,9 +15,10 @@ a logistic of the expected spread move. Its terms, all public at the decision in
   `e = exp(-(reserves / bank_total_assets - SATIATION) / LENGTH)`. It is 1 at satiation
   (`scarcity.SATIATION_BAND`, the lower end), flat-ish above and steep below. Neither constant is
   fitted;
-* the **drain**: the announced net Treasury cash settlement (`net_settlement_ahead_1d`, the scored day's own
-  settlement as announced by the decision instant, at horizon 1; `net_settlement_due_5d` beyond), less the
-  ON RRP balance, which absorbs it before reserves do: `shortfall = max(0, max(0, net) - on_rrp)`;
+* the **drain**: the announced net Treasury cash settlement of the scored day itself, as announced by the decision
+  instant (#568, #618): `net_settlement_ahead_1d` at horizon 1, and at horizon h the difference
+  `net_settlement_ahead_{h}d - net_settlement_ahead_{h-1}d` of the cumulative columns of
+  `projected_reserves.AHEAD_COLUMNS`, the net of the one business day h rows ahead. Less the ON RRP balance, which absorbs it before reserves do: `shortfall = max(0, max(0, net) - on_rrp)`;
   the TGA's rise over the last five rows; the tax date, whose inflow raises the TGA; and the
   quarter-end and month-end window (balance-sheet window-dressing);
 * the as-of spread.
@@ -35,6 +36,12 @@ four elasticity terms by the constant `exp((level - 0.12) / LENGTH)`, which the 
 the model. Declared in `metadata/satiation_587.json`;
 a measurement, off in every published declaration.
 
+**Kinked elasticity (#626, ruling on #597).** `kinked_fitted` and `kinked_rolling` take their level as `fitted` and
+`rolling` do, but replace the exponential-everywhere curve by `e = exp(max(0, level - ratio) / LENGTH)`: 1 at and above the
+level, the unkinked curve's growth below it. Above the level `e` no longer decays, so a constant level is no longer a
+constant factor on the four terms and the fitted level can move the forecast. Declared in `metadata/kinked_626.json`; a
+measurement, off in every published declaration.
+
 Standard library only: the six-coefficient ridge logistic is fitted here by Newton's method; the
 as-of pairing of labels with what was public at their own decision instant is `ml._pressure_pairs`,
 imported inside the function that needs it (`tests/test_dependency_boundary.py`).
@@ -50,10 +57,12 @@ from types import MappingProxyType
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from .data import DailyObservation, exceeds_bp
+from .projected_reserves import AHEAD_COLUMNS
 from .satiation import FIXED, ROLLING_COLUMN, fit_level
 
 __all__ = [
     "COLUMN_NAMES",
+    "KINKED_FORMS",
     "RAW_NAMES",
     "STRUCTURAL_FORMS",
     "DEFAULT_DECLARATION",
@@ -83,20 +92,29 @@ COLUMN_NAMES = ("spread_bps", "e_x_shortfall", "e_x_tga_up", "e_x_tax_date", "e_
 #: elasticity multiplies them (`StructuralDesign.finish`).
 RAW_NAMES = ("spread_bps", "ratio", "shortfall", "tga_up", "tax_date", "window")
 #: The satiation forms the structural model reads (`satiation.FORMS` less the projected model's hinge control).
-STRUCTURAL_FORMS = ("fixed", "rolling", "fitted")
+STRUCTURAL_FORMS = ("fixed", "rolling", "fitted", "kinked_rolling", "kinked_fitted")
+#: The forms whose elasticity is kinked (#626), with the level source each reads (`rolling` or `fitted`).
+KINKED_FORMS = {"kinked_rolling": "rolling", "kinked_fitted": "fitted"}
 
 _CALENDAR = ("days_to_month_end", "quarter_end", "tax_date")
 _BASE = ("spread_bps",) + _CALENDAR + ("reserve_balances", "bank_total_assets", "on_rrp", "tga")
-#: The drain column at horizon 1 and beyond. At horizon 1 the scored day is the row after the decision row, so its
-#: own settlement is the net announced for the next business day by the decision row's instant
-#: (`projected_reserves.AHEAD_COLUMNS[0]`), not `net_settlement`, which is the decision day's own (#568).
-_DRAIN_COLUMNS = ("net_settlement_ahead_1d", "net_settlement_due_5d")
+#: The drain's columns: the net announced for the next k business days, cumulative (`projected_reserves.AHEAD_COLUMNS`).
+#: The scored day at horizon h is the h-th business day after the decision row, so its own settlement is the h-th
+#: column less the (h-1)-th (the first column alone at h = 1), not `net_settlement`, which is the decision day's own
+#: (#568), and not the five-day sum `net_settlement_due_5d` (#618).
+_DRAIN_COLUMNS = AHEAD_COLUMNS
 _EPSILON = 1e-6
 
 
-def elasticity(ratio: float, satiation: float = SATIATION) -> float:
-    """The reserve demand curve's slope at reserves over bank assets `ratio`: 1 at the satiation level (0.12 by default)."""
+def elasticity(ratio: float, satiation: float = SATIATION, kinked: bool = False) -> float:
+    """The reserve demand curve's slope at reserves over bank assets `ratio`: 1 at the satiation level (0.12 by default).
 
+    Unkinked it is `exp(-(ratio - satiation) / LENGTH)`, falling toward 0 above the level. With `kinked` (#626) it is
+    `exp(max(0, satiation - ratio) / LENGTH)`: flat at 1 at and above the level, the same growth below it.
+    """
+
+    if kinked:
+        return math.exp(max(0.0, float(satiation) - float(ratio)) / LENGTH)
     return math.exp(-(float(ratio) - float(satiation)) / LENGTH)
 
 
@@ -106,18 +124,37 @@ def shortfall(net_settlement_bn: float, on_rrp_bn: float) -> float:
     return max(0.0, max(0.0, float(net_settlement_bn)) - float(on_rrp_bn))
 
 
+def _level_source(satiation: str) -> str:
+    """Where a form's level comes from: `fixed`, `rolling` (the panel column) or `fitted` (one level per refit)."""
+
+    return KINKED_FORMS.get(satiation, satiation)
+
+
+def drain_columns(horizon: int) -> Tuple[str, ...]:
+    """The panel columns whose difference is the scored day's own announced net settlement at `horizon`.
+
+    `(ahead_1d,)` at horizon 1; `(ahead_h, ahead_{h-1})` beyond (#618). The horizon is the number of panel rows
+    from the decision row to the scored day.
+    """
+
+    if not 1 <= horizon <= len(_DRAIN_COLUMNS):
+        raise ValueError(f"horizon must be one of 1 to {len(_DRAIN_COLUMNS)}, got {horizon}")
+    return (_DRAIN_COLUMNS[horizon - 1],) + ((_DRAIN_COLUMNS[horizon - 2],) if horizon > 1 else ())
+
+
 def features_at_horizon(horizon: int, satiation: str = "fixed") -> Tuple[str, ...]:
-    """The declared features at `horizon`: the scored day's own announced settlement alone at horizon 1 (#568).
+    """The declared features at `horizon`: the scored day's own announced settlement (#568, #618).
 
     Under the `rolling` satiation form (#587) the level column is read too.
     """
 
     if horizon < 1:
         raise ValueError(f"horizon must be positive, got {horizon}")
+    drain = drain_columns(horizon)
     if satiation not in STRUCTURAL_FORMS:
         raise ValueError(f"the satiation form is one of {list(STRUCTURAL_FORMS)}, got {satiation!r}")
-    extra = (ROLLING_COLUMN,) if satiation == "rolling" else ()
-    return _BASE + (_DRAIN_COLUMNS[0] if horizon == 1 else _DRAIN_COLUMNS[1],) + extra
+    extra = (ROLLING_COLUMN,) if _level_source(satiation) == "rolling" else ()
+    return _BASE + drain + extra
 
 
 class StructuralDesign:
@@ -134,18 +171,25 @@ class StructuralDesign:
         if satiation not in STRUCTURAL_FORMS:
             raise ValueError(f"the satiation form is one of {list(STRUCTURAL_FORMS)}, got {satiation!r}")
         declared = tuple(dict.fromkeys(str(name) for name in features))
-        required_columns = _BASE + ((ROLLING_COLUMN,) if satiation == "rolling" else ())
+        self.level_source = _level_source(satiation)
+        self.kinked = satiation in KINKED_FORMS
+        required_columns = _BASE + ((ROLLING_COLUMN,) if self.level_source == "rolling" else ())
         for required in required_columns:
             if required not in declared:
                 raise ValueError(f"the structural liquidity model reads {required!r}; declare it")
-        drain = [name for name in _DRAIN_COLUMNS if name in declared]
-        if len(drain) != 1:
-            raise ValueError(f"declare exactly one of {list(_DRAIN_COLUMNS)} as the drain, got {drain}")
+        matches = [
+            drain_columns(k) for k in range(1, len(_DRAIN_COLUMNS) + 1) if set(drain_columns(k)) == set(declared) & set(_DRAIN_COLUMNS)
+        ]
+        if not matches:
+            raise ValueError(
+                f"declare the scored day's drain, {list(drain_columns(1))} or an adjacent pair of {list(_DRAIN_COLUMNS)}, "
+                f"got {[name for name in _DRAIN_COLUMNS if name in declared]}"
+            )
         if not hasattr(declaration, "day_type"):
             raise ValueError("the pressure-day type needs the split declaration that defines it")
         self.features = declared
         self.declaration = declaration
-        self.drain_column = drain[0]
+        self.drain_columns = matches[0]
         self.satiation = satiation
 
     def needs_history(self) -> bool:
@@ -160,6 +204,12 @@ class StructuralDesign:
             )
         return float(value)
 
+    def drain(self, observation: DailyObservation) -> float:
+        """The scored day's own announced net settlement, USD billions: the horizon's column less the one before it (#618)."""
+
+        values = [self._value(observation, name) for name in self.drain_columns]
+        return values[0] - (values[1] if len(values) > 1 else 0.0)
+
     def row(self, observation: DailyObservation, tga_change: Optional[float]) -> List[float]:
         """The five columns; under `fitted`, the raw row (`RAW_NAMES`) that `finish` completes once the level is fitted."""
 
@@ -170,7 +220,7 @@ class StructuralDesign:
         ratio = reserves_ratio(
             self._value(observation, "reserve_balances"), self._value(observation, "bank_total_assets")
         )
-        short = shortfall(self._value(observation, self.drain_column), self._value(observation, "on_rrp"))
+        short = shortfall(self.drain(observation), self._value(observation, "on_rrp"))
         kind = self.declaration.day_type(observation.values)
         raw = [
             float(observation.spread_bps),
@@ -180,15 +230,15 @@ class StructuralDesign:
             1.0 if kind == "tax_date" else 0.0,
             1.0 if kind in ("quarter_end", "month_end") else 0.0,
         ]
-        if self.satiation == "fitted":
+        if self.level_source == "fitted":
             return raw
-        level = self._value(observation, ROLLING_COLUMN) if self.satiation == "rolling" else SATIATION
+        level = self._value(observation, ROLLING_COLUMN) if self.level_source == "rolling" else SATIATION
         return self.finish(raw, level)
 
     def finish(self, raw: Sequence[float], level: float) -> List[float]:
         """The five columns from a raw row (`RAW_NAMES`) at satiation `level`: the elasticity multiplies four terms."""
 
-        e = elasticity(raw[1], level)
+        e = elasticity(raw[1], level, self.kinked)
         return [raw[0], e * raw[2], e * raw[3], e * raw[4], e * raw[5]]
 
 
@@ -357,7 +407,7 @@ def structural_exceedance(
             design.row(row, ml._served_tga_change(histories[day], row)) for day, row in enumerate(feature_rows)
         ]
         level_record: Dict[str, Any] = {}
-        if satiation == "fitted":
+        if design.level_source == "fitted":
             # one level for the refit, from its training pairs alone; the pairs' ratios were public at their own
             # decisions and their spreads are labels the training frame covers
             level, level_record = fit_level([x[1] for x in xs], spreads)
@@ -396,7 +446,7 @@ def structural_exceedance(
             "estimator": "ridge logistic, Newton's method, standardized columns",
             "C": RIDGE_C,
             "design": ["intercept", *COLUMN_NAMES],
-            "drain": design.drain_column,
+            "drain": list(design.drain_columns),
             "satiation": SATIATION if satiation == "fixed" else satiation,
             "length": LENGTH,
         }

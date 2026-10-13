@@ -19,6 +19,12 @@ What is covered:
 * `VariantFeatureTests` -- a variant's features are its parent's with the one column added, nothing else.
 * `RunGuardTests` -- `run` refuses a scored day in a locked tier.
 
+**Recorded mutation for #622** (12 October 2026, disposable copy, `/opt/rmm-venv`): in `scripts/satiation_distance_598.py`, `distance_rule`,
+`registry = h41_release.release_dated_registry(measurement_fields.load_registry(), ...)` replaced by `registry = measurement_fields.load_registry()`
+(the weekly lag again). `ReleaseDatedReadTests.test_the_panel_rule_reads_the_release_dated_registry` fails with `AssertionError: 'release_calendar' not found in {...}`,
+`test_a_friday_reads_the_print_of_its_own_wednesday_not_the_weekly_lag` with `AssertionError: [] is not true` and
+`test_the_built_columns_follow_the_release_dated_ratio` errors.
+
 **Recorded mutations** (disposable copy of the tree, `/opt/rmm-venv`, `PYTHONDONTWRITEBYTECODE=1`, the killing test run alone, each
 confirmed applied by `grep` and restored before the next):
 
@@ -113,6 +119,56 @@ class _Distance(_Measured):
         return sat.build_distance_columns(
             self.rows if rows is None else rows, self.rule(), last_day=LAST, q=0.1, window=100, minimum=20
         )
+
+
+class ReleaseDatedReadTests(_Distance):
+    """The distance columns read reserves per H.4.1 release, as the +h41 rows they join do (#622, ruling on #541)."""
+
+    def ratios(self, rule):
+        from repo_model import h41_release
+
+        with h41_release.release_dating():
+            return sat.asof_ratios(self.rows, rule, last_day=LAST)
+
+    def test_the_panel_rule_reads_the_release_dated_registry(self):
+        rule = SCRIPT.distance_rule()
+        self.assertIn("release_calendar", rule.registry["fred_macro_latest_vintage"])
+
+    def test_a_friday_reads_the_print_of_its_own_wednesday_not_the_weekly_lag(self):
+        old = self.ratios(self.rule())
+        new = self.ratios(SCRIPT.distance_rule())
+        moved = [i for i, (a, b) in enumerate(zip(old, new)) if a is not None and b is not None and abs(a - b) > 1e-12]
+        self.assertTrue(moved)
+
+    def test_the_built_columns_follow_the_release_dated_ratio(self):
+        end = LAST
+        built = SCRIPT.distance_rows(self.rows, end, check_every=40)
+        new = self.ratios(SCRIPT.distance_rule())
+        rolling = SCRIPT.rolling_constants()
+        level = sat.rolling_level(
+            new, 300, q=rolling["quantile"], window=rolling["window_rows"], minimum=rolling["minimum_rows"]
+        )
+        self.assertAlmostEqual(built[300].values[sat.DISTANCE_COLUMN], new[300] - level)
+
+
+class HingeShareTests(unittest.TestCase):
+    """The share of days the hinge is on, by year (#621)."""
+
+    def rows(self, *cells):
+        return [DailyObservation(date.fromisoformat(day), {sat.HINGE_COLUMN: value}) for day, value in cells]
+
+    def test_the_share_counts_days_with_a_positive_hinge_by_calendar_year(self):
+        built = self.rows(("2022-01-03", 0.4), ("2022-01-04", 0.0), ("2022-06-01", 1.2), ("2023-01-03", 0.0))
+        self.assertEqual(SCRIPT.hinge_share_by_year(built), {"2022": [2, 3], "2023": [0, 1]})
+
+    def test_a_day_without_a_value_is_not_a_day(self):
+        built = self.rows(("2022-01-03", None), ("2022-01-04", 0.3))
+        self.assertEqual(SCRIPT.hinge_share_by_year(built), {"2022": [1, 1]})
+
+    def test_the_table_prints_percent_and_counts(self):
+        text = SCRIPT.hinge_share_markdown({"weekly lag": {"2022": [1, 4]}, "per release": {"2022": [2, 4], "2023": [0, 2]}})
+        self.assertIn("| weekly lag | 25% (1 of 4) | – |", text)
+        self.assertIn("| per release | 50% (2 of 4) | 0% (0 of 2) |", text)
 
 
 class BuildDistanceTests(_Distance):
