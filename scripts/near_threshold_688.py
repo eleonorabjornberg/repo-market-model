@@ -363,6 +363,524 @@ def walk_command(args) -> int:
     return 0
 
 
+# -- the screen ----------------------------------------------------------------------------------------------------
+
+#: The statistics of a screen cell. Each is a difference of pressure rates, input on minus input off, or `None`.
+STATISTICS = ("raw_all", "raw_near", "raw_high", "raw_low", "stratified_all", "stratified_near")
+BAND_CODE = {"low": 0, "near": 1, "high": 2}
+STATE_CODE = {"ample": 0, "scarce": 1, "unknown": 2}
+
+
+def cell_statistics(table) -> Dict[str, Optional[float]]:
+    """The six statistics of a (9, 4) stratum table; strata are `band * 3 + state`."""
+
+    by_band = {band: [code * 3 + state for state in range(3)] for band, code in BAND_CODE.items()}
+    everything = list(range(9))
+    return {
+        "raw_all": _raw(table, everything),
+        "raw_near": _raw(table, by_band["near"]),
+        "raw_high": _raw(table, by_band["high"]),
+        "raw_low": _raw(table, by_band["low"]),
+        "stratified_all": _mh(table, everything),
+        "stratified_near": _mh(table, by_band["near"]),
+    }
+
+
+def persistence_share(raw: Optional[float], stratified: Optional[float]) -> Optional[float]:
+    """The share of a positive raw difference that the as-of spread band and the scarcity state account for: 1 - stratified / raw."""
+
+    if raw is None or stratified is None or raw <= 0.0:
+        return None
+    return 1.0 - stratified / raw
+
+
+MEMBERS = {
+    "raw_all": "all", "stratified_all": "all", "persistence_share": "all",
+    "raw_near": "near", "stratified_near": "near", "raw_high": "high", "raw_low": "low",
+}
+
+
+def qualifies(table, members: Sequence[int]) -> bool:
+    """Whether the strata `members` hold the declared minimum: 30 days with and without the input, and 3 pressure days."""
+
+    with_n = sum(int(table[k][1]) for k in members)
+    without_n = sum(int(table[k][3]) for k in members)
+    events = sum(int(table[k][0]) + int(table[k][2]) for k in members)
+    return with_n >= MINIMUM_CELL_DAYS and without_n >= MINIMUM_CELL_DAYS and events >= MINIMUM_CELL_EVENTS
+
+
+def screen_cell(flag, outcome, stratum, seed: str) -> dict:
+    """The rates of one cell and its statistics; a statistic whose own strata hold too few days is `None`, with no interval."""
+
+    import numpy
+
+    flag, outcome, stratum = numpy.asarray(flag), numpy.asarray(outcome), numpy.asarray(stratum)
+    table = _counts(flag, outcome, stratum, 9)
+    cell: dict = {
+        "days": int(len(flag)), "pressure_days": int(outcome.sum()), "input_days": int(flag.sum()),
+        "rates": {
+            band: rate_cell([(int(f), int(o)) for f, o, k in zip(flag, outcome, stratum) if k // 3 == code])
+            for band, code in BAND_CODE.items()
+        },
+        "statistics": {},
+    }
+    groups = {"all": list(range(9)), **{band: [code * 3 + state for state in range(3)] for band, code in BAND_CODE.items()}}
+    enough = {name: qualifies(table, groups[which]) for name, which in MEMBERS.items()}
+    point = cell_statistics(table)
+    point["persistence_share"] = persistence_share(point["raw_all"], point["stratified_all"])
+    draws: Dict[str, list] = {name: [] for name in point}
+    if any(enough.values()):
+        rng = random.Random(seed)
+        for _ in range(RESAMPLES):
+            index = numpy.asarray(metrics.stationary_bootstrap_indices(len(flag), BLOCK, rng))
+            resampled = cell_statistics(_counts(flag[index], outcome[index], stratum[index], 9))
+            resampled["persistence_share"] = persistence_share(resampled["raw_all"], resampled["stratified_all"])
+            for name, value in resampled.items():
+                if value is not None and enough[name]:
+                    draws[name].append(value)
+    for name, value in point.items():
+        interval = None
+        values = sorted(draws[name])
+        if enough[name] and len(values) >= 0.5 * RESAMPLES:
+            interval = [metrics._quantile(values, 0.05), metrics._quantile(values, 0.95)]
+        cell["statistics"][name] = {"value": value if enough[name] else None, "interval": interval}
+    return cell
+
+
+def screen_command(args) -> int:
+    declared = committed_declaration()
+    refuse_locked([LAST_TARGET])
+    sd = _load("satiation_distance_598")
+    rows = [row for row in load_daily_panel(args.panel) if row.date <= LAST_TARGET]
+    audit_panel(rows)
+    registry = sd.measurement_fields.load_registry()
+    splits = load_split_declaration(SPLITS)
+    position = {row.date: index for index, row in enumerate(rows)}
+    inputs = {
+        "bill_x_band": lambda cell: None if cell[BILLS] is None else int(cell[BILLS] > 0.0),
+        "post_month_end_window": lambda cell: None if cell[FLAG] is None else int(cell[FLAG] > 0.0),
+    }
+    result: dict = {name: {} for name in inputs}
+    scope: dict = {}
+    for lead in HORIZONS:
+        read = read_inputs(rows, registry, lead, (BILLS, FLAG, STATE))
+        days = [
+            day for day in sorted(read)
+            if not sd.ann.risk_flag(splits, rows[position[day]].values, True) and spread_band(read[day]["spread_bps"]) is not None
+        ]
+        scope[str(lead)] = {"scored_days": len(read), "ordinary_days": len(days)}
+        outcome = {day: int(exceeds_bp(rows[position[day]].spread_bps, THRESHOLD_BP)) for day in days}
+        for name, flag_of in inputs.items():
+            subsets = {"pooled": [d for d in days if flag_of(read[d]) is not None]}
+            for label in splits.regime_labels:
+                subsets[f"regime:{label}"] = [d for d in subsets["pooled"] if splits.regime(d) == label]
+            result[name][str(lead)] = {}
+            for split, members in subsets.items():
+                if not members:
+                    continue
+                result[name][str(lead)][split] = screen_cell(
+                    [flag_of(read[d]) for d in members],
+                    [outcome[d] for d in members],
+                    [BAND_CODE[spread_band(read[d]["spread_bps"])] * 3 + STATE_CODE[state_band(read[d][STATE])] for d in members],
+                    f"{SEED}:{name}:{lead}:{split}",
+                )
+        print(json.dumps({"lead": lead, "ordinary_days": len(days)}), flush=True)
+    cells = sum(len(by_split) for by_lead in result.values() for by_split in by_lead.values())
+    intervals = sum(
+        1 for by_lead in result.values() for by_split in by_lead.values() for cell in by_split.values()
+        for stat in cell["statistics"].values() if stat["interval"] is not None
+    )
+    document = {
+        "declaration": "metadata/near_threshold_688.json",
+        "panel_sha256": panel_sha256(args.panel),
+        "first_day": FIRST_DAY.isoformat(), "last_day": LAST_TARGET.isoformat(),
+        "resamples": RESAMPLES, "block": BLOCK, "seed": SEED,
+        "scope": scope, "cells": cells, "statistics_with_interval": intervals,
+        "regimes": list(splits.regime_labels),
+        "screen": result,
+    }
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output), "cells": cells, "statistics_with_interval": intervals}))
+    return 0
+
+
+# -- scoring -------------------------------------------------------------------------------------------------------
+
+
+def load_laws(directory: Path, variant: str) -> Dict[int, Dict[date, Optional[List[float]]]]:
+    """A row's walks at the five leads as `{h: {target day: 23 quantiles or None}}`."""
+
+    out: Dict[int, Dict[date, Optional[List[float]]]] = {}
+    for h in HORIZONS:
+        document = json.loads((directory / f"{variant}_h{h}.json").read_text(encoding="utf-8"))
+        if document["horizon"] != h or document["variant"] != variant:
+            raise ValueError(f"{variant}_h{h}.json is not the walk of {variant} at lead {h}")
+        if tuple(document["levels"]) != tuple(GRID):
+            raise ValueError(f"{variant}_h{h}.json is not on the protocol's grid")
+        out[h] = {
+            date.fromisoformat(day): (None if law is None else [float(v) for v in law]) for day, law in document["laws"].items()
+        }
+    return out
+
+
+def lead_forecasts(
+    laws: Mapping[int, Mapping[date, Optional[Sequence[float]]]], calendar: Sequence[date]
+) -> Tuple[Dict[date, Dict[int, Optional[List[float]]]], List[date]]:
+    """Per-lead walks (`laws[h][target day]`) as decision-day forecasts (`out[d][h]`), and the scored decision days.
+
+    A walk at lead h scores target `s` from the decision made h business days before it, so decision day `d` has the
+    lead-h law of target `calendar[position(d) + h]`. A decision day is scored when all five targets are in their walks
+    (`None` is a missing forecast, to be filled by B1; absent is not scored).
+    """
+
+    position = {day: index for index, day in enumerate(calendar)}
+    candidates: Optional[set] = None
+    for h in HORIZONS:
+        days = set()
+        for target in laws[h]:
+            if target not in position:
+                raise ValueError(f"target day {target} is not on the scoring calendar")
+            if position[target] - h < 0:
+                raise ValueError(f"lead {h} target {target} has no decision day on the calendar")
+            days.add(calendar[position[target] - h])
+        candidates = days if candidates is None else candidates & days
+    out: Dict[date, Dict[int, Optional[List[float]]]] = {}
+    for day in sorted(candidates or ()):
+        out[day] = {h: laws[h][calendar[position[day] + h]] for h in HORIZONS}
+    return out, sorted(out)
+
+
+def day_means(cells: Mapping[Tuple[date, int], float], include) -> Dict[date, float]:
+    """A decision day's mean over its leads whose cell `include(decision, h)` admits; days with none are absent."""
+
+    sums: Dict[date, List[float]] = {}
+    for (decision, h), value in cells.items():
+        if include(decision, h):
+            sums.setdefault(decision, []).append(value)
+    return {day: sum(values) / len(values) for day, values in sums.items()}
+
+
+def summarise(test: "sp.PairedTest") -> dict:
+    return {
+        "n": test.n,
+        "benchmark_mean": test.benchmark_mean,
+        "mean_difference": test.mean_difference,
+        "skill": test.skill,
+        "mean_difference_lower_95_one_sided": test.lower_mean_difference(),
+        "skill_lower_95_one_sided": sp._bound(test.skill_draws, test.alpha, test.draws),
+        "skill_upper_95_one_sided": test.upper_skill(),
+        "bootstrap_p": test.p_value,
+        "dm_statistic": test.dm_statistic,
+        "dm_p": test.dm_p_value,
+    }
+
+
+def pair_table(
+    scores: Mapping[str, Mapping[date, float]], pairs: Sequence[Tuple[str, str]], days: Sequence[date], draws: int
+) -> Dict[str, dict]:
+    """`paired_tests` of each (reference, candidate) name pair on `days`; empty when the days cannot carry the lag."""
+
+    if len(days) <= sp.HAC_LAG:
+        return {}
+    chosen = [({d: scores[b][d] for d in days}, {d: scores[c][d] for d in days}) for b, c in pairs]
+    tests = sp.paired_tests(chosen, seed=SEED, draws=draws)
+    return {f"{b} -> {c}": summarise(test) for (b, c), test in zip(pairs, tests)}
+
+
+def score_command(args) -> int:
+    declared = committed_declaration()
+    refuse_locked([LAST_TARGET])
+    draws = args.draws
+    rows = load_daily_panel(args.published)
+    audit_panel(rows)
+    calendar = [row.date for row in rows]
+    position = {day: index for index, day in enumerate(calendar)}
+    outcomes = {row.date: row.spread_bps for row in rows}
+    row_of = {row.date: row for row in rows}
+    splits = load_split_declaration(SPLITS)
+    registry = json.loads(SOURCES.read_text(encoding="utf-8"))
+    decisions, days_by_row = {}, {}
+    for name in ROWS:
+        decisions[name], days_by_row[name] = lead_forecasts(load_laws(args.walks, name), calendar)
+    common = sorted(set.intersection(*(set(days) for days in days_by_row.values())))
+    common = [day for day in common if calendar[position[day] + max(HORIZONS)] <= LAST_TARGET]
+    refuse_locked(common + [calendar[position[day] + h] for day in common for h in HORIZONS])
+    if not common:
+        raise SystemExit("no decision day is covered by every walk")
+    # a decision day on which a benchmark cannot be built is not scored for any row (the days are listed in the record)
+    usable, unbuilt = [], []
+    for day in common:
+        try:
+            pb.forecasts(pb.b1_forecast, rows, [day], registry=registry, decision_time=DECISION)
+            pb.forecasts(pb.b2_forecast, rows, [day], registry=registry, decision_time=DECISION, splits=splits)
+            usable.append(day)
+        except sp.ProtocolError as error:
+            unbuilt.append((day.isoformat(), str(error)))
+    common = usable
+    b1 = pb.forecasts(pb.b1_forecast, rows, common, registry=registry, decision_time=DECISION)
+    b2 = pb.forecasts(pb.b2_forecast, rows, common, registry=registry, decision_time=DECISION, splits=splits)
+    forecasts: Dict[str, Dict[date, Dict[int, Sequence[float]]]] = {"B1": b1, "B2": b2}
+    missing = {}
+    for name in ROWS:
+        filled = sp.fill_missing({day: decisions[name][day] for day in common}, b1, common)
+        forecasts[name] = filled.forecasts
+        missing[name] = {"days": len(filled.missing_days), "share": filled.missing_share}
+    names = list(BENCHMARKS) + list(ROWS)
+    primary = {n: sp.day_scores(forecasts[n], outcomes, calendar) for n in names}
+    secondary = {n: sp.day_scores(forecasts[n], outcomes, calendar, score=sp.upper_tail_twcrps) for n in names}
+    days = sorted(primary["B1"])
+    for n in names:
+        if sorted(primary[n]) != days or sorted(secondary[n]) != days:
+            raise SystemExit(f"{n} does not score the same decision days as B1")
+    pairs = [("control", v) for v in VARIANTS] + [(b, r) for r in ROWS for b in BENCHMARKS]
+    document: dict = {
+        "declaration": "metadata/near_threshold_688.json",
+        "panel_sha256": panel_sha256(args.published),
+        "decision_days": {"n": len(days), "first": days[0].isoformat(), "last": days[-1].isoformat()},
+        "draws": draws, "seed": SEED,
+        "decision_days_without_a_benchmark": unbuilt,
+        "missing": missing,
+        "names": names,
+        "mean_primary": {n: sum(primary[n].values()) / len(days) for n in names},
+        "mean_key_secondary": {n: sum(secondary[n].values()) / len(days) for n in names},
+        "pooled_primary": pair_table(primary, pairs, days, draws),
+        "pooled_key_secondary": pair_table(secondary, pairs, days, draws),
+    }
+    cells = {}
+    for n in names:
+        cells[n] = {}
+        for decision, leads in forecasts[n].items():
+            for h in HORIZONS:
+                target = calendar[position[decision] + h]
+                if outcomes.get(target) is not None:
+                    cells[n][(decision, h)] = sp.grid_crps(leads[h], outcomes[target])
+    document["by_lead"] = {
+        n: {str(h): sum(v for (d, hh), v in cells[n].items() if hh == h) / sum(1 for (d, hh) in cells[n] if hh == h) for h in HORIZONS}
+        for n in names
+    }
+    # paired by lead: each variant against the control on the grid CRPS of one lead alone
+    by_lead_tests = {}
+    for h in HORIZONS:
+        per_day = {n: {d: v for (d, hh), v in cells[n].items() if hh == h} for n in ROWS}
+        lead_days = sorted(set.intersection(*(set(m) for m in per_day.values())))
+        by_lead_tests[str(h)] = pair_table(per_day, [("control", v) for v in VARIANTS], lead_days, draws)
+    document["by_lead_tests"] = by_lead_tests
+    by_regime = {}
+    for label in splits.regime_labels:
+        group = [day for day in days if splits.regime(day) == label]
+        if len(group) > sp.HAC_LAG:
+            by_regime[label] = {
+                "n": len(group),
+                "mean_primary": {n: sum(primary[n][d] for d in group) / len(group) for n in names},
+                "tests": pair_table(primary, pairs, group, draws),
+            }
+    document["by_regime"] = by_regime
+
+    def kind_of(day: date) -> str:
+        return splits.reporting_day_type(day, row_of[day].values)
+
+    by_type = {}
+    for kind in sorted({kind_of(calendar[position[d] + h]) for d in days for h in HORIZONS}):
+        include = lambda d, h, kind=kind: kind_of(calendar[position[d] + h]) == kind
+        means = {n: day_means(cells[n], include) for n in names}
+        group = sorted(set.intersection(*(set(m) for m in means.values())))
+        if len(group) > sp.HAC_LAG:
+            by_type[kind] = {
+                "decision_days": len(group),
+                "target_cells": sum(1 for d in days for h in HORIZONS if include(d, h)),
+                "mean_primary": {n: sum(means[n][d] for d in group) / len(group) for n in names},
+                "tests": pair_table(means, pairs, group, draws),
+            }
+    document["by_type"] = by_type
+    # pinball at the contract's levels, the median's absolute error and central coverage, pooled over cells
+    detail: Dict[str, Dict[Tuple[date, int], Dict[str, float]]] = {n: {} for n in names}
+    for n in names:
+        for decision, leads in forecasts[n].items():
+            for h in HORIZONS:
+                y = outcomes.get(calendar[position[decision] + h])
+                if y is None:
+                    continue
+                q = leads[h]
+                at = lambda level: q[GRID.index(level)]
+                cell = {f"pinball_{level:g}": metrics.pinball_loss(level, at(level), y) for level in REPORT_LEVELS}
+                cell["mae_median"] = abs(at(0.5) - y)
+                cell["hit_50"] = 1.0 if at(0.25) <= y <= at(0.75) else 0.0
+                cell["hit_90"] = 1.0 if at(0.05) <= y <= at(0.95) else 0.0
+                detail[n][(decision, h)] = cell
+    measures = [f"pinball_{level:g}" for level in REPORT_LEVELS] + ["mae_median"]
+    also = {}
+    for measure in measures:
+        daily = {n: day_means({k: v[measure] for k, v in detail[n].items()}, lambda d, h: True) for n in names}
+        group = sorted(set.intersection(*(set(m) for m in daily.values())))
+        also[measure] = {
+            "mean": {n: sum(daily[n][d] for d in group) / len(group) for n in names},
+            "tests": pair_table(daily, [("control", v) for v in VARIANTS], group, draws),
+        }
+    document["also"] = also
+    document["coverage"] = {
+        key: {n: sum(v[key] for v in detail[n].values()) / len(detail[n]) for n in names} for key in ("hit_50", "hit_90")
+    }
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output), "decision_days": len(days)}))
+    return 0
+
+
+# -- the report ----------------------------------------------------------------------------------------------------
+
+INPUT_LABELS = {
+    "bill_x_band": "bill settlement on the scored day (#676)",
+    "post_month_end_window": "first three market days of the month (#677)",
+}
+LABELS = {
+    "B1": "B1 as-of persistence",
+    "B2": "B2 calendar climatology",
+    "control": "control (two-part, #632)",
+    "bill_x_band": "+ bill settlement (#676)",
+    "post_month_end_window": "+ post-month-end window (#677)",
+}
+
+
+def _pp(value: Optional[float], digits: int = 1) -> str:
+    return "n/a" if value is None else f"{100.0 * value:+.{digits}f}"
+
+
+def _with_interval(statistic: Mapping) -> str:
+    interval = statistic["interval"]
+    text = _pp(statistic["value"])
+    return text if interval is None else f"{text} [{_pp(interval[0])}, {_pp(interval[1])}]"
+
+
+def _rate(cell: Mapping) -> str:
+    if cell["with_rate"] is None or cell["without_rate"] is None:
+        return f"{cell['with_events']}/{cell['with_n']} against {cell['without_events']}/{cell['without_n']}"
+    return (
+        f"{cell['with_events']}/{cell['with_n']} ({cell['with_rate']:.2f}) against "
+        f"{cell['without_events']}/{cell['without_n']} ({cell['without_rate']:.2f})"
+    )
+
+
+def screen_text(screen: Mapping) -> str:
+    lines = [
+        "# The screen (#688)",
+        "",
+        "Ordinary scored days, 2018-06-29 to 2025-12-31. Pressure day: the spread strictly above +5 bp. Differences are in percentage points of "
+        "the pressure rate, input on minus input off, with 90% stationary-bootstrap intervals (1000 resamples, mean block 10) where the cell holds "
+        "30 days on each side and 3 pressure days. `strat.` is the Mantel-Haenszel difference over the six strata of as-of spread band by "
+        "scarcity state band. The persistence share is one minus the stratified over the raw difference (negative: the strata do not explain "
+        "it away, they hide more of it). Cells computed: "
+        f"{screen['cells']}; statistics with an interval: {screen['statistics_with_interval']}. Nothing is corrected for multiplicity.",
+        "",
+    ]
+    for name, by_lead in screen["screen"].items():
+        lines += [f"## {INPUT_LABELS[name]}", "", "### Pooled, by lead", ""]
+        lines += [
+            "| lead | days | input days | near band, rate with against without | raw, near | strat., near | raw, all | strat., all | "
+            "above +5 bp (persistence), with against without | raw, above +5 | persistence share |",
+            "|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        for lead, splits in by_lead.items():
+            cell = splits["pooled"]
+            st = cell["statistics"]
+            lines.append(
+                f"| {lead} | {cell['days']} | {cell['input_days']} | {_rate(cell['rates']['near'])} | {_with_interval(st['raw_near'])} | "
+                f"{_with_interval(st['stratified_near'])} | {_with_interval(st['raw_all'])} | {_with_interval(st['stratified_all'])} | "
+                f"{_rate(cell['rates']['high'])} | {_with_interval(st['raw_high'])} | {_with_interval(st['persistence_share'])} |"
+            )
+        lines += ["", "### By regime (raw difference in the near band; stratified difference over all strata)", ""]
+        header = "| regime | " + " | ".join(f"lead {lead}" for lead in by_lead) + " |"
+        lines += [header, "|---|" + "---|" * len(by_lead)]
+        for label in screen["regimes"]:
+            row = []
+            for lead, splits in by_lead.items():
+                cell = splits.get(f"regime:{label}")
+                if cell is None:
+                    row.append("no days")
+                    continue
+                st = cell["statistics"]
+                row.append(
+                    f"{cell['days']} d, {cell['pressure_days']} p; near {_with_interval(st['raw_near'])}; strat. {_with_interval(st['stratified_all'])}"
+                )
+            lines.append(f"| {label} | " + " | ".join(row) + " |")
+        lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def _skill(test: Mapping) -> str:
+    return (
+        f"{test['mean_difference']:+.4f} ({100 * test['skill']:+.2f}% [{100 * test['skill_lower_95_one_sided']:+.2f}%, "
+        f"{100 * test['skill_upper_95_one_sided']:+.2f}%]), p {test['bootstrap_p']:.3f}"
+    )
+
+
+def score_text(score: Mapping) -> str:
+    names = score["names"]
+    lines = [
+        "# The model test (#688)",
+        "",
+        f"Decision days: {score['decision_days']['n']} ({score['decision_days']['first']} to {score['decision_days']['last']}). Grid CRPS in bp, "
+        "averaged over h = 1 to 5, per decision day. A paired cell is the reference's score minus the candidate's (positive favours the "
+        "candidate), its skill the same over the reference's mean, with the one-sided 95% interval of the protocol "
+        f"({score['draws']} stationary-bootstrap draws, seed {score['seed']}). Development days: a description, not a verdict.",
+        "",
+        "| row | mean grid CRPS | mean twCRPS above 0 bp | days filled with B1 |",
+        "|---|---|---|---|",
+    ]
+    for n in names:
+        filled = score["missing"].get(n)
+        lines.append(
+            f"| {LABELS[n]} | {score['mean_primary'][n]:.4f} | {score['mean_key_secondary'][n]:.4f} | "
+            f"{'n/a' if filled is None else str(filled['days'])} |"
+        )
+    for key, title in (("pooled_primary", "Primary: grid CRPS"), ("pooled_key_secondary", "Key secondary: upper-tail twCRPS")):
+        lines += ["", f"## {title}, pooled", "", "| pair | difference (skill [95% bounds]), bootstrap p |", "|---|---|"]
+        for pair, test in score[key].items():
+            a, b = pair.split(" -> ")
+            lines.append(f"| {LABELS[a]} -> {LABELS[b]} | {_skill(test)} |")
+    lines += ["", "## By lead, grid CRPS of one lead alone", "", "| row | " + " | ".join(f"h = {h}" for h in HORIZONS) + " |", "|---|" + "---|" * len(HORIZONS)]
+    for n in names:
+        lines.append(f"| {LABELS[n]} | " + " | ".join(f"{score['by_lead'][n][str(h)]:.4f}" for h in HORIZONS) + " |")
+    lines += ["", "Each variant against the control, by lead (difference, skill [95% bounds], p):", ""]
+    lines += ["| variant | " + " | ".join(f"h = {h}" for h in HORIZONS) + " |", "|---|" + "---|" * len(HORIZONS)]
+    for v in VARIANTS:
+        cells = []
+        for h in HORIZONS:
+            test = score["by_lead_tests"][str(h)].get(f"control -> {v}")
+            cells.append("n/a" if test is None else _skill(test))
+        lines.append(f"| {LABELS[v]} | " + " | ".join(cells) + " |")
+    for title, group in (("By regime of the decision day", score["by_regime"]), ("By pressure-day type of the target day", score["by_type"])):
+        lines += ["", f"## {title}, grid CRPS", "", "| group | days | " + " | ".join(LABELS[n] for n in names) + " | " + " | ".join(f"control -> {LABELS[v]}" for v in VARIANTS) + " |"]
+        lines.append("|---|---|" + "---|" * (len(names) + len(VARIANTS)))
+        for label, cell in group.items():
+            days = cell.get("n", cell.get("decision_days"))
+            tests = cell["tests"]
+            lines.append(
+                f"| {label} | {days} | " + " | ".join(f"{cell['mean_primary'][n]:.4f}" for n in names) + " | "
+                + " | ".join("n/a" if f"control -> {v}" not in tests else _skill(tests[f"control -> {v}"]) for v in VARIANTS) + " |"
+            )
+    lines += ["", "## Pinball loss at the contract's levels, the median's absolute error and central coverage", "",
+              "| measure | " + " | ".join(LABELS[n] for n in names) + " |", "|---|" + "---|" * len(names)]
+    for measure, cell in score["also"].items():
+        lines.append(f"| {measure} | " + " | ".join(f"{cell['mean'][n]:.4f}" for n in names) + " |")
+    for key in ("hit_50", "hit_90"):
+        lines.append(f"| {key} (nominal {'0.50' if key == 'hit_50' else '0.90'}) | " + " | ".join(f"{score['coverage'][key][n]:.3f}" for n in names) + " |")
+    lines += ["", "Each variant against the control on those measures (positive favours the variant):", "",
+              "| measure | " + " | ".join(LABELS[v] for v in VARIANTS) + " |", "|---|" + "---|" * len(VARIANTS)]
+    for measure, cell in score["also"].items():
+        lines.append(f"| {measure} | " + " | ".join(
+            "n/a" if f"control -> {v}" not in cell["tests"] else _skill(cell["tests"][f"control -> {v}"]) for v in VARIANTS) + " |")
+    if score["decision_days_without_a_benchmark"]:
+        lines += ["", f"Decision days without a benchmark (not scored for any row): {len(score['decision_days_without_a_benchmark'])}."]
+    return "\n".join(lines) + "\n"
+
+
+def report_command(args) -> int:
+    screen = json.loads(args.screen.read_text(encoding="utf-8"))
+    score = json.loads(args.score.read_text(encoding="utf-8"))
+    args.output.write_text(screen_text(screen) + "\n" + score_text(score), encoding="utf-8")
+    print(json.dumps({"output": str(args.output)}))
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -373,6 +891,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     walk.add_argument("--panel", type=Path, required=True)
     walk.add_argument("--output", type=Path, required=True)
     walk.set_defaults(function=walk_command)
+    screen = commands.add_parser("screen", help="screen each input on the ordinary days")
+    screen.add_argument("--panel", type=Path, required=True)
+    screen.add_argument("--output", type=Path, required=True)
+    screen.set_defaults(function=screen_command)
+    score = commands.add_parser("score", help="score the walks against the control and the benchmarks")
+    score.add_argument("--published", type=Path, required=True)
+    score.add_argument("--walks", type=Path, required=True)
+    score.add_argument("--output", type=Path, required=True)
+    score.add_argument("--draws", type=int, default=sp.DRAWS)
+    score.set_defaults(function=score_command)
+    report = commands.add_parser("report", help="write the report from the screen and the score")
+    report.add_argument("--screen", type=Path, required=True)
+    report.add_argument("--score", type=Path, required=True)
+    report.add_argument("--output", type=Path, required=True)
+    report.set_defaults(function=report_command)
     args = parser.parse_args(argv)
     return args.function(args)
 

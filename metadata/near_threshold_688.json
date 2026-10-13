@@ -53,7 +53,7 @@
     "controls": "the as-of spread band (below 2 bp, 2 to 5 bp, above +5 bp) and the scarcity state band (ample below 2, scarce at 2 or more, unknown when not read) at the same lead, both read through the as-of rule",
     "cells": "the pressure rate with and without the input in each spread band, pooled and by regime; the raw rate difference; the stratified (Mantel-Haenszel) rate difference across the six strata of spread band by scarcity band; the same difference inside the near band alone; per lead h = 1 to 5",
     "persistence_share": "the share of the raw difference that the as-of spread band explains: one minus the stratified difference over the raw difference, and the rates conditional on an as-of spread above +5 bp (P | as-of spread > 5 bp) with and without the input, which is the plain persistence part",
-    "interval": "90% from 1000 stationary-bootstrap resamples of the days (metrics.stationary_bootstrap_indices, mean block 10, seed 688); a cell needs 30 days with and without the input, and 3 pressure days",
+    "interval": "90% from 1000 stationary-bootstrap resamples of the days (metrics.stationary_bootstrap_indices, mean block 10, seed 688); a statistic is reported only where the strata it reads (all six, or the near band, or the band above +5 bp, or the band below 2 bp) hold 30 days with and without the input and 3 pressure days; a thinner statistic is not reported, point or interval (amended on 13 October 2026 after the first screen printed intervals for statistics on a handful of days: the first wording applied the minimum to the whole cell, and the stricter reading is the one used)",
     "counts": "the number of cells computed is counted and reported; nothing is corrected for multiplicity"
   },
   "outputs": {

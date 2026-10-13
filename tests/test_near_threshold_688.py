@@ -20,7 +20,7 @@ import importlib.util
 import json
 import sys
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +110,83 @@ class RateTests(unittest.TestCase):
     def test_a_cell_with_too_few_days_has_no_rate(self):
         cell = SCRIPT.rate_cell([(1, 1), (0, 0)], minimum_days=30, minimum_events=3)
         self.assertIsNone(cell["difference"])
+
+
+class ScreenStatisticTests(unittest.TestCase):
+    def setUp(self):
+        if importlib.util.find_spec("numpy") is None:  # pragma: no cover - the ml extra is optional
+            self.skipTest("the ml extra is not installed")
+
+    def test_the_array_counts_agree_with_the_row_reading(self):
+        rows = [(1, 1, 4), (1, 0, 4), (0, 0, 4), (0, 1, 4), (1, 1, 1), (0, 0, 1), (0, 0, 1)]
+        table = SCRIPT._counts([r[0] for r in rows], [r[1] for r in rows], [r[2] for r in rows], 9)
+        self.assertEqual([int(v) for v in table[4]], [1, 2, 1, 2])
+        self.assertEqual([int(v) for v in table[1]], [1, 1, 0, 2])
+        by_rows = SCRIPT.stratified_difference([(f, o, str(k)) for f, o, k in rows])
+        self.assertAlmostEqual(SCRIPT._mh(table, range(9)), by_rows)
+
+    def test_the_bands_are_the_strata_of_the_statistics(self):
+        # stratum 4 = near band (1) and scarce (1): only that stratum feeds the near-band statistics
+        rows = [(1, 1, 4)] * 5 + [(0, 0, 4)] * 5 + [(1, 0, 0)] * 5 + [(0, 1, 0)] * 5
+        table = SCRIPT._counts([r[0] for r in rows], [r[1] for r in rows], [r[2] for r in rows], 9)
+        statistics = SCRIPT.cell_statistics(table)
+        self.assertAlmostEqual(statistics["raw_near"], 1.0)
+        self.assertAlmostEqual(statistics["stratified_near"], 1.0)
+        self.assertAlmostEqual(statistics["raw_low"], -1.0)
+        self.assertIsNone(statistics["raw_high"])
+
+    def test_the_persistence_share(self):
+        self.assertAlmostEqual(SCRIPT.persistence_share(0.04, 0.01), 0.75)
+        self.assertAlmostEqual(SCRIPT.persistence_share(0.04, 0.04), 0.0)
+        self.assertIsNone(SCRIPT.persistence_share(-0.01, 0.01))
+        self.assertIsNone(SCRIPT.persistence_share(None, 0.01))
+
+    def test_a_statistic_whose_strata_are_too_thin_is_not_reported(self):
+        cell = SCRIPT.screen_cell([1, 0, 1, 0], [1, 0, 0, 0], [4, 4, 4, 4], "seed")
+        for name in ("raw_near", "raw_all", "stratified_near"):
+            self.assertIsNone(cell["statistics"][name]["value"])
+            self.assertIsNone(cell["statistics"][name]["interval"])
+        self.assertEqual(cell["rates"]["near"]["with_n"], 2)
+
+    def test_a_statistic_reads_only_its_own_strata(self):
+        # 40 near-band days on each side (stratum 4) and 2 days on each side in the high band (stratum 6)
+        flag = [1] * 40 + [0] * 40 + [1, 1, 0, 0]
+        outcome = [1] * 10 + [0] * 30 + [1] * 5 + [0] * 35 + [1, 0, 1, 0]
+        stratum = [4] * 80 + [6] * 4
+        cell = SCRIPT.screen_cell(flag, outcome, stratum, "seed")
+        self.assertAlmostEqual(cell["statistics"]["raw_near"]["value"], 0.25 - 0.125)
+        self.assertIsNotNone(cell["statistics"]["raw_near"]["interval"])
+        self.assertIsNone(cell["statistics"]["raw_high"]["value"])
+
+
+class LeadForecastTests(unittest.TestCase):
+    CALENDAR = [date(2024, 3, 4) + timedelta(days=k) for k in range(12)]
+
+    def laws(self, drop=None):
+        # lead h scores targets calendar[h + 2] .. calendar[7]: decision days calendar[2] .. calendar[7 - h]
+        out = {}
+        for h in (1, 2, 3, 4, 5):
+            out[h] = {self.CALENDAR[i + h]: [float(i + h)] * 23 for i in range(2, 8 - h + 1)}
+        if drop:
+            out[1][drop] = None
+        return out
+
+    def test_a_decision_day_takes_the_lead_h_law_of_the_target_h_days_later(self):
+        forecasts, days = SCRIPT.lead_forecasts(self.laws(), self.CALENDAR)
+        self.assertEqual(days, [self.CALENDAR[2], self.CALENDAR[3]])
+        # decision calendar[2]: lead h has target calendar[2 + h], stored as the value 2 + h
+        for h in (1, 2, 3, 4, 5):
+            self.assertEqual(forecasts[self.CALENDAR[2]][h][0], float(2 + h))
+
+    def test_a_missing_law_is_kept_as_none_for_the_scorer_to_fill(self):
+        forecasts, _days = SCRIPT.lead_forecasts(self.laws(drop=self.CALENDAR[3]), self.CALENDAR)
+        self.assertIsNone(forecasts[self.CALENDAR[2]][1])
+
+    def test_a_target_off_the_calendar_is_refused(self):
+        laws = self.laws()
+        laws[1][date(2030, 1, 1)] = [0.0] * 23
+        with self.assertRaises(ValueError):
+            SCRIPT.lead_forecasts(laws, self.CALENDAR)
 
 
 class DeclarationTests(unittest.TestCase):
