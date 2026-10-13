@@ -1,15 +1,17 @@
 """The persistence-logistic and raw-spread reference rows of the off-risk-day measurement (#681, finding #667).
 
 Recorded mutations, 13 October 2026, in a disposable copy of `scripts/off_risk_day_624.py`:
-1. in `paired_cells`, the pairing's resample restricted to the days of the cell replaced by the days of the first row only is not a
-   leakage guard, so it has none; the guard of this file is the equal-days refusal. In `paired_cells`, the `len(...) != 1` check on the
-   column lengths deleted: `test_columns_of_different_lengths_are_refused` then fails with `AssertionError: ValueError not raised`.
-2. in `paired_cells`, the difference taken the other way (`q` less `p`): `test_a_better_ranker_has_a_positive_difference` then fails with
-   `AssertionError: -0.5 not greater than 0`.
-3. in `asof_spread_document`, the refusal of a hole in the read deleted: `test_a_hole_in_the_read_is_refused` then fails with
-   `AssertionError: ValueError not raised`.
-4. in `cell_statistics`, the `probability` switch ignored (the Brier skill and the reliability fit taken of the raw spread):
-   `test_a_raw_spread_has_a_ranking_and_no_probability_statistics` then fails with `AssertionError: 0.3 is not None`.
+1. in `paired_cells`, the check that the two rows, the outcomes and the reference are one per day deleted (two rows of different days are paired
+   by position). `test_columns_of_different_lengths_are_refused` then errors with `IndexError: list index out of range`.
+2. in `paired_cells`, the difference taken the other way (the other row less the row). `test_a_better_ranker_has_a_positive_difference` then fails with
+   `AssertionError: -0.4896304020391612 not greater than 0`.
+3. in `asof_spread_document`, the refusal of a hole in the as-of read deleted (a hole read as 0 bp). `test_a_hole_in_the_read_is_refused` then fails
+   with `AssertionError: ValueError not raised`.
+4. in `cell_statistics`, the `probability` switch ignored (the Brier skill and the reliability fit taken of the raw spread).
+   `test_a_raw_spread_has_a_ranking_and_no_probability_statistics` then fails with `AssertionError: 0.16552444444444436 is not None`.
+
+The as-of read of the spread is `off_risk_day_624.read_features`, the reader of step 2 (`asof.InformationRule` with the leakage and staleness guards of
+`baseline._as_of_folds`); `spread_bps` is an input already declared in `metadata/sources.json`, so no new availability declaration is made.
 """
 
 import importlib.util
@@ -95,13 +97,17 @@ class PairedTests(unittest.TestCase):
 
 class RawSpreadTests(unittest.TestCase):
     def test_a_raw_spread_has_a_ranking_and_no_probability_statistics(self):
-        spread = [0.3, 0.3, 2.0, 2.0, 6.0, 7.0]
-        y = [0, 0, 0, 1, 1, 1]
-        cell = SCRIPT.cell_statistics(spread, y, [None] * 6, probability=False)
-        self.assertIsNotNone(cell["auroc"])
+        n = 120
+        y = [1 if k % 4 == 0 else 0 for k in range(n)]
+        spread = [0.2 + (k % 4 == 0 and k % 3 != 0 or k % 5 == 1) * 0.3 + (k % 9) * 0.01 for k in range(n)]
+        as_probability = SCRIPT.cell_statistics(spread, y, [0.25] * n)
+        self.assertIsNotNone(as_probability["brier_skill"])
+        self.assertIsNotNone(as_probability["slope"])
+        cell = SCRIPT.cell_statistics(spread, y, [0.25] * n, probability=False)
+        self.assertEqual(cell["auroc"], as_probability["auroc"])
         for key in ("brier_skill", "slope", "intercept"):
             self.assertIsNone(cell[key])
-        self.assertEqual(cell["pressure_days"], 3)
+        self.assertEqual(cell["pressure_days"], 30)
 
     def test_the_intervals_of_a_raw_spread_are_its_ranking_only(self):
         n = 120
@@ -124,6 +130,30 @@ class RawSpreadTests(unittest.TestCase):
             SCRIPT.asof_spread_document({"2020-01-02": {"spread_bps": None}}, ["2020-01-02"], 1)
         with self.assertRaises(ValueError):
             SCRIPT.asof_spread_document({}, ["2020-01-02"], 1)
+
+
+class MarkdownTests(unittest.TestCase):
+    def document(self):
+        stat = {
+            "days": 100, "pressure_days": 9, "auroc": 0.8, "brier_skill": 0.1, "slope": 0.9, "intercept": 0.0, "positive_days": 90, "pressure_days_on_zero": 1,
+            "skill_days": 100, "intervals": {"auroc": None, "brier_skill": None, "slope": None, "intercept": None},
+        }
+        level = dict(stat, brier_skill=None, slope=None, intercept=None, positive_days=0, pressure_days_on_zero=0)
+        pair = {"all": {"auroc": {"difference": 0.05, "lower": -0.01, "upper": 0.1, "draws": 60, "left_out": 0}, "brier_skill": None}}
+        return {"rows": {
+            SCRIPT.PERSISTENCE: {"1": {"cells": {"all": stat}}},
+            "variant": {"1": {"cells": {"all": dict(stat, auroc=0.85)}, "paired_with_" + SCRIPT.PERSISTENCE: pair}},
+            SCRIPT.SPREAD_REFERENCE: {"1": {"cells": {"all": level}}},
+        }}
+
+    def test_the_paired_table_shows_the_difference_the_cell_s_pressure_days_and_both_rows(self):
+        text = SCRIPT.paired_markdown(self.document())
+        self.assertIn("`variant` against `persistence_logistic`", text)
+        self.assertIn("| all | 1 | 9 | 0.850 | 0.800 | +0.050 [-0.010, +0.100] | 0.100 | 0.100 | – |", text)
+
+    def test_a_level_has_no_zero_forecast_count_in_the_row_table(self):
+        text = SCRIPT.markdown(self.document())
+        self.assertIn("n/a (a level)", text)
 
 
 if __name__ == "__main__":
