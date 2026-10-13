@@ -9,7 +9,7 @@ Two scratch chains were built from the same tracked fixtures with the commands o
 * **after:** the current tree, base `ee9366eb` (it contains #662, merge `0db0471d`).
 * **before:** the same tree with the three files #662 changed and that the chain reads put back as they were in `0db0471d^1`
   (`7b8fd686`): `src/repo_model/fed_liquidity.py`, `src/repo_model/ingest.py`, `metadata/sources_measurement.json`. (The
-  other files of #662 are tests and documents, which the chain does not read.) Nothing else differs between the two trees
+  other files of #662 are test files and documents, which the chain does not read.) Nothing else differs between the two trees
   (`diff -rq` over `src/`, `scripts/` and `metadata/` shows exactly those three files).
 
 ```
@@ -53,7 +53,7 @@ to 2025-12-31 are identical in every column, and so are the 26 rows before 2018-
 | `fed_repo_log_accepted` | 6 | the same six | 0.0620, 0.0630, 0.0639, 0.0639, 0.0630, 0.0630 | 0.0 |
 | `fed_repo_rate_iorb_bps` | 6 | the same six | -4.625, -3.308, 7.652, 5.303, 7.338, 2.338 | 0.0 |
 | `fed_repo_log_accepted_change` | 12 | the six and the next panel day: 2018-05-10, 2018-05-17, 2018-11-16, 2018-12-06, 2019-05-09, 2019-05-14 | +x on the test date, -x on the day after | 0.0 |
-| `fed_repo_days_since_positive` | 339 | every panel row 2018-05-09 to 2019-09-16 | 0 on a test date, then counting up (to 125 at most, restarting at each test) | 250 (the cap) on all 339 rows |
+| `fed_repo_days_since_positive` | 339 | every panel row 2018-05-09 to 2019-09-16 | zero on a test date, then counting up (to 125 at most, restarting at each test) | 250 (the cap) on all 339 rows |
 | `fed_repo_accepted_sameday`, `fed_repo_submitted_sameday` | 6 | the same six | as the next-day columns | 0.0 |
 | `fed_repo_ops_sameday`, `fed_repo_log_accepted_sameday`, `fed_repo_rate_iorb_bps_sameday` | 6 each | the same six | as the next-day columns | 0.0 |
 | `fed_repo_log_accepted_change_sameday` | 12 | the same twelve | as the next-day column | 0.0 |
