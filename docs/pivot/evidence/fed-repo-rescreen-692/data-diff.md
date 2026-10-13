@@ -9,7 +9,7 @@ Two scratch chains were built from the same tracked fixtures with the commands o
 * **after:** the current tree, base `ee9366eb` (it contains #662, merge `0db0471d`).
 * **before:** the same tree with the three files #662 changed and that the chain reads put back as they were in `0db0471d^1`
   (`7b8fd686`): `src/repo_model/fed_liquidity.py`, `src/repo_model/ingest.py`, `metadata/sources_measurement.json`. (The
-  other files of #662 are test files and documents, which the chain does not read.) Nothing else differs between the two trees
+  other files of #662 are only checks and prose, which the chain does not read.) Nothing else differs between the two trees
   (`diff -rq` over `src/`, `scripts/` and `metadata/` shows exactly those three files).
 
 ```
