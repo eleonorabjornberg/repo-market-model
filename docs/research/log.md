@@ -214,3 +214,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the export withholds 85 of 666 weekly dates of `pd_repo_ust` and 72 of `pd_reverse_repo_ust` (2022 to 2025), 3 of `pd_repo_mbs`, none of the fails series. Partial rank correlation with the +5 bp indicator on ordinary days: `pd_reverse_repo_ust` +0.112 → +0.087 [+0.05, +0.12], `pd_repo_ust` +0.104 → +0.076 [+0.03, +0.12]. Detail in `docs/pivot/new-sources-withheld-weeks.md`.
 - Against kill: not applicable (H3's kill is not tested here; the two series lose rank, and neither was a lead beyond #630's own reading).
 - Next: Eleonora decides whether the source is admitted given the withheld weeks.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#711
+- Directive: #679
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d`
+- Tried: the partly announced bill class of the net settlement columns audited against the completed day's net (#665's 117 day-lead cases reproduce; #647's 238 groups do not), and the class left out until fully announced; the structural, projected-reserves and combined models re-scored. Variants: n/a (correction).
+- Result: leaving the class out has the smallest mean absolute error at leads 4 and 5 (32.8 and 35.9 bn, against 49.1 and 51.7 for the old rule and 87.7 and 87.5 for #647's) and overall (37.2 against 50.6 and 85.7); at lead 2 (2 cases) and lead 3 (10 cases) another rule is nearer. Re-scored: no tier or pass changes; `risk_gbm+structural` stays at 15 of 26 onsets (tier 3 yes), `structural_liquidity` 11 to 12 of 26, `projected_reserves` 12 to 11 of 26; none of the rows passes.
+- Against kill: not applicable (a data correction; no hypothesis is tested).
+- Next: re-run the other evidence that reads the net settlement columns (listed in `docs/pivot/partly-announced-679-audit.md`).
