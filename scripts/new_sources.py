@@ -15,6 +15,10 @@ Step 2, the snapshots (each is one plain request per URL, made by the repository
 (the posture of `scripts/extract_fr2004.py`). `--check` recomputes the extract from the export and
 compares. `fetch-dts` takes the Daily Treasury Statement's debt cash lines for 2018 to 2025.
 
+The weeks the New York Fed withheld, and the panel days the 13-day carry leaves empty (#680):
+
+    PYTHONPATH=src python3 scripts/new_sources.py withheld --panel SCREEN.csv --output docs/pivot/evidence/new-sources-capped/withheld.json
+
 The auction results and the Desk's operation records are read from snapshots already tracked
 (`tests/fixtures/snapshots/treasury_auctions/`, `.../on_rrp_inputs/`); nothing is fetched for them.
 
@@ -159,6 +163,52 @@ def new_series() -> Dict[str, Dict[date, float]]:
     payloads = [p.read_bytes() for p in sorted(DTS_DIR.glob("*.json")) if not p.name.endswith("manifest.json")]
     out.update(new_sources.parse_dts_debt_cash(payloads))
     return out
+
+
+def withheld_command(args) -> int:
+    """The weeks the New York Fed withheld, by column, and the days the 13-day carry leaves as holes (#680)."""
+
+    payload = PD_EXTRACT.read_bytes()
+    suppressed = new_sources.parse_pd_suppressed(payload)
+    values = new_sources.parse_pd_export(payload)
+    rows = load_daily_panel(args.panel)
+    capped = new_sources.add_columns(rows, values)
+    out = {}
+    for column in new_sources.PD_SERIES:
+        weeks = suppressed[column]
+        out[column] = {
+            "weeks_in_extract": len(values[column]) + len(weeks),
+            "withheld": new_sources.summarise_suppressed(weeks),
+            "longest_run": _longest_run(weeks),
+            "days_with_a_value_capped": sum(1 for r in capped if r.values.get(column) is not None),
+            "days_with_a_value_uncapped": _uncapped_days(rows, values[column]),
+        }
+    args.output.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(out, indent=1, sort_keys=True))
+    return 0
+
+
+def _longest_run(weeks) -> Optional[List[str]]:
+    best: List[date] = []
+    run: List[date] = []
+    for day in sorted(weeks):
+        run = run + [day] if run and (day - run[-1]).days == 7 else [day]
+        if len(run) > len(best):
+            best = run
+    return [best[0].isoformat(), best[-1].isoformat()] if best else None
+
+
+def _uncapped_days(rows, series) -> int:
+    """Panel days with a value under the rule #630 used: carried with no limit (the behaviour #680 removes)."""
+
+    starts = sorted(series)
+    cursor, count, seen = 0, 0, False
+    for row in rows:
+        while cursor < len(starts) and starts[cursor] <= row.date:
+            cursor += 1
+            seen = True
+        count += 1 if seen else 0
+    return count
 
 
 def panel_command(args) -> int:
@@ -639,6 +689,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     fetch.add_argument("--start", default=FIRST_DTS_YEAR_START)
     fetch.add_argument("--end", default=new_sources.END.isoformat())
     fetch.set_defaults(func=fetch_dts_command)
+    wh = sub.add_parser("withheld")
+    wh.add_argument("--panel", type=Path, required=True)
+    wh.add_argument("--output", type=Path, required=True)
+    wh.set_defaults(func=withheld_command)
     pan = sub.add_parser("panel")
     pan.add_argument("--panel", type=Path, required=True)
     pan.add_argument("--output", type=Path, required=True)
