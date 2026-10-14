@@ -8,6 +8,8 @@ as-of reserves ratio (`rolling`), and a kink fitted on each refit's training pai
 * `RollingLevelTests` -- the rolling level is the declared quantile of the trailing window, the fixed 0.12 until
   the declared minimum, absent when the row has no ratio, and **reads no row after its own** (the criterion).
 * `FitLevelTests` -- the fitted kink recovers a planted one, and falls back to 0.12 on too few pairs or a wrong slope.
+* `FitLevelTieTests` (#747) -- grid points that fit equally well are "not identified" (fixed 0.12, `fitted: False`, the tied
+  interval carried), the answer does not depend on rounding, and a clear minimum is still fitted.
 * `BuildTests` and `NoFutureTests` -- the panel column on a panel read through the as-of rule, and the guard that
   refuses a level built from a later row.
 * `DesignTests` -- the structural design under each form: `fixed` is the model as scored, `rolling` reads the level
@@ -33,6 +35,11 @@ alone, each confirmed applied by `grep` and restored before the next):
 4. (#626) `structural_exceedance.fit_predict` (the same line, now reached by `kinked_fitted` through `design.level_source`): the
    same replacement as 2. `PredictorTests.test_a_kinked_fitted_level_is_unmoved_by_rows_after_the_training_end` fails with
    `AssertionError: 0.1425 != 0.14`.
+
+5. (#747) `fit_level`: replace `abs(c[0] - least) <= KINK_TIE_RTOL * least` by `abs(c[0] - least) <= 1e-12` (the old absolute
+   comparison). Grid points that tie in exact arithmetic are then split by rounding, and the tied set is cut short;
+   `FitLevelTieTests.test_the_answer_does_not_depend_on_rounding` fails with `AssertionError: Lists differ: [0.15, 0.2] != [0.15, 0.1925]`
+   (the first of the two tie tests, which passes on exact ties, is not what kills it). Applied in a scratch copy and confirmed by `grep`.
 
 The kinked elasticity of #626 is covered by `DesignTests` (`test_the_kinked_elasticity_is_flat_above_the_level_and_exponential_below_it`,
 `test_kinked_forms_read_what_their_level_source_reads`, `test_a_constant_level_changes_the_kinked_columns`) and by
@@ -155,6 +162,38 @@ class FitLevelTests(unittest.TestCase):
     def test_one_spread_per_ratio(self):
         with self.assertRaises(ValueError):
             sat.fit_level([0.1, 0.2], [1.0])
+
+
+class FitLevelTieTests(unittest.TestCase):
+    """#747: grid points that fit equally well are "not identified", never a point picked by rounding."""
+
+    def flat(self, noise=1.0, n=400):
+        # every ratio is at most 0.15 and the planted kink is 0.20: all grid points from 0.15 up fit identically
+        ratios = [round(0.09 + 0.01 * (k % 7), 4) for k in range(n)]
+        spreads = [-1.0 + 400.0 * max(0.0, 0.20 - r) + noise * (((k * 53) % 7) - 3) for k, r in enumerate(ratios)]
+        return ratios, spreads
+
+    def test_a_flat_sse_above_the_highest_ratio_is_not_identified(self):
+        ratios, spreads = self.flat()
+        level, record = sat.fit_level(ratios, spreads)
+        self.assertFalse(record["fitted"])
+        self.assertEqual(level, sat.FIXED)
+        self.assertTrue(record["reason"].startswith("not identified (tied SSE over ["))
+        lo, hi = record["tied"]
+        self.assertGreaterEqual(lo, max(ratios) - 0.0025)
+        self.assertEqual(hi, sat.KINK_GRID[-1])
+
+    def test_the_answer_does_not_depend_on_rounding(self):
+        ratios, spreads = self.flat()
+        shifted = [s + 1e-9 * ((k * 7) % 5) for k, s in enumerate(spreads)]
+        self.assertFalse(sat.fit_level(ratios, shifted)[1]["fitted"])
+        self.assertEqual(sat.fit_level(ratios, spreads)[1]["tied"], sat.fit_level(ratios, shifted)[1]["tied"])
+
+    def test_a_clear_minimum_is_still_fitted(self):
+        ratios, spreads = FitLevelTests().pairs(0.11, noise=5.0)
+        level, record = sat.fit_level(ratios, spreads)
+        self.assertTrue(record["fitted"])
+        self.assertAlmostEqual(level, 0.11, places=2)
 
 
 def _panel(count=330):
