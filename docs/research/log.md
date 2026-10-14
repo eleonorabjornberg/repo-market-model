@@ -394,3 +394,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: no refit in any row, year or horizon is "not identified" and no level moves, so no earlier figure moves; the old rule reproduces the recorded levels for the structural and combined rows exactly (the projected row differs in 47 refits for a later feature change, not the tie). At a tolerance of 1e-4, 44 refits of each structural and combined row would be tied; none at 1e-6. Detail in `docs/pivot/satiation-ties-747-result.md`.
 - Against kill: not applicable (no verdict; development data).
 - Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
+
+### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#766
+- Directive: #766
+- Step: 1, groundwork (liquidity G6 input; ingestion only; the repo-operation snapshots extended to 2026-09-03 for liquidity goalpost 3, eleonorabjornberg/repo-market-liquidity#75)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `fefc608`
+- Tried: no forecast variant. One fetch of the Desk's repo-operation results for 2026-01-01 to 2026-09-03 with `PYTHONPATH=src python3 -m repo_model.cli fetch repo-ops --start 2026-01-01 --end 2026-09-03`, saved beside the eight yearly snapshots; `coverage_end` of `nyfed_repo_ops` and `nyfed_repo_ops_sameday` moved to 2026-09-03. Variants: 0.
+- Result: 510 operations on 169 operation dates, 2026-01-02 to 2026-09-03. Rows before 2026-01-01 read identically with and without the new file (both readings), the eight earlier files and manifests are byte-for-byte unchanged, and a date after 2026-09-03 is still refused. The published panel digest does not move.
+- Against kill: not applicable (no verdict; nothing scored on a 2026 day).
+- Next: the liquidity repo bumps its parent pin to the merge commit and reads the 2026 labels.
