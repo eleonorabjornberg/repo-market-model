@@ -49,6 +49,7 @@ __all__ = [
     "FORMS",
     "KINK_GRID",
     "KINK_MINIMUM_PAIRS",
+    "KINK_TIE_RTOL",
     "READ_FEATURES",
     "ROLLING_COLUMN",
     "ROLLING_MINIMUM",
@@ -97,6 +98,10 @@ ROLLING_MINIMUM = 63
 #: Form b. The kink is searched on a grid of ratios, 0.080 to 0.200 in steps of 0.0025, and needs a year of pairs.
 KINK_GRID = tuple(round(0.08 + 0.0025 * k, 4) for k in range(49))
 KINK_MINIMUM_PAIRS = 250
+# Grid points whose squared error is within this fraction of the best are tied (#747). The error is a sum over
+# hundreds of pairs, so floating-point rounding moves it by about 1e-13 of itself; a real one-step change in the
+# kink moves it by far more. 1e-9 sits between the two.
+KINK_TIE_RTOL = 1e-9
 #: Business days appended to the dates handed to the rule, so a lag at the last real row is dated the same
 #: whatever follows it.
 _EXTRA_DATES = 15
@@ -156,7 +161,11 @@ def fit_level(
 
     Reads only the pairs handed in, which are one refit's training pairs: each ratio was public at its pair's
     own decision and each spread is the label of a day the training frame covers. With fewer than
-    `minimum_pairs` pairs, or no candidate with a non-negative slope, the level is the fixed 0.12.
+    `minimum_pairs` pairs, or no candidate with a non-negative slope, the level is the fixed 0.12. So it is when the
+    kink is not identified (#747): grid points whose squared error is within `KINK_TIE_RTOL` of the best span more
+    than one grid step (for example every point at or above the highest ratio, which all fit alike). The record then
+    says `fitted: False`, "not identified (tied SSE over [lo, hi])", and carries `tied: [lo, hi]`; a point is never
+    picked among them.
 
     Returns:
         `(level, record)`; the record says whether the level was fitted, from how many pairs, and the winner's
@@ -169,8 +178,8 @@ def fit_level(
     if n < minimum_pairs:
         return FIXED, {"fitted": False, "reason": "too few pairs", "pairs": n}
     y_mean = sum(spreads) / n
-    best: Optional[Tuple[float, float, float]] = None
-    for k in grid:
+    found: List[Tuple[float, int, float, float]] = []
+    for index, k in enumerate(grid):
         x = [hinge(r, k) for r in ratios]
         x_mean = sum(x) / n
         sxx = sum((v - x_mean) ** 2 for v in x)
@@ -181,11 +190,21 @@ def fit_level(
             continue
         intercept = y_mean - slope * x_mean
         sse = sum((s - intercept - slope * v) ** 2 for v, s in zip(x, spreads))
-        if best is None or sse < best[0] - 1e-12:
-            best = (sse, float(k), slope)
-    if best is None:
+        found.append((sse, index, float(k), slope))
+    if not found:
         return FIXED, {"fitted": False, "reason": "no candidate with a non-negative slope", "pairs": n}
-    return best[1], {"fitted": True, "pairs": n, "slope": best[2], "sse": best[0]}
+    least = min(c[0] for c in found)
+    tied = [c for c in found if abs(c[0] - least) <= KINK_TIE_RTOL * least]
+    if max(c[1] for c in tied) - min(c[1] for c in tied) > 1:
+        lo, hi = min(c[2] for c in tied), max(c[2] for c in tied)
+        return FIXED, {
+            "fitted": False,
+            "reason": f"not identified (tied SSE over [{lo}, {hi}])",
+            "pairs": n,
+            "tied": [lo, hi],
+        }
+    best = min(tied, key=lambda c: (c[0], c[1]))
+    return best[2], {"fitted": True, "pairs": n, "slope": best[3], "sse": best[0]}
 
 
 def asof_ratios(
