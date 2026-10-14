@@ -1,0 +1,55 @@
+{
+  "status": "declared by the pull request that closes #689 before any score was computed; a development-data measurement, not a record and not a verdict under scoring protocol v1 (#640). Nothing is published: the published scarcity indicator and its 0.12 band are unchanged, every input is off in every published declaration, no day after 2025-12-31 is scored, and these rows are not added to the frozen shortlist of #567. Only the logistic coefficients and the level are fitted, on the judge's refit cadence; every constant below is written down once and not tuned.",
+  "issue": 689,
+  "serves": "H5 (structural model), and the nested forecast test of H7 (the estimator itself is in eleonorabjornberg/repo-market-liquidity#22 and is not duplicated here)",
+  "instruction": "Eleonora, 13 October 2026: make finding #671 a directive. satiation.fit_level picks the kink by least squares of the spread level on a hinge, an objective that differs from the logistic it feeds, with several minima; the fitted level jumped between refits, so #626's null result describes the estimator, not the kink.",
+  "fixed_level": 0.12,
+  "elasticity": "the kinked curve of #626 (structural_liquidity.elasticity with kinked=True): e = exp(max(0, level - ratio) / 0.01); every other term is unchanged (metadata/structural_liquidity.json)",
+  "grid": [0.08, 0.2, 0.0025],
+  "grid_reading": "satiation.KINK_GRID, the grid of #587 and #626: 0.080 to 0.200 in steps of 0.0025, 49 levels",
+  "minimum_pairs": 250,
+  "label_for_the_level": "the +5 bp label of the refit's training pairs (the lowest of the declared thresholds); the level is chosen once per refit and applies to both the +5 bp and the +10 bp fits. With fewer than 250 pairs, or a training label with no event or only events, the level is the fixed 0.12 and the record says why",
+  "variants": {
+    "structural_kinked_profile": {
+      "label": "(a) kinked, level profiled on the ridge-logistic objective",
+      "form": "kinked_profile",
+      "level": "at each refit, for every level k on the grid, the design is completed at k and the ridge logistic (C = 1) is fitted on the training pairs' +5 bp labels; the level is the k whose fitted objective (summed log loss plus the ridge penalty, the quantity the fit minimises) is smallest. Ties go to the lower level. Nothing outside the refit's training pairs is read",
+      "interval": "the levels whose objective is within 1.92 nats of the minimum (the likelihood-ratio 95% region on one degree of freedom, applied to the penalised objective), recorded at every refit with the number of local minima of the curve"
+    },
+    "structural_kinked_slow": {
+      "label": "(b) kinked, profiled level constrained to move slowly",
+      "form": "kinked_slow",
+      "level": "the same profile, but the level is the k that minimises (objective(k) - minimum objective) / pairs + 0.001 * ((k - previous level) / 0.01)^2, where the previous level is the level of the previous refit (0.12 at the first refit). The penalty, 0.001 nats per pair per squared percentage point of the ratio, is written down here once and is not tuned",
+      "penalty_per_pair": 0.001
+    }
+  },
+  "penalty_per_pair": 0.001,
+  "not_scored": {
+    "c": "the directive's optional variant (c), fitting the level on the pressure label itself, is the label that (a) already profiles on; it is not a separate row",
+    "once_per_regime": "the directive's alternative form of (b), a level fitted once per regime as of each decision, is not scored: a regime label is a hindsight label (ruling on #515) and the penalised profile is the declared form of (b)"
+  },
+  "rows": {
+    "controls": ["structural_liquidity+h41"],
+    "references": ["structural_kinked_fitted", "structural_kinked_rolling"],
+    "new": ["structural_kinked_profile", "structural_kinked_slow"],
+    "reading": "all five rows read the reserves leg of the ratio, and the rolling level, per H.4.1 release (metadata/h41_release_dating.json, ruling on #541; #622), on the same scratch panel and the same fold grid. structural_kinked_fitted and structural_kinked_rolling are re-run here, as #626 declared them, so every pair is on one run. The comparison is each new row against each of the two references"
+  },
+  "thresholds_bp": [5, 10],
+  "horizons": [1, 2, 3, 4, 5],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "primary_threshold_bp": 5
+  },
+  "reports": {
+    "refit_path": "for each level estimator (the least-squares fit of #587, the rolling quantile, (a), (b)) the level at every refit, its stability and, for (a) and (b), the profile's interval and local minima. Stability: the number of fitted refits, the number of distinct levels, the mean and the largest absolute change between consecutive refits, the number of changes of 0.01 or more, the standard deviation of the level, and the level at the last refit. The rolling level is read at the refit's last training row from the scratch panel's satiation_roll column",
+    "ordinary_days": "on days that are not scheduled risk dates (pressure_judge._scheduled_risk_date), at +5 bp, by horizon: the AUROC; the Brier score and its skill against the calendar climatology (1 - Brier / Brier of the climatology); and the reliability line (intercept and slope of the outcome on the logit of the forecast, #616). Each row is paired with structural_kinked_fitted and with structural_kinked_rolling: the AUROC difference and the Brier-skill difference, with 90% stationary-bootstrap intervals (the judge's block length, replications and seed)",
+    "within_regime": "the reliability line and the Brier skill on ordinary days within each reporting regime of the split declaration (evaluation_splits.regime); a regime with fewer than 10 events reports no line",
+    "onsets_2025": "for each +5 bp onset in 2025: the row's forecast on the onset day at each horizon and whether it is above the as-of 90th percentile of the same row's forecasts over the 252 scored days before it (at least 63 needed). This is not the judge's cut-off rule, which is retired as a decision rule; it is a description of the 2025 onsets, and no hindsight enters it",
+    "demand_curve_route": "stated plainly at the end of the result page: closed, or still open, with the evidence it rests on"
+  },
+  "unchanged": "the judge, its declaration and candidates, every published declaration, the information set, the published scarcity indicator and its 0.12 band, the frozen shortlist of #567 and the lockbox. Development data only: nothing here is a verdict under scoring protocol v1, and a pass here is not a confirmation (ruling on #567)."
+}
