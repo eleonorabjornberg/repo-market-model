@@ -9,7 +9,8 @@ quantiles of `scoring_protocol.GRID` at leads h = 1..5, made at the decision ins
 - **B2, calendar climatology.** The empirical distribution of the spread over the trailing
   year, on days of the same type as the target (quarter-end, month-end, tax date, ordinary).
 - **B3, the incumbent.** The best registered model; initially the published v1 funding
-  declaration. Its forecasts are scored only on the protocol's grid (`b3_forecast`).
+  declaration. Scored on its own five levels against the candidate's same five, as a
+  secondary comparison (`b3_forecast`; ruling of 13 October 2026, PR #660).
 
 **What is read, and when.** The decision for lead h on decision row `t` is the forecast of row
 `t + h` under `InformationRule(horizon=h)`, so every lead of one decision day shares one
@@ -238,22 +239,28 @@ def incumbent() -> Dict[str, object]:
 
 
 def b3_forecast(levels: Sequence[float], forecast: Mapping[int, Sequence[float]]) -> Dict[int, List[float]]:
-    """§4 B3: the incumbent's forecast for one decision day, admitted only on the protocol's grid.
+    """§4 B3: the incumbent's forecast for one decision day, on the incumbent's own levels.
 
-    The published v1 declaration forecasts five levels (0.05, 0.25, 0.5, 0.75, 0.95). How it
-    is put on the 23-level grid (refitted at those levels, or interpolated and extrapolated
-    from five) changes its score and is not settled here, so a forecast on any other grid
-    is refused rather than mapped.
+    Eleonora's ruling of 13 October 2026 (PR #660): the published v1 declaration forecasts five
+    levels (0.05, 0.25, 0.5, 0.75, 0.95), and B3 is scored on those five against each candidate
+    read at the same five (`scoring_protocol.on_levels`, `scoring_protocol.level_crps`), as a
+    secondary comparison. B1 and B2 stay the primary benchmarks on the 23-level grid.
 
     Raises:
-        ProtocolError: the forecast is not on `GRID`, or misses a lead.
+        ProtocolError: a level is not on `GRID`, a lead carries the wrong number of
+            quantiles, or a lead is missing.
     """
 
-    if tuple(float(level) for level in levels) != GRID:
-        raise ProtocolError(
-            f"the incumbent forecasts at {len(levels)} levels {tuple(levels)}, not the protocol's "
-            f"{len(GRID)}; putting it on the grid is a question for Eleonora (#655)"
-        )
+    grid = tuple(float(level) for level in levels)
+    for level in grid:
+        if level not in GRID:
+            raise ProtocolError(f"the incumbent's level {level} is not on the protocol's grid")
     if set(forecast) != set(HORIZONS):
         raise ProtocolError(f"the incumbent's forecast carries leads {sorted(forecast)}")
-    return {h: [float(value) for value in forecast[h]] for h in HORIZONS}
+    out = {}
+    for h in HORIZONS:
+        values = [float(value) for value in forecast[h]]
+        if len(values) != len(grid):
+            raise ProtocolError(f"the incumbent's lead-{h} forecast has {len(values)} quantiles, not {len(grid)}")
+        out[h] = values
+    return out
