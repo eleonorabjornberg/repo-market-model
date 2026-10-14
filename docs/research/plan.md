@@ -89,9 +89,9 @@ queued" have no first directive yet.
 ## H8. Ranking beats calibrating for desk use
 
 - **Target:** rank the next 20 business days by risk, scored on top-k precision and recall against climatology and persistence.
-- **Test:** not yet queued.
+- **Test:** [#694](https://github.com/eleonorabjornberg/repo-market-model/issues/694) (step 1, development).
 - **Kill:** no ranking skill beyond the calendar of known risk dates.
-- **Status:** open, not yet queued. Manual: [`hypotheses/H8.md`](hypotheses/H8.md).
+- **Status:** open. Manual: [`hypotheses/H8.md`](hypotheses/H8.md).
 
 ## H9 (secondary goal). Richer targets carry more learnable signal
 

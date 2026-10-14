@@ -59,6 +59,7 @@ from repo_model.asof import fold_grid  # noqa: E402
 from repo_model.data import DailyObservation, exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
+from repo_model.metrics import _quantile  # noqa: E402
 from repo_model.scoring_protocol import BLOCK_LENGTH, DRAWS, paired_test  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "richer_targets_639.json"
@@ -255,8 +256,10 @@ def _skill_cell(b1: Sequence[float], b2: Sequence[float], days: Sequence[date], 
         skill=test.skill,
         skill_low=draws[tail],
         skill_high=draws[test.draws - tail - 1],
-        lower_mean_difference=test.lower_mean_difference(),
-        p_value=test.p_value,
+        # Pinned to the percentile bootstrap this screen's figures were made with (PR #660): PR #695 made
+        # `lower_mean_difference()` and `p_value` the studentized ones (#655).
+        lower_mean_difference=_quantile(test.mean_difference_draws, 0.05),
+        p_value=sum(1 for value in test.mean_difference_draws if value <= 0.0) / test.draws,
     )
     return cell
 
