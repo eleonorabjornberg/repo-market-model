@@ -251,6 +251,26 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 .fdhidden{font-size:.9rem}
 table.fttab.fdtab th[scope=row]{white-space:normal;min-width:11em}
 table.fttab.fdtab td{white-space:nowrap}
+.rs{margin-top:56px}
+.rs-box{border-top:1px solid var(--rule);padding:12px 0 4px;font-family:var(--sans);max-width:80ch}
+.rs-box h3{font-size:1rem;margin:0 0 6px}
+.rs-box ul,.rs-h ul{margin:4px 0;padding-left:1.2em}
+.rs-table{border-collapse:collapse;width:100%;font-size:.88rem}
+.rs-table th,.rs-table td{text-align:left;padding:4px 8px 4px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.rs-tag{font-size:.74rem;font-weight:600;border:1px solid var(--ink-3);border-radius:4px;padding:0 5px;color:var(--ink-2);white-space:normal}
+.rs-note{font-size:.84rem;color:var(--ink-2)}
+.rs-q{border-left:3px solid var(--th1);padding-left:10px}
+.rs-nm{color:var(--ink-3);font-style:italic}
+.rs-h{border-top:1px solid var(--rule);padding:14px 0;font-family:var(--sans);max-width:80ch;overflow-wrap:anywhere}
+.rs-h h3{font-size:1.1rem;margin:0 0 8px}
+.rs-h dl{margin:0;display:grid;grid-template-columns:9em 1fr;gap:4px 12px;font-size:.9rem}
+.rs-h dt{font-weight:600;color:var(--ink-2)} .rs-h dd{margin:0}
+.rs-miles{list-style:none;padding-left:0!important} .rs-miles li{margin:2px 0}
+.rs-state{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
+.rs-miles li.done .rs-state{color:var(--sofr);font-weight:600}
+.rs-log{font-size:.84rem}
+#background{margin-top:72px;border-top:3px solid var(--ink);padding-top:18px}
+@media (max-width:560px){ .rs-h dl{grid-template-columns:1fr} .rs-h dt{margin-top:6px} .rs-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)} .rs-table tr{display:block;border-bottom:1px solid var(--rule);padding:4px 0} .rs-table th,.rs-table td{display:block;border:0;padding:1px 0} .rs-table td::before{content:attr(data-label) ": ";color:var(--ink-3)} }
 </style>
 </head>
 <body>
@@ -261,6 +281,26 @@ table.fttab.fdtab td{white-space:nowrap}
     <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
   </div>
   <p class="uselimit"><b>Limits.</b> {{use_limitation}} The final test was near-blind, and the central range is not yet fully calibrated. <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/use-limitation.md">Method and limits</a></p>
+</header>
+
+<section id="research-summary" class="rs" aria-labelledby="research-summary-title">
+  <h2 id="research-summary-title">Executive summary</h2>
+  {{research_summary}}
+</section>
+
+<section id="best-performer" class="rs" aria-labelledby="best-performer-title">
+  <h2 id="best-performer-title">Current best performer</h2>
+  {{research_best}}
+</section>
+
+<section id="hypotheses" class="rs" aria-labelledby="hypotheses-title">
+  <h2 id="hypotheses-title">The hypotheses, H1 to H10</h2>
+  <p class="prose lede">Each follows the same six steps: question, groundwork, development, registration, confirmation, verdict. Development figures are labelled &ldquo;development, not a verdict&rdquo;; a figure nobody has measured says so.</p>
+  {{research_hypotheses}}
+</section>
+
+<div id="background">
+<h2 id="background-title">Background and detailed records</h2>
   <nav aria-label="Chapters">
     <ol>
       <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
@@ -274,7 +314,6 @@ table.fttab.fdtab td{white-space:nowrap}
       <li class="live"><b>7</b><span><a href="#built">How it was built</a><small>Process and guards</small></span></li>
     </ol>
   </nav>
-</header>
 
 <!-- start-here -->
 <div id="start">
@@ -740,6 +779,8 @@ table.fttab.fdtab td{white-space:nowrap}
     <dt>Settlement</dt><dd>The day a Treasury sold at auction is paid for and delivered.</dd>
   </dl>
 </details>
+
+</div>
 
 <footer>
   <p>Built from {{n_rows}} business days, {{first_day}} to {{last_day}}. Panel SHA-256 <code>{{sha}}</code>, commit <code>{{commit}}</code>. Every number is computed by <code>scripts/emit_visual.py</code> from the panel and the run records; none is typed by hand.</p>
