@@ -38,9 +38,15 @@ with `z = (q - m) / sqrt(v)`. Where the forecast depends on `y[t]`, the expectat
 
 **What "recovers" means.** For every ordered pair (better, worse), the protocol's paired test,
 with the worse forecast as benchmark and the better as candidate, gives a positive mean daily
-difference `d = S(worse) - S(better)`, and its one-sided 95% stationary-bootstrap lower bound
-(mean block 10, 10,000 draws) is above zero. The same holds with the upper-tail twCRPS, for the
-pairs where its order is known (stated in `TWCRPS_ORDERS`).
+difference `d = S(worse) - S(better)`, and its one-sided 95% studentized stationary-bootstrap
+lower bound (mean block 10, HAC lag 10; ruling of 13 October 2026, PR #660) is above zero. The
+same holds with the upper-tail twCRPS, for the pairs where its order is known (stated in
+`TWCRPS_ORDERS`).
+
+**Draws.** Studentizing costs a long-run variance per resample per pair, and on 5,000 days and
+every pair that is too slow at the protocol's 10,000 draws for the suite. Every pair is therefore
+checked at `SUITE_DRAWS`, and the closest pair (ideal against the off-by-one lead, under the
+twCRPS) is checked again at the protocol's 10,000 (`test_the_closest_pair_at_the_protocols_draws`).
 """
 
 from __future__ import annotations
@@ -63,6 +69,8 @@ VAR = SIGMA**2 / (1.0 - PHI**2)
 #: is not something the protocol's 250 days can see in a world like this one.
 DECISION_DAYS = 5000
 SEED = 655
+#: Bootstrap draws for the all-pairs check; see "Draws" above.
+SUITE_DRAWS = 500
 START = date(2001, 1, 2)
 STANDARD = NormalDist()
 NOISE_LEVELS = (0.5, 1.0, 2.0, 4.0, 8.0)
@@ -301,7 +309,7 @@ class RecoveryTests(unittest.TestCase):
         pairs = [(cls.crps[worse], cls.crps[better]) for better, worse in ORDERS]
         pairs += [(cls.twcrps[worse], cls.twcrps[better]) for better, worse in TWCRPS_ORDERS]
         # One resample stream for every pair, as the protocol reads them.
-        results = sp.paired_tests(pairs, seed=SEED)
+        results = sp.paired_tests(pairs, seed=SEED, draws=SUITE_DRAWS, with_skill=False)
         cls.crps_tests = dict(zip(ORDERS, results[: len(ORDERS)]))
         cls.twcrps_tests = dict(zip(TWCRPS_ORDERS, results[len(ORDERS):]))
 
@@ -316,9 +324,16 @@ class RecoveryTests(unittest.TestCase):
 
     def test_the_protocol_settings_are_the_ones_used(self):
         test = next(iter(self.crps_tests.values()))
+        self.assertEqual(test.draws, SUITE_DRAWS)
+        self.assertEqual(test.block_length, sp.BLOCK_LENGTH)
+        self.assertEqual(test.alpha, sp.ALPHA)
+
+    def test_the_closest_pair_at_the_protocols_draws(self):
+        test = sp.paired_test(
+            self.twcrps["misaligned off-by-one"], self.twcrps["ideal"], seed=SEED, with_skill=False
+        )
         self.assertEqual(test.draws, 10_000)
-        self.assertEqual(test.block_length, 10)
-        self.assertEqual(test.alpha, 0.05)
+        self.assertGreater(test.lower_mean_difference(), 0.0)
 
     def test_grid_crps_recovers_every_stated_order(self):
         for (better, worse), test in self.crps_tests.items():
@@ -336,8 +351,8 @@ class RecoveryTests(unittest.TestCase):
         """d = S(benchmark) - S(candidate): a better candidate has positive d and skill."""
 
         good, bad = self.crps["ideal"], self.crps["climatology"]
-        forward = sp.paired_tests([(bad, good)], seed=SEED)[0]
-        backward = sp.paired_tests([(good, bad)], seed=SEED)[0]
+        forward = sp.paired_tests([(bad, good)], seed=SEED, draws=50)[0]
+        backward = sp.paired_tests([(good, bad)], seed=SEED, draws=50)[0]
         self.assertGreater(forward.mean_difference, 0.0)
         self.assertGreater(forward.skill, 0.0)
         self.assertAlmostEqual(forward.mean_difference, -backward.mean_difference)
