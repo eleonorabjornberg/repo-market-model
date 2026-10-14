@@ -43,11 +43,12 @@
       "coverage of the 90th and 95th percentile forecasts on the cells whose outcome is above 0 bp (share of those cells with y <= q90, y <= q95), and the unconditional exceedance rates P(y > q90) and P(y > q95) against nominal 0.10 and 0.05, with a stationary-bootstrap interval for each (block 10)",
       "location of the miss on the cells above 0 bp: the median PIT, the share with PIT above 0.5, and the share of cells beyond q99 (expected 0.01 unconditionally); and the ratio mean(y - q50) / mean(q95 - q50) on those cells"
     ],
-    "reading_rule": "Under-dispersed: the unconditional exceedance rate of q95 has a lower bound above 0.05 while the median PIT on cells above 0 bp is below 0.9 (the bulk is not displaced). Mislocated: the median PIT on cells above 0 bp is at least 0.9 and the share of those cells beyond q99 is above 0.5 (the whole law sits below the outcome). Both: both hold. Otherwise 'neither resolved'. The coverage on cells above 0 bp is conditioned on the outcome and is below nominal by construction; it is reported as asked and is not the rule."
+    "reading_rule": "Two flags. U (spread too narrow): the lower bound of the unconditional exceedance rate of q95 is above 0.05. L (law displaced): the median PIT on cells above 0 bp is at least 0.9 and the share of those cells beyond q99 is above 0.5, that is the whole law sits below the outcome. Under-dispersed: U and not L. Mislocated: L and not U. Both: U and L. Otherwise 'neither resolved'. The coverage on cells above 0 bp is conditioned on the outcome and is below nominal by construction; it is reported as asked and is not the rule."
   },
   "variants": {
     "scored": "6 post-hoc transforms: R_level, R_scale and R_shrink, each applied to the 2 candidates. No model is refitted.",
     "count": "added by this measurement: 6 (no new fit); cumulative with #634: 9 + 6 = 15",
     "ruled_out": "the +5 bp classification (paused, #46), any 2026 day, any new input"
-  }
+  },
+  "amended": "The tail reading rule was restated as two flags (U, L) in a second commit, before any number was computed; the first commit made 'under-dispersed' and 'both' contradict each other."
 }
