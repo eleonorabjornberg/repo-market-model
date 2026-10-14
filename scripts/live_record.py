@@ -77,7 +77,7 @@ v1 = _script("pressure_model_v1")
 #: published distribution and as-of persistence exactly as `compare` does.
 final_test = _script("final_test_preregistration")
 
-from repo_model import onset, pressure  # noqa: E402
+from repo_model import onset, pressure, prospective_log  # noqa: E402
 from repo_model.asof import (  # noqa: E402
     KIND_OBSERVED,
     InformationRule,
@@ -133,7 +133,13 @@ RECORD_VERSION = 1
 #: A file that also carries `distributions.published_v2` (#245). The format only
 #: gains that block: every field a version 1 file has is written as before.
 RECORD_VERSION_V2 = 2
-READABLE_VERSIONS = (RECORD_VERSION, RECORD_VERSION_V2)
+#: A file that also carries `protocol` (#656): B1, B2, B3's note, the registered candidates and the H7m hook, for the
+#: scoring protocol (`repo_model.prospective_log`). The format only gains that block: every field a version 2 file
+#: has is written as before.
+RECORD_VERSION_V3 = 3
+READABLE_VERSIONS = (RECORD_VERSION, RECORD_VERSION_V2, RECORD_VERSION_V3)
+#: Versions that carry `distributions.published_v2`.
+V2_VERSIONS = (RECORD_VERSION_V2, RECORD_VERSION_V3)
 #: The last day of the published panel. The final test (#150) scores no day
 #: after it; the live record logs no day on or before it.
 PANEL_END = date(2026, 9, 3)
@@ -311,12 +317,16 @@ def _forecast_block(block, targets, where):
 def validate_record(record) -> None:
     """The record's schema. Raises `ValueError` naming what is wrong."""
 
-    optional = {"dry_run", "chain", "environment"} & set(record) if isinstance(record, dict) else set()
+    optional = {"dry_run", "chain", "environment", "protocol"} & set(record) if isinstance(record, dict) else set()
     if not isinstance(record, dict) or set(record) != set(RECORD_KEYS) | optional:
         missing = sorted(set(RECORD_KEYS) - set(record or {}))
         raise ValueError(f"a record holds exactly {list(RECORD_KEYS)}; missing {missing}")
     if record["record_version"] not in READABLE_VERSIONS:
         raise ValueError(f"record_version must be one of {list(READABLE_VERSIONS)}")
+    if (record["record_version"] == RECORD_VERSION_V3) != ("protocol" in record):
+        raise ValueError("a version 3 file carries `protocol`, and no other version does")
+    if "protocol" in record:
+        prospective_log.validate_protocol_block(record["protocol"])
     day = date.fromisoformat(record["decision_day"])
     require_loggable(day)
     datetime.fromisoformat(record["decision_instant"])
@@ -434,7 +444,7 @@ def _validate_distributions(block, version: int = RECORD_VERSION) -> None:
     carries exactly the two sides.
     """
 
-    sides = set(DISTRIBUTION_SIDES) | ({"published_v2"} if version == RECORD_VERSION_V2 else set())
+    sides = set(DISTRIBUTION_SIDES) | ({"published_v2"} if version in V2_VERSIONS else set())
     if not isinstance(block, dict) or set(block) != {"levels", *sides}:
         raise ValueError(f"distributions must hold levels and exactly {sorted(sides)}")
     if list(block["levels"]) != list(QUANTILE_LEVELS):
@@ -448,7 +458,7 @@ def _validate_distributions(block, version: int = RECORD_VERSION) -> None:
         isinstance(digest, str) and len(digest) == 64 for digest in digests.values()
     ):
         raise ValueError("distributions.published.declaration_sha256 must hold every horizon")
-    if version == RECORD_VERSION_V2:
+    if version in V2_VERSIONS:
         _validate_v2(block["published_v2"])
     for side in DISTRIBUTION_SIDES:
         quantiles = block[side].get("quantiles_bps")
@@ -1085,6 +1095,25 @@ def distributions_block(extended, registry, *, forecast=None, v2_forecast=None) 
     return block
 
 
+def protocol_for(extended, decision_day: date, registry, splits, written_at: datetime) -> dict:
+    """The record's `protocol` block (#656): B1, B2, B3's note, the registered candidates and the H7m hook.
+
+    `extended` is the panel extended through the decision day's fifth target (`extend_panel` at horizon 5); the
+    decision day's row is the one whose date is `decision_day`. B1 and B2 read only rows at or before the anchor, the
+    last real row (`protocol_benchmarks._require_public`), never a placeholder. `written_at` is when the record is
+    being made; the block is refused if that is not before the first outcome's publication
+    (`prospective_log.require_written_before_outcome`).
+
+    No candidate is registered and no H7m estimate is, so those parts are empty (`prospective_log.REGISTERED_CANDIDATES`,
+    `REGISTERED_H7M`). Registering one is Eleonora's attested action and changes this function with it.
+    """
+
+    index = [row.date for row in extended].index(decision_day)
+    return prospective_log.protocol_block(
+        extended, index, registry=registry, decision_time=DECISION, splits=splits, written_at=written_at,
+    )
+
+
 # -- provenance ---------------------------------------------------------------
 
 
@@ -1263,7 +1292,7 @@ def run_command(args) -> int:
     tick = clock.monotonic()
     _status(args.status, "write")
     record = {
-        "record_version": RECORD_VERSION_V2,
+        "record_version": RECORD_VERSION_V3,
         "decision_day": day.isoformat(),
         "decision_instant": instant.isoformat(),
         "code": {"sha": head, "pinned_sha": pinned},
@@ -1281,6 +1310,7 @@ def run_command(args) -> int:
         "models": models,
         "baselines": baselines,
         "distributions": distributions,
+        "protocol": protocol_for(extended[HORIZONS[-1]][0], day, registry, splits, datetime.now(timezone.utc)),
         "run": {
             "started_at": started.isoformat(),
             "workflow_run": args.workflow_run,
