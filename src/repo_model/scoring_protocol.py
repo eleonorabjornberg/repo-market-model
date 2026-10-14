@@ -77,13 +77,28 @@ INTERIM_DRAWS = 100_000
 #: Inner draws per outer resample of the double bootstrap (a diagnostic since the ruling of
 #: 13 October 2026, PR #695 comment 6149326627, which calibrates the critical value empirically).
 INNER_DRAWS = 200
-#: The critical value of the one-sided bound at each checkpoint, calibrated on the development
-#: history (ruling of 13 October 2026, PR #695, comment 6149326627; a protocol change under §13):
-#: the largest, across the benchmark pairs, of the `1 - level` quantile of the studentized mean
-#: over resampled windows of the checkpoint's length, at the checkpoint's nominal level. Recorded
-#: by `scripts/protocol_coverage.py calibrate` in `docs/research/protocol-calibration/result.json`.
-#: Look 1 has none: its level cannot be calibrated from the windows the history gives (Q-B).
-CRITICAL_VALUES: Dict[int, Optional[float]] = {60: None, 125: 9.50052772574656, 250: 5.454950300123988}
+#: The comparisons the critical values are calibrated for: a forecast against a primary benchmark on
+#: the 23-level grid (calibrated on B2 - B1) and against B3 on its five levels (calibrated on B3 - B1).
+GRID_COMPARISON = "B2-B1"
+FIVE_LEVEL_COMPARISON = "B3-B1 (five levels)"
+#: The critical value of the one-sided lower bound of mean(d), per comparison and checkpoint,
+#: calibrated on the development history: the `1 - level` quantile of the studentized mean over
+#: resampled windows of the checkpoint's length, at the checkpoint's nominal level. Each comparison
+#: is read at its own value (Eleonora's ruling on PR #695, comment 6159852603, Q-E (b); a protocol
+#: change under §13). Recorded by `scripts/protocol_coverage.py calibrate` in
+#: `docs/research/protocol-calibration/result.json`, with each value's null false-detection rate.
+#: Look 1 has none: it checks futility only (Q-B).
+CRITICAL_VALUES: Dict[str, Dict[int, Optional[float]]] = {
+    GRID_COMPARISON: {60: None, 125: 3.419438620805254, 250: 2.425730476113518},
+    FIVE_LEVEL_COMPARISON: {60: None, 125: 9.50052772574656, 250: 5.454950300123988},
+}
+#: Futility (Q-C): one-sided at this level at every look, non-binding.
+FUTILITY_LEVEL = 0.05
+#: The critical value of the one-sided upper bound of skill at `FUTILITY_LEVEL`, per checkpoint,
+#: calibrated on the grid comparison's development windows the same way (`calibrate_futility_value`).
+FUTILITY_CRITICAL_VALUES: Dict[str, Dict[int, float]] = {
+    GRID_COMPARISON: {60: 1.9297931884419124, 125: 1.564595026945276, 250: 1.446264200252977},
+}
 #: Consecutive days per block when windows are drawn from a series for calibration.
 WINDOW_BLOCK = 10
 #: §5, §6: the overall one-sided level.
@@ -468,6 +483,13 @@ class PairedTest:
 
         return self.mean_difference - float(critical_value) * self.standard_error
 
+    def upper_skill_bound(self, critical_value: float) -> float:
+        """The one-sided upper bound of skill at a calibrated critical value: `skill + c * se(skill)`."""
+
+        if self.skill_standard_error is None:
+            raise ProtocolError("this test was made without skill (with_skill=False)")
+        return self.skill + float(critical_value) * self.skill_standard_error
+
     def calibrated_level(self, level: Optional[float] = None) -> float:
         """The level the outer t-draws are read at so the bound covers `level`'s rate.
 
@@ -673,6 +695,14 @@ def paired_test(
     return paired_tests([(benchmark, candidate)], seed=seed, **settings)[0]
 
 
+def _window_indices(size: int, days: int, rng: random.Random, block: int) -> List[int]:
+    index: List[int] = []
+    while len(index) < days:
+        start = rng.randrange(size)
+        index.extend((start + k) % size for k in range(block))
+    return index[:days]
+
+
 def window_t_statistics(
     series: Sequence[float],
     *,
@@ -694,16 +724,57 @@ def window_t_statistics(
         raise ProtocolError(f"windows of {days} days cannot carry a lag-{hac_lag} long-run variance")
     truth = sum(values) / len(values)
     rng = random.Random(seed)
-    size = len(values)
     out = []
     for _ in range(windows):
-        window: List[float] = []
-        while len(window) < days:
-            start = rng.randrange(size)
-            window.extend(values[(start + k) % size] for k in range(block))
-        window = window[:days]
+        window = [values[i] for i in _window_indices(len(values), days, rng, block)]
         out.append((sum(window) / days - truth) / _standard_error(window, hac_lag, "a window"))
     return sorted(out)
+
+
+def window_skill_t_statistics(
+    benchmark: Sequence[float],
+    differences: Sequence[float],
+    *,
+    days: int,
+    windows: int,
+    seed: int,
+    block: int = WINDOW_BLOCK,
+    hac_lag: int = HAC_LAG,
+) -> List[float]:
+    """Sorted studentized skill of windows drawn as `window_t_statistics` draws them.
+
+    For a window, skill is `mean(d) / mean(b)` and its standard error the Newey-West standard error of
+    `d - skill * b` over `mean(b)`, as `PairedTest` computes them; the statistic is
+    `(skill_w - skill_full) / se_w`, with `skill_full` the whole series' skill.
+    """
+
+    bench = [_finite(value, "a benchmark score") for value in benchmark]
+    diff = [_finite(value, "a daily difference") for value in differences]
+    if len(bench) != len(diff) or not bench or days <= hac_lag:
+        raise ProtocolError("benchmark and differences must be equally long and windows longer than the lag")
+    truth = sum(diff) / sum(bench)
+    rng = random.Random(seed)
+    out = []
+    for _ in range(windows):
+        index = _window_indices(len(bench), days, rng, block)
+        b = [bench[i] for i in index]
+        d = [diff[i] for i in index]
+        bench_mean = sum(b) / days
+        skill = (sum(d) / days) / bench_mean
+        linear = [x - skill * y for x, y in zip(d, b)]
+        out.append((skill - truth) / (_standard_error(linear, hac_lag, "a window's skill") / bench_mean))
+    return sorted(out)
+
+
+def calibrate_futility_value(
+    benchmark: Sequence[float], differences: Sequence[float], *, days: int, level: float, windows: int,
+    seed: int, **settings
+) -> float:
+    """The critical value `c` of the upper bound `skill + c * se(skill)` that covers the series' skill on
+    a `1 - level` share of its windows: minus the `level` quantile of `window_skill_t_statistics`."""
+
+    ordered = window_skill_t_statistics(benchmark, differences, days=days, windows=windows, seed=seed, **settings)
+    return -_bound(ordered, level, windows)
 
 
 def calibrate_critical_value(
@@ -836,27 +907,34 @@ def verdict(
     against_b2: PairedTest,
     *,
     look: int,
-    futility_level: float,
+    futility_level: float = FUTILITY_LEVEL,
     checkpoints: Sequence[int] = CHECKPOINTS,
     alpha: float = ALPHA,
     mme: float = MME,
 ) -> str:
     """§6: the verdict at checkpoint `look` (1-based) on the primary score.
 
-    Supported: the lower bound of mean(d), `mean - c * se` with `c` the checkpoint's calibrated
-    critical value (`CRITICAL_VALUES`), is above zero against B1 and against B2, and the point
-    skill against B1 is at least the MME. Killed: the upper
-    bound of skill against B1, at `futility_level`, is below the MME. Otherwise inconclusive,
-    or "not shown" at the last checkpoint.
+    Read at the grid comparison's own calibrated values (Eleonora's ruling on PR #695, comment
+    6159852603):
 
-    `futility_level` has no default: §6 does not say at which level the futility bound is
-    read, and that is Eleonora's call (asked in the pull request that closes #655).
+    - Supported, at looks 2 and 3: the lower bound of mean(d), `mean - c * se` with `c` the
+      checkpoint's `CRITICAL_VALUES[GRID_COMPARISON]`, is above zero against B1 and against B2, and
+      the point skill against B1 is at least the MME. Look 1 has no efficacy value and checks
+      futility only (Q-B).
+    - Killed (futility, Q-C): the upper bound of skill against B1, `skill + c_f * se(skill)` with
+      `c_f` the checkpoint's `FUTILITY_CRITICAL_VALUES[GRID_COMPARISON]`, one-sided at 0.05, is below
+      the MME. It is non-binding: Supported is read first.
+    - Otherwise inconclusive, or "not shown" at the last checkpoint.
 
     Raises:
-        ProtocolError: the tests are not on the checkpoint's day count, or not on the same days.
-        UnresolvedLevel: the checkpoint has no calibrated critical value.
+        ProtocolError: the tests are not on the checkpoint's day count or the same days, or
+            `futility_level` is not the protocol's.
     """
 
+    if futility_level != FUTILITY_LEVEL:
+        raise ProtocolError(
+            f"futility is read one-sided at {FUTILITY_LEVEL} (ruling on PR #695, Q-C), not {futility_level}"
+        )
     if not 1 <= look <= len(checkpoints):
         raise ProtocolError(f"look must be 1 to {len(checkpoints)}, got {look}")
     days = checkpoints[look - 1]
@@ -865,18 +943,14 @@ def verdict(
             raise ProtocolError(f"the test against {name} covers {test.n} days, not checkpoint {look}'s {days}")
     if against_b1.days != against_b2.days:
         raise ProtocolError("the tests against B1 and B2 must cover the same days")
-    critical = CRITICAL_VALUES.get(days)
-    if critical is None:
-        raise UnresolvedLevel(
-            f"checkpoint {look} ({days} days) has no calibrated critical value (ruling of 13 October "
-            f"2026, PR #695; how the first look works is a question for Eleonora)"
-        )
+    critical = CRITICAL_VALUES[GRID_COMPARISON].get(days)
     if (
-        against_b1.lower_bound(critical) > 0.0
+        critical is not None
+        and against_b1.lower_bound(critical) > 0.0
         and against_b2.lower_bound(critical) > 0.0
         and against_b1.skill >= mme
     ):
         return SUPPORTED
-    if against_b1.upper_skill(futility_level) < mme:
+    if against_b1.upper_skill_bound(FUTILITY_CRITICAL_VALUES[GRID_COMPARISON][days]) < mme:
         return KILLED
     return NOT_SHOWN if look == len(checkpoints) else INCONCLUSIVE

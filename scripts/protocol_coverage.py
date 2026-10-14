@@ -19,8 +19,8 @@ for the plain studentized bound read off the same outer draws.
 `calibrate` computes the critical value at each checkpoint on each benchmark pair (B2 - B1 on the
 grid, B3 - B1 on B3's five levels, and each reversed) on the development history, as Eleonora ruled
 on 13 October 2026 (PR #695, comment 6149326627), and with `--write` records it in
-`docs/research/protocol-calibration/result.json`, which `scoring_protocol.CRITICAL_VALUES` must
-equal. `check-coverage` measures each value's coverage on fresh windows. `null` re-runs #699's
+`docs/research/protocol-calibration/result.json`, which `scoring_protocol.CRITICAL_VALUES` and
+`FUTILITY_CRITICAL_VALUES` must equal, with each value's full-history null false-detection rate. `check-coverage` measures each value's coverage on fresh windows. `null` re-runs #699's
 post-hoc size check with the calibrated values.
 
 `--series` is `real`, `real-without-2019-09` (the real series less its one most negative day,
@@ -84,9 +84,21 @@ REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text(encoding="u
 DECISION = clock(16, 0)
 
 
+_SCORES = {}
+
+
 def real_differences():
     """The real B2 - B1 daily differences (d = S(B2) - S(B1), grid CRPS), in decision-day order."""
 
+    s1, s2 = grid_scores()
+    return [b - a for a, b in zip(s1, s2)]
+
+
+def grid_scores():
+    """B1's and B2's grid-CRPS day scores on the development decision days, in order."""
+
+    if "grid" in _SCORES:
+        return _SCORES["grid"]
     rows = published_rows()
     splits = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
     days = [row.date for row in rows]
@@ -100,17 +112,28 @@ def real_differences():
     outcomes = {row.date: row.spread_bps for row in rows}
     s1 = sp.day_scores(b1, outcomes, days)
     s2 = sp.day_scores(b2, outcomes, days)
-    return [s2[day] - s1[day] for day in sorted(s1)]
+    ordered = sorted(s1)
+    _SCORES["grid"] = ([s1[day] for day in ordered], [s2[day] for day in ordered])
+    return _SCORES["grid"]
 
 
 def b3_differences():
-    """The real B3 - B1 daily differences on B3's five levels (d = S(B3) - S(B1)), in decision-day order.
+    """The real B3 - B1 daily differences on B3's five levels (d = S(B3) - S(B1)), in decision-day order."""
+
+    s1, s3 = five_level_scores()
+    return [b - a for a, b in zip(s1, s3)]
+
+
+def five_level_scores():
+    """B1's and B3's day scores on B3's five levels, on the decision days B3 forecasts, in order.
 
     B3 is the published declaration's daily forecasts (`docs/runs/published_distribution_daily_h*.json`,
     dated by target day); a decision day enters when all five leads are there. B1 is read at the
     same five levels (`scoring_protocol.on_levels`), and both are scored by `level_crps`.
     """
 
+    if "five" in _SCORES:
+        return _SCORES["five"]
     rows = published_rows()
     days = [row.date for row in rows]
     position = {day: i for i, day in enumerate(days)}
@@ -130,7 +153,9 @@ def b3_differences():
         outcomes, days, score=five,
     )
     s3 = sp.day_scores(b3, outcomes, days, score=five)
-    return [s3[day] - s1[day] for day in sorted(set(s1) & set(s3))]
+    ordered = sorted(set(s1) & set(s3))
+    _SCORES["five"] = ([s1[day] for day in ordered], [s3[day] for day in ordered])
+    return _SCORES["five"]
 
 
 def series(kind):
@@ -204,6 +229,8 @@ CALIBRATION = ROOT / "docs" / "research" / "protocol-calibration" / "result.json
 #: Windows per (pair, checkpoint); look 1's diagnostic needs many more to reach its level.
 CALIBRATION_WINDOWS = {60: 200_000, 125: 20_000, 250: 20_000}
 CALIBRATION_SEED = 1
+FUTILITY_WINDOWS = 20_000
+NULL_PATHS = 2_000
 
 
 def calibration(seed=CALIBRATION_SEED, windows=None):
@@ -222,20 +249,57 @@ def calibration(seed=CALIBRATION_SEED, windows=None):
             str(n): sp.calibrate_critical_value(series_, days=n, level=levels[n], windows=windows[n], seed=seed)
             for n in sp.CHECKPOINTS
         }
-    protocol = {}
-    for n in sp.CHECKPOINTS:
-        protocol[str(n)] = None if n == sp.CHECKPOINTS[0] else max(values[name][str(n)] for name in pairs)
+    largest = {
+        str(n): None if n == sp.CHECKPOINTS[0] else max(values[name][str(n)] for name in pairs)
+        for n in sp.CHECKPOINTS
+    }
+    # Futility (Q-C): the upper bound of skill, one-sided at FUTILITY_LEVEL, on the grid comparison.
+    s1, s2 = grid_scores()
+    futility = {
+        sp.GRID_COMPARISON: {
+            str(n): sp.calibrate_futility_value(
+                s2, [b - a for a, b in zip(s1, s2)], days=n, level=sp.FUTILITY_LEVEL,
+                windows=FUTILITY_WINDOWS, seed=seed,
+            )
+            for n in sp.CHECKPOINTS
+        }
+    }
+    # Each comparison's own values (Q-E (b)), with each value's null false-detection rate on the full
+    # development history (#699's rule, generalised to the comparison's own scores).
+    own = {
+        comparison: {str(n): (None if n == sp.CHECKPOINTS[0] else values[comparison][str(n)]) for n in sp.CHECKPOINTS}
+        for comparison in (sp.GRID_COMPARISON, sp.FIVE_LEVEL_COMPARISON)
+    }
+    nulls = {}
+    for comparison, (bench, other) in ((sp.GRID_COMPARISON, grid_scores()), (sp.FIVE_LEVEL_COMPARISON, five_level_scores())):
+        critical = {n: own[comparison][str(n)] for n in sp.CHECKPOINTS}
+        rates = detections(bench, other, delta=0.0, noise=1.0, critical=critical, paths=NULL_PATHS)
+        nulls[comparison] = dict(rates["ungated"], paths=NULL_PATHS, series_days=len(bench))
     return {
-        "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627",
+        "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6159852603",
+        "earlier_rulings": [
+            "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627",
+        ],
         "series_days": {name: len(series_) for name, series_ in pairs.items()},
         "nominal_levels": {str(n): levels[n] for n in sp.CHECKPOINTS},
         "studentized_normal_values": {str(n): sp._NORMAL.inv_cdf(1 - levels[n]) for n in sp.CHECKPOINTS},
         "windows": {str(n): windows[n] for n in sp.CHECKPOINTS},
+        "futility_windows": FUTILITY_WINDOWS,
         "window_block": sp.WINDOW_BLOCK,
         "seed": seed,
         "critical_values": values,
-        "protocol_critical_values": protocol,
-        "note": "protocol value: the largest across all four orientations; look 1 is left uncalibrated (Q-B)",
+        "comparison_critical_values": own,
+        "futility_level": sp.FUTILITY_LEVEL,
+        "futility_critical_values": futility,
+        "null_false_detection_full_history": nulls,
+        "largest_across_pairs_superseded": largest,
+        "note": (
+            "each comparison is read at its own value (Q-E (b)); look 1 checks futility only (Q-B); futility is "
+            "one-sided at 0.05 at every look, non-binding (Q-C). The largest value across pairs, which PR #695 "
+            "used, is kept for the record and superseded. Null rates: #699's rule (bench B1, candidate whose "
+            "difference is the centred B1 - other difference) on the comparison's full development history, "
+            "detections at looks 2 and 3, by checkpoint."
+        ),
     }
 
 
@@ -262,7 +326,7 @@ def check_coverage(args):
     for name, values in named.items():
         for n in (sp.CHECKPOINTS[-1],) + ((args.level_days,) if args.level_days else ()):
             t = sp.window_t_statistics(values, days=n, windows=args.windows, seed=args.seed)
-            protocol = record["protocol_critical_values"][str(n)]
+            protocol = record["comparison_critical_values"][sp.GRID_COMPARISON][str(n)]
             own = sp.calibrate_critical_value(values, days=n, level=args.level, windows=args.windows, seed=CALIBRATION_SEED)
             print(json.dumps({
                 "series": name, "days": n, "level": args.level, "windows": args.windows, "seed": args.seed,
@@ -298,8 +362,12 @@ def development_scores(history):
 def readings():
     record = json.loads(CALIBRATION.read_text(encoding="utf-8"))
     return {
-        "protocol values": {n: record["protocol_critical_values"][str(n)] for n in sp.CHECKPOINTS},
-        "B2-B1 values alone (diagnostic)": {n: record["critical_values"]["B2-B1"][str(n)] for n in sp.CHECKPOINTS},
+        "protocol values (the grid comparison's own)": {
+            n: record["comparison_critical_values"][sp.GRID_COMPARISON][str(n)] for n in sp.CHECKPOINTS
+        },
+        "largest across pairs (superseded, diagnostic)": {
+            n: record["largest_across_pairs_superseded"][str(n)] for n in sp.CHECKPOINTS
+        },
         "normal values (uncalibrated, diagnostic)": {
             n: sp._NORMAL.inv_cdf(1 - level) for n, level in zip(sp.CHECKPOINTS, sp.nominal_levels())
         },
