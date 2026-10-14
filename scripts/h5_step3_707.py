@@ -17,6 +17,7 @@ import argparse
 import bisect
 import importlib.util
 import json
+import random
 import statistics
 import subprocess
 import sys
@@ -27,7 +28,7 @@ from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
+from repo_model import metrics, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
@@ -324,8 +325,46 @@ def paired(sd, scores, pairs, group, draws) -> Dict[str, dict]:
                     "bootstrap_p": None, "dm_statistic": None, "dm_p": None, "identical": True,
                 }
             else:
-                out.update(sd.pair_table(scores, [(benchmark, candidate)], group, draws))
+                try:
+                    out.update(sd.pair_table(scores, [(benchmark, candidate)], group, draws))
+                except sp.ProtocolError:
+                    out[f"{benchmark} -> {candidate}"] = percentile_pair(
+                        [scores[benchmark][d] for d in group], [scores[candidate][d] for d in group], draws
+                    )
         return out
+
+
+def percentile_pair(benchmark: Sequence[float], candidate: Sequence[float], draws: int, seed: int = SEED) -> dict:
+    """Percentile bounds of mean(d) and of skill by the stationary bootstrap, for a series the scorer cannot studentize.
+
+    A difference that is zero on most days can resample to a series with no variance, which the scorer's studentized
+    interval refuses. The row is marked `method: percentile`; its bounds are the 5th and 95th percentiles of the
+    resampled mean difference and of the resampled skill (one-sided 95% each).
+    """
+
+    n = len(benchmark)
+    diff = [b - c for b, c in zip(benchmark, candidate)]
+    rng = random.Random(seed)
+    means, skills = [], []
+    for _ in range(draws):
+        indices = metrics.stationary_bootstrap_indices(n, sp.BLOCK_LENGTH, rng)
+        mean_d = sum(diff[i] for i in indices) / n
+        mean_b = sum(benchmark[i] for i in indices) / n
+        means.append(mean_d)
+        if mean_b != 0.0:
+            skills.append(mean_d / mean_b)
+    means.sort()
+    skills.sort()
+    mean = sum(diff) / n
+    bench_mean = sum(benchmark) / n
+    low, high = int(0.05 * (len(means) - 1)), int(0.95 * (len(means) - 1))
+    return {
+        "n": n, "benchmark_mean": bench_mean, "mean_difference": mean, "skill": mean / bench_mean,
+        "mean_difference_lower_95_one_sided": means[low],
+        "skill_lower_95_one_sided": skills[int(0.05 * (len(skills) - 1))],
+        "skill_upper_95_one_sided": skills[int(0.95 * (len(skills) - 1))],
+        "bootstrap_p": None, "dm_statistic": None, "dm_p": None, "method": "percentile",
+    }
 
 
 def score_command(args) -> int:

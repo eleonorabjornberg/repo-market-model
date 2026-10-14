@@ -50,5 +50,6 @@
     "count": "added by this measurement: 6 (no new fit); cumulative with #634: 9 + 6 = 15",
     "ruled_out": "the +5 bp classification (paused, #46), any 2026 day, any new input"
   },
-  "amended": "The tail reading rule was restated as two flags (U, L) in a second commit, before any number was computed; the first commit made 'under-dispersed' and 'both' contradict each other."
+  "amended": "The tail reading rule was restated as two flags (U, L) in a second commit, before any number was computed; the first commit made 'under-dispersed' and 'both' contradict each other.",
+  "amended_2": "Where the scorer's studentized interval refuses a series (a daily difference that is zero on most days resamples to a series with no variance), the row is reported with the stationary bootstrap's percentile bounds (same block, draws and seed) and marked 'method: percentile'. Added before any number was computed."
 }

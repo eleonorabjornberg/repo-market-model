@@ -193,5 +193,16 @@ class PairedFallbackTests(unittest.TestCase):
         self.assertEqual(out["A -> C"], {"n": 30})
 
 
+class PercentilePairTests(unittest.TestCase):
+    def test_the_bounds_bracket_the_mean_and_the_row_is_marked(self):
+        benchmark = [2.0 + (i % 5) * 0.1 for i in range(80)]
+        candidate = [b - 0.3 if i % 8 == 0 else b for i, b in enumerate(benchmark)]
+        row = script.percentile_pair(benchmark, candidate, 500)
+        self.assertEqual(row["method"], "percentile")
+        self.assertLessEqual(row["mean_difference_lower_95_one_sided"], row["mean_difference"])
+        self.assertLessEqual(row["skill_lower_95_one_sided"], row["skill"])
+        self.assertGreaterEqual(row["skill_upper_95_one_sided"], row["skill"])
+
+
 if __name__ == "__main__":
     unittest.main()
