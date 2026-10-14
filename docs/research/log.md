@@ -424,3 +424,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
+
+### 2026-10-14 [H5] step 4 · eleonorabjornberg/repo-market-model#775
+- Directive: #758
+- Step: 4 (the best candidate against H2's ceiling; stacked on #634)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panels `92bf10a4…` (ceiling fits) and as in `scripts/spread_distribution_634.py`; base `1bbee114`; declaration `metadata/h5_step4_758.json`
+- Tried: no new model. H2's cross-fitted and reachable gradient-boosted fits rerun, and #634's `gbm_funding` and variant (c) walks rerun, scored on H2's 1,598 walk-forward days by the protocol's grid CRPS against B1. Variants: 0.
+- Result: best candidate `gbm_funding` +0.257 [+0.114, +0.400] against B1 on ordinary targets, ceiling +0.168 [+0.003, +0.316], reachable line +0.196 [+0.019, +0.354]; headroom of the ceiling −0.090 [−0.161, −0.019]. Shown in one of 13 cells: regime 2024 (+0.110 [+0.027, +0.160]). The rerun differs from H2's recorded skills by 0.004 to 0.006. Detail in `docs/pivot/h5-step4-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora decides between "continue model work in 2024" and "stop, step 5".
