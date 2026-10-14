@@ -144,5 +144,67 @@ class ExceedanceTests(unittest.TestCase):
         self.assertEqual(script.brier(0.25, False), 0.0625)
 
 
+class ResumeTests(unittest.TestCase):
+    """A walk takes hours; a finished one is kept, so a later run resumes from the walks already written."""
+
+    def setUp(self):
+        import tempfile
+
+        self.tmp = Path(tempfile.mkdtemp())
+        self.published = self.tmp / "published.csv"
+        self.panel = self.tmp / "panel.csv"
+        self.published.write_text("date,spread_bps\n", encoding="utf-8")
+        self.panel.write_text("date,spread_bps,extra\n", encoding="utf-8")
+        self.output = self.tmp / "b_gbm_new_h2.json"
+
+    def tearDown(self):
+        import shutil
+
+        shutil.rmtree(self.tmp)
+
+    def write(self, **changes):
+        document = {
+            "variant": "b_gbm_new",
+            "horizon": 2,
+            "panel_sha256": script.panel_sha256(self.published),
+            "scratch_panel_sha256": script.panel_sha256(self.panel),
+            "laws": {"2019-01-02": [0.0]},
+        }
+        document.update(changes)
+        self.output.write_text(script.json.dumps(document), encoding="utf-8")
+
+    def finished(self, variant="b_gbm_new", horizon=2):
+        return script.finished_walk(self.output, variant=variant, horizon=horizon, published=self.published, panel=self.panel)
+
+    def test_a_walk_of_the_same_variant_lead_and_panels_is_finished(self):
+        self.write()
+        self.assertTrue(self.finished())
+
+    def test_no_file_or_an_unreadable_one_is_not_finished(self):
+        self.assertFalse(self.finished())
+        self.output.write_text('{"variant": "b_gbm', encoding="utf-8")
+        self.assertFalse(self.finished())
+
+    def test_another_variant_lead_or_panel_is_not_finished(self):
+        self.write()
+        self.assertFalse(self.finished(variant="c_two_part_new"))
+        self.assertFalse(self.finished(horizon=3))
+        self.write(panel_sha256="0" * 64)
+        self.assertFalse(self.finished())
+        self.write(scratch_panel_sha256="0" * 64)
+        self.assertFalse(self.finished())
+
+    def test_a_control_ignores_the_scratch_panel(self):
+        self.write(variant="published", scratch_panel_sha256=None)
+        self.assertTrue(self.finished(variant="published"))
+
+    def test_the_walk_command_skips_a_finished_walk_without_reading_the_panels(self):
+        self.write()
+        args = script.argparse.Namespace(variant="b_gbm_new", horizon=2, published=self.published, panel=self.panel, output=self.output)
+        before = self.output.read_text(encoding="utf-8")
+        self.assertEqual(script.walk_command(args), 0)
+        self.assertEqual(self.output.read_text(encoding="utf-8"), before)
+
+
 if __name__ == "__main__":
     unittest.main()

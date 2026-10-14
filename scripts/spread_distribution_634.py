@@ -23,7 +23,8 @@ unchanged. Scored decision days end where their fifth target day is on or before
 target day s from the information public h business days earlier (`asof.InformationRule(horizon=h)`), so the five leads of
 one decision day d are the walks' laws for the targets d + 1 .. d + 5. `score` assembles them (`lead_forecasts`), adds the
 benchmarks of protocol section 4, scores every decision day with `scoring_protocol.day_scores` and pairs each candidate with
-each benchmark with `scoring_protocol.paired_tests`.
+each benchmark with `scoring_protocol.paired_tests`. A walk whose output already holds the same variant and lead, walked
+from the same panel bytes, is skipped (`finished_walk`), so a run stopped part-way resumes from the walks it wrote.
 """
 
 from __future__ import annotations
@@ -345,6 +346,28 @@ def two_part_every_day(horizon: int) -> Tuple[str, ...]:
     return tuple(name for name in TWO_PART_EVERY_DAY if horizon == 1 or name not in IORB_COLUMNS)
 
 
+def finished_walk(output: Path, *, variant: str, horizon: int, published: Path, panel: Path) -> bool:
+    """Whether `output` already holds this walk: the same variant and lead, read from the same panel bytes.
+
+    A walk takes hours, so a run that stops part-way keeps the walks it wrote and a later run starts from them. A file
+    that does not parse, or was walked for another variant, lead or panel, is not finished and is walked again.
+    """
+
+    try:
+        document = json.loads(output.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(document, dict) or not isinstance(document.get("laws"), dict):
+        return False
+    scratch = panel_sha256(panel) if variant in VARIANTS else None
+    return (
+        document.get("variant") == variant
+        and document.get("horizon") == horizon
+        and document.get("panel_sha256") == panel_sha256(published)
+        and document.get("scratch_panel_sha256") == scratch
+    )
+
+
 def walk_command(args) -> int:
     declared = committed_declaration()
     h, variant = args.horizon, args.variant
@@ -353,6 +376,9 @@ def walk_command(args) -> int:
     if variant not in VARIANTS + CONTROLS:
         raise SystemExit(f"{variant!r} is not a declared variant or control")
     require_unlocked([LAST_TARGET], where="spread_distribution_634")
+    if finished_walk(args.output, variant=variant, horizon=h, published=args.published, panel=args.panel):
+        print(json.dumps({"variant": variant, "horizon": h, "skipped": "finished walk at " + str(args.output)}))
+        return 0
     minimum = declared["scoring"]["minimum_history"]
     refit = declared["scoring"]["refit_every"]
     published = load_daily_panel(args.published)
@@ -430,7 +456,10 @@ def walk_command(args) -> int:
         "settings": json.loads(json.dumps(settings, default=str)),
         "laws": laws,
     }
-    args.output.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
+    # written whole, then renamed: a run stopped mid-write leaves no file that reads as a finished walk
+    partial = args.output.with_name(args.output.name + ".partial")
+    partial.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
+    partial.replace(args.output)
     print(json.dumps({"variant": variant, "horizon": h, "days": len(laws), "missing": sum(1 for v in laws.values() if v is None)}))
     return 0
 
