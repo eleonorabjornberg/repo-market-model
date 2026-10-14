@@ -41,7 +41,8 @@
       "stop at the best available candidate": "headroom is shown nowhere; the next step is step 5 (choose the primary from development by the protocol score alone)"
     },
     "one_recommendation": "the result page ends with exactly one of the two, the trade-off in one line, and a marked question for Eleonora; no registration, no protocol change",
-    "cap": "if the candidate is ahead of the ceiling, the headroom is negative and is read as 'not shown'; that is reported plainly, because the ceiling is a cross-fitted fit and not a bound on what a forecast could do"
+    "cap": "if the candidate is ahead of the ceiling, the headroom is negative and is read as 'not shown'; that is reported plainly, because the ceiling is a cross-fitted fit and not a bound on what a forecast could do",
+    "best_candidate": "the one of the two candidates with the lower mean grid CRPS on the pooled ordinary-target cell of the window; the recommendation is read on it and the other is shown beside it. The cells read: pooled (ordinary targets and all targets), each regime, each day type, and the upper-tail twCRPS pooled (all targets and ordinary targets)"
   },
   "checks": {
     "lookahead": "the scorer refuses (LookAheadError) a fit, a walk or a published panel that reaches a day after 2025-12-31, and refuses a day of a locked tier (require_unlocked)",
