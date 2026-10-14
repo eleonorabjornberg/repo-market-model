@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import statistics
 import subprocess
 import sys
@@ -35,13 +36,15 @@ from repo_model import ranking, scoring_protocol as sp  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
-from repo_model.metrics import _quantile  # noqa: E402
+from repo_model.metrics import _quantile, stationary_bootstrap_indices  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "ranking_694.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"
 SEED = 694
 BLOCK = 20.0
+#: The protocol's block, reported beside the declared 20 as a labelled sensitivity (Eleonora, 13 October 2026, ruling on #722, item 2).
+SENSITIVITY_BLOCK = 10.0
 INTERVAL = (0.05, 0.95)
 MIN_GROUP_DAYS = 20
 METRICS = ("precision", "recall")
@@ -63,7 +66,24 @@ def interval(draws: Sequence[float]) -> List[float]:
     return [_quantile(draws, INTERVAL[0]), _quantile(draws, INTERVAL[1])]
 
 
-def paired(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[date, float], days: Sequence[date], draws: int) -> dict:
+def percentile_gains(pairs: Sequence[tuple], *, draws: int, block: float) -> List[List[float]]:
+    """The sorted resampled mean differences of each (benchmark loss, candidate loss) pair: the draws `paired_tests` takes
+    its percentile interval from (one `random.Random(SEED)`, one stationary-bootstrap index set per draw, shared by the pairs)."""
+
+    days = sorted(pairs[0][0])
+    diffs = [[b[d] - c[d] for d in days] for b, c in pairs]
+    n = len(days)
+    rng = random.Random(SEED)
+    out: List[List[float]] = [[] for _ in pairs]
+    for _ in range(draws):
+        indices = stationary_bootstrap_indices(n, block, rng)
+        for i, diff in enumerate(diffs):
+            out[i].append(sum(diff[j] for j in indices) / n)
+    return [sorted(o) for o in out]
+
+
+def paired(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[date, float], days: Sequence[date], draws: int,
+           block: float = BLOCK) -> dict:
     """The candidate's gain in a metric over each benchmark on `days`: the mean difference and its block-bootstrap interval.
 
     `scoring_protocol.paired_tests` takes losses (lower is better), so it is run on `1 - metric`: its difference is the
@@ -74,8 +94,19 @@ def paired(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[da
     pairs = [({d: 1.0 - benchmarks[n][d] for d in days}, {d: 1.0 - candidate[d] for d in days}) for n in names]
     out = {}
     try:
-        tests = sp.paired_tests(pairs, seed=SEED, draws=draws, block_length=BLOCK)
+        tests = sp.paired_tests(pairs, seed=SEED, draws=draws, block_length=block)
     except sp.ProtocolError as error:
+        if "long-run variance" in str(error):
+            # The scorer studentizes each resample and refuses one with no long-run variance (the rankers score alike
+            # on nearly every day of the group). The gain and its percentile interval need no studentization:
+            # the same draws, without it.
+            sorted_draws = percentile_gains(pairs, draws=draws, block=block)
+            return {n: {"days": len(days), "benchmark_mean": mean([benchmarks[n][d] for d in days]),
+                        "candidate_mean": mean([candidate[d] for d in days]),
+                        "gain": mean([candidate[d] - benchmarks[n][d] for d in days]),
+                        "gain_interval": interval(sorted_draws[i]),
+                        "method": "percentile interval of the same draws, unstudentized"}
+                    for i, n in enumerate(names)}
         if "scores zero" not in str(error):
             raise
         return {n: {"days": len(days), "undefined": str(error),
@@ -175,6 +206,12 @@ def score(args) -> int:
         return out
 
     result["paired"] = {"all": comparisons(days, pressured)}
+    # the protocol's block of 10 as a labelled sensitivity (ruling on #722, item 2): the headline families only
+    result["sensitivity_block"] = {"block_length": SENSITIVITY_BLOCK, "label": "sensitivity, not the declared block", "paired": {
+        cand: {f"{label}@{k}": paired({b: series(b, k, metric, subset) for b in ranking.BENCHMARKS},
+                                      series(cand, k, metric, subset), subset, args.draws, block=SENSITIVITY_BLOCK)
+               for k in ranking.TOP_K for label, metric, subset in (("precision", "precision", days), ("recall", "recall", pressured))}
+        for cand in ranking.CANDIDATES}}
     # precision on the windows with a pressure day, as a separate family
     result["paired"]["pressure_windows_precision"] = {}
     for cand in ranking.CANDIDATES:
@@ -273,7 +310,18 @@ def render(r: dict) -> str:
     for cand in ranking.CANDIDATES:
         for metric, cell in r["paired"]["all"][cand].items():
             lines.append(f"| {NAMES[cand]} | {metric} | " + " | ".join(gain_text(cell[b]) for b in ranking.BENCHMARKS) + " |")
-    lines += ["", "## Precision on the windows that held a pressure day", "",
+    sens = r["sensitivity_block"]
+    lines += ["", f"## Sensitivity: the protocol's block of {sens['block_length']:.0f} days instead of the declared {r['block_length']:.0f}", "",
+              "Same draws and seed, only the mean block changes (ruling on #722, item 2). Labelled a sensitivity: the declared block is "
+              f"{r['block_length']:.0f} days.", "",
+              "| Ranker | Metric | vs persistence | vs climatology | vs calendar |", "|---|---|---|---|---|"]
+    for cand in ranking.CANDIDATES:
+        for metric, cell in sens["paired"][cand].items():
+            lines.append(f"| {NAMES[cand]} | {metric} | " + " | ".join(gain_text(cell[b]) for b in ranking.BENCHMARKS) + " |")
+    low, high = sens["paired"]["model_prob"]["precision@5"]["calendar"]["gain_interval"]
+    lines += ["", f"Primary under block {sens['block_length']:.0f}: interval [{pp(low)}, {pp(high)}]; "
+              + ("it lies wholly above zero." if low > 0.0 else "it does not lie wholly above zero, as under the declared block."),
+              "", "## Precision on the windows that held a pressure day", "",
               "| Ranker | Metric | vs persistence | vs climatology | vs calendar |", "|---|---|---|---|---|"]
     for cand in ranking.CANDIDATES:
         for metric, cell in r["paired"]["pressure_windows_precision"][cand].items():

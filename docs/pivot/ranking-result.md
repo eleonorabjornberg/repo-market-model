@@ -38,6 +38,23 @@ The interval does not lie wholly above zero: **no ranking skill beyond the calen
 | model, median | recall@3 | -1.4 pp [-4.0 pp, +1.3 pp] | -13.7 pp [-19.5 pp, -8.5 pp] | -28.8 pp [-36.6 pp, -21.5 pp] |
 | model, median | recall@5 | -3.2 pp [-6.5 pp, +0.1 pp] | -15.2 pp [-21.3 pp, -9.8 pp] | -33.7 pp [-41.4 pp, -26.4 pp] |
 
+## Sensitivity: the protocol's block of 10 days instead of the declared 20
+
+Same draws and seed, only the mean block changes (ruling on #722, item 2). Labelled a sensitivity: the declared block is 20 days.
+
+| Ranker | Metric | vs persistence | vs climatology | vs calendar |
+|---|---|---|---|---|
+| model, P(> +5 bp) | precision@3 | +0.1 pp [-0.5 pp, +0.6 pp] | -2.9 pp [-4.6 pp, -1.4 pp] | -7.5 pp [-10.4 pp, -4.9 pp] |
+| model, P(> +5 bp) | precision@5 | +0.1 pp [-0.3 pp, +0.6 pp] | -1.7 pp [-2.7 pp, -0.7 pp] | -5.2 pp [-7.2 pp, -3.4 pp] |
+| model, P(> +5 bp) | recall@3 | +0.9 pp [-1.1 pp, +3.2 pp] | -11.4 pp [-17.5 pp, -5.9 pp] | -26.5 pp [-33.9 pp, -19.5 pp] |
+| model, P(> +5 bp) | recall@5 | +1.9 pp [-0.6 pp, +4.7 pp] | -10.1 pp [-16.1 pp, -4.6 pp] | -28.6 pp [-35.9 pp, -21.6 pp] |
+| model, median | precision@3 | -0.7 pp [-1.6 pp, +0.2 pp] | -3.7 pp [-5.4 pp, -2.1 pp] | -8.2 pp [-11.3 pp, -5.4 pp] |
+| model, median | precision@5 | -0.8 pp [-1.6 pp, -0.0 pp] | -2.6 pp [-3.8 pp, -1.5 pp] | -6.1 pp [-8.3 pp, -4.1 pp] |
+| model, median | recall@3 | -1.4 pp [-4.1 pp, +1.5 pp] | -13.7 pp [-19.2 pp, -8.7 pp] | -28.8 pp [-36.1 pp, -21.8 pp] |
+| model, median | recall@5 | -3.2 pp [-6.8 pp, +0.5 pp] | -15.2 pp [-21.0 pp, -9.9 pp] | -33.7 pp [-40.8 pp, -26.8 pp] |
+
+Primary under block 10: interval [-7.2 pp, -3.4 pp]; it does not lie wholly above zero, as under the declared block.
+
 ## Precision on the windows that held a pressure day
 
 | Ranker | Metric | vs persistence | vs climatology | vs calendar |

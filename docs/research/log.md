@@ -271,9 +271,9 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Tier: development
 - Pins: published panel `4ddc3882…`; scoring protocol v1 scorer for the bootstrap; base `bd7f573`; seed 694
 - Tried: 2 rankers of the next 20 business days, from the mean-reverting spread distribution of #686 extended to 20 leads (read as P(spread > +5 bp) and as the predicted median), against persistence (B1), climatology by day type and the calendar of known risk dates. Variants: 2 (the declaration `metadata/ranking_694.json`; nothing is fitted to the +5 bp event).
-- Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Detail in `docs/pivot/ranking-result.md`.
+- Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Sensitivity (ruling of 13 October 2026, item 2): with the protocol's mean block of 10 days in place of the declared 20, the same gain's interval is [-7.2 pp, -3.4 pp], so the reading is unchanged. Detail in `docs/pivot/ranking-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
-- Next: Eleonora decides whether a model-plus-calendar ranker, or #634's candidates once on main, is worth a step 2.
+- Next: step 2, accepted by Eleonora on 13 October 2026: rank by tail probability combined with the day type (a directive for it is hers to queue).
 
 ### 2026-10-13 [H7] step 1 · eleonorabjornberg/repo-market-model#715
 - Directive: #689
