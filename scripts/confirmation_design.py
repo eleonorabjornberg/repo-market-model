@@ -311,6 +311,9 @@ def window_statistics(series: Sequence[float], *, days: int, lengths: Sequence[i
 
 
 def pair_series(series: Series) -> Dict[str, List[float]]:
+    """The four calibration series. `e` is S(B1) - S(B2), so "B2-B1" here is the candidate-side orientation (a B2-like
+    candidate against B1) and "B1-B2" is `S(B2) - S(B1)`, the orientation PR #695 calls B2 - B1."""
+
     return {
         "B2-B1": list(series.e), "B1-B2": [-v for v in series.e],
         "B3-B1 (five levels)": list(series.e3), "B1-B3 (five levels)": [-v for v in series.e3],
@@ -358,12 +361,22 @@ def history_slice(series: Series, history: str) -> Tuple[List[float], List[float
 def run_path(job) -> Optional[int]:
     """One path: the look at which the candidate is detected (gated), and the first look its bound is above zero."""
 
-    design, history, delta, noise, seed = job
+    design, history, delta, noise, seed, *rest = job
+    generator = rest[0] if rest else "stationary"
     b, e = _DATA["histories"][(design.id, history)]
     critical = _DATA["critical"][design.id]
     x = candidate(b, e, delta, noise)
     rng = random.Random(seed)
-    index = stationary_bootstrap_indices(len(b), sp.BLOCK_LENGTH, rng)[: design.days]
+    if generator == "stationary":
+        index = stationary_bootstrap_indices(len(b), sp.BLOCK_LENGTH, rng)[: design.days]
+    elif generator == "circular":
+        index = []
+        while len(index) < design.days:
+            start = rng.randrange(len(b))
+            index.extend((start + k) % len(b) for k in range(sp.WINDOW_BLOCK))
+        index = index[: design.days]
+    else:
+        raise RuleError(f"unknown generator {generator!r}")
     xs = [x[i] for i in index]
     bs = [b[i] for i in index]
     ungated = gated = None
@@ -378,12 +391,15 @@ def run_path(job) -> Optional[int]:
     return ungated, gated
 
 
-def simulate(pool_args, critical, *, paths, workers):
+def simulate(pool_args, critical, *, paths, workers, generator="stationary", scenarios=None):
     histories, designs = pool_args
     out = {design.id: {} for design in designs}
     for s, (name, delta, noise, history) in enumerate(SCENARIOS):
+        if scenarios is not None and name not in scenarios:
+            continue
         for design in designs:
-            jobs = [(design, history, delta, noise, SEED * 100_003 + s * SCENARIO_STRIDE + i) for i in range(paths)]
+            jobs = [(design, history, delta, noise, SEED * 100_003 + s * SCENARIO_STRIDE + i, generator)
+                    for i in range(paths)]
             if workers > 1:
                 with multiprocessing.Pool(workers, initializer=init_worker, initargs=(histories, critical)) as pool:
                     results = pool.map(run_path, jobs, chunksize=max(1, paths // (workers * 8)))
@@ -447,6 +463,8 @@ def reading(scenarios) -> Dict[str, object]:
             "power_3": cells["3%, full"]["with_the_mme_gate"][last],
             "power_3_se": cells["3%, full"]["with_the_mme_gate_se"],
             "power_10": cells["10%, full"]["with_the_mme_gate"][last],
+            "power_3_post_2020": cells["3%, post-2020"]["with_the_mme_gate"][last],
+            "power_10_post_2020": cells["10%, post-2020"]["with_the_mme_gate"][last],
             "smallest_skill_at_80": smallest_skill_at_target(design.id, scenarios),
         }
     admissible = [d for d in DESIGNS if rows[d.id]["admissible"]]
@@ -523,8 +541,8 @@ def pct(value: float) -> str:
     return f"{100 * value:.1f}%"
 
 
-def render_page(result) -> str:
-    reading_ = result["reading"]
+def render_page(result, add=None) -> str:
+    reading_ = reading(result["scenarios"])
     rows = reading_["rows"]
     c = result["constants"]
     lines = [
@@ -544,8 +562,8 @@ def render_page(result) -> str:
         "Size is the false-detection share by the last look under no true difference, without the MME gate. Power is "
         "the gated detection share by the last look. Intervals are Monte Carlo (one standard error shown).",
         "",
-        "| design | days | leads | scale | c at look 2 / 3 | size, full | size, post-2020 | power at 3% | power at 10% | smallest skill at 80% | admissible |",
-        "|---|---|---|---|---|---|---|---|---|---|---|",
+        "| design | days | leads | scale | c at look 2 / 3 | size, full | size, post-2020 | power at 3%, full | power at 10%, full | power at 3%, post-2020 | power at 10%, post-2020 | smallest skill at 80% | admissible |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for design in DESIGNS:
         r, info = rows[design.id], result["designs"][design.id]
@@ -556,6 +574,7 @@ def render_page(result) -> str:
             f"| {design.id} | {design.days} | {lead} | {'standardized' if design.standardized else 'raw'} | "
             f"{cv[str(looks[1])]:.2f} / {cv[str(looks[2])]:.2f} | {pct(r['size_full'])} | {pct(r['size_post_2020'])} | "
             f"{pct(r['power_3'])} ± {pct(r['power_3_se'])} | {pct(r['power_10'])} | "
+            f"{pct(r['power_3_post_2020'])} | {pct(r['power_10_post_2020'])} | "
             f"{'none on the grid' if r['smallest_skill_at_80'] is None else pct(r['smallest_skill_at_80'])} | "
             f"{'yes' if r['admissible'] else 'no'} |"
         )
@@ -577,7 +596,7 @@ def render_page(result) -> str:
             for label, key in (("none", "without_the_mme_gate"), ("MME", "with_the_mme_gate")):
                 cell = result["scenarios"][design.id][name][key]
                 lines.append(f"| {design.id} | {name} | {label} | {pct(cell[str(looks[1])])} | {pct(cell[str(looks[2])])} |")
-    lines += ["", "## Smallest true skill detected with 80% power (Full history, gated, last look)", "",
+    lines += ["", "## Gated power by true skill (Full history, last look); the smallest skill with 80% power is the first cell at or above 80%", "",
               "| design | " + " | ".join(pct(g) for g in MDE_GRID) + " |", "|---|" + "---|" * len(MDE_GRID)]
     names = {0.03: "3%, full", 0.05: "5%, full", 0.075: "7.5%, full", 0.10: "10%, full", 0.15: "15%, full",
              0.20: "20%, full", 0.30: "30%, full"}
@@ -607,6 +626,10 @@ def render_page(result) -> str:
             f"{pct(r['power_3'])}, at 10% {pct(base['power_10'])} → {pct(r['power_10'])}; size on the full history "
             f"{pct(base['size_full'])} → {pct(r['size_full'])}; days {base['days']} → {r['days']}.",
         ]
+        if not reaches:
+            lines += ["", f"**No admissible design reaches {pct(TARGET_POWER)} power at 3%.** The pick above is the "
+                      f"highest power among the admissible designs ({pct(r['power_3'])}), not a design with useful power; "
+                      f"on the rule's own reading no design on the list can confirm the MME."]
     lines += [
         "",
         "## Question for Eleonora (marked; this page decides nothing)",
@@ -618,12 +641,123 @@ def render_page(result) -> str:
         "skill each design detects, is yours.",
         "",
     ]
+    if add is not None:
+        lines += render_addendum(result, add)
     return "\n".join(lines)
+
+
+def render_addendum(result, add) -> List[str]:
+    reading_b = reading(add["scenarios_b"])
+    rows = reading_b["rows"]
+    lines = [
+        "## Post-hoc addendum (written after the figures above were seen)",
+        "",
+        f"Rule: [`confirmation-design-733-addendum.md`](confirmation-design-733-addendum.md) (sha256 "
+        f"`{add['addendum_sha256'][:12]}…`). It changes none of the figures above and not the recommendation above.",
+        "",
+        "### Reading (b): the critical value calibrated on S(B2) - S(B1) alone",
+        "",
+        "Same designs, paths, seeds and gate. The value at looks 2 and 3 is the one calibrated on that single comparison "
+        "(PR #695, Q-E (b)), not the largest across the four.",
+        "",
+        "| design | days | c at look 2 / 3 | size, full | size, post-2020 | power at 3%, full | power at 10%, full | power at 3%, post-2020 | power at 10%, post-2020 | smallest skill at 80% | admissible |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for design in DESIGNS:
+        r = rows[design.id]
+        cv = add["critical_values_b"][design.id]
+        looks = result["designs"][design.id]["checkpoints"]
+        lines.append(
+            f"| {design.id} | {design.days} | {cv[str(looks[1])]:.2f} / {cv[str(looks[2])]:.2f} | "
+            f"{pct(r['size_full'])} | {pct(r['size_post_2020'])} | {pct(r['power_3'])} ± {pct(r['power_3_se'])} | "
+            f"{pct(r['power_10'])} | {pct(r['power_3_post_2020'])} | {pct(r['power_10_post_2020'])} | "
+            f"{'none on the grid' if r['smallest_skill_at_80'] is None else pct(r['smallest_skill_at_80'])} | "
+            f"{'yes' if r['admissible'] else 'no'} |"
+        )
+    ref = REFERENCE_695
+    own = rows["D0"]
+    lines += ["", f"Check against PR #695's Q-E table (reading (b), post-2020 history, 250 days, D0's rule): PR #695 reports "
+              f"{pct(ref['power_3'])} power at 3%, {pct(ref['power_10'])} at 10% and {pct(ref['size'])} false detections; "
+              f"this study's D0 gives {pct(own['power_3_post_2020'])}, {pct(own['power_10_post_2020'])} and "
+              f"{pct(add['scenarios_b']['D0']['size, post-2020']['without_the_mme_gate']['250'])} "
+              f"(a different pool: it ends on 2025-12-31 and PR #695's on 2026-09-03). The full-history columns differ "
+              f"from the post-2020 ones because the full history holds one September 2019 day that the post-2020 "
+              f"history does not.", ""]
+    lines += ["Admissible at reading (b): " + (", ".join(reading_b["admissible"]) or "none") + ". "
+              "With 80% power at 3%: " + (", ".join(reading_b["reach_target_power_at_3"]) or "none") + ". "
+              "The rule of §7 applied to reading (b) recommends: "
+              + (reading_b["recommended"] or "none") + ".", ""]
+    lines += ["### Size under the calibration's own generator", "",
+              "False-detection share by the last look under no true difference, without the MME gate, under the main "
+              "study's calibrated values. Stationary: geometric blocks (the paths above). Circular: fixed blocks of 10 "
+              "days, as the calibration's windows.", "",
+              "| design | stationary, full | circular, full | stationary, post-2020 | circular, post-2020 |",
+              "|---|---|---|---|---|"]
+    for design in DESIGNS:
+        last = str(design.days)
+        cells = []
+        for name in ("size, full", "size, post-2020"):
+            cells.append(pct(result["scenarios"][design.id][name]["without_the_mme_gate"][last]))
+            cells.append(pct(add["scenarios_circular"][design.id][name]["without_the_mme_gate"][last]))
+        lines.append(f"| {design.id} | " + " | ".join(cells) + " |")
+    lines += [
+        "",
+        "### Question for Eleonora (marked; post-hoc)",
+        "",
+        "Which reading of the critical value should confirmation use: the largest across the four comparisons (now in "
+        "force) or the one calibrated on the verdict's own comparison (reading (b))? The first holds size and has almost "
+        "no power at any skill on the grid; the second has the power shown above and the size shown above. This "
+        "is the choice PR #695 asked as Q-E, and it decides what the confirmation design can detect.",
+        "",
+    ]
+    return lines
+
+
+#: PR #695's Q-E table, reading (b), the post-2020-04 series, 250 days (published figures, quoted for the check).
+REFERENCE_695 = {"power_3": 0.14, "power_10": 0.1925, "size": 0.1165}
+ADDENDUM = REPO / "docs" / "research" / "confirmation-design-733-addendum.md"
+SIZE_SCENARIOS = ("size, full", "size, post-2020")
+
+
+def reading_b_critical(result) -> Dict[str, Dict[str, float]]:
+    """The addendum's reading (b): at each look, the value calibrated on S(B2) - S(B1) alone (the `B1-B2` entry)."""
+
+    return {d: {n: info["per_pair"]["B1-B2"][n] for n in info["critical_values"]}
+            for d, info in result["designs"].items()}
+
+
+def addendum_command(args) -> int:
+    out = Path(args.out)
+    result = json.loads((out / "result.json").read_text(encoding="utf-8"))
+    if result["rule_sha256"] != sha256(RULE):
+        raise RuleError("result.json was made under another text of the rule")
+    pool, digest = load_pool()
+    if digest != result["panel_sha256"]:
+        raise RuleError("the panel is not the one result.json was made on")
+    series = {design.id: design_series(pool, design) for design in DESIGNS}
+    histories = {(design.id, history): history_slice(series[design.id], history)
+                 for design in DESIGNS for history in ("full", "post-2020")}
+    paths = result["constants"]["paths"]
+    critical_b = reading_b_critical(result)
+    scenarios_b = simulate((histories, DESIGNS), critical_b, paths=paths, workers=args.workers)
+    critical = {d: info["critical_values"] for d, info in result["designs"].items()}
+    circular = simulate((histories, DESIGNS), critical, paths=paths, workers=args.workers,
+                        generator="circular", scenarios=SIZE_SCENARIOS)
+    add = {
+        "post_hoc": True, "addendum": str(ADDENDUM.relative_to(REPO)), "addendum_sha256": sha256(ADDENDUM),
+        "rule_sha256": result["rule_sha256"], "critical_values_b": critical_b,
+        "scenarios_b": scenarios_b, "reading_b": reading(scenarios_b), "scenarios_circular": circular,
+    }
+    (out / "addendum.json").write_text(json.dumps(add, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print("wrote", out / "addendum.json")
+    return 0
 
 
 def report_command(args) -> int:
     result = json.loads((Path(args.out) / "result.json").read_text(encoding="utf-8"))
-    PAGE.write_text(render_page(result), encoding="utf-8")
+    add_path = Path(args.out) / "addendum.json"
+    add = json.loads(add_path.read_text(encoding="utf-8")) if add_path.exists() else None
+    PAGE.write_text(render_page(result, add), encoding="utf-8")
     print("wrote", PAGE)
     return 0
 
@@ -634,7 +768,11 @@ def check_command(args) -> int:
         raise RuleError("result.json was made under another text of the rule")
     if result["pool"]["last"] > STUDY_END.isoformat():
         raise RuleError("the study scored a day after its end")
-    if PAGE.read_text(encoding="utf-8") != render_page(result):
+    add_path = Path(args.out) / "addendum.json"
+    add = json.loads(add_path.read_text(encoding="utf-8")) if add_path.exists() else None
+    if add is not None and add["addendum_sha256"] != sha256(ADDENDUM):
+        raise RuleError("addendum.json was made under another text of the addendum")
+    if PAGE.read_text(encoding="utf-8") != render_page(result, add):
         raise RuleError("the result page is not the one result.json renders")
     print("ok")
     return 0
@@ -651,6 +789,10 @@ def main(argv=None) -> int:
     run.add_argument("--windows", type=int, default=WINDOWS)
     run.add_argument("--workers", type=int, default=1)
     run.set_defaults(func=run_command)
+    addendum = sub.add_parser("addendum")
+    addendum.add_argument("--out", required=True)
+    addendum.add_argument("--workers", type=int, default=1)
+    addendum.set_defaults(func=addendum_command)
     for name, func in (("report", report_command), ("check", check_command)):
         command = sub.add_parser(name)
         command.add_argument("--out", required=True)
