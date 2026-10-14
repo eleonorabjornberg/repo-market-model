@@ -1,0 +1,54 @@
+{
+ "critical_values": {
+  "B1-B2 (reversed, diagnostic)": {
+   "125": 2.5476176053580666,
+   "250": 1.3467953558970605,
+   "60": 6.749330041257863
+  },
+  "B1-B3 (reversed, diagnostic)": {
+   "125": 1.4342750488305942,
+   "250": 1.0059739885853967,
+   "60": 2.677692689554682
+  },
+  "B2-B1": {
+   "125": 3.419438620805254,
+   "250": 2.425730476113518,
+   "60": 6.978058117549889
+  },
+  "B3-B1 (five levels)": {
+   "125": 9.50052772574656,
+   "250": 5.454950300123988,
+   "60": 25.4109459061036
+  }
+ },
+ "nominal_levels": {
+  "125": 0.005552272301342587,
+  "250": 0.0482414793805519,
+  "60": 6.313944260094573e-05
+ },
+ "note": "protocol value: the largest across all four orientations; look 1 is left uncalibrated (Q-B)",
+ "protocol_critical_values": {
+  "125": 9.50052772574656,
+  "250": 5.454950300123988,
+  "60": null
+ },
+ "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627",
+ "seed": 1,
+ "series_days": {
+  "B1-B2 (reversed, diagnostic)": 2037,
+  "B1-B3 (reversed, diagnostic)": 1869,
+  "B2-B1": 2037,
+  "B3-B1 (five levels)": 1869
+ },
+ "studentized_normal_values": {
+  "125": 2.539391616498786,
+  "250": 1.6621487211016701,
+  "60": 3.833604953946013
+ },
+ "window_block": 10,
+ "windows": {
+  "125": 20000,
+  "250": 20000,
+  "60": 200000
+ }
+}

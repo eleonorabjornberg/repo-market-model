@@ -1,0 +1,16 @@
+{
+ "addendum": "docs/research/power-study-656-addendum.md",
+ "addendum_sha256": "8937e7cd970b2d846e7c2fec8bf039841a2bad25d2fbe6e457fbf4567f541be8",
+ "false_detection_share_with_the_mme_gate": {
+  "125": 0.105,
+  "250": 0.2175
+ },
+ "false_detection_share_without_the_mme_gate": {
+  "125": 0.105,
+  "250": 0.2175
+ },
+ "monte_carlo_se_at_250": 0.02062727260206739,
+ "nominal_overall_level": 0.05,
+ "paths": 400,
+ "post_hoc": true
+}
