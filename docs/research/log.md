@@ -395,7 +395,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
 
-### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#764
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#773
 - Directive: #755
 - Step: 3 (reading only: distribution forecasts under regime change, for the 2021–23 and upper-tail diagnoses of #707)
 - Tier: development
@@ -405,7 +405,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (reading only; development).
 - Next: Eleonora or the orchestrator decides whether any lead is queued, in plan order.
 
-### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#764
+### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#773
 - Directive: #755
 - Step: 3 (reading only: the power of forecast comparisons, for #754's three families)
 - Tier: development
@@ -414,3 +414,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `docs/research/literature-2026-10.md`. Power at 60 to 125 days depends mainly on the dependence and tail weight of the CRPS differences, which no test choice changes; the sequential tests need a declared cap and are weakest at horizons above 1. No source sizes a confirmation period for a CRPS comparison, and none quantifies a sign test under dependence: gaps.
 - Against kill: not applicable (reading only; development).
 - Next: #754 starts after #733 and #737 merge; leads 3 and 4 of the page bear on it.
+
+### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
+- Directive: #762
+- Step: 3 (is each benchmark computed as specified: B1, B2 and `richer_targets.b1_quantiles` on a simulated panel with known dynamics; finding #744)
+- Tier: development
+- Pins: no panel (simulated data only); simulator `tests/benchmark_simulation.py`, seeds 762000 to 762199; base `c0c4525`
+- Tried: an AR(1) spread with day-type levels on the market calendar, run through the benchmarks under the registry's availability declarations. Alignment asserted on a ramp, on level-only and on AR(1) panels; central 90% coverage measured against the known conditional law, not asserted. Variants: 1 process.
+- Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
+- Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
+- Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
