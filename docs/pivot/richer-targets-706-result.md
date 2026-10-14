@@ -110,7 +110,7 @@ is Eleonora's call: under "and" the criterion also needs step 3's nested test, w
 
 ## Not done, and for Eleonora
 
-* Step 3, the nested test with H5's best candidate with and without each target's forecast as an input, is not run (it needs #634 merged).
+* The next step, the nested test with H5's best candidate with and without each target's forecast as an input, is not run (it needs #634 merged).
 * The nested test of the directive is read as "beside #634's spread row", not as a nested model comparison (marked as a question in the pull request).
 * The two readings of the target choice above, and the kill-criterion wording.
 * Intervals are not corrected for the three targets, five leads and several splits. A cell that stands out is a candidate for a declared test, not evidence.
