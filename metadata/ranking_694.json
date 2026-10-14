@@ -1,0 +1,49 @@
+{
+  "status": "declared by the pull request that closes #694 before any score was computed; a measurement, not a record. Nothing is published: no ranker joins any published declaration, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. The candidate is the model of #686, which was written after seeing 2018-2025, so a result here is exploration on development data, never a verdict (scoring protocol v1, #640)",
+  "issue": 694,
+  "hypothesis": "H8: ranking beats calibrating for desk use. Step 1 of the issue (the ranking target, the benchmarks and a development score); development tier",
+  "ruling": "Eleonora, directive #694 (13 October 2026): queue H8",
+  "task": "at each decision day, rank the next 20 business days (the 20 panel rows after the decision day) by predicted risk, and score the top k of the ranking against the days that were realised pressure days",
+  "pressure_day": "a day whose spread_bps is strictly above +5 bp read on whole basis points (data.exceeds_bp, docs/decisions/pressure-probability.md)",
+  "candidate": {
+    "name": "spread_mr_level10, extended to 20 leads",
+    "source": "the model of #686 (repo_model.spread_mean_reversion, metadata/spread_distribution_686.json): level + phi^k * (last - level) + eps_h, with the same level, anchor, row lag k, phi grid, 2-year window, 60-pair minimum and 21-day refit. The one change is the leads: h = 1..20 instead of 1..5, because a ranking of 20 days needs a forecast for each. phi is fitted on the pairs of all 20 leads, eps_h on lead h's own pairs. The extended fit is repo_model.ranking.fit; the model of #686 is not edited",
+    "why_this_row": "it is the strongest H5 distribution row on main whose forecasts for every decision day can be recomputed: +22.3% grid CRPS skill against B1 and a tie with the published distribution (research log, H5 step 2, #713). The published distribution forecasts leads 1..5 at five levels only and cannot rank 20 days. #634's candidates are not on main; when they merge, a row can be added in a later directive",
+    "risk": {
+      "probability": "P(spread > +5 bp) at the target day, read from the 23 quantiles of lead h with repo_model.spread_mean_reversion.exceedance (the whole-basis-point reading); the ranker is called model_prob",
+      "median": "the predicted median, the quantile at level 0.5 of the grid; the ranker is called model_median"
+    }
+  },
+  "benchmarks": {
+    "persistence": {
+      "name": "persistence",
+      "risk": "P(spread > +5 bp) from B1 (protocol_benchmarks.b1_forecast) extended to leads 1..20: the anchor's spread plus the trailing 2 years' h-row changes, h = 1..20, read with the same exceedance. Persistence says only that the spread stays near where it was, so its ranking is the decay of that anchor, not a calendar"
+    },
+    "climatology": {
+      "name": "climatology by day type",
+      "risk": "the share of days of the target day's type (SplitDeclaration.reporting_day_type: quarter_end, month_end, tax_date, ordinary) that were pressure days among the trailing year's days up to the anchor (B2's window and type reading, protocol_benchmarks.B2_YEARS). A decision with no day of some target's type in the window has no climatology forecast and is dropped from every ranker (listed in the report)"
+    },
+    "calendar": {
+      "name": "the calendar of known risk dates alone",
+      "risk": "1 on a scheduled risk date, else 0: a quarter-end, a tax date or a day with a coupon settlement, pressure_judge._scheduled_risk_date (calendar facts known ahead; the definition the groupings already use). Ranked by day type, then by date: risk dates first, and within a tie the earliest date first. No spread is read. This is the benchmark the plan's kill rule is stated against. #682 (one shared definition) had not merged when this was declared; when it does, the one function is swapped in for _scheduled_risk_date and the result is re-run"
+    },
+    "ties": "model_prob, model_median, persistence and climatology break ties by their expected value over a random order (a tie group that straddles the cutoff contributes its share of the hits in proportion to the places left), so no ranker gains from an arbitrary order. The calendar breaks ties by date, as declared above"
+  },
+  "scores": {
+    "per_decision_day": "precision@k = (pressure days among the top k) / k, recall@k = (pressure days among the top k) / (pressure days in the 20), for k = 3 and k = 5. Recall is defined only on windows with at least one pressure day; precision on every window and, separately, on windows with at least one",
+    "primary": "precision@5 of model_prob against the calendar benchmark, the plan's top-5 precision against the calendar, on all scored decision days",
+    "secondary": "precision@3; recall@3 and recall@5; model_median; the comparisons against persistence and climatology; precision and recall on windows with a pressure day; the hits' composition (the share of the top k that are scheduled risk dates, and the share of the window's pressure days that are scheduled risk dates)",
+    "paired": "for each ranker and benchmark, the per-decision-day difference in the metric (positive favours the ranker), its mean, and a stationary-bootstrap interval over decision days: mean block 20 business days (the window length: consecutive windows share 19 of their 20 days, so the protocol's block of 10 would understate the interval), 10,000 draws, seed 694, reported as the 5th and 95th percentile of the draws (the project's 90% two-sided interval). scoring_protocol.paired_tests runs it on the loss 1 - metric, so that its difference is the metric's gain",
+    "splits": "by calendar year of the decision day and by regime of the decision day (SplitDeclaration.regime: 2018-19, 2020, 2021-23, 2024, 2025-26 on development days), each split with at least 20 decision days; the splits are on the decision day because the unit of a ranking is the window"
+  },
+  "kill": "H8's kill, applied in words to the primary: the ranker has no ranking skill beyond the calendar of known risk dates when the 90% interval of its precision@5 gain over the calendar benchmark does not lie wholly above zero. On development data the statement is exploration and not a verdict",
+  "days": {
+    "scored": "decision days whose 20 targets all fall on or before 2025-12-31 and for which every ranker has a forecast, from the first with a forecast; no later day is read (docs/decisions/lockbox.md); each decision day and each target day is passed through lockbox.require_unlocked",
+    "outcomes": "the panel's spread_bps at the target day, not the first-published vintage of protocol section 11"
+  },
+  "limits": {
+    "max_rankers": 2,
+    "last_day": "2025-12-31",
+    "extension": "#684 (the 2026 development days) had not merged when this declaration was made; if it merges before this pull request does, the days from 2026-01-01 to 2026-09-03 are a separate column, not pooled in the headline"
+  }
+}
