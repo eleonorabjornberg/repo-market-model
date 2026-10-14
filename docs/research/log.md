@@ -405,6 +405,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
 
+<<<<<<< HEAD
 ### 2026-10-14 [H9] step 2 · eleonorabjornberg/repo-market-model#774
 - Directive: #706
 - Step: 2
@@ -414,3 +415,14 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: skill over B1 +0.329 [lower +0.271], +0.310 [+0.286], +0.330 [+0.241]; over B2 +0.156 [+0.080], −0.103 [−0.142], +0.155 [+0.054]; the spread (#634 b) +0.201 over B1 and +0.268 over B2. Negative on quarter-end target days for all three. No lead on the +5 bp episodes in the scarce state (pre-onset AUC of the modelled median 0.38, 0.53, 0.39, intervals not above one half). Detail in `docs/pivot/richer-targets-706-result.md`.
 - Against kill: no chosen target shows both skill over persistence and a lead on the +5 bp episodes, so the criterion as worded in the queue is met on development data; not a verdict, and the wording ("or" in the queue, "and" in `H9.md`) is Eleonora's call.
 - Next: the nested test with H5's best candidate (H9 step 3), after #634 merges.
+=======
+### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
+- Directive: #762
+- Step: 3 (is each benchmark computed as specified: B1, B2 and `richer_targets.b1_quantiles` on a simulated panel with known dynamics; finding #744)
+- Tier: development
+- Pins: no panel (simulated data only); simulator `tests/benchmark_simulation.py`, seeds 762000 to 762199; base `c0c4525`
+- Tried: an AR(1) spread with day-type levels on the market calendar, run through the benchmarks under the registry's availability declarations. Alignment asserted on a ramp, on level-only and on AR(1) panels; central 90% coverage measured against the known conditional law, not asserted. Variants: 1 process.
+- Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
+- Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
+- Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
+>>>>>>> origin/main
