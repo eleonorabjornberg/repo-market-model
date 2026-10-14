@@ -355,3 +355,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Calibration (Eleonora's ruling on PR #695, a §13 change): the critical value calibrated on the development history, largest across B2 − B1 and B3 − B1, is 5.45 at 250 days (9.50 at 125; none at 60), against 1.66 uncalibrated. Out of sample the bound then covers 1.000 of B2 − B1 windows, 0.951 of B3 − B1 windows and 1.000 of the control's; under no true difference (#699's size check) it detects on 0.3% of paths by 250 days, against 23.3% uncalibrated.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
+
+### 2026-10-14 [H4] step 3 · eleonorabjornberg/repo-market-model#726
+- Directive: #726
+- Step: 3 (development nested test of the back-fill against H5's candidate, #634's gbm_funding; steps 1 and 2 were done in #661)
+- Tier: development
+- Pins: published panel `4ddc3882…`; extended panel `1e09ae43…`; base `49ff40d9`; declaration `metadata/backfill_h5_726.json`
+- Tried: the candidate trained without and with the 899 back-filled rows (only SOFR, IORB, volume, TGCR, BGCR and calendar columns carried, the rest blank and imputed by the fitter), 23 levels, leads 1 to 5, scored by the protocol's scorer on 1869 decision days. Variants: 1 new (the with arm), 5 fits.
+- Result: 2018-19 grid CRPS 4.005 → 4.119, d −0.114 [−0.168, −0.061] (worse); all days d −0.001 [−0.038, +0.040]; 2018-19 90% coverage 0.688 → 0.659 (−0.029 [−0.064, +0.007]); 2024 and 2025-26 slightly worse, 2020 and 2021-23 better with intervals covering zero. Detail in `docs/pivot/backfill-h5-726-result.md`.
+- Against kill: no development gain beyond the interval, so H4 is not supported by this test, as exploration only; the test is narrow, since the candidate's other inputs are imputed on back-filled rows.
+- Next: step 4 is Eleonora's; which candidate and which reading of the blank inputs are her questions on the PR.
