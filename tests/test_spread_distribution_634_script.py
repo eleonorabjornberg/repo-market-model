@@ -135,6 +135,10 @@ class LockboxTests(unittest.TestCase):
 
 
 class ExceedanceTests(unittest.TestCase):
+    def setUp(self):
+        if importlib.util.find_spec("numpy") is None:  # pragma: no cover - the ml extra is optional
+            self.skipTest("the ml extra is not installed")
+
     def test_a_law_wholly_below_the_threshold_has_a_small_exceedance_and_the_reading_falls_with_the_threshold(self):
         law = [-8.0 + 0.5 * k for k in range(len(sp.GRID))]
         probabilities = [script.exceedance(law, tau) for tau in script.THRESHOLDS_BP]
