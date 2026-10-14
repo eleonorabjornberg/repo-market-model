@@ -265,6 +265,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data). It does not beat the published distribution, so it adds nothing over the incumbent on CRPS.
 - Next: Eleonora decides whether a reverting level is worth adding to #634's candidates; #707 diagnoses 2021-23 and the upper tail.
 
+### 2026-10-13 [H6] step 1 · eleonorabjornberg/repo-market-model#719
+- Directive: #693
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmark B1; seed 693
+- Tried: 2 candidates on 383 risk target days (quarter-end, month-end, tax and coupon-settlement days) to 2025-12-31: the mean-reverting H5 row of #686 read on those days, and 1 new day-type × scarcity-state model (the trailing two years' spreads on days of the type and state group). Benchmarks: as-of persistence B1 and the trailing year's spreads on days of the same risk type. Variants: 1 (the declaration `metadata/risk_date_spread_693.json`).
+- Result: grid CRPS 3.139 bp for the H5 row against 3.243 for B1 and 4.289 for the calendar benchmark: skill +3.2% [+0.0%, +6.6%] against B1 (lower bound +0.03%) and +26.8% [+13.8%, +44.7%] against the calendar; MAE of the median has no skill against B1 (+0.7% [-3.2%, +3.6%]). By regime its skill against B1 is +4.4% in 2018-19, -1.8% in 2020-24 and +5.7% in 2025-26. The type × state model is worse than the calendar benchmark on CRPS (-7.1% [-16.6%, -0.8%]).
+- Against kill: not killed on the declared reading (the H5 row has CRPS skill against both benchmarks), narrowly and from the regimes outside 2020-24; development data, not a verdict.
+- Next: Eleonora decides the size threshold and the announcement timing of coupon settlements (marked questions in the declaration); the day set moves to #682's function once it merges.
+
 ### 2026-10-13 [H3] step 1 · eleonorabjornberg/repo-market-model#716
 - Directive: #690
 - Step: 1
@@ -284,3 +294,34 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: spread, ordinary days, against B1: cross-fitted gbm +0.144 [+0.0002, +0.271], reachable gbm +0.192 [+0.007, +0.352] (behind in 2021-23, -0.318 [-0.529, -0.133]); the cross-fitted ceiling is not above the reachable line (-0.037 [-0.124, +0.049] on the same days); both ridge fits are worse than persistence. Indicator, read against persistence-logistic: cross-fitted gbm AUROC difference -0.016 [-0.044, +0.015], Brier skill -0.159 [-0.245, -0.059]; reachable +0.015 [-0.017, +0.058] and -0.192 [-0.374, +0.034]. The in-sample gbm (AUROC 1.000) is a reference only.
 - Against kill: not applicable as a verdict (development). Under the amended reading rule: spread partly reached, by a hair; indicator data problem.
 - Next: H5's development steps on the spread (#634); the indicator's effort goes to new data (H3, H4).
+
+### 2026-10-13 [H4] step 3 · eleonorabjornberg/repo-market-model#661
+- Directive: #633
+- Step: 3 (steps 1 and 2 in the same pull request: the due-diligence table, and the workbook released from 17 May 2018 by Eleonora's ruling)
+- Tier: development
+- Pins: scratch panel `4137d0ad…`, extended panel `f3acce04…`, workbook `1c889930…`; base `09640f5b`; declaration `metadata/backfill_spread_633.json`
+- Tried: one scratch quantile model of the spread (23 levels, leads 1 to 5) trained without and with the 899 back-filled rows, scored by the protocol's scorer from 2018-06-29 to 2025-12-31; a workbook-only sensitivity declared after the first score. Variants: 1 model, 2 input sets, 2 arms each.
+- Result: 2018-19 coverage of the central 90% interval rises +0.050 [+0.020, +0.082] (declared) and +0.035 [+0.017, +0.054] (workbook-only); 2018-19 CRPS d +0.043 [−0.013, +0.101] and +0.064 [+0.009, +0.117]; the share above the 95th percentile does not move (0.167 → 0.174, 0.191 → 0.191). Detail in `docs/pivot/posting-dates-h4-result.md`.
+- Against kill: not killed, as exploration: a posting time is established, and the 2018-19 calibration move's interval excludes zero in both input sets. The 2018-19 upper tail stays under-forecast.
+- Next: whether to register (step 4) is Eleonora's; the H5 models cannot use the history without pre-2018 inputs the project does not hold.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#692
+- Directive: #692
+- Step: 3 (data rework: re-run the seven records that read the Fed repo take-up columns after #659)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `e2b1f397`; data change confined to 339 panel rows, 2018-05-09 to 2019-09-16
+- Tried: no new variant. Re-ran the record's own commands, unchanged apart from the data: source screen, source matrix, unused inputs, OFR follow-up, weighted-miss rows that read the columns; backfilled history and the due-diligence table checked. Variants: 0.
+- Result: no ranking, redundancy group or pass/fail verdict moved. Figures moved for the Fed repo columns only (e.g. `fed_repo_days_since_positive` ordinary-day pressure AUROC at lead 1 0.58 [0.43, 0.72] to 0.64 [0.48, 0.79]); in the judged records the dealer candidates flag more 2018 onsets (OFR logistic 15 to 18 of 27, recall 0.577 to 0.692 [0.517, 0.844]) and some paired-Brier intervals change whether they exclude zero. Detail in `docs/pivot/fed-repo-rescreen-692-result.md`.
+- Against kill: not applicable (no verdict; development data). The ceiling statements of H2 are unchanged: the Fed repo columns stay far below the cut-off of the source screen.
+- Next: Eleonora decides whether to amend the stale sentences named in the result page.
+
+### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#695
+- Directive: #655 (scorer, benchmarks and synthetic suite merged in PR #660; this pull request applies Eleonora's rulings on its questions)
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: the synthetic suite of protocol v1 (perfect, persistence, climatology, shifted, dispersed, lead-misaligned and noisy-truth forecasts) against the scorer; the interval's coverage on the resampled real B2 − B1 daily difference series and on an iid normal control, at 250 days, first with the percentile and then with the studentized stationary bootstrap.
+- Result: the first check passes: every stated order is recovered under grid CRPS and the upper-tail twCRPS. The second check fails: the one-sided 95% bound covers 0.802 (percentile) and 0.825 (studentized) of 1,500 replications on the real series, against 0.937 and 0.941 on the control; 0.831 at 10,000 draws. The real series' left tail drives it (0.929 with its one September 2019 day removed).
+- Calibration (Eleonora's ruling on PR #695, a §13 change): the critical value calibrated on the development history, largest across B2 − B1 and B3 − B1, is 5.45 at 250 days (9.50 at 125; none at 60), against 1.66 uncalibrated. Out of sample the bound then covers 1.000 of B2 − B1 windows, 0.951 of B3 − B1 windows and 1.000 of the control's; under no true difference (#699's size check) it detects on 0.3% of paths by 250 days, against 23.3% uncalibrated.
+- Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
+- Next: prospective logging and the power study (#656).
