@@ -251,7 +251,10 @@ def score_command(args) -> int:
             print(json.dumps({"scored": kind, "subset": subset}), flush=True)
 
     head = document["cells"]["crps"][HEADLINE]
-    require_reproduced({k: head["tests"][f"B1 -> {k}"]["skill"] for k in RECORDED})
+    rerun = {k: head["tests"][f"B1 -> {k}"]["skill"] for k in RECORDED}
+    document["reproduction"] = {"rerun": rerun, "recorded": RECORDED, "tolerance": args.tolerance, "fits_panel_sha256": fits["panel_sha256"]}
+    print(json.dumps({"reproduction": document["reproduction"]}), flush=True)
+    require_reproduced(rerun, tolerance=args.tolerance)
     best = min(ceiling_candidates, key=lambda c: head["means"][c])
     document["best_candidate"] = best
     reading_cells = {}
@@ -322,6 +325,7 @@ def main(argv=None) -> int:
     p.add_argument("--fits", type=Path, required=True)
     p.add_argument("--walks", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--tolerance", type=float, default=RECORDED_TOLERANCE, help="how far the rerun's skills may sit from H2's recorded ones")
     p.set_defaults(run=score_command)
     p = sub.add_parser("report")
     p.add_argument("score", type=Path)

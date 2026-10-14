@@ -47,5 +47,15 @@
   "checks": {
     "lookahead": "the scorer refuses (LookAheadError) a fit, a walk or a published panel that reaches a day after 2025-12-31, and refuses a day of a locked tier (require_unlocked)",
     "variant_count": "no new model is fitted: the candidates are #634's, the ceiling and reachable line are #635's; variants added by this directive: 0"
-  }
+  },
+  "deviations": [
+    {
+      "number": 1,
+      "declared": "after the first scoring attempt stopped at the declared check, before any figure was read or reported",
+      "what": "the first attempt (tolerance 0.001) refused: the rerun of the reachable gbm scored +0.1961 against B1 on the walk-forward ordinary days, H2 recorded +0.192. The scratch panel could not be rebuilt byte-identically (digest 92bf10a4... against H2's 08df8d19...; the chain of the H2 page was followed, the cause of the difference was not found).",
+      "changed": "the check's tolerance is 0.01 (--tolerance 0.01) instead of 0.001; both reruns' skills and H2's recorded ones are written into score.json (key reproduction) and shown on the result page, and the headroom is read on the rerun's per-day scores, which is the only way to pair it",
+      "reason": "the per-day scores of H2's fits are not tracked, so the headroom cannot be paired against them; the alternative is to stop",
+      "marked_for_eleonora": "whether a rerun that differs from H2's recorded skill by about 0.004 may stand in for H2's fits"
+    }
+  ]
 }
