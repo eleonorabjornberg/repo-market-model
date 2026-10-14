@@ -1003,6 +1003,8 @@ _WALK = "scores the days `final_test_opening.distribution_walk` walks, which cal
 _FOLDS = "scores the days `baseline.rolling_persistence_backtest` walks, which refuses a locked day through `_as_of_folds`"
 CRPS_SCORERS = {
     "scoring_protocol.grid_crps": ("delegates", "scoring protocol v1's loss of one vector at one outcome; `day_scores` calls `require_unlocked` on every decision and target day before it computes any (#655)"),
+    "scoring_protocol.level_crps": ("delegates", "builds the B3 secondary comparison's loss on given levels; scores no day itself, and `day_scores` calls `require_unlocked` before using it (PR #660 ruling)"),
+    "scoring_protocol.score": ("delegates", "the loss `level_crps` returns, of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any"),
     "scoring_protocol.upper_tail_twcrps": ("delegates", "the key secondary's loss of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any (#655)"),
     "scripts/spread_mean_reversion_686.five_level_cells": ("guard", "the five-level CRPS of the mean-reversion walk's cells: `require_unlocked` on every decision and target day before any cell is computed (#686)"),
     "scripts/spread_mean_reversion_686.published_cells": ("guard", "the five-level CRPS of the published distribution's cells on the same days: `require_unlocked` on every target day before any cell is computed (#686)"),
