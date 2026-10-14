@@ -306,6 +306,7 @@ def score_command(args) -> int:
     declared = committed_declaration()
     refuse_locked([LAST_TARGET])
     sd = _load("spread_distribution_634")
+    sd.SEED = SEED  # pair_table seeds the bootstrap from the module constant; this measurement declares its own seed
     pj = _load("pressure_judge")
     draws = args.draws
     if sd.panel_sha256(args.published) != declared["input"]["published_panel_sha256"]:
