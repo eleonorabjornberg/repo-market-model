@@ -375,6 +375,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
 
+### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#737
+- Directive: #655 (follow-up: Eleonora's answers to Q-E, Q-B and Q-C on PR #695, comment 6159852603)
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `e9ce416`
+- Tried: each comparison read at its own calibrated critical value instead of the largest across pairs; look 1 futility only; futility one-sided at 0.05 at every look, non-binding, at a calibrated upper bound of skill.
+- Result: the verdict reads the grid comparison's values, 2.43 at 250 days and 3.42 at 125 (B3 − B1 on five levels: 5.45 and 9.50); null false detections on the full development history 0.85% and 0.25% by 250 and 125 days (B3 − B1: 0.0%). Futility values 1.93, 1.56 and 1.45 at 60, 125 and 250 days. Power at these values stays low (14% for a 3% skill by 250 days), and the confirmation design goes to a separate study.
+- Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
+- Next: the confirmation-design study (horizon, statistic, MME).
+
 ### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
 - Directive: #747
 - Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
@@ -394,3 +404,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: grid CRPS 1.737 / 1.780 / 1.745 bp against mean reversion's 1.778 over 1,855 decision days to 2025-12-31; gain over mean reversion, studentized 90%: (i) +2.3% [+1.0%, +3.6%], (ii) -0.1% [-4.5%, +3.1%], (iii) +1.9% [-2.7%, +5.2%]. Upper-tail twCRPS (i) +4.1% [+2.4%, +5.8%]. (i) loses in 2020 (-5.9%) and 2021-23 (-0.3%); (ii) loses after a risk day (-4.3%). Calm ordinary-day P(> +5 bp) error: mean reversion -0.046, (i) -0.021, (iii) -0.006. Detail in `docs/pivot/spread-mr-variants-result.md`.
 - Against kill: not applicable (no verdict; development data). Only (i) has an interval above zero against mean reversion.
 - Next: whether (i) joins #634's candidates is Eleonora's.
+
+### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
+- Directive: #762
+- Step: 3 (is each benchmark computed as specified: B1, B2 and `richer_targets.b1_quantiles` on a simulated panel with known dynamics; finding #744)
+- Tier: development
+- Pins: no panel (simulated data only); simulator `tests/benchmark_simulation.py`, seeds 762000 to 762199; base `c0c4525`
+- Tried: an AR(1) spread with day-type levels on the market calendar, run through the benchmarks under the registry's availability declarations. Alignment asserted on a ramp, on level-only and on AR(1) panels; central 90% coverage measured against the known conditional law, not asserted. Variants: 1 process.
+- Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
+- Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
+- Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
