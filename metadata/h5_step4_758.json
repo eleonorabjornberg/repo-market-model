@@ -1,0 +1,50 @@
+{
+  "status": "declared before any score was computed (#758, H5 development step 4): a measurement, not a record. Nothing is published, nothing is registered, no rule changes, no day after 2025-12-31 is read, and no day of a locked tier is scored (docs/decisions/lockbox.md). Development days give a score and an interval, never a verdict (scoring protocol v1, #46).",
+  "issue": 758,
+  "hypothesis": "H5 (primary goal), development step 4: use H2's upper-bound result (#635) to decide whether more model work is worthwhile",
+  "candidates": {
+    "gbm_funding": "the phase 2 gradient-boosted quantile model at the 23 levels of protocol v1 on the published features (#634's control): the lowest mean grid CRPS of the five forecasts #634 scored on all 1,868 decision days (the rule in docs/research/hypotheses/H5.md step 5 is the protocol score alone)",
+    "c_two_part_new": "#634's variant (c), the two-part form with the post-phase-2 inputs: the best of the three new-input variants on the upper tail and the only one ahead of B3 on the upper-tail twCRPS",
+    "walks": "the walks of scripts/spread_distribution_634.py (`walk`), run again on the published panel (digest 4ddc3882...) and the scratch panel of its docstring; they are not tracked, and the script refuses a walk made on a different published panel",
+    "not_scored_here": "a_published_new and b_gbm_new (#634's other two variants), the published declaration B3 (it is on five levels, which the ceiling is not), and the step 3 diagnoses of #707, which have not merged; none is a candidate for this step"
+  },
+  "ceiling_and_reachable_line": {
+    "source": "docs/pivot/upper-bound-result.md and docs/pivot/evidence/upper-bound/score.json (#635, PR #703), taken unchanged: the declaration metadata/upper_bound_635.json, its inputs, settings and seeds; the fits are rerun by `scripts/upper_bound_635.py fit` and their per-day laws are scored here on the same days",
+    "ceiling": "the cross-fitted gradient-boosted fit, 'ceiling gbm' of H2 (ten contiguous blocks per lead, the walk-forward's embargo before the block and its mirror after it), at its generous settings",
+    "reachable": "the walk-forward gradient-boosted fit, 'reachable gbm' of H2 (refit every 21 scored days on the rows public at the block's first decision instant, 250 training rows at least)",
+    "family": "the gradient-boosted family in both cases (the better of the two families by H2's rule, in every cell of H2's tables); the ridge fits are not used",
+    "check": "the rerun must reproduce H2's recorded skills against B1 on the walk-forward ordinary days (reachable gbm +0.192, ceiling gbm +0.162) to three decimals, or the score refuses to read them as H2's"
+  },
+  "scale": {
+    "metric": "grid CRPS in bp (twice the mean pinball loss over the 23 levels of protocol v1), averaged over leads 1 to 5, one number per decision day (repo_model.scoring_protocol.day_scores)",
+    "benchmark": "B1, as-of persistence (repo_model.protocol_benchmarks.b1_forecast); B2, calendar climatology, reported beside it",
+    "skill": "(mean S(B1) - mean S(forecast)) / mean S(B1); positive favours the forecast",
+    "window": "the walk-forward decision days of H2 (the first is 2019-07-31), 1,598 of them; the candidate's own walk starts earlier and is restricted to these days; a decision day with no B2 is left out of every window",
+    "headline_pool": "ordinary targets (a decision day is scored on those of its five targets that are not risk dates), as in H2; the pool of all targets is reported beside it, as in #634",
+    "interval": "the stationary bootstrap of the protocol: mean block 10, one draw shared by every pair (seed 758), the 5th to 95th percentile of the paired draws as the 90% interval (H2's form), and the one-sided 95% lower bound of the mean daily difference; 10,000 draws on the pooled cells, 2,000 on the splits (H2's)"
+  },
+  "headroom": {
+    "definition": "headroom = skill(ceiling gbm against B1) - skill(candidate against B1), in skill points; the paired draws of the two skills share one resample, so the interval is the 5th to 95th percentile of the draw-wise difference. The same gap is also given relative to the candidate (skill of the ceiling against the candidate's own scores), and the gap to the reachable line the same way. Positive headroom means the ceiling is ahead of the candidate.",
+    "splits": [
+      "pooled (ordinary targets; all targets)",
+      "regime: 2018-19, 2020, 2021-23, 2024, 2025-26 (evaluation_splits.json), ordinary targets",
+      "pressure-day type of the target day: ordinary, month_end, quarter_end, tax_date (splits.reporting_day_type)",
+      "the upper tail: upper-tail twCRPS with weight 1{y > 0 bp} (all targets, and ordinary targets)"
+    ],
+    "minimum_days": 30,
+    "note": "a split with fewer than 30 decision days is reported as too thin and read as 'not shown'; the splits are reported beside the pooled figure, never alone, and are not a pass requirement (protocol v1 section 7)"
+  },
+  "reading_rule": {
+    "headroom_shown": "the 90% interval of the headroom has a lower end above 0; otherwise 'not shown'. It is a one-sided 95% reading with no adjustment for the number of splits, and a development reading, never a verdict.",
+    "recommendation": {
+      "continue model work": "headroom is shown pooled on ordinary targets, or in at least one regime, day type or the upper tail with at least 30 decision days; the recommendation then names where, by split",
+      "stop at the best available candidate": "headroom is shown nowhere; the next step is step 5 (choose the primary from development by the protocol score alone)"
+    },
+    "one_recommendation": "the result page ends with exactly one of the two, the trade-off in one line, and a marked question for Eleonora; no registration, no protocol change",
+    "cap": "if the candidate is ahead of the ceiling, the headroom is negative and is read as 'not shown'; that is reported plainly, because the ceiling is a cross-fitted fit and not a bound on what a forecast could do"
+  },
+  "checks": {
+    "lookahead": "the scorer refuses (LookAheadError) a fit, a walk or a published panel that reaches a day after 2025-12-31, and refuses a day of a locked tier (require_unlocked)",
+    "variant_count": "no new model is fitted: the candidates are #634's, the ceiling and reachable line are #635's; variants added by this directive: 0"
+  }
+}
