@@ -405,6 +405,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
 
+### 2026-10-14 [H5] step 2 · eleonorabjornberg/repo-market-model#731
+- Directive: #688
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `49b5413`, origin/main merged at `9c749c60`
+- Tried: 2 variants, each added to the every-day part of the two-part spread distribution of #632 (refitted at the protocol's 23 levels; the control): the announced bill settlement beside the as-of spread (#676), and a flag for the first three market days of the month (#677); a screen on the ordinary days with the as-of spread and scarcity state as controls (60 cells).
+- Result: grid CRPS against the control, 1,868 decision days: bill settlement −0.10% [−0.49%, +0.28%]; window +1.03% [+0.50%, +1.61%], at h = 3 to 5 (+1.30%, +1.74%, +1.69%, each interval above zero), none at h = 1 and 2, and only in 2021-23 by regime (a regime with no ordinary pressure day); upper-tail twCRPS inside its interval for both. The screen's near-threshold bill contrast reproduces (13/44 against 5/60 at lead 1, none of it plain persistence) but does not carry into the distribution; the window's lead-1 rise is plain persistence. Detail in `docs/pivot/near-threshold-688-result.md`.
+- Against kill: not applicable (H5's kill is by the protocol's futility rule; development days give no verdict).
+- Next: whether the window flag belongs in #634's model after #634 lands (H5 step 2); the bill input's product form and bridged persistence are Eleonora's.
+
 ### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
 - Directive: #762
 - Step: 3 (is each benchmark computed as specified: B1, B2 and `richer_targets.b1_quantiles` on a simulated panel with known dynamics; finding #744)
