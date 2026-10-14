@@ -206,5 +206,24 @@ class ResumeTests(unittest.TestCase):
         self.assertEqual(self.output.read_text(encoding="utf-8"), before)
 
 
+class SummaryTests(unittest.TestCase):
+    """The reported interval is the scorer's own: studentized at both ends (Eleonora's ruling on #660, item 1)."""
+
+    def test_both_skill_bounds_are_the_studentized_ones(self):
+        import random
+
+        rng = random.Random(1)
+        days = business_days(date(2020, 1, 1), 120)
+        benchmark = {day: 2.0 + rng.random() for day in days}
+        candidate = {day: benchmark[day] - 0.2 + 0.5 * rng.random() for day in days}
+        (test,) = sp.paired_tests([(benchmark, candidate)], seed=7, draws=400)
+        row = script.summarise(test)
+        studentized_lower = test.skill - sp._bound(test.skill_t_draws, 1.0 - test.alpha, test.draws) * test.skill_standard_error
+        self.assertAlmostEqual(row["skill_lower_95_one_sided"], studentized_lower)
+        self.assertAlmostEqual(row["skill_upper_95_one_sided"], test.upper_skill())
+        self.assertLess(row["skill_lower_95_one_sided"], test.skill)
+        self.assertGreater(row["skill_upper_95_one_sided"], test.skill)
+
+
 if __name__ == "__main__":
     unittest.main()

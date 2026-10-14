@@ -526,13 +526,16 @@ def load_laws(directory: Path, variant: str, native: bool = False) -> Dict[int, 
 
 
 def summarise(test: "sp.PairedTest") -> dict:
+    """One pair's row: both skill bounds are the scorer's studentized ones (ruling on #660, item 1), like mean(d)'s."""
+
+    skill_lower = test.skill - sp._bound(test.skill_t_draws, 1.0 - test.alpha, test.draws) * test.skill_standard_error
     return {
         "n": test.n,
         "benchmark_mean": test.benchmark_mean,
         "mean_difference": test.mean_difference,
         "skill": test.skill,
         "mean_difference_lower_95_one_sided": test.lower_mean_difference(),
-        "skill_lower_95_one_sided": sp._bound(test.skill_draws, test.alpha, test.draws),
+        "skill_lower_95_one_sided": skill_lower,
         "skill_upper_95_one_sided": test.upper_skill(),
         "bootstrap_p": test.p_value,
         "dm_statistic": test.dm_statistic,
@@ -849,7 +852,7 @@ def report_command(args) -> int:
     w = out.append
     days = d["decision_days"]
     w(f"Decision days scored: {days['n']} ({days['first']} to {days['last']}); every target day on or before 2025-12-31. "
-      f"Bootstrap: stationary, mean block 10, {d['draws']:,} draws, seed {d['seed']}, one-sided 95%.")
+      f"Bootstrap: studentized stationary (Newey-West at lag 10; ruling on #660, item 1), mean block 10, {d['draws']:,} draws, seed {d['seed']}, one-sided 95%.")
     w("")
     w("Reading of each cell: **skill [one-sided 95% lower bound, upper bound] / lower bound of the mean daily difference** "
       "(bp). Skill is mean(d) / mean(benchmark score), d = benchmark − candidate, positive favours the candidate. "
