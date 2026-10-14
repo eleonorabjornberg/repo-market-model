@@ -23,9 +23,9 @@ announcement instant on `t` (12:00 New York) and so read by the 16:00 decision o
   days after `t`, whatever was announced for them by that instant.
 
 An auction enters a column only when its `announcemt_date` is on or before `t`. A
-class partly announced on a day nets its announced offerings alone, with no maturing amount (#620):
-the maturing total covers securities not yet announced, and subtracting it from part of
-the offering read a cash inflow. `check_known_columns` is the
+class partly announced on a day is left out until it is fully announced (#679): the maturing
+total covers securities not yet announced, so netting it against part of the offering read a cash
+inflow (#620), and counting that part with no maturing amount read a drain (#665). `check_known_columns` is the
 guard: a column that counts an auction announced after the instant raises
 `LookAheadError`, and one that leaves out an announced auction raises
 `StaleReadError`.
@@ -215,11 +215,13 @@ def net_for_day(auctions: Sequence[Auction], instant: datetime) -> Tuple[float, 
     class maturing that day, repeated on each of its records, so Notes and Bonds
     settling together subtract it once.
 
-    A class that is partly announced (#620) is not netted against that total: it covers
-    securities whose offerings are not yet known, so subtracting it from the announced part alone reads
-    a cash inflow that is not there. The class counts its announced offerings only, with no maturing
-    amount. That a class has more auctions settling the day is read from `auctions`, the day's whole list,
-    as the Treasury's published schedule would show it; no unannounced offering enters any figure.
+    A class that is partly announced is left out of every figure until it is fully announced (#679). Its
+    maturing amount covers securities whose offerings are not yet known, so netting it against the announced
+    part reads a cash inflow that is not there (#620); counting the announced offerings with no maturing
+    amount reads a drain the unannounced part offsets (#665). Left out, the class reads 0.0, which has the
+    smallest mean absolute error of the three rules against the completed net (`scripts/partly_announced_679.py`). That a class has more auctions settling the day is read from
+    `auctions`, the day's whole list, as the Treasury's published schedule would show it; no unannounced
+    offering enters any figure.
     """
 
     groups: Dict[bool, List[Auction]] = {}
@@ -233,8 +235,10 @@ def net_for_day(auctions: Sequence[Auction], instant: datetime) -> Tuple[float, 
     for is_bill, members in groups.items():
         partly_announced = len(members) < len(everything[is_bill])
         figures = [a.maturing for a in members if a.maturing is not None]
-        maturing = 0.0 if partly_announced else (max(figures) if figures else 0.0)
-        unknown += not figures and not partly_announced
+        if partly_announced:
+            continue
+        maturing = max(figures) if figures else 0.0
+        unknown += not figures
         value = sum(a.offering for a in members) - maturing
         net += value
         if is_bill:
