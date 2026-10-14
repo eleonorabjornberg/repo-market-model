@@ -488,16 +488,59 @@ class EmpiricalCalibrationTests(unittest.TestCase):
         test = sp.paired_test(b, c, seed=1, draws=20)
         self.assertAlmostEqual(test.lower_bound(2.5), test.mean_difference - 2.5 * test.standard_error)
 
-    def test_the_protocol_values_are_the_recorded_calibration(self):
-        """`CRITICAL_VALUES` is the largest calibrated value across the benchmark pairs, per checkpoint,
-        as `scripts/protocol_coverage.py calibrate` recorded it."""
+    def test_each_comparison_has_its_own_recorded_values(self):
+        """Q-E (b), Eleonora's ruling on PR #695 (comment 6159852603): each comparison is read at its own
+        calibrated value, not the largest across them. `CRITICAL_VALUES` keys the values by comparison,
+        as `scripts/protocol_coverage.py calibrate` recorded them; look 1 has none (Q-B)."""
 
         record = json.loads((ROOT / "docs" / "research" / "protocol-calibration" / "result.json").read_text())
-        for look, n in enumerate(sp.CHECKPOINTS):
-            recorded = record["protocol_critical_values"][str(n)]
+        self.assertEqual(set(sp.CRITICAL_VALUES), {sp.GRID_COMPARISON, sp.FIVE_LEVEL_COMPARISON})
+        for comparison, values in sp.CRITICAL_VALUES.items():
+            self.assertIsNone(values[sp.CHECKPOINTS[0]])
+            for n in sp.CHECKPOINTS[1:]:
+                with self.subTest(comparison=comparison, days=n):
+                    self.assertEqual(values[n], record["critical_values"][comparison][str(n)])
+                    self.assertIn(str(n), record["null_false_detection_full_history"][comparison])
+
+    def test_the_futility_values_are_the_recorded_calibration(self):
+        record = json.loads((ROOT / "docs" / "research" / "protocol-calibration" / "result.json").read_text())
+        self.assertEqual(sp.FUTILITY_LEVEL, 0.05)
+        for n in sp.CHECKPOINTS:
             with self.subTest(days=n):
-                self.assertEqual(sp.CRITICAL_VALUES[n], recorded)
-        self.assertIsNone(sp.CRITICAL_VALUES[sp.CHECKPOINTS[0]])
+                self.assertEqual(
+                    sp.FUTILITY_CRITICAL_VALUES[sp.GRID_COMPARISON][n],
+                    record["futility_critical_values"][sp.GRID_COMPARISON][str(n)],
+                )
+
+    def test_the_skill_window_statistics_match_a_direct_computation(self):
+        rng = random.Random(6)
+        bench = [2.0 + rng.random() for _ in range(300)]
+        diff = [0.1 + 0.3 * rng.gauss(0, 1) for _ in range(300)]
+        truth = sum(diff) / sum(bench)
+        got = sp.window_skill_t_statistics(bench, diff, days=60, windows=40, seed=4)
+        rng = random.Random(4)
+        want = []
+        for _ in range(40):
+            starts = []
+            while len(starts) * 10 < 60:
+                starts.append(rng.randrange(300))
+            index = [(s + k) % 300 for s in starts for k in range(10)][:60]
+            b = [bench[i] for i in index]
+            d = [diff[i] for i in index]
+            skill = sum(d) / sum(b)
+            z = [x - skill * y for x, y in zip(d, b)]
+            se = math.sqrt(hac_variance(z) / 60) / (sum(b) / 60)
+            want.append((skill - truth) / se)
+        for a, b in zip(got, sorted(want)):
+            self.assertAlmostEqual(a, b, places=9)
+
+    def test_the_upper_skill_bound_at_a_critical_value(self):
+        days = weekdays(date(2015, 1, 2), 100)
+        rng = random.Random(1)
+        b = {day: 1 + rng.random() for day in days}
+        c = {day: 0.9 + rng.random() for day in days}
+        test = sp.paired_test(b, c, seed=1, draws=20)
+        self.assertAlmostEqual(test.upper_skill_bound(1.7), test.skill + 1.7 * test.skill_standard_error)
 
 
 class DieboldMarianoTests(unittest.TestCase):
@@ -559,7 +602,9 @@ class SpendingTests(unittest.TestCase):
 
 
 class VerdictTests(unittest.TestCase):
-    """Verdicts read the calibrated critical values (`CRITICAL_VALUES`), not the bootstrap quantile."""
+    """Verdicts read each comparison's own calibrated values (Eleonora's ruling on PR #695, comment
+    6159852603): the efficacy bound at `CRITICAL_VALUES[GRID_COMPARISON]`, futility one-sided at 0.05 at
+    every look (non-binding) at `FUTILITY_CRITICAL_VALUES[GRID_COMPARISON]`, and look 1 futility only."""
 
     def setUp(self):
         rng = random.Random(9)
@@ -576,30 +621,46 @@ class VerdictTests(unittest.TestCase):
             [(self.b1, self.strong), (self.b2, self.strong), (self.b1, self.weak), (self.b2, self.weak)],
             seed=1, draws=200,
         )
-        self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
-        self.assertEqual(sp.verdict(tests[2], tests[3], look=3, futility_level=0.05), sp.KILLED)
+        self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+        self.assertEqual(sp.verdict(tests[2], tests[3], look=3), sp.KILLED)
 
-    def test_the_verdict_reads_the_calibrated_value(self):
-        """The same tests are supported under a small critical value and not under one that puts the
-        bound below zero."""
+    def test_the_verdict_reads_the_grid_comparisons_value(self):
+        """Supported under a small value for the grid comparison and not under one that puts the bound
+        below zero; the five-level comparison's value is not read."""
 
         tests = sp.paired_tests([(self.b1, self.strong), (self.b2, self.strong)], seed=1, draws=200)
         t_stat = min(t.mean_difference / t.standard_error for t in tests)
-        with mock.patch.dict(sp.CRITICAL_VALUES, {250: t_stat * 0.9}):
-            self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
-        with mock.patch.dict(sp.CRITICAL_VALUES, {250: t_stat * 1.1}):
-            self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.SUPPORTED)
+        grid = dict(sp.CRITICAL_VALUES[sp.GRID_COMPARISON])
+        with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_stat * 0.9},
+                                                  sp.FIVE_LEVEL_COMPARISON: {60: None, 125: 1e9, 250: 1e9}}):
+            self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+        with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_stat * 1.1}}):
+            self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
 
-    def test_the_first_look_has_no_calibrated_value(self):
-        """Look 1 is not calibrated (Q-B in the pull request): its efficacy bound is refused."""
-
+    def test_the_first_look_checks_futility_only(self):
         days = weekdays(date(2015, 1, 2), 60)
         rng = random.Random(2)
-        b = {day: 1 + rng.random() for day in days}
-        c = {day: 0.5 + 0.2 * rng.random() for day in days}
-        tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=100)
-        with self.assertRaises(sp.UnresolvedLevel):
-            sp.verdict(tests[0], tests[1], look=1, futility_level=0.05)
+        b = {day: 1 + 0.05 * rng.random() for day in days}
+        strong = {day: 0.5 + 0.05 * rng.random() for day in days}
+        weak = {day: b[day] + 0.001 * rng.gauss(0, 1) for day in days}
+        tests = sp.paired_tests([(b, strong), (b, strong), (b, weak), (b, weak)], seed=1, draws=100)
+        self.assertEqual(sp.verdict(tests[0], tests[1], look=1), sp.INCONCLUSIVE)
+        self.assertEqual(sp.verdict(tests[2], tests[3], look=1), sp.KILLED)
+
+    def test_futility_reads_the_calibrated_upper_bound(self):
+        tests = sp.paired_tests([(self.b1, self.weak), (self.b2, self.weak)], seed=1, draws=200)
+        upper = tests[0].upper_skill_bound(sp.FUTILITY_CRITICAL_VALUES[sp.GRID_COMPARISON][250])
+        self.assertLess(upper, sp.MME)
+        futility = dict(sp.FUTILITY_CRITICAL_VALUES[sp.GRID_COMPARISON])
+        needed = (sp.MME - tests[0].skill) / tests[0].skill_standard_error
+        with mock.patch.dict(sp.FUTILITY_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**futility, 250: needed * 1.01}}):
+            self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.NOT_SHOWN)
+
+    def test_only_the_protocols_futility_level_is_read(self):
+        tests = sp.paired_tests([(self.b1, self.weak), (self.b2, self.weak)], seed=1, draws=200)
+        self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.KILLED)
+        with self.assertRaises(sp.ProtocolError):
+            sp.verdict(tests[0], tests[1], look=3, futility_level=0.10)
 
     def test_a_test_off_the_checkpoint_is_refused(self):
         days = weekdays(date(2015, 1, 2), 100)
@@ -607,7 +668,7 @@ class VerdictTests(unittest.TestCase):
         c = {day: 0.9 + 0.02 * (i % 3) for i, day in enumerate(days)}
         tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=100)
         with self.assertRaises(sp.ProtocolError):
-            sp.verdict(tests[0], tests[1], look=3, futility_level=0.05)
+            sp.verdict(tests[0], tests[1], look=3)
 
 
 class SecondaryLevelsTests(unittest.TestCase):
