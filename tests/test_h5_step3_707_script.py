@@ -166,5 +166,32 @@ class TailReadingTests(unittest.TestCase):
         self.assertEqual(script.read_tail(exceed95_lower=0.03, median_pit=0.7, beyond_q99=0.1), "neither resolved")
 
 
+class PairedFallbackTests(unittest.TestCase):
+    class Stub:
+        @staticmethod
+        def pair_table(scores, pairs, group, draws):
+            if any(scores[b] == scores[c] for b, c in pairs):
+                raise sp.ProtocolError("a resampled difference has no long-run variance; it cannot be studentized")
+            return {f"{b} -> {c}": {"n": len(group)} for b, c in pairs}
+
+    def test_an_identical_pair_is_reported_as_a_zero_difference(self):
+        group = days(30)
+        scores = {"A": {d: 1.0 + i for i, d in enumerate(group)}, "B": {d: 1.0 + i for i, d in enumerate(group)}}
+        out = script.paired(self.Stub, scores, [("A", "B")], group, 10)
+        self.assertTrue(out["A -> B"]["identical"])
+        self.assertEqual(out["A -> B"]["mean_difference"], 0.0)
+
+    def test_a_different_pair_beside_it_is_still_tested(self):
+        group = days(30)
+        scores = {
+            "A": {d: 1.0 + i for i, d in enumerate(group)},
+            "B": {d: 1.0 + i for i, d in enumerate(group)},
+            "C": {d: 2.0 + i for i, d in enumerate(group)},
+        }
+        out = script.paired(self.Stub, scores, [("A", "B"), ("A", "C")], group, 10)
+        self.assertTrue(out["A -> B"]["identical"])
+        self.assertEqual(out["A -> C"], {"n": 30})
+
+
 if __name__ == "__main__":
     unittest.main()

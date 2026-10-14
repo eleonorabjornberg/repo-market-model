@@ -302,6 +302,32 @@ def tail_stats(cells: Sequence[Cell]) -> Dict[str, object]:
     }
 
 
+def paired(sd, scores, pairs, group, draws) -> Dict[str, dict]:
+    """`sd.pair_table`, pair by pair when a difference is identically zero (a remedy that left a forecast unchanged).
+
+    A pair whose daily difference is zero on every day has no variance to studentize: it is reported as a zero
+    difference with zero bounds, marked `identical`. Any other failure is raised.
+    """
+
+    try:
+        return sd.pair_table(scores, pairs, group, draws)
+    except sp.ProtocolError:
+        out: Dict[str, dict] = {}
+        for benchmark, candidate in pairs:
+            if len(group) <= sp.HAC_LAG:
+                continue
+            if all(scores[benchmark][d] == scores[candidate][d] for d in group):
+                mean = sum(scores[benchmark][d] for d in group) / len(group)
+                out[f"{benchmark} -> {candidate}"] = {
+                    "n": len(group), "benchmark_mean": mean, "mean_difference": 0.0, "skill": 0.0,
+                    "mean_difference_lower_95_one_sided": 0.0, "skill_lower_95_one_sided": 0.0, "skill_upper_95_one_sided": 0.0,
+                    "bootstrap_p": None, "dm_statistic": None, "dm_p": None, "identical": True,
+                }
+            else:
+                out.update(sd.pair_table(scores, [(benchmark, candidate)], group, draws))
+        return out
+
+
 def score_command(args) -> int:
     declared = committed_declaration()
     refuse_locked([LAST_TARGET])
@@ -359,7 +385,7 @@ def score_command(args) -> int:
         return sp.day_scores(fc, outcomes, calendar, score=score)
 
     def table(scores, pairs, group):
-        return sd.pair_table(scores, pairs, group, draws)
+        return paired(sd, scores, pairs, group, draws)
 
     primary = {name: score_all(forecasts[name]) for name in forecasts}
     days = sorted(primary["B1"])
