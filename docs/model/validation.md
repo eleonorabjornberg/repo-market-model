@@ -599,6 +599,7 @@ GitHub herself (`docs/decisions/drafts/owner-attestation.md`).
 | `docs/decisions/iorb-availability.md` | Decision: IORB and IOER for a date are public before that date | Status: decided and declared. |
 | `docs/decisions/judge-rulings-10-october.md` | Decision: the judge's rules, as amended by the rulings of 10 October 2026 | Status: DRAFT, for Eleonora to review and merge. |
 | `docs/decisions/live-pin-v2-bump.md` | Version bump: pressure model v2 joins the live record (#245) | Status: a draft for Eleonora, not in force. |
+| `docs/decisions/live-pin-v3-bump.md` | Version bump: the protocol block joins the live record (#656) | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/live-pin.md` | The live record's code pin | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/materiality.md` | Decision: a bounded, listed defect is handled, not a reason to refuse a series | Status: decided by Eleonora, 30 September 2026. |
 | `docs/decisions/policy-point-in-time.md` | Decision: policy and legislation are read from their announcement | Status: drafted for Eleonora's review (#376, track P of #374). |

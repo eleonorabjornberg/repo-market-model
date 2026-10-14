@@ -1,0 +1,9790 @@
+{
+ "declaration_penalty_per_pair": 0.001,
+ "level": 0.9,
+ "onsets_2025": {
+  "1": {
+   "onsets": [
+    {
+     "day": "2025-09-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.0716683527349018,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.07183238691049224,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.7367913380909966,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.0717773341043169,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.07183238691049224,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-09-30",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.07338644221718003,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.0734958118714712,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.9449653404494309,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.07344363795953229,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.07349581187147124,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-10-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.058865380501343045,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.05896558636340362,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.3453474218335128,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.05891817356469079,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.05896558636340365,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-12-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.11174590743276172,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.11186391212802484,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.8349649312319047,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.11174590743276172,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.11186391212802478,
+      "warned": false
+     }
+    },
+    {
+     "day": "2025-12-26",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.0784202160430244,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.07843175842055113,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.116915200836317,
+      "warned": false
+     },
+     "structural_kinked_slow": {
+      "p": 0.07839135958689669,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.07843175842055117,
+      "warned": false
+     }
+    }
+   ]
+  },
+  "2": {
+   "onsets": [
+    {
+     "day": "2025-09-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.05168176050391141,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.05187779858346356,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.6998062421343708,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.05183369727646055,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.05187779858346356,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-09-30",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.0939416964450345,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.09406581496817516,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.9870112014294253,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.09402791682733291,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.09406581496817511,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-10-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.04429912802482238,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.04443099082541816,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.24692616011028223,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.04438971031922244,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.04443099082541818,
+      "warned": false
+     }
+    },
+    {
+     "day": "2025-12-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.12054998303516698,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.12076503451475909,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.9630120255604517,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.12062535594437584,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.12076503451475905,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-12-26",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.09521122030858152,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.09524685225764971,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.16737401972877133,
+      "warned": false
+     },
+     "structural_kinked_slow": {
+      "p": 0.09522410565295017,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.09524685225764987,
+      "warned": false
+     }
+    }
+   ]
+  },
+  "3": {
+   "onsets": [
+    {
+     "day": "2025-09-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.054467080017898684,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.05461710824855653,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.7482121639836203,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.05458637746701829,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.05461710824855656,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-09-30",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.051048911551388604,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.05123300704856871,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.8343006940838806,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.051194291346591786,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.05123300704856876,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-10-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.0432924707087506,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.04345420273855134,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.2692967928009154,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.0434205227355955,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.043454202738551384,
+      "warned": false
+     }
+    },
+    {
+     "day": "2025-12-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.15262316385907856,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.15281879258564202,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.9788257562721182,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.15273671461408833,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.15281879258564188,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-12-26",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.0676195585687484,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.06767258793595259,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.11029397969761288,
+      "warned": false
+     },
+     "structural_kinked_slow": {
+      "p": 0.06764981046770975,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.06767258793595259,
+      "warned": false
+     }
+    }
+   ]
+  },
+  "4": {
+   "onsets": [
+    {
+     "day": "2025-09-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.05860545982729325,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.05870608257828021,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.7048462108715501,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.05867620799753054,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.05870608257828021,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-09-30",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.04636194669830831,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.046507958630113574,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.8426774643404726,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.04646225451062122,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.04650795863011359,
+      "warned": false
+     }
+    },
+    {
+     "day": "2025-10-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.05152714470155264,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.051631962601304385,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.16978921384745577,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.0516004325745105,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.0516319626013044,
+      "warned": false
+     }
+    },
+    {
+     "day": "2025-12-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.18992379053155312,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.19000670255438462,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.9879712425547751,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.18995669198821294,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.1900067025543847,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-12-26",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.0711065924137511,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.07113475167082464,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.08370875663667239,
+      "warned": false
+     },
+     "structural_kinked_slow": {
+      "p": 0.07111699447797776,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.0711347516708246,
+      "warned": false
+     }
+    }
+   ]
+  },
+  "5": {
+   "onsets": [
+    {
+     "day": "2025-09-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.07903773367613381,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.0790721771657183,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.6798990979116633,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.07905833575171284,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.0790721771657183,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-09-30",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.06191534847042882,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.06202245911836107,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.8376539098457213,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.06197239679525861,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.06202245911836112,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-10-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.059500672510947115,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.05955687018615772,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.10812849887879239,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.05953194907842696,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.05955687018615776,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-12-15",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.15395425373359495,
+      "warned": true
+     },
+     "structural_kinked_profile": {
+      "p": 0.15402738833960058,
+      "warned": true
+     },
+     "structural_kinked_rolling": {
+      "p": 0.9608236094890725,
+      "warned": true
+     },
+     "structural_kinked_slow": {
+      "p": 0.15395425373359495,
+      "warned": true
+     },
+     "structural_liquidity+h41": {
+      "p": 0.1540273883396006,
+      "warned": true
+     }
+    },
+    {
+     "day": "2025-12-26",
+     "risk_date": "1",
+     "structural_kinked_fitted": {
+      "p": 0.11061119083619789,
+      "warned": false
+     },
+     "structural_kinked_profile": {
+      "p": 0.11058464658192657,
+      "warned": false
+     },
+     "structural_kinked_rolling": {
+      "p": 0.13775342277956723,
+      "warned": false
+     },
+     "structural_kinked_slow": {
+      "p": 0.11061119083619789,
+      "warned": false
+     },
+     "structural_liquidity+h41": {
+      "p": 0.11058464658192663,
+      "warned": false
+     }
+    }
+   ]
+  }
+ },
+ "ordinary_days": {
+  "1": {
+   "days": 1568,
+   "events": 87,
+   "structural_kinked_fitted": {
+    "auroc": 0.8764891693248582,
+    "auroc_interval": [
+     0.8245598687807545,
+     0.9167821407622141
+    ],
+    "brier_skill": 0.11038147373342444,
+    "brier_skill_interval": [
+     -0.05274347904639365,
+     0.24584743872661097
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": 0.020496616893724062,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.0264078842879882,
+      "slope": 0.268194009115435
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.21004678086776163,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.8813861698392326,
+      "slope": 1.2095697836160875
+     }
+    },
+    "intercept": -1.4221655767852845,
+    "mean_forecast": 0.08124758415607088,
+    "minus_structural_kinked_rolling": {
+     "auroc": -0.005328024711479418,
+     "auroc_interval": [
+      -0.019848594280822862,
+      0.009411636023745285
+     ],
+     "brier_skill": -0.06182846883259285,
+     "brier_skill_interval": [
+      -0.15238971893515418,
+      0.014963991367398788
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.5712199512917338
+   },
+   "structural_kinked_profile": {
+    "auroc": 0.8811225717323647,
+    "auroc_interval": [
+     0.829272396021403,
+     0.9208434264272822
+    ],
+    "brier_skill": 0.14231712329965063,
+    "brier_skill_interval": [
+     -0.004274647607370952,
+     0.270039652750108
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.009988086823772058,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.0477492131468682,
+      "slope": 0.2578894000648369
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.2100888116686399,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.8853296495074486,
+      "slope": 1.2116261123094392
+     }
+    },
+    "intercept": -1.3661951761667306,
+    "mean_forecast": 0.07890330768617537,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.004633402407506537,
+     "auroc_interval": [
+      0.00028346392921496655,
+      0.010851353766419436
+     ],
+     "brier_skill": 0.03193564956622619,
+     "brier_skill_interval": [
+      -0.025221793509989987,
+      0.12792632668270354
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": -0.0006946223039728805,
+     "auroc_interval": [
+      -0.016788867464988755,
+      0.01723964007585843
+     ],
+     "brier_skill": -0.029892819266366666,
+     "brier_skill_interval": [
+      -0.14922956629261652,
+      0.11229177971337156
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.5886955551789373
+   },
+   "structural_kinked_rolling": {
+    "auroc": 0.8818171940363376,
+    "auroc_interval": [
+     0.8289245905722648,
+     0.9211256990995994
+    ],
+    "brier_skill": 0.1722099425660173,
+    "brier_skill_interval": [
+     0.022647349911416925,
+     0.28583173504884785
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": 0.13965410762394714,
+      "days": 314,
+      "events": 63,
+      "intercept": -0.42124401211739143,
+      "slope": 0.47202850477103675
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.3261339193219557,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.37894210569437065,
+      "slope": 1.1617359487184247
+     }
+    },
+    "intercept": -0.8576430247673381,
+    "mean_forecast": 0.07009090519983328,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.005328024711479418,
+     "auroc_interval": [
+      -0.009451692363835362,
+      0.019818287120828226
+     ],
+     "brier_skill": 0.06182846883259285,
+     "brier_skill_interval": [
+      -0.015082810037557293,
+      0.15130250480651997
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.7440224190246705
+   },
+   "structural_kinked_slow": {
+    "auroc": 0.8809246625843055,
+    "auroc_interval": [
+     0.8293647828505484,
+     0.9207507517967652
+    ],
+    "brier_skill": 0.14321872149343962,
+    "brier_skill_interval": [
+     -0.0029066805734834222,
+     0.27090240293239354
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.010018186875485169,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.047751687700902,
+      "slope": 0.2578690907679936
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.21007500037626836,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.8828096203896634,
+      "slope": 1.2104020110779934
+     }
+    },
+    "intercept": -1.361970372587463,
+    "mean_forecast": 0.07903957753180395,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.004435493259447254,
+     "auroc_interval": [
+      0.0002968168399435367,
+      0.010564781649119004
+     ],
+     "brier_skill": 0.032837247760015176,
+     "brier_skill_interval": [
+      -0.024789013126916948,
+      0.12898583493560367
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": -0.0008925314520321637,
+     "auroc_interval": [
+      -0.01688156122820983,
+      0.016846592126119164
+     ],
+     "brier_skill": -0.028991221072577678,
+     "brier_skill_interval": [
+      -0.14792590471249611,
+      0.11260530278683123
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.5909241274803603
+   },
+   "structural_liquidity+h41": {
+    "auroc": 0.8826398752008195,
+    "auroc_interval": [
+     0.8316312537890816,
+     0.9217008004728637
+    ],
+    "brier_skill": 0.1373252011966316,
+    "brier_skill_interval": [
+     -0.011218942037223067,
+     0.2661595481410196
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.020542030552087587,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.0553911654470025,
+      "slope": 0.25596840834027984
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.21008881166864313,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.8853296495074615,
+      "slope": 1.2116261123093874
+     }
+    },
+    "intercept": -1.3716498974236337,
+    "mean_forecast": 0.07951664613902522,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.0061507058759613376,
+     "auroc_interval": [
+      0.0011374358576654586,
+      0.01329875206735831
+     ],
+     "brier_skill": 0.026943727463207168,
+     "brier_skill_interval": [
+      -0.03147245013868216,
+      0.12293306567888651
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.0008226811644819199,
+     "auroc_interval": [
+      -0.014404675915547949,
+      0.018444329856015185
+     ],
+     "brier_skill": -0.034884741369385686,
+     "brier_skill_interval": [
+      -0.15685508239082424,
+      0.10674880651174623
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.5887496200387773
+   }
+  },
+  "2": {
+   "days": 1568,
+   "events": 87,
+   "structural_kinked_fitted": {
+    "auroc": 0.8366124162766693,
+    "auroc_interval": [
+     0.7736367984693877,
+     0.8864587787246313
+    ],
+    "brier_skill": -0.004226447719687609,
+    "brier_skill_interval": [
+     -0.1930890527741458,
+     0.14899693182008777
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.06680169378636025,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.068580256834321,
+      "slope": 0.22689482783520973
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.05198617366899416,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.5704708629512208,
+      "slope": 1.0219323143637815
+     }
+    },
+    "intercept": -1.6998780916419685,
+    "mean_forecast": 0.08754109843946682,
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.0005549217288722819,
+     "auroc_interval": [
+      -0.022149569442955652,
+      0.02279788564741969
+     ],
+     "brier_skill": -0.08332600956544511,
+     "brier_skill_interval": [
+      -0.1871166196099342,
+      0.002450982871195273
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.4745723253577368
+   },
+   "structural_kinked_profile": {
+    "auroc": 0.8441407250459848,
+    "auroc_interval": [
+     0.7818670351604483,
+     0.893182549040626
+    ],
+    "brier_skill": 0.05471364735239759,
+    "brier_skill_interval": [
+     -0.10599988193366938,
+     0.2039801925977609
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.10375482563372196,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.0896315984293368,
+      "slope": 0.2182159285116603
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.052116005438757496,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.5747721012568836,
+      "slope": 1.0240440340683028
+     }
+    },
+    "intercept": -1.6198876304898615,
+    "mean_forecast": 0.08311581488351118,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.007528308769315539,
+     "auroc_interval": [
+      0.001463325406987348,
+      0.01632817344197024
+     ],
+     "brier_skill": 0.0589400950720852,
+     "brier_skill_interval": [
+      -0.02310151195849408,
+      0.1850810768131308
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.008083230498187821,
+     "auroc_interval": [
+      -0.01500932132799171,
+      0.031173247685622574
+     ],
+     "brier_skill": -0.024385914493359917,
+     "brier_skill_interval": [
+      -0.16835697977111974,
+      0.136497229609421
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.5005511237777526
+   },
+   "structural_kinked_rolling": {
+    "auroc": 0.836057494547797,
+    "auroc_interval": [
+     0.7686677926198884,
+     0.8877680352393617
+    ],
+    "brier_skill": 0.0790995618457575,
+    "brier_skill_interval": [
+     -0.07238576135354102,
+     0.2005658083770041
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": 0.05187042946448961,
+      "days": 314,
+      "events": 63,
+      "intercept": -0.48890395977131457,
+      "slope": 0.39844538925046136
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.15422460577331254,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.11700949769106264,
+      "slope": 0.9784013713244588
+     }
+    },
+    "intercept": -1.0608857095457793,
+    "mean_forecast": 0.07282255969523353,
+    "minus_structural_kinked_fitted": {
+     "auroc": -0.0005549217288722819,
+     "auroc_interval": [
+      -0.022942851916694984,
+      0.022097398603422747
+     ],
+     "brier_skill": 0.08332600956544511,
+     "brier_skill_interval": [
+      -0.0027122209566505795,
+      0.1869517340897613
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.6707134656025746
+   },
+   "structural_kinked_slow": {
+    "auroc": 0.8432481935939525,
+    "auroc_interval": [
+     0.7805964449093792,
+     0.8924570535064045
+    ],
+    "brier_skill": 0.05409247136843187,
+    "brier_skill_interval": [
+     -0.10665437710543002,
+     0.20277532806109078
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.10375224502206049,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.089618865613963,
+      "slope": 0.21820775596661435
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.05203580701937505,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.5727216413258736,
+      "slope": 1.0230935761179167
+     }
+    },
+    "intercept": -1.6220072048058487,
+    "mean_forecast": 0.08326130533689875,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.006635777317283265,
+     "auroc_interval": [
+      0.0012757426644796066,
+      0.014284327220182025
+     ],
+     "brier_skill": 0.05831891908811948,
+     "brier_skill_interval": [
+      -0.023304838203461076,
+      0.18365629858096466
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.0071906990461555464,
+     "auroc_interval": [
+      -0.015691002455905267,
+      0.03034792725247848
+     ],
+     "brier_skill": -0.025007090477325633,
+     "brier_skill_interval": [
+      -0.1687190483805061,
+      0.13526562256385788
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.4999654850106085
+   },
+   "structural_liquidity+h41": {
+    "auroc": 0.8440941581876179,
+    "auroc_interval": [
+     0.7812745098039215,
+     0.8935503685503685
+    ],
+    "brier_skill": 0.04999790229784795,
+    "brier_skill_interval": [
+     -0.11206224725599934,
+     0.1981959539403756
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.1116761535450237,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.0999239305018182,
+      "slope": 0.21565339850587656
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.052116005438757496,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.5747721012568823,
+      "slope": 1.0240440340683024
+     }
+    },
+    "intercept": -1.6323002785020053,
+    "mean_forecast": 0.08370705300304022,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.007481741910948636,
+     "auroc_interval": [
+      0.0015467274503419004,
+      0.016274813059579674
+     ],
+     "brier_skill": 0.05422435001753556,
+     "brier_skill_interval": [
+      -0.02743384877055377,
+      0.18072793117895225
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.008036663639820918,
+     "auroc_interval": [
+      -0.015461379378262086,
+      0.032051648288864754
+     ],
+     "brier_skill": -0.029101659547909553,
+     "brier_skill_interval": [
+      -0.17529078332378367,
+      0.1336750566558077
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.49745695578384985
+   }
+  },
+  "3": {
+   "days": 1568,
+   "events": 87,
+   "structural_kinked_fitted": {
+    "auroc": 0.7996111667326364,
+    "auroc_interval": [
+     0.7256491151726139,
+     0.8585804214943892
+    ],
+    "brier_skill": 0.02782452644403899,
+    "brier_skill_interval": [
+     -0.14445062318267055,
+     0.1644897669827814
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.1074889561957535,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.1376784783122318,
+      "slope": 0.19557186291379955
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.04209950294840703,
+      "days": 211,
+      "events": 19,
+      "intercept": 2.0760432312899595,
+      "slope": 1.5133107168317876
+     }
+    },
+    "intercept": -1.9318855972413287,
+    "mean_forecast": 0.09232392608810175,
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.015099303825467425,
+     "auroc_interval": [
+      -0.024815817170350307,
+      0.05462923468662351
+     ],
+     "brier_skill": -0.02478260158309975,
+     "brier_skill_interval": [
+      -0.1742916266408232,
+      0.14172479975900676
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.4054203264912149
+   },
+   "structural_kinked_profile": {
+    "auroc": 0.80078309933487,
+    "auroc_interval": [
+     0.7272685398433901,
+     0.8600087869288496
+    ],
+    "brier_skill": 0.03239812005240994,
+    "brier_skill_interval": [
+     -0.1396461296344207,
+     0.16847020336786311
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.10728374551166064,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.1388536513960479,
+      "slope": 0.19529378575994158
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.04213789432174475,
+      "days": 211,
+      "events": 19,
+      "intercept": 2.0869206795336352,
+      "slope": 1.5179337357804494
+     }
+    },
+    "intercept": -1.9290478647653346,
+    "mean_forecast": 0.09177751517623306,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.001171932602233583,
+     "auroc_interval": [
+      -0.0014515268493237032,
+      0.004468744304720218
+     ],
+     "brier_skill": 0.004573593608370952,
+     "brier_skill_interval": [
+      0.0002166989125431673,
+      0.011182916255250808
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.016271236427701008,
+     "auroc_interval": [
+      -0.02400846702317283,
+      0.05587986065342243
+     ],
+     "brier_skill": -0.0202090079747288,
+     "brier_skill_interval": [
+      -0.17243215537154843,
+      0.15090069914117887
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.40627559162604654
+   },
+   "structural_kinked_rolling": {
+    "auroc": 0.784511862907169,
+    "auroc_interval": [
+     0.6985909291061206,
+     0.8469627490942029
+    ],
+    "brier_skill": 0.05260712802713874,
+    "brier_skill_interval": [
+     -0.1112103786109424,
+     0.1732059888418157
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": 0.046332680300719464,
+      "days": 314,
+      "events": 63,
+      "intercept": -0.607471500403532,
+      "slope": 0.3423283431100464
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.18977370318350217,
+      "days": 211,
+      "events": 19,
+      "intercept": 1.0679864059437139,
+      "slope": 1.3827333826954207
+     }
+    },
+    "intercept": -1.5162078860379844,
+    "mean_forecast": 0.08435171753858449,
+    "minus_structural_kinked_fitted": {
+     "auroc": -0.015099303825467425,
+     "auroc_interval": [
+      -0.05467196819085496,
+      0.024553486640684907
+     ],
+     "brier_skill": 0.02478260158309975,
+     "brier_skill_interval": [
+      -0.14178521650000253,
+      0.17371257438493093
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.5358669073891352
+   },
+   "structural_kinked_slow": {
+    "auroc": 0.799696539306309,
+    "auroc_interval": [
+     0.7256126898210795,
+     0.8590020229265003
+    ],
+    "brier_skill": 0.031159250149549345,
+    "brier_skill_interval": [
+     -0.14108398838099157,
+     0.16754042173739359
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.10725682512294776,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.1388391848689206,
+      "slope": 0.19529030399468422
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.04211743904858689,
+      "days": 211,
+      "events": 19,
+      "intercept": 2.083147305568516,
+      "slope": 1.516376962617058
+     }
+    },
+    "intercept": -1.9311076082675387,
+    "mean_forecast": 0.09200868175084415,
+    "minus_structural_kinked_fitted": {
+     "auroc": 8.537257367258189e-05,
+     "auroc_interval": [
+      -0.0019696286272740116,
+      0.0022360954929103727
+     ],
+     "brier_skill": 0.0033347237055103562,
+     "brier_skill_interval": [
+      4.5991252428545515e-05,
+      0.008210326070797525
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.015184676399140007,
+     "auroc_interval": [
+      -0.025089345079787218,
+      0.05476112565445024
+     ],
+     "brier_skill": -0.021447877877589394,
+     "brier_skill_interval": [
+      -0.17302624940222278,
+      0.14857757888856482
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.4057016958304045
+   },
+   "structural_liquidity+h41": {
+    "auroc": 0.8010625004850714,
+    "auroc_interval": [
+     0.7277120966105135,
+     0.8597783627717391
+    ],
+    "brier_skill": 0.023659421544803938,
+    "brier_skill_interval": [
+     -0.1495681210627946,
+     0.16199763881058904
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.12198406117705951,
+      "days": 314,
+      "events": 63,
+      "intercept": -1.148346026665895,
+      "slope": 0.19238524641950672
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.042137894321745084,
+      "days": 211,
+      "events": 19,
+      "intercept": 2.0869206795336286,
+      "slope": 1.5179337357804472
+     }
+    },
+    "intercept": -1.938748583823561,
+    "mean_forecast": 0.09252182216439095,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.0014513337524350023,
+     "auroc_interval": [
+      -0.001444934846574153,
+      0.005246532709337393
+     ],
+     "brier_skill": -0.00416510489923505,
+     "brier_skill_interval": [
+      -0.016612787647740213,
+      0.005433297080237542
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.016550637577902427,
+     "auroc_interval": [
+      -0.024448607839136383,
+      0.05712119753561795
+     ],
+     "brier_skill": -0.0289477064823348,
+     "brier_skill_interval": [
+      -0.18479512024041944,
+      0.1416839084985324
+     ]
+    },
+    "realised": 0.05548469387755102,
+    "slope": 0.4036891481276855
+   }
+  },
+  "4": {
+   "days": 1567,
+   "events": 87,
+   "structural_kinked_fitted": {
+    "auroc": 0.8297297297297297,
+    "auroc_interval": [
+     0.762954186413902,
+     0.8821635677849227
+    ],
+    "brier_skill": 0.05414943708578901,
+    "brier_skill_interval": [
+     -0.09791996561924687,
+     0.19574133460218202
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.09280878243657376,
+      "days": 313,
+      "events": 63,
+      "intercept": -1.1111819578797533,
+      "slope": 0.20329329698374277
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.049855725424248654,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.633745764719298,
+      "slope": 1.0621357073629398
+     }
+    },
+    "intercept": -1.7490780396560104,
+    "mean_forecast": 0.0856205609014924,
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.00520736253494869,
+     "auroc_interval": [
+      -0.016099258200626076,
+      0.027370865659452903
+     ],
+     "brier_skill": -0.062343673415732104,
+     "brier_skill_interval": [
+      -0.19008588942057036,
+      0.05029803558649881
+     ]
+    },
+    "realised": 0.05552010210593491,
+    "slope": 0.4556525242022094
+   },
+   "structural_kinked_profile": {
+    "auroc": 0.8310888474681578,
+    "auroc_interval": [
+     0.7638836119554204,
+     0.8835115958911363
+    ],
+    "brier_skill": 0.056294993729611664,
+    "brier_skill_interval": [
+     -0.095783318717227,
+     0.19782095581736248
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.09209552641343555,
+      "days": 313,
+      "events": 63,
+      "intercept": -1.1117180138075367,
+      "slope": 0.20341518257625135
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.04993179122344982,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.638714652477508,
+      "slope": 1.0642887908913279
+     }
+    },
+    "intercept": -1.7460935307895276,
+    "mean_forecast": 0.08539995680236823,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.0013591177384281172,
+     "auroc_interval": [
+      -0.0004315816197003608,
+      0.0038118457460188937
+     ],
+     "brier_skill": 0.0021455566438226548,
+     "brier_skill_interval": [
+      8.993690346525973e-05,
+      0.004902586263939357
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.006566480273376807,
+     "auroc_interval": [
+      -0.015239524166756002,
+      0.029050211966593076
+     ],
+     "brier_skill": -0.06019811677190945,
+     "brier_skill_interval": [
+      -0.18835504897967004,
+      0.0529623863863391
+     ]
+    },
+    "realised": 0.05552010210593491,
+    "slope": 0.4568229654107235
+   },
+   "structural_kinked_rolling": {
+    "auroc": 0.824522367194781,
+    "auroc_interval": [
+     0.7494041686527712,
+     0.8806670382757339
+    ],
+    "brier_skill": 0.11649311050152111,
+    "brier_skill_interval": [
+     0.014102641731871923,
+     0.21129805652810663
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": 0.03462735475673606,
+      "days": 313,
+      "events": 63,
+      "intercept": -0.40825328850855036,
+      "slope": 0.45124880083890406
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.16009277795143162,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.10287099072790458,
+      "slope": 1.0017210306295998
+     }
+    },
+    "intercept": -0.685664640443169,
+    "mean_forecast": 0.07499780272586168,
+    "minus_structural_kinked_fitted": {
+     "auroc": -0.00520736253494869,
+     "auroc_interval": [
+      -0.027390186477156186,
+      0.015938130464021483
+     ],
+     "brier_skill": 0.062343673415732104,
+     "brier_skill_interval": [
+      -0.05035745064180308,
+      0.18993147620349227
+     ]
+    },
+    "realised": 0.05552010210593491,
+    "slope": 0.8524019451920698
+   },
+   "structural_kinked_slow": {
+    "auroc": 0.8306306306306306,
+    "auroc_interval": [
+     0.7639574890239784,
+     0.8827954562551719
+    ],
+    "brier_skill": 0.05586457574403081,
+    "brier_skill_interval": [
+     -0.09660986996279242,
+     0.19738375365343286
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.09208235327570646,
+      "days": 313,
+      "events": 63,
+      "intercept": -1.1117366198077476,
+      "slope": 0.20339478317340667
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.049859313021636154,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.6360913962277587,
+      "slope": 1.063195045381171
+     }
+    },
+    "intercept": -1.747277734727441,
+    "mean_forecast": 0.08548940583479418,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.0009009009009008917,
+     "auroc_interval": [
+      -0.00042567125081860446,
+      0.0025589101620029364
+     ],
+     "brier_skill": 0.0017151386582417993,
+     "brier_skill_interval": [
+      -3.758664427844227e-05,
+      0.003981864968283344
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.006108263435849581,
+     "auroc_interval": [
+      -0.015571832040288558,
+      0.028613975372910105
+     ],
+     "brier_skill": -0.060628534757490304,
+     "brier_skill_interval": [
+      -0.18887382007772935,
+      0.05232303430431229
+     ]
+    },
+    "realised": 0.05552010210593491,
+    "slope": 0.45646054406274905
+   },
+   "structural_liquidity+h41": {
+    "auroc": 0.8314228021124573,
+    "auroc_interval": [
+     0.7646118287740629,
+     0.8836296038108516
+    ],
+    "brier_skill": 0.051371548603158956,
+    "brier_skill_interval": [
+     -0.10513756326088575,
+     0.19446713763438606
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.10063463116529947,
+      "days": 313,
+      "events": 63,
+      "intercept": -1.117868062890131,
+      "slope": 0.20166110355162833
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.04993179129477043,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.6387146544064033,
+      "slope": 1.0642887907703336
+     }
+    },
+    "intercept": -1.7523832266483772,
+    "mean_forecast": 0.08590902538934067,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.001693072382727645,
+     "auroc_interval": [
+      -0.0008814189637893488,
+      0.005111992283785227
+     ],
+     "brier_skill": -0.002777888482630053,
+     "brier_skill_interval": [
+      -0.013238041696830294,
+      0.004161250410921857
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.006900434917676335,
+     "auroc_interval": [
+      -0.015567722895309166,
+      0.030564493976376395
+     ],
+     "brier_skill": -0.06512156189836216,
+     "brier_skill_interval": [
+      -0.19560025581147555,
+      0.04762183085020233
+     ]
+    },
+    "realised": 0.05552010210593491,
+    "slope": 0.4554152339208058
+   }
+  },
+  "5": {
+   "days": 1566,
+   "events": 87,
+   "structural_kinked_fitted": {
+    "auroc": 0.8117825806501753,
+    "auroc_interval": [
+     0.7247553074165978,
+     0.8729935166554885
+    ],
+    "brier_skill": 0.025646668018709184,
+    "brier_skill_interval": [
+     -0.14329335647801966,
+     0.1834557501481422
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.14765989841754168,
+      "days": 312,
+      "events": 63,
+      "intercept": -1.0585413369758458,
+      "slope": 0.2011865280440882
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.07447507720297486,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.5686644141481513,
+      "slope": 1.0781088153529013
+     }
+    },
+    "intercept": -1.7774069345260786,
+    "mean_forecast": 0.0868680489910371,
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.007099391480730244,
+     "auroc_interval": [
+      -0.01817226890756296,
+      0.03560203629924741
+     ],
+     "brier_skill": -0.08961470500984359,
+     "brier_skill_interval": [
+      -0.20860419153028176,
+      0.021629219897929652
+     ]
+    },
+    "realised": 0.05555555555555555,
+    "slope": 0.44751696161238924
+   },
+   "structural_kinked_profile": {
+    "auroc": 0.8126063742976382,
+    "auroc_interval": [
+     0.7253010813303952,
+     0.873508891194676
+    ],
+    "brier_skill": 0.027558903767007314,
+    "brier_skill_interval": [
+     -0.14113372916038602,
+     0.18531071480256478
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.14673345886716072,
+      "days": 312,
+      "events": 63,
+      "intercept": -1.05936134817933,
+      "slope": 0.2010735426711728
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.07445062340931297,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.5728487184254772,
+      "slope": 1.079896980067767
+     }
+    },
+    "intercept": -1.7767400239064146,
+    "mean_forecast": 0.08669480734172423,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.0008237936474628782,
+     "auroc_interval": [
+      -0.00023896528033606756,
+      0.0023693727397430253
+     ],
+     "brier_skill": 0.00191223574829813,
+     "brier_skill_interval": [
+      0.0003445293540008665,
+      0.004216412587429996
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.007923185128193122,
+     "auroc_interval": [
+      -0.01773297067171231,
+      0.036626905011320265
+     ],
+     "brier_skill": -0.08770246926154546,
+     "brier_skill_interval": [
+      -0.20654071119081407,
+      0.02376106313734716
+     ]
+    },
+    "realised": 0.05555555555555555,
+    "slope": 0.4477741879277956
+   },
+   "structural_kinked_rolling": {
+    "auroc": 0.804683189169445,
+    "auroc_interval": [
+     0.7137274654924486,
+     0.8718203071379547
+    ],
+    "brier_skill": 0.11526137302855277,
+    "brier_skill_interval": [
+     0.02492134360909004,
+     0.20940083798989073
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": 0.021575790331228695,
+      "days": 312,
+      "events": 63,
+      "intercept": -0.5081448027339296,
+      "slope": 0.3749711076960733
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.17827153719554523,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.27708288829267297,
+      "slope": 1.0699699417091113
+     }
+    },
+    "intercept": -0.7115138803743486,
+    "mean_forecast": 0.07687345713016794,
+    "minus_structural_kinked_fitted": {
+     "auroc": -0.007099391480730244,
+     "auroc_interval": [
+      -0.03561243860291308,
+      0.018127779856174975
+     ],
+     "brier_skill": 0.08961470500984359,
+     "brier_skill_interval": [
+      -0.02178568961315952,
+      0.20844324397933667
+     ]
+    },
+    "realised": 0.05555555555555555,
+    "slope": 0.8480163571605649
+   },
+   "structural_kinked_slow": {
+    "auroc": 0.8122411073030084,
+    "auroc_interval": [
+     0.7251780864039359,
+     0.8731940319868332
+    ],
+    "brier_skill": 0.027097314579577425,
+    "brier_skill_interval": [
+     -0.14186160740808162,
+     0.18443853522312292
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.14673680619050433,
+      "days": 312,
+      "events": 63,
+      "intercept": -1.0593736473330604,
+      "slope": 0.2010597706591623
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.07440224779042603,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.569532794849234,
+      "slope": 1.0785400165394892
+     }
+    },
+    "intercept": -1.7776485489856488,
+    "mean_forecast": 0.08677935612895518,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.00045852665283308003,
+     "auroc_interval": [
+      -0.000261409767498999,
+      0.0013834076870281597
+     ],
+     "brier_skill": 0.0014506465608682406,
+     "brier_skill_interval": [
+      0.00021703583216958755,
+      0.0032107330678754487
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.007557918133563324,
+     "auroc_interval": [
+      -0.017885402455661725,
+      0.03613199665831235
+     ],
+     "brier_skill": -0.08816405844897535,
+     "brier_skill_interval": [
+      -0.2073390999746212,
+      0.022933102966621988
+     ]
+    },
+    "realised": 0.05555555555555555,
+    "slope": 0.4474887607565723
+   },
+   "structural_liquidity+h41": {
+    "auroc": 0.8131503889704911,
+    "auroc_interval": [
+     0.725670066109773,
+     0.8739503688799464
+    ],
+    "brier_skill": 0.01931361322763747,
+    "brier_skill_interval": [
+     -0.14995519572439764,
+     0.17653069652846487
+    ],
+    "by_regime": {
+     "2018-19": {
+      "brier_skill": -0.16058097018659967,
+      "days": 312,
+      "events": 63,
+      "intercept": -1.0667044588656789,
+      "slope": 0.1992271215629074
+     },
+     "2020": {
+      "days": 209,
+      "events": 3
+     },
+     "2021-23": {
+      "days": 624,
+      "events": 0
+     },
+     "2024": {
+      "days": 210,
+      "events": 2
+     },
+     "2025-26": {
+      "brier_skill": 0.07445062340931297,
+      "days": 211,
+      "events": 19,
+      "intercept": 0.5728487184254779,
+      "slope": 1.0798969800677671
+     }
+    },
+    "intercept": -1.7829864196985705,
+    "mean_forecast": 0.08726735718449191,
+    "minus_structural_kinked_fitted": {
+     "auroc": 0.0013678083203157998,
+     "auroc_interval": [
+      -0.0005195495626117985,
+      0.003890728476821148
+     ],
+     "brier_skill": -0.006333054791071713,
+     "brier_skill_interval": [
+      -0.0222709705192915,
+      0.0032337947025564695
+     ]
+    },
+    "minus_structural_kinked_rolling": {
+     "auroc": 0.008467199801046044,
+     "auroc_interval": [
+      -0.01802182810368358,
+      0.03820749923788236
+     ],
+     "brier_skill": -0.0959477598009153,
+     "brier_skill_interval": [
+      -0.2169786560470397,
+      0.016602761967811852
+     ]
+    },
+    "realised": 0.05555555555555555,
+    "slope": 0.4464284384497053
+   }
+  }
+ },
+ "paths": {
+  "1": {
+   "least_squares (kinked_fitted)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.115
+     ],
+     [
+      "2019-06-03",
+      0.1175
+     ],
+     [
+      "2019-07-02",
+      0.1175
+     ],
+     [
+      "2019-08-01",
+      0.1175
+     ],
+     [
+      "2019-08-30",
+      0.1175
+     ],
+     [
+      "2019-10-01",
+      0.09
+     ],
+     [
+      "2019-10-31",
+      0.1125
+     ],
+     [
+      "2019-12-03",
+      0.115
+     ],
+     [
+      "2020-01-03",
+      0.115
+     ],
+     [
+      "2020-02-04",
+      0.09
+     ],
+     [
+      "2020-03-05",
+      0.09
+     ],
+     [
+      "2020-04-03",
+      0.09
+     ],
+     [
+      "2020-05-05",
+      0.1175
+     ],
+     [
+      "2020-06-04",
+      0.1175
+     ],
+     [
+      "2020-07-06",
+      0.115
+     ],
+     [
+      "2020-08-04",
+      0.1125
+     ],
+     [
+      "2020-09-02",
+      0.11
+     ],
+     [
+      "2020-10-02",
+      0.0925
+     ],
+     [
+      "2020-11-03",
+      0.0925
+     ],
+     [
+      "2020-12-04",
+      0.0925
+     ],
+     [
+      "2021-01-06",
+      0.0925
+     ],
+     [
+      "2021-02-05",
+      0.105
+     ],
+     [
+      "2021-03-09",
+      0.11
+     ],
+     [
+      "2021-04-08",
+      0.115
+     ],
+     [
+      "2021-05-07",
+      0.115
+     ],
+     [
+      "2021-06-08",
+      0.115
+     ],
+     [
+      "2021-07-08",
+      0.1175
+     ],
+     [
+      "2021-08-06",
+      0.18
+     ],
+     [
+      "2021-09-07",
+      0.1825
+     ],
+     [
+      "2021-10-06",
+      0.1825
+     ],
+     [
+      "2021-11-05",
+      0.185
+     ],
+     [
+      "2021-12-08",
+      0.185
+     ],
+     [
+      "2022-01-07",
+      0.185
+     ],
+     [
+      "2022-02-08",
+      0.1825
+     ],
+     [
+      "2022-03-10",
+      0.18
+     ],
+     [
+      "2022-04-08",
+      0.1775
+     ],
+     [
+      "2022-05-10",
+      0.175
+     ],
+     [
+      "2022-06-09",
+      0.1725
+     ],
+     [
+      "2022-07-12",
+      0.17
+     ],
+     [
+      "2022-08-10",
+      0.1675
+     ],
+     [
+      "2022-09-09",
+      0.165
+     ],
+     [
+      "2022-10-11",
+      0.145
+     ],
+     [
+      "2022-11-09",
+      0.135
+     ],
+     [
+      "2022-12-12",
+      0.135
+     ],
+     [
+      "2023-01-12",
+      0.1325
+     ],
+     [
+      "2023-02-13",
+      0.1325
+     ],
+     [
+      "2023-03-15",
+      0.1325
+     ],
+     [
+      "2023-04-14",
+      0.1325
+     ],
+     [
+      "2023-05-15",
+      0.1325
+     ],
+     [
+      "2023-06-14",
+      0.1325
+     ],
+     [
+      "2023-07-17",
+      0.1325
+     ],
+     [
+      "2023-08-15",
+      0.1325
+     ],
+     [
+      "2023-09-14",
+      0.1325
+     ],
+     [
+      "2023-10-16",
+      0.1325
+     ],
+     [
+      "2023-11-14",
+      0.1325
+     ],
+     [
+      "2023-12-14",
+      0.1325
+     ],
+     [
+      "2024-01-17",
+      0.1325
+     ],
+     [
+      "2024-02-15",
+      0.1325
+     ],
+     [
+      "2024-03-18",
+      0.1325
+     ],
+     [
+      "2024-04-17",
+      0.1325
+     ],
+     [
+      "2024-05-16",
+      0.1325
+     ],
+     [
+      "2024-06-17",
+      0.1325
+     ],
+     [
+      "2024-07-18",
+      0.1325
+     ],
+     [
+      "2024-08-16",
+      0.1325
+     ],
+     [
+      "2024-09-17",
+      0.1325
+     ],
+     [
+      "2024-10-17",
+      0.1325
+     ],
+     [
+      "2024-11-18",
+      0.1325
+     ],
+     [
+      "2024-12-18",
+      0.1325
+     ],
+     [
+      "2025-01-21",
+      0.13
+     ],
+     [
+      "2025-02-20",
+      0.13
+     ],
+     [
+      "2025-03-21",
+      0.13
+     ],
+     [
+      "2025-04-22",
+      0.13
+     ],
+     [
+      "2025-05-21",
+      0.13
+     ],
+     [
+      "2025-06-23",
+      0.13
+     ],
+     [
+      "2025-07-23",
+      0.13
+     ],
+     [
+      "2025-08-21",
+      0.13
+     ],
+     [
+      "2025-09-22",
+      0.1325
+     ],
+     [
+      "2025-10-22",
+      0.135
+     ],
+     [
+      "2025-11-21",
+      0.1375
+     ],
+     [
+      "2025-12-23",
+      0.145
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 9,
+     "distinct_levels": 21,
+     "last": 0.145,
+     "max_abs_change": 0.0625,
+     "mean_abs_change": 0.0037341772151898733,
+     "refits": 80,
+     "sd": 0.024928628591190088
+    }
+   },
+   "rolling (kinked_rolling)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.11603002942079946
+     ],
+     [
+      "2018-08-27",
+      0.11468031011910099
+     ],
+     [
+      "2018-09-26",
+      0.11241535689138711
+     ],
+     [
+      "2018-10-26",
+      0.11051023997615143
+     ],
+     [
+      "2018-11-28",
+      0.10782843941153235
+     ],
+     [
+      "2018-12-31",
+      0.10300595460281911
+     ],
+     [
+      "2019-01-31",
+      0.09747874356732524
+     ],
+     [
+      "2019-03-04",
+      0.09633816651613941
+     ],
+     [
+      "2019-04-02",
+      0.09553676449073938
+     ],
+     [
+      "2019-05-02",
+      0.09498764246307381
+     ],
+     [
+      "2019-06-03",
+      0.0933099747282271
+     ],
+     [
+      "2019-07-02",
+      0.08947014497454403
+     ],
+     [
+      "2019-08-01",
+      0.08762107377170228
+     ],
+     [
+      "2019-08-30",
+      0.08749416988168093
+     ],
+     [
+      "2019-10-01",
+      0.08650854788642381
+     ],
+     [
+      "2019-10-31",
+      0.08538495618347272
+     ],
+     [
+      "2019-12-03",
+      0.08519300154630319
+     ],
+     [
+      "2020-01-03",
+      0.08535927059483203
+     ],
+     [
+      "2020-02-04",
+      0.08539596429289016
+     ],
+     [
+      "2020-03-05",
+      0.08546609822566874
+     ],
+     [
+      "2020-04-03",
+      0.08569347869788184
+     ],
+     [
+      "2020-05-05",
+      0.08574745934959349
+     ],
+     [
+      "2020-06-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-07-06",
+      0.08574745934959349
+     ],
+     [
+      "2020-08-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-09-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-10-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-11-03",
+      0.08574745934959349
+     ],
+     [
+      "2020-12-04",
+      0.08574745934959349
+     ],
+     [
+      "2021-01-06",
+      0.08574745934959349
+     ],
+     [
+      "2021-02-05",
+      0.08574745934959349
+     ],
+     [
+      "2021-03-09",
+      0.08574745934959349
+     ],
+     [
+      "2021-04-08",
+      0.08574745934959349
+     ],
+     [
+      "2021-05-07",
+      0.08574745934959349
+     ],
+     [
+      "2021-06-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-07-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-08-06",
+      0.08608476074954939
+     ],
+     [
+      "2021-09-07",
+      0.08611802154907482
+     ],
+     [
+      "2021-10-06",
+      0.09052104983053696
+     ],
+     [
+      "2021-11-05",
+      0.09219148751122208
+     ],
+     [
+      "2021-12-08",
+      0.09303537718845999
+     ],
+     [
+      "2022-01-07",
+      0.09703341750748112
+     ],
+     [
+      "2022-02-08",
+      0.13130725202297597
+     ],
+     [
+      "2022-03-10",
+      0.13999295078226032
+     ],
+     [
+      "2022-04-08",
+      0.1409606632070628
+     ],
+     [
+      "2022-05-10",
+      0.14145628499877883
+     ],
+     [
+      "2022-06-09",
+      0.14145628499877883
+     ],
+     [
+      "2022-07-12",
+      0.14086773630042534
+     ],
+     [
+      "2022-08-10",
+      0.14200690786204156
+     ],
+     [
+      "2022-09-09",
+      0.1425536410601532
+     ],
+     [
+      "2022-10-11",
+      0.1423301059163357
+     ],
+     [
+      "2022-11-09",
+      0.14154818214834228
+     ],
+     [
+      "2022-12-12",
+      0.13835473972130158
+     ],
+     [
+      "2023-01-12",
+      0.1369553429952323
+     ],
+     [
+      "2023-02-13",
+      0.1355794846369395
+     ],
+     [
+      "2023-03-15",
+      0.13288138035442107
+     ],
+     [
+      "2023-04-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-05-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-06-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-07-17",
+      0.1326235821130118
+     ],
+     [
+      "2023-08-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-09-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-10-16",
+      0.1326235821130118
+     ],
+     [
+      "2023-11-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-12-14",
+      0.1326235821130118
+     ],
+     [
+      "2024-01-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-02-15",
+      0.1326235821130118
+     ],
+     [
+      "2024-03-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-04-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-05-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-06-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-07-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-08-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-09-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-10-17",
+      0.13348290958437595
+     ],
+     [
+      "2024-11-18",
+      0.1336527105513443
+     ],
+     [
+      "2024-12-18",
+      0.1336527105513443
+     ],
+     [
+      "2025-01-21",
+      0.13506042313425692
+     ],
+     [
+      "2025-02-20",
+      0.13537124607883894
+     ],
+     [
+      "2025-03-21",
+      0.13655660559305688
+     ],
+     [
+      "2025-04-22",
+      0.1365567481014445
+     ],
+     [
+      "2025-05-21",
+      0.13605844681820484
+     ],
+     [
+      "2025-06-23",
+      0.13550146868305948
+     ],
+     [
+      "2025-07-23",
+      0.13538159404867742
+     ],
+     [
+      "2025-08-21",
+      0.13538159404867742
+     ],
+     [
+      "2025-09-22",
+      0.1348164307139712
+     ],
+     [
+      "2025-10-22",
+      0.13242081195736263
+     ],
+     [
+      "2025-11-21",
+      0.12977529877228047
+     ],
+     [
+      "2025-12-23",
+      0.12297036025506548
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 1,
+     "distinct_levels": 56,
+     "last": 0.12297036025506548,
+     "max_abs_change": 0.034273834515494844,
+     "mean_abs_change": 0.0013572398668113132,
+     "refits": 90,
+     "sd": 0.022643748432611705
+    }
+   },
+   "structural_kinked_profile": {
+    "median_excess_at_fixed_nats": 0.9036139984540341,
+    "median_interval_width": 0.085,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.145
+     ],
+     [
+      "2019-06-03",
+      0.135
+     ],
+     [
+      "2019-07-02",
+      0.185
+     ],
+     [
+      "2019-08-01",
+      0.175
+     ],
+     [
+      "2019-08-30",
+      0.145
+     ],
+     [
+      "2019-10-01",
+      0.1925
+     ],
+     [
+      "2019-10-31",
+      0.1675
+     ],
+     [
+      "2019-12-03",
+      0.14
+     ],
+     [
+      "2020-01-03",
+      0.145
+     ],
+     [
+      "2020-02-04",
+      0.1925
+     ],
+     [
+      "2020-03-05",
+      0.0925
+     ],
+     [
+      "2020-04-03",
+      0.13
+     ],
+     [
+      "2020-05-05",
+      0.185
+     ],
+     [
+      "2020-06-04",
+      0.1625
+     ],
+     [
+      "2020-07-06",
+      0.18
+     ],
+     [
+      "2020-08-04",
+      0.1675
+     ],
+     [
+      "2020-09-02",
+      0.1625
+     ],
+     [
+      "2020-10-02",
+      0.19
+     ],
+     [
+      "2020-11-03",
+      0.2
+     ],
+     [
+      "2020-12-04",
+      0.1925
+     ],
+     [
+      "2021-01-06",
+      0.1775
+     ],
+     [
+      "2021-02-05",
+      0.1675
+     ],
+     [
+      "2021-03-09",
+      0.165
+     ],
+     [
+      "2021-04-08",
+      0.1825
+     ],
+     [
+      "2021-05-07",
+      0.195
+     ],
+     [
+      "2021-06-08",
+      0.19
+     ],
+     [
+      "2021-07-08",
+      0.195
+     ],
+     [
+      "2021-08-06",
+      0.195
+     ],
+     [
+      "2021-09-07",
+      0.1925
+     ],
+     [
+      "2021-10-06",
+      0.1925
+     ],
+     [
+      "2021-11-05",
+      0.1925
+     ],
+     [
+      "2021-12-08",
+      0.195
+     ],
+     [
+      "2022-01-07",
+      0.1925
+     ],
+     [
+      "2022-02-08",
+      0.2
+     ],
+     [
+      "2022-03-10",
+      0.195
+     ],
+     [
+      "2022-04-08",
+      0.195
+     ],
+     [
+      "2022-05-10",
+      0.1925
+     ],
+     [
+      "2022-06-09",
+      0.195
+     ],
+     [
+      "2022-07-12",
+      0.2
+     ],
+     [
+      "2022-08-10",
+      0.195
+     ],
+     [
+      "2022-09-09",
+      0.1975
+     ],
+     [
+      "2022-10-11",
+      0.1975
+     ],
+     [
+      "2022-11-09",
+      0.2
+     ],
+     [
+      "2022-12-12",
+      0.1975
+     ],
+     [
+      "2023-01-12",
+      0.1925
+     ],
+     [
+      "2023-02-13",
+      0.1975
+     ],
+     [
+      "2023-03-15",
+      0.1925
+     ],
+     [
+      "2023-04-14",
+      0.1925
+     ],
+     [
+      "2023-05-15",
+      0.1925
+     ],
+     [
+      "2023-06-14",
+      0.195
+     ],
+     [
+      "2023-07-17",
+      0.195
+     ],
+     [
+      "2023-08-15",
+      0.1925
+     ],
+     [
+      "2023-09-14",
+      0.2
+     ],
+     [
+      "2023-10-16",
+      0.2
+     ],
+     [
+      "2023-11-14",
+      0.195
+     ],
+     [
+      "2023-12-14",
+      0.195
+     ],
+     [
+      "2024-01-17",
+      0.195
+     ],
+     [
+      "2024-02-15",
+      0.1925
+     ],
+     [
+      "2024-03-18",
+      0.195
+     ],
+     [
+      "2024-04-17",
+      0.1925
+     ],
+     [
+      "2024-05-16",
+      0.1975
+     ],
+     [
+      "2024-06-17",
+      0.1975
+     ],
+     [
+      "2024-07-18",
+      0.2
+     ],
+     [
+      "2024-08-16",
+      0.1925
+     ],
+     [
+      "2024-09-17",
+      0.1975
+     ],
+     [
+      "2024-10-17",
+      0.195
+     ],
+     [
+      "2024-11-18",
+      0.1925
+     ],
+     [
+      "2024-12-18",
+      0.195
+     ],
+     [
+      "2025-01-21",
+      0.1925
+     ],
+     [
+      "2025-02-20",
+      0.195
+     ],
+     [
+      "2025-03-21",
+      0.1925
+     ],
+     [
+      "2025-04-22",
+      0.2
+     ],
+     [
+      "2025-05-21",
+      0.195
+     ],
+     [
+      "2025-06-23",
+      0.1925
+     ],
+     [
+      "2025-07-23",
+      0.2
+     ],
+     [
+      "2025-08-21",
+      0.1925
+     ],
+     [
+      "2025-09-22",
+      0.1925
+     ],
+     [
+      "2025-10-22",
+      0.195
+     ],
+     [
+      "2025-11-21",
+      0.195
+     ],
+     [
+      "2025-12-23",
+      0.195
+     ]
+    ],
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.05,
+    "share_of_levels_at_the_grid_maximum": 0.1125,
+    "share_with_several_local_minima": 0.6875,
+    "stability": {
+     "changes_of_0.01_or_more": 20,
+     "distinct_levels": 18,
+     "last": 0.195,
+     "max_abs_change": 0.1,
+     "mean_abs_change": 0.00968354430379747,
+     "refits": 80,
+     "sd": 0.019300233766395166
+    }
+   },
+   "structural_kinked_slow": {
+    "median_excess_at_fixed_nats": 0.9036139984540341,
+    "median_interval_width": 0.085,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1225
+     ],
+     [
+      "2019-06-03",
+      0.125
+     ],
+     [
+      "2019-07-02",
+      0.125
+     ],
+     [
+      "2019-08-01",
+      0.125
+     ],
+     [
+      "2019-08-30",
+      0.125
+     ],
+     [
+      "2019-10-01",
+      0.125
+     ],
+     [
+      "2019-10-31",
+      0.125
+     ],
+     [
+      "2019-12-03",
+      0.125
+     ],
+     [
+      "2020-01-03",
+      0.125
+     ],
+     [
+      "2020-02-04",
+      0.125
+     ],
+     [
+      "2020-03-05",
+      0.125
+     ],
+     [
+      "2020-04-03",
+      0.125
+     ],
+     [
+      "2020-05-05",
+      0.1275
+     ],
+     [
+      "2020-06-04",
+      0.13
+     ],
+     [
+      "2020-07-06",
+      0.1325
+     ],
+     [
+      "2020-08-04",
+      0.135
+     ],
+     [
+      "2020-09-02",
+      0.135
+     ],
+     [
+      "2020-10-02",
+      0.1375
+     ],
+     [
+      "2020-11-03",
+      0.1375
+     ],
+     [
+      "2020-12-04",
+      0.1375
+     ],
+     [
+      "2021-01-06",
+      0.1375
+     ],
+     [
+      "2021-02-05",
+      0.1375
+     ],
+     [
+      "2021-03-09",
+      0.1375
+     ],
+     [
+      "2021-04-08",
+      0.1375
+     ],
+     [
+      "2021-05-07",
+      0.1375
+     ],
+     [
+      "2021-06-08",
+      0.1375
+     ],
+     [
+      "2021-07-08",
+      0.1375
+     ],
+     [
+      "2021-08-06",
+      0.1375
+     ],
+     [
+      "2021-09-07",
+      0.1375
+     ],
+     [
+      "2021-10-06",
+      0.1375
+     ],
+     [
+      "2021-11-05",
+      0.1375
+     ],
+     [
+      "2021-12-08",
+      0.1375
+     ],
+     [
+      "2022-01-07",
+      0.1375
+     ],
+     [
+      "2022-02-08",
+      0.1375
+     ],
+     [
+      "2022-03-10",
+      0.1375
+     ],
+     [
+      "2022-04-08",
+      0.1375
+     ],
+     [
+      "2022-05-10",
+      0.1375
+     ],
+     [
+      "2022-06-09",
+      0.1375
+     ],
+     [
+      "2022-07-12",
+      0.1375
+     ],
+     [
+      "2022-08-10",
+      0.1375
+     ],
+     [
+      "2022-09-09",
+      0.1375
+     ],
+     [
+      "2022-10-11",
+      0.1375
+     ],
+     [
+      "2022-11-09",
+      0.1375
+     ],
+     [
+      "2022-12-12",
+      0.1375
+     ],
+     [
+      "2023-01-12",
+      0.1375
+     ],
+     [
+      "2023-02-13",
+      0.1375
+     ],
+     [
+      "2023-03-15",
+      0.1375
+     ],
+     [
+      "2023-04-14",
+      0.1375
+     ],
+     [
+      "2023-05-15",
+      0.1375
+     ],
+     [
+      "2023-06-14",
+      0.1375
+     ],
+     [
+      "2023-07-17",
+      0.1375
+     ],
+     [
+      "2023-08-15",
+      0.1375
+     ],
+     [
+      "2023-09-14",
+      0.1375
+     ],
+     [
+      "2023-10-16",
+      0.1375
+     ],
+     [
+      "2023-11-14",
+      0.1375
+     ],
+     [
+      "2023-12-14",
+      0.1375
+     ],
+     [
+      "2024-01-17",
+      0.1375
+     ],
+     [
+      "2024-02-15",
+      0.1375
+     ],
+     [
+      "2024-03-18",
+      0.1375
+     ],
+     [
+      "2024-04-17",
+      0.1375
+     ],
+     [
+      "2024-05-16",
+      0.1375
+     ],
+     [
+      "2024-06-17",
+      0.1375
+     ],
+     [
+      "2024-07-18",
+      0.1375
+     ],
+     [
+      "2024-08-16",
+      0.1375
+     ],
+     [
+      "2024-09-17",
+      0.1375
+     ],
+     [
+      "2024-10-17",
+      0.1375
+     ],
+     [
+      "2024-11-18",
+      0.1375
+     ],
+     [
+      "2024-12-18",
+      0.1375
+     ],
+     [
+      "2025-01-21",
+      0.1375
+     ],
+     [
+      "2025-02-20",
+      0.1375
+     ],
+     [
+      "2025-03-21",
+      0.1375
+     ],
+     [
+      "2025-04-22",
+      0.1375
+     ],
+     [
+      "2025-05-21",
+      0.1375
+     ],
+     [
+      "2025-06-23",
+      0.1375
+     ],
+     [
+      "2025-07-23",
+      0.1375
+     ],
+     [
+      "2025-08-21",
+      0.1375
+     ],
+     [
+      "2025-09-22",
+      0.1375
+     ],
+     [
+      "2025-10-22",
+      0.1375
+     ],
+     [
+      "2025-11-21",
+      0.1375
+     ],
+     [
+      "2025-12-23",
+      0.1375
+     ]
+    ],
+    "profile_level_stability": {
+     "changes_of_0.01_or_more": 20,
+     "distinct_levels": 18,
+     "last": 0.195,
+     "max_abs_change": 0.1,
+     "mean_abs_change": 0.00968354430379747,
+     "refits": 80,
+     "sd": 0.019300233766395166
+    },
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.05,
+    "share_of_levels_at_the_grid_maximum": 0.0,
+    "share_with_several_local_minima": 0.6875,
+    "stability": {
+     "changes_of_0.01_or_more": 0,
+     "distinct_levels": 7,
+     "last": 0.1375,
+     "max_abs_change": 0.0025000000000000022,
+     "mean_abs_change": 0.00018987341772151915,
+     "refits": 80,
+     "sd": 0.0046536276172465755
+    }
+   }
+  },
+  "2": {
+   "least_squares (kinked_fitted)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.115
+     ],
+     [
+      "2019-06-03",
+      0.1175
+     ],
+     [
+      "2019-07-02",
+      0.1175
+     ],
+     [
+      "2019-08-01",
+      0.1175
+     ],
+     [
+      "2019-08-30",
+      0.1175
+     ],
+     [
+      "2019-10-01",
+      0.09
+     ],
+     [
+      "2019-10-31",
+      0.115
+     ],
+     [
+      "2019-12-03",
+      0.115
+     ],
+     [
+      "2020-01-03",
+      0.115
+     ],
+     [
+      "2020-02-04",
+      0.09
+     ],
+     [
+      "2020-03-05",
+      0.09
+     ],
+     [
+      "2020-04-03",
+      0.09
+     ],
+     [
+      "2020-05-05",
+      0.0925
+     ],
+     [
+      "2020-06-04",
+      0.1175
+     ],
+     [
+      "2020-07-06",
+      0.115
+     ],
+     [
+      "2020-08-04",
+      0.0925
+     ],
+     [
+      "2020-09-02",
+      0.0925
+     ],
+     [
+      "2020-10-02",
+      0.0925
+     ],
+     [
+      "2020-11-03",
+      0.0925
+     ],
+     [
+      "2020-12-04",
+      0.0925
+     ],
+     [
+      "2021-01-06",
+      0.0925
+     ],
+     [
+      "2021-02-05",
+      0.105
+     ],
+     [
+      "2021-03-09",
+      0.11
+     ],
+     [
+      "2021-04-08",
+      0.115
+     ],
+     [
+      "2021-05-07",
+      0.115
+     ],
+     [
+      "2021-06-08",
+      0.115
+     ],
+     [
+      "2021-07-08",
+      0.1175
+     ],
+     [
+      "2021-08-06",
+      0.18
+     ],
+     [
+      "2021-09-07",
+      0.1825
+     ],
+     [
+      "2021-10-06",
+      0.1825
+     ],
+     [
+      "2021-11-05",
+      0.185
+     ],
+     [
+      "2021-12-08",
+      0.185
+     ],
+     [
+      "2022-01-07",
+      0.185
+     ],
+     [
+      "2022-02-08",
+      0.1825
+     ],
+     [
+      "2022-03-10",
+      0.18
+     ],
+     [
+      "2022-04-08",
+      0.1775
+     ],
+     [
+      "2022-05-10",
+      0.175
+     ],
+     [
+      "2022-06-09",
+      0.1725
+     ],
+     [
+      "2022-07-12",
+      0.17
+     ],
+     [
+      "2022-08-10",
+      0.1675
+     ],
+     [
+      "2022-09-09",
+      0.165
+     ],
+     [
+      "2022-10-11",
+      0.145
+     ],
+     [
+      "2022-11-09",
+      0.135
+     ],
+     [
+      "2022-12-12",
+      0.135
+     ],
+     [
+      "2023-01-12",
+      0.135
+     ],
+     [
+      "2023-02-13",
+      0.1325
+     ],
+     [
+      "2023-03-15",
+      0.1325
+     ],
+     [
+      "2023-04-14",
+      0.1325
+     ],
+     [
+      "2023-05-15",
+      0.1325
+     ],
+     [
+      "2023-06-14",
+      0.1325
+     ],
+     [
+      "2023-07-17",
+      0.1325
+     ],
+     [
+      "2023-08-15",
+      0.1325
+     ],
+     [
+      "2023-09-14",
+      0.1325
+     ],
+     [
+      "2023-10-16",
+      0.1325
+     ],
+     [
+      "2023-11-14",
+      0.1325
+     ],
+     [
+      "2023-12-14",
+      0.1325
+     ],
+     [
+      "2024-01-17",
+      0.1325
+     ],
+     [
+      "2024-02-15",
+      0.1325
+     ],
+     [
+      "2024-03-18",
+      0.1325
+     ],
+     [
+      "2024-04-17",
+      0.1325
+     ],
+     [
+      "2024-05-16",
+      0.1325
+     ],
+     [
+      "2024-06-17",
+      0.1325
+     ],
+     [
+      "2024-07-18",
+      0.1325
+     ],
+     [
+      "2024-08-16",
+      0.1325
+     ],
+     [
+      "2024-09-17",
+      0.1325
+     ],
+     [
+      "2024-10-17",
+      0.1325
+     ],
+     [
+      "2024-11-18",
+      0.1325
+     ],
+     [
+      "2024-12-18",
+      0.1325
+     ],
+     [
+      "2025-01-21",
+      0.13
+     ],
+     [
+      "2025-02-20",
+      0.13
+     ],
+     [
+      "2025-03-21",
+      0.13
+     ],
+     [
+      "2025-04-22",
+      0.13
+     ],
+     [
+      "2025-05-21",
+      0.13
+     ],
+     [
+      "2025-06-23",
+      0.13
+     ],
+     [
+      "2025-07-23",
+      0.13
+     ],
+     [
+      "2025-08-21",
+      0.13
+     ],
+     [
+      "2025-09-22",
+      0.1325
+     ],
+     [
+      "2025-10-22",
+      0.135
+     ],
+     [
+      "2025-11-21",
+      0.1375
+     ],
+     [
+      "2025-12-23",
+      0.145
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 9,
+     "distinct_levels": 20,
+     "last": 0.145,
+     "max_abs_change": 0.0625,
+     "mean_abs_change": 0.0037341772151898733,
+     "refits": 80,
+     "sd": 0.02579478811213614
+    }
+   },
+   "rolling (kinked_rolling)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.11603002942079946
+     ],
+     [
+      "2018-08-27",
+      0.11468031011910099
+     ],
+     [
+      "2018-09-26",
+      0.11241535689138711
+     ],
+     [
+      "2018-10-26",
+      0.11051023997615143
+     ],
+     [
+      "2018-11-28",
+      0.10782843941153235
+     ],
+     [
+      "2018-12-31",
+      0.10300595460281911
+     ],
+     [
+      "2019-01-31",
+      0.09747874356732524
+     ],
+     [
+      "2019-03-04",
+      0.09633816651613941
+     ],
+     [
+      "2019-04-02",
+      0.09553676449073938
+     ],
+     [
+      "2019-05-02",
+      0.09498764246307381
+     ],
+     [
+      "2019-06-03",
+      0.0933099747282271
+     ],
+     [
+      "2019-07-02",
+      0.08947014497454403
+     ],
+     [
+      "2019-08-01",
+      0.08762107377170228
+     ],
+     [
+      "2019-08-30",
+      0.08749416988168093
+     ],
+     [
+      "2019-10-01",
+      0.08650854788642381
+     ],
+     [
+      "2019-10-31",
+      0.08538495618347272
+     ],
+     [
+      "2019-12-03",
+      0.08519300154630319
+     ],
+     [
+      "2020-01-03",
+      0.08535927059483203
+     ],
+     [
+      "2020-02-04",
+      0.08539596429289016
+     ],
+     [
+      "2020-03-05",
+      0.08546609822566874
+     ],
+     [
+      "2020-04-03",
+      0.08569347869788184
+     ],
+     [
+      "2020-05-05",
+      0.08574745934959349
+     ],
+     [
+      "2020-06-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-07-06",
+      0.08574745934959349
+     ],
+     [
+      "2020-08-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-09-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-10-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-11-03",
+      0.08574745934959349
+     ],
+     [
+      "2020-12-04",
+      0.08574745934959349
+     ],
+     [
+      "2021-01-06",
+      0.08574745934959349
+     ],
+     [
+      "2021-02-05",
+      0.08574745934959349
+     ],
+     [
+      "2021-03-09",
+      0.08574745934959349
+     ],
+     [
+      "2021-04-08",
+      0.08574745934959349
+     ],
+     [
+      "2021-05-07",
+      0.08574745934959349
+     ],
+     [
+      "2021-06-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-07-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-08-06",
+      0.08608476074954939
+     ],
+     [
+      "2021-09-07",
+      0.08611802154907482
+     ],
+     [
+      "2021-10-06",
+      0.09052104983053696
+     ],
+     [
+      "2021-11-05",
+      0.09219148751122208
+     ],
+     [
+      "2021-12-08",
+      0.09303537718845999
+     ],
+     [
+      "2022-01-07",
+      0.09703341750748112
+     ],
+     [
+      "2022-02-08",
+      0.13130725202297597
+     ],
+     [
+      "2022-03-10",
+      0.13999295078226032
+     ],
+     [
+      "2022-04-08",
+      0.1409606632070628
+     ],
+     [
+      "2022-05-10",
+      0.14145628499877883
+     ],
+     [
+      "2022-06-09",
+      0.14145628499877883
+     ],
+     [
+      "2022-07-12",
+      0.14086773630042534
+     ],
+     [
+      "2022-08-10",
+      0.14200690786204156
+     ],
+     [
+      "2022-09-09",
+      0.1425536410601532
+     ],
+     [
+      "2022-10-11",
+      0.1423301059163357
+     ],
+     [
+      "2022-11-09",
+      0.14154818214834228
+     ],
+     [
+      "2022-12-12",
+      0.13835473972130158
+     ],
+     [
+      "2023-01-12",
+      0.1369553429952323
+     ],
+     [
+      "2023-02-13",
+      0.1355794846369395
+     ],
+     [
+      "2023-03-15",
+      0.13288138035442107
+     ],
+     [
+      "2023-04-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-05-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-06-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-07-17",
+      0.1326235821130118
+     ],
+     [
+      "2023-08-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-09-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-10-16",
+      0.1326235821130118
+     ],
+     [
+      "2023-11-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-12-14",
+      0.1326235821130118
+     ],
+     [
+      "2024-01-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-02-15",
+      0.1326235821130118
+     ],
+     [
+      "2024-03-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-04-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-05-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-06-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-07-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-08-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-09-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-10-17",
+      0.13348290958437595
+     ],
+     [
+      "2024-11-18",
+      0.1336527105513443
+     ],
+     [
+      "2024-12-18",
+      0.1336527105513443
+     ],
+     [
+      "2025-01-21",
+      0.13506042313425692
+     ],
+     [
+      "2025-02-20",
+      0.13537124607883894
+     ],
+     [
+      "2025-03-21",
+      0.13655660559305688
+     ],
+     [
+      "2025-04-22",
+      0.1365567481014445
+     ],
+     [
+      "2025-05-21",
+      0.13605844681820484
+     ],
+     [
+      "2025-06-23",
+      0.13550146868305948
+     ],
+     [
+      "2025-07-23",
+      0.13538159404867742
+     ],
+     [
+      "2025-08-21",
+      0.13538159404867742
+     ],
+     [
+      "2025-09-22",
+      0.1348164307139712
+     ],
+     [
+      "2025-10-22",
+      0.13242081195736263
+     ],
+     [
+      "2025-11-21",
+      0.12977529877228047
+     ],
+     [
+      "2025-12-23",
+      0.12297036025506548
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 1,
+     "distinct_levels": 56,
+     "last": 0.12297036025506548,
+     "max_abs_change": 0.034273834515494844,
+     "mean_abs_change": 0.0013572398668113132,
+     "refits": 90,
+     "sd": 0.022643748432611705
+    }
+   },
+   "structural_kinked_profile": {
+    "median_excess_at_fixed_nats": 1.2488674740875894,
+    "median_interval_width": 0.08250000000000002,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.135
+     ],
+     [
+      "2019-06-03",
+      0.185
+     ],
+     [
+      "2019-07-02",
+      0.16
+     ],
+     [
+      "2019-08-01",
+      0.13
+     ],
+     [
+      "2019-08-30",
+      0.1725
+     ],
+     [
+      "2019-10-01",
+      0.1325
+     ],
+     [
+      "2019-10-31",
+      0.175
+     ],
+     [
+      "2019-12-03",
+      0.14
+     ],
+     [
+      "2020-01-03",
+      0.1425
+     ],
+     [
+      "2020-02-04",
+      0.1875
+     ],
+     [
+      "2020-03-05",
+      0.1325
+     ],
+     [
+      "2020-04-03",
+      0.195
+     ],
+     [
+      "2020-05-05",
+      0.16
+     ],
+     [
+      "2020-06-04",
+      0.1825
+     ],
+     [
+      "2020-07-06",
+      0.17
+     ],
+     [
+      "2020-08-04",
+      0.18
+     ],
+     [
+      "2020-09-02",
+      0.1725
+     ],
+     [
+      "2020-10-02",
+      0.17
+     ],
+     [
+      "2020-11-03",
+      0.1675
+     ],
+     [
+      "2020-12-04",
+      0.1675
+     ],
+     [
+      "2021-01-06",
+      0.17
+     ],
+     [
+      "2021-02-05",
+      0.165
+     ],
+     [
+      "2021-03-09",
+      0.165
+     ],
+     [
+      "2021-04-08",
+      0.185
+     ],
+     [
+      "2021-05-07",
+      0.195
+     ],
+     [
+      "2021-06-08",
+      0.1925
+     ],
+     [
+      "2021-07-08",
+      0.1975
+     ],
+     [
+      "2021-08-06",
+      0.195
+     ],
+     [
+      "2021-09-07",
+      0.19
+     ],
+     [
+      "2021-10-06",
+      0.2
+     ],
+     [
+      "2021-11-05",
+      0.1975
+     ],
+     [
+      "2021-12-08",
+      0.195
+     ],
+     [
+      "2022-01-07",
+      0.195
+     ],
+     [
+      "2022-02-08",
+      0.2
+     ],
+     [
+      "2022-03-10",
+      0.195
+     ],
+     [
+      "2022-04-08",
+      0.195
+     ],
+     [
+      "2022-05-10",
+      0.1975
+     ],
+     [
+      "2022-06-09",
+      0.195
+     ],
+     [
+      "2022-07-12",
+      0.195
+     ],
+     [
+      "2022-08-10",
+      0.1975
+     ],
+     [
+      "2022-09-09",
+      0.195
+     ],
+     [
+      "2022-10-11",
+      0.1975
+     ],
+     [
+      "2022-11-09",
+      0.195
+     ],
+     [
+      "2022-12-12",
+      0.195
+     ],
+     [
+      "2023-01-12",
+      0.195
+     ],
+     [
+      "2023-02-13",
+      0.1975
+     ],
+     [
+      "2023-03-15",
+      0.2
+     ],
+     [
+      "2023-04-14",
+      0.195
+     ],
+     [
+      "2023-05-15",
+      0.2
+     ],
+     [
+      "2023-06-14",
+      0.195
+     ],
+     [
+      "2023-07-17",
+      0.2
+     ],
+     [
+      "2023-08-15",
+      0.1975
+     ],
+     [
+      "2023-09-14",
+      0.195
+     ],
+     [
+      "2023-10-16",
+      0.1975
+     ],
+     [
+      "2023-11-14",
+      0.2
+     ],
+     [
+      "2023-12-14",
+      0.195
+     ],
+     [
+      "2024-01-17",
+      0.2
+     ],
+     [
+      "2024-02-15",
+      0.1975
+     ],
+     [
+      "2024-03-18",
+      0.1975
+     ],
+     [
+      "2024-04-17",
+      0.195
+     ],
+     [
+      "2024-05-16",
+      0.2
+     ],
+     [
+      "2024-06-17",
+      0.195
+     ],
+     [
+      "2024-07-18",
+      0.195
+     ],
+     [
+      "2024-08-16",
+      0.195
+     ],
+     [
+      "2024-09-17",
+      0.1975
+     ],
+     [
+      "2024-10-17",
+      0.1975
+     ],
+     [
+      "2024-11-18",
+      0.1975
+     ],
+     [
+      "2024-12-18",
+      0.2
+     ],
+     [
+      "2025-01-21",
+      0.2
+     ],
+     [
+      "2025-02-20",
+      0.2
+     ],
+     [
+      "2025-03-21",
+      0.195
+     ],
+     [
+      "2025-04-22",
+      0.195
+     ],
+     [
+      "2025-05-21",
+      0.2
+     ],
+     [
+      "2025-06-23",
+      0.195
+     ],
+     [
+      "2025-07-23",
+      0.195
+     ],
+     [
+      "2025-08-21",
+      0.1975
+     ],
+     [
+      "2025-09-22",
+      0.195
+     ],
+     [
+      "2025-10-22",
+      0.195
+     ],
+     [
+      "2025-11-21",
+      0.195
+     ],
+     [
+      "2025-12-23",
+      0.2
+     ]
+    ],
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.1625,
+    "share_with_several_local_minima": 1.0,
+    "stability": {
+     "changes_of_0.01_or_more": 17,
+     "distinct_levels": 20,
+     "last": 0.2,
+     "max_abs_change": 0.0625,
+     "mean_abs_change": 0.008924050632911391,
+     "refits": 80,
+     "sd": 0.018148583794610533
+    }
+   },
+   "structural_kinked_slow": {
+    "median_excess_at_fixed_nats": 1.2488674740875894,
+    "median_interval_width": 0.08250000000000002,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1225
+     ],
+     [
+      "2019-06-03",
+      0.125
+     ],
+     [
+      "2019-07-02",
+      0.125
+     ],
+     [
+      "2019-08-01",
+      0.125
+     ],
+     [
+      "2019-08-30",
+      0.125
+     ],
+     [
+      "2019-10-01",
+      0.125
+     ],
+     [
+      "2019-10-31",
+      0.125
+     ],
+     [
+      "2019-12-03",
+      0.125
+     ],
+     [
+      "2020-01-03",
+      0.125
+     ],
+     [
+      "2020-02-04",
+      0.125
+     ],
+     [
+      "2020-03-05",
+      0.125
+     ],
+     [
+      "2020-04-03",
+      0.125
+     ],
+     [
+      "2020-05-05",
+      0.1275
+     ],
+     [
+      "2020-06-04",
+      0.13
+     ],
+     [
+      "2020-07-06",
+      0.1325
+     ],
+     [
+      "2020-08-04",
+      0.135
+     ],
+     [
+      "2020-09-02",
+      0.1375
+     ],
+     [
+      "2020-10-02",
+      0.14
+     ],
+     [
+      "2020-11-03",
+      0.14
+     ],
+     [
+      "2020-12-04",
+      0.14
+     ],
+     [
+      "2021-01-06",
+      0.14
+     ],
+     [
+      "2021-02-05",
+      0.14
+     ],
+     [
+      "2021-03-09",
+      0.14
+     ],
+     [
+      "2021-04-08",
+      0.14
+     ],
+     [
+      "2021-05-07",
+      0.14
+     ],
+     [
+      "2021-06-08",
+      0.14
+     ],
+     [
+      "2021-07-08",
+      0.14
+     ],
+     [
+      "2021-08-06",
+      0.14
+     ],
+     [
+      "2021-09-07",
+      0.14
+     ],
+     [
+      "2021-10-06",
+      0.14
+     ],
+     [
+      "2021-11-05",
+      0.14
+     ],
+     [
+      "2021-12-08",
+      0.14
+     ],
+     [
+      "2022-01-07",
+      0.14
+     ],
+     [
+      "2022-02-08",
+      0.14
+     ],
+     [
+      "2022-03-10",
+      0.14
+     ],
+     [
+      "2022-04-08",
+      0.14
+     ],
+     [
+      "2022-05-10",
+      0.14
+     ],
+     [
+      "2022-06-09",
+      0.14
+     ],
+     [
+      "2022-07-12",
+      0.14
+     ],
+     [
+      "2022-08-10",
+      0.14
+     ],
+     [
+      "2022-09-09",
+      0.14
+     ],
+     [
+      "2022-10-11",
+      0.14
+     ],
+     [
+      "2022-11-09",
+      0.14
+     ],
+     [
+      "2022-12-12",
+      0.14
+     ],
+     [
+      "2023-01-12",
+      0.14
+     ],
+     [
+      "2023-02-13",
+      0.14
+     ],
+     [
+      "2023-03-15",
+      0.14
+     ],
+     [
+      "2023-04-14",
+      0.14
+     ],
+     [
+      "2023-05-15",
+      0.14
+     ],
+     [
+      "2023-06-14",
+      0.14
+     ],
+     [
+      "2023-07-17",
+      0.14
+     ],
+     [
+      "2023-08-15",
+      0.14
+     ],
+     [
+      "2023-09-14",
+      0.14
+     ],
+     [
+      "2023-10-16",
+      0.14
+     ],
+     [
+      "2023-11-14",
+      0.14
+     ],
+     [
+      "2023-12-14",
+      0.14
+     ],
+     [
+      "2024-01-17",
+      0.14
+     ],
+     [
+      "2024-02-15",
+      0.14
+     ],
+     [
+      "2024-03-18",
+      0.14
+     ],
+     [
+      "2024-04-17",
+      0.14
+     ],
+     [
+      "2024-05-16",
+      0.14
+     ],
+     [
+      "2024-06-17",
+      0.14
+     ],
+     [
+      "2024-07-18",
+      0.14
+     ],
+     [
+      "2024-08-16",
+      0.14
+     ],
+     [
+      "2024-09-17",
+      0.14
+     ],
+     [
+      "2024-10-17",
+      0.14
+     ],
+     [
+      "2024-11-18",
+      0.14
+     ],
+     [
+      "2024-12-18",
+      0.14
+     ],
+     [
+      "2025-01-21",
+      0.14
+     ],
+     [
+      "2025-02-20",
+      0.14
+     ],
+     [
+      "2025-03-21",
+      0.14
+     ],
+     [
+      "2025-04-22",
+      0.14
+     ],
+     [
+      "2025-05-21",
+      0.14
+     ],
+     [
+      "2025-06-23",
+      0.14
+     ],
+     [
+      "2025-07-23",
+      0.14
+     ],
+     [
+      "2025-08-21",
+      0.14
+     ],
+     [
+      "2025-09-22",
+      0.14
+     ],
+     [
+      "2025-10-22",
+      0.14
+     ],
+     [
+      "2025-11-21",
+      0.14
+     ],
+     [
+      "2025-12-23",
+      0.14
+     ]
+    ],
+    "profile_level_stability": {
+     "changes_of_0.01_or_more": 17,
+     "distinct_levels": 20,
+     "last": 0.2,
+     "max_abs_change": 0.0625,
+     "mean_abs_change": 0.008924050632911391,
+     "refits": 80,
+     "sd": 0.018148583794610533
+    },
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.0,
+    "share_with_several_local_minima": 1.0,
+    "stability": {
+     "changes_of_0.01_or_more": 0,
+     "distinct_levels": 8,
+     "last": 0.14,
+     "max_abs_change": 0.0025000000000000022,
+     "mean_abs_change": 0.00022151898734177236,
+     "refits": 80,
+     "sd": 0.005612486080160917
+    }
+   }
+  },
+  "3": {
+   "least_squares (kinked_fitted)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1175
+     ],
+     [
+      "2019-06-03",
+      0.1175
+     ],
+     [
+      "2019-07-02",
+      0.1175
+     ],
+     [
+      "2019-08-01",
+      0.1175
+     ],
+     [
+      "2019-08-30",
+      0.1175
+     ],
+     [
+      "2019-10-01",
+      0.115
+     ],
+     [
+      "2019-10-31",
+      0.115
+     ],
+     [
+      "2019-12-03",
+      0.115
+     ],
+     [
+      "2020-01-03",
+      0.115
+     ],
+     [
+      "2020-02-04",
+      0.115
+     ],
+     [
+      "2020-03-05",
+      0.115
+     ],
+     [
+      "2020-04-03",
+      0.115
+     ],
+     [
+      "2020-05-05",
+      0.1175
+     ],
+     [
+      "2020-06-04",
+      0.12
+     ],
+     [
+      "2020-07-06",
+      0.1175
+     ],
+     [
+      "2020-08-04",
+      0.115
+     ],
+     [
+      "2020-09-02",
+      0.115
+     ],
+     [
+      "2020-10-02",
+      0.115
+     ],
+     [
+      "2020-11-03",
+      0.115
+     ],
+     [
+      "2020-12-04",
+      0.115
+     ],
+     [
+      "2021-01-06",
+      0.115
+     ],
+     [
+      "2021-02-05",
+      0.115
+     ],
+     [
+      "2021-03-09",
+      0.115
+     ],
+     [
+      "2021-04-08",
+      0.115
+     ],
+     [
+      "2021-05-07",
+      0.1175
+     ],
+     [
+      "2021-06-08",
+      0.1175
+     ],
+     [
+      "2021-07-08",
+      0.18
+     ],
+     [
+      "2021-08-06",
+      0.18
+     ],
+     [
+      "2021-09-07",
+      0.1825
+     ],
+     [
+      "2021-10-06",
+      0.1825
+     ],
+     [
+      "2021-11-05",
+      0.185
+     ],
+     [
+      "2021-12-08",
+      0.185
+     ],
+     [
+      "2022-01-07",
+      0.185
+     ],
+     [
+      "2022-02-08",
+      0.1825
+     ],
+     [
+      "2022-03-10",
+      0.18
+     ],
+     [
+      "2022-04-08",
+      0.1775
+     ],
+     [
+      "2022-05-10",
+      0.175
+     ],
+     [
+      "2022-06-09",
+      0.1725
+     ],
+     [
+      "2022-07-12",
+      0.17
+     ],
+     [
+      "2022-08-10",
+      0.1675
+     ],
+     [
+      "2022-09-09",
+      0.1675
+     ],
+     [
+      "2022-10-11",
+      0.145
+     ],
+     [
+      "2022-11-09",
+      0.135
+     ],
+     [
+      "2022-12-12",
+      0.135
+     ],
+     [
+      "2023-01-12",
+      0.135
+     ],
+     [
+      "2023-02-13",
+      0.1325
+     ],
+     [
+      "2023-03-15",
+      0.1325
+     ],
+     [
+      "2023-04-14",
+      0.1325
+     ],
+     [
+      "2023-05-15",
+      0.1325
+     ],
+     [
+      "2023-06-14",
+      0.1325
+     ],
+     [
+      "2023-07-17",
+      0.1325
+     ],
+     [
+      "2023-08-15",
+      0.1325
+     ],
+     [
+      "2023-09-14",
+      0.1325
+     ],
+     [
+      "2023-10-16",
+      0.1325
+     ],
+     [
+      "2023-11-14",
+      0.1325
+     ],
+     [
+      "2023-12-14",
+      0.1325
+     ],
+     [
+      "2024-01-17",
+      0.1325
+     ],
+     [
+      "2024-02-15",
+      0.1325
+     ],
+     [
+      "2024-03-18",
+      0.1325
+     ],
+     [
+      "2024-04-17",
+      0.1325
+     ],
+     [
+      "2024-05-16",
+      0.1325
+     ],
+     [
+      "2024-06-17",
+      0.1325
+     ],
+     [
+      "2024-07-18",
+      0.1325
+     ],
+     [
+      "2024-08-16",
+      0.1325
+     ],
+     [
+      "2024-09-17",
+      0.1325
+     ],
+     [
+      "2024-10-17",
+      0.1325
+     ],
+     [
+      "2024-11-18",
+      0.1325
+     ],
+     [
+      "2024-12-18",
+      0.1325
+     ],
+     [
+      "2025-01-21",
+      0.1325
+     ],
+     [
+      "2025-02-20",
+      0.1325
+     ],
+     [
+      "2025-03-21",
+      0.1325
+     ],
+     [
+      "2025-04-22",
+      0.1325
+     ],
+     [
+      "2025-05-21",
+      0.1325
+     ],
+     [
+      "2025-06-23",
+      0.1325
+     ],
+     [
+      "2025-07-23",
+      0.1325
+     ],
+     [
+      "2025-08-21",
+      0.1325
+     ],
+     [
+      "2025-09-22",
+      0.1325
+     ],
+     [
+      "2025-10-22",
+      0.135
+     ],
+     [
+      "2025-11-21",
+      0.1375
+     ],
+     [
+      "2025-12-23",
+      0.145
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 3,
+     "distinct_levels": 15,
+     "last": 0.145,
+     "max_abs_change": 0.0625,
+     "mean_abs_change": 0.001867088607594936,
+     "refits": 80,
+     "sd": 0.021841022719586642
+    }
+   },
+   "rolling (kinked_rolling)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.11603002942079946
+     ],
+     [
+      "2018-08-27",
+      0.11468031011910099
+     ],
+     [
+      "2018-09-26",
+      0.11241535689138711
+     ],
+     [
+      "2018-10-26",
+      0.11051023997615143
+     ],
+     [
+      "2018-11-28",
+      0.10782843941153235
+     ],
+     [
+      "2018-12-31",
+      0.10300595460281911
+     ],
+     [
+      "2019-01-31",
+      0.09747874356732524
+     ],
+     [
+      "2019-03-04",
+      0.09633816651613941
+     ],
+     [
+      "2019-04-02",
+      0.09553676449073938
+     ],
+     [
+      "2019-05-02",
+      0.09498764246307381
+     ],
+     [
+      "2019-06-03",
+      0.0933099747282271
+     ],
+     [
+      "2019-07-02",
+      0.08947014497454403
+     ],
+     [
+      "2019-08-01",
+      0.08762107377170228
+     ],
+     [
+      "2019-08-30",
+      0.08749416988168093
+     ],
+     [
+      "2019-10-01",
+      0.08650854788642381
+     ],
+     [
+      "2019-10-31",
+      0.08538495618347272
+     ],
+     [
+      "2019-12-03",
+      0.08519300154630319
+     ],
+     [
+      "2020-01-03",
+      0.08535927059483203
+     ],
+     [
+      "2020-02-04",
+      0.08539596429289016
+     ],
+     [
+      "2020-03-05",
+      0.08546609822566874
+     ],
+     [
+      "2020-04-03",
+      0.08569347869788184
+     ],
+     [
+      "2020-05-05",
+      0.08574745934959349
+     ],
+     [
+      "2020-06-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-07-06",
+      0.08574745934959349
+     ],
+     [
+      "2020-08-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-09-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-10-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-11-03",
+      0.08574745934959349
+     ],
+     [
+      "2020-12-04",
+      0.08574745934959349
+     ],
+     [
+      "2021-01-06",
+      0.08574745934959349
+     ],
+     [
+      "2021-02-05",
+      0.08574745934959349
+     ],
+     [
+      "2021-03-09",
+      0.08574745934959349
+     ],
+     [
+      "2021-04-08",
+      0.08574745934959349
+     ],
+     [
+      "2021-05-07",
+      0.08574745934959349
+     ],
+     [
+      "2021-06-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-07-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-08-06",
+      0.08608476074954939
+     ],
+     [
+      "2021-09-07",
+      0.08611802154907482
+     ],
+     [
+      "2021-10-06",
+      0.09052104983053696
+     ],
+     [
+      "2021-11-05",
+      0.09219148751122208
+     ],
+     [
+      "2021-12-08",
+      0.09303537718845999
+     ],
+     [
+      "2022-01-07",
+      0.09703341750748112
+     ],
+     [
+      "2022-02-08",
+      0.13130725202297597
+     ],
+     [
+      "2022-03-10",
+      0.13999295078226032
+     ],
+     [
+      "2022-04-08",
+      0.1409606632070628
+     ],
+     [
+      "2022-05-10",
+      0.14145628499877883
+     ],
+     [
+      "2022-06-09",
+      0.14145628499877883
+     ],
+     [
+      "2022-07-12",
+      0.14086773630042534
+     ],
+     [
+      "2022-08-10",
+      0.14200690786204156
+     ],
+     [
+      "2022-09-09",
+      0.1425536410601532
+     ],
+     [
+      "2022-10-11",
+      0.1423301059163357
+     ],
+     [
+      "2022-11-09",
+      0.14154818214834228
+     ],
+     [
+      "2022-12-12",
+      0.13835473972130158
+     ],
+     [
+      "2023-01-12",
+      0.1369553429952323
+     ],
+     [
+      "2023-02-13",
+      0.1355794846369395
+     ],
+     [
+      "2023-03-15",
+      0.13288138035442107
+     ],
+     [
+      "2023-04-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-05-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-06-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-07-17",
+      0.1326235821130118
+     ],
+     [
+      "2023-08-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-09-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-10-16",
+      0.1326235821130118
+     ],
+     [
+      "2023-11-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-12-14",
+      0.1326235821130118
+     ],
+     [
+      "2024-01-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-02-15",
+      0.1326235821130118
+     ],
+     [
+      "2024-03-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-04-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-05-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-06-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-07-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-08-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-09-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-10-17",
+      0.13348290958437595
+     ],
+     [
+      "2024-11-18",
+      0.1336527105513443
+     ],
+     [
+      "2024-12-18",
+      0.1336527105513443
+     ],
+     [
+      "2025-01-21",
+      0.13506042313425692
+     ],
+     [
+      "2025-02-20",
+      0.13537124607883894
+     ],
+     [
+      "2025-03-21",
+      0.13655660559305688
+     ],
+     [
+      "2025-04-22",
+      0.1365567481014445
+     ],
+     [
+      "2025-05-21",
+      0.13605844681820484
+     ],
+     [
+      "2025-06-23",
+      0.13550146868305948
+     ],
+     [
+      "2025-07-23",
+      0.13538159404867742
+     ],
+     [
+      "2025-08-21",
+      0.13538159404867742
+     ],
+     [
+      "2025-09-22",
+      0.1348164307139712
+     ],
+     [
+      "2025-10-22",
+      0.13242081195736263
+     ],
+     [
+      "2025-11-21",
+      0.12977529877228047
+     ],
+     [
+      "2025-12-23",
+      0.12297036025506548
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 1,
+     "distinct_levels": 56,
+     "last": 0.12297036025506548,
+     "max_abs_change": 0.034273834515494844,
+     "mean_abs_change": 0.0013572398668113132,
+     "refits": 90,
+     "sd": 0.022643748432611705
+    }
+   },
+   "structural_kinked_profile": {
+    "median_excess_at_fixed_nats": 1.7320016120063997,
+    "median_interval_width": 0.08000000000000002,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.165
+     ],
+     [
+      "2019-06-03",
+      0.14
+     ],
+     [
+      "2019-07-02",
+      0.18
+     ],
+     [
+      "2019-08-01",
+      0.155
+     ],
+     [
+      "2019-08-30",
+      0.13
+     ],
+     [
+      "2019-10-01",
+      0.1725
+     ],
+     [
+      "2019-10-31",
+      0.1625
+     ],
+     [
+      "2019-12-03",
+      0.13
+     ],
+     [
+      "2020-01-03",
+      0.1425
+     ],
+     [
+      "2020-02-04",
+      0.145
+     ],
+     [
+      "2020-03-05",
+      0.1625
+     ],
+     [
+      "2020-04-03",
+      0.1475
+     ],
+     [
+      "2020-05-05",
+      0.165
+     ],
+     [
+      "2020-06-04",
+      0.1825
+     ],
+     [
+      "2020-07-06",
+      0.185
+     ],
+     [
+      "2020-08-04",
+      0.1675
+     ],
+     [
+      "2020-09-02",
+      0.1625
+     ],
+     [
+      "2020-10-02",
+      0.18
+     ],
+     [
+      "2020-11-03",
+      0.1775
+     ],
+     [
+      "2020-12-04",
+      0.1875
+     ],
+     [
+      "2021-01-06",
+      0.165
+     ],
+     [
+      "2021-02-05",
+      0.1625
+     ],
+     [
+      "2021-03-09",
+      0.1675
+     ],
+     [
+      "2021-04-08",
+      0.1825
+     ],
+     [
+      "2021-05-07",
+      0.1875
+     ],
+     [
+      "2021-06-08",
+      0.1925
+     ],
+     [
+      "2021-07-08",
+      0.2
+     ],
+     [
+      "2021-08-06",
+      0.1925
+     ],
+     [
+      "2021-09-07",
+      0.1925
+     ],
+     [
+      "2021-10-06",
+      0.195
+     ],
+     [
+      "2021-11-05",
+      0.195
+     ],
+     [
+      "2021-12-08",
+      0.1975
+     ],
+     [
+      "2022-01-07",
+      0.195
+     ],
+     [
+      "2022-02-08",
+      0.1975
+     ],
+     [
+      "2022-03-10",
+      0.195
+     ],
+     [
+      "2022-04-08",
+      0.195
+     ],
+     [
+      "2022-05-10",
+      0.195
+     ],
+     [
+      "2022-06-09",
+      0.195
+     ],
+     [
+      "2022-07-12",
+      0.195
+     ],
+     [
+      "2022-08-10",
+      0.2
+     ],
+     [
+      "2022-09-09",
+      0.195
+     ],
+     [
+      "2022-10-11",
+      0.1975
+     ],
+     [
+      "2022-11-09",
+      0.2
+     ],
+     [
+      "2022-12-12",
+      0.2
+     ],
+     [
+      "2023-01-12",
+      0.2
+     ],
+     [
+      "2023-02-13",
+      0.195
+     ],
+     [
+      "2023-03-15",
+      0.195
+     ],
+     [
+      "2023-04-14",
+      0.1975
+     ],
+     [
+      "2023-05-15",
+      0.195
+     ],
+     [
+      "2023-06-14",
+      0.195
+     ],
+     [
+      "2023-07-17",
+      0.195
+     ],
+     [
+      "2023-08-15",
+      0.2
+     ],
+     [
+      "2023-09-14",
+      0.195
+     ],
+     [
+      "2023-10-16",
+      0.195
+     ],
+     [
+      "2023-11-14",
+      0.2
+     ],
+     [
+      "2023-12-14",
+      0.195
+     ],
+     [
+      "2024-01-17",
+      0.2
+     ],
+     [
+      "2024-02-15",
+      0.1975
+     ],
+     [
+      "2024-03-18",
+      0.1975
+     ],
+     [
+      "2024-04-17",
+      0.2
+     ],
+     [
+      "2024-05-16",
+      0.195
+     ],
+     [
+      "2024-06-17",
+      0.195
+     ],
+     [
+      "2024-07-18",
+      0.195
+     ],
+     [
+      "2024-08-16",
+      0.1975
+     ],
+     [
+      "2024-09-17",
+      0.195
+     ],
+     [
+      "2024-10-17",
+      0.1975
+     ],
+     [
+      "2024-11-18",
+      0.195
+     ],
+     [
+      "2024-12-18",
+      0.2
+     ],
+     [
+      "2025-01-21",
+      0.195
+     ],
+     [
+      "2025-02-20",
+      0.195
+     ],
+     [
+      "2025-03-21",
+      0.195
+     ],
+     [
+      "2025-04-22",
+      0.195
+     ],
+     [
+      "2025-05-21",
+      0.195
+     ],
+     [
+      "2025-06-23",
+      0.2
+     ],
+     [
+      "2025-07-23",
+      0.1975
+     ],
+     [
+      "2025-08-21",
+      0.2
+     ],
+     [
+      "2025-09-22",
+      0.195
+     ],
+     [
+      "2025-10-22",
+      0.1975
+     ],
+     [
+      "2025-11-21",
+      0.195
+     ],
+     [
+      "2025-12-23",
+      0.2
+     ]
+    ],
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.1625,
+    "share_with_several_local_minima": 0.575,
+    "stability": {
+     "changes_of_0.01_or_more": 17,
+     "distinct_levels": 19,
+     "last": 0.2,
+     "max_abs_change": 0.04249999999999998,
+     "mean_abs_change": 0.006645569620253164,
+     "refits": 80,
+     "sd": 0.017787125567035843
+    }
+   },
+   "structural_kinked_slow": {
+    "median_excess_at_fixed_nats": 1.7320016120063997,
+    "median_interval_width": 0.08000000000000002,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1225
+     ],
+     [
+      "2019-06-03",
+      0.125
+     ],
+     [
+      "2019-07-02",
+      0.125
+     ],
+     [
+      "2019-08-01",
+      0.125
+     ],
+     [
+      "2019-08-30",
+      0.125
+     ],
+     [
+      "2019-10-01",
+      0.125
+     ],
+     [
+      "2019-10-31",
+      0.125
+     ],
+     [
+      "2019-12-03",
+      0.125
+     ],
+     [
+      "2020-01-03",
+      0.125
+     ],
+     [
+      "2020-02-04",
+      0.125
+     ],
+     [
+      "2020-03-05",
+      0.125
+     ],
+     [
+      "2020-04-03",
+      0.125
+     ],
+     [
+      "2020-05-05",
+      0.1275
+     ],
+     [
+      "2020-06-04",
+      0.13
+     ],
+     [
+      "2020-07-06",
+      0.1325
+     ],
+     [
+      "2020-08-04",
+      0.135
+     ],
+     [
+      "2020-09-02",
+      0.1375
+     ],
+     [
+      "2020-10-02",
+      0.14
+     ],
+     [
+      "2020-11-03",
+      0.14
+     ],
+     [
+      "2020-12-04",
+      0.14
+     ],
+     [
+      "2021-01-06",
+      0.1425
+     ],
+     [
+      "2021-02-05",
+      0.1425
+     ],
+     [
+      "2021-03-09",
+      0.1425
+     ],
+     [
+      "2021-04-08",
+      0.1425
+     ],
+     [
+      "2021-05-07",
+      0.1425
+     ],
+     [
+      "2021-06-08",
+      0.1425
+     ],
+     [
+      "2021-07-08",
+      0.1425
+     ],
+     [
+      "2021-08-06",
+      0.1425
+     ],
+     [
+      "2021-09-07",
+      0.1425
+     ],
+     [
+      "2021-10-06",
+      0.1425
+     ],
+     [
+      "2021-11-05",
+      0.1425
+     ],
+     [
+      "2021-12-08",
+      0.1425
+     ],
+     [
+      "2022-01-07",
+      0.1425
+     ],
+     [
+      "2022-02-08",
+      0.1425
+     ],
+     [
+      "2022-03-10",
+      0.1425
+     ],
+     [
+      "2022-04-08",
+      0.1425
+     ],
+     [
+      "2022-05-10",
+      0.1425
+     ],
+     [
+      "2022-06-09",
+      0.1425
+     ],
+     [
+      "2022-07-12",
+      0.1425
+     ],
+     [
+      "2022-08-10",
+      0.1425
+     ],
+     [
+      "2022-09-09",
+      0.1425
+     ],
+     [
+      "2022-10-11",
+      0.1425
+     ],
+     [
+      "2022-11-09",
+      0.1425
+     ],
+     [
+      "2022-12-12",
+      0.1425
+     ],
+     [
+      "2023-01-12",
+      0.1425
+     ],
+     [
+      "2023-02-13",
+      0.1425
+     ],
+     [
+      "2023-03-15",
+      0.1425
+     ],
+     [
+      "2023-04-14",
+      0.1425
+     ],
+     [
+      "2023-05-15",
+      0.1425
+     ],
+     [
+      "2023-06-14",
+      0.1425
+     ],
+     [
+      "2023-07-17",
+      0.1425
+     ],
+     [
+      "2023-08-15",
+      0.1425
+     ],
+     [
+      "2023-09-14",
+      0.1425
+     ],
+     [
+      "2023-10-16",
+      0.1425
+     ],
+     [
+      "2023-11-14",
+      0.1425
+     ],
+     [
+      "2023-12-14",
+      0.1425
+     ],
+     [
+      "2024-01-17",
+      0.1425
+     ],
+     [
+      "2024-02-15",
+      0.1425
+     ],
+     [
+      "2024-03-18",
+      0.1425
+     ],
+     [
+      "2024-04-17",
+      0.1425
+     ],
+     [
+      "2024-05-16",
+      0.1425
+     ],
+     [
+      "2024-06-17",
+      0.1425
+     ],
+     [
+      "2024-07-18",
+      0.1425
+     ],
+     [
+      "2024-08-16",
+      0.1425
+     ],
+     [
+      "2024-09-17",
+      0.1425
+     ],
+     [
+      "2024-10-17",
+      0.1425
+     ],
+     [
+      "2024-11-18",
+      0.1425
+     ],
+     [
+      "2024-12-18",
+      0.1425
+     ],
+     [
+      "2025-01-21",
+      0.1425
+     ],
+     [
+      "2025-02-20",
+      0.1425
+     ],
+     [
+      "2025-03-21",
+      0.1425
+     ],
+     [
+      "2025-04-22",
+      0.1425
+     ],
+     [
+      "2025-05-21",
+      0.1425
+     ],
+     [
+      "2025-06-23",
+      0.1425
+     ],
+     [
+      "2025-07-23",
+      0.1425
+     ],
+     [
+      "2025-08-21",
+      0.1425
+     ],
+     [
+      "2025-09-22",
+      0.1425
+     ],
+     [
+      "2025-10-22",
+      0.1425
+     ],
+     [
+      "2025-11-21",
+      0.1425
+     ],
+     [
+      "2025-12-23",
+      0.1425
+     ]
+    ],
+    "profile_level_stability": {
+     "changes_of_0.01_or_more": 17,
+     "distinct_levels": 19,
+     "last": 0.2,
+     "max_abs_change": 0.04249999999999998,
+     "mean_abs_change": 0.006645569620253164,
+     "refits": 80,
+     "sd": 0.017787125567035843
+    },
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.0,
+    "share_with_several_local_minima": 0.575,
+    "stability": {
+     "changes_of_0.01_or_more": 0,
+     "distinct_levels": 9,
+     "last": 0.1425,
+     "max_abs_change": 0.0025000000000000022,
+     "mean_abs_change": 0.00025316455696202517,
+     "refits": 80,
+     "sd": 0.006556247020971673
+    }
+   }
+  },
+  "4": {
+   "least_squares (kinked_fitted)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1175
+     ],
+     [
+      "2019-06-03",
+      0.1175
+     ],
+     [
+      "2019-07-02",
+      0.1175
+     ],
+     [
+      "2019-08-01",
+      0.1175
+     ],
+     [
+      "2019-08-30",
+      0.12
+     ],
+     [
+      "2019-10-01",
+      0.115
+     ],
+     [
+      "2019-10-31",
+      0.115
+     ],
+     [
+      "2019-12-03",
+      0.1175
+     ],
+     [
+      "2020-01-03",
+      0.1175
+     ],
+     [
+      "2020-02-04",
+      0.1175
+     ],
+     [
+      "2020-03-05",
+      0.115
+     ],
+     [
+      "2020-04-03",
+      0.115
+     ],
+     [
+      "2020-05-05",
+      0.1175
+     ],
+     [
+      "2020-06-04",
+      0.12
+     ],
+     [
+      "2020-07-06",
+      0.1175
+     ],
+     [
+      "2020-08-04",
+      0.115
+     ],
+     [
+      "2020-09-02",
+      0.115
+     ],
+     [
+      "2020-10-02",
+      0.115
+     ],
+     [
+      "2020-11-03",
+      0.115
+     ],
+     [
+      "2020-12-04",
+      0.115
+     ],
+     [
+      "2021-01-06",
+      0.115
+     ],
+     [
+      "2021-02-05",
+      0.115
+     ],
+     [
+      "2021-03-09",
+      0.115
+     ],
+     [
+      "2021-04-08",
+      0.115
+     ],
+     [
+      "2021-05-07",
+      0.1175
+     ],
+     [
+      "2021-06-08",
+      0.1175
+     ],
+     [
+      "2021-07-08",
+      0.18
+     ],
+     [
+      "2021-08-06",
+      0.1825
+     ],
+     [
+      "2021-09-07",
+      0.1825
+     ],
+     [
+      "2021-10-06",
+      0.1825
+     ],
+     [
+      "2021-11-05",
+      0.185
+     ],
+     [
+      "2021-12-08",
+      0.185
+     ],
+     [
+      "2022-01-07",
+      0.185
+     ],
+     [
+      "2022-02-08",
+      0.1825
+     ],
+     [
+      "2022-03-10",
+      0.18
+     ],
+     [
+      "2022-04-08",
+      0.1775
+     ],
+     [
+      "2022-05-10",
+      0.175
+     ],
+     [
+      "2022-06-09",
+      0.1725
+     ],
+     [
+      "2022-07-12",
+      0.17
+     ],
+     [
+      "2022-08-10",
+      0.1675
+     ],
+     [
+      "2022-09-09",
+      0.1675
+     ],
+     [
+      "2022-10-11",
+      0.145
+     ],
+     [
+      "2022-11-09",
+      0.135
+     ],
+     [
+      "2022-12-12",
+      0.135
+     ],
+     [
+      "2023-01-12",
+      0.135
+     ],
+     [
+      "2023-02-13",
+      0.135
+     ],
+     [
+      "2023-03-15",
+      0.1325
+     ],
+     [
+      "2023-04-14",
+      0.1325
+     ],
+     [
+      "2023-05-15",
+      0.1325
+     ],
+     [
+      "2023-06-14",
+      0.1325
+     ],
+     [
+      "2023-07-17",
+      0.1325
+     ],
+     [
+      "2023-08-15",
+      0.1325
+     ],
+     [
+      "2023-09-14",
+      0.1325
+     ],
+     [
+      "2023-10-16",
+      0.1325
+     ],
+     [
+      "2023-11-14",
+      0.1325
+     ],
+     [
+      "2023-12-14",
+      0.1325
+     ],
+     [
+      "2024-01-17",
+      0.1325
+     ],
+     [
+      "2024-02-15",
+      0.1325
+     ],
+     [
+      "2024-03-18",
+      0.1325
+     ],
+     [
+      "2024-04-17",
+      0.1325
+     ],
+     [
+      "2024-05-16",
+      0.1325
+     ],
+     [
+      "2024-06-17",
+      0.1325
+     ],
+     [
+      "2024-07-18",
+      0.1325
+     ],
+     [
+      "2024-08-16",
+      0.1325
+     ],
+     [
+      "2024-09-17",
+      0.1325
+     ],
+     [
+      "2024-10-17",
+      0.1325
+     ],
+     [
+      "2024-11-18",
+      0.1325
+     ],
+     [
+      "2024-12-18",
+      0.1325
+     ],
+     [
+      "2025-01-21",
+      0.1325
+     ],
+     [
+      "2025-02-20",
+      0.1325
+     ],
+     [
+      "2025-03-21",
+      0.1325
+     ],
+     [
+      "2025-04-22",
+      0.1325
+     ],
+     [
+      "2025-05-21",
+      0.1325
+     ],
+     [
+      "2025-06-23",
+      0.1325
+     ],
+     [
+      "2025-07-23",
+      0.1325
+     ],
+     [
+      "2025-08-21",
+      0.1325
+     ],
+     [
+      "2025-09-22",
+      0.1325
+     ],
+     [
+      "2025-10-22",
+      0.135
+     ],
+     [
+      "2025-11-21",
+      0.1375
+     ],
+     [
+      "2025-12-23",
+      0.145
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 3,
+     "distinct_levels": 15,
+     "last": 0.145,
+     "max_abs_change": 0.0625,
+     "mean_abs_change": 0.001993670886075948,
+     "refits": 80,
+     "sd": 0.021790349605674067
+    }
+   },
+   "rolling (kinked_rolling)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.11603002942079946
+     ],
+     [
+      "2018-08-27",
+      0.11468031011910099
+     ],
+     [
+      "2018-09-26",
+      0.11241535689138711
+     ],
+     [
+      "2018-10-26",
+      0.11051023997615143
+     ],
+     [
+      "2018-11-28",
+      0.10782843941153235
+     ],
+     [
+      "2018-12-31",
+      0.10300595460281911
+     ],
+     [
+      "2019-01-31",
+      0.09747874356732524
+     ],
+     [
+      "2019-03-04",
+      0.09633816651613941
+     ],
+     [
+      "2019-04-02",
+      0.09553676449073938
+     ],
+     [
+      "2019-05-02",
+      0.09498764246307381
+     ],
+     [
+      "2019-06-03",
+      0.0933099747282271
+     ],
+     [
+      "2019-07-02",
+      0.08947014497454403
+     ],
+     [
+      "2019-08-01",
+      0.08762107377170228
+     ],
+     [
+      "2019-08-30",
+      0.08749416988168093
+     ],
+     [
+      "2019-10-01",
+      0.08650854788642381
+     ],
+     [
+      "2019-10-31",
+      0.08538495618347272
+     ],
+     [
+      "2019-12-03",
+      0.08519300154630319
+     ],
+     [
+      "2020-01-03",
+      0.08535927059483203
+     ],
+     [
+      "2020-02-04",
+      0.08539596429289016
+     ],
+     [
+      "2020-03-05",
+      0.08546609822566874
+     ],
+     [
+      "2020-04-03",
+      0.08569347869788184
+     ],
+     [
+      "2020-05-05",
+      0.08574745934959349
+     ],
+     [
+      "2020-06-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-07-06",
+      0.08574745934959349
+     ],
+     [
+      "2020-08-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-09-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-10-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-11-03",
+      0.08574745934959349
+     ],
+     [
+      "2020-12-04",
+      0.08574745934959349
+     ],
+     [
+      "2021-01-06",
+      0.08574745934959349
+     ],
+     [
+      "2021-02-05",
+      0.08574745934959349
+     ],
+     [
+      "2021-03-09",
+      0.08574745934959349
+     ],
+     [
+      "2021-04-08",
+      0.08574745934959349
+     ],
+     [
+      "2021-05-07",
+      0.08574745934959349
+     ],
+     [
+      "2021-06-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-07-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-08-06",
+      0.08608476074954939
+     ],
+     [
+      "2021-09-07",
+      0.08611802154907482
+     ],
+     [
+      "2021-10-06",
+      0.09052104983053696
+     ],
+     [
+      "2021-11-05",
+      0.09219148751122208
+     ],
+     [
+      "2021-12-08",
+      0.09303537718845999
+     ],
+     [
+      "2022-01-07",
+      0.09703341750748112
+     ],
+     [
+      "2022-02-08",
+      0.13130725202297597
+     ],
+     [
+      "2022-03-10",
+      0.13999295078226032
+     ],
+     [
+      "2022-04-08",
+      0.1409606632070628
+     ],
+     [
+      "2022-05-10",
+      0.14145628499877883
+     ],
+     [
+      "2022-06-09",
+      0.14145628499877883
+     ],
+     [
+      "2022-07-12",
+      0.14086773630042534
+     ],
+     [
+      "2022-08-10",
+      0.14200690786204156
+     ],
+     [
+      "2022-09-09",
+      0.1425536410601532
+     ],
+     [
+      "2022-10-11",
+      0.1423301059163357
+     ],
+     [
+      "2022-11-09",
+      0.14154818214834228
+     ],
+     [
+      "2022-12-12",
+      0.13835473972130158
+     ],
+     [
+      "2023-01-12",
+      0.1369553429952323
+     ],
+     [
+      "2023-02-13",
+      0.1355794846369395
+     ],
+     [
+      "2023-03-15",
+      0.13288138035442107
+     ],
+     [
+      "2023-04-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-05-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-06-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-07-17",
+      0.1326235821130118
+     ],
+     [
+      "2023-08-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-09-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-10-16",
+      0.1326235821130118
+     ],
+     [
+      "2023-11-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-12-14",
+      0.1326235821130118
+     ],
+     [
+      "2024-01-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-02-15",
+      0.1326235821130118
+     ],
+     [
+      "2024-03-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-04-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-05-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-06-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-07-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-08-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-09-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-10-17",
+      0.13348290958437595
+     ],
+     [
+      "2024-11-18",
+      0.1336527105513443
+     ],
+     [
+      "2024-12-18",
+      0.1336527105513443
+     ],
+     [
+      "2025-01-21",
+      0.13506042313425692
+     ],
+     [
+      "2025-02-20",
+      0.13537124607883894
+     ],
+     [
+      "2025-03-21",
+      0.13655660559305688
+     ],
+     [
+      "2025-04-22",
+      0.1365567481014445
+     ],
+     [
+      "2025-05-21",
+      0.13605844681820484
+     ],
+     [
+      "2025-06-23",
+      0.13550146868305948
+     ],
+     [
+      "2025-07-23",
+      0.13538159404867742
+     ],
+     [
+      "2025-08-21",
+      0.13538159404867742
+     ],
+     [
+      "2025-09-22",
+      0.1348164307139712
+     ],
+     [
+      "2025-10-22",
+      0.13242081195736263
+     ],
+     [
+      "2025-11-21",
+      0.12977529877228047
+     ],
+     [
+      "2025-12-23",
+      0.12297036025506548
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 1,
+     "distinct_levels": 56,
+     "last": 0.12297036025506548,
+     "max_abs_change": 0.034273834515494844,
+     "mean_abs_change": 0.0013572398668113132,
+     "refits": 90,
+     "sd": 0.022643748432611705
+    }
+   },
+   "structural_kinked_profile": {
+    "median_excess_at_fixed_nats": 1.1115452775800918,
+    "median_interval_width": 0.08250000000000002,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1325
+     ],
+     [
+      "2019-06-03",
+      0.1675
+     ],
+     [
+      "2019-07-02",
+      0.1325
+     ],
+     [
+      "2019-08-01",
+      0.135
+     ],
+     [
+      "2019-08-30",
+      0.13
+     ],
+     [
+      "2019-10-01",
+      0.1525
+     ],
+     [
+      "2019-10-31",
+      0.145
+     ],
+     [
+      "2019-12-03",
+      0.1775
+     ],
+     [
+      "2020-01-03",
+      0.13
+     ],
+     [
+      "2020-02-04",
+      0.165
+     ],
+     [
+      "2020-03-05",
+      0.1825
+     ],
+     [
+      "2020-04-03",
+      0.13
+     ],
+     [
+      "2020-05-05",
+      0.18
+     ],
+     [
+      "2020-06-04",
+      0.1725
+     ],
+     [
+      "2020-07-06",
+      0.1675
+     ],
+     [
+      "2020-08-04",
+      0.1625
+     ],
+     [
+      "2020-09-02",
+      0.185
+     ],
+     [
+      "2020-10-02",
+      0.1775
+     ],
+     [
+      "2020-11-03",
+      0.175
+     ],
+     [
+      "2020-12-04",
+      0.19
+     ],
+     [
+      "2021-01-06",
+      0.165
+     ],
+     [
+      "2021-02-05",
+      0.1975
+     ],
+     [
+      "2021-03-09",
+      0.18
+     ],
+     [
+      "2021-04-08",
+      0.18
+     ],
+     [
+      "2021-05-07",
+      0.1925
+     ],
+     [
+      "2021-06-08",
+      0.1925
+     ],
+     [
+      "2021-07-08",
+      0.195
+     ],
+     [
+      "2021-08-06",
+      0.1875
+     ],
+     [
+      "2021-09-07",
+      0.2
+     ],
+     [
+      "2021-10-06",
+      0.195
+     ],
+     [
+      "2021-11-05",
+      0.195
+     ],
+     [
+      "2021-12-08",
+      0.2
+     ],
+     [
+      "2022-01-07",
+      0.195
+     ],
+     [
+      "2022-02-08",
+      0.1975
+     ],
+     [
+      "2022-03-10",
+      0.1975
+     ],
+     [
+      "2022-04-08",
+      0.1975
+     ],
+     [
+      "2022-05-10",
+      0.1975
+     ],
+     [
+      "2022-06-09",
+      0.1975
+     ],
+     [
+      "2022-07-12",
+      0.195
+     ],
+     [
+      "2022-08-10",
+      0.195
+     ],
+     [
+      "2022-09-09",
+      0.195
+     ],
+     [
+      "2022-10-11",
+      0.195
+     ],
+     [
+      "2022-11-09",
+      0.195
+     ],
+     [
+      "2022-12-12",
+      0.195
+     ],
+     [
+      "2023-01-12",
+      0.195
+     ],
+     [
+      "2023-02-13",
+      0.195
+     ],
+     [
+      "2023-03-15",
+      0.195
+     ],
+     [
+      "2023-04-14",
+      0.195
+     ],
+     [
+      "2023-05-15",
+      0.195
+     ],
+     [
+      "2023-06-14",
+      0.195
+     ],
+     [
+      "2023-07-17",
+      0.2
+     ],
+     [
+      "2023-08-15",
+      0.1975
+     ],
+     [
+      "2023-09-14",
+      0.2
+     ],
+     [
+      "2023-10-16",
+      0.195
+     ],
+     [
+      "2023-11-14",
+      0.1975
+     ],
+     [
+      "2023-12-14",
+      0.1975
+     ],
+     [
+      "2024-01-17",
+      0.195
+     ],
+     [
+      "2024-02-15",
+      0.195
+     ],
+     [
+      "2024-03-18",
+      0.1975
+     ],
+     [
+      "2024-04-17",
+      0.1975
+     ],
+     [
+      "2024-05-16",
+      0.195
+     ],
+     [
+      "2024-06-17",
+      0.2
+     ],
+     [
+      "2024-07-18",
+      0.1975
+     ],
+     [
+      "2024-08-16",
+      0.1975
+     ],
+     [
+      "2024-09-17",
+      0.195
+     ],
+     [
+      "2024-10-17",
+      0.195
+     ],
+     [
+      "2024-11-18",
+      0.1975
+     ],
+     [
+      "2024-12-18",
+      0.1975
+     ],
+     [
+      "2025-01-21",
+      0.195
+     ],
+     [
+      "2025-02-20",
+      0.1975
+     ],
+     [
+      "2025-03-21",
+      0.195
+     ],
+     [
+      "2025-04-22",
+      0.1975
+     ],
+     [
+      "2025-05-21",
+      0.1975
+     ],
+     [
+      "2025-06-23",
+      0.195
+     ],
+     [
+      "2025-07-23",
+      0.195
+     ],
+     [
+      "2025-08-21",
+      0.195
+     ],
+     [
+      "2025-09-22",
+      0.195
+     ],
+     [
+      "2025-10-22",
+      0.2
+     ],
+     [
+      "2025-11-21",
+      0.2
+     ],
+     [
+      "2025-12-23",
+      0.195
+     ]
+    ],
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.0875,
+    "share_with_several_local_minima": 0.5125,
+    "stability": {
+     "changes_of_0.01_or_more": 16,
+     "distinct_levels": 20,
+     "last": 0.195,
+     "max_abs_change": 0.05249999999999999,
+     "mean_abs_change": 0.007563291139240508,
+     "refits": 80,
+     "sd": 0.01917841295408721
+    }
+   },
+   "structural_kinked_slow": {
+    "median_excess_at_fixed_nats": 1.1115452775800918,
+    "median_interval_width": 0.08250000000000002,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1225
+     ],
+     [
+      "2019-06-03",
+      0.125
+     ],
+     [
+      "2019-07-02",
+      0.125
+     ],
+     [
+      "2019-08-01",
+      0.125
+     ],
+     [
+      "2019-08-30",
+      0.125
+     ],
+     [
+      "2019-10-01",
+      0.125
+     ],
+     [
+      "2019-10-31",
+      0.125
+     ],
+     [
+      "2019-12-03",
+      0.125
+     ],
+     [
+      "2020-01-03",
+      0.125
+     ],
+     [
+      "2020-02-04",
+      0.125
+     ],
+     [
+      "2020-03-05",
+      0.125
+     ],
+     [
+      "2020-04-03",
+      0.125
+     ],
+     [
+      "2020-05-05",
+      0.1275
+     ],
+     [
+      "2020-06-04",
+      0.13
+     ],
+     [
+      "2020-07-06",
+      0.1325
+     ],
+     [
+      "2020-08-04",
+      0.135
+     ],
+     [
+      "2020-09-02",
+      0.1375
+     ],
+     [
+      "2020-10-02",
+      0.1375
+     ],
+     [
+      "2020-11-03",
+      0.1375
+     ],
+     [
+      "2020-12-04",
+      0.1375
+     ],
+     [
+      "2021-01-06",
+      0.14
+     ],
+     [
+      "2021-02-05",
+      0.14
+     ],
+     [
+      "2021-03-09",
+      0.14
+     ],
+     [
+      "2021-04-08",
+      0.14
+     ],
+     [
+      "2021-05-07",
+      0.14
+     ],
+     [
+      "2021-06-08",
+      0.14
+     ],
+     [
+      "2021-07-08",
+      0.14
+     ],
+     [
+      "2021-08-06",
+      0.14
+     ],
+     [
+      "2021-09-07",
+      0.14
+     ],
+     [
+      "2021-10-06",
+      0.14
+     ],
+     [
+      "2021-11-05",
+      0.14
+     ],
+     [
+      "2021-12-08",
+      0.14
+     ],
+     [
+      "2022-01-07",
+      0.14
+     ],
+     [
+      "2022-02-08",
+      0.14
+     ],
+     [
+      "2022-03-10",
+      0.14
+     ],
+     [
+      "2022-04-08",
+      0.14
+     ],
+     [
+      "2022-05-10",
+      0.14
+     ],
+     [
+      "2022-06-09",
+      0.14
+     ],
+     [
+      "2022-07-12",
+      0.14
+     ],
+     [
+      "2022-08-10",
+      0.14
+     ],
+     [
+      "2022-09-09",
+      0.14
+     ],
+     [
+      "2022-10-11",
+      0.14
+     ],
+     [
+      "2022-11-09",
+      0.14
+     ],
+     [
+      "2022-12-12",
+      0.14
+     ],
+     [
+      "2023-01-12",
+      0.14
+     ],
+     [
+      "2023-02-13",
+      0.14
+     ],
+     [
+      "2023-03-15",
+      0.14
+     ],
+     [
+      "2023-04-14",
+      0.14
+     ],
+     [
+      "2023-05-15",
+      0.14
+     ],
+     [
+      "2023-06-14",
+      0.14
+     ],
+     [
+      "2023-07-17",
+      0.14
+     ],
+     [
+      "2023-08-15",
+      0.14
+     ],
+     [
+      "2023-09-14",
+      0.14
+     ],
+     [
+      "2023-10-16",
+      0.14
+     ],
+     [
+      "2023-11-14",
+      0.14
+     ],
+     [
+      "2023-12-14",
+      0.14
+     ],
+     [
+      "2024-01-17",
+      0.14
+     ],
+     [
+      "2024-02-15",
+      0.14
+     ],
+     [
+      "2024-03-18",
+      0.14
+     ],
+     [
+      "2024-04-17",
+      0.14
+     ],
+     [
+      "2024-05-16",
+      0.14
+     ],
+     [
+      "2024-06-17",
+      0.14
+     ],
+     [
+      "2024-07-18",
+      0.14
+     ],
+     [
+      "2024-08-16",
+      0.14
+     ],
+     [
+      "2024-09-17",
+      0.14
+     ],
+     [
+      "2024-10-17",
+      0.14
+     ],
+     [
+      "2024-11-18",
+      0.14
+     ],
+     [
+      "2024-12-18",
+      0.14
+     ],
+     [
+      "2025-01-21",
+      0.14
+     ],
+     [
+      "2025-02-20",
+      0.14
+     ],
+     [
+      "2025-03-21",
+      0.14
+     ],
+     [
+      "2025-04-22",
+      0.14
+     ],
+     [
+      "2025-05-21",
+      0.14
+     ],
+     [
+      "2025-06-23",
+      0.14
+     ],
+     [
+      "2025-07-23",
+      0.14
+     ],
+     [
+      "2025-08-21",
+      0.14
+     ],
+     [
+      "2025-09-22",
+      0.14
+     ],
+     [
+      "2025-10-22",
+      0.14
+     ],
+     [
+      "2025-11-21",
+      0.14
+     ],
+     [
+      "2025-12-23",
+      0.14
+     ]
+    ],
+    "profile_level_stability": {
+     "changes_of_0.01_or_more": 16,
+     "distinct_levels": 20,
+     "last": 0.195,
+     "max_abs_change": 0.05249999999999999,
+     "mean_abs_change": 0.007563291139240508,
+     "refits": 80,
+     "sd": 0.01917841295408721
+    },
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.0,
+    "share_with_several_local_minima": 0.5125,
+    "stability": {
+     "changes_of_0.01_or_more": 0,
+     "distinct_levels": 8,
+     "last": 0.14,
+     "max_abs_change": 0.0025000000000000022,
+     "mean_abs_change": 0.00022151898734177236,
+     "refits": 80,
+     "sd": 0.005586587593289848
+    }
+   }
+  },
+  "5": {
+   "least_squares (kinked_fitted)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1175
+     ],
+     [
+      "2019-06-03",
+      0.1175
+     ],
+     [
+      "2019-07-02",
+      0.1175
+     ],
+     [
+      "2019-08-01",
+      0.1175
+     ],
+     [
+      "2019-08-30",
+      0.12
+     ],
+     [
+      "2019-10-01",
+      0.115
+     ],
+     [
+      "2019-10-31",
+      0.115
+     ],
+     [
+      "2019-12-03",
+      0.1175
+     ],
+     [
+      "2020-01-03",
+      0.1175
+     ],
+     [
+      "2020-02-04",
+      0.1175
+     ],
+     [
+      "2020-03-05",
+      0.1175
+     ],
+     [
+      "2020-04-03",
+      0.115
+     ],
+     [
+      "2020-05-05",
+      0.1175
+     ],
+     [
+      "2020-06-04",
+      0.12
+     ],
+     [
+      "2020-07-06",
+      0.1175
+     ],
+     [
+      "2020-08-04",
+      0.115
+     ],
+     [
+      "2020-09-02",
+      0.115
+     ],
+     [
+      "2020-10-02",
+      0.115
+     ],
+     [
+      "2020-11-03",
+      0.115
+     ],
+     [
+      "2020-12-04",
+      0.115
+     ],
+     [
+      "2021-01-06",
+      0.115
+     ],
+     [
+      "2021-02-05",
+      0.115
+     ],
+     [
+      "2021-03-09",
+      0.115
+     ],
+     [
+      "2021-04-08",
+      0.1175
+     ],
+     [
+      "2021-05-07",
+      0.1175
+     ],
+     [
+      "2021-06-08",
+      0.1175
+     ],
+     [
+      "2021-07-08",
+      0.18
+     ],
+     [
+      "2021-08-06",
+      0.1825
+     ],
+     [
+      "2021-09-07",
+      0.1825
+     ],
+     [
+      "2021-10-06",
+      0.185
+     ],
+     [
+      "2021-11-05",
+      0.185
+     ],
+     [
+      "2021-12-08",
+      0.185
+     ],
+     [
+      "2022-01-07",
+      0.185
+     ],
+     [
+      "2022-02-08",
+      0.1825
+     ],
+     [
+      "2022-03-10",
+      0.18
+     ],
+     [
+      "2022-04-08",
+      0.18
+     ],
+     [
+      "2022-05-10",
+      0.175
+     ],
+     [
+      "2022-06-09",
+      0.175
+     ],
+     [
+      "2022-07-12",
+      0.17
+     ],
+     [
+      "2022-08-10",
+      0.1675
+     ],
+     [
+      "2022-09-09",
+      0.1675
+     ],
+     [
+      "2022-10-11",
+      0.145
+     ],
+     [
+      "2022-11-09",
+      0.145
+     ],
+     [
+      "2022-12-12",
+      0.135
+     ],
+     [
+      "2023-01-12",
+      0.135
+     ],
+     [
+      "2023-02-13",
+      0.135
+     ],
+     [
+      "2023-03-15",
+      0.1325
+     ],
+     [
+      "2023-04-14",
+      0.1325
+     ],
+     [
+      "2023-05-15",
+      0.1325
+     ],
+     [
+      "2023-06-14",
+      0.1325
+     ],
+     [
+      "2023-07-17",
+      0.1325
+     ],
+     [
+      "2023-08-15",
+      0.1325
+     ],
+     [
+      "2023-09-14",
+      0.1325
+     ],
+     [
+      "2023-10-16",
+      0.1325
+     ],
+     [
+      "2023-11-14",
+      0.1325
+     ],
+     [
+      "2023-12-14",
+      0.1325
+     ],
+     [
+      "2024-01-17",
+      0.1325
+     ],
+     [
+      "2024-02-15",
+      0.1325
+     ],
+     [
+      "2024-03-18",
+      0.1325
+     ],
+     [
+      "2024-04-17",
+      0.1325
+     ],
+     [
+      "2024-05-16",
+      0.1325
+     ],
+     [
+      "2024-06-17",
+      0.1325
+     ],
+     [
+      "2024-07-18",
+      0.1325
+     ],
+     [
+      "2024-08-16",
+      0.1325
+     ],
+     [
+      "2024-09-17",
+      0.1325
+     ],
+     [
+      "2024-10-17",
+      0.1325
+     ],
+     [
+      "2024-11-18",
+      0.1325
+     ],
+     [
+      "2024-12-18",
+      0.1325
+     ],
+     [
+      "2025-01-21",
+      0.1325
+     ],
+     [
+      "2025-02-20",
+      0.1325
+     ],
+     [
+      "2025-03-21",
+      0.1325
+     ],
+     [
+      "2025-04-22",
+      0.1325
+     ],
+     [
+      "2025-05-21",
+      0.1325
+     ],
+     [
+      "2025-06-23",
+      0.1325
+     ],
+     [
+      "2025-07-23",
+      0.1325
+     ],
+     [
+      "2025-08-21",
+      0.1325
+     ],
+     [
+      "2025-09-22",
+      0.1325
+     ],
+     [
+      "2025-10-22",
+      0.135
+     ],
+     [
+      "2025-11-21",
+      0.1375
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 3,
+     "distinct_levels": 13,
+     "last": 0.1375,
+     "max_abs_change": 0.0625,
+     "mean_abs_change": 0.0019230769230769223,
+     "refits": 79,
+     "sd": 0.022051354098860557
+    }
+   },
+   "rolling (kinked_rolling)": {
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.11603002942079946
+     ],
+     [
+      "2018-08-27",
+      0.11468031011910099
+     ],
+     [
+      "2018-09-26",
+      0.11241535689138711
+     ],
+     [
+      "2018-10-26",
+      0.11051023997615143
+     ],
+     [
+      "2018-11-28",
+      0.10782843941153235
+     ],
+     [
+      "2018-12-31",
+      0.10300595460281911
+     ],
+     [
+      "2019-01-31",
+      0.09747874356732524
+     ],
+     [
+      "2019-03-04",
+      0.09633816651613941
+     ],
+     [
+      "2019-04-02",
+      0.09553676449073938
+     ],
+     [
+      "2019-05-02",
+      0.09498764246307381
+     ],
+     [
+      "2019-06-03",
+      0.0933099747282271
+     ],
+     [
+      "2019-07-02",
+      0.08947014497454403
+     ],
+     [
+      "2019-08-01",
+      0.08762107377170228
+     ],
+     [
+      "2019-08-30",
+      0.08749416988168093
+     ],
+     [
+      "2019-10-01",
+      0.08650854788642381
+     ],
+     [
+      "2019-10-31",
+      0.08538495618347272
+     ],
+     [
+      "2019-12-03",
+      0.08519300154630319
+     ],
+     [
+      "2020-01-03",
+      0.08535927059483203
+     ],
+     [
+      "2020-02-04",
+      0.08539596429289016
+     ],
+     [
+      "2020-03-05",
+      0.08546609822566874
+     ],
+     [
+      "2020-04-03",
+      0.08569347869788184
+     ],
+     [
+      "2020-05-05",
+      0.08574745934959349
+     ],
+     [
+      "2020-06-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-07-06",
+      0.08574745934959349
+     ],
+     [
+      "2020-08-04",
+      0.08574745934959349
+     ],
+     [
+      "2020-09-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-10-02",
+      0.08574745934959349
+     ],
+     [
+      "2020-11-03",
+      0.08574745934959349
+     ],
+     [
+      "2020-12-04",
+      0.08574745934959349
+     ],
+     [
+      "2021-01-06",
+      0.08574745934959349
+     ],
+     [
+      "2021-02-05",
+      0.08574745934959349
+     ],
+     [
+      "2021-03-09",
+      0.08574745934959349
+     ],
+     [
+      "2021-04-08",
+      0.08574745934959349
+     ],
+     [
+      "2021-05-07",
+      0.08574745934959349
+     ],
+     [
+      "2021-06-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-07-08",
+      0.08593905058797738
+     ],
+     [
+      "2021-08-06",
+      0.08608476074954939
+     ],
+     [
+      "2021-09-07",
+      0.08611802154907482
+     ],
+     [
+      "2021-10-06",
+      0.09052104983053696
+     ],
+     [
+      "2021-11-05",
+      0.09219148751122208
+     ],
+     [
+      "2021-12-08",
+      0.09303537718845999
+     ],
+     [
+      "2022-01-07",
+      0.09703341750748112
+     ],
+     [
+      "2022-02-08",
+      0.13130725202297597
+     ],
+     [
+      "2022-03-10",
+      0.13999295078226032
+     ],
+     [
+      "2022-04-08",
+      0.1409606632070628
+     ],
+     [
+      "2022-05-10",
+      0.14145628499877883
+     ],
+     [
+      "2022-06-09",
+      0.14145628499877883
+     ],
+     [
+      "2022-07-12",
+      0.14086773630042534
+     ],
+     [
+      "2022-08-10",
+      0.14200690786204156
+     ],
+     [
+      "2022-09-09",
+      0.1425536410601532
+     ],
+     [
+      "2022-10-11",
+      0.1423301059163357
+     ],
+     [
+      "2022-11-09",
+      0.14154818214834228
+     ],
+     [
+      "2022-12-12",
+      0.13835473972130158
+     ],
+     [
+      "2023-01-12",
+      0.1369553429952323
+     ],
+     [
+      "2023-02-13",
+      0.1355794846369395
+     ],
+     [
+      "2023-03-15",
+      0.13288138035442107
+     ],
+     [
+      "2023-04-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-05-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-06-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-07-17",
+      0.1326235821130118
+     ],
+     [
+      "2023-08-15",
+      0.1326235821130118
+     ],
+     [
+      "2023-09-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-10-16",
+      0.1326235821130118
+     ],
+     [
+      "2023-11-14",
+      0.1326235821130118
+     ],
+     [
+      "2023-12-14",
+      0.1326235821130118
+     ],
+     [
+      "2024-01-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-02-15",
+      0.1326235821130118
+     ],
+     [
+      "2024-03-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-04-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-05-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-06-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-07-18",
+      0.1326235821130118
+     ],
+     [
+      "2024-08-16",
+      0.1326235821130118
+     ],
+     [
+      "2024-09-17",
+      0.1326235821130118
+     ],
+     [
+      "2024-10-17",
+      0.13348290958437595
+     ],
+     [
+      "2024-11-18",
+      0.1336527105513443
+     ],
+     [
+      "2024-12-18",
+      0.1336527105513443
+     ],
+     [
+      "2025-01-21",
+      0.13506042313425692
+     ],
+     [
+      "2025-02-20",
+      0.13537124607883894
+     ],
+     [
+      "2025-03-21",
+      0.13655660559305688
+     ],
+     [
+      "2025-04-22",
+      0.1365567481014445
+     ],
+     [
+      "2025-05-21",
+      0.13605844681820484
+     ],
+     [
+      "2025-06-23",
+      0.13550146868305948
+     ],
+     [
+      "2025-07-23",
+      0.13538159404867742
+     ],
+     [
+      "2025-08-21",
+      0.13538159404867742
+     ],
+     [
+      "2025-09-22",
+      0.1348164307139712
+     ],
+     [
+      "2025-10-22",
+      0.13242081195736263
+     ],
+     [
+      "2025-11-21",
+      0.12977529877228047
+     ]
+    ],
+    "stability": {
+     "changes_of_0.01_or_more": 1,
+     "distinct_levels": 55,
+     "last": 0.12977529877228047,
+     "max_abs_change": 0.034273834515494844,
+     "mean_abs_change": 0.001295334200329453,
+     "refits": 89,
+     "sd": 0.022752433706816372
+    }
+   },
+   "structural_kinked_profile": {
+    "median_excess_at_fixed_nats": 0.9410907990576902,
+    "median_interval_width": 0.085,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1425
+     ],
+     [
+      "2019-06-03",
+      0.1625
+     ],
+     [
+      "2019-07-02",
+      0.135
+     ],
+     [
+      "2019-08-01",
+      0.1325
+     ],
+     [
+      "2019-08-30",
+      0.1425
+     ],
+     [
+      "2019-10-01",
+      0.13
+     ],
+     [
+      "2019-10-31",
+      0.14
+     ],
+     [
+      "2019-12-03",
+      0.145
+     ],
+     [
+      "2020-01-03",
+      0.135
+     ],
+     [
+      "2020-02-04",
+      0.13
+     ],
+     [
+      "2020-03-05",
+      0.15
+     ],
+     [
+      "2020-04-03",
+      0.165
+     ],
+     [
+      "2020-05-05",
+      0.1575
+     ],
+     [
+      "2020-06-04",
+      0.2
+     ],
+     [
+      "2020-07-06",
+      0.17
+     ],
+     [
+      "2020-08-04",
+      0.1775
+     ],
+     [
+      "2020-09-02",
+      0.1875
+     ],
+     [
+      "2020-10-02",
+      0.2
+     ],
+     [
+      "2020-11-03",
+      0.195
+     ],
+     [
+      "2020-12-04",
+      0.1825
+     ],
+     [
+      "2021-01-06",
+      0.1925
+     ],
+     [
+      "2021-02-05",
+      0.185
+     ],
+     [
+      "2021-03-09",
+      0.165
+     ],
+     [
+      "2021-04-08",
+      0.18
+     ],
+     [
+      "2021-05-07",
+      0.1875
+     ],
+     [
+      "2021-06-08",
+      0.2
+     ],
+     [
+      "2021-07-08",
+      0.19
+     ],
+     [
+      "2021-08-06",
+      0.19
+     ],
+     [
+      "2021-09-07",
+      0.195
+     ],
+     [
+      "2021-10-06",
+      0.195
+     ],
+     [
+      "2021-11-05",
+      0.195
+     ],
+     [
+      "2021-12-08",
+      0.2
+     ],
+     [
+      "2022-01-07",
+      0.195
+     ],
+     [
+      "2022-02-08",
+      0.1975
+     ],
+     [
+      "2022-03-10",
+      0.1975
+     ],
+     [
+      "2022-04-08",
+      0.195
+     ],
+     [
+      "2022-05-10",
+      0.195
+     ],
+     [
+      "2022-06-09",
+      0.195
+     ],
+     [
+      "2022-07-12",
+      0.195
+     ],
+     [
+      "2022-08-10",
+      0.195
+     ],
+     [
+      "2022-09-09",
+      0.1975
+     ],
+     [
+      "2022-10-11",
+      0.195
+     ],
+     [
+      "2022-11-09",
+      0.195
+     ],
+     [
+      "2022-12-12",
+      0.195
+     ],
+     [
+      "2023-01-12",
+      0.195
+     ],
+     [
+      "2023-02-13",
+      0.1975
+     ],
+     [
+      "2023-03-15",
+      0.1975
+     ],
+     [
+      "2023-04-14",
+      0.1975
+     ],
+     [
+      "2023-05-15",
+      0.1975
+     ],
+     [
+      "2023-06-14",
+      0.195
+     ],
+     [
+      "2023-07-17",
+      0.1975
+     ],
+     [
+      "2023-08-15",
+      0.195
+     ],
+     [
+      "2023-09-14",
+      0.2
+     ],
+     [
+      "2023-10-16",
+      0.1975
+     ],
+     [
+      "2023-11-14",
+      0.1975
+     ],
+     [
+      "2023-12-14",
+      0.195
+     ],
+     [
+      "2024-01-17",
+      0.195
+     ],
+     [
+      "2024-02-15",
+      0.195
+     ],
+     [
+      "2024-03-18",
+      0.195
+     ],
+     [
+      "2024-04-17",
+      0.1975
+     ],
+     [
+      "2024-05-16",
+      0.195
+     ],
+     [
+      "2024-06-17",
+      0.195
+     ],
+     [
+      "2024-07-18",
+      0.1975
+     ],
+     [
+      "2024-08-16",
+      0.1975
+     ],
+     [
+      "2024-09-17",
+      0.195
+     ],
+     [
+      "2024-10-17",
+      0.195
+     ],
+     [
+      "2024-11-18",
+      0.1975
+     ],
+     [
+      "2024-12-18",
+      0.195
+     ],
+     [
+      "2025-01-21",
+      0.1975
+     ],
+     [
+      "2025-02-20",
+      0.2
+     ],
+     [
+      "2025-03-21",
+      0.195
+     ],
+     [
+      "2025-04-22",
+      0.195
+     ],
+     [
+      "2025-05-21",
+      0.2
+     ],
+     [
+      "2025-06-23",
+      0.1975
+     ],
+     [
+      "2025-07-23",
+      0.195
+     ],
+     [
+      "2025-08-21",
+      0.195
+     ],
+     [
+      "2025-09-22",
+      0.2
+     ],
+     [
+      "2025-10-22",
+      0.195
+     ],
+     [
+      "2025-11-21",
+      0.195
+     ]
+    ],
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.10126582278481013,
+    "share_with_several_local_minima": 0.45569620253164556,
+    "stability": {
+     "changes_of_0.01_or_more": 18,
+     "distinct_levels": 21,
+     "last": 0.195,
+     "max_abs_change": 0.04250000000000001,
+     "mean_abs_change": 0.005608974358974361,
+     "refits": 79,
+     "sd": 0.020160438445648497
+    }
+   },
+   "structural_kinked_slow": {
+    "median_excess_at_fixed_nats": 0.9410907990576902,
+    "median_interval_width": 0.085,
+    "path": [
+     [
+      "2018-06-27",
+      0.12
+     ],
+     [
+      "2018-07-27",
+      0.12
+     ],
+     [
+      "2018-08-27",
+      0.12
+     ],
+     [
+      "2018-09-26",
+      0.12
+     ],
+     [
+      "2018-10-26",
+      0.12
+     ],
+     [
+      "2018-11-28",
+      0.12
+     ],
+     [
+      "2018-12-31",
+      0.12
+     ],
+     [
+      "2019-01-31",
+      0.12
+     ],
+     [
+      "2019-03-04",
+      0.12
+     ],
+     [
+      "2019-04-02",
+      0.12
+     ],
+     [
+      "2019-05-02",
+      0.1225
+     ],
+     [
+      "2019-06-03",
+      0.125
+     ],
+     [
+      "2019-07-02",
+      0.125
+     ],
+     [
+      "2019-08-01",
+      0.125
+     ],
+     [
+      "2019-08-30",
+      0.125
+     ],
+     [
+      "2019-10-01",
+      0.125
+     ],
+     [
+      "2019-10-31",
+      0.125
+     ],
+     [
+      "2019-12-03",
+      0.125
+     ],
+     [
+      "2020-01-03",
+      0.125
+     ],
+     [
+      "2020-02-04",
+      0.125
+     ],
+     [
+      "2020-03-05",
+      0.125
+     ],
+     [
+      "2020-04-03",
+      0.125
+     ],
+     [
+      "2020-05-05",
+      0.1275
+     ],
+     [
+      "2020-06-04",
+      0.13
+     ],
+     [
+      "2020-07-06",
+      0.1325
+     ],
+     [
+      "2020-08-04",
+      0.135
+     ],
+     [
+      "2020-09-02",
+      0.135
+     ],
+     [
+      "2020-10-02",
+      0.135
+     ],
+     [
+      "2020-11-03",
+      0.1375
+     ],
+     [
+      "2020-12-04",
+      0.1375
+     ],
+     [
+      "2021-01-06",
+      0.1375
+     ],
+     [
+      "2021-02-05",
+      0.1375
+     ],
+     [
+      "2021-03-09",
+      0.1375
+     ],
+     [
+      "2021-04-08",
+      0.1375
+     ],
+     [
+      "2021-05-07",
+      0.1375
+     ],
+     [
+      "2021-06-08",
+      0.1375
+     ],
+     [
+      "2021-07-08",
+      0.1375
+     ],
+     [
+      "2021-08-06",
+      0.1375
+     ],
+     [
+      "2021-09-07",
+      0.1375
+     ],
+     [
+      "2021-10-06",
+      0.1375
+     ],
+     [
+      "2021-11-05",
+      0.1375
+     ],
+     [
+      "2021-12-08",
+      0.1375
+     ],
+     [
+      "2022-01-07",
+      0.1375
+     ],
+     [
+      "2022-02-08",
+      0.1375
+     ],
+     [
+      "2022-03-10",
+      0.1375
+     ],
+     [
+      "2022-04-08",
+      0.1375
+     ],
+     [
+      "2022-05-10",
+      0.1375
+     ],
+     [
+      "2022-06-09",
+      0.1375
+     ],
+     [
+      "2022-07-12",
+      0.1375
+     ],
+     [
+      "2022-08-10",
+      0.1375
+     ],
+     [
+      "2022-09-09",
+      0.1375
+     ],
+     [
+      "2022-10-11",
+      0.1375
+     ],
+     [
+      "2022-11-09",
+      0.1375
+     ],
+     [
+      "2022-12-12",
+      0.1375
+     ],
+     [
+      "2023-01-12",
+      0.1375
+     ],
+     [
+      "2023-02-13",
+      0.1375
+     ],
+     [
+      "2023-03-15",
+      0.1375
+     ],
+     [
+      "2023-04-14",
+      0.1375
+     ],
+     [
+      "2023-05-15",
+      0.1375
+     ],
+     [
+      "2023-06-14",
+      0.1375
+     ],
+     [
+      "2023-07-17",
+      0.1375
+     ],
+     [
+      "2023-08-15",
+      0.1375
+     ],
+     [
+      "2023-09-14",
+      0.1375
+     ],
+     [
+      "2023-10-16",
+      0.1375
+     ],
+     [
+      "2023-11-14",
+      0.1375
+     ],
+     [
+      "2023-12-14",
+      0.1375
+     ],
+     [
+      "2024-01-17",
+      0.1375
+     ],
+     [
+      "2024-02-15",
+      0.1375
+     ],
+     [
+      "2024-03-18",
+      0.1375
+     ],
+     [
+      "2024-04-17",
+      0.1375
+     ],
+     [
+      "2024-05-16",
+      0.1375
+     ],
+     [
+      "2024-06-17",
+      0.1375
+     ],
+     [
+      "2024-07-18",
+      0.1375
+     ],
+     [
+      "2024-08-16",
+      0.1375
+     ],
+     [
+      "2024-09-17",
+      0.1375
+     ],
+     [
+      "2024-10-17",
+      0.1375
+     ],
+     [
+      "2024-11-18",
+      0.1375
+     ],
+     [
+      "2024-12-18",
+      0.1375
+     ],
+     [
+      "2025-01-21",
+      0.1375
+     ],
+     [
+      "2025-02-20",
+      0.1375
+     ],
+     [
+      "2025-03-21",
+      0.1375
+     ],
+     [
+      "2025-04-22",
+      0.1375
+     ],
+     [
+      "2025-05-21",
+      0.1375
+     ],
+     [
+      "2025-06-23",
+      0.1375
+     ],
+     [
+      "2025-07-23",
+      0.1375
+     ],
+     [
+      "2025-08-21",
+      0.1375
+     ],
+     [
+      "2025-09-22",
+      0.1375
+     ],
+     [
+      "2025-10-22",
+      0.1375
+     ],
+     [
+      "2025-11-21",
+      0.1375
+     ]
+    ],
+    "profile_level_stability": {
+     "changes_of_0.01_or_more": 18,
+     "distinct_levels": 21,
+     "last": 0.195,
+     "max_abs_change": 0.04250000000000001,
+     "mean_abs_change": 0.005608974358974361,
+     "refits": 79,
+     "sd": 0.020160438445648497
+    },
+    "share_interval_reaching_the_grid_maximum": 1.0,
+    "share_interval_reaching_the_grid_minimum": 0.0,
+    "share_of_levels_at_the_grid_maximum": 0.0,
+    "share_with_several_local_minima": 0.45569620253164556,
+    "stability": {
+     "changes_of_0.01_or_more": 0,
+     "distinct_levels": 7,
+     "last": 0.1375,
+     "max_abs_change": 0.0025000000000000022,
+     "mean_abs_change": 0.00019230769230769247,
+     "refits": 79,
+     "sd": 0.004668981807976711
+    }
+   }
+  }
+ },
+ "replications": 2000
+}
