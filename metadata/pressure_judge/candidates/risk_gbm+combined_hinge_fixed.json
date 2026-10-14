@@ -28,7 +28,9 @@
     "effr",
     "iorb"
   ],
-  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads net_settlement_due_5d in place of net_settlement_ahead_1d and proj_dist_h{h} for the horizon h",
+  "features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads net_settlement_ahead_{h}d and net_settlement_ahead_{h-1}d in place of net_settlement_ahead_1d (their difference is the scored day's own announced net settlement; #618, under #679's rule) and proj_dist_h{h} for the horizon h",
+  "superseded_features_at_horizon_2_or_more": "with treasury_settlement and treasury_settlement_coupons for the passer; the component reads net_settlement_due_5d in place of net_settlement_ahead_1d and proj_dist_h{h} for the horizon h",
+  "amended": "Amended 13 October 2026 by the pull request that closes #691 (finding #673): the file named the five-day sum net_settlement_due_5d, but since #618 (PR #647) the code reads net_settlement_ahead_h and net_settlement_ahead_{h-1} at h >= 2. The earlier wording is kept in superseded_features_at_horizon_2_or_more. No score changes by this note; the pages are re-scored by the same pull request.",
   "calibration": "the passer's forecast on a risk date, unchanged; on any other day the ordinary-day logistic on factor, structural, projected with the projected term a hinge at the fixed 0.12, platt-calibrated walk-forward, then the 'gate' false-alarm control of #532; metadata/satiation_587.json",
   "parent": "risk_gbm+settle+h41"
 }

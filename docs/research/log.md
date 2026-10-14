@@ -305,6 +305,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable as a verdict (development). Under the amended reading rule: spread partly reached, by a hair; indicator data problem.
 - Next: H5's development steps on the spread (#634); the indicator's effort goes to new data (H3, H4).
 
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#691
+- Directive: #691
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `660a72b`
+- Tried: 0 model variants; the eight candidate declarations of the satiation (#587) and kinked (#626) rows corrected to name `net_settlement_ahead_h` and `ahead_{h-1}` at h >= 2 (finding #673), and both pages re-scored on the current code (#618, #679). Variants: n/a (correction).
+- Result: no tier and no pass of any row changes. `structural_rolling` flags 18 of 26 onsets (was 14) with tier-3 flags per 252 days 2.9 / 3.4 (was 1.2 / 1.3); `structural_liquidity` and `structural_fitted` 12 of 26 (was 11); `structural_kinked_rolling` 17 (was 16); `structural_kinked_fitted` stays at 11 with fewer false alarms (1.21 against 1.69). Detail in `docs/pivot/declarations-691-result.md`.
+- Against kill: not applicable (a record correction; no hypothesis is tested).
+- Next: none from this directive; the pages keep their original prose with a dated note.
+
 ### 2026-10-13 [H4] step 3 · eleonorabjornberg/repo-market-model#661
 - Directive: #633
 - Step: 3 (steps 1 and 2 in the same pull request: the due-diligence table, and the workbook released from 17 May 2018 by Eleonora's ruling)
