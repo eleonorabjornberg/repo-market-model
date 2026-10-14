@@ -335,3 +335,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Calibration (Eleonora's ruling on PR #695, a §13 change): the critical value calibrated on the development history, largest across B2 − B1 and B3 − B1, is 5.45 at 250 days (9.50 at 125; none at 60), against 1.66 uncalibrated. Out of sample the bound then covers 1.000 of B2 − B1 windows, 0.951 of B3 − B1 windows and 1.000 of the control's; under no true difference (#699's size check) it detects on 0.3% of paths by 250 days, against 23.3% uncalibrated.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
+
+### 2026-10-14 [H1] step 2 · eleonorabjornberg/repo-market-model#751
+- Directive: #733 (a design study for the confirmation test; no verdict, nothing registered)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `6114a8e`; rule `docs/research/confirmation-design-733.md`, committed before the study ran
+- Tried: six declared designs (the in-force test at 250 days; 375 and 500 days; lead 1 alone; a standardized statistic at 250 and 375 days), each calibrated afresh on decision days to 2025-12-31 (no later day read) and simulated for size and for power at 3% and 10% skill (2,000 paths per scenario). A post-hoc addendum re-reads them at the critical value calibrated on the one comparison S(B2) − S(B1) (PR #695, Q-E (b)). Variants: 6 designs, 2 readings.
+- Result: at the critical value in force (the largest across four comparisons) no design has power: D0 to D2 under 1% at 3% and at 10% even on the post-2020 history, D3 2.6% and 3.9% there; the standardized D4 reaches 14.4% and 19.4% on the post-2020 history but fails size (8% to 13%). At reading (b) D0 reproduces PR #695's Q-E table on the post-2020 history (14.3% and 19.7% against 14.0% and 19.25%) with size 11.5%; every design fails size on that history. No design reaches 80% power at 3% or at 30% skill. The §7 rule's pick (D3) is the least bad of the admissible, not a useful design.
+- Against kill: not applicable (H1 is a validity check, not a gain claim); the page's reading is that the confirmation design cannot confirm the 3% MME in 500 days as the test stands.
+- Next: Eleonora decides the reading of the critical value (Q-E) and whether to change the MME or the days; a change is a draft decision record under §13.
