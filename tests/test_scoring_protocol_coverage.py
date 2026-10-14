@@ -171,8 +171,8 @@ class EmpiricalCalibrationCoverageTests(unittest.TestCase):
         c = sp.calibrate_critical_value(self.real, days=DAYS, level=LEVEL, windows=self.WINDOWS, seed=1)
         self.assertAlmostEqual(self.coverage(self.real, c), 1.0 - LEVEL, delta=self.WINDOW_TOLERANCE)
 
-    def test_check_2_passes_at_the_protocols_value(self):
-        c = sp.CRITICAL_VALUES[DAYS]
+    def test_check_2_passes_at_the_grid_comparisons_value(self):
+        c = sp.CRITICAL_VALUES[sp.GRID_COMPARISON][DAYS]
         self.assertGreaterEqual(self.coverage(self.real, c), 1.0 - LEVEL)
         self.assertGreaterEqual(self.coverage(self.control, c), 1.0 - LEVEL)
 
