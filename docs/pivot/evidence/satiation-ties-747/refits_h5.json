@@ -1,0 +1,5709 @@
+{
+ "horizon": 5,
+ "refits": {
+  "projected_fitted": [
+   {
+    "first_anchor": "2018-06-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 46,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-07-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 67,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-08-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 88,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-09-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 109,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-10-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 130,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-11-28",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 151,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-12-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 172,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-01-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 193,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-03-04",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 214,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-04-02",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 235,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-05-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 256,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-06-03",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 277,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-07-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 298,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-01",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 319,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-30",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 340,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-01",
+    "fitted": true,
+    "level": 0.0875,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.0875,
+    "pairs": 361,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-31",
+    "fitted": true,
+    "level": 0.1075,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1075,
+    "pairs": 382,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-12-03",
+    "fitted": true,
+    "level": 0.11,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.11,
+    "pairs": 403,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-01-03",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 424,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-02-04",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 445,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-03-05",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 466,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-04-03",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 487,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-05-05",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 508,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-06-04",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 529,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-07-06",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 550,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-08-04",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 571,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-09-02",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 592,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-10-02",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 613,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-11-03",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 634,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-12-04",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 655,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-01-06",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 676,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-02-05",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 697,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-03-09",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 718,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-04-08",
+    "fitted": true,
+    "level": 0.09,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.09,
+    "pairs": 739,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-05-07",
+    "fitted": true,
+    "level": 0.0925,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.0925,
+    "pairs": 760,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-06-08",
+    "fitted": true,
+    "level": 0.1,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1,
+    "pairs": 781,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-07-08",
+    "fitted": true,
+    "level": 0.1025,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1025,
+    "pairs": 802,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-08-06",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 823,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-09-07",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 844,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-10-06",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 865,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-11-05",
+    "fitted": true,
+    "level": 0.1775,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1775,
+    "pairs": 886,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-12-08",
+    "fitted": true,
+    "level": 0.1775,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1775,
+    "pairs": 907,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-01-07",
+    "fitted": true,
+    "level": 0.1775,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1775,
+    "pairs": 928,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-02-08",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 949,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-03-10",
+    "fitted": true,
+    "level": 0.1725,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1725,
+    "pairs": 970,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-04-08",
+    "fitted": true,
+    "level": 0.1725,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1725,
+    "pairs": 991,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-05-10",
+    "fitted": true,
+    "level": 0.17,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.17,
+    "pairs": 1012,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-06-09",
+    "fitted": true,
+    "level": 0.1675,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1675,
+    "pairs": 1033,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-07-12",
+    "fitted": true,
+    "level": 0.165,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.165,
+    "pairs": 1054,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-08-10",
+    "fitted": true,
+    "level": 0.1625,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1625,
+    "pairs": 1075,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-09-09",
+    "fitted": true,
+    "level": 0.16,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.16,
+    "pairs": 1096,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-10-11",
+    "fitted": true,
+    "level": 0.1575,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1575,
+    "pairs": 1117,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-11-09",
+    "fitted": true,
+    "level": 0.155,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.155,
+    "pairs": 1138,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-12-12",
+    "fitted": true,
+    "level": 0.155,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.155,
+    "pairs": 1159,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-01-12",
+    "fitted": true,
+    "level": 0.1525,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1525,
+    "pairs": 1180,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-02-13",
+    "fitted": true,
+    "level": 0.15,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.15,
+    "pairs": 1201,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-03-15",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1222,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-04-14",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1243,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-05-15",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1264,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-06-14",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1285,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-07-17",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1306,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-08-15",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1327,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-09-14",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1348,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-10-16",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1369,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-11-14",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1390,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-12-14",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1411,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-01-17",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1432,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-02-15",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1453,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-03-18",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1474,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-04-17",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1495,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-05-16",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1516,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-06-17",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1537,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-07-18",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1558,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-08-16",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1579,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-09-17",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1600,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-10-17",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1621,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-11-18",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1642,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-12-18",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1663,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-01-21",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1684,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-02-20",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1705,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-03-21",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1726,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-04-22",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1747,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-05-21",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1768,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-06-23",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1789,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-07-23",
+    "fitted": true,
+    "level": 0.13,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.13,
+    "pairs": 1810,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-08-21",
+    "fitted": true,
+    "level": 0.1275,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1275,
+    "pairs": 1831,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-09-22",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1852,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-10-22",
+    "fitted": true,
+    "level": 0.1475,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1475,
+    "pairs": 1873,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-11-21",
+    "fitted": true,
+    "level": 0.1475,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1475,
+    "pairs": 1894,
+    "reason": null,
+    "tied": null
+   }
+  ],
+  "risk_gbm+combined_fitted": [
+   {
+    "first_anchor": "2018-06-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 46,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-07-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 67,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-08-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 88,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-09-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 109,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-10-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 130,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-11-28",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 151,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-12-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 172,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-01-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 193,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-03-04",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 214,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-04-02",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 235,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-05-02",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 256,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-06-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 277,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-07-02",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 298,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-01",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 319,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-30",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 340,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-01",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 361,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-31",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 382,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-12-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 403,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-01-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 424,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-02-04",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 445,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-03-05",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 466,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-04-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 487,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-05-05",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 508,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-06-04",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 529,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-07-06",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 550,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-08-04",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 571,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-09-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 592,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-10-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 613,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-11-03",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 634,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-12-04",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 655,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-01-06",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 676,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-02-05",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 697,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-03-09",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 718,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-04-08",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 739,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-05-07",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 760,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-06-08",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 781,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-07-08",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 802,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-08-06",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 823,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-09-07",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 844,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-10-06",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 865,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-11-05",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 886,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-12-08",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 907,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-01-07",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 928,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-02-08",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 949,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-03-10",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 970,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-04-08",
+    "fitted": true,
+    "level": 0.18,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.18,
+    "pairs": 991,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-05-10",
+    "fitted": true,
+    "level": 0.1775,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1775,
+    "pairs": 1012,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-06-09",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 1033,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-07-12",
+    "fitted": true,
+    "level": 0.1725,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1725,
+    "pairs": 1054,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-08-10",
+    "fitted": true,
+    "level": 0.17,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.17,
+    "pairs": 1075,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-09-09",
+    "fitted": true,
+    "level": 0.1675,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1675,
+    "pairs": 1096,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-10-11",
+    "fitted": true,
+    "level": 0.165,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.165,
+    "pairs": 1117,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-11-09",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1138,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-12-12",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1159,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-01-12",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1180,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-02-13",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1201,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-03-15",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1222,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-04-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1243,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-05-15",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1264,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-06-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1285,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-07-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1306,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-08-15",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1327,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-09-14",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1348,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-10-16",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1369,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-11-14",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1390,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-12-14",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1411,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-01-17",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1432,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-02-15",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1453,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-03-18",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1474,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-04-17",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1495,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-05-16",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1516,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-06-17",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1537,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-07-18",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1558,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-08-16",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1579,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-09-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1600,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-10-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1621,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-11-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1642,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-12-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1663,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-01-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1684,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-02-20",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1705,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-03-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1726,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-04-22",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1747,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-05-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1768,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-06-23",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1789,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-07-23",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1810,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-08-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1831,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-09-22",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1852,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-10-22",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1873,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-11-21",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1894,
+    "reason": null,
+    "tied": null
+   }
+  ],
+  "structural_fitted": [
+   {
+    "first_anchor": "2018-06-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 47,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-07-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 68,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-08-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 89,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-09-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 110,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-10-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 131,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-11-28",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 152,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-12-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 173,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-01-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 194,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-03-04",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 215,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-04-02",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 236,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-05-02",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 257,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-06-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 278,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-07-02",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 299,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-01",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 320,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-30",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 341,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-01",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 362,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-31",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 383,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-12-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 404,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-01-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 425,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-02-04",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 446,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-03-05",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 467,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-04-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 488,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-05-05",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 509,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-06-04",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 530,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-07-06",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 551,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-08-04",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 572,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-09-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 593,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-10-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 614,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-11-03",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 635,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-12-04",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 656,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-01-06",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 677,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-02-05",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 698,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-03-09",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 719,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-04-08",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 740,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-05-07",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 761,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-06-08",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 782,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-07-08",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 803,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-08-06",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 824,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-09-07",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 845,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-10-06",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 866,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-11-05",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 887,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-12-08",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 908,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-01-07",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 929,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-02-08",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 950,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-03-10",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 971,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-04-08",
+    "fitted": true,
+    "level": 0.18,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.18,
+    "pairs": 992,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-05-10",
+    "fitted": true,
+    "level": 0.1775,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1775,
+    "pairs": 1013,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-06-09",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 1034,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-07-12",
+    "fitted": true,
+    "level": 0.1725,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1725,
+    "pairs": 1055,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-08-10",
+    "fitted": true,
+    "level": 0.17,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.17,
+    "pairs": 1076,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-09-09",
+    "fitted": true,
+    "level": 0.1675,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1675,
+    "pairs": 1097,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-10-11",
+    "fitted": true,
+    "level": 0.165,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.165,
+    "pairs": 1118,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-11-09",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1139,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-12-12",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1160,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-01-12",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1181,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-02-13",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1202,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-03-15",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1223,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-04-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1244,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-05-15",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1265,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-06-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1286,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-07-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1307,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-08-15",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1328,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-09-14",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1349,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-10-16",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1370,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-11-14",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1391,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-12-14",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1412,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-01-17",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1433,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-02-15",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1454,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-03-18",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1475,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-04-17",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1496,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-05-16",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1517,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-06-17",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1538,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-07-18",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1559,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-08-16",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1580,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-09-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1601,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-10-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1622,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-11-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1643,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-12-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1664,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-01-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1685,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-02-20",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1706,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-03-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1727,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-04-22",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1748,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-05-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1769,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-06-23",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1790,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-07-23",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1811,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-08-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1832,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-09-22",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1853,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-10-22",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1874,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-11-21",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1895,
+    "reason": null,
+    "tied": null
+   }
+  ],
+  "structural_kinked_fitted": [
+   {
+    "first_anchor": "2018-06-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 47,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-07-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 68,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-08-27",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 89,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-09-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 110,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-10-26",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 131,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-11-28",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 152,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2018-12-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 173,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-01-31",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 194,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-03-04",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 215,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-04-02",
+    "fitted": false,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": false,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 236,
+    "reason": "too few pairs",
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-05-02",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 257,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-06-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 278,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-07-02",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 299,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-01",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 320,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-08-30",
+    "fitted": true,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 341,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-01",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 362,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-10-31",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 383,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2019-12-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 404,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-01-03",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 425,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-02-04",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 446,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-03-05",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 467,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-04-03",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 488,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-05-05",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 509,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-06-04",
+    "fitted": true,
+    "level": 0.12,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.12,
+    "pairs": 530,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-07-06",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 551,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-08-04",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 572,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-09-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 593,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-10-02",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 614,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-11-03",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 635,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2020-12-04",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 656,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-01-06",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 677,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-02-05",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 698,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-03-09",
+    "fitted": true,
+    "level": 0.115,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.115,
+    "pairs": 719,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-04-08",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 740,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-05-07",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 761,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-06-08",
+    "fitted": true,
+    "level": 0.1175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1175,
+    "pairs": 782,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-07-08",
+    "fitted": true,
+    "level": 0.18,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.18,
+    "pairs": 803,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-08-06",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 824,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-09-07",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 845,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-10-06",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 866,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-11-05",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 887,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2021-12-08",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 908,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-01-07",
+    "fitted": true,
+    "level": 0.185,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.185,
+    "pairs": 929,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-02-08",
+    "fitted": true,
+    "level": 0.1825,
+    "not_identified_at": {
+     "0.0001": true,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1825,
+    "pairs": 950,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-03-10",
+    "fitted": true,
+    "level": 0.18,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.18,
+    "pairs": 971,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-04-08",
+    "fitted": true,
+    "level": 0.18,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.18,
+    "pairs": 992,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-05-10",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 1013,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-06-09",
+    "fitted": true,
+    "level": 0.175,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.175,
+    "pairs": 1034,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-07-12",
+    "fitted": true,
+    "level": 0.17,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.17,
+    "pairs": 1055,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-08-10",
+    "fitted": true,
+    "level": 0.1675,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1675,
+    "pairs": 1076,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-09-09",
+    "fitted": true,
+    "level": 0.1675,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1675,
+    "pairs": 1097,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-10-11",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1118,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-11-09",
+    "fitted": true,
+    "level": 0.145,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.145,
+    "pairs": 1139,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2022-12-12",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1160,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-01-12",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1181,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-02-13",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1202,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-03-15",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1223,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-04-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1244,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-05-15",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1265,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-06-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1286,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-07-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1307,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-08-15",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1328,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-09-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1349,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-10-16",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1370,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-11-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1391,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2023-12-14",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1412,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-01-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1433,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-02-15",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1454,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-03-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1475,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-04-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1496,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-05-16",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1517,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-06-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1538,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-07-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": false,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1559,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-08-16",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1580,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-09-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1601,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-10-17",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1622,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-11-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1643,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2024-12-18",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1664,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-01-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1685,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-02-20",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1706,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-03-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1727,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-04-22",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1748,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-05-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1769,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-06-23",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1790,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-07-23",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1811,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-08-21",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1832,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-09-22",
+    "fitted": true,
+    "level": 0.1325,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1325,
+    "pairs": 1853,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-10-22",
+    "fitted": true,
+    "level": 0.135,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.135,
+    "pairs": 1874,
+    "reason": null,
+    "tied": null
+   },
+   {
+    "first_anchor": "2025-11-21",
+    "fitted": true,
+    "level": 0.1375,
+    "not_identified_at": {
+     "0.0001": false,
+     "0.001": true,
+     "0.01": true,
+     "1e-06": false,
+     "1e-09": false
+    },
+    "old_level": 0.1375,
+    "pairs": 1895,
+    "reason": null,
+    "tied": null
+   }
+  ]
+ }
+}
