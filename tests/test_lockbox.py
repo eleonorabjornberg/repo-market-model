@@ -469,6 +469,11 @@ NOT_ENTRY_POINTS = {
         "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
         "(tests/test_derived_features_631.py)"
     ),
+    "scripts/upper_bound_635.read_inputs": (
+        "reads each input as of the decision instant at leads 1 to 5 on the lead-1 fold grid, for the upper-bound study of #635; "
+        "selects no model and scores no forecast, calls lockbox.require_unlocked on every day before it reads one, and its `fit` "
+        "refuses a panel that runs past 2025-12-31 (tests/test_upper_bound_635.py)"
+    ),
     "scripts/source_screen.probe": (
         "asks the as-of rule, on the one middle row of the panel, whether a column has a "
         "row-relative availability; reads one row, scores and selects nothing (#478)"
@@ -1045,6 +1050,8 @@ CRPS_SCORERS = {
     "scripts/quarter_end_remedy._crps": ("delegates", "one loss; " + _WALK),
     "scripts/desk_outputs.check_against_published": ("delegates", "compares the days `history_command` chose, after its `require_unlocked`"),
     "scripts/spread_distribution_632.crps_contract": ("delegates", "one loss on the contract's levels; `distribution_command` calls `require_unlocked` on the last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the published daily file is read to that day only (#632)"),
+    "scripts/spread_distribution_634.five_crps": ("delegates", "B3's secondary loss of one vector on its own five levels at one outcome; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634, ruling on #660 and #700)"),
+    "scripts/spread_distribution_634.five_twcrps": ("delegates", "the upper-tail loss on the same five levels; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634)"),
     "scripts/desk_outputs._series": ("delegates", "the series of days `history_command` chose, after its `require_unlocked`"),
 }
 
