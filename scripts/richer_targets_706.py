@@ -411,6 +411,7 @@ def lead_on_onsets(target, args, all_rows, laws1, values, position, reads, rows)
         }
         lead1 = richer_targets.as_of_rows(rows, registry, [target, s639.SCARCITY], leads=(1,), scored=scored_idx, decision_time=DECISION)[1]
     scored_days = [dates[i] for i in scored_idx]
+    refuse_locked(scored_days)
     onset_days = pressure.onsets(all_rows, THRESHOLD_BP, [d for d in scored_days if d in every])
     state = [s639.band(rows[r].values.get(s639.SCARCITY)) for r in lead1[s639.SCARCITY]]
     median = [None if laws1.get(d) is None else richer_targets.median(laws1[d]) for d in scored_days]
