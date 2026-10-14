@@ -290,14 +290,25 @@ class IncumbentTests(unittest.TestCase):
         record = json.loads((ROOT / incumbent["record"]).read_text(encoding="utf-8"))
         self.assertIn("declaration", record)
 
-    def test_b3_is_refused_off_the_grid(self):
-        five = {h: [0.0, 1.0, 2.0, 3.0, 4.0] for h in sp.HORIZONS}
-        with self.assertRaises(sp.ProtocolError):
-            pb.b3_forecast(pb.incumbent()["levels"], five)
+    def test_b3_is_admitted_on_its_own_five_levels(self):
+        """Ruling of 13 October 2026 (PR #660): B3 is scored on its own levels, a secondary comparison."""
 
-    def test_b3_is_admitted_on_the_grid(self):
-        forecast = {h: [float(k) for k in range(23)] for h in sp.HORIZONS}
-        self.assertEqual(pb.b3_forecast(sp.GRID, forecast), forecast)
+        five = {h: [0.0, 1.0, 2.0, 3.0, 4.0] for h in sp.HORIZONS}
+        self.assertEqual(pb.b3_forecast(pb.incumbent()["levels"], five), five)
+
+    def test_b3_is_refused_off_the_grid_or_off_its_levels(self):
+        with self.assertRaises(sp.ProtocolError):
+            pb.b3_forecast((0.05, 0.33, 0.5), {h: [0.0, 1.0, 2.0] for h in sp.HORIZONS})
+        with self.assertRaises(sp.ProtocolError):
+            pb.b3_forecast(pb.incumbent()["levels"], {h: [0.0, 1.0] for h in sp.HORIZONS})
+        with self.assertRaises(sp.ProtocolError):
+            pb.b3_forecast(pb.incumbent()["levels"], {1: [0.0, 1.0, 2.0, 3.0, 4.0]})
+
+    def test_the_secondary_comparison_reads_the_candidate_at_b3s_levels(self):
+        levels = pb.incumbent()["levels"]
+        candidate = {h: [float(k) for k in range(23)] for h in sp.HORIZONS}
+        reduced = {h: sp.on_levels(candidate[h], levels) for h in sp.HORIZONS}
+        self.assertEqual(reduced[1], [float(sp.GRID.index(level)) for level in levels])
 
 
 class OutcomeTests(unittest.TestCase):

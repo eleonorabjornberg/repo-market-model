@@ -1,0 +1,700 @@
+{
+ "day_lead_cases": {
+  "all": 4980,
+  "by_lead": {
+   "1": {
+    "announced": {
+     "mae": null,
+     "mean_error": null,
+     "n": 0
+    },
+    "left_out": {
+     "mae": null,
+     "mean_error": null,
+     "n": 0
+    },
+    "old": {
+     "mae": null,
+     "mean_error": null,
+     "n": 0
+    }
+   },
+   "2": {
+    "announced": {
+     "mae": 41.75849999999999,
+     "mean_error": -8.24150000000001,
+     "n": 2
+    },
+    "left_out": {
+     "mae": 70.7415,
+     "mean_error": -70.7415,
+     "n": 2
+    },
+    "old": {
+     "mae": 55.0,
+     "mean_error": -55.0,
+     "n": 2
+    }
+   },
+   "3": {
+    "announced": {
+     "mae": 53.5254,
+     "mean_error": 36.5254,
+     "n": 10
+    },
+    "left_out": {
+     "mae": 79.9746,
+     "mean_error": -79.9746,
+     "n": 10
+    },
+    "old": {
+     "mae": 46.5,
+     "mean_error": -46.5,
+     "n": 10
+    }
+   },
+   "4": {
+    "announced": {
+     "mae": 87.74027272727272,
+     "mean_error": 87.74027272727272,
+     "n": 55
+    },
+    "left_out": {
+     "mae": 32.76645454545454,
+     "mean_error": -23.314272727272726,
+     "n": 55
+    },
+    "old": {
+     "mae": 49.09090909090909,
+     "mean_error": -49.09090909090909,
+     "n": 55
+    }
+   },
+   "5": {
+    "announced": {
+     "mae": 87.53224074074075,
+     "mean_error": 81.85012962962963,
+     "n": 54
+    },
+    "left_out": {
+     "mae": 35.88824074074074,
+     "mean_error": -26.40912962962963,
+     "n": 54
+    },
+    "old": {
+     "mae": 51.673314814814816,
+     "mean_error": -51.673314814814816,
+     "n": 54
+    }
+   }
+  },
+  "by_lead_all_cases": {
+   "1": {
+    "announced": {
+     "mae": 2.5100401606425704e-05,
+     "mean_error": -2.5100401606425704e-05,
+     "n": 996
+    },
+    "left_out": {
+     "mae": 2.5100401606425704e-05,
+     "mean_error": -2.5100401606425704e-05,
+     "n": 996
+    },
+    "old": {
+     "mae": 2.5100401606425704e-05,
+     "mean_error": -2.5100401606425704e-05,
+     "n": 996
+    }
+   },
+   "2": {
+    "announced": {
+     "mae": 0.10704518072289154,
+     "mean_error": -0.03974196787148596,
+     "n": 996
+    },
+    "left_out": {
+     "mae": 0.16524397590361445,
+     "mean_error": -0.16524397590361445,
+     "n": 996
+    },
+    "old": {
+     "mae": 0.13363453815261045,
+     "mean_error": -0.13363453815261045,
+     "n": 996
+    }
+   },
+   "3": {
+    "announced": {
+     "mae": 0.7313795180722892,
+     "mean_error": 0.17274497991967872,
+     "n": 996
+    },
+    "left_out": {
+     "mae": 0.996933734939759,
+     "mean_error": -0.996933734939759,
+     "n": 996
+    },
+    "old": {
+     "mae": 0.6608433734939759,
+     "mean_error": -0.6608433734939759,
+     "n": 996
+    }
+   },
+   "4": {
+    "announced": {
+     "mae": 5.45074297188755,
+     "mean_error": 4.239447791164658,
+     "n": 996
+    },
+    "left_out": {
+     "mae": 2.41504016064257,
+     "mean_error": -1.8930823293172692,
+     "n": 996
+    },
+    "old": {
+     "mae": 3.3164909638554216,
+     "mean_error": -3.3164909638554216,
+     "n": 996
+    }
+   },
+   "5": {
+    "announced": {
+     "mae": 8.560927710843373,
+     "mean_error": 2.8461004016064257,
+     "n": 996
+    },
+    "left_out": {
+     "mae": 5.760951807228915,
+     "mean_error": -3.0233775100401603,
+     "n": 996
+    },
+    "old": {
+     "mae": 6.6167690763052205,
+     "mean_error": -4.393122489959839,
+     "n": 996
+    }
+   }
+  },
+  "by_rule_leads_2_to_5": {
+   "announced": {
+    "mae": 85.70278632478633,
+    "mean_error": 83.23413675213675,
+    "n": 117
+   },
+   "left_out": {
+    "mae": 37.242290598290595,
+    "mean_error": -28.423982905982907,
+    "n": 117
+   },
+   "old": {
+    "mae": 50.60989743589744,
+    "mean_error": -50.60989743589744,
+    "n": 117
+   }
+  },
+  "by_rule_partly_announced": {
+   "announced": {
+    "mae": 84.05972727272727,
+    "mean_error": 79.2925041322314,
+    "n": 121
+   },
+   "left_out": {
+    "mae": 38.6888347107438,
+    "mean_error": -30.16204132231405,
+    "n": 121
+   },
+   "old": {
+    "mae": 50.12693388429752,
+    "mean_error": -50.12693388429752,
+    "n": 121
+   }
+  },
+  "by_year_leads_4_5": {
+   "2018": {
+    "announced": {
+     "mae": 88.94575,
+     "mean_error": 88.94575,
+     "n": 80
+    },
+    "left_out": {
+     "mae": 21.463424999999997,
+     "mean_error": -8.66675,
+     "n": 80
+    },
+    "n": 80,
+    "old": {
+     "mae": 52.311875,
+     "mean_error": -52.311875,
+     "n": 80
+    }
+   },
+   "2019": {
+    "announced": {
+     "mae": 51.0,
+     "mean_error": 51.0,
+     "n": 2
+    },
+    "left_out": {
+     "mae": 36.0,
+     "mean_error": -36.0,
+     "n": 2
+    },
+    "n": 2,
+    "old": {
+     "mae": 30.0,
+     "mean_error": -30.0,
+     "n": 2
+    }
+   },
+   "2020": {
+    "announced": {
+     "mae": 56.04121428571428,
+     "mean_error": 35.41035714285714,
+     "n": 14
+    },
+    "left_out": {
+     "mae": 103.08964285714286,
+     "mean_error": -103.08964285714286,
+     "n": 14
+    },
+    "n": 14,
+    "old": {
+     "mae": 58.31128571428572,
+     "mean_error": -58.31128571428572,
+     "n": 14
+    }
+   },
+   "2021": {
+    "announced": {
+     "mae": 62.502500000000005,
+     "mean_error": 62.502500000000005,
+     "n": 4
+    },
+    "left_out": {
+     "mae": 43.499500000000005,
+     "mean_error": -41.497499999999995,
+     "n": 4
+    },
+    "n": 4,
+    "old": {
+     "mae": 42.5,
+     "mean_error": -42.5,
+     "n": 4
+    }
+   },
+   "2023": {
+    "announced": {
+     "mae": 108.4606,
+     "mean_error": 104.8602,
+     "n": 5
+    },
+    "left_out": {
+     "mae": 32.739799999999995,
+     "mean_error": -32.739799999999995,
+     "n": 5
+    },
+    "n": 5,
+    "old": {
+     "mae": 15.810200000000004,
+     "mean_error": -15.810200000000004,
+     "n": 5
+    }
+   },
+   "2024": {
+    "announced": {
+     "mae": 199.982,
+     "mean_error": 199.982,
+     "n": 2
+    },
+    "left_out": {
+     "mae": 49.018,
+     "mean_error": -49.018,
+     "n": 2
+    },
+    "n": 2,
+    "old": {
+     "mae": 40.0,
+     "mean_error": -40.0,
+     "n": 2
+    }
+   },
+   "2025": {
+    "announced": {
+     "mae": 178.971,
+     "mean_error": 178.971,
+     "n": 2
+    },
+    "left_out": {
+     "mae": 36.028999999999996,
+     "mean_error": -36.028999999999996,
+     "n": 2
+    },
+    "n": 2,
+    "old": {
+     "mae": 50.0,
+     "mean_error": -50.0,
+     "n": 2
+    }
+   }
+  },
+  "old_and_announced_differ": 117,
+  "partly_announced": 121
+ },
+ "fixture": "tests/fixtures/snapshots/net_settlement_inputs/treasury_auctions/20261008T205048Z_568c69347867.json",
+ "groups": {
+  "announcement_dates": {
+   "announced": {
+    "mae": 60.36029341317365,
+    "mean_error": -0.7256826347305393
+   },
+   "left_out": {
+    "mae": 57.059670658682634,
+    "mean_error": -53.47418562874252
+   },
+   "n": 167,
+   "old": {
+    "mae": 104.6467125748503,
+    "mean_error": -104.6467125748503
+   }
+  },
+  "within_10_business_days": {
+   "announced": {
+    "mae": 56.45832543103448,
+    "mean_error": -12.103493534482759
+   },
+   "left_out": {
+    "mae": 59.78533836206896,
+    "mean_error": -57.09702801724138
+   },
+   "n": 464,
+   "old": {
+    "mae": 107.27802155172414,
+    "mean_error": -107.27802155172414
+   }
+  },
+  "within_5_business_days": {
+   "announced": {
+    "mae": 83.89147933884297,
+    "mean_error": 79.4607520661157
+   },
+   "left_out": {
+    "mae": 38.5205867768595,
+    "mean_error": -29.99379338842975
+   },
+   "n": 121,
+   "old": {
+    "mae": 49.958685950413226,
+    "mean_error": -49.958685950413226
+   }
+  }
+ },
+ "named_cases": [
+  {
+   "announced": 90.0,
+   "completed": -14.953000000000003,
+   "decision": "2018-09-28",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -54.953,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-10-04"
+  },
+  {
+   "announced": 90.0,
+   "completed": -14.953000000000003,
+   "decision": "2018-09-27",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -54.953,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-10-04"
+  },
+  {
+   "announced": 118.0,
+   "completed": -2.0020000000000095,
+   "decision": "2021-10-01",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -27.00200000000001,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2021-10-07"
+  },
+  {
+   "announced": 118.0,
+   "completed": -2.0020000000000095,
+   "decision": "2021-09-30",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -27.00200000000001,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2021-10-07"
+  },
+  {
+   "announced": 200.0,
+   "completed": 34.328,
+   "decision": "2023-08-16",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": 34.303,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2023-08-22"
+  },
+  {
+   "announced": 200.0,
+   "completed": 34.328,
+   "decision": "2023-08-15",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": 34.303,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2023-08-22"
+  },
+  {
+   "announced": 249.0,
+   "completed": 49.018,
+   "decision": "2024-11-20",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": 9.018,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2024-11-26"
+  },
+  {
+   "announced": 249.0,
+   "completed": 49.018,
+   "decision": "2024-11-19",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": 9.018,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2024-11-26"
+  },
+  {
+   "announced": 215.0,
+   "completed": 36.028999999999996,
+   "decision": "2025-04-02",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -13.971000000000004,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2025-04-08"
+  },
+  {
+   "announced": 215.0,
+   "completed": 36.028999999999996,
+   "decision": "2025-04-01",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -13.971000000000004,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2025-04-08"
+  }
+ ],
+ "rules": [
+  "old",
+  "announced",
+  "left_out"
+ ],
+ "worst_cases": [
+  {
+   "announced": 249.0,
+   "completed": 49.018,
+   "decision": "2024-11-20",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": 9.018,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2024-11-26"
+  },
+  {
+   "announced": 249.0,
+   "completed": 49.018,
+   "decision": "2024-11-19",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": 9.018,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2024-11-26"
+  },
+  {
+   "announced": 215.0,
+   "completed": 36.028999999999996,
+   "decision": "2025-04-02",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -13.971000000000004,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2025-04-08"
+  },
+  {
+   "announced": 215.0,
+   "completed": 36.028999999999996,
+   "decision": "2025-04-01",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -13.971000000000004,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2025-04-08"
+  },
+  {
+   "announced": 200.0,
+   "completed": 34.328,
+   "decision": "2023-08-16",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": 34.303,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2023-08-22"
+  },
+  {
+   "announced": 200.0,
+   "completed": 34.328,
+   "decision": "2023-08-15",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": 34.303,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2023-08-22"
+  },
+  {
+   "announced": 90.0,
+   "completed": -63.99799999999999,
+   "decision": "2018-04-06",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -108.99799999999999,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-04-12"
+  },
+  {
+   "announced": 90.0,
+   "completed": -63.99799999999999,
+   "decision": "2018-04-05",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -108.99799999999999,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-04-12"
+  },
+  {
+   "announced": 116.0,
+   "completed": -21.99799999999999,
+   "decision": "2018-09-07",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -66.99799999999999,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-09-13"
+  },
+  {
+   "announced": 116.0,
+   "completed": -21.99799999999999,
+   "decision": "2018-09-06",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -66.99799999999999,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-09-13"
+  },
+  {
+   "announced": 90.0,
+   "completed": -43.986999999999995,
+   "decision": "2018-04-13",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -88.987,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-04-19"
+  },
+  {
+   "announced": 90.0,
+   "completed": -43.986999999999995,
+   "decision": "2018-04-12",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -88.987,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-04-19"
+  },
+  {
+   "announced": 39.0,
+   "completed": 164.07600000000002,
+   "decision": "2020-12-23",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -32.282,
+   "partly": [
+    "coupon"
+   ],
+   "settles": "2020-12-31"
+  },
+  {
+   "announced": 116.0,
+   "completed": -7.997000000000014,
+   "decision": "2018-04-20",
+   "lead": 4,
+   "left_out": 0.0,
+   "old": -52.997000000000014,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-04-26"
+  },
+  {
+   "announced": 116.0,
+   "completed": -7.997000000000014,
+   "decision": "2018-04-19",
+   "lead": 5,
+   "left_out": 0.0,
+   "old": -52.997000000000014,
+   "partly": [
+    "bill"
+   ],
+   "settles": "2018-04-26"
+  }
+ ]
+}
