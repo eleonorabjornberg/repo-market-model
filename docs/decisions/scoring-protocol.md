@@ -1,7 +1,8 @@
 # Decision: the scoring protocol for hypotheses, version 1
 
-**Status: DRAFT, for Eleonora to merge. Not in force until she has merged it** (§13 below: this record is merged
-by her, not under delegated review). Drafted by the pull request that closes #655.
+**Status: In force since 13 October 2026**, when Eleonora merged it (PR #695; §13 below: this record is merged
+by her, not under delegated review). Drafted by the pull request that closes #655. Item 5 is amended by #737,
+which is a draft change to be merged by her.
 
 Eleonora decided the protocol herself on #640, in her own words (comment 6131185033, typed in the web UI):
 

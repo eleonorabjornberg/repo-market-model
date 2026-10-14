@@ -519,7 +519,8 @@ class PairedTest:
         """The one-sided lower bound of mean(d) at `level` (default: the test's `alpha`).
 
         Calibrated by the double bootstrap when the test carries prepivots, the studentized
-        bound at the nominal level otherwise.
+        bound at the nominal level otherwise. A descriptive figure, not the verdict bound: only `verdict`
+        reads the calibrated critical values (#737, Q-1).
         """
 
         level = self.alpha if level is None else level
@@ -528,7 +529,10 @@ class PairedTest:
         return self.mean_difference - _bound(self.t_draws, 1.0 - level, self.draws) * self.standard_error
 
     def upper_skill(self, level: Optional[float] = None) -> float:
-        """The one-sided upper bound of skill at `level` (default: the test's `alpha`)."""
+        """The one-sided upper bound of skill at `level` (default: the test's `alpha`).
+
+        A descriptive figure, not the verdict bound: only `verdict` reads the calibrated critical values (#737, Q-1).
+        """
 
         if self.skill_standard_error is None:
             raise ProtocolError("this test was made without skill (with_skill=False)")

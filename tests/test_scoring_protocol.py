@@ -706,6 +706,22 @@ class SecondaryLevelsTests(unittest.TestCase):
         self.assertAlmostEqual(scores[calendar[2]], expected)
 
 
+class ReportedBoundLabelTests(unittest.TestCase):
+    """Eleonora's ruling on #737 (Q-1, 14 Oct 2026): bounds reported outside a verdict stay descriptive and
+    say so. Only `verdict` reads the calibrated values."""
+
+    def test_reported_bounds_are_labelled_not_the_verdict_bound(self):
+        for method in (sp.PairedTest.lower_mean_difference, sp.PairedTest.upper_skill):
+            self.assertIn("not the verdict bound", method.__doc__)
+
+    def test_the_decision_record_status_is_in_force(self):
+        text = (Path(__file__).resolve().parent.parent / "docs" / "decisions" / "scoring-protocol.md").read_text()
+        status = text.split("\n\n", 2)[1]
+        self.assertTrue(status.startswith("**Status: In force"), status)
+        self.assertIn("13 October 2026", status)
+        self.assertNotIn("DRAFT", status)
+
+
 class HolmTests(unittest.TestCase):
     def test_step_down(self):
         self.assertEqual(sp.holm({"a": 0.01, "b": 0.04}), {"a": True, "b": True})
