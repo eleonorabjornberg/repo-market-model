@@ -20,7 +20,7 @@ from typing import Dict, List
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model.exploration import EXPLORATORY_END, NEAR_BLIND_START  # noqa: E402
+from repo_model.exploration import EXPLORATORY_END, NEAR_BLIND_START, panel_end  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "derived_features_631.json"
 CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
@@ -771,7 +771,7 @@ def model_command(args) -> int:
     h = args.horizon
     if h not in scoring["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
-    last = date.fromisoformat(scoring["last_day"])
+    last = panel_end(args.end, date.fromisoformat(scoring["last_day"]), where="derived_features_631.model")
     require_unlocked([last], where="derived_features_631")
     _ss, _ann = _modules()
     s598 = _load("satiation_distance_598")
@@ -870,13 +870,13 @@ def ordinary_command(args) -> int:
     from repo_model.evaluation_splits import load_split_declaration
     from repo_model.metrics import stationary_bootstrap_indices
 
+    last = panel_end(args.end, date.fromisoformat(MODEL_TEST_LAST_DAY), where="derived_features_631.ordinary")
     declared = _committed()
     _ss, _ann = _modules()
     rows = load_daily_panel(args.panel)
     splits = load_split_declaration(REPO / "metadata" / "evaluation_splits.json")
     by_date = {r.date: r for r in rows}
-    last = date.fromisoformat(MODEL_TEST_LAST_DAY)
-    out = {"rows": {}, "paired": {}, "scope": {"threshold_bp": 5, "last_day": MODEL_TEST_LAST_DAY}}
+    out = {"rows": {}, "paired": {}, "scope": {"threshold_bp": 5, "last_day": last.isoformat()}}
     for h in declared["model_test"]["scoring"]["horizons"]:
         docs = [json.loads(Path(str(p).format(h=h)).read_text(encoding="utf-8")) for p in args.inputs]
         forecasts = {}
@@ -1076,21 +1076,24 @@ def report_command(args) -> int:
 def model_report_command(args) -> int:
     """The model test's tables: the judge's tiers, then the ordinary-day AUROC and calibration, paired."""
 
-    judged = {rule: json.loads(Path(path).read_text(encoding="utf-8"))["candidates"] for rule, path in (("flat", args.unweighted), ("weighted", args.weighted))}
+    judged = (
+        {rule: json.loads(Path(path).read_text(encoding="utf-8"))["candidates"] for rule, path in (("flat", args.unweighted), ("weighted", args.weighted))}
+        if args.weighted and args.unweighted else None
+    )
     ordinary = json.loads(args.ordinary.read_text(encoding="utf-8"))
     names = [CONTROL.rsplit("+dist_roll", 1)[0], CONTROL, PARENT, TEST]
     yes = lambda x: "yes" if x else "no"
     ci = lambda r: f"{r['mean']:.3f} [{r['interval']['lower']:.3f}, {r['interval']['upper']:.3f}]"
-    lines = ["Table M1. The judge in force (tiers 1, 3 and 5; the weighted rule is the one in force, the flat rule is reported beside it). Tier 1: onsets flagged at some lead 1 to 5, recall [90%], the pooled false alarms per onset (a false alarm counted once however many leads flag it; limit 2, #550); tier 1 also needs the recall conditions at each lead.", "",
+    lines = [] if judged is None else ["Table M1. The judge in force (tiers 1, 3 and 5; the weighted rule is the one in force, the flat rule is reported beside it). Tier 1: onsets flagged at some lead 1 to 5, recall [90%], the pooled false alarms per onset (a false alarm counted once however many leads flag it; limit 2, #550); tier 1 also needs the recall conditions at each lead.", "",
              "| row | rule | onsets flagged | recall [90%] | pooled false alarms per onset | tier 1 | tier 3 | tier 5 | passes |", "|---|---|---|---|---|---|---|---|---|"]
-    for name in names:
+    for name in names if judged else ():
         for rule in ("weighted", "flat"):
             e = judged[rule][name]
             t = e["tiers"]["onset_warning"]["lead_at_least_1"]
             v = e["verdict"]
             worst = t["pooled_weighted_false_alarms_per_onset"] if rule == "weighted" else t["pooled_false_alarms_per_onset"]
             lines.append(f"| `{name}` | {rule} | {t['onsets_flagged']:g} of {t['onsets']} | {ci(t['recall'])} | {worst:.2f} | {yes(v['tier_1_onset_warning'])} | {yes(v['tier_3_no_crying_wolf'])} | {yes(v['tier_5_week_ahead'])} | {yes(v['passes'])} |")
-    lines += ["", "Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%], and the reliability intercept and slope (logistic of the outcome on logit(forecast); `-` where the forecast is constant or the fit is not formed). The control forecasts exactly 0 there.", "",
+    lines += ["" if lines else "Table M1 is not made: the judge is not run on days past 2025-12-31 (#684, ruling of 13 October 2026).", "", "Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%], and the reliability intercept and slope (logistic of the outcome on logit(forecast); `-` where the forecast is constant or the fit is not formed). The control forecasts exactly 0 there.", "",
               "| row | h | days | pressure days | mean forecast | realised | AUROC [90%] | intercept | slope |", "|---|---|---|---|---|---|---|---|---|"]
     for name in names[1:]:
         for h, c in ordinary["rows"][name].items():
@@ -1124,6 +1127,7 @@ def main(argv=None) -> int:
     model.add_argument("--published", type=Path, required=True)
     model.add_argument("--horizon", type=int, required=True)
     model.add_argument("--output", type=Path, required=True)
+    model.add_argument("--end", help="last scored day, ISO; default the declaration's own (at most 2026-09-03, #684: a scratch scored span)")
     model.set_defaults(func=model_command)
     compare = sub.add_parser("compare")
     compare.add_argument("--rule", choices=("unweighted", "weighted"), default="weighted")
@@ -1135,6 +1139,7 @@ def main(argv=None) -> int:
     ordinary = sub.add_parser("ordinary")
     ordinary.add_argument("--panel", type=Path, required=True)
     ordinary.add_argument("--output", type=Path, required=True)
+    ordinary.add_argument("--end", help="last scored day, ISO; default the declaration's own (at most 2026-09-03, #684: a scratch scored span)")
     ordinary.add_argument("inputs", nargs="+", help="forecast files with {h} for the horizon")
     ordinary.set_defaults(func=ordinary_command)
     report = sub.add_parser("report")
@@ -1142,8 +1147,8 @@ def main(argv=None) -> int:
     report.add_argument("--output-dir", type=Path, required=True)
     report.set_defaults(func=report_command)
     modelreport = sub.add_parser("model-report")
-    modelreport.add_argument("--weighted", type=Path, required=True)
-    modelreport.add_argument("--unweighted", type=Path, required=True)
+    modelreport.add_argument("--weighted", type=Path, help="the judge's output under the weighted rule; with --unweighted, Table M1 is made")
+    modelreport.add_argument("--unweighted", type=Path)
     modelreport.add_argument("--ordinary", type=Path, required=True)
     modelreport.add_argument("--output", type=Path, required=True)
     modelreport.set_defaults(func=model_report_command)

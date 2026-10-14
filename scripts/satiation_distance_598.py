@@ -267,7 +267,7 @@ def run_command(args) -> int:
     if h not in declared["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
     scoring = declared["scoring"]
-    last = date.fromisoformat(scoring["last_day"])
+    last = panel_end(args.end, date.fromisoformat(scoring["last_day"]), where="satiation_distance_598.run")
     require_unlocked([last], where="satiation_distance_598")
     rolling_constants()
     rows = load_daily_panel(args.panel)
@@ -476,6 +476,7 @@ def main(argv=None) -> int:
     p.add_argument("--published", type=Path, required=True)
     p.add_argument("--horizon", type=int, required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     p = sub.add_parser("compare")
     p.add_argument("--panel", type=Path, required=True)
     for name in ("bench", "risk", "reference", "parents", "rows"):

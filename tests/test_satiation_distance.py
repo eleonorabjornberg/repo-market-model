@@ -316,7 +316,7 @@ class VariantFeatureTests(unittest.TestCase):
 
 class RunGuardTests(unittest.TestCase):
     def args(self, **changes):
-        base = dict(horizon=1, panel=REPO / "no-such-panel.csv", published=REPO / "no-such-panel.csv",
+        base = dict(horizon=1, end=None, panel=REPO / "no-such-panel.csv", published=REPO / "no-such-panel.csv",
                     output=REPO / "no-such-output.json")
         base.update(changes)
         return argparse.Namespace(**base)

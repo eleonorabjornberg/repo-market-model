@@ -1,0 +1,44 @@
+{
+  "title": "Scratch scored span for the exploratory re-runs of #624 and #631 (#684)",
+  "ruling": "Eleonora, 13 October 2026, on PR #710: a separate scratch declaration for the #624 and #631 re-runs that read the 2026 development days; the published pressure-judge declaration does not move; the 3-pressure-day minimum stays.",
+  "status": "exploration on development data; nothing here is a verdict under scoring protocol v1 (#640)",
+  "scored_span": {
+    "first_day": "2018-06-29",
+    "last_day": "2026-09-03",
+    "shared_constant": "repo_model.exploration.EXPLORATORY_END"
+  },
+  "minimum_pressure_days": 3,
+  "unchanged": {
+    "metadata/pressure_judge.json": {
+      "sha256": "20ab20f9802ca53cfd7df8141fa95a8e949548d8951dcdd228d43b1eba8b49ad",
+      "scoring_last_day": "2025-12-31"
+    },
+    "metadata/off_risk_day_681.json": {
+      "sha256": "0d08828d046dbf0b23095066611e1dc867878c09d4313bc5cc98640017d245ae"
+    },
+    "metadata/derived_features_631.json": {
+      "sha256": "302901bc0cd6080b50ccc67988a89bb7b9cc0a6236a41ea8feb6433ac10b54d8"
+    },
+    "metadata/satiation_distance_598.json": {
+      "sha256": "5fd34cd24e3d9fce7d71ed4df89f97518ef65b40f2f41851104da0d82b055fd4"
+    },
+    "metadata/iorb_every_day_579.json": {
+      "sha256": "d8aa58dbdf8c2ddee2ce92cb7420e199793d829b0a4a7427c43f3a97336142d9"
+    },
+    "metadata/risk_date_severity.json": {
+      "sha256": "2d7b9af2e214227d24dc116d434e93b912203bd0b4089db9e76f2a039a1c249f"
+    }
+  },
+  "how": "each scoring command takes --end, checked by repo_model.exploration.panel_end (LookAheadError for a day after EXPLORATORY_END or in a locked tier); without --end it keeps its committed declaration's own last day, so a run without the flag is unchanged. The judge itself (judge, compare, require_scored_days on its own declaration) is not run on 2026 days.",
+  "commands": [
+    "pressure_judge.py forecasts",
+    "risk_date_severity.py run",
+    "announcement_dating_rescore.py run",
+    "satiation_distance_598.py run",
+    "iorb_every_day_579.py run",
+    "every_day_conditioning_601.py cap",
+    "off_risk_day_624.py measure",
+    "derived_features_631.py model",
+    "derived_features_631.py ordinary"
+  ]
+}

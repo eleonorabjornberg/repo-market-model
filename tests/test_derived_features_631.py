@@ -195,5 +195,41 @@ class RunTests(unittest.TestCase):
                     script.main(["panel", "--panel", str(panel), "--output", str(Path(directory) / "out.csv")])
 
 
+class ExploratoryEndTests(unittest.TestCase):
+    """`model` and `ordinary` take `--end` through the guard (#684), and the model report is made without the judge's tables.
+
+    The source-text test for `--end` (`tests/test_exploration.py`, `ScoringCommandEndTests`) was written first and watched fail; these two were
+    written after the code, and the first was watched to fail only under the mutation below.
+    Recorded mutation: in `ordinary_command`, the line `last = panel_end(args.end, ...)` -> `last = date.fromisoformat(args.end or MODEL_TEST_LAST_DAY)`,
+    so an end in the blind tier is accepted: `test_an_end_in_the_blind_tier_is_refused` errors with `FileNotFoundError` (no `LookAheadError` is
+    raised; the run goes on to read the missing panel).
+    """
+
+    def test_an_end_in_the_blind_tier_is_refused(self):
+        for command in ("ordinary", "model"):
+            with self.subTest(command=command):
+                argv = [command, "--panel", "missing.csv", "--end", "2026-09-04", "--output", "out.json"]
+                if command == "model":
+                    argv += ["--published", "missing.csv", "--horizon", "1"]
+                else:
+                    argv += ["x.json"]
+                with self.assertRaises(LookAheadError):
+                    script.main(argv)
+
+    def test_the_model_report_is_made_without_the_judge(self):
+        row = {"days": 10, "pressure_days": 2, "mean_forecast": 0.1, "realised": 0.2, "constant": False, "auroc": 0.8,
+               "interval": [0.7, 0.9], "calibration": None}
+        names = [script.CONTROL.rsplit("+dist_roll", 1)[0], script.CONTROL, script.PARENT, script.TEST]
+        ordinary = {"rows": {n: {"1": row} for n in names}, "paired": {"1": {"auroc_difference": -0.01, "interval": [-0.05, 0.03]}}}
+        with tempfile.TemporaryDirectory() as directory:
+            source, target = Path(directory) / "ordinary.json", Path(directory) / "model.md"
+            source.write_text(json.dumps(ordinary), encoding="utf-8")
+            script.main(["model-report", "--ordinary", str(source), "--output", str(target)])
+            text = target.read_text(encoding="utf-8")
+        self.assertIn("Table M1 is not made", text)
+        self.assertIn("Table M2", text)
+        self.assertIn("Table M3", text)
+
+
 if __name__ == "__main__":
     unittest.main()

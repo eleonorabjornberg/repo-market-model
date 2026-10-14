@@ -18,6 +18,9 @@ Recorded mutation (#684), applied in a disposable copy outside the tree: setting
 `test_the_constant_is_the_end_of_the_opened_near_blind_tier` fail with `AssertionError: datetime.date(2026, 9, 4) !=
 datetime.date(2026, 9, 3)` and `test_the_last_day_is_allowed` error with `LookAheadError` (the lockbox still locks the
 blind tier's first day). Written first and watched fail (`ModuleNotFoundError: No module named 'repo_model.exploration'`).
+A third, for `ScoringCommandEndTests` (the scratch scored span of the ruling of 13 October 2026 on PR #710; written first and watched fail, seven subtests, before the edits): in `scripts/satiation_distance_598.py`, the `run` line `last = panel_end(args.end, ..., where="satiation_distance_598.run")` ->
+`last = date.fromisoformat(args.end or scoring["last_day"])` makes `test_every_scoring_command_takes_the_end_through_the_guard` fail with
+`AssertionError: 'where="satiation_distance_598.run"' not found in ...`.
 A second: in `panel_end`, deleting the `require_exploratory_window([end], where=where)` line makes
 `test_an_end_into_the_blind_tier_is_refused` fail with `AssertionError: LookAheadError not raised`.
 """
@@ -34,7 +37,6 @@ from repo_model.lockbox import load_lockbox
 from repo_model.splits import LookAheadError
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
-#: `off_risk_day_624` is not here: its step 2 scores through the pressure judge, whose own declaration ends 2025-12-31 (see the PR for #684).
 SCREENS = ("source_screen", "source_matrix_629", "derived_features_631")
 PANEL_BUILDERS = (
     "pressure_v1_1", "measurement_fields", "net_settlement", "fed_liquidity", "nowcast", "dvp_segment_inputs",
@@ -85,6 +87,54 @@ class PanelEndTests(unittest.TestCase):
             with self.subTest(script=name):
                 text = (SCRIPTS / f"{name}.py").read_text(encoding="utf-8")
                 self.assertIn("panel_end(args.end", text)
+                self.assertIn('"--end"', text)
+
+
+#: The scoring commands that feed #624's step 1 and #631's model test (#684, ruling of 13 October 2026): each takes `--end`
+#: through the guard and so scores 2026 days on a scratch scored span, while its committed declaration and the pressure
+#: judge's published declaration keep 2025-12-31.
+SCORING_COMMANDS = (
+    ("pressure_judge", "pressure_judge.forecasts"),
+    ("risk_date_severity", "risk_date_severity.run"),
+    ("announcement_dating_rescore", "announcement_dating_rescore.run"),
+    ("satiation_distance_598", "satiation_distance_598.run"),
+    ("iorb_every_day_579", "iorb_every_day_579.run"),
+    ("every_day_conditioning_601", "every_day_conditioning_601.cap"),
+    ("off_risk_day_624", "off_risk_day_624.measure"),
+    ("off_risk_day_624", "off_risk_day_624.panel"),
+    ("off_risk_day_624", "off_risk_day_624.run"),
+    ("derived_features_631", "derived_features_631.model"),
+    ("derived_features_631", "derived_features_631.ordinary"),
+)
+
+
+class ScratchSpanDeclarationTests(unittest.TestCase):
+    """`metadata/exploration_684.json` names the scratch scored span; the published judge declaration keeps its own."""
+
+    def setUp(self):
+        import json
+
+        root = Path(__file__).resolve().parents[1]
+        self.scratch = json.loads((root / "metadata" / "exploration_684.json").read_text(encoding="utf-8"))
+        self.judge = json.loads((root / "metadata" / "pressure_judge.json").read_text(encoding="utf-8"))
+
+    def test_the_scratch_span_ends_at_the_shared_constant(self):
+        self.assertEqual(date.fromisoformat(self.scratch["scored_span"]["last_day"]), exploration.EXPLORATORY_END)
+
+    def test_the_published_judge_declaration_does_not_move(self):
+        self.assertEqual(self.judge["scoring"]["last_day"], "2025-12-31")
+        self.assertEqual(self.scratch["unchanged"]["metadata/pressure_judge.json"]["scoring_last_day"], "2025-12-31")
+
+    def test_the_minimum_stays(self):
+        self.assertEqual(self.scratch["minimum_pressure_days"], 3)
+
+
+class ScoringCommandEndTests(unittest.TestCase):
+    def test_every_scoring_command_takes_the_end_through_the_guard(self):
+        for name, where in SCORING_COMMANDS:
+            with self.subTest(script=name):
+                text = (SCRIPTS / f"{name}.py").read_text(encoding="utf-8")
+                self.assertIn(f'where="{where}"', text)
                 self.assertIn('"--end"', text)
 
 

@@ -50,6 +50,7 @@ from repo_model import contract, measurement_fields, ml, scarcity  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import stationary_bootstrap_indices  # noqa: E402
 
@@ -117,7 +118,7 @@ def run_command(args) -> int:
     h = args.horizon
     if h not in declared["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
-    last = date.fromisoformat(declared["scoring"]["last_day"])
+    last = panel_end(args.end, date.fromisoformat(declared["scoring"]["last_day"]), where="risk_date_severity.run")
     require_unlocked([last], where="risk_date_severity")
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
@@ -310,6 +311,7 @@ def main(argv=None) -> int:
     run.add_argument("--panel", type=Path, required=True)
     run.add_argument("--published", type=Path, required=True)
     run.add_argument("--horizon", type=int, required=True)
+    run.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     run.add_argument("--candidate")
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(handler=run_command)
