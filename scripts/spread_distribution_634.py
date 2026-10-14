@@ -496,6 +496,9 @@ def exceedance_command(args) -> int:
 
 #: the primary comparisons, on the 23-level grid; B3 is a secondary benchmark on its own five levels (see `FIVE`).
 BENCHMARKS = ("B1", "B2")
+#: a sensitivity, not the headline (Eleonora's ruling on #711): variant (a), which forecasts the five published levels, against
+#: B1 and B2 read at those five, beside its headline comparison on the grid.
+SENSITIVITY_FIVE = (("B1", "a_published_new"), ("B2", "a_published_new"))
 #: candidates tested against each benchmark; `published` is B3 itself.
 CANDIDATES = ("gbm_funding",) + VARIANTS
 
@@ -648,8 +651,8 @@ def score_command(args) -> int:
     }
     document["pooled_primary"] = pair_table(primary, pairs + ablation, days, draws)
     document["pooled_key_secondary"] = pair_table(secondary, pairs + ablation, days, draws)
-    document["pooled_primary_five"] = pair_table(primary5, pairs5 + ablation5, days, draws)
-    document["pooled_key_secondary_five"] = pair_table(secondary5, pairs5 + ablation5, days, draws)
+    document["pooled_primary_five"] = pair_table(primary5, pairs5 + ablation5 + list(SENSITIVITY_FIVE), days, draws)
+    document["pooled_key_secondary_five"] = pair_table(secondary5, pairs5 + ablation5 + list(SENSITIVITY_FIVE), days, draws)
     # by lead: the grid CRPS of each lead alone
     cells = {n: cell_scores(forecasts[n], outcomes, calendar, sp.grid_crps) for n in names}
     document["by_lead"] = {
@@ -825,6 +828,17 @@ def benchmark_table(tests: Mapping[str, dict], names: Sequence[str], means: Mapp
     return lines
 
 
+def sensitivity_table(tests: Mapping[str, dict], means: Mapping[str, float]) -> List[str]:
+    """Variant (a) against B1 and B2 on its own five levels: a sensitivity, not the headline (ruling on #711)."""
+
+    name = "a_published_new"
+    return [
+        "| model (five levels, sensitivity) | mean | vs B1 | vs B2 |",
+        "|---|---|---|---|",
+        "| " + " | ".join([LABELS[name], f"{means[name]:.3f}"] + [cell(tests.get(f"{b} -> {name}")) for b, _ in SENSITIVITY_FIVE]) + " |",
+    ]
+
+
 def five_table(tests: Mapping[str, dict], names: Sequence[str], means: Mapping[str, float]) -> List[str]:
     """B3 as the secondary benchmark on its own five levels: every row is read at the same five levels."""
 
@@ -870,6 +884,17 @@ def report_command(args) -> int:
     w("### Table 1b. Secondary benchmark B3: CRPS on the five published levels (bp), averaged over h = 1 to 5, pooled")
     w("")
     out.extend(five_table(d["pooled_primary_five"], names5, d["mean_primary_five"]))
+    w("")
+    w("### Table 1c. Sensitivity, not the headline: (a) against B1 and B2 on its own five levels (bp), pooled")
+    w("")
+    w("Variant (a) forecasts the five published levels. Its headline comparison with B1 and B2 is on the grid (Table 1, by the "
+      "linear law of the gbm exceedance); here B1 and B2 are read at the same five levels instead (Eleonora's ruling on #711).")
+    w("")
+    out.extend(sensitivity_table(d["pooled_primary_five"], d["mean_primary_five"]))
+    w("")
+    w("Upper-tail twCRPS on the same five levels (sensitivity):")
+    w("")
+    out.extend(sensitivity_table(d["pooled_key_secondary_five"], d["mean_key_secondary_five"]))
     w("")
     w("### Table 2. Key secondary: upper-tail twCRPS (weight 1{y > 0 bp}), pooled")
     w("")
