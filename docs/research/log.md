@@ -325,6 +325,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether `auc_cover` enters the nested test of H3 step 3 (#708); not decided here.
 
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#703
+- Directive: #635
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`; scratch panel `DERIV.csv` `08df8d19…`
+- Tried: the upper bound on 159 inputs for the spread (23-level grid CRPS over leads 1 to 5, against B1 and B2) and the +5 bp indicator on ordinary days: a gradient-boosted and a regularised linear family, each fitted cross-fitted with generous settings (the ceiling, ten blocked folds per lead with a walk-forward embargo; Eleonora's ruling of 13 October) and walk-forward every 21 scored days (the reachable line); the first in-sample fit is kept as a labelled reference. Variants: 12 fitted rows (2 families x 2 targets x 3 fits).
+- Result: spread, ordinary days, against B1: cross-fitted gbm +0.144 [+0.0002, +0.271], reachable gbm +0.192 [+0.007, +0.352] (behind in 2021-23, -0.318 [-0.529, -0.133]); the cross-fitted ceiling is not above the reachable line (-0.037 [-0.124, +0.049] on the same days); both ridge fits are worse than persistence. Indicator, read against persistence-logistic: cross-fitted gbm AUROC difference -0.016 [-0.044, +0.015], Brier skill -0.159 [-0.245, -0.059]; reachable +0.015 [-0.017, +0.058] and -0.192 [-0.374, +0.034]. The in-sample gbm (AUROC 1.000) is a reference only.
+- Against kill: not applicable as a verdict (development). Under the amended reading rule: spread partly reached, by a hair; indicator data problem.
+- Next: H5's development steps on the spread (#634); the indicator's effort goes to new data (H3, H4).
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#691
 - Directive: #691
 - Step: 3
