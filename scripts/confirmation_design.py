@@ -541,8 +541,17 @@ def pct(value: float) -> str:
     return f"{100 * value:.1f}%"
 
 
+def share_cell(scenarios, design: Design, name: str, key: str = "with_the_mme_gate") -> str:
+    """A share at the design's last look with its Monte Carlo standard error."""
+
+    value = scenarios[design.id][name][key][str(design.days)]
+    se = scenarios[design.id][name][key + "_se"]
+    return f"{pct(value)} ± {pct(se)}"
+
+
 def render_page(result, add=None) -> str:
-    reading_ = reading(result["scenarios"])
+    sc = result["scenarios"]
+    reading_ = reading(sc)
     rows = reading_["rows"]
     c = result["constants"]
     lines = [
@@ -560,7 +569,7 @@ def render_page(result, add=None) -> str:
         "## Designs, size and power",
         "",
         "Size is the false-detection share by the last look under no true difference, without the MME gate. Power is "
-        "the gated detection share by the last look. Intervals are Monte Carlo (one standard error shown).",
+        "the gated detection share by the last look. Every share is shown with its Monte Carlo standard error.",
         "",
         "| design | days | leads | scale | c at look 2 / 3 | size, full | size, post-2020 | power at 3%, full | power at 10%, full | power at 3%, post-2020 | power at 10%, post-2020 | smallest skill at 80% | admissible |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
@@ -572,9 +581,11 @@ def render_page(result, add=None) -> str:
         looks = info["checkpoints"]
         lines.append(
             f"| {design.id} | {design.days} | {lead} | {'standardized' if design.standardized else 'raw'} | "
-            f"{cv[str(looks[1])]:.2f} / {cv[str(looks[2])]:.2f} | {pct(r['size_full'])} | {pct(r['size_post_2020'])} | "
-            f"{pct(r['power_3'])} ± {pct(r['power_3_se'])} | {pct(r['power_10'])} | "
-            f"{pct(r['power_3_post_2020'])} | {pct(r['power_10_post_2020'])} | "
+            f"{cv[str(looks[1])]:.2f} / {cv[str(looks[2])]:.2f} | "
+            f"{share_cell(sc, design, 'size, full', 'without_the_mme_gate')} | "
+            f"{share_cell(sc, design, 'size, post-2020', 'without_the_mme_gate')} | "
+            f"{share_cell(sc, design, '3%, full')} | {share_cell(sc, design, '10%, full')} | "
+            f"{share_cell(sc, design, '3%, post-2020')} | {share_cell(sc, design, '10%, post-2020')} | "
             f"{'none on the grid' if r['smallest_skill_at_80'] is None else pct(r['smallest_skill_at_80'])} | "
             f"{'yes' if r['admissible'] else 'no'} |"
         )
@@ -647,7 +658,8 @@ def render_page(result, add=None) -> str:
 
 
 def render_addendum(result, add) -> List[str]:
-    reading_b = reading(add["scenarios_b"])
+    sb = add["scenarios_b"]
+    reading_b = reading(sb)
     rows = reading_b["rows"]
     lines = [
         "## Post-hoc addendum (written after the figures above were seen)",
@@ -669,8 +681,10 @@ def render_addendum(result, add) -> List[str]:
         looks = result["designs"][design.id]["checkpoints"]
         lines.append(
             f"| {design.id} | {design.days} | {cv[str(looks[1])]:.2f} / {cv[str(looks[2])]:.2f} | "
-            f"{pct(r['size_full'])} | {pct(r['size_post_2020'])} | {pct(r['power_3'])} ± {pct(r['power_3_se'])} | "
-            f"{pct(r['power_10'])} | {pct(r['power_3_post_2020'])} | {pct(r['power_10_post_2020'])} | "
+            f"{share_cell(sb, design, 'size, full', 'without_the_mme_gate')} | "
+            f"{share_cell(sb, design, 'size, post-2020', 'without_the_mme_gate')} | "
+            f"{share_cell(sb, design, '3%, full')} | {share_cell(sb, design, '10%, full')} | "
+            f"{share_cell(sb, design, '3%, post-2020')} | {share_cell(sb, design, '10%, post-2020')} | "
             f"{'none on the grid' if r['smallest_skill_at_80'] is None else pct(r['smallest_skill_at_80'])} | "
             f"{'yes' if r['admissible'] else 'no'} |"
         )

@@ -6,16 +6,16 @@ The rule is [`confirmation-design-733.md`](confirmation-design-733.md) (committe
 
 ## Designs, size and power
 
-Size is the false-detection share by the last look under no true difference, without the MME gate. Power is the gated detection share by the last look. Intervals are Monte Carlo (one standard error shown).
+Size is the false-detection share by the last look under no true difference, without the MME gate. Power is the gated detection share by the last look. Every share is shown with its Monte Carlo standard error.
 
 | design | days | leads | scale | c at look 2 / 3 | size, full | size, post-2020 | power at 3%, full | power at 10%, full | power at 3%, post-2020 | power at 10%, post-2020 | smallest skill at 80% | admissible |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D0 | 250 | 1 to 5 | raw | 9.36 / 5.49 | 0.0% | 0.2% | 0.0% ± 0.0% | 0.0% | 0.3% | 0.7% | none on the grid | yes |
-| D1 | 375 | 1 to 5 | raw | 8.77 / 5.28 | 0.0% | 0.1% | 0.0% ± 0.0% | 0.0% | 0.2% | 0.6% | none on the grid | yes |
-| D2 | 500 | 1 to 5 | raw | 8.32 / 5.29 | 0.0% | 0.1% | 0.0% ± 0.0% | 0.0% | 0.2% | 0.5% | none on the grid | yes |
-| D3 | 250 | 1 | raw | 8.44 / 4.63 | 0.0% | 1.7% | 0.1% ± 0.1% | 0.1% | 2.6% | 3.9% | none on the grid | yes |
-| D4 | 250 | 1 to 5 | standardized | 6.24 / 2.59 | 8.4% | 13.1% | 11.0% ± 0.7% | 14.2% | 14.4% | 19.4% | none on the grid | no |
-| D5 | 375 | 1 to 5 | standardized | 5.07 / 2.29 | 9.9% | 13.4% | 12.6% ± 0.7% | 16.5% | 16.2% | 23.2% | none on the grid | no |
+| D0 | 250 | 1 to 5 | raw | 9.36 / 5.49 | 0.0% ± 0.0% | 0.2% ± 0.1% | 0.0% ± 0.0% | 0.0% ± 0.0% | 0.3% ± 0.1% | 0.7% ± 0.2% | none on the grid | yes |
+| D1 | 375 | 1 to 5 | raw | 8.77 / 5.28 | 0.0% ± 0.0% | 0.1% ± 0.1% | 0.0% ± 0.0% | 0.0% ± 0.0% | 0.2% ± 0.1% | 0.6% ± 0.2% | none on the grid | yes |
+| D2 | 500 | 1 to 5 | raw | 8.32 / 5.29 | 0.0% ± 0.0% | 0.1% ± 0.1% | 0.0% ± 0.0% | 0.0% ± 0.0% | 0.2% ± 0.1% | 0.5% ± 0.2% | none on the grid | yes |
+| D3 | 250 | 1 | raw | 8.44 / 4.63 | 0.0% ± 0.0% | 1.7% ± 0.3% | 0.1% ± 0.1% | 0.1% ± 0.0% | 2.6% ± 0.4% | 3.9% ± 0.4% | none on the grid | yes |
+| D4 | 250 | 1 to 5 | standardized | 6.24 / 2.59 | 8.4% ± 0.6% | 13.1% ± 0.8% | 11.0% ± 0.7% | 14.2% ± 0.8% | 14.4% ± 0.8% | 19.4% ± 0.9% | none on the grid | no |
+| D5 | 375 | 1 to 5 | standardized | 5.07 / 2.29 | 9.9% ± 0.7% | 13.4% ± 0.8% | 12.6% ± 0.7% | 16.5% ± 0.8% | 16.2% ± 0.8% | 23.2% ± 0.9% | none on the grid | no |
 
 ## Power by look
 
@@ -125,12 +125,12 @@ Same designs, paths, seeds and gate. The value at looks 2 and 3 is the one calib
 
 | design | days | c at look 2 / 3 | size, full | size, post-2020 | power at 3%, full | power at 10%, full | power at 3%, post-2020 | power at 10%, post-2020 | smallest skill at 80% | admissible |
 |---|---|---|---|---|---|---|---|---|---|---|
-| D0 | 250 | 3.43 / 2.50 | 0.2% | 11.5% | 1.1% ± 0.2% | 2.8% | 14.3% | 19.7% | none on the grid | no |
-| D1 | 375 | 3.35 / 2.55 | 0.4% | 9.1% | 0.4% ± 0.1% | 1.9% | 11.6% | 17.2% | none on the grid | no |
-| D2 | 500 | 3.38 / 2.62 | 0.2% | 6.9% | 0.7% ± 0.2% | 1.0% | 9.0% | 15.8% | none on the grid | no |
-| D3 | 250 | 3.16 / 2.33 | 1.9% | 16.9% | 2.7% ± 0.4% | 5.1% | 21.8% | 25.9% | none on the grid | no |
-| D4 | 250 | 2.61 / 1.76 | 23.8% | 26.7% | 27.0% ± 1.0% | 32.9% | 30.2% | 38.7% | none on the grid | no |
-| D5 | 375 | 2.64 / 1.79 | 20.1% | 23.3% | 24.3% ± 1.0% | 30.9% | 25.7% | 36.4% | none on the grid | no |
+| D0 | 250 | 3.43 / 2.50 | 0.2% ± 0.1% | 11.5% ± 0.7% | 1.1% ± 0.2% | 2.8% ± 0.4% | 14.3% ± 0.8% | 19.7% ± 0.9% | none on the grid | no |
+| D1 | 375 | 3.35 / 2.55 | 0.4% ± 0.1% | 9.1% ± 0.6% | 0.4% ± 0.1% | 1.9% ± 0.3% | 11.6% ± 0.7% | 17.2% ± 0.8% | none on the grid | no |
+| D2 | 500 | 3.38 / 2.62 | 0.2% ± 0.1% | 6.9% ± 0.6% | 0.7% ± 0.2% | 1.0% ± 0.2% | 9.0% ± 0.6% | 15.8% ± 0.8% | none on the grid | no |
+| D3 | 250 | 3.16 / 2.33 | 1.9% ± 0.3% | 16.9% ± 0.8% | 2.7% ± 0.4% | 5.1% ± 0.5% | 21.8% ± 0.9% | 25.9% ± 1.0% | none on the grid | no |
+| D4 | 250 | 2.61 / 1.76 | 23.8% ± 1.0% | 26.7% ± 1.0% | 27.0% ± 1.0% | 32.9% ± 1.1% | 30.2% ± 1.0% | 38.7% ± 1.1% | none on the grid | no |
+| D5 | 375 | 2.64 / 1.79 | 20.1% ± 0.9% | 23.3% ± 0.9% | 24.3% ± 1.0% | 30.9% ± 1.0% | 25.7% ± 1.0% | 36.4% ± 1.1% | none on the grid | no |
 
 Check against PR #695's Q-E table (reading (b), post-2020 history, 250 days, D0's rule): PR #695 reports 14.0% power at 3%, 19.2% at 10% and 11.7% false detections; this study's D0 gives 14.3%, 19.7% and 11.5% (a different pool: it ends on 2025-12-31 and PR #695's on 2026-09-03). The full-history columns differ from the post-2020 ones because the full history holds one September 2019 day that the post-2020 history does not.
 

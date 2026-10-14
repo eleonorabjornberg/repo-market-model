@@ -224,7 +224,9 @@ class ResultTests(unittest.TestCase):
         result = json.loads(RESULT.read_text(encoding="utf-8"))
         self.assertEqual(result["rule_sha256"], cd.sha256(cd.RULE))
         self.assertLessEqual(result["pool"]["last"], cd.STUDY_END.isoformat())
-        self.assertEqual(cd.PAGE.read_text(encoding="utf-8"), cd.render_page(result))
+        add = RESULT.with_name("addendum.json")
+        add = json.loads(add.read_text(encoding="utf-8")) if add.exists() else None
+        self.assertEqual(cd.PAGE.read_text(encoding="utf-8"), cd.render_page(result, add))
         self.assertEqual(set(result["designs"]), {d.id for d in cd.DESIGNS})
         self.assertEqual(set(result["scenarios"]["D0"]), {name for name, *_ in cd.SCENARIOS})
 
