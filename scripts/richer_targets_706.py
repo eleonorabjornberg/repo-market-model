@@ -390,7 +390,7 @@ def score_target(target: str, args, declared: dict, all_rows, splits, registry) 
     return out
 
 
-def lead_on_onsets(target, args, all_rows, laws1, values, position, reads, rows) -> dict:
+def lead_on_onsets(target, args, all_rows, laws1, values, position, rows) -> dict:
     """The pre-onset AUC of the model's lead-1 median and of the as-of value, within each as-of state (step 1's contrast)."""
 
     registry = s639.measurement_fields.load_registry()
@@ -446,7 +446,7 @@ def score_command(args) -> int:
     splits = load_split_declaration(SPLITS)
     registry = s639.measurement_fields.load_registry()
     results = {}
-    for target in declared["choice"]["chosen"]:
+    for target in args.only or declared["choice"]["chosen"]:
         results[target] = score_target(target, args, declared, all_rows, splits, registry)
     reference = {}
     if SPREAD_SCORE.exists():
@@ -544,7 +544,14 @@ def report_markdown(document: dict, declared: dict) -> str:
     shown_both = []
     for target, result in document["targets"].items():
         skill, lead = readings(result)
-        lines.append(f"* `{target}`: skill over persistence {'shown' if skill else 'not shown'}; lead on the episodes {'shown' if lead else 'not shown'}.")
+        over_b2 = result["pooled"].get("B2 -> model")
+        beside = "" if not over_b2 else (
+            f" Beside it: against the climatology B2 the lower bound of the mean CRPS difference is {fmt(over_b2['mean_difference_lower_95_one_sided'], 3, True)} "
+            f"({'above' if over_b2['mean_difference_lower_95_one_sided'] > 0.0 else 'not above'} zero)."
+        )
+        lines.append(
+            f"* `{target}`: skill over persistence {'shown' if skill else 'not shown'}; lead on the episodes {'shown' if lead else 'not shown'}.{beside}"
+        )
         if skill and lead:
             shown_both.append(target)
     lines.append("")
@@ -582,6 +589,7 @@ def main(argv=None) -> int:
     score.add_argument("--walks", type=Path, required=True)
     score.add_argument("--output", type=Path, required=True)
     score.add_argument("--draws", type=int, default=DRAWS)
+    score.add_argument("--only", nargs="*", help="score these chosen targets only (a trial run)")
     score.set_defaults(handler=score_command)
     report = commands.add_parser("report", help="the tables")
     report.add_argument("--score", type=Path, required=True)
