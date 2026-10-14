@@ -245,6 +245,23 @@ def _load_arm(runs: Path, arm: str, suffix: str = "") -> Tuple[Dict[date, Dict[i
     return {day: leads for day, leads in by_day.items() if set(leads) == set(sp.HORIZONS)}, documents
 
 
+def paired_cell(test) -> dict:
+    """One paired cell of the score. The bound and p-value are pinned to the percentile bootstrap this
+    record's figures were made with (PR #660): PR #695 made `lower_mean_difference()` and `p_value` the
+    studentized ones (#655)."""
+
+    draws = test.mean_difference_draws
+    return {
+        "n": test.n,
+        "mean_d": test.mean_difference,
+        "lower_95_one_sided": metrics._quantile(draws, 0.05),
+        "interval_90": [draws[int(0.05 * test.draws)], draws[int(0.95 * test.draws) - 1]],
+        "skill": test.skill,
+        "p_value": sum(1 for value in draws if value <= 0.0) / test.draws,
+        "dm_p_value": None if math.isnan(test.dm_p_value) else test.dm_p_value,
+    }
+
+
 def score_command(args) -> int:
     declaration = _committed_declaration()
     rows = load_daily_panel(args.scratch)
@@ -287,17 +304,7 @@ def score_command(args) -> int:
             seed=SEED,
         )
 
-        def paired(test) -> dict:
-            draws = test.mean_difference_draws
-            return {
-                "n": test.n,
-                "mean_d": test.mean_difference,
-                "lower_95_one_sided": test.lower_mean_difference(),
-                "interval_90": [draws[int(0.05 * test.draws)], draws[int(0.95 * test.draws) - 1]],
-                "skill": test.skill,
-                "p_value": test.p_value,
-                "dm_p_value": None if math.isnan(test.dm_p_value) else test.dm_p_value,
-            }
+        paired = paired_cell
 
         result = {
             "days": len(group),
