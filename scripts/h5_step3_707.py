@@ -557,6 +557,10 @@ def f(value, digits: int = 3) -> str:
 def skill_cell(entry: Optional[dict]) -> str:
     if not entry:
         return "n/a"
+    if entry.get("identical"):
+        return "0.0% (identical forecasts)"
+    if max(abs(entry["skill_lower_95_one_sided"]), abs(entry["skill_upper_95_one_sided"])) > 10.0:
+        return f"{entry['skill'] * 100:+.1f}% [bounds beyond ±1000%: difference ≈ 0]"
     return f"{entry['skill'] * 100:+.1f}% [{entry['skill_lower_95_one_sided'] * 100:+.1f}%, {entry['skill_upper_95_one_sided'] * 100:+.1f}%]"
 
 
