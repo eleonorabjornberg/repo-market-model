@@ -275,6 +275,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data). It does not beat the published distribution, so it adds nothing over the incumbent on CRPS.
 - Next: Eleonora decides whether a reverting level is worth adding to #634's candidates; #707 diagnoses 2021-23 and the upper tail.
 
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
+- Directive: #687
+- Step: 3 (diagnosis of avenue #674)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `53338b4`; bootstrap seed 624
+- Tried: the every-day part of the control row taken apart one construction step at a time (persist, gate, tail cap, all eight subsets) and #624's `+offday` taken apart (inputs, state, interactions), 11 rows, against persistence-logistic and the full construction, plus pooled against within-refit-block AUROC. Variants: n/a (diagnosis, no new variant).
+- Result: the ungated logistic ranks the ordinary days as well as persistence-logistic (AUROC 0.905 against 0.897 at lead 1, difference +0.008 [-0.004, +0.027]) and below the raw spread (0.941). The gate takes it to 0.736 (37 of 82 pressure days on a forecast of 0) and the tail cap to 0.493; removing only the cap from the full construction gains +0.240 [+0.156, +0.304]. Refits do not lower the pooled AUROC: within-block AUROC is lower (0.659 against 0.905).
+- Against kill: not applicable (no verdict; development data).
+- Next: an every-day part for #634(c) or #632(b) drops the cap and the gate; Eleonora confirms the reading of "persist".
+
 ### 2026-10-13 [H7] step 1 · eleonorabjornberg/repo-market-model#715
 - Directive: #689
 - Step: 1 (the as-of estimator of the kink, model side; the label-free estimator is in the liquidity repository)
