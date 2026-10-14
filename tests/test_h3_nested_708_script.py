@@ -4,9 +4,9 @@ Recorded mutation (the one guard this script adds: the family columns are readab
 declaration, with their registered sources, so the as-of rule governs them; nothing joins `contract.FEATURE_FIELDS`):
 
 * `switched_on`, the `mock.patch.multiple(contract, FEATURE_FIELDS=..., FEATURE_SOURCES=...)` replaced by a bare
-  `yield`: `test_the_family_columns_resolve_to_their_registered_sources_inside_the_run` fails with `AssertionError`
-  (`ValueError not raised`... the columns are then unknown to the as-of rule, so `_resolve_fields` raises
-  `ValueError` inside the run and the test fails with that error).
+  `yield`: `test_the_family_columns_resolve_to_their_registered_sources_inside_the_run` errors with
+  `contract.UndeclaredFeatureError` (feature 'dts_debt_net_bn' is not in contract.FEATURE_FIELDS ...): the columns are
+  unknown to the as-of rule inside the run.
 """
 
 from __future__ import annotations
