@@ -365,3 +365,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `+offday` of #624 at h = 1 has a pooled slope of 0.83, 0.48 inside 2018-19 and 0.79 inside 2025-26; at h = 3 to 5, 0.14 to 0.22 inside 2018-19 against a pooled 0.78 to 0.80. #626's rows have no per-regime slope yet.
 - Against kill: not applicable (a correction to how step 3 figures are read).
 - Next: the per-regime slopes for #626's kinked page, and an account of why its rebuild never finishes, move to the follow-up directive #753 (Eleonora's ruling of 14 October 2026 on this pull request); any reliability-shape test (#628) is read within regimes.
+
+### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
+- Directive: #747
+- Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panels as in `scripts/satiation_587.py`; base `e9ce416d`
+- Tried: no forecast variant. The tie rule of the fitted kink (relative tolerance 1e-9, "not identified" when the tied set spans more than one grid step) and a count of the walk-forward refits of the fitted-level rows of #587 and #626 (four rows, horizons 1 to 5) under old and new rule. Variants: 0.
+- Result: no refit in any row, year or horizon is "not identified" and no level moves, so no earlier figure moves; the old rule reproduces the recorded levels for the structural and combined rows exactly (the projected row differs in 47 refits for a later feature change, not the tie). At a tolerance of 1e-4, 44 refits of each structural and combined row would be tied; none at 1e-6. Detail in `docs/pivot/satiation-ties-747-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
