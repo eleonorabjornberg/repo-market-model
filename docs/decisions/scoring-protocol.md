@@ -1,7 +1,8 @@
 # Decision: the scoring protocol for hypotheses, version 1
 
-**Status: DRAFT, for Eleonora to merge. Not in force until she has merged it** (§13 below: this record is merged
-by her, not under delegated review). Drafted by the pull request that closes #655.
+**Status: In force since 13 October 2026**, when Eleonora merged it (PR #695; §13 below: this record is merged
+by her, not under delegated review). Drafted by the pull request that closes #655. Item 5 is amended by #737,
+which is a draft change to be merged by her.
 
 Eleonora decided the protocol herself on #640, in her own words (comment 6131185033, typed in the web UI):
 
@@ -56,16 +57,26 @@ merges it.
      checkpoint's nominal level) of windows of the checkpoint's length drawn from the development history (to
      2026-09-03; no locked day), each window built from circular blocks of 10 consecutive days. Nothing in d is
      trimmed or winsorized.
-   - **On each benchmark pair the protocol scores**: B2 − B1 on the 23-level grid and B3 − B1 on B3's five levels,
-     and, as diagnostics, each reversed. The protocol uses the **largest** value, so the bound is never
-     anti-conservative for any of them. The values and the windows are recorded in
-     `docs/research/protocol-calibration/result.json` and set in `scoring_protocol.CRITICAL_VALUES`.
-   - **The first checkpoint has no calibrated value** until Eleonora rules how the interim looks work (the pull
-     request asks it).
+   - **Each comparison is read at its own value** (Q-E (b), a fourth ruling of 13 October 2026, relayed on PR #695,
+     comment 6159852603; it supersedes the earlier reading that took the largest value across pairs). Values are
+     calibrated per comparison on the development history: a forecast against a primary benchmark on the 23-level
+     grid is read at the B2 − B1 value (2.43 at 250 days, 3.42 at 125), and a comparison with B3 on its five levels at
+     the B3 − B1 value (5.45 and 9.50). Each value's null false-detection rate on the full development history is
+     recorded beside it. The values, their windows and the rates are in
+     `docs/research/protocol-calibration/result.json` and set in `scoring_protocol.CRITICAL_VALUES`; the verdict
+     reads the grid comparison's.
+   - **The first checkpoint checks futility only** (Q-B). The second and third read their calibrated values.
+   - **Futility is one-sided at 0.05 at every checkpoint, and non-binding** (Q-C). Killed means the upper bound of
+     skill against B1, skill + c_f · se(skill), is below the MME, with c_f calibrated on the grid comparison's
+     development windows in the same way (`scoring_protocol.FUTILITY_CRITICAL_VALUES`). Supported is read first, so
+     futility never changes the test's size.
+   - **The confirmation design itself** (horizon, statistic, MME) goes to a separate study directive, because no
+     setting gives useful power within 250 prospective days. Nothing is registered until that study is decided.
    - Registration stays held until H1's coverage check passes and #656's power study confirms it.
    <https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627>
+   <https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6159852603>
 6. **The other readings stand as the pull request proposed them**, unless she says otherwise:
-   - the futility bound's level is not set by §6 and is given explicitly at each verdict;
+   - the futility bound's level is one-sided 0.05 at every look (item 5, Q-C);
    - the verdict reads the primary score alone at the spent level, and Holm across the primary and the key secondary
      is reported, not applied to the primary;
    - the key secondary's weight is the threshold weight 1{z > 0 bp}, by the chaining function max(z, 0);
