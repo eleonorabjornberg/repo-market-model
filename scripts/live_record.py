@@ -1101,7 +1101,8 @@ def protocol_for(extended, decision_day: date, registry, splits, written_at: dat
     `extended` is the panel extended through the decision day's fifth target (`extend_panel` at horizon 5); the
     decision day's row is the one whose date is `decision_day`. B1 and B2 read only rows at or before the anchor, the
     last real row (`protocol_benchmarks._require_public`), never a placeholder. `written_at` is when the record is
-    being made; the block is refused if that is not before the first outcome's publication
+    being made and is stored in the block (`written_at`); the block is refused if that is not before 23:59 ET on the
+    decision day (`prospective_log.require_written_by_cutoff`, #740) or before the first outcome's publication
     (`prospective_log.require_written_before_outcome`).
 
     No candidate is registered and no H7m estimate is, so those parts are empty (`prospective_log.REGISTERED_CANDIDATES`,
