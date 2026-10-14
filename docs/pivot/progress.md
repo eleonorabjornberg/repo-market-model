@@ -7,7 +7,7 @@ Primary goal H5: the SOFR - IORB spread distribution in bp. Secondary goal H9: r
 ## Variant count
 
 - Candidate files under `metadata/pressure_judge/candidates/`: 358.
-- Spread-forecast declarations (`metadata/spread_distribution_*.json`): 2, declaring 4 variants.
+- Spread-forecast declarations (`metadata/spread_distribution_*.json`): 3, declaring 7 variants.
 - Candidates with evidence in this page: 127. Candidate files with no committed evidence this page reads: 231 (listed at the end).
 
 Position is the order in which the candidate file was added.
