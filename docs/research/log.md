@@ -285,6 +285,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not testable (no registered test; development data). The demand-curve route is closed for a kinked logistic whose level is estimated from the pressure label, and open for H7's label-free estimator.
 - Next: the liquidity repository's estimator (its #22) is the next test of the kink.
 
+### 2026-10-13 [H5] step 6 · eleonorabjornberg/repo-market-model#718
+- Directive: #717
+- Step: 6 (new: the validation report rewritten for the chosen candidate; plan amendment, nothing scored)
+- Tier: development
+- Pins: published panel `4ddc3882…`; no score, no panel built; base `bd7f573`
+- Tried: plan: validation report added. `docs/research/hypotheses/H5.md` gains step 6 and milestone M5a (the report is a rewrite of `docs/model/validation.md`, goes to Eleonora with the registration, and is updated at each checkpoint). Variants: 0.
+- Result: not applicable (a plan edit; no experiment).
+- Against kill: not applicable.
+- Next: the step is carried out once step 5 has chosen the primary candidate.
+
 ### 2026-10-13 [H6] step 1 · eleonorabjornberg/repo-market-model#719
 - Directive: #693
 - Step: 1
