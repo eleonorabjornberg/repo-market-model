@@ -34,6 +34,7 @@ import importlib.util
 import json
 import math
 import random
+import subprocess
 import sys
 from datetime import date, datetime, time
 from pathlib import Path
@@ -75,7 +76,13 @@ def _load(name: str):
 def committed_declaration() -> dict:
     """The declaration, refused unless it is committed and unchanged since `HEAD`."""
 
-    return _load("spread_distribution_634").committed_declaration(DECLARATION)
+    relative = str(DECLARATION.resolve().relative_to(REPO))
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", relative], cwd=REPO, capture_output=True, text=True, check=True
+    ).stdout.strip()
+    if dirty:
+        raise SystemExit(f"{relative} is not committed ({dirty}); a declaration is made before any score")
+    return json.loads(DECLARATION.read_text(encoding="utf-8"))
 
 
 # -- the pure parts ------------------------------------------------------------------------------------------------
@@ -203,7 +210,7 @@ def forecasts_command(args) -> int:
     registry = json.loads(sd.SOURCES.read_text(encoding="utf-8"))
     live = sd._load("live_record")
     lead_features = tuple(live.published_features(h))
-    minimum = sd.committed_declaration()["scoring"]["minimum_history"]
+    minimum = json.loads(sd.DECLARATION.read_text(encoding="utf-8"))["scoring"]["minimum_history"]
     fit = functools.partial(
         ml.fit_gradient_boosted_quantiles, regressors=tuple(f for f in lead_features if f != "spread_bps"), levels=sd.GRID
     )
