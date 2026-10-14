@@ -356,6 +356,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
 
+### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
+- Directive: #747
+- Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panels as in `scripts/satiation_587.py`; base `e9ce416d`
+- Tried: no forecast variant. The tie rule of the fitted kink (relative tolerance 1e-9, "not identified" when the tied set spans more than one grid step) and a count of the walk-forward refits of the fitted-level rows of #587 and #626 (four rows, horizons 1 to 5) under old and new rule. Variants: 0.
+- Result: no refit in any row, year or horizon is "not identified" and no level moves, so no earlier figure moves; the old rule reproduces the recorded levels for the structural and combined rows exactly (the projected row differs in 47 refits for a later feature change, not the tie). At a tolerance of 1e-4, 44 refits of each structural and combined row would be tied; none at 1e-6. Detail in `docs/pivot/satiation-ties-747-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
+
 ### 2026-10-14 [H5] step 2 · eleonorabjornberg/repo-market-model#731
 - Directive: #688
 - Step: 2
