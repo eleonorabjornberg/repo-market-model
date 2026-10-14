@@ -20,6 +20,13 @@
       "comment_id": 6068792134,
       "phrase": "GO #370",
       "what": "re-take the live scorer checksum so the freeze covers the decision-day calendar helpers and the group labels (#370)"
+    },
+    {
+      "kind": "live-pin",
+      "issue": 656,
+      "comment_id": 6172786156,
+      "phrase": "GO #656",
+      "what": "move the live pin to 492c53d65b09a0181065f5532f0197291b24ea14, the merge commit of #699, so the live record gains the protocol block (docs/decisions/live-pin-v3-bump.md, #736)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
