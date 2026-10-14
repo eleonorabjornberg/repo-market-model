@@ -405,7 +405,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
 
-<<<<<<< HEAD
 ### 2026-10-14 [H9] step 2 · eleonorabjornberg/repo-market-model#774
 - Directive: #706
 - Step: 2
@@ -415,7 +414,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: skill over B1 +0.329 [lower +0.271], +0.310 [+0.286], +0.330 [+0.241]; over B2 +0.156 [+0.080], −0.103 [−0.142], +0.155 [+0.054]; the spread (#634 b) +0.201 over B1 and +0.268 over B2. Negative on quarter-end target days for all three. No lead on the +5 bp episodes in the scarce state (pre-onset AUC of the modelled median 0.38, 0.53, 0.39, intervals not above one half). Detail in `docs/pivot/richer-targets-706-result.md`.
 - Against kill: no chosen target shows both skill over persistence and a lead on the +5 bp episodes, so the criterion as worded in the queue is met on development data; not a verdict, and the wording ("or" in the queue, "and" in `H9.md`) is Eleonora's call.
 - Next: the nested test with H5's best candidate (H9 step 3), after #634 merges.
-=======
+
 ### 2026-10-14 [H5] step 2 · eleonorabjornberg/repo-market-model#731
 - Directive: #688
 - Step: 2
@@ -425,7 +424,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: grid CRPS against the control, 1,868 decision days: bill settlement −0.10% [−0.49%, +0.28%]; window +1.03% [+0.50%, +1.61%], at h = 3 to 5 (+1.30%, +1.74%, +1.69%, each interval above zero), none at h = 1 and 2, and only in 2021-23 by regime (a regime with no ordinary pressure day); upper-tail twCRPS inside its interval for both. The screen's near-threshold bill contrast reproduces (13/44 against 5/60 at lead 1, none of it plain persistence) but does not carry into the distribution; the window's lead-1 rise is plain persistence. Detail in `docs/pivot/near-threshold-688-result.md`.
 - Against kill: not applicable (H5's kill is by the protocol's futility rule; development days give no verdict).
 - Next: whether the window flag belongs in #634's model after #634 lands (H5 step 2); the bill input's product form and bridged persistence are Eleonora's.
->>>>>>> origin/main
 
 ### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
 - Directive: #762
