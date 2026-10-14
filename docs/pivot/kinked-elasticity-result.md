@@ -1,5 +1,14 @@
 # A kinked elasticity in the structural model (#626, ruling on #597)
 
+> **Note of 13 October 2026 (#691, finding #673): this page was scored before #679, under declarations that misnamed its inputs.** Its rows were scored with #618 and #620 included, while the five
+> kinked and control candidate files declared `net_settlement_due_5d`; the scoring pre-dated the rule of #679 (a partly announced class is left out). Since #618 the code reads
+> `net_settlement_ahead_h` and `net_settlement_ahead_{h-1}`, and the declarations now say so (the old wording is kept in
+> `superseded_features_at_horizon_2_or_more`). The rows were re-scored on the current code and `docs/pivot/evidence/kinked/` now holds the re-score;
+> the before-and-after tables are in [`declarations-691-result.md`](declarations-691-result.md) (`scripts/declarations_691.py`). **The prose and
+> tables below are the original scoring and are not re-written.** No tier and no pass of any row changes. The figures that moved most: `structural_kinked_rolling`
+> flags 17 of 26 onsets (was 16), `structural_liquidity` 12 (was 11), `structural_liquidity+h41` 11 (was 10); `structural_kinked_fitted` stays at 11 with fewer false
+> alarms (1.21 against 1.69). The conclusion (no kinked row passes tier 1) stands.
+
 A scratch measurement under the pressure-day judge. It writes nothing into `docs/runs/`, publishes nothing, moves no published
 figure, scores no day of 2026 and reads no day after 2025-12-31 (`docs/decisions/lockbox.md`; the scripts refuse a later panel).
 The published scarcity indicator and its 0.12 band are unchanged, and none of these rows is added to the frozen shortlist of #567.
