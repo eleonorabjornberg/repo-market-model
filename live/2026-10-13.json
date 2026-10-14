@@ -1,0 +1,405 @@
+{
+ "baselines": {
+  "calendar_climatology": {
+   "forecasts": {
+    "1": {
+     "+10bp": 0.021052631578947368,
+     "+5bp": 0.059833795013850416
+    },
+    "2": {
+     "+10bp": 0.021052631578947368,
+     "+5bp": 0.059833795013850416
+    },
+    "3": {
+     "+10bp": 0.021052631578947368,
+     "+5bp": 0.059833795013850416
+    },
+    "4": {
+     "+10bp": 0.021052631578947368,
+     "+5bp": 0.059833795013850416
+    },
+    "5": {
+     "+10bp": 0.021052631578947368,
+     "+5bp": 0.059833795013850416
+    }
+   }
+  },
+  "leap_calendar_climatology": {
+   "forecasts": {
+    "1": {
+     "leap": 0.07820299500831947
+    },
+    "2": {
+     "leap": 0.06714761376248612
+    },
+    "3": {
+     "leap": 0.07162687395891172
+    },
+    "4": {
+     "leap": 0.07333333333333333
+    },
+    "5": {
+     "leap": 0.06948304613674264
+    }
+   }
+  },
+  "leap_persistence_logistic": {
+   "forecasts": {
+    "1": {
+     "leap": 0.09680693091373664
+    },
+    "2": {
+     "leap": 0.09193944969613164
+    },
+    "3": {
+     "leap": 0.09803534483735456
+    },
+    "4": {
+     "leap": 0.09767711161878875
+    },
+    "5": {
+     "leap": 0.09053030292015457
+    }
+   }
+  },
+  "persistence_logistic": {
+   "forecasts": {
+    "1": {
+     "+10bp": 0.02089711465154815,
+     "+5bp": 0.045646507967575176
+    },
+    "2": {
+     "+10bp": 0.027453672933428114,
+     "+5bp": 0.05267984668288723
+    },
+    "3": {
+     "+10bp": 0.02800753501172763,
+     "+5bp": 0.06184327842875478
+    },
+    "4": {
+     "+10bp": 0.02521893720235982,
+     "+5bp": 0.05680405637447529
+    },
+    "5": {
+     "+10bp": 0.025331956115646252,
+     "+5bp": 0.05685876330318261
+    }
+   }
+  }
+ },
+ "chain": {
+  "prev_commit": "69e56d357016ba69891e8e085bf8fd7ecadb74a0",
+  "prev_date": "2026-10-09",
+  "prev_sha256": "cbdf66da61b2ce96664325f9e251251cbb50f48c626a20f4b8110681a31a6262"
+ },
+ "code": {
+  "pinned_sha": "c69a361965fd601a4e69fdbc92643d669dba8e9e",
+  "sha": "c69a361965fd601a4e69fdbc92643d669dba8e9e"
+ },
+ "decision_day": "2026-10-13",
+ "decision_instant": "2026-10-13T16:00:00-04:00",
+ "distributions": {
+  "levels": [
+   0.05,
+   0.25,
+   0.5,
+   0.75,
+   0.95
+  ],
+  "persistence": {
+   "quantiles_bps": {
+    "1": [
+     -6.149999999999993,
+     -3.999999999999959,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     1.000000000000023
+    ],
+    "2": [
+     -6.149999999999993,
+     -3.999999999999959,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     1.000000000000023
+    ],
+    "3": [
+     -6.149999999999993,
+     -3.999999999999959,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     1.000000000000023
+    ],
+    "4": [
+     -6.149999999999993,
+     -3.999999999999959,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     1.000000000000023
+    ],
+    "5": [
+     -6.149999999999993,
+     -3.999999999999959,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     1.000000000000023
+    ]
+   }
+  },
+  "published": {
+   "declaration_sha256": {
+    "1": "6e48bc40a6eb16c50acc28b682e3fa40bc889a04a63992d72ccf10eaa7b28c9e",
+    "2": "c62c6d0ccf296946d8dceafb2089ab3829459e0b0738a914141cd74d81470d41",
+    "3": "285a77265d0f3abaae3da8f7428620d31fe54574b77c68d05deb6de71c9a7d12",
+    "4": "5a7e88f9c70cb9a81b73dc26baf9fa62d4095932c30bed8320201954fbc8c1a7",
+    "5": "f85090e5645a958d2af0f73dc4d990acd8e556ed096cfeb9e30a71208fea6f28"
+   },
+   "quantiles_bps": {
+    "1": [
+     -6.525794088466732,
+     -2.3874769249335976,
+     -0.9038529527200879,
+     -8.366712691241043e-05,
+     2.9640253877944307
+    ],
+    "2": [
+     -7.655589848661421,
+     -2.9164134979380227,
+     -1.558342976309624,
+     -1.4844911428060148,
+     3.0635116939239593
+    ],
+    "3": [
+     -8.498349410697857,
+     -2.9164134979380227,
+     -1.558342976309624,
+     -1.4844911428060148,
+     3.9062712559603945
+    ],
+    "4": [
+     -9.140257363845965,
+     -2.9164134979380227,
+     -1.558342976309624,
+     -1.4844911428060148,
+     4.548179209108502
+    ],
+    "5": [
+     -8.254930753075325,
+     -2.9164134979380227,
+     -1.558342976309624,
+     -1.4844911428060148,
+     3.662852598337862
+    ]
+   },
+   "records": {
+    "1": "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json",
+    "2": "docs/runs/pressure_model_v1_h2.json",
+    "3": "docs/runs/pressure_model_v1_h3.json",
+    "4": "docs/runs/pressure_model_v1_h4.json",
+    "5": "docs/runs/pressure_model_v1_h5.json"
+   }
+  }
+ },
+ "environment": {
+  "lock_sha256": "80fd364df301d3a5235e824fe410a9ff614534b8246700d5a49d2ea1fd973902",
+  "packages": {
+   "cloudpickle": "3.1.2",
+   "joblib": "1.6.0",
+   "narwhals": "2.26.0",
+   "numpy": "2.4.6",
+   "scikit-learn": "1.9.1",
+   "scipy": "1.17.1",
+   "threadpoolctl": "3.7.0"
+  },
+  "python": "3.11.16",
+  "runner": "ubuntu-24.04"
+ },
+ "inputs": {
+  "build_cutoff": "2026-10-14T00:33:20+00:00",
+  "panel_last_date": "2026-10-09",
+  "panel_sha256": "17ce5dec93c4d880d0e65056e931f031592c40665776cd594a3e567e5482288b",
+  "registry_sha256": "865ce2df7a49882ac87fb9c2fd4c8383a77bfba499b5067f2c85cb08d44d981b",
+  "snapshots": [
+   {
+    "retrieved_at": "2026-10-14T00:30:28.861732+00:00",
+    "sha256": "136e44542e2c68298d99790eb94ccae234b29381768271289d291c7c92df1b6c",
+    "source_id": "fred_macro_latest_vintage",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=IORB%2CIOER%2CWRESBAL%2CWTREGEN%2CRRPONTSYD%2CDFF%2CRRPONTSYAWARD%2CTREAST%2CWLRRAOL"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:24.497940+00:00",
+    "sha256": "37eba4a4b11dccd9093dad1e99c504132f5d180a97cca792d0ba18cd86e0e9c2",
+    "source_id": "nyfed_sofr",
+    "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-10-13&type=rate"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:24.497940+00:00",
+    "sha256": "fe5ee0702d48d61fc043423cd9574f81365af227985856f22b77a7c7aa9a5b7f",
+    "source_id": "nyfed_sofr",
+    "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-10-13&type=volume"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:33:20.035854+00:00",
+    "sha256": "8ff751ca15161e7e75b3c8f57aedea20bae0be8b18efc9f86f0b63aec6d98179",
+    "source_id": "treasury_auctions",
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?filter=issue_date%3Agte%3A2017-01-03%2Cissue_date%3Alte%3A2026-12-12&page%5Bsize%5D=10000&sort=record_date%2Cissue_date%2Ccusip"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "4059b158b989b5bb4d295cc5e3356434bcceba44d89365e368a2aafbf2077859",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2022/all?type=daily_treasury_bill_rates&field_tdr_date_value=2022&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "47cc8985d9474bbdaea37266ac5658f6b1b276d3310c54c7efd70358e80bc37b",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2024/all?type=daily_treasury_bill_rates&field_tdr_date_value=2024&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "6f037e225a3f296613f620404667971df9f202743e70540d9ffbf5c7d30a3a51",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2018/all?type=daily_treasury_bill_rates&field_tdr_date_value=2018&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "aa024dfde7700a971b287d7cc8284fd8c34f4dd6c66cb009cf39f501be33b562",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2025/all?type=daily_treasury_bill_rates&field_tdr_date_value=2025&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "ca4d73d5e9856391c06ef0b3ec252d950019b1a5db97c934d92d9569fc4ba87c",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2023/all?type=daily_treasury_bill_rates&field_tdr_date_value=2023&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "cc29ccb650fe49ce04781e97332cecba11c20e466b053a08d6fb15b6b24dbd20",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2020/all?type=daily_treasury_bill_rates&field_tdr_date_value=2020&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "e45398cf008aeca21679fe1ebcc7d051add07f0819ef62723fe472a1ea00377d",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2021/all?type=daily_treasury_bill_rates&field_tdr_date_value=2021&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2019/all?type=daily_treasury_bill_rates&field_tdr_date_value=2019&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-10-14T00:30:28.865804+00:00",
+    "sha256": "f4d3a7a7c8d17f4b6f2d075d26cc235fb8284cb533fb1dc504654c6a8c33e379",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_bill_rates&field_tdr_date_value=2026&_format=csv"
+   }
+  ],
+  "splits_sha256": "d92d48f17aef1475d3773406d2dfb6c650cbe470fd4f9e8074e965c37a23bc96",
+  "thresholds_sha256": "537dd7bbf9fd52eaa857dcf038e3326b4f00a87a623ea2182349ab29c624e620"
+ },
+ "models": {
+  "pressure_model_v1": {
+   "declaration_sha256": {
+    "1": "2003b59f58f8b2ac986445bb11cfa23ba64d1ec7d21a0fb4706efbd8a96892da",
+    "2": "c62c6d0ccf296946d8dceafb2089ab3829459e0b0738a914141cd74d81470d41",
+    "3": "285a77265d0f3abaae3da8f7428620d31fe54574b77c68d05deb6de71c9a7d12",
+    "4": "5a7e88f9c70cb9a81b73dc26baf9fa62d4095932c30bed8320201954fbc8c1a7",
+    "5": "f85090e5645a958d2af0f73dc4d990acd8e556ed096cfeb9e30a71208fea6f28"
+   },
+   "forecasts": {
+    "1": {
+     "+10bp": 0.014268672290095156,
+     "+5bp": 0.020582273211108903,
+     "leap": 0.11747276096297132
+    },
+    "2": {
+     "+10bp": 0.013175393522420807,
+     "+5bp": 0.022228598964065142,
+     "leap": 0.04976813895075116
+    },
+    "3": {
+     "+10bp": 0.014092450871051952,
+     "+5bp": 0.021043160478541465,
+     "leap": 0.04976813895075116
+    },
+    "4": {
+     "+10bp": 0.01505576716965359,
+     "+5bp": 0.02256942412296869,
+     "leap": 0.04976813895075116
+    },
+    "5": {
+     "+10bp": 0.013996448035327704,
+     "+5bp": 0.021277067882776703,
+     "leap": 0.04976813895075116
+    }
+   },
+   "published": "docs/runs/pressure_model_v1_h{h}.json"
+  }
+ },
+ "packages": {
+  "numpy": "2.4.6",
+  "python": "3.11.16",
+  "scikit-learn": "1.9.1"
+ },
+ "record_version": 1,
+ "run": {
+  "durations_seconds": {
+   "build": 4.986,
+   "fetch": 175.744,
+   "fit_forecast_baselines": 30.333,
+   "fit_forecast_distributions": 475.6,
+   "fit_forecast_models": 978.65,
+   "total": 1665.315,
+   "write": 0.002
+  },
+  "finished_at": "2026-10-14T00:58:09.692440+00:00",
+  "started_at": "2026-10-14T00:30:24.032272+00:00",
+  "workflow_run": "https://github.com/eleonorabjornberg/repo-market-model/actions/runs/38490485194"
+ },
+ "targets": [
+  {
+   "anchor_date": "2026-10-09",
+   "anchor_spread_bp": -3,
+   "horizon": 1,
+   "leap_threshold_bp": 3.0,
+   "target_date": "2026-10-14",
+   "train_end": "2026-09-25"
+  },
+  {
+   "anchor_date": "2026-10-09",
+   "anchor_spread_bp": -3,
+   "horizon": 2,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-10-15",
+   "train_end": "2026-09-25"
+  },
+  {
+   "anchor_date": "2026-10-09",
+   "anchor_spread_bp": -3,
+   "horizon": 3,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-10-16",
+   "train_end": "2026-09-25"
+  },
+  {
+   "anchor_date": "2026-10-09",
+   "anchor_spread_bp": -3,
+   "horizon": 4,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-10-19",
+   "train_end": "2026-09-25"
+  },
+  {
+   "anchor_date": "2026-10-09",
+   "anchor_spread_bp": -3,
+   "horizon": 5,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-10-20",
+   "train_end": "2026-09-25"
+  }
+ ]
+}
