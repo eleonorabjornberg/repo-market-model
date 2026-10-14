@@ -246,14 +246,13 @@ Four more scripts read a third population, by the *reporting* day type (`reporti
 `model_defects_540.py` (`reporting_day_type` other than `ordinary`, or inside the quarter-end window), and `spread_mean_reversion_686.py` (the tail scope `ordinary`, the `day_type` equal to `ordinary`, which reached main after this section was first written). Re-pointing them would move
 their published figures, so they stay as they are; they are a finding for Eleonora's ruling with the one below.
 
-### Marked question for Eleonora (not settled in code)
+### Ruling (Eleonora, 14 October 2026, relayed by the orchestrating session on #709)
 
-**Which definition do H2 and H5, and the progress page (#637), use for "ordinary day"?** `scheduled` leaves 99 more days and 5 more
-pressure days, the month-ends, in the ordinary set, so an ordinary-day AUROC under it is harder to win. `non_ordinary` removes them and
-makes the remaining days easier. Until she rules, each script keeps its current definition, and an ordinary-day figure should be quoted
-with the name of the definition it was read under.
-
-**Is the table of the four headlines under both definitions wanted, at the cost of re-scoring each page's forecasts?** Criterion 2 of
-#682 asked for each headline under both definitions. It is met for the counts and not for the headline figures: the stored evidence
-keeps summaries, not per-day forecasts, so the figure under the other definition needs a re-run of each page's scoring (development
-exploration only, no published figure would move). That re-run is not done here; whether it is worth doing is for Eleonora.
+- **Criterion 2 of #682 is accepted with the counts under both definitions.** Each headline stays under its own page's definition, and
+  pages scored under the retired judge are not re-scored. The re-run of the four headlines is not wanted.
+- **The definition from now on** is the shared `risk_dates` definition, under which announced coupon settlements count as risk dates,
+  consistent with her #720 ruling. H2, H5 and the progress page (#637) use it from their next step on. Past pages keep theirs.
+- **Open wording question (not settled in code):** both named definitions, `scheduled` and `non_ordinary`, count a coupon settlement
+  as a risk date, so the ruling does not say which of the two the "shared definition" is. They differ by the 99 month-ends that are not
+  quarter-ends (1568 / 87 against 1469 / 82 at lead 1). Until she names one, each script keeps its current definition, and an
+  ordinary-day figure is quoted with the name of the definition it was read under.
