@@ -1,0 +1,52 @@
+{
+  "status": "declared by the pull request that closes #765 before any score was computed; a measurement, not a record. Nothing is published: no ranker joins any published declaration, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. The tail probability is the model of #686, which was written after seeing 2018-2025, so a result here is exploration on development data, never a verdict (scoring protocol v1, #640)",
+  "issue": 765,
+  "hypothesis": "H8: ranking beats calibrating for desk use. Step 2: rank by tail probability combined with the day type (Eleonora, ruling of 13 October 2026 on #722, item 3); development tier",
+  "ruling": "Eleonora, directive #765 (14 October 2026), and her ruling on #722 (comment 6159854873): block 20 with the protocol's block 10 as a labelled sensitivity; the row ranked is spread_mr_level10 extended to 20 leads",
+  "task": "as declared in metadata/ranking_694.json: at each decision day, rank the next 20 business days (the 20 panel rows after the decision day), and score the top k against the days that were realised pressure days (strictly above +5 bp on whole basis points). The windows, days, outcomes, metrics, bootstrap and seed are those of step 1; only the rankers change",
+  "quantity": "The +5 bp level is only the ranking quantity carried over from step 1 (P(spread > +5 bp), repo_model.spread_mean_reversion.exceedance). Nothing is fitted to the +5 bp event, which is retired as a decision rule",
+  "day_type": "SplitDeclaration.reporting_day_type of the target day (quarter_end, month_end, tax_date, ordinary), read from the target row's calendar columns, which are known in advance (the reading step 1's climatology already uses). No spread, and no column that depends on one, is read for a day after the anchor",
+  "rankers": {
+    "calendar_then_tail": {
+      "letter": "a",
+      "rule": "order by the calendar's own ordering first (1 on a scheduled risk date, pressure_judge._scheduled_risk_date, else 0), and within each of the two groups by the step-1 tail probability P(spread > +5 bp) from the model of #686 extended to 20 leads (ranking.fit and ranking.forecast, unchanged). Score: 2 x calendar + tail probability, so the calendar always dominates. A tie in the score is broken by its expected value over a random order",
+      "reads": "the calendar flag of each target and the step-1 tail probability"
+    },
+    "tail_by_type": {
+      "letter": "b",
+      "rule": "the tail probability conditioned on the target's day type. The forecast of lead h is the step-1 centre (level + phi^(h + lag) x (last - level), the same phi, level, anchor and row lag) plus the quantiles of a residual pool: the residuals of the fit's training pairs whose target day has the target's type, taken from the leads h - 2 .. h + 2 (clipped to 1 .. 20), each residual as the fit defines it (the target deviation less phi^k times the origin deviation, k the pair's own row distance). The pool is refit with the model every 21 decision days. Fallback: when the pool holds fewer than 30 residuals, the lead's own all-type residuals (the step-1 residuals), so the ranker is then the step-1 tail probability for that lead. The share of target leads that took the fallback is reported",
+      "pool_band": 2,
+      "min_pool": 30
+    },
+    "blend": {
+      "letter": "c",
+      "rule": "a declared blend of the calendar rank and the step-1 tail-probability rank. Each is turned into a mid-rank in (0, 1) within the window (ties share the average of the places they cover; high is risky). Score: w x calendar rank + (1 - w) x tail rank. The weight w is chosen from the grid {0, 0.25, 0.5, 0.75, 1} at each refit (every 21 decision days), as the grid value with the highest mean top-5 precision over the trailing scored windows, using only windows whose 20 targets are all at or before the anchor (the last public row at the refit's decision instant), at most the latest 252 of them. A tie in that mean goes to the smaller w. Before 60 such windows exist the weight is 0.5. The chosen weights are reported",
+      "weight_grid": [0.0, 0.25, 0.5, 0.75, 1.0],
+      "default_weight": 0.5,
+      "trailing_windows": 252,
+      "min_trailing_windows": 60
+    }
+  },
+  "benchmarks": {
+    "calendar": "the calendar of known risk dates alone, as declared in metadata/ranking_694.json (earliest date first within a tie): the primary benchmark",
+    "climatology": "the share of pressure days among the trailing year's days of the target's type, as in step 1",
+    "persistence": "P(spread > +5 bp) from B1 on 20 leads, as in step 1 (benchmark B1)",
+    "reference": "the step-1 probability ranker (model_prob) is shown as a reference row for context; it is not one of the rankers of this declaration and is not counted among them"
+  },
+  "scores": {
+    "per_decision_day": "precision@k and recall@k for k = 3 and k = 5, as in step 1; primary: precision@5 of each ranker against the calendar benchmark on all scored decision days",
+    "paired": "as in step 1: the per-decision-day difference in the metric (positive favours the ranker), its mean, and a stationary-bootstrap interval over decision days (scoring_protocol.paired_tests on the loss 1 - metric): mean block 20 business days, 10,000 draws, seed 765, the 5th and 95th percentile of the draws. The protocol's mean block of 10 is reported beside it as a labelled sensitivity",
+    "splits": "pooled; by calendar year and by regime of the decision day (SplitDeclaration.regime), 2021-23 called out; and by the as-of reserve scarcity state of the decision day (scripts/pressure_judge._scarcity_states at horizon 1 on the next panel day, each leg read at its own latest public row, #586; abundant, ample, tight, scarce, or unknown). Each split with at least 20 decision days; a smaller one is not tested",
+    "where_it_loses": "for each ranker, the splits in which its point gain over the calendar is below zero, and which of those have an interval wholly below zero"
+  },
+  "kill": "H8's kill, applied in words to the primary: a ranker has no ranking skill beyond the calendar of known risk dates when the 90% interval of its precision@5 gain over the calendar benchmark does not lie wholly above zero. On development data the statement is exploration and not a verdict. Whether any ranker goes on to registration (step 3) is Eleonora's decision",
+  "days": {
+    "scored": "decision days whose 20 targets all fall on or before 2025-12-31 and for which every ranker has a forecast; no later day is read (docs/decisions/lockbox.md); each decision day and each target day is passed through lockbox.require_unlocked",
+    "outcomes": "the panel's spread_bps at the target day, as in step 1"
+  },
+  "limits": {
+    "max_rankers": 3,
+    "last_day": "2025-12-31",
+    "variants": 3
+  }
+}
