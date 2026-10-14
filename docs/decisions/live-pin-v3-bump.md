@@ -1,6 +1,6 @@
 # Version bump: the protocol block joins the live record (#656)
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #656. It takes effect only
+**Status: approved by Eleonora's own `GO #656` (comment 6172786156, 14 October 2026); the pin moves when #736's pull request merges.** Drafted by the pull request that closes #656. It takes effect only
 when she merges it, and the pin moves only through her own approval (`docs/decisions/live-pin.md`: an owner-attested
 comment, cited in `metadata/owner_attestations.json`).
 
@@ -34,7 +34,7 @@ as they are, at `record_version` 1 or 2, and still score. `scripts/live_score.py
 
 | id | SHA | Decided |
 |---|---|---|
-| the next transition after `t0-first-record` and, if registered first, `t1-v2-joins` (id: `protocol-block`) | the merge commit of the pull request that closes #656 | not yet: the SHA does not exist until that pull request merges |
+| the next transition after `t0-first-record` and, if registered first, `t1-v2-joins` (id: `protocol-block`) | `492c53d65b09a0181065f5532f0197291b24ea14` (the merge commit of #699, which closes #656) | Eleonora, `GO #656` (comment 6172786156), 14 October 2026 |
 
 The bump is never retroactive: each day's file already carries the SHA it was made with. The transition is added to
 `metadata/live_pin.json`, naming the merge commit, in a follow-up that carries Eleonora's own approval (kind

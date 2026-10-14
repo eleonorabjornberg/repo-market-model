@@ -1,5 +1,5 @@
 {
-  "current": "c69a361965fd601a4e69fdbc92643d669dba8e9e",
+  "current": "492c53d65b09a0181065f5532f0197291b24ea14",
   "environment": {
     "lock": "metadata/live_requirements.lock",
     "lock_sha256": "80fd364df301d3a5235e824fe410a9ff614534b8246700d5a49d2ea1fd973902",
@@ -11,6 +11,11 @@
       "id": "t0-first-record",
       "record": "docs/decisions/live-pin.md",
       "sha": "c69a361965fd601a4e69fdbc92643d669dba8e9e"
+    },
+    {
+      "id": "protocol-block",
+      "record": "docs/decisions/live-pin-v3-bump.md",
+      "sha": "492c53d65b09a0181065f5532f0197291b24ea14"
     }
   ],
   "version": 1

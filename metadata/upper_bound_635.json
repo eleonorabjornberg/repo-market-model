@@ -1,0 +1,343 @@
+{
+ "deviations": [
+  {
+   "changed": "the ceiling is cross-fitted: blocked folds by time (ten contiguous blocks of near-equal size per lead; a fold count chosen on cost, before any score, the embargo being what the ruling fixes), each block scored by a fit that did not see it, at the ceiling settings; a training row is embargoed from a block when it falls inside the walk-forward's embargo before the block (its scored row is after the last public row of the block's first decision instant) or inside its mirror after the block (its own last public row is before the block's last scored row); an embargoed row in a training set raises LookAheadError (crossfit_positions)",
+   "fold_count": 10,
+   "kept": "inputs, settings, targets, scoring, intervals and the reading rule's spread line; the first declaration's in-sample fit is kept and reported beside the new ceiling as 'memorised', labelled as in-sample, and carries no reading",
+   "number": 1,
+   "reason": "the in-sample gradient-boosted ceiling memorises (ordinary-day AUROC exactly 1.000 at every lead), so the reading rule could never return 'data problem' for a flexible model",
+   "ruling": "repo-market-model#703, comment 6149433242, item 1: cross-fit the ceiling"
+  },
+  {
+   "changed": "the indicator's headline is read against persistence-logistic (AUROC difference and Brier skill, with 90% intervals), in the form of the spread's rule: barely above when the lower end of the AUROC-difference interval, or of the Brier-skill interval, is at or below 0 (the operational form is this pull request's choice, marked in its description); the 0.6 line is reported as a secondary reading",
+   "kept": "the verdict map (data problem, model problem, partly reached) and the spread's rule",
+   "number": 2,
+   "reason": "persistence-logistic alone scores AUROC 0.890 on the walk-forward ordinary days, so a 0.6 line against climatology is below the benchmark the project names",
+   "ruling": "repo-market-model#703, comment 6149433242, item 2: read the indicator against persistence-logistic"
+  }
+ ],
+ "fits": {
+  "ceiling": "(i) cross-fitted (deviation 1): the scored days are cut into ten contiguous blocks of near-equal size per lead (CEILING_FOLDS); each block is scored by a fit on the other blocks' days with a spread, at the ceiling settings, less the embargoed rows (crossfit_positions); what any model could at best extract from these inputs; not a claim",
+  "memorised": "(i-a) the first declaration's ceiling: fitted on every scored day with a spread and scored on the same days, at the ceiling settings; it memorises, is reported beside the cross-fitted ceiling and labelled in-sample, and carries no reading",
+  "reachable": {
+   "minimum_training_rows": 250,
+   "reading": "(ii) the same inputs, read at each row's own decision instant, refitted every 21 scored days at the reachable settings; a day with no fit (fewer than the minimum training rows) is not scored for any line",
+   "refit_every_scored_days": 21,
+   "training_rows": "the scored days whose spread row is at or before the last public row (the anchor) of the block's first decision instant; a row after it raises LookAheadError (training_positions)"
+  }
+ },
+ "hypothesis": "H2 (docs/research/plan.md): the data we hold carries signal for the spread and for ordinary-day pressure; step 3, the upper bound",
+ "inputs": {
+  "columns": [
+   "sofr_volume",
+   "sofr_p25",
+   "sofr_p75",
+   "tgcr",
+   "bgcr",
+   "reserve_balances",
+   "tga",
+   "treasury_settlement",
+   "treasury_settlement_bills",
+   "treasury_settlement_coupons",
+   "treasury_settlement_soma",
+   "dealer_treasury_position",
+   "tbill_4w",
+   "tbill_13w",
+   "quarter_end",
+   "tax_date",
+   "days_to_month_end",
+   "on_rrp",
+   "bank_total_assets",
+   "effr",
+   "reserve_scarcity_state",
+   "iorb_announced_change_bps",
+   "iorb_days_to_announced_change",
+   "sofr_p1",
+   "sofr_p99",
+   "tga_daily",
+   "ofr_tri_rate",
+   "ofr_gcf_rate",
+   "sofr_p99_iorb_bps",
+   "sofr_p75_iorb_bps",
+   "sofr_p99_iorb_sd15_bps",
+   "tga_daily_change",
+   "tga_change_x_reserves",
+   "net_settlement",
+   "net_settlement_bills",
+   "net_settlement_due_5d",
+   "policy_days_since_known",
+   "policy_days_until_effective",
+   "policy_pending_count",
+   "policy_iorb_offset_bp",
+   "policy_qt_in_force",
+   "policy_standing_repo_in_force",
+   "policy_slr_exclusion_in_force",
+   "policy_reserve_management_in_force",
+   "policy_debt_limit_reinstated",
+   "fed_repo_accepted",
+   "fed_repo_submitted",
+   "fed_repo_rate_iorb_bps",
+   "fed_repo_ops",
+   "fed_repo_log_accepted",
+   "fed_repo_log_accepted_change",
+   "fed_repo_days_since_positive",
+   "fed_repo_accepted_sameday",
+   "fed_repo_submitted_sameday",
+   "fed_repo_rate_iorb_bps_sameday",
+   "fed_repo_ops_sameday",
+   "fed_repo_log_accepted_sameday",
+   "fed_repo_log_accepted_change_sameday",
+   "fed_repo_days_since_positive_sameday",
+   "on_rrp_sameday",
+   "spread_nowcast_bps",
+   "bgcr_volume",
+   "ofr_dvp_rate",
+   "sofr_tgcr_bps",
+   "bgcr_tgcr_bps",
+   "dvp_volume_share",
+   "dvp_volume_share_chg20",
+   "ofr_dvp_minus_bgcr_bp",
+   "ofr_dvp_minus_bgcr_bp_backfill",
+   "srf_take_up",
+   "sofr_p99_p75_bps",
+   "tga_change_5d",
+   "sofr_above_effr_share_20",
+   "effr_iorb_change_20_bps",
+   "on_rrp_below_100bn",
+   "srf_take_up_positive",
+   "satiation_dist_roll",
+   "satiation_hinge_roll",
+   "spread_rv5",
+   "spread_rv20",
+   "above_median_run",
+   "days_since_pressure",
+   "sofr_min_dist_20",
+   "sofr_max_dist_20",
+   "sofr_z_20",
+   "sofr_min_dist_60",
+   "sofr_max_dist_60",
+   "sofr_z_60",
+   "sofr_p1_min_dist_20",
+   "sofr_p1_max_dist_20",
+   "sofr_p1_z_20",
+   "sofr_p1_min_dist_60",
+   "sofr_p1_max_dist_60",
+   "sofr_p1_z_60",
+   "sofr_p25_min_dist_20",
+   "sofr_p25_max_dist_20",
+   "sofr_p25_z_20",
+   "sofr_p25_min_dist_60",
+   "sofr_p25_max_dist_60",
+   "sofr_p25_z_60",
+   "sofr_p75_min_dist_20",
+   "sofr_p75_max_dist_20",
+   "sofr_p75_z_20",
+   "sofr_p75_min_dist_60",
+   "sofr_p75_max_dist_60",
+   "sofr_p75_z_60",
+   "sofr_p99_min_dist_20",
+   "sofr_p99_max_dist_20",
+   "sofr_p99_z_20",
+   "sofr_p99_min_dist_60",
+   "sofr_p99_max_dist_60",
+   "sofr_p99_z_60",
+   "bgcr_min_dist_20",
+   "bgcr_max_dist_20",
+   "bgcr_z_20",
+   "bgcr_min_dist_60",
+   "bgcr_max_dist_60",
+   "bgcr_z_60",
+   "tgcr_min_dist_20",
+   "tgcr_max_dist_20",
+   "tgcr_z_20",
+   "tgcr_min_dist_60",
+   "tgcr_max_dist_60",
+   "tgcr_z_60",
+   "effr_min_dist_20",
+   "effr_max_dist_20",
+   "effr_z_20",
+   "effr_min_dist_60",
+   "effr_max_dist_60",
+   "effr_z_60",
+   "ofr_tri_rate_min_dist_20",
+   "ofr_tri_rate_max_dist_20",
+   "ofr_tri_rate_z_20",
+   "ofr_tri_rate_min_dist_60",
+   "ofr_tri_rate_max_dist_60",
+   "ofr_tri_rate_z_60",
+   "ofr_gcf_rate_min_dist_20",
+   "ofr_gcf_rate_max_dist_20",
+   "ofr_gcf_rate_z_20",
+   "ofr_gcf_rate_min_dist_60",
+   "ofr_gcf_rate_max_dist_60",
+   "ofr_gcf_rate_z_60",
+   "reserve_change_5",
+   "pressure_last",
+   "pressure_lag1",
+   "spread_lag1",
+   "pressure_lag2",
+   "spread_lag2",
+   "pressure_lag5",
+   "spread_lag5",
+   "dow",
+   "bday_of_month",
+   "maint_period_day",
+   "tail_x_scarcity",
+   "tgachg_x_satdist",
+   "settle_x_scarcity",
+   "netsettle_x_scarcity",
+   "tail_x_reservetrend",
+   "spread_asof"
+  ],
+  "excluded": "the six nowcast_* columns, which the as-of rule refuses as undeclared; #630's new sources (H3); nothing is chosen from a score",
+  "interactions_of_631": {
+   "netsettle_x_scarcity": [
+    "net_settlement",
+    "reserve_scarcity_state"
+   ],
+   "settle_x_scarcity": [
+    "treasury_settlement",
+    "reserve_scarcity_state"
+   ],
+   "tail_x_reservetrend": [
+    "sofr_p99_iorb_bps",
+    "reserve_change_5"
+   ],
+   "tail_x_scarcity": [
+    "sofr_p99_iorb_bps",
+    "reserve_scarcity_state"
+   ],
+   "tgachg_x_satdist": [
+    "tga_change_5d",
+    "satiation_dist_roll"
+   ]
+  },
+  "last_public_spread": "spread_asof",
+  "reading": "derived_features_631.read_all's: the 'both' arm (announcement-dated settlements, per-release H.4.1) at the decision instant of lead h, each read checked by the as-of rule; a series not public at the lead is a hole, left missing"
+ },
+ "issue": 635,
+ "models": {
+  "climatology": "the training rate of the indicator (the cross-fitted training rate for the ceiling, the in-sample rate for the memorised fit)",
+  "gbm": {
+   "indicator": "ml.gbm_probabilities: HistGradientBoostingClassifier, ordinary days only",
+   "spread": "ml.grid_quantiles_gbm: HistGradientBoostingRegressor(loss='quantile') per level of the 23-level grid, sorted per day"
+  },
+  "key_columns_interacted": [
+   "spread_asof",
+   "sofr_p99_iorb_bps",
+   "sofr_p75_iorb_bps",
+   "reserve_scarcity_state",
+   "satiation_dist_roll",
+   "reserve_change_5",
+   "tga_change_5d",
+   "treasury_settlement",
+   "net_settlement",
+   "days_to_month_end"
+  ],
+  "persistence_logistic": "ml.l2_logistic_probabilities on the last public spread alone, c = 1.0, the reachable fit's rule",
+  "ridge": {
+   "indicator": "ml.l2_logistic_probabilities on the same design, ordinary days only",
+   "spread": "ml.ridge_location_scale_quantiles: ridge location and ridge absolute-residual scale on the standardised inputs (training mean imputed, clipped at +-5) and the products i <= j of the key columns; quantiles from the standardised training residuals"
+  },
+  "settings": {
+   "ceiling": {
+    "gbm": {
+     "learning_rate": 0.05,
+     "max_iter": 400,
+     "max_leaf_nodes": 31,
+     "min_samples_leaf": 10,
+     "random_state": 0
+    },
+    "logistic_c": 1.0,
+    "ridge_alpha": 1.0
+   },
+   "reachable": {
+    "gbm": {
+     "learning_rate": 0.05,
+     "max_iter": 200,
+     "max_leaf_nodes": 15,
+     "min_samples_leaf": 20,
+     "random_state": 0
+    },
+    "logistic_c": 0.05,
+    "ridge_alpha": 30.0
+   }
+  },
+  "shared": {
+   "logistic_max_iter": 2000,
+   "scale_ceiling_share": 5.0,
+   "scale_floor_share": 0.2,
+   "standardise_clip": 5.0
+  },
+  "tuning": "none: settings are fixed here; the ceiling's are looser (more rounds, more leaves, a weaker penalty) so that it is the more flexible fit; the cross-fitted ceiling and the memorised fit use the same ceiling settings"
+ },
+ "panel": {
+  "built_by": "docs/pivot/derived-features-result.md (Reproduce): the scratch panel DERIV.csv of #631",
+  "columns_refused_by_the_as_of_rule": {
+   "nowcast_naive": "UndeclaredFeatureError",
+   "nowcast_published_only": "UndeclaredFeatureError",
+   "nowcast_rrp": "UndeclaredFeatureError",
+   "nowcast_rrp_settlement": "UndeclaredFeatureError",
+   "nowcast_rrp_settlement_calendar": "UndeclaredFeatureError",
+   "nowcast_settlement": "UndeclaredFeatureError"
+  },
+  "sha256": "08df8d195dbd5d474e95e856bb49fcdb4ce9a9cdd6d6e3b66b8f09e8f28af7fc"
+ },
+ "reading_rule": {
+  "barely_above": {
+   "indicator": "the ordinary-day AUROC difference to persistence-logistic, averaged over leads 1 to 5, has a 90% interval whose lower end is at or below 0, or the Brier skill against persistence-logistic, averaged over leads 1 to 5, has a 90% interval whose lower end is at or below 0 (deviation 2); clearly above needs both intervals above 0",
+   "spread": "the skill against B1 on ordinary days has a 90% stationary-bootstrap interval (5th to 95th percentile of the paired skill draws) whose lower end is at or below 0"
+  },
+  "benchmark_for_the_indicator": "persistence-logistic, a logistic model on the last public spread alone (the pressure-probability benchmark of CLAUDE.md), fitted on the same training rows as the candidate; walk-forward climatology is reported beside it (deviation 2)",
+  "benchmark_for_the_spread": "B1, as-of persistence (protocol v1 section 4); B2, calendar climatology, reported",
+  "clearly_above": "not barely above",
+  "effort_rule": "H2 outcome rule (docs/research/hypotheses/H2.md): a data problem sends effort to H3 and H4, a model problem to H5's development steps",
+  "not_a_claim": "the ceiling reads every day's own surroundings, before and after, so it is an upper bound and not a forecast; a reachable figure is development evidence and gives no verdict (protocol v1 section 1)",
+  "secondary_indicator_reading": "the issue's own absolute line: the ordinary-day AUROC, averaged over leads 1 to 5, under 0.6 is 'barely above climatology'; reported beside the headline, it decides no verdict (deviation 2)",
+  "source": "the issue's text (#635, Eleonora, 12 October 2026), made operational here before any number; the scoring sections of the issue are superseded by protocol v1 (ruling on #635)",
+  "targets": {
+   "primary": "the spread in bp, 23-level grid CRPS averaged over leads 1 to 5 per decision day, on ordinary days (the target day is not a risk date)",
+   "secondary": "the +5 bp indicator on ordinary days, AUROC averaged over leads 1 to 5"
+  },
+  "the_verdict_line": "stated for the spread (the primary target) and for the indicator, each under the rule; if they differ, both are stated and the primary target's decides the one-line verdict",
+  "verdict": {
+   "data problem": "the ceiling is barely above the benchmark",
+   "model problem": "the ceiling is clearly above the benchmark and the reachable line is barely above it",
+   "partly reached": "both are clearly above the benchmark; the gap between the ceiling and the reachable line is reported, with its paired interval"
+  },
+  "which_model": "for each fit, the better of the two model families on the same days, by the point estimate of the quantity above (the skill against B1 for the spread, the AUROC for the indicator); the choice is among two, on development data, and is reported as such"
+ },
+ "ruling": "the scoring sections of #635 are superseded by scoring protocol v1 (docs/decisions/scoring-protocol.md, #640) wherever they differ: the metric (23-level grid CRPS over leads 1 to 5), the benchmarks (B1, B2) and the interval (stationary bootstrap, mean block 10); development days give no verdict",
+ "scope": {
+  "first_day": "2018-06-29",
+  "last_day": "2025-12-31",
+  "leads": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "locked_days": "none read (lockbox.md; require_unlocked)",
+  "minimum_history": 61
+ },
+ "scoring": {
+  "indicator": {
+   "interval": "the stationary bootstrap over the ordinary scored days in date order, mean block 10, 1000 draws, seed 635, one draw shared by every lead and model; the 90% interval is the 5th to 95th percentile",
+   "metrics": "AUROC, the AUROC difference to persistence-logistic, and Brier skill against walk-forward climatology and against persistence-logistic, per lead and averaged over leads 1 to 5",
+   "splits": "by regime and by as-of scarcity state (ample | scarce | unknown)"
+  },
+  "spread": {
+   "benchmarks": "protocol_benchmarks.b1_forecast and b2_forecast on the published panel cut at 2025-12-31",
+   "interval": "scoring_protocol.paired_tests: stationary bootstrap, mean block 10, seed 635, 10000 draws (2000 on the split tables); the 90% interval is the 5th to 95th percentile of the paired skill draws; the protocol's one-sided 95% lower bound of mean(d) is reported",
+   "score": "scoring_protocol.grid_crps, averaged over leads 1 to 5 per decision day (day_scores); MAE of the median beside it",
+   "splits": "all days, ordinary days, risk dates; by regime (metadata/evaluation_splits.json) on all and on ordinary days; by reporting day type; by lead; a split is reported, never a pass requirement"
+  }
+ },
+ "status": "declared by the pull request that closes #635 before any score was computed; a development measurement (H2, step 3), never a claim or a verdict. Nothing is published, no variant joins a published declaration, no day after 2025-12-31 is read",
+ "targets": {
+  "indicator": "1 if the spread is strictly above +5 bp on whole basis points (repo_model.data.exceeds_bp), on ordinary days: the risk-date rule of the model (announcement_dating_rescore.risk_flag with the coupon clause) is false",
+  "spread": "spread_bps at the scored day, in bp, first published, as a 23-level quantile law (scoring_protocol.GRID), led 1 to 5 business days"
+ },
+ "variant_count": "four fitted families of two kinds (a quantile law and a classifier, each gradient-boosted and regularised linear), each at two settings (ceiling and reachable) and no other; the ceiling settings are used twice (cross-fitted, and in-sample as the memorised fit); no input list, setting or interaction was changed after a score"
+}
