@@ -42,6 +42,14 @@ level, the unkinked curve's growth below it. Above the level `e` no longer decay
 constant factor on the four terms and the fitted level can move the forecast. Declared in `metadata/kinked_626.json`; a
 measurement, off in every published declaration.
 
+**Identified levels (#689, finding #671).** `kinked_profile` and `kinked_slow` take the kinked curve's level from the ridge
+logistic itself rather than from a least-squares hinge on the spread: at each refit the design is completed at every level of
+`satiation.KINK_GRID`, the logistic is fitted on the training pairs' lowest-threshold labels, and the level is the grid point
+with the smallest fitted objective (`profile_curve`, `choose_profile_level`). `kinked_slow` adds a penalty,
+`PROFILE_PENALTY` per pair per squared percentage point, on the move from the previous refit's level. Each refit records the
+level, the interval of levels within `PROFILE_INTERVAL_NATS` of the minimum and the number of local minima. Declared in
+`metadata/identified_level_689.json`; a measurement, off in every published declaration.
+
 Standard library only: the six-coefficient ridge logistic is fitted here by Newton's method; the
 as-of pairing of labels with what was public at their own decision instant is `ml._pressure_pairs`,
 imported inside the function that needs it (`tests/test_dependency_boundary.py`).
@@ -49,6 +57,7 @@ imported inside the function that needs it (`tests/test_dependency_boundary.py`)
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from dataclasses import dataclass
@@ -58,7 +67,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from .data import DailyObservation, exceeds_bp
 from .projected_reserves import AHEAD_COLUMNS
-from .satiation import FIXED, ROLLING_COLUMN, fit_level
+from .satiation import FIXED, KINK_GRID, KINK_MINIMUM_PAIRS, ROLLING_COLUMN, fit_level
 
 __all__ = [
     "COLUMN_NAMES",
@@ -67,12 +76,16 @@ __all__ = [
     "STRUCTURAL_FORMS",
     "DEFAULT_DECLARATION",
     "LENGTH",
+    "PROFILE_PENALTY",
     "RIDGE_C",
     "SATIATION",
     "StructuralDesign",
+    "choose_profile_level",
     "elasticity",
     "features_at_horizon",
     "fit_ridge_logistic",
+    "profile_curve",
+    "ridge_objective",
     "shortfall",
     "structural_exceedance",
 ]
@@ -92,9 +105,17 @@ COLUMN_NAMES = ("spread_bps", "e_x_shortfall", "e_x_tga_up", "e_x_tax_date", "e_
 #: elasticity multiplies them (`StructuralDesign.finish`).
 RAW_NAMES = ("spread_bps", "ratio", "shortfall", "tga_up", "tax_date", "window")
 #: The satiation forms the structural model reads (`satiation.FORMS` less the projected model's hinge control).
-STRUCTURAL_FORMS = ("fixed", "rolling", "fitted", "kinked_rolling", "kinked_fitted")
-#: The forms whose elasticity is kinked (#626), with the level source each reads (`rolling` or `fitted`).
-KINKED_FORMS = {"kinked_rolling": "rolling", "kinked_fitted": "fitted"}
+STRUCTURAL_FORMS = ("fixed", "rolling", "fitted", "kinked_rolling", "kinked_fitted", "kinked_profile", "kinked_slow")
+#: The forms whose elasticity is kinked (#626, #689), with the level source each reads (`rolling`, `fitted` or `profile`).
+KINKED_FORMS = {
+    "kinked_rolling": "rolling", "kinked_fitted": "fitted", "kinked_profile": "profile", "kinked_slow": "profile",
+}
+#: The `kinked_slow` form's penalty on a move of the level (#689): nats of the profile objective per training pair, per
+#: square of one percentage point of the ratio. Written down before any score, not tuned.
+PROFILE_PENALTY = 0.001
+#: Two times the change in the objective at which a level is still inside the profile's interval: the chi-square 95% point
+#: on one degree of freedom (`excess <= PROFILE_INTERVAL_NATS`).
+PROFILE_INTERVAL_NATS = 1.92
 
 _CALENDAR = ("days_to_month_end", "quarter_end", "tax_date")
 _BASE = ("spread_bps",) + _CALENDAR + ("reserve_balances", "bank_total_assets", "on_rrp", "tga")
@@ -173,6 +194,7 @@ class StructuralDesign:
         declared = tuple(dict.fromkeys(str(name) for name in features))
         self.level_source = _level_source(satiation)
         self.kinked = satiation in KINKED_FORMS
+        self.slow = satiation == "kinked_slow"
         required_columns = _BASE + ((ROLLING_COLUMN,) if self.level_source == "rolling" else ())
         for required in required_columns:
             if required not in declared:
@@ -230,7 +252,7 @@ class StructuralDesign:
             1.0 if kind == "tax_date" else 0.0,
             1.0 if kind in ("quarter_end", "month_end") else 0.0,
         ]
-        if self.level_source == "fitted":
+        if self.level_source in ("fitted", "profile"):
             return raw
         level = self._value(observation, ROLLING_COLUMN) if self.level_source == "rolling" else SATIATION
         return self.finish(raw, level)
@@ -357,6 +379,138 @@ def fit_ridge_logistic(
     return RidgeFit(tuple(centre), tuple(scale), tuple(w))
 
 
+def ridge_objective(
+    fit: RidgeFit, xs: Sequence[Sequence[float]], ys: Sequence[int], c: float = RIDGE_C
+) -> float:
+    """The quantity `fit_ridge_logistic` minimises, at `fit`: summed log loss plus `(1 / 2c) * ||w||^2` (intercept free)."""
+
+    total = 0.0
+    for x, y in zip(xs, ys):
+        s = fit.coefficients[0] + sum(
+            b * (v - m) / sc for b, v, m, sc in zip(fit.coefficients[1:], x, fit.centre, fit.scale)
+        )
+        total += max(s, 0.0) - y * s + math.log1p(math.exp(-abs(s)))
+    return total + 0.5 / c * sum(b * b for b in fit.coefficients[1:])
+
+
+_PROFILE_CACHE: Dict[str, List[Optional[float]]] = {}
+
+
+def profile_curve(
+    design: "StructuralDesign", raws: Sequence[Sequence[float]], labels: Sequence[int], grid: Sequence[float] = KINK_GRID
+) -> List[Optional[float]]:
+    """The ridge logistic's own objective at each level of `grid` (#689): the profile.
+
+    For each level `k` the design's columns are completed at `k` (`StructuralDesign.finish`, the kinked elasticity), the
+    ridge logistic is fitted on `labels`, and its objective is kept. `None` where the fit fails (a singular system).
+    Reads only the rows and labels handed in. The curve is cached by the content of its inputs (a hash of the rows, the
+    labels and the grid), so two forms that profile the same pairs fit them once and a changed row never reads a stale
+    curve.
+    """
+
+    key = hashlib.sha256(repr((design.kinked, [list(r) for r in raws], list(labels), list(grid))).encode()).hexdigest()
+    if key in _PROFILE_CACHE:
+        return list(_PROFILE_CACHE[key])
+    curve: List[Optional[float]] = []
+    for level in grid:
+        xs = [design.finish(r, level) for r in raws]
+        try:
+            fit = fit_ridge_logistic(xs, labels)
+        except ValueError:
+            curve.append(None)
+            continue
+        curve.append(ridge_objective(fit, xs, labels))
+    if len(_PROFILE_CACHE) > 4096:
+        _PROFILE_CACHE.clear()
+    _PROFILE_CACHE[key] = list(curve)
+    return curve
+
+
+def choose_profile_level(
+    grid: Sequence[float],
+    curve: Sequence[Optional[float]],
+    pairs: int,
+    *,
+    previous: Optional[float] = None,
+    penalty: float = 0.0,
+) -> Tuple[float, Dict[str, Any]]:
+    """The level on `grid` that minimises the profile plus a penalty on the move from `previous` (#689).
+
+    The score of a level is its excess over the profile's minimum, per training pair, plus
+    `penalty * ((level - previous) / 0.01) ** 2`. With `penalty` 0 it is the profile's minimum (form a); with
+    `PROFILE_PENALTY` and the previous refit's level it is form b. Ties go to the lower level.
+
+    Returns `(level, record)`: the record holds the unpenalised profile minimum (`profile_level`), the excess of every
+    level in nats (`excess`; `None` where the fit failed), the interval of levels within `PROFILE_INTERVAL_NATS` of the
+    minimum (`interval`), and the number of local minima of the curve (`local_minima`).
+
+    Raises:
+        ValueError: no level has a fit.
+    """
+
+    if len(grid) != len(curve):
+        raise ValueError("choose_profile_level needs one objective per level")
+    known = [value for value in curve if value is not None]
+    if not known:
+        raise ValueError("no level has a fit")
+    best = min(known)
+    excess = [None if value is None else value - best for value in curve]
+    profile_level = next(k for k, e in zip(grid, excess) if e == 0.0)
+    anchor = previous if previous is not None else profile_level
+
+    def score(k: float, e: float) -> float:
+        return e / max(1, pairs) + (penalty * ((k - anchor) / 0.01) ** 2 if penalty > 0.0 else 0.0)
+
+    level = min((k for k, e in zip(grid, excess) if e is not None), key=lambda k: (score(k, excess[list(grid).index(k)]), k))
+    inside = [k for k, e in zip(grid, excess) if e is not None and e <= PROFILE_INTERVAL_NATS]
+    present = [(k, v) for k, v in zip(grid, curve) if v is not None]
+    minima = 0
+    for i, (_k, v) in enumerate(present):
+        left = present[i - 1][1] if i > 0 else math.inf
+        right = present[i + 1][1] if i + 1 < len(present) else math.inf
+        if v < left and v <= right:
+            minima += 1
+    record = {
+        "profile_level": profile_level,
+        "excess": excess,
+        "interval": [min(inside), max(inside)],
+        "local_minima": minima,
+    }
+    return level, record
+
+
+def _profile_level(
+    design: "StructuralDesign",
+    raws: Sequence[Sequence[float]],
+    spreads: Sequence[float],
+    taus: Sequence[float],
+    state: Dict[str, float],
+    penalty: float,
+) -> Tuple[float, Dict[str, Any]]:
+    """One refit's level from the profile of the ridge logistic on the pairs' lowest-threshold labels (#689).
+
+    The fixed 0.12 with `fitted` False on fewer than `KINK_MINIMUM_PAIRS` pairs or a one-class label. For the slow form
+    `penalty` is `PROFILE_PENALTY` and the move is measured from `state["level"]`, the previous refit's level (0.12 at
+    the first); the fixed form passes 0.
+    """
+
+    n = len(raws)
+    if n < KINK_MINIMUM_PAIRS:
+        return FIXED, {"fitted": False, "reason": "too few pairs", "pairs": n}
+    labels = [1 if exceeds_bp(value, float(min(taus))) else 0 for value in spreads]
+    if sum(labels) == 0 or sum(labels) == n:
+        return FIXED, {"fitted": False, "reason": "no events or all events: the profile is flat", "pairs": n}
+    curve = profile_curve(design, raws, labels)
+    try:
+        level, record = choose_profile_level(
+            KINK_GRID, curve, n, previous=state.get("level", FIXED), penalty=penalty
+        )
+    except ValueError:
+        return FIXED, {"fitted": False, "reason": "no level has a fit", "pairs": n}
+    out = {"fitted": True, "pairs": n, "previous_level": state.get("level", FIXED), **record}
+    return level, out
+
+
 def structural_exceedance(
     features: Sequence[str], declaration: Any, *, minimum_history: int, satiation: str = "fixed"
 ) -> Any:
@@ -374,6 +528,7 @@ def structural_exceedance(
     design = StructuralDesign(features, declaration, satiation)
     cache: dict = {}
     fits: List[Dict[str, Any]] = []
+    state: Dict[str, float] = {"level": FIXED}
 
     def fit_predict(
         train_rows: Sequence[DailyObservation],
@@ -407,7 +562,17 @@ def structural_exceedance(
             design.row(row, ml._served_tga_change(histories[day], row)) for day, row in enumerate(feature_rows)
         ]
         level_record: Dict[str, Any] = {}
-        if design.level_source == "fitted":
+        if design.level_source == "profile":
+            # one level for the refit, the minimum of the ridge logistic's own objective over the grid, from the
+            # training pairs alone (#689); the slow form penalises the move from the previous refit's level
+            level, level_record = _profile_level(
+                design, xs, spreads, taus, state, PROFILE_PENALTY if design.slow else 0.0
+            )
+            state["level"] = level
+            level_record = {"satiation_level": level, **level_record}
+            xs = [design.finish(x, level) for x in xs]
+            served = [design.finish(x, level) for x in served]
+        elif design.level_source == "fitted":
             # one level for the refit, from its training pairs alone; the pairs' ratios were public at their own
             # decisions and their spreads are labels the training frame covers
             level, level_record = fit_level([x[1] for x in xs], spreads)
