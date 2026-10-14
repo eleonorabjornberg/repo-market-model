@@ -265,6 +265,36 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data). It does not beat the published distribution, so it adds nothing over the incumbent on CRPS.
 - Next: Eleonora decides whether a reverting level is worth adding to #634's candidates; #707 diagnoses 2021-23 and the upper tail.
 
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
+- Directive: #687
+- Step: 3 (diagnosis of avenue #674)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `53338b4`; bootstrap seed 624
+- Tried: the every-day part of the control row taken apart one construction step at a time (persist, gate, tail cap, all eight subsets) and #624's `+offday` taken apart (inputs, state, interactions), 11 rows, against persistence-logistic and the full construction, plus pooled against within-refit-block AUROC. Variants: n/a (diagnosis, no new variant).
+- Result: the ungated logistic ranks the ordinary days as well as persistence-logistic (AUROC 0.905 against 0.897 at lead 1, difference +0.008 [-0.004, +0.027]) and below the raw spread (0.941). The gate takes it to 0.736 (37 of 82 pressure days on a forecast of 0) and the tail cap to 0.493; removing only the cap from the full construction gains +0.240 [+0.156, +0.304]. Refits do not lower the pooled AUROC: within-block AUROC is lower (0.659 against 0.905).
+- Against kill: not applicable (no verdict; development data).
+- Next: an every-day part for #634(c) or #632(b) drops the cap and the gate; Eleonora confirms the reading of "persist".
+
+### 2026-10-13 [H7] step 1 · eleonorabjornberg/repo-market-model#715
+- Directive: #689
+- Step: 1 (the as-of estimator of the kink, model side; the label-free estimator is in the liquidity repository)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `52cb519e…`; base `e2b1f397`
+- Tried: 2 variants (`structural_kinked_profile`, the level that minimises the ridge logistic's own objective over the level grid at each refit; `structural_kinked_slow`, the same with a penalty on the move from the previous refit's level), against `structural_kinked_fitted` and `structural_kinked_rolling` of #626, at h = 1 to 5.
+- Result: the interval of levels within 1.92 nats of the profile's minimum reaches the grid maximum 0.20, above every observed ratio, at every refit at every horizon (width about 0.08, several local minima at 46% to 100% of refits): the logistic never rejects "no kink". The profile level moves more than the least-squares one (20 changes of 0.01 or more against 9 at h = 1); the slow level is held at 0.1375 by its penalty. Ordinary days, h = 1: AUROC 0.881 [0.829, 0.921] for both, against 0.883 for the unkinked control; AUROC minus `kinked_fitted` +0.005 [0.000, 0.011], minus `kinked_rolling` -0.001 [-0.017, 0.017].
+- Against kill: not testable (no registered test; development data). The demand-curve route is closed for a kinked logistic whose level is estimated from the pressure label, and open for H7's label-free estimator.
+- Next: the liquidity repository's estimator (its #22) is the next test of the kink.
+
+### 2026-10-13 [H5] step 6 · eleonorabjornberg/repo-market-model#718
+- Directive: #717
+- Step: 6 (new: the validation report rewritten for the chosen candidate; plan amendment, nothing scored)
+- Tier: development
+- Pins: published panel `4ddc3882…`; no score, no panel built; base `bd7f573`
+- Tried: plan: validation report added. `docs/research/hypotheses/H5.md` gains step 6 and milestone M5a (the report is a rewrite of `docs/model/validation.md`, goes to Eleonora with the registration, and is updated at each checkpoint). Variants: 0.
+- Result: not applicable (a plan edit; no experiment).
+- Against kill: not applicable.
+- Next: the step is carried out once step 5 has chosen the primary candidate.
+
 ### 2026-10-13 [H6] step 1 · eleonorabjornberg/repo-market-model#719
 - Directive: #693
 - Step: 1
@@ -294,3 +324,54 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `+offday` of #624 at h = 1 has a pooled slope of 0.83, 0.48 inside 2018-19 and 0.79 inside 2025-26; at h = 3 to 5, 0.14 to 0.22 inside 2018-19 against a pooled 0.78 to 0.80. #626's rows have no per-regime slope yet.
 - Against kill: not applicable (a correction to how step 3 figures are read).
 - Next: rebuild #626's forecasts and run `scripts/reliability_regimes_683.py kinked`; any reliability-shape test (#628) is read within regimes.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#691
+- Directive: #691
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `660a72b`
+- Tried: 0 model variants; the eight candidate declarations of the satiation (#587) and kinked (#626) rows corrected to name `net_settlement_ahead_h` and `ahead_{h-1}` at h >= 2 (finding #673), and both pages re-scored on the current code (#618, #679). Variants: n/a (correction).
+- Result: no tier and no pass of any row changes. `structural_rolling` flags 18 of 26 onsets (was 14) with tier-3 flags per 252 days 2.9 / 3.4 (was 1.2 / 1.3); `structural_liquidity` and `structural_fitted` 12 of 26 (was 11); `structural_kinked_rolling` 17 (was 16); `structural_kinked_fitted` stays at 11 with fewer false alarms (1.21 against 1.69). Detail in `docs/pivot/declarations-691-result.md`.
+- Against kill: not applicable (a record correction; no hypothesis is tested).
+- Next: none from this directive; the pages keep their original prose with a dated note.
+
+### 2026-10-13 [H4] step 3 · eleonorabjornberg/repo-market-model#661
+- Directive: #633
+- Step: 3 (steps 1 and 2 in the same pull request: the due-diligence table, and the workbook released from 17 May 2018 by Eleonora's ruling)
+- Tier: development
+- Pins: scratch panel `4137d0ad…`, extended panel `f3acce04…`, workbook `1c889930…`; base `09640f5b`; declaration `metadata/backfill_spread_633.json`
+- Tried: one scratch quantile model of the spread (23 levels, leads 1 to 5) trained without and with the 899 back-filled rows, scored by the protocol's scorer from 2018-06-29 to 2025-12-31; a workbook-only sensitivity declared after the first score. Variants: 1 model, 2 input sets, 2 arms each.
+- Result: 2018-19 coverage of the central 90% interval rises +0.050 [+0.020, +0.082] (declared) and +0.035 [+0.017, +0.054] (workbook-only); 2018-19 CRPS d +0.043 [−0.013, +0.101] and +0.064 [+0.009, +0.117]; the share above the 95th percentile does not move (0.167 → 0.174, 0.191 → 0.191). Detail in `docs/pivot/posting-dates-h4-result.md`.
+- Against kill: not killed, as exploration: a posting time is established, and the 2018-19 calibration move's interval excludes zero in both input sets. The 2018-19 upper tail stays under-forecast.
+- Next: whether to register (step 4) is Eleonora's; the H5 models cannot use the history without pre-2018 inputs the project does not hold.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#692
+- Directive: #692
+- Step: 3 (data rework: re-run the seven records that read the Fed repo take-up columns after #659)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `e2b1f397`; data change confined to 339 panel rows, 2018-05-09 to 2019-09-16
+- Tried: no new variant. Re-ran the record's own commands, unchanged apart from the data: source screen, source matrix, unused inputs, OFR follow-up, weighted-miss rows that read the columns; backfilled history and the due-diligence table checked. Variants: 0.
+- Result: no ranking, redundancy group or pass/fail verdict moved. Figures moved for the Fed repo columns only (e.g. `fed_repo_days_since_positive` ordinary-day pressure AUROC at lead 1 0.58 [0.43, 0.72] to 0.64 [0.48, 0.79]); in the judged records the dealer candidates flag more 2018 onsets (OFR logistic 15 to 18 of 27, recall 0.577 to 0.692 [0.517, 0.844]) and some paired-Brier intervals change whether they exclude zero. Detail in `docs/pivot/fed-repo-rescreen-692-result.md`.
+- Against kill: not applicable (no verdict; development data). The ceiling statements of H2 are unchanged: the Fed repo columns stay far below the cut-off of the source screen.
+- Next: Eleonora decides whether to amend the stale sentences named in the result page.
+
+### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#695
+- Directive: #655 (scorer, benchmarks and synthetic suite merged in PR #660; this pull request applies Eleonora's rulings on its questions)
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: the synthetic suite of protocol v1 (perfect, persistence, climatology, shifted, dispersed, lead-misaligned and noisy-truth forecasts) against the scorer; the interval's coverage on the resampled real B2 − B1 daily difference series and on an iid normal control, at 250 days, first with the percentile and then with the studentized stationary bootstrap.
+- Result: the first check passes: every stated order is recovered under grid CRPS and the upper-tail twCRPS. The second check fails: the one-sided 95% bound covers 0.802 (percentile) and 0.825 (studentized) of 1,500 replications on the real series, against 0.937 and 0.941 on the control; 0.831 at 10,000 draws. The real series' left tail drives it (0.929 with its one September 2019 day removed).
+- Calibration (Eleonora's ruling on PR #695, a §13 change): the critical value calibrated on the development history, largest across B2 − B1 and B3 − B1, is 5.45 at 250 days (9.50 at 125; none at 60), against 1.66 uncalibrated. Out of sample the bound then covers 1.000 of B2 − B1 windows, 0.951 of B3 − B1 windows and 1.000 of the control's; under no true difference (#699's size check) it detects on 0.3% of paths by 250 days, against 23.3% uncalibrated.
+- Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
+- Next: prospective logging and the power study (#656).
+
+### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
+- Directive: #747
+- Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panels as in `scripts/satiation_587.py`; base `e9ce416d`
+- Tried: no forecast variant. The tie rule of the fitted kink (relative tolerance 1e-9, "not identified" when the tied set spans more than one grid step) and a count of the walk-forward refits of the fitted-level rows of #587 and #626 (four rows, horizons 1 to 5) under old and new rule. Variants: 0.
+- Result: no refit in any row, year or horizon is "not identified" and no level moves, so no earlier figure moves; the old rule reproduces the recorded levels for the structural and combined rows exactly (the projected row differs in 47 refits for a later feature change, not the tie). At a tolerance of 1e-4, 44 refits of each structural and combined row would be tied; none at 1e-6. Detail in `docs/pivot/satiation-ties-747-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
