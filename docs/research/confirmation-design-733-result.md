@@ -111,9 +111,9 @@ Trade-off against D0 (now in force, 250 days): power at 3% 0.0% → 0.1%, at 10%
 
 **No admissible design reaches 80.0% power at 3%.** The pick above is the highest power among the admissible designs (0.1%), not a design with useful power; on the rule's own reading no design on the list can confirm the MME.
 
-## Question for Eleonora (marked; this page decides nothing)
+## Rulings on the questions this page asked (this page decides nothing)
 
-Do you want to change the confirmation design, or the MME, and if so which? If the recommended design stands, a draft decision record is the next step; it would be a protocol change under §13 of `docs/decisions/scoring-protocol.md`, motivated by this synthetic demonstration and by no candidate's result. Whether a design that does not reach 80% power at 3% is acceptable, or the MME should rise to the smallest skill each design detects, is yours.
+Eleonora ruled on 14 October 2026 on this page's two questions. The reading of the critical value is already decided: reading (b), the value calibrated on each comparison (her ruling on PR #695, Q-E, 13 October); the largest-across-comparisons value that `scoring_protocol.CRITICAL_VALUES` holds on main is in force only until #737 applies reading (b) there. The side-by-side table of the two readings below stays. Whether a design that does not reach 80% power at 3% is acceptable, and the MME, are superseded: she has asked for power to be tested a different way, an empirical replay on real forecast pairs with three test families and a matched null generator, in #754 (H1 step 3). This page remains a study of the six declared designs and answers neither question.
 
 ## Post-hoc addendum (written after the figures above were seen)
 
@@ -149,6 +149,6 @@ False-detection share by the last look under no true difference, without the MME
 | D4 | 8.4% | 4.2% | 13.1% | 7.3% |
 | D5 | 9.9% | 4.8% | 13.4% | 7.2% |
 
-### Question for Eleonora (marked; post-hoc)
+### Ruling on the post-hoc question
 
-Which reading of the critical value should confirmation use: the largest across the four comparisons (now in force) or the one calibrated on the verdict's own comparison (reading (b))? The first holds size and has almost no power at any skill on the grid; the second has the power shown above and the size shown above. This is the choice PR #695 asked as Q-E, and it decides what the confirmation design can detect.
+Decided, not asked: reading (b) is the reading confirmation uses (Eleonora's ruling on PR #695, Q-E, 13 October 2026), and #737 applies it to `CRITICAL_VALUES`; the largest-across-comparisons value is in force on main only until #737 merges. The first holds size and has almost no power at any skill on the grid; the second has the power shown above and the size shown above.
