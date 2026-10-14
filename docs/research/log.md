@@ -414,3 +414,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
+
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#732
+- Directive: #732
+- Step: 5 (the running variant count that every registration publishes, §2 of the protocol)
+- Tier: development
+- Pins: no panel (counting and a declaration check only); base `978dbcd`
+- Tried: no forecast variant. The progress page's variant count now reads every `metadata/*.json` that has a `variants` block (top level, or under `model`), by content and not by file name (ruling of 14 October 2026); a CI test refuses a model declaration with no `hypothesis` key or no `variants` block, with the 23 declarations that predate the rule listed as exempt.
+- Result: the count moves from 2 declarations and 4 variants (the files named `spread_distribution_*`) to 19 declarations and 55 variants. `near_threshold_688.json`, the case that found the gap, is now seen (3 variants, under `model`). The 55 include the pre-pivot +5 bp classification variants as well as spread-forecast ones, because the ruling counts by content.
+- Against kill: not applicable (no verdict; a count, not a score).
+- Next: Eleonora's call on converting the exempt declarations to carry `hypothesis`, and on whether the page should show the count by hypothesis.
