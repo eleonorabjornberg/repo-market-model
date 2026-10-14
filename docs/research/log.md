@@ -366,6 +366,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
 
+### 2026-10-13 [H5] step 3 · eleonorabjornberg/repo-market-model#723
+- Directive: #683
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d`
+- Tried: the reliability slope of earlier result pages read inside regimes and not pooled: a shared helper with bootstrap intervals, the per-regime slopes already in #624's tracked evidence, dated notes on the pages that reported pooled slopes. Variants: n/a (correction).
+- Result: `+offday` of #624 at h = 1 has a pooled slope of 0.83, 0.48 inside 2018-19 and 0.79 inside 2025-26; at h = 3 to 5, 0.14 to 0.22 inside 2018-19 against a pooled 0.78 to 0.80. #626's rows have no per-regime slope yet.
+- Against kill: not applicable (a correction to how step 3 figures are read).
+- Next: the per-regime slopes for #626's kinked page, and an account of why its rebuild never finishes, move to the follow-up directive #753 (Eleonora's ruling of 14 October 2026 on this pull request); any reliability-shape test (#628) is read within regimes.
+
 ### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
 - Directive: #747
 - Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
