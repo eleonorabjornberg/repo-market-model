@@ -263,7 +263,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Tried: the phase 2 gbm and the published declaration re-scored under protocol v1 (grid CRPS, h = 1 to 5, against B1 and B2; against B3 on its own five levels), and 3 variants with the post-phase-2 inputs (published declaration, gbm, two-part). Variants: 3 new plus 1 re-fitted control; 9 spread-forecast variants in all with phase 2 (3) and #632 (2).
 - Result: published declaration 1.814 bp on its five levels, +21.8% [+14.4%, +41.0%] against B1 and +27.4% [+17.8%, +36.5%] against B2 there; phase 2 gbm on the grid +20.7% [+13.3%, +40.0%] and +27.4% [+17.4%, +36.6%]. The new inputs add nothing on the primary score (ablation −0.9% [−2.3%, +0.6%] for the published declaration, −0.8% [−2.3%, +0.6%] for the gbm); no variant beats B3 on its five levels. Upper-tail twCRPS: only the two-part form is ahead of B3, +5.3% [+0.7%, +10.5%]. In 2021-23 no variant beats persistence.
 - Against kill: not applicable (development days give no verdict); no CRPS gain over the phase 2 models on the primary score.
-- Next: the 2021-23 and upper-tail diagnoses (H5 step 3); B3 is scored on its own five levels by Eleonora's ruling (#660, #700); how variant (a) is put on the grid against B1 and B2 is her question.
+- Next: the 2021-23 and upper-tail diagnoses (H5 step 3); B3 is scored on its own five levels by Eleonora's ruling (#660, #700); variant (a) stays on the grid against B1 and B2 by her ruling on #711, with its own five levels as a sensitivity (+21.1% and +26.8%).
 
 ### 2026-10-13 [H5] step 2 · eleonorabjornberg/repo-market-model#713
 - Directive: #686

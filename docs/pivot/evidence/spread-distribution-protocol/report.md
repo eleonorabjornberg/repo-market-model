@@ -25,6 +25,20 @@ Reading of each cell: **skill [one-sided 95% lower bound, upper bound] / lower b
 | (b) gbm + new inputs | 1.850 | -2.0% [-4.4%, +0.2%] / -0.080 |
 | (c) two-part + new inputs | 1.829 | -0.8% [-5.5%, +3.6%] / -0.097 |
 
+### Table 1c. Sensitivity, not the headline: (a) against B1 and B2 on its own five levels (bp), pooled
+
+Variant (a) forecasts the five published levels. Its headline comparison with B1 and B2 is on the grid (Table 1, by the linear law of the gbm exceedance); here B1 and B2 are read at the same five levels instead (Eleonora's ruling on #711).
+
+| model (five levels, sensitivity) | mean | vs B1 | vs B2 |
+|---|---|---|---|
+| (a) published + new inputs | 1.829 | +21.1% [+13.4%, +42.4%] / +0.235 | +26.8% [+17.5%, +35.8%] / +0.445 |
+
+Upper-tail twCRPS on the same five levels (sensitivity):
+
+| model (five levels, sensitivity) | mean | vs B1 | vs B2 |
+|---|---|---|---|
+| (a) published + new inputs | 0.930 | +33.0% [+23.8%, +54.5%] / +0.205 | +17.7% [+6.5%, +29.8%] / +0.093 |
+
 ### Table 2. Key secondary: upper-tail twCRPS (weight 1{y > 0 bp}), pooled
 
 | model | mean | vs B1 | vs B2 |
