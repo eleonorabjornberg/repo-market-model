@@ -50,6 +50,7 @@ from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import _quantile  # noqa: E402
+from repo_model.splits import SplitError  # noqa: E402
 
 s686 = _load("spread_mean_reversion_686")
 
@@ -164,18 +165,21 @@ def build_frame(panel, splits, registry, declaration):
             b1[day] = pb.b1_forecast(panel, index, registry=registry, decision_time=DECISION_TIME)
             b2[day] = pb.b2_forecast(panel, index, **settings)
             rc[day] = var.b1_recentred_forecast(panel, index, **settings)
-        except sp.ProtocolError:
+        except (sp.ProtocolError, SplitError):
             b1.pop(day, None), b2.pop(day, None)
             dropped.append(day)
     walk = var.walk(panel, candidate_days, b2=b2, **settings)
     days = [day for day in candidate_days if day in b1 and day in b2 and day in rc
             and all(day in walk.forecasts[name] for name in (REFERENCE,) + var.NAMES)]
     frame.days = days
-    frame.forecasts = {"B1": b1, "B2": b2, B1RC: rc, **{name: walk.forecasts[name] for name in (REFERENCE,) + var.NAMES}}
+    frame.forecasts = {
+        name: {day: forecasts[day] for day in days}
+        for name, forecasts in (("B1", b1), ("B2", b2), (B1RC, rc), *((n, walk.forecasts[n]) for n in (REFERENCE,) + var.NAMES))
+    }
     notes = {
         "decision_days_offered": len(candidate_days),
         "candidate_skipped_for_history": len(walk.skipped),
-        "benchmark_missing": [d.isoformat() for d in dropped],
+        "benchmark_missing": [d.isoformat() for d in dropped if d in walk.forecasts[REFERENCE]],
         "scored_decision_days": len(days),
         "first": days[0].isoformat(), "last": days[-1].isoformat(),
         "last_target": frame.target(days[-1], max(sp.HORIZONS)).isoformat(),
@@ -499,7 +503,7 @@ def page(args) -> int:
         lost = loses(r, name)
         lines.append("- **%s**: grid CRPS gain over mean reversion %s. %s" % (
             LABELS[name], skill_text(row), ("Loses (point estimate below mean reversion) in: " + "; ".join(lost) + ".") if lost else "Loses in no group."))
-    lines += ["", "Development, not a verdict. Variants counted in this directive: %d (the progress page counts them)." % len(var.NAMES), ""]
+    lines += ["", "Development, not a verdict.", ""]
     Path(args.output).write_text("\n".join(lines), encoding="utf-8")
     return 0
 
