@@ -11676,7 +11676,7 @@
     },
     {
      "from": "2020-05-05",
-     "level": 0.0875,
+     "level": 0.09,
      "fitted": true,
      "pairs": 510
     },
@@ -11766,7 +11766,7 @@
     },
     {
      "from": "2021-08-06",
-     "level": 0.1,
+     "level": 0.1025,
      "fitted": true,
      "pairs": 825
     },
@@ -11856,7 +11856,7 @@
     },
     {
      "from": "2022-11-09",
-     "level": 0.155,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1140
     },
@@ -11910,7 +11910,7 @@
     },
     {
      "from": "2023-08-15",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1329
     },
@@ -11940,7 +11940,7 @@
     },
     {
      "from": "2024-01-17",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1434
     },
@@ -11976,7 +11976,7 @@
     },
     {
      "from": "2024-07-18",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1560
     },
@@ -12302,13 +12302,13 @@
     },
     {
      "from": "2021-07-08",
-     "level": 0.0925,
+     "level": 0.1025,
      "fitted": true,
      "pairs": 803
     },
     {
      "from": "2021-08-06",
-     "level": 0.1,
+     "level": 0.1025,
      "fitted": true,
      "pairs": 824
     },
@@ -12350,7 +12350,7 @@
     },
     {
      "from": "2022-03-10",
-     "level": 0.175,
+     "level": 0.1725,
      "fitted": true,
      "pairs": 971
     },
@@ -12548,49 +12548,49 @@
     },
     {
      "from": "2024-12-18",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1664
     },
     {
      "from": "2025-01-21",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1685
     },
     {
      "from": "2025-02-20",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1706
     },
     {
      "from": "2025-03-21",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1727
     },
     {
      "from": "2025-04-22",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1748
     },
     {
      "from": "2025-05-21",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1769
     },
     {
      "from": "2025-06-23",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1790
     },
     {
      "from": "2025-07-23",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1811
     },
@@ -12724,7 +12724,7 @@
     },
     {
      "from": "2019-10-31",
-     "level": 0.0925,
+     "level": 0.1075,
      "fitted": true,
      "pairs": 382
     },
@@ -12838,7 +12838,7 @@
     },
     {
      "from": "2021-06-08",
-     "level": 0.0925,
+     "level": 0.1,
      "fitted": true,
      "pairs": 781
     },
@@ -12892,7 +12892,7 @@
     },
     {
      "from": "2022-03-10",
-     "level": 0.175,
+     "level": 0.1725,
      "fitted": true,
      "pairs": 970
     },
@@ -12964,157 +12964,157 @@
     },
     {
      "from": "2023-03-15",
-     "level": 0.1475,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1222
     },
     {
      "from": "2023-04-14",
-     "level": 0.1475,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1243
     },
     {
      "from": "2023-05-15",
-     "level": 0.1475,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1264
     },
     {
      "from": "2023-06-14",
-     "level": 0.145,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1285
     },
     {
      "from": "2023-07-17",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1306
     },
     {
      "from": "2023-08-15",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1327
     },
     {
      "from": "2023-09-14",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1348
     },
     {
      "from": "2023-10-16",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1369
     },
     {
      "from": "2023-11-14",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1390
     },
     {
      "from": "2023-12-14",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1411
     },
     {
      "from": "2024-01-17",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1432
     },
     {
      "from": "2024-02-15",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1453
     },
     {
      "from": "2024-03-18",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1474
     },
     {
      "from": "2024-04-17",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1495
     },
     {
      "from": "2024-05-16",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1516
     },
     {
      "from": "2024-06-17",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1537
     },
     {
      "from": "2024-07-18",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1558
     },
     {
      "from": "2024-08-16",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1579
     },
     {
      "from": "2024-09-17",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1600
     },
     {
      "from": "2024-10-17",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1621
     },
     {
      "from": "2024-11-18",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1642
     },
     {
      "from": "2024-12-18",
-     "level": 0.145,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1663
     },
     {
      "from": "2025-01-21",
-     "level": 0.1325,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1684
     },
     {
      "from": "2025-02-20",
-     "level": 0.145,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1705
     },
     {
      "from": "2025-03-21",
-     "level": 0.145,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1726
     },
     {
      "from": "2025-04-22",
-     "level": 0.1475,
+     "level": 0.13,
      "fitted": true,
      "pairs": 1747
     },
@@ -13138,7 +13138,7 @@
     },
     {
      "from": "2025-08-21",
-     "level": 0.13,
+     "level": 0.1275,
      "fitted": true,
      "pairs": 1831
     },
