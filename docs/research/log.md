@@ -274,6 +274,15 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Sensitivity (ruling of 13 October 2026, item 2): with the protocol's mean block of 10 days in place of the declared 20, the same gain's interval is [-7.2 pp, -3.4 pp], so the reading is unchanged. Detail in `docs/pivot/ranking-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
 - Next: step 2, accepted by Eleonora on 13 October 2026: rank by tail probability combined with the day type (a directive for it is hers to queue).
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
+- Directive: #687
+- Step: 3 (diagnosis of avenue #674)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `53338b4`; bootstrap seed 624
+- Tried: the every-day part of the control row taken apart one construction step at a time (persist, gate, tail cap, all eight subsets) and #624's `+offday` taken apart (inputs, state, interactions), 11 rows, against persistence-logistic and the full construction, plus pooled against within-refit-block AUROC. Variants: n/a (diagnosis, no new variant).
+- Result: the ungated logistic ranks the ordinary days as well as persistence-logistic (AUROC 0.905 against 0.897 at lead 1, difference +0.008 [-0.004, +0.027]) and below the raw spread (0.941). The gate takes it to 0.736 (37 of 82 pressure days on a forecast of 0) and the tail cap to 0.493; removing only the cap from the full construction gains +0.240 [+0.156, +0.304]. Refits do not lower the pooled AUROC: within-block AUROC is lower (0.659 against 0.905).
+- Against kill: not applicable (no verdict; development data).
+- Next: an every-day part for #634(c) or #632(b) drops the cap and the gate; Eleonora confirms the reading of "persist".
 
 ### 2026-10-13 [H7] step 1 · eleonorabjornberg/repo-market-model#715
 - Directive: #689
@@ -284,6 +293,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the interval of levels within 1.92 nats of the profile's minimum reaches the grid maximum 0.20, above every observed ratio, at every refit at every horizon (width about 0.08, several local minima at 46% to 100% of refits): the logistic never rejects "no kink". The profile level moves more than the least-squares one (20 changes of 0.01 or more against 9 at h = 1); the slow level is held at 0.1375 by its penalty. Ordinary days, h = 1: AUROC 0.881 [0.829, 0.921] for both, against 0.883 for the unkinked control; AUROC minus `kinked_fitted` +0.005 [0.000, 0.011], minus `kinked_rolling` -0.001 [-0.017, 0.017].
 - Against kill: not testable (no registered test; development data). The demand-curve route is closed for a kinked logistic whose level is estimated from the pressure label, and open for H7's label-free estimator.
 - Next: the liquidity repository's estimator (its #22) is the next test of the kink.
+
+### 2026-10-13 [H5] step 6 · eleonorabjornberg/repo-market-model#718
+- Directive: #717
+- Step: 6 (new: the validation report rewritten for the chosen candidate; plan amendment, nothing scored)
+- Tier: development
+- Pins: published panel `4ddc3882…`; no score, no panel built; base `bd7f573`
+- Tried: plan: validation report added. `docs/research/hypotheses/H5.md` gains step 6 and milestone M5a (the report is a rewrite of `docs/model/validation.md`, goes to Eleonora with the registration, and is updated at each checkpoint). Variants: 0.
+- Result: not applicable (a plan edit; no experiment).
+- Against kill: not applicable.
+- Next: the step is carried out once step 5 has chosen the primary candidate.
 
 ### 2026-10-13 [H6] step 1 · eleonorabjornberg/repo-market-model#719
 - Directive: #693
@@ -304,6 +323,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `auc_dealer_share` is no longer clear of 0.5 on ordinary days (AUROC 0.566 [0.49, 0.64] at lead 1, was 0.580 [0.51, 0.66]; scarce band 0.491 [0.41, 0.56]). `auc_cover` on Treasury's definition is now the auction series clear of 0.5, on the low side (ordinary days 0.365 [0.31, 0.43] at lead 1 and 0.297 [0.25, 0.35] at lead 5; partial rho -0.10 [-0.15, -0.06]). Exploratory, unadjusted for multiplicity.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether `auc_cover` enters the nested test of H3 step 3 (#708); not decided here.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#691
+- Directive: #691
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `660a72b`
+- Tried: 0 model variants; the eight candidate declarations of the satiation (#587) and kinked (#626) rows corrected to name `net_settlement_ahead_h` and `ahead_{h-1}` at h >= 2 (finding #673), and both pages re-scored on the current code (#618, #679). Variants: n/a (correction).
+- Result: no tier and no pass of any row changes. `structural_rolling` flags 18 of 26 onsets (was 14) with tier-3 flags per 252 days 2.9 / 3.4 (was 1.2 / 1.3); `structural_liquidity` and `structural_fitted` 12 of 26 (was 11); `structural_kinked_rolling` 17 (was 16); `structural_kinked_fitted` stays at 11 with fewer false alarms (1.21 against 1.69). Detail in `docs/pivot/declarations-691-result.md`.
+- Against kill: not applicable (a record correction; no hypothesis is tested).
+- Next: none from this directive; the pages keep their original prose with a dated note.
 
 ### 2026-10-13 [H4] step 3 · eleonorabjornberg/repo-market-model#661
 - Directive: #633
@@ -335,3 +364,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Calibration (Eleonora's ruling on PR #695, a §13 change): the critical value calibrated on the development history, largest across B2 − B1 and B3 − B1, is 5.45 at 250 days (9.50 at 125; none at 60), against 1.66 uncalibrated. Out of sample the bound then covers 1.000 of B2 − B1 windows, 0.951 of B3 − B1 windows and 1.000 of the control's; under no true difference (#699's size check) it detects on 0.3% of paths by 250 days, against 23.3% uncalibrated.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
+
+### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
+- Directive: #747
+- Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panels as in `scripts/satiation_587.py`; base `e9ce416d`
+- Tried: no forecast variant. The tie rule of the fitted kink (relative tolerance 1e-9, "not identified" when the tied set spans more than one grid step) and a count of the walk-forward refits of the fitted-level rows of #587 and #626 (four rows, horizons 1 to 5) under old and new rule. Variants: 0.
+- Result: no refit in any row, year or horizon is "not identified" and no level moves, so no earlier figure moves; the old rule reproduces the recorded levels for the structural and combined rows exactly (the projected row differs in 47 refits for a later feature change, not the tie). At a tolerance of 1e-4, 44 refits of each structural and combined row would be tied; none at 1e-6. Detail in `docs/pivot/satiation-ties-747-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).

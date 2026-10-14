@@ -1,5 +1,15 @@
 # A time-varying satiation level for the reserve-demand terms (#587, ruling on #569)
 
+> **Note of 13 October 2026 (#691, finding #673): this page was scored on the five-day sum and the old netting.** Its figures and tables below were
+> scored when the structural model read `net_settlement_due_5d` at h >= 2, before the drain fix of #618 (PR #647) and the rule of #679 (a partly announced
+> class is left out). The eight judge candidates declared the five-day sum, which is what these tables read; since #618 the code reads
+> `net_settlement_ahead_h` and `net_settlement_ahead_{h-1}`, and the declarations now say so (the old wording is kept in
+> `superseded_features_at_horizon_2_or_more`). The rows were re-scored on the current code and `docs/pivot/evidence/satiation/` now holds the re-score;
+> the before-and-after tables are in [`declarations-691-result.md`](declarations-691-result.md) (`scripts/declarations_691.py`). **The prose and
+> tables below are the original scoring and are not re-written.** No tier and no pass of any row changes. The figures that moved most: `structural_rolling`
+> flags 18 of 26 onsets (was 14) and its tier-3 flags per 252 days rise to 2.9 / 3.4 (was 1.2 / 1.3); `structural_liquidity` and `structural_fitted` flag
+> 12 of 26 (was 11). The conclusion (no new row passes, none is added to the shortlist) stands.
+
 A scratch measurement under the pressure-day judge. It writes nothing into `docs/runs/`, publishes nothing, moves no published
 figure, scores no day of 2026 and reads no day after 2025-12-31 (`docs/decisions/lockbox.md`; the script refuses a later panel).
 The published scarcity indicator and its 0.12 band are unchanged. No rule, threshold, onset definition, cut-off rule or
