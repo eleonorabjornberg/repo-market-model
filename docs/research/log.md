@@ -395,7 +395,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: the liquidity repo bumps its parent pin to the merge commit and proceeds to H7 step 2 (eleonorabjornberg/repo-market-liquidity#41).
 
-### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#766
+### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#772
 - Directive: #766
 - Step: 1, groundwork (liquidity G6 input; ingestion only; the repo-operation snapshots extended to 2026-09-03 for liquidity goalpost 3, eleonorabjornberg/repo-market-liquidity#75)
 - Tier: development
