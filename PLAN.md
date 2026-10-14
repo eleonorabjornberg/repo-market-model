@@ -19,8 +19,9 @@ This is an academic exercise, and the phase structure below should be read as on
 committed scope is what the exercise undertakes to evidence, and the aspirational
 phases are research directions recorded so that the committed scope is not quietly
 widened to include them. The choice of data and its meaning across these phases rests
-with Nicholas Beroud, the project's advisor; the model, methodology and
-workflow, engineering and evaluation decisions rest with the author.
+with Eleonora (from 13 October 2026; Nicholas Beroud, the project's advisor, has stepped back, per
+[repo-market-liquidity#1](https://github.com/eleonorabjornberg/repo-market-liquidity/issues/1#issuecomment-6132252283));
+the model, methodology and workflow, engineering and evaluation decisions rest with the author.
 
 Initial forecast horizon: next business day, later extended to five business days
 and intraday nowcasting. "Next business day" means a forecast made at 16:00 on the
