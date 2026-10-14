@@ -12,7 +12,9 @@
     "tga",
     "net_settlement_ahead_1d"
   ],
-  "features_at_horizon_2_or_more": "net_settlement_due_5d in place of net_settlement_ahead_1d (the scored day's own settlement is not yet public)",
+  "features_at_horizon_2_or_more": "net_settlement_ahead_{h}d and net_settlement_ahead_{h-1}d in place of net_settlement_ahead_1d (their difference is the scored day's own announced net settlement; #618, under #679's rule)",
+  "superseded_features_at_horizon_2_or_more": "net_settlement_due_5d in place of net_settlement_ahead_1d (the scored day's own settlement is not yet public)",
+  "amended": "Amended 13 October 2026 by the pull request that closes #691 (finding #673): the file named the five-day sum net_settlement_due_5d, but since #618 (PR #647) the code reads net_settlement_ahead_h and net_settlement_ahead_{h-1} at h >= 2. The earlier wording is kept in superseded_features_at_horizon_2_or_more. No score changes by this note; the pages are re-scored by the same pull request.",
   "calibration": "none: the logistic of six declared terms with the elasticity at a satiation level fitted on each refit's training pairs; metadata/satiation_587.json",
   "inputs_note": "structural_liquidity with the elasticity's satiation level fitted per refit on its training pairs (satiation.fit_level); six fitted coefficients; forecasts every day"
 }
