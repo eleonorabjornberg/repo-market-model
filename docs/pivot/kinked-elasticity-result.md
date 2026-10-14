@@ -104,14 +104,50 @@ high: the slope is 0.4 to 0.9 and the intercept is negative, i.e. the forecasts 
 to calibrated (slope 0.74 at h = 1, 0.85 at h = 4 and 5), which comes with its extra false alarms. The risk-date passers forecast almost 0 on these days and so
 have no ranking (AUROC 0.50), as designed.
 
-> *Note, 13 October 2026 (#683).* Every slope in this table, and "nearest to calibrated" for the rolling form, is **pooled across regimes**, so it is not a
+> *Note, 13 October 2026 (#683).* Every slope in the table above, and "nearest to calibrated" for the rolling form, is **pooled across regimes**, so it is not a
 > reading of calibration inside 2018-19 or 2025-26 and the rolling form is not shown to be calibrated in either. 2021-23 has no pressure day and
 > forecasts near 0; it adds a well-ordered stretch at the bottom of the curve and raises the pooled slope (`docs/pivot/diagnostics-reconciliation.md`,
-> point 11). For the nearest tracked comparator, `+offday` of #624, the pooled 0.83 at h = 1 is 0.48 inside 2018-19 and 0.79 inside 2025-26
-> (`docs/pivot/off-risk-day-result.md`, "Reliability within regimes"); #626's own rows have **no per-regime slope yet**. The tracked evidence of this page
-> keeps no forecast, so computing them means rebuilding #626's forecasts (the commands in the docstring of `scripts/kinked_626.py`) and then running
-> `scripts/reliability_regimes_683.py kinked`, which writes each row's slope and intercept with a 90% interval pooled, per regime and per scarcity state.
-> That run did not finish in the session of #683; until it has, read this table as pooled and uncalibrated by regime.
+> point 11). The per-regime slopes of #626's own rows follow (#753).
+
+### Reliability within regimes (14 October 2026, #753)
+
+Development data only (days to 2025-12-31, not risk dates, +5 bp); not a verdict. Slope of the logistic reliability line, 90% stationary-bootstrap
+interval (2,000 replications, the judge's block length), pressure days in brackets; 1 is reliable. `†` is a figure without an interval (a handful of
+pressure days). The full tables, with intercepts and the split by as-of scarcity state, are in
+`docs/pivot/evidence/reliability-regimes/kinked-626.md` (and `.json`), written by `scripts/reliability_regimes_683.py kinked`.
+
+Horizons 1 and 5 are shown; all five are in the evidence file.
+
+| row | h | pooled (87) | 2018-19 (63) | 2020-24 (5) | 2025-26 (19) |
+|---|---|---|---|---|---|
+| `structural_liquidity+h41` | 1 | 0.59 [0.40, 0.89] | 0.26 [0.16, 0.47] | 0.69 [-1.62, 1.12] | 1.21 [0.87, 2.03] |
+| `structural_liquidity+h41` | 5 | 0.42 [0.29, 0.77] | 0.19 [0.09, 0.37] | 1.18 [-1.05, 2.12] | 1.09 [0.68, 2.24] |
+| `structural_kinked_fitted` | 1 | 0.57 [0.39, 0.83] | 0.27 [0.17, 0.50] | 0.44 [-1.62, 0.75] | 1.21 [0.87, 2.03] |
+| `structural_kinked_fitted` | 5 | 0.42 [0.28, 0.77] | 0.19 [0.09, 0.37] | 1.17 [-1.05, 2.10] | 1.09 [0.68, 2.23] |
+| `structural_kinked_rolling` | 1 | 0.74 [0.52, 1.04] | 0.47 [0.26, 0.93] | 0.34 [-1.19, 0.66] | 1.16 [0.89, 1.75] |
+| `structural_kinked_rolling` | 5 | 0.74 [0.49, 1.04] | 0.38 [0.19, 0.69] | 0.57 [-0.71, 1.04] | 1.12 [0.76, 2.08] |
+| `persistence_logistic` | 1 | 1.05 [0.73, 1.43] | 0.60 [0.31, 1.22] | 0.63 [-1.21, 1.10] | 1.03 [0.75, 1.70] |
+| `persistence_logistic` | 5 | 0.94 [0.59, 1.38] | 0.35 [0.18, 0.66] | 1.21 [-0.65, 2.67] | 0.92 [0.58, 1.80] |
+
+**What the regimes show.** Inside 2018-19, where 63 of the 87 pressure days are, every structural row is far from calibrated and its interval excludes 1: the
+slope is 0.18 to 0.27 for the fixed and fitted-kink forms and 0.30 to 0.47 for the rolling form, at every horizon. In 2025-26 the same rows read 0.98 to 1.51, with
+intervals that include 1. 2020-24 holds 5 pressure days and its intervals cover everything from negative values to 2 or more: it says nothing.
+So the pooled 0.39 to 0.74 is a mean of an over-spread regime and a regime near 1, and the reading above is restated:
+
+- **"The rolling form is nearest to calibrated" holds only in the weak sense that its slope is nearer 1 than the fixed and fitted forms' in 2018-19** (0.47 against
+  0.26 and 0.27 at h = 1; 0.38 against 0.19 at h = 5). It is not calibrated there (its interval is [0.26, 0.93] at h = 1), and the persistence-logistic
+  model is nearer 1 than the rolling form at h = 1 to 4 (0.60, 0.50, 0.33, 0.58 against 0.47, 0.40, 0.30, 0.46) and level with it at h = 5 (0.35 against 0.38); the intervals
+  overlap, so this is not a separation.
+- **In 2025-26 the forms do not separate.** The three structural rows read within 0.1 of each other at every horizon except h = 3 (rolling 1.39, others 1.51), and
+  the intervals overlap. `persistence_logistic` is as near 1 (1.03 at h = 1).
+- By as-of scarcity state the pressure days are almost all in state 3 (78 of 87 at h = 1), where the rolling form reads 0.48 (and 0.31 at h = 5); states 0 and 1 hold
+  at most 2 pressure days each and give no slope worth reading (full table in the evidence file).
+- `risk_gbm+settle+h41+dist_roll` forecasts near 0 on these days (pooled 0.03 to 0.07) and has no slope worth reading in any regime, as designed.
+
+The forecasts behind these figures were rebuilt in this order and nothing else was needed (`reliability_regimes_683.py kinked` reads the benchmarks, the parents and #626's rows, and not
+the risk-date, `pressure_track_q` or `satiation_587` files): `pressure_v1_1.py panel`, `measurement_fields.py panel`, `net_settlement.py panel`, `projected_reserves.py panel`,
+`kinked_626.py panel`, then for each horizon `pressure_judge.py forecasts`, `announcement_dating_rescore.py run --arm both --model risk_gbm` and `kinked_626.py run`
+(about 100 seconds per horizon on one free core, 16 minutes for the five; the bootstrap of the table is a further 26 minutes on four processes).
 
 ## The ruling on #567
 
