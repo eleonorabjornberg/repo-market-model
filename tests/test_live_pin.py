@@ -39,10 +39,11 @@ confirmed applied by grep (one match) and killed by the test named:
 * hashes: in `live_pin.parse_lock`, `if "--hash=sha256:" not in block:` ->
   `if False:` makes `test_a_requirement_without_a_hash_is_refused` fail with
   `AssertionError: ValueError not raised`.
-* the literal: `"current": "c69a361965fd601a4e69fdbc92643d669dba8e9e"` in
-  `metadata/live_pin.json` changed to forty zeros makes
+* the literal: `"current": "492c53d65b09a0181065f5532f0197291b24ea14"` in
+  `metadata/live_pin.json` (the `protocol-block` transition, #736; it was
+  `c69a361…` under `t0-first-record`) changed to forty zeros makes
   `test_the_real_manifest_is_valid_and_its_pin_is_on_main` fail with
-  `AssertionError: '0000...' != 'c69a361...'` (the old mutation that no test
+  `AssertionError: '0000...' != '492c53d...'` (the old mutation that no test
   caught). Re-pointing both `current` and the transition at a SHA that is not
   on main is the ancestry mutation above.
 """
@@ -62,7 +63,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 WORKFLOW = ROOT / ".github" / "workflows" / "live-log.yml"
-PIN_SHA = "c69a361965fd601a4e69fdbc92643d669dba8e9e"
+PIN_SHA = "492c53d65b09a0181065f5532f0197291b24ea14"
 
 
 def _load(name):
