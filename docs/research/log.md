@@ -415,7 +415,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
 
-### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#775
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
 - Directive: #740
 - Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
 - Tier: development
