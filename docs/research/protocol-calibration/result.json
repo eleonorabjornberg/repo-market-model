@@ -1,4 +1,16 @@
 {
+ "comparison_critical_values": {
+  "B2-B1": {
+   "125": 3.419438620805254,
+   "250": 2.425730476113518,
+   "60": null
+  },
+  "B3-B1 (five levels)": {
+   "125": 9.50052772574656,
+   "250": 5.454950300123988,
+   "60": null
+  }
+ },
  "critical_values": {
   "B1-B2 (reversed, diagnostic)": {
    "125": 2.5476176053580666,
@@ -21,18 +33,44 @@
    "60": 25.4109459061036
   }
  },
+ "earlier_rulings": [
+  "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627"
+ ],
+ "futility_critical_values": {
+  "B2-B1": {
+   "125": 1.564595026945276,
+   "250": 1.446264200252977,
+   "60": 1.9297931884419124
+  }
+ },
+ "futility_level": 0.05,
+ "futility_windows": 20000,
+ "largest_across_pairs_superseded": {
+  "125": 9.50052772574656,
+  "250": 5.454950300123988,
+  "60": null
+ },
  "nominal_levels": {
   "125": 0.005552272301342587,
   "250": 0.0482414793805519,
   "60": 6.313944260094573e-05
  },
- "note": "protocol value: the largest across all four orientations; look 1 is left uncalibrated (Q-B)",
- "protocol_critical_values": {
-  "125": 9.50052772574656,
-  "250": 5.454950300123988,
-  "60": null
+ "note": "each comparison is read at its own value (Q-E (b)); look 1 checks futility only (Q-B); futility is one-sided at 0.05 at every look, non-binding (Q-C). The largest value across pairs, which PR #695 used, is kept for the record and superseded. Null rates: #699's rule (bench B1, candidate whose difference is the centred B1 - other difference) on the comparison's full development history, detections at looks 2 and 3, by checkpoint.",
+ "null_false_detection_full_history": {
+  "B2-B1": {
+   "125": 0.0025,
+   "250": 0.0085,
+   "paths": 2000,
+   "series_days": 2037
+  },
+  "B3-B1 (five levels)": {
+   "125": 0.0,
+   "250": 0.0,
+   "paths": 2000,
+   "series_days": 1869
+  }
  },
- "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627",
+ "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6159852603",
  "seed": 1,
  "series_days": {
   "B1-B2 (reversed, diagnostic)": 2037,
