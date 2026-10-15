@@ -160,3 +160,11 @@ could be read.
 It registers nothing and gives no verdict for any hypothesis. It does not simulate the B2 half or futility stopping.
 It reads no day after 2025-12-31 and compares nothing on a locked day (`docs/decisions/lockbox.md`). Every figure is
 development data, so none is a statement about 2026.
+
+## 9. Post-hoc addendum (written after the figures of a first full run were seen)
+
+The first full run showed that family (c) detects nothing, on any window, at any skill on the full history. The rule
+above is unchanged, and so is every figure it produces. One description is added so that the page can say why:
+for each pair and each of its two readings (five-lead mean and lead 1), over the pair's whole series, the scale `C`
+of the e-process, the mean and standard deviation of `d`, the ratio of the mean to `C`, and the day on which the
+e-process first reaches `1 / alpha` when run from the first day (or "never"). It is a description, not a test.
