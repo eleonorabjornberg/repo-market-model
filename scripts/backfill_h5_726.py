@@ -62,7 +62,7 @@ ESTABLISHED = (
 )
 LOW90, HIGH90 = sp.GRID.index(0.05), sp.GRID.index(0.95)
 LOW50, HIGH50 = sp.GRID.index(0.25), sp.GRID.index(0.75)
-CRITICAL_250 = sp.CRITICAL_VALUES[250]
+CRITICAL_250 = sp.CRITICAL_VALUES[sp.GRID_COMPARISON][250]
 
 
 def _load(name: str):
@@ -356,7 +356,7 @@ def markdown(document: dict) -> str:
         "# H4 step 3: the back-fill against H5's candidate (#726), development days\n",
         f"Decision days {document['decision_days'][0]} to {document['decision_days'][1]} ({document['decision_days'][2]}); "
         f"{document['dropped_decision_days']} dropped. d = CRPS(without) - CRPS(with), positive when the history helps.\n",
-        "| group | days | CRPS without | CRPS with | mean d | one-sided 95% lower | lower (c = 5.455) | 90% interval | skill vs B1 without | with |",
+        f"| group | days | CRPS without | CRPS with | mean d | one-sided 95% lower | lower (c = {CRITICAL_250:.3f}) | 90% interval | skill vs B1 without | with |",
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for name, e in document["groups"].items():
