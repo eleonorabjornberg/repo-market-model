@@ -79,3 +79,54 @@ class StatisticsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AnchorDayTypeReportTests(unittest.TestCase):
+    """#741: skill against B1 is reported by the anchor's day type, with the pooled figure beside it."""
+
+    def result(self):
+        def vs(skill):
+            row = {"days": 100, "skill": skill, "skill_interval": [skill - 0.01, skill + 0.01],
+                   "difference": 0.1, "difference_interval": [0.0, 0.2]}
+            return {"B1": row, "B2": row}
+
+        def cell(skill):
+            return {"means": {"B1": 2.0, "B2": 2.0, script.NAME: 1.5}, "vs": vs(skill)}
+
+        group = lambda days, skill: {"days": days, "grid_crps": cell(skill), "upper_tail_twcrps": cell(skill)}  # noqa: E731
+        return {
+            "label": "development, not a verdict", "declaration": "d.json", "panel_sha256": "0" * 64, "draws": 10, "seed": 686,
+            "notes": {"scored_decision_days": 1000, "first": "2018-06-29", "last": "2025-12-24", "last_target": "2025-12-31",
+                      "candidate_skipped_for_history": 0, "benchmark_missing": [], "refits": 3},
+            "primary": {"grid_crps": {"means": cell(0.2)["means"], "vs": vs(0.2), "by_lead": {}},
+                        "upper_tail_twcrps": {"means": cell(0.2)["means"], "vs": vs(0.2), "by_lead": {}}},
+            "splits": {"regime": {}, "regime_three": {}, "day_type": {},
+                       "anchor_day_type": {"ordinary": group(800, 0.01), "quarter_end": group(30, 0.4),
+                                           "tax_date": {"days": 5, "note": "fewer than 20 days; not tested"}}},
+            "tail": {"tau_bp": 5, "reading": "r", "by_regime": {"ordinary": {}, "all": {}}, "brier_vs": {"ordinary": {}, "all": {}}},
+            "published": {"levels": [], "days": 1, "days_without_five_published_leads": 0,
+                          "means": {"published": 1.0, script.NAME: 1.0, "B1": 1.0, "B2": 1.0},
+                          "candidate_vs": {k: vs(0.0)["B1"] for k in ("published", "B1", "B2")}, "by_lead": {}, "by_regime": {}, "by_day_type": {}},
+            "variant_b_632": {"variant": "v", "note": "n", "by_lead": {}},
+            "fit": {"refits": [{"fitted_on": "2020-01-02", "phi": 0.5, "pairs": {"1": 10}}]},
+        }
+
+    def test_the_report_has_the_pooled_row_beside_each_anchor_type(self):
+        text = script.render_report(self.result())
+        section = text.split("by the type of the anchor, on the decision day (#741)")[1].split("##")[0]
+        self.assertIn("| pooled | 1000 |", section)
+        self.assertIn("| quarter_end | 30 |", section)
+        self.assertIn("| ordinary | 800 |", section)
+        self.assertIn("fewer than 20 days; not tested", section)
+
+    def test_the_page_carries_the_same_split(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as folder:
+            score, out = Path(folder, "s.json"), Path(folder, "p.md")
+            score.write_text(json.dumps(self.result()), encoding="utf-8")
+            script.page(type("Args", (), {"score": str(score), "output": str(out)})())
+            page = out.read_text(encoding="utf-8")
+        self.assertIn("by the type of the anchor", page)
+        self.assertIn("| pooled | 1000 |", page)
+        self.assertIn("| quarter_end | 30 |", page)
