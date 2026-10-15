@@ -537,7 +537,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
-<<<<<<< HEAD
 ### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#777
 - Directive: #742
 - Step: 2 (milestone M2, guard updated: a per-series admitted list)
@@ -567,7 +566,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
 - Against kill: not applicable (no hypothesis test).
 - Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
-=======
+
 ### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#732
 - Directive: #732
 - Step: 5 (the running variant count that every registration publishes, §2 of the protocol)
@@ -577,4 +576,4 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the count moves from 2 declarations and 4 variants (the files named `spread_distribution_*`) to 19 declarations and 55 variants. `near_threshold_688.json`, the case that found the gap, is now seen (3 variants, under `model`). The 55 include the pre-pivot +5 bp classification variants as well as spread-forecast ones, because the ruling counts by content.
 - Against kill: not applicable (no verdict; a count, not a score).
 - Next: Eleonora's call on converting the exempt declarations to carry `hypothesis`, and on whether the page should show the count by hypothesis.
->>>>>>> origin/main
+
