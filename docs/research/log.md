@@ -618,3 +618,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: only B3 against B1 is a known-better pair (skill 21.8%); B2 scores worse than B1. At that gain the current test flags 66% to 73% of windows but flags 26% to 33% of sign-flipped B3 windows, so its size on a symmetric null is far above 5%; the fixed-b test flags 27% to 34% of the real windows and 4% to 10% of the sign-flipped. Synthetic gated power at a 3% gain, 250 days: 10% (current), 8% (matched null), 3% (fixed-b), 0% (e-process, whose bounded bets never grow on these scores). No family reaches 80% power at any gain up to 50% in 250 days; the current test does at 50% in 500 days. By normal-theory arithmetic the daily signal-to-noise of B3's 22% gain needs about 1,300 days. The rule's pick (the e-process on lead 1) holds the size limit with 0% power.
 - Against kill: not applicable (H1 is a validity check; development).
 - Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
+
+### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#821
+- Directive: #806
+- Step: 5 (goal G3, prospective logging; the follow-up to #740's cut-off)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `06801bb`
+- Tried: reading a record back now checks its stored `written_at` against the record's own decision day (`validate_record` passes `decision_day`); `live_integrity.committed_times` derives each logged day's commit time from the live-log branch's git history, the `committed_at` that `filled_candidate` needs; `run_command` refuses to start from 23:59 ET, the minute the block already refuses. Variants: n/a (guards, no model).
+- Result: a block regenerated or committed after its decision day now fails on read-back; commit times exist for the fill step. Two recorded mutations kill the two guards. No rule changes, nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); the fill step reads `committed_times` when a candidate is registered.
