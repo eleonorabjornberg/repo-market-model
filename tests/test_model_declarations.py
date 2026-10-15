@@ -44,6 +44,7 @@ LEGACY = {
     "pressure_hazard.json",
     "pressure_tail.json",
     "projected_reserves.json",
+    "richer_targets_706.json",
     "risk_date_every_day.json",
     "risk_date_hurdle.json",
     "satiation_distance_598.json",
