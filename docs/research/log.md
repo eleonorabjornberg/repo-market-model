@@ -618,3 +618,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: only B3 against B1 is a known-better pair (skill 21.8%); B2 scores worse than B1. At that gain the current test flags 66% to 73% of windows but flags 26% to 33% of sign-flipped B3 windows, so its size on a symmetric null is far above 5%; the fixed-b test flags 27% to 34% of the real windows and 4% to 10% of the sign-flipped. Synthetic gated power at a 3% gain, 250 days: 10% (current), 8% (matched null), 3% (fixed-b), 0% (e-process, whose bounded bets never grow on these scores). No family reaches 80% power at any gain up to 50% in 250 days; the current test does at 50% in 500 days. By normal-theory arithmetic the daily signal-to-noise of B3's 22% gain needs about 1,300 days. The rule's pick (the e-process on lead 1) holds the size limit with 0% power.
 - Against kill: not applicable (H1 is a validity check; development).
 - Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
+
+### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#820
+- Directive: #805
+- Step: 3 (the splits the headline pages of #634 and #707 lacked: by the anchor's day type, without decision day 2019-09-18, and the upper-tail Brier claims by regime and pressure-day type; no new model)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `06801bbd`; script `scripts/h5_splits_805.py`
+- Tried: #634's 25 walks re-run on the rebuilt panels and scored with the protocol's scorer, all pooled figures reproduced exactly; then cut by anchor day type, without 2019-09-18 (real walk scores that day), by regime and target-day type for the Brier claims, and c at 125 and 250 days with and without the day. Variants: 0 new (re-score of the existing nine and #707's six transforms).
+- Result: grid CRPS skill against B1, pooled → ordinary-anchor days → without 2019-09-18: gbm +20.7% [+13.3%, +40.0%] → +9.0% [+4.6%, +14.9%] → +14.9% [+10.3%, +21.3%]; (c) +20.3% [+11.0%, +38.0%] → +9.0% [+2.9%, +15.8%] → +14.5% [+7.7%, +22.2%]. The gain concentrates on days after a calendar spike. (c)'s Brier gain at +5 bp holds pooled (+19.0% [+13.7%, +23.7%] against persistence-logistic) and in 2018-19 and 2025-26, not in 2020; 2021-23 has no events. Detail in `docs/pivot/h5-splits-805-result.md`.
+- Against kill: not applicable (no verdict; development data). H5's kill, no CRPS gain over phase 2 and no ordinary-day ranking gain, is not assessed here; the ordinary-anchor gain is resolved and about +9%.
+- Next: #741 (does avoiding calendar spikes alone reach the pooled figure); the critical value and the MME are Eleonora's.
