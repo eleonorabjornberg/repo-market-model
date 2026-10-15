@@ -14,10 +14,6 @@ under the previous rule was re-scored or archived.
 > `metadata/sources.json` is frozen by the final-test pre-registration (bytes), so turning either on is a
 > later pull request, with the re-pin that needs, made after her ruling on it.
 >
-> **Proposed in #430, for Eleonora to review:** the amendment at the end of this record, which
-> records her ruling of 8 October 2026 (#374) on the New York Fed's back-filled repo-rate history.
-> It was drafted by the pull request that closes #430. A decision is in force only once she merges it.
-
 > **Proposed in #586, for Eleonora to review:** the amendment at the end of this record, which records her
 > ruling of 11 October 2026 on #571 (relayed by the orchestrating session): the reserve-scarcity state reads each
 > of its legs at its own latest public row. It was drafted by the pull request that closes #586 and is **not in
@@ -84,9 +80,10 @@ when the feature set was fixed; re-scoring them belongs with next-version resear
 
 ## Amendment: back-filled repo-rate history is training history only (#374, #430)
 
-**Proposed, for Eleonora to review. Not in force until the workbook's first posting date is established.** The
-snapshot and the guard are merged; this amendment takes effect only once she has established when the Bank
-first posted the workbook, and no back-filled value is used as training history before then. Eleonora ruled on 8 October 2026 (#374) that the New York Fed's
+The snapshot and the guard are merged. **Posting instant established: 2018-05-17** (the start of that day, New York
+time) for TGCR, BGCR and SOFR, by her ruling of 13 October 2026 on PR #661 (#633); the source is
+`metadata/backfill_posting.json`. The amendment is in force from the merge of the pull request that closes #734.
+Eleonora ruled on 8 October 2026 (#374) that the New York Fed's
 back-filled history of SOFR, TGCR and BGCR may be used as training history. The Bank's reference-rate
 API begins on 2018-04-02. For the months before it, the Bank published a workbook of indicative values
 of the same three rates and their volumes, computed after the fact on the same method, from 2014-08-22
