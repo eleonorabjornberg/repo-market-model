@@ -577,7 +577,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: none for this item.
 
-### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#814
+### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#817
 - Directive: #801
 - Step: 3 (calibration diagnosis of the kinked and #624 rows; per-regime reliability slopes, #683)
 - Tier: development
