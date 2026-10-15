@@ -477,7 +477,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
-### 2026-10-15 [H1] step 1 · eleonorabjornberg/repo-market-model#789
+### 2026-10-15 [H1] step 1 · eleonorabjornberg/repo-market-model#791
 - Directive: #769
 - Step: 1 (the power study re-run on the test in force after ruling 5)
 - Tier: development
