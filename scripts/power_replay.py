@@ -745,7 +745,7 @@ QUESTIONS = [
     "largest difference in history) its bets are too small to cross in the whole history; a different construction is a "
     "different test, and one more step.",
     "4. **The only known-better pair is B3 on development days.** The replay's power is for a gain of 22%, not 3%. Pairs "
-    "with a known gain near the MME are among the pairs declared.", ""
+    "with a known gain near the MME do not exist in the data held.", ""
 ]
 
 

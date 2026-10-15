@@ -170,6 +170,12 @@ class RuleAgreementTests(unittest.TestCase):
         self.assertEqual(result["rule_sha256"], pr.sha256(RULE))
         self.assertLessEqual(result["pool"]["last"], pr.STUDY_END.isoformat())
 
+    def test_the_committed_page_is_what_the_script_renders(self):
+        if not RESULT.exists():
+            self.skipTest("no result committed yet")
+        result = json.loads(RESULT.read_text(encoding="utf-8"))
+        self.assertEqual(pr.render_page(result), pr.PAGE.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
