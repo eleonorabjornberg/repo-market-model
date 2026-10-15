@@ -6,7 +6,7 @@ What is covered:
 * `DeclarationTests` -- `metadata/derived_features_631.json` is committed, lists exactly the columns the script builds, the four
   interactions, the model test's rows and inputs, and the candidate files agree with it; nothing is on the confirmation roster.
 * `ReadTests` -- a derived column is read through the as-of rule at the row where its source fields are public, and a locked day is refused.
-* `RunTests` -- `run` refuses a panel past 2025-12-31.
+* `RunTests` -- `run` refuses a panel past 2026-09-03 (#684).
 
 **Recorded mutations** (disposable copy of the tree, `/opt/rmm-venv`, `PYTHONDONTWRITEBYTECODE=1`, the killing test run alone, each
 confirmed applied by `grep` and restored before the next; the readers' own guards are recorded in `tests/test_derived_features.py`):
@@ -122,9 +122,10 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(set(self.declared["interactions"]), set(script.INTERACTIONS))
         self.assertEqual(set(script.INTERACTIONS), {"tail_x_scarcity", "tgachg_x_satdist", "settle_x_scarcity", "netsettle_x_scarcity", "tail_x_reservetrend"})
 
-    def test_it_declares_the_leads_the_directive_asks_for_and_no_day_after_2025(self):
+    def test_it_declares_the_leads_the_directive_asks_for_and_no_day_after_the_exploratory_end(self):
         self.assertEqual(self.declared["leads"], [1, 2, 3, 5, 10])
-        self.assertEqual(self.declared["scope"]["last_day"], "2025-12-31")
+        # the screen reads to the exploratory end (#684); the model test scores through the judge, which ends 2025-12-31
+        self.assertEqual(self.declared["scope"]["last_day"], "2026-09-03")
         self.assertEqual(self.declared["model_test"]["scoring"]["last_day"], "2025-12-31")
 
     def test_the_model_test_is_one_comparison_and_the_candidates_agree_with_it(self):
@@ -179,7 +180,8 @@ class RunTests(unittest.TestCase):
         return path
 
     def test_a_panel_past_the_last_day_is_refused(self):
-        rows = synthetic_rows(date(2025, 8, 1), 140)
+        rows = synthetic_rows(date(2026, 6, 1), 140)  # runs past 2026-09-03 (#684)
+        self.assertGreater(rows[-1].date, date(2026, 9, 3))
         with tempfile.TemporaryDirectory() as directory:
             panel = self.write_panel(directory, rows)
             with self.assertRaises(SystemExit):
@@ -191,6 +193,42 @@ class RunTests(unittest.TestCase):
             with mock.patch.object(script, "_committed", lambda: {**json.loads(DECLARATION.read_text()), "scope": {"last_day": "2026-12-31"}}):
                 with self.assertRaises(LookAheadError):
                     script.main(["panel", "--panel", str(panel), "--output", str(Path(directory) / "out.csv")])
+
+
+class ExploratoryEndTests(unittest.TestCase):
+    """`model` and `ordinary` take `--end` through the guard (#684), and the model report is made without the judge's tables.
+
+    The source-text test for `--end` (`tests/test_exploration.py`, `ScoringCommandEndTests`) was written first and watched fail; these two were
+    written after the code, and the first was watched to fail only under the mutation below.
+    Recorded mutation: in `ordinary_command`, the line `last = panel_end(args.end, ...)` -> `last = date.fromisoformat(args.end or MODEL_TEST_LAST_DAY)`,
+    so an end in the blind tier is accepted: `test_an_end_in_the_blind_tier_is_refused` errors with `FileNotFoundError` (no `LookAheadError` is
+    raised; the run goes on to read the missing panel).
+    """
+
+    def test_an_end_in_the_blind_tier_is_refused(self):
+        for command in ("ordinary", "model"):
+            with self.subTest(command=command):
+                argv = [command, "--panel", "missing.csv", "--end", "2026-09-04", "--output", "out.json"]
+                if command == "model":
+                    argv += ["--published", "missing.csv", "--horizon", "1"]
+                else:
+                    argv += ["x.json"]
+                with self.assertRaises(LookAheadError):
+                    script.main(argv)
+
+    def test_the_model_report_is_made_without_the_judge(self):
+        row = {"days": 10, "pressure_days": 2, "mean_forecast": 0.1, "realised": 0.2, "constant": False, "auroc": 0.8,
+               "interval": [0.7, 0.9], "calibration": None}
+        names = [script.CONTROL.rsplit("+dist_roll", 1)[0], script.CONTROL, script.PARENT, script.TEST]
+        ordinary = {"rows": {n: {"1": row} for n in names}, "paired": {"1": {"auroc_difference": -0.01, "interval": [-0.05, 0.03]}}}
+        with tempfile.TemporaryDirectory() as directory:
+            source, target = Path(directory) / "ordinary.json", Path(directory) / "model.md"
+            source.write_text(json.dumps(ordinary), encoding="utf-8")
+            script.main(["model-report", "--ordinary", str(source), "--output", str(target)])
+            text = target.read_text(encoding="utf-8")
+        self.assertIn("Table M1 is not made", text)
+        self.assertIn("Table M2", text)
+        self.assertIn("Table M3", text)
 
 
 if __name__ == "__main__":

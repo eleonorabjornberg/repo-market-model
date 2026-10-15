@@ -1,0 +1,345 @@
+[
+ {
+  "name": "tail_x_scarcity",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.9346492879101574,
+  "dev": 0.43464928791015744,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": "spread_bps",
+  "regimes_tested": 2,
+  "also_in_cluster": [
+   "days_since_pressure",
+   "spread_lag1",
+   "spread_lag5",
+   "spread_lag2"
+  ],
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "spread_rv20",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.889414329631721,
+  "dev": 0.38941432963172096,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "spread_rv5",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.846904605056779,
+  "dev": 0.346904605056779,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "sofr_p99_max_dist_60",
+  "direction": 1,
+  "best_lead": 3,
+  "auroc": 0.8209266578831796,
+  "dev": 0.32092665788317964,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": "sofr_p75_z_60",
+  "regimes_tested": 2,
+  "also_in_cluster": [
+   "sofr_p75_max_dist_60",
+   "sofr_p99_max_dist_20",
+   "tgcr_max_dist_20",
+   "bgcr_max_dist_20",
+   "sofr_p25_max_dist_20",
+   "sofr_p75_max_dist_20",
+   "sofr_p75_z_60",
+   "tgcr_z_60",
+   "bgcr_z_60",
+   "tgcr_max_dist_60",
+   "bgcr_max_dist_60",
+   "sofr_max_dist_60",
+   "sofr_p25_max_dist_60",
+   "sofr_max_dist_20",
+   "sofr_p1_max_dist_20",
+   "sofr_p1_max_dist_60",
+   "sofr_p25_z_60",
+   "sofr_z_60",
+   "sofr_p1_z_60",
+   "ofr_tri_rate_max_dist_60",
+   "ofr_tri_rate_max_dist_20",
+   "ofr_tri_rate_z_60"
+  ],
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "pressure_lag1",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.7547289666854884,
+  "dev": 0.2547289666854884,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "effr_max_dist_60",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.7439417466591379,
+  "dev": 0.24394174665913793,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "pressure_lag2",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.7269668737060041,
+  "dev": 0.2269668737060041,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "effr_max_dist_20",
+  "direction": 1,
+  "best_lead": 2,
+  "auroc": 0.7057218144174666,
+  "dev": 0.20572181441746662,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "settle_x_scarcity",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.670701581027668,
+  "dev": 0.17070158102766797,
+  "leads_excluding": 4,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": true,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 4,
+  "noise_risk": "low"
+ },
+ {
+  "name": "pressure_last",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.7891022021456804,
+  "dev": 0.2891022021456804,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 3,
+  "noise_risk": "medium"
+ },
+ {
+  "name": "above_median_run",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.7862828596524248,
+  "dev": 0.28628285965242484,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 3,
+  "noise_risk": "medium"
+ },
+ {
+  "name": "pressure_lag5",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.699510634293243,
+  "dev": 0.199510634293243,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 3,
+  "noise_risk": "medium"
+ },
+ {
+  "name": "bgcr_min_dist_20",
+  "direction": 1,
+  "best_lead": 10,
+  "auroc": 0.6936719681284899,
+  "dev": 0.19367196812848986,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": "tgcr_min_dist_20",
+  "regimes_tested": 2,
+  "also_in_cluster": [
+   "tgcr_min_dist_20",
+   "sofr_p25_min_dist_20",
+   "sofr_min_dist_20",
+   "sofr_p99_min_dist_20",
+   "sofr_p75_min_dist_20"
+  ],
+  "passed": 3,
+  "noise_risk": "medium"
+ },
+ {
+  "name": "effr_min_dist_20",
+  "direction": 1,
+  "best_lead": 1,
+  "auroc": 0.6805869251521426,
+  "dev": 0.18058692515214259,
+  "leads_excluding": 5,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 3,
+  "noise_risk": "medium"
+ },
+ {
+  "name": "sofr_p1_min_dist_20",
+  "direction": 1,
+  "best_lead": 10,
+  "auroc": 0.6479390175042349,
+  "dev": 0.14793901750423488,
+  "leads_excluding": 4,
+  "checks": {
+   "three_leads": true,
+   "regimes_agree": true,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 3,
+  "noise_risk": "medium"
+ },
+ {
+  "name": "netsettle_x_scarcity",
+  "direction": 1,
+  "best_lead": 2,
+  "auroc": 0.6067899491812535,
+  "dev": 0.10678994918125351,
+  "leads_excluding": 2,
+  "checks": {
+   "three_leads": false,
+   "regimes_agree": true,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 2,
+  "passed": 2,
+  "noise_risk": "medium"
+ },
+ {
+  "name": "ofr_tri_rate_min_dist_20",
+  "direction": 1,
+  "best_lead": 5,
+  "auroc": 0.6846110351976629,
+  "dev": 0.18461103519766286,
+  "leads_excluding": 2,
+  "checks": {
+   "three_leads": false,
+   "regimes_agree": false,
+   "pre_onset": false,
+   "not_redundant": true
+  },
+  "cluster": null,
+  "regimes_tested": 1,
+  "passed": 1,
+  "noise_risk": "high"
+ }
+]

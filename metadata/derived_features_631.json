@@ -1,14 +1,14 @@
 {
-  "status": "declared by the pull request that closes #631 before any number was computed; an exploratory screen and one model test, not a result. Nothing is selected into a model or published: no rule, threshold, onset definition or availability time changes, the published declaration, the live record and the pin do not move. The screen reads 2018-2025 and the model test is one declared comparison under the judge in force, so a pass is not a confirmation (ruling on #567)",
+  "status": "declared by the pull request that closes #631 before any number was computed; an exploratory screen and one model test, not a result. Nothing is selected into a model or published: no rule, threshold, onset definition or availability time changes, the published declaration, the live record and the pin do not move. The screen reads 2018 to 2026-09-03 (the 2026 days are development days, #684) and the model test is one declared comparison under the judge in force, so a pass is not a confirmation (ruling on #567)",
   "issue": 631,
   "companions": "#629 (the sources we already hold, screened the same way); #601, PR #609 (the tail spread, the every-day part); #606; #616",
   "scope": {
     "first_day": "2018-06-29",
-    "last_day": "2025-12-31",
+    "last_day": "2026-09-03",
     "days": "the lead-1 fold grid of source_screen.py (asof.fold_grid at horizon 1, minimum history 61), restricted to ORDINARY days",
     "ordinary_day": "a scored day for which announcement_dating_rescore.risk_flag(splits, values, True) is false: its pressure-day type is ordinary (not a quarter-end window, month-end window or tax date) and it settles no coupon. A function of the calendar and the auction schedule, known in advance, not of any outcome",
     "no_hindsight_regime_labels": "regimes are metadata/evaluation_splits.json's date ranges; the scarcity state is read as of each decision instant (ruling on #515)",
-    "locked_days": "none read: require_unlocked on the last scored day; the panel is cut at 2025-12-31"
+    "locked_days": "none read: require_unlocked on the last scored day; the panel is cut at 2026-09-03"
   },
   "reading": {
     "rule": "every series is read through asof.InformationRule at the decision instant 16:00, at a lead of L panel days (horizon L), L in LEADS, per field, with both guards",
@@ -190,7 +190,7 @@
   },
   "ranked_leads": {
     "rule": "a series is a candidate lead if its pooled AUROC interval excludes 0.5 at two or more leads. It is ranked by the number of the following checks it passes, then by its largest |AUROC - 0.5|: (1) the pooled AUROC interval excludes 0.5 at three or more leads; (2) its direction is the same in every regime that holds 5 pressure days and has a point estimate; (3) its pre-onset AUC interval excludes 0.5 in the same direction at lead 1; (4) it is not in a cluster with a member that passes more checks (a cluster is listed once, by its representative-or-best). The noise risk is 'low' if 4 checks pass, 'medium' if 3 or 2, 'high' otherwise; the reason column says which checks pass and fail",
-    "note": "a list for the next declared model test, selected on 2018-2025: nothing in it is selected into a model"
+    "note": "a list for the next declared model test, selected on 2018 to 2026-09-03: nothing in it is selected into a model"
   },
   "model_test": {
     "question": "does lagged pressure added to the every-day part of risk_gbm+settle+h41+dist_roll improve its forecast of pressure days that are not risk dates?",
