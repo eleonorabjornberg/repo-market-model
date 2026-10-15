@@ -2,9 +2,8 @@
 
 Recorded mutation (the one leakage guard this script adds; the scorer's own lockbox guard is tested with the scorer):
 
-* `require_study_window`, the condition `day > LAST_TARGET` changed to `day > LAST_TARGET + timedelta(days=400)`:
-  `StudyWindowTests.test_a_day_after_the_study_end_is_refused` fails with `AssertionError` (`LookAheadError not raised`,
-  for 2026-01-02).
+* `require_study_window`, the line `if late:` changed to `if False:`:
+  `StudyWindowTests.test_a_day_after_the_study_end_is_refused` fails with `AssertionError` (`LookAheadError not raised`).
 """
 
 from __future__ import annotations
