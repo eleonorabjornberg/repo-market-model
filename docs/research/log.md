@@ -618,3 +618,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: only B3 against B1 is a known-better pair (skill 21.8%); B2 scores worse than B1. At that gain the current test flags 66% to 73% of windows but flags 26% to 33% of sign-flipped B3 windows, so its size on a symmetric null is far above 5%; the fixed-b test flags 27% to 34% of the real windows and 4% to 10% of the sign-flipped. Synthetic gated power at a 3% gain, 250 days: 10% (current), 8% (matched null), 3% (fixed-b), 0% (e-process, whose bounded bets never grow on these scores). No family reaches 80% power at any gain up to 50% in 250 days; the current test does at 50% in 500 days. By normal-theory arithmetic the daily signal-to-noise of B3's 22% gain needs about 1,300 days. The rule's pick (the e-process on lead 1) holds the size limit with 0% power.
 - Against kill: not applicable (H1 is a validity check; development).
 - Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#820
+- Directive: #804 (re-score of #688/#731 on the studentized interval of ruling 1)
+- Step: 2 (the same two inputs and control; no new variant)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `8474e69`; walks refitted from the declared `metadata/near_threshold_688.json`, screen byte-identical to the earlier record
+- Tried: no new forecast variant. #731's score used the percentile bootstrap that ruling 1 replaced; the 15 walks were refitted and scored with the scorer's studentized bounds at both ends, and a pair the scorer cannot studentize now carries no interval instead of stopping the run. Variants: 0 new (2 re-scored).
+- Result: grid CRPS against the control, the window flag +1.03% [+0.44%, +1.64%] (was [+0.50%, +1.61%]), still above zero at h = 3 to 5 (+1.30% [+0.39%, +2.18%], +1.74% [+0.80%, +2.65%], +1.69% [+0.88%, +2.53%]); bill settlement −0.10% [−0.54%, +0.28%] (was [−0.49%, +0.28%]). One cell crosses zero: the window's pinball loss at 0.05, +1.09% [−0.03%, +2.23%]. Against B1 the control is +19.26% [+10.55%, +39.09%] (was [+8.36%, +28.35%]). Quarter-end days: identical forecasts; tax-date days: no interval. Point values unchanged. Detail in `docs/pivot/near-threshold-688-result.md`, section "Re-score on the ruled interval (#804)".
+- Against kill: not applicable (development days give no verdict).
+- Next: none for this item; the window flag's place in #634's model stays an H5 step 2 question for Eleonora.
