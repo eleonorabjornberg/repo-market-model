@@ -5,7 +5,9 @@ One entry per scored experiment, newest last. The plan is [`plan.md`](plan.md); 
 CI. The same format serves both repositories (`repo-market-liquidity` results arrive as a fenced `research-log`
 block copied verbatim from that repository's pull request body).
 
-Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time).
+Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
+hypothesis manual, kept apart from the six steps) has its own heading,
+`### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR`; an item that covers two pieces of groundwork has one entry each.
 Lines: Directive, Step, Tier (`development` or `confirmation`), Pins, Tried, Result, Against kill, Next.
 
 **Backfill, 12 October 2026.** The entries from 10 to 12 October were written after the fact from the pull request
@@ -454,3 +456,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
+
+### 2026-10-13 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#699
+- Directive: #656
+- Step: groundwork G3 (prospective logging)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: record version 3 with a protocol block (B1, B2, B3 note, candidates, H7m hook). Variants: n/a.
+- Result: no figure; the prospective log carries the protocol block (copied from the fenced block of PR #699, which the log could not hold until #701).
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+### 2026-10-13 [H5] groundwork G4 · eleonorabjornberg/repo-market-model#699
+- Directive: #656
+- Step: groundwork G4 (power study)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: a power study of the 3% MME under the protocol's test and spending. Variants: n/a.
+- Result: 3% is not detected within 250 days (power 0.16 at 125, 0.29 at 250 against a 0.80 target); look 1 (60 days) cannot be read with 10,000 draws; post-hoc, the test fires on 21.75% of paths with no true difference by 250 days.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
