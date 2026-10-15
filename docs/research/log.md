@@ -445,7 +445,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
 
-### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#PR
+### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#784
 - Directive: #741
 - Step: 3 (are the benchmarks right: does a forecaster that only declines to copy a calendar spike beat B1 by the MME; finding #741)
 - Tier: development
