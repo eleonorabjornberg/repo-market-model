@@ -1,0 +1,1316 @@
+{
+ "reading": "Pooled slopes mislead here (#670): a regime with no pressure day (2021-23) forecasts near 0 and adds a long, well-ordered stretch at the bottom of the curve, which raises the pooled slope. Read calibration within a regime. A cell with no pressure day has no slope. Figures here are development, not a verdict.",
+ "rows": {
+  "risk_gbm+every_day+gate+settle+h41+iorb": {
+   "1": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.48734181001335725
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.2357314968045665
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.4028020040661479
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": -0.39361140054828714
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.2012610207537204
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.5661426381723406
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.281971401696461
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.29303406617025135
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 1,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 1,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": 0.7493005915371008
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.12016800005021006
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.44545966278304927
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.10232626495388457
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.29516142869561834
+    },
+    "scarcity state 0": {
+     "days": 820,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": 1.6515439853367946
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.04726436374745808
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1468,
+     "pressure_days": 82,
+     "slope": 0.6482397653229357
+    },
+    "regime 2018-19": {
+     "days": 293,
+     "pressure_days": 62,
+     "slope": 0.3845372544500088
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.2584798376844704
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 31,
+     "pressure_days": 7,
+     "slope": 1.201326280251059
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.14730784289272356
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1467,
+     "pressure_days": 82,
+     "slope": 0.5587074118252724
+    },
+    "regime 2018-19": {
+     "days": 292,
+     "pressure_days": 62,
+     "slope": 0.07769308555829234
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.4221504478673098
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 8,
+     "slope": 1.3747023029702923
+    },
+    "scarcity state 3": {
+     "days": 373,
+     "pressure_days": 72,
+     "slope": -0.004583368771538703
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+   "1": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 2.0347027280201657
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 1.3888427793718692
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": null
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 1.3889653662184023
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 2.658815593571983
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 2.3053986291571293
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": null
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 1,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 1,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 2.3053986291571293
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 3.185598932810583
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 2.314475816172332
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": null
+    },
+    "scarcity state 0": {
+     "days": 820,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 2.314475816172332
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1468,
+     "pressure_days": 82,
+     "slope": 1.823858316428265
+    },
+    "regime 2018-19": {
+     "days": 293,
+     "pressure_days": 62,
+     "slope": 0.1851506590708213
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": null
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 31,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.1851506590708213
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1467,
+     "pressure_days": 82,
+     "slope": 2.3964020427418786
+    },
+    "regime 2018-19": {
+     "days": 292,
+     "pressure_days": 62,
+     "slope": 1.5812120379803187
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": null
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": null
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 8,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 373,
+     "pressure_days": 72,
+     "slope": 1.5812120379803187
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor": {
+   "1": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.46468450080839374
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.11977974312944885
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.204475582243038
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -99.3475384088782
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": -11.272834584375266
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": -10.329988271247714
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": -2.516530932168052
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.07322017428095548
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.38476333315011546
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": -0.007762453189194426
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.9168033902380115
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -110.63622660837703
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": -19.700933735226656
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 1,
+     "slope": -8.780809895830792
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 1,
+     "slope": -4.086117205008331
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": -3.0987434145668638
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": -0.1711769209446769
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.2731589134612326
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": -0.05058212537722576
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.655950044037046
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -126.85106674060256
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": -31.22149324342472
+    },
+    "scarcity state 0": {
+     "days": 820,
+     "pressure_days": 2,
+     "slope": -10.28863212300556
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": -4.851148335907336
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": -0.21255981802229232
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1468,
+     "pressure_days": 82,
+     "slope": 0.39773586771081687
+    },
+    "regime 2018-19": {
+     "days": 293,
+     "pressure_days": 62,
+     "slope": 0.054651910628171596
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.391512002496383
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -158.25865992049071
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": -34.33511285372517
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": -10.353189957336806
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 31,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": -0.13165445802725012
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1467,
+     "pressure_days": 82,
+     "slope": 0.45593552809070076
+    },
+    "regime 2018-19": {
+     "days": 292,
+     "pressure_days": 62,
+     "slope": 0.12106723953417176
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 7.088315814338007
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -99.80206897837543
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": -34.41543307283816
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": -9.421873129666368
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 8,
+     "slope": -5.1970196496830505
+    },
+    "scarcity state 3": {
+     "days": 373,
+     "pressure_days": 72,
+     "slope": -0.06581560056274942
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor": {
+   "1": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.5714739222663427
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.1319797428402778
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 0.4137283367546125
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.8864386737490755
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.1835697939084711
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.5492699940758922
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.07735309842222644
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": -0.6879324854008559
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.8137353272177803
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 1,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 1,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.0667312339856811
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.5261328423236095
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.07269713573736089
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": -0.6950312396890956
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.7246750596168401
+    },
+    "scarcity state 0": {
+     "days": 820,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.03915276568194942
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1468,
+     "pressure_days": 82,
+     "slope": 0.5788771607538398
+    },
+    "regime 2018-19": {
+     "days": 293,
+     "pressure_days": 62,
+     "slope": 0.12882592098416323
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": -0.7019388383035312
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.7291379372762912
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 31,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.07736501900828996
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1467,
+     "pressure_days": 82,
+     "slope": 0.5947671155864437
+    },
+    "regime 2018-19": {
+     "days": 292,
+     "pressure_days": 62,
+     "slope": 0.15038582046321292
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 0.06322558059267339
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 0.7028495858082903
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": null
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 8,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 373,
+     "pressure_days": 72,
+     "slope": 0.13410397221626907
+    }
+   }
+  },
+  "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor": {
+   "1": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.7251599910436529
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": 0.11977974312944885
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.204475582243038
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -99.3475384088782
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 1.3590846000198367
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": -10.329988271247714
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": -2.516530932168052
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": 0.09017316073925466
+    }
+   },
+   "2": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.7342075996764815
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": -0.007762453189194426
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.9168033902380115
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -110.63622660837703
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 1.3522563472862295
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 1,
+     "slope": -8.780809895830792
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 1,
+     "slope": -4.086117205008331
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": -3.0987434145668638
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": -0.16158895364965056
+    }
+   },
+   "3": {
+    "all": {
+     "days": 1469,
+     "pressure_days": 82,
+     "slope": 0.6273499640782197
+    },
+    "regime 2018-19": {
+     "days": 294,
+     "pressure_days": 62,
+     "slope": -0.05058212537722576
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.655950044037046
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -126.85106674060256
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 1.3454082669466534
+    },
+    "scarcity state 0": {
+     "days": 820,
+     "pressure_days": 2,
+     "slope": -10.28863212300556
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 7,
+     "slope": -4.851148335907336
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": -0.20441883251165754
+    }
+   },
+   "4": {
+    "all": {
+     "days": 1468,
+     "pressure_days": 82,
+     "slope": 0.7549103621813119
+    },
+    "regime 2018-19": {
+     "days": 293,
+     "pressure_days": 62,
+     "slope": 0.054651910628171596
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 6.391512002496383
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -158.25865992049071
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 1.3413048598002617
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": -10.353189957336806
+    },
+    "scarcity state 1": {
+     "days": 244,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 31,
+     "pressure_days": 7,
+     "slope": null
+    },
+    "scarcity state 3": {
+     "days": 374,
+     "pressure_days": 73,
+     "slope": -0.11447691602270951
+    }
+   },
+   "5": {
+    "all": {
+     "days": 1467,
+     "pressure_days": 82,
+     "slope": 0.7581126662562627
+    },
+    "regime 2018-19": {
+     "days": 292,
+     "pressure_days": 62,
+     "slope": 0.12106723953417176
+    },
+    "regime 2020": {
+     "days": 195,
+     "pressure_days": 3,
+     "slope": 7.088315814338007
+    },
+    "regime 2021-23": {
+     "days": 586,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "regime 2024": {
+     "days": 197,
+     "pressure_days": 2,
+     "slope": -99.80206897837543
+    },
+    "regime 2025-26": {
+     "days": 197,
+     "pressure_days": 15,
+     "slope": 1.1653773069971622
+    },
+    "scarcity state 0": {
+     "days": 819,
+     "pressure_days": 2,
+     "slope": -9.421873129666368
+    },
+    "scarcity state 1": {
+     "days": 243,
+     "pressure_days": 0,
+     "slope": null
+    },
+    "scarcity state 2": {
+     "days": 32,
+     "pressure_days": 8,
+     "slope": -5.1970196496830505
+    },
+    "scarcity state 3": {
+     "days": 373,
+     "pressure_days": 72,
+     "slope": -0.0637438986987478
+    }
+   }
+  }
+ },
+ "source": "docs/pivot/evidence/off-risk-day/step1.json"
+}

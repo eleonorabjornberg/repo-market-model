@@ -12,4 +12,14 @@ The model: `level + phi^k * (last - level) + eps`, with `level` the median of th
 | upper-tail twCRPS, candidate | 0.930 | +32.4% [+21.2%, +41.0%] | +17.8% [+8.4%, +29.5%] |
 | five-level CRPS vs the published distribution | 1.790 against 1.811 | +1.2% [-2.3%, +4.8%] | |
 
+Skill against B1 by the type of the anchor (grid CRPS; the pooled figure beside it):
+
+| anchor day type | days | vs B1: skill [90%] |
+|---|---|---|
+| pooled | 1855 | +22.3% [+13.7%, +29.5%] |
+| month_end | 149 | +34.2% [+18.7%, +42.7%] |
+| ordinary | 1588 | +11.2% [+6.9%, +15.9%] |
+| quarter_end | 29 | +65.9% [+30.8%, +75.8%] |
+| tax_date | 89 | +67.5% [+9.3%, +79.0%] |
+
 The splits by regime and pressure-day type, the reliability of P(spread > +5 bp) within regimes (against avenue #675's numbers), the Brier scores and the comparison with variant (b) of #632 are in `docs/pivot/evidence/spread-mean-reversion/report.md`.
