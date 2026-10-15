@@ -1,0 +1,79 @@
+{
+  "status": "declared by the pull request that closes #761 before any score was computed; a measurement, not a record. Nothing is published: no variant joins any published declaration, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. The variants were written after seeing 2018-2025 (avenues #745 and #746 quote ordinary-day numbers from that window), so a result here is exploration, never a verdict (scoring protocol v1, #640). Whether any of them joins #634's candidates is Eleonora's",
+  "issue": 761,
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 2 of the plan (a candidate beyond the phase 2 models), development tier; the same step as #686",
+  "ruling": "Eleonora, directive #761 (14 October 2026), joining avenues #745 and #746. The +5 bp classification variants are paused: the tail probability is read off the distribution, never fitted as a classifier. The interval is the studentized stationary bootstrap of scoring protocol v1, ruling 1 (#739), not #713's percentile interval",
+  "target": "spread_bps at the scored day, in basis points: the level, as a 23-quantile distribution at each lead h = 1..5 (the grid of scoring_protocol.GRID)",
+  "base": {
+    "name": "spread_mr_level10 (#686)",
+    "module": "repo_model.spread_mean_reversion, unchanged",
+    "formula": "q_p(t+h) = level + phi^k * (last - level) + eps_h,p; level, k, phi, the training window, the minimum of 60 pairs and the refit every 21 decision days are as in metadata/spread_distribution_686.json. Each variant below reuses its phi, level and anchor and changes only what this section says"
+  },
+  "context": {
+    "definition": "the target day's context, one of three, read from calendar columns known in advance",
+    "risk_day": "SplitDeclaration.reporting_day_type is not 'ordinary' (quarter-end, one of the month's last two business days, or a tax date), or the day settles a coupon (treasury_settlement_coupons > 0), the scheduled-pressure-day reading of repo_model.onset",
+    "ordinary_after_risk": "an ordinary target day whose previous panel row is a risk day",
+    "ordinary_after_ordinary": "an ordinary target day whose previous panel row is also ordinary",
+    "columns_read": "quarter_end, tax_date, days_to_month_end, treasury_settlement_coupons, and the row's date, of the target row and the row before it, through a view that raises LookAheadError on any other column (the spread, the rates, the volumes and the balances are never read for a context)",
+    "training": "a training pair's context is that of its own target row, read the same way"
+  },
+  "variants": {
+    "spread_mr_ctx": {
+      "label": "mean reversion with residuals pooled by the target's context",
+      "structure": "level + phi^k * (last - level) + the empirical residual quantiles of the training pairs whose target has the same context, per lead",
+      "pool": "for lead h and context c: the 23 empirical quantiles (protocol_benchmarks.empirical_quantiles) of the residuals (spread[target] - level[origin]) - phi^k * (spread[origin] - level[origin]) of lead h's training pairs whose target context is c; a pool with fewer than 30 values falls back to lead h's pooled residuals (the whole-lead pool of spread_mr_level10)",
+      "phi": "the pooled phi of spread_mr_level10, fitted on all pairs: no new parameter",
+      "run": true
+    },
+    "spread_mr_b2": {
+      "label": "a quantile average of mean reversion and B2",
+      "structure": "w * q_MR + (1 - w) * q_B2, level by level, per lead: non-decreasing, so no crossing; q_MR is spread_mr_level10's forecast and q_B2 is protocol_benchmarks.b2_forecast of the same decision day",
+      "weight": {
+        "grid": "w in 0.0, 0.1, ..., 1.0 (the weight on mean reversion)",
+        "choice": "at each refit (the first forecast day and every 21st after it), the w that minimises the mean grid CRPS over leads 1..5 and over the trailing scored days; a tie takes the larger w",
+        "trailing_scored_days": "the last 250 decision days before the refit, with a forecast of both legs, whose five targets were public at the refit's decision instant (their last target row is at or before the refit's anchor; protocol_benchmarks._require_public refuses any later row). Each leg's forecast of those days is the one it made on that day (as-of), not refitted",
+        "too_few": "fewer than 60 such days: w = 0.5",
+        "kept": "between refits the chosen w is kept; the legs' forecasts are read afresh each day"
+      },
+      "run": true
+    },
+    "spread_mr_ctx_b2": {
+      "label": "both: the context-pooled mean reversion averaged with B2",
+      "structure": "as spread_mr_b2 with spread_mr_ctx as the mean-reversion leg; the weight is chosen by the same rule on the context variant's own trailing forecasts",
+      "run": true
+    }
+  },
+  "references": {
+    "spread_mr_level10": "the reference row (#686): the gain of each variant over it is the result's last line per variant",
+    "b1_recentred": "reference row only (#741): B1 with its centre replaced by the spread of the last ordinary day at or before the anchor (SplitDeclaration.reporting_day_type == 'ordinary'); the changes are B1's own. Not a variant, not counted, not a benchmark of the protocol: B1 stays as ruled (ruling 6)",
+    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks); B3 on its own five levels"
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days with a forecast of every variant, mean reversion, B1 and B2 whose five targets (h = 1..5 business days later on the panel's calendar) all fall on or before 2025-12-31, from the first such day; no day after 2025-12-31 is read (docs/decisions/lockbox.md); the scored days pass lockbox.require_unlocked",
+    "primary": "grid CRPS (23 levels), the mean over leads 1..5 per decision day, paired against B1 and B2 and, for the gain over the reference, against spread_mr_level10: skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate): positive favours the candidate",
+    "key_secondary": "upper-tail twCRPS with weight 1{z > 0 bp} (scoring_protocol.upper_tail_twcrps), the same pairs",
+    "interval": "scoring_protocol.paired_tests: the studentized stationary bootstrap (ruling 1): mean block 10 business days, 10,000 draws, seed 761. A two-sided 90% interval is skill less the 95th and 5th percentile of the skill's studentized draws times its HAC standard error (and likewise for mean(d)); the Diebold-Mariano statistic stands beside it. The percentile interval of #713 is not used. A comparison the studentization cannot resolve (a benchmark that scores zero, a series with no long-run variance) is reported as undefined, with the means",
+    "outcomes": "the panel's spread_bps at the target day, not the first-published vintage of protocol section 11; the difference is stated in the pull request",
+    "b3": "docs/runs/published_distribution_daily_h{h}.json on its five levels (0.05, 0.25, 0.5, 0.75, 0.95), days on or before 2025-12-31; each side's five-level CRPS (metrics.crps_from_quantiles), the candidate read at its own quantiles at those levels, the mean over the five leads, paired by decision day, on the decision days with all five published leads. Putting it on the 23-level grid is Eleonora's question"
+  },
+  "splits": {
+    "pooled": "one number per decision day (protocol section 3)",
+    "unit": "the pooled score is on the decision day. Every split is on the target day: each target day's score is the mean over the leads that forecast it, and a target day belongs to the group of its own date. Except 'anchor day type' and 'as-of scarcity state', which belong to the decision and are read as of it: the anchor day type is SplitDeclaration.reporting_day_type of the anchor row, a decision day's group by its own score",
+    "regime": "SplitDeclaration.regime (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024 and 2025-26 on the development days; 2021-23 is called out in the page",
+    "pressure_day_type": "SplitDeclaration.reporting_day_type of the target day",
+    "as_of_scarcity_state": "scripts/pressure_judge.py _scarcity_states(h, 2025-12-31), each leg read as of the decision instant at the lead (ruling on #571): 0 and 1 ample, 2 and 3 scarce, no reading unknown; a (decision day, lead) cell belongs to the state of its target day at that lead, and a day's group is the mean over its leads that fall in the group",
+    "anchor_day_type": "SplitDeclaration.reporting_day_type of the anchor row of the decision, found by protocol_benchmarks._anchor",
+    "context": "the three contexts above, on the target day",
+    "min_days": "a group of fewer than 20 days is listed and not tested"
+  },
+  "tail": {
+    "reading": "P(spread > tau) = 1 - F(floor(tau) + 0.5), F linear between the 23 quantiles and continued at the outer segments' slopes to 0 and 1 (repo_model.spread_mean_reversion.exceedance), for tau = 5 bp",
+    "reliability": "the mean predicted P(spread > +5 bp), the realised share of target days above +5 bp, and their difference, pooled over leads 1..5, on ordinary target days: all, 'calm' (ordinary after ordinary) and 'after a risk day' (ordinary after risk), by regime, for B1, B2, spread_mr_level10 and each variant. Brier score of the same probabilities. Not a classification variant: nothing is fitted to the +5 bp event"
+  },
+  "limits": {
+    "max_variants": 3,
+    "last_day": "2025-12-31",
+    "extension": "#684 (the 2026 development days) is not read here: if it merges, the days from 2026-01-01 are a separate column in a later directive, not pooled in this headline"
+  }
+}

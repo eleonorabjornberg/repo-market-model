@@ -397,6 +397,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
 
+### 2026-10-13 [H5] step 3 · eleonorabjornberg/repo-market-model#723
+- Directive: #683
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d`
+- Tried: the reliability slope of earlier result pages read inside regimes and not pooled: a shared helper with bootstrap intervals, the per-regime slopes already in #624's tracked evidence, dated notes on the pages that reported pooled slopes. Variants: n/a (correction).
+- Result: `+offday` of #624 at h = 1 has a pooled slope of 0.83, 0.48 inside 2018-19 and 0.79 inside 2025-26; at h = 3 to 5, 0.14 to 0.22 inside 2018-19 against a pooled 0.78 to 0.80. #626's rows have no per-regime slope yet.
+- Against kill: not applicable (a correction to how step 3 figures are read).
+- Next: the per-regime slopes for #626's kinked page, and an account of why its rebuild never finishes, move to the follow-up directive #753 (Eleonora's ruling of 14 October 2026 on this pull request); any reliability-shape test (#628) is read within regimes.
+
 ### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#737
 - Directive: #655 (follow-up: Eleonora's answers to Q-E, Q-B and Q-C on PR #695, comment 6159852603)
 - Step: 1
@@ -406,6 +416,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the verdict reads the grid comparison's values, 2.43 at 250 days and 3.42 at 125 (B3 − B1 on five levels: 5.45 and 9.50); null false detections on the full development history 0.85% and 0.25% by 250 and 125 days (B3 − B1: 0.0%). Futility values 1.93, 1.56 and 1.45 at 60, 125 and 250 days. Power at these values stays low (14% for a 3% skill by 250 days), and the confirmation design goes to a separate study.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
+
+### 2026-10-14 [H1] step 2 · eleonorabjornberg/repo-market-model#751
+- Directive: #733 (a design study for the confirmation test; no verdict, nothing registered)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `6114a8e`; rule `docs/research/confirmation-design-733.md`, committed before the study ran
+- Tried: six declared designs (the in-force test at 250 days; 375 and 500 days; lead 1 alone; a standardized statistic at 250 and 375 days), each calibrated afresh on decision days to 2025-12-31 (no later day read) and simulated for size and for power at 3% and 10% skill (2,000 paths per scenario). A post-hoc addendum re-reads them at the critical value calibrated on the one comparison S(B2) − S(B1) (PR #695, Q-E (b)). Variants: 6 designs, 2 readings.
+- Result: at the critical value in force (the largest across four comparisons) no design has power: D0 to D2 under 1% at 3% and at 10% even on the post-2020 history, D3 2.6% and 3.9% there; the standardized D4 reaches 14.4% and 19.4% on the post-2020 history but fails size (8% to 13%). At reading (b) D0 reproduces PR #695's Q-E table on the post-2020 history (14.3% and 19.7% against 14.0% and 19.25%) with size 11.5%; every design fails size on that history. No design reaches 80% power at 3% or at 30% skill. The §7 rule's pick (D3) is the least bad of the admissible, not a useful design.
+- Against kill: not applicable (H1 is a validity check, not a gain claim); the page's reading is that the confirmation design cannot confirm the 3% MME in 500 days as the test stands.
+- Next: Eleonora decides the reading of the critical value (Q-E) and whether to change the MME or the days; a change is a draft decision record under §13.
 
 ### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
 - Directive: #747
@@ -447,6 +467,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (reading only; development).
 - Next: #754 starts after #733 and #737 merge; leads 3 and 4 of the page bear on it.
 
+### 2026-10-14 [H5] step 2 · eleonorabjornberg/repo-market-model#767
+- Directive: #761
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmarks B1, B2; seed 761; base as in the pull request
+- Tried: 3 variants of `spread_mr_level10`: (i) residuals pooled by the target day's context, (ii) a quantile average with B2 whose weight is chosen at each refit on trailing scored days, (iii) both; B1 re-centred on the last ordinary day as a reference row. Variants: 3 (declaration `metadata/spread_distribution_761.json`).
+- Result: grid CRPS 1.737 / 1.780 / 1.745 bp against mean reversion's 1.778 over 1,855 decision days to 2025-12-31; gain over mean reversion, studentized 90%: (i) +2.3% [+1.0%, +3.6%], (ii) -0.1% [-4.5%, +3.1%], (iii) +1.9% [-2.7%, +5.2%]. Upper-tail twCRPS (i) +4.1% [+2.4%, +5.8%]. (i) loses in 2020 (-5.9%) and 2021-23 (-0.3%); (ii) loses after a risk day (-4.3%). Calm ordinary-day P(> +5 bp) error: mean reversion -0.046, (i) -0.021, (iii) -0.006. Detail in `docs/pivot/spread-mr-variants-result.md`.
+- Against kill: not applicable (no verdict; development data). Only (i) has an interval above zero against mean reversion.
+- Next: whether (i) joins #634's candidates is Eleonora's.
+
 ### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
 - Directive: #762
 - Step: 3 (is each benchmark computed as specified: B1, B2 and `richer_targets.b1_quantiles` on a simulated panel with known dynamics; finding #744)
@@ -486,3 +516,25 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 3% is not detected within 250 days (power 0.16 at 125, 0.29 at 250 against a 0.80 target); look 1 (60 days) cannot be read with 10,000 draws; post-hoc, the test fires on 21.75% of paths with no true difference by 250 days.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+<<<<<<< HEAD
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
+- Directive: #743
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9674324b`
+- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
+- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
+=======
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
+- Directive: #740
+- Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `b0da43a`
+- Tried: a write-time guard at 23:59 ET on the decision day (`require_written_by_decision_day_end`), `written_at` stored in every block, and `filled_candidate` refusing a stored `written_at` or commit time past the cut-off. Variants: n/a (a guard, no model).
+- Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
+>>>>>>> origin/main
