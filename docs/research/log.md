@@ -619,7 +619,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H1 is a validity check; development).
 - Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
 
-### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#821
+### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#823
 - Directive: #806
 - Step: 5 (goal G3, prospective logging; the follow-up to #740's cut-off)
 - Tier: development
