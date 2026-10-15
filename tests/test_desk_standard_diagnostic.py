@@ -290,5 +290,23 @@ class EvidenceTests(unittest.TestCase):
                 self.assertIn(source, names)
 
 
+class RiskDatesTests(unittest.TestCase):
+    """`desk_standard_diagnostic.risk_dates` once failed with `AttributeError` (a function shadowed the module)."""
+
+    class _Splits:
+        @staticmethod
+        def day_type(values):
+            return values["day_type"]
+
+    def test_the_risk_dates_are_the_non_ordinary_days_and_at_h1_the_coupon_settlements(self):
+        rows = {
+            1: {"day_type": "ordinary", "treasury_settlement_coupons": 0.0},
+            2: {"day_type": "quarter_end", "treasury_settlement_coupons": 0.0},
+            3: {"day_type": "ordinary", "treasury_settlement_coupons": 5.0},
+        }
+        self.assertEqual(ds.risk_dates(self._Splits, rows, [1, 2, 3], 1), {2, 3})
+        self.assertEqual(ds.risk_dates(self._Splits, rows, [1, 2, 3], 2), {2})
+
+
 if __name__ == "__main__":
     unittest.main()

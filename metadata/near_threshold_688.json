@@ -1,0 +1,69 @@
+{
+  "status": "declared by the pull request that closes #688 before any number was computed; a measurement, not a record. Nothing is published: neither input joins a published declaration, no day after 2025-12-31 is scored, the live record and pin do not move. Development days give a score and an interval, never a verdict (scoring protocol v1, #640)",
+  "issue": 688,
+  "serves": "H5 (primary goal), research step 2 (add inputs one family at a time, with an ablation), and H2. Exploration only. These are inputs to the spread distribution, not new +5 bp classification variants (paused)",
+  "ruling": "Eleonora, 13 October 2026, on #688: queue avenues #676 and #677. Screen each input with the as-of spread and the scarcity state as controls, then add it to the spread-distribution model and score it against the row without it with the scorer of scoring protocol v1",
+  "inputs": {
+    "bill_x_band": {
+      "avenue": 676,
+      "what": "the as-of spread just below the threshold (2 to 5 bp) interacted with a bill settlement on the scored day",
+      "screen": "a flag: the as-of spread in the near band (at least 2 bp and not strictly above +5 bp on whole basis points) and a bill settlement on the scored day (treasury_settlement_bills above 0), read through the as-of rule at lead h; announcement-dated (metadata/settlement_announcement_dating.json, the 'both' arm of metadata/announcement_dating.json)",
+      "model": "the column treasury_settlement_bills (announcement-dated, as the screen reads it) added to the every-day inputs of the model, beside the as-of spread that those inputs already hold; the gradient-boosted trees form the interaction themselves. The product flag is not a model column: a model column must be a function of one row's declared fields, and the flag mixes the as-of row with the scored day. This is a reading of the avenue, not a decision (see questions)"
+    },
+    "post_month_end_window": {
+      "avenue": 677,
+      "what": "a window flag for the first one to three market days of a month, the days after the month-end turn, which the decision on the last business day never sees at h = 1",
+      "screen": "bday_of_month (derived_features.bday_of_month, the market day of the month) at most 3 on the scored day: a function of the date and the market holiday table, known in advance",
+      "model": "the column post_month_end_window (1.0 when bday_of_month is at most 3, else 0.0) added to the every-day inputs of the model, declared a calendar feature for the run (contract.CALENDAR_FEATURES, known in advance, as bday_of_month is in #631)",
+      "not_run": "bridged persistence (the risk part's forecast for the unseen turn day as the persistence input at h = 1). It feeds one model's forecast into another's input and leaves the one-row design the as-of rule reads; it is not a variant of this directive and is listed as an avenue for Eleonora's decision"
+    }
+  },
+  "model": {
+    "control": "spread_q_gbm+two_part+settle+h41+dist_roll, the two-part row of #632 (ml.pressure_spread_distribution_exceedance, structure two_part): the strongest spread-distribution row on main (docs/pivot/spread-distribution-result.md, step 1: ahead of as-of persistence at every lead, level with the published distribution). #634's model has not landed; this row is the stand-in the directive allows. The risk-date part uses the inputs of risk_gbm+settle+h41+dist_roll at the lead; the every-day part uses ml.EVERY_DAY_COMPONENT_INPUTS",
+    "estimator": "sklearn HistGradientBoostingRegressor, loss='quantile', one fit per level, the hyperparameters of ml.PRESSURE_SPREAD_DISTRIBUTION_SETTINGS, none tuned",
+    "quantile_grid": "the 23 levels of scoring protocol v1 (scoring_protocol.GRID), in place of the 13 of #632, for this run only",
+    "variants": {
+      "control": "the control, re-run on the grid and the days of this measurement",
+      "bill_x_band": "the control with treasury_settlement_bills added to the every-day inputs",
+      "post_month_end_window": "the control with post_month_end_window added to the every-day inputs"
+    },
+    "variant_count": 2,
+    "variant_count_reading": "two variants, one per input, plus the re-run control. At most three rows (#567). The screen is not a model variant; its cells are counted"
+  },
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "horizons": [1, 2, 3, 4, 5],
+    "lockbox": "a decision day is scored when its fifth target day is on or before 2025-12-31, the end of the rows this one is compared with (#632, #634). The near-blind tier (2026-01-01 to 2026-09-03) is ordinary history since 2026-10-05 (docs/decisions/lockbox.md, the amendment of #151) and is not used here, so as to keep the days of the control comparable; the blind tier (after 2026-09-03) is locked and is refused by lockbox.require_unlocked"
+  },
+  "benchmarks": {
+    "primary_pair": "each variant against the control, paired per decision day on scoring_protocol.day_scores (grid CRPS averaged over h = 1 to 5), with scoring_protocol.paired_tests (stationary bootstrap, mean block 10, one-sided 95%, Diebold-Mariano beside it); the key secondary is the upper-tail twCRPS above 0 bp",
+    "reference_pairs": "the control and each variant against B1 (as-of persistence, widening with the lead) and B2 (calendar climatology) of protocol_benchmarks, so that the gain over the control is read next to the gain over the benchmarks",
+    "missing": "a decision day on which a row has no law at some lead is filled with B1 (scoring_protocol.fill_missing), and the number of such days is reported for every row",
+    "splits": "pooled; by regime of the decision day (metadata/evaluation_splits.json); by pressure-day type of the target day (splits.reporting_day_type)",
+    "detail": "grid CRPS by lead; pinball at the five levels of the contract; MAE of the median; central 50% and 90% coverage",
+    "no_verdict": "development days: every interval is a description, not a decision (protocol section 1)"
+  },
+  "screen": {
+    "population": "the ordinary scored days of the screen of #631: days that are not risk dates under the rule the models serve (announcement_dating_rescore.risk_flag, coupon clause on), 2018-06-29 to 2025-12-31, at each lead h = 1 to 5",
+    "outcome": "a pressure day: the spread strictly above +5 bp on whole basis points (data.exceeds_bp)",
+    "controls": "the as-of spread band (below 2 bp, 2 to 5 bp, above +5 bp) and the scarcity state band (ample below 2, scarce at 2 or more, unknown when not read) at the same lead, both read through the as-of rule",
+    "cells": "the pressure rate with and without the input in each spread band, pooled and by regime; the raw rate difference; the stratified (Mantel-Haenszel) rate difference across the six strata of spread band by scarcity band; the same difference inside the near band alone; per lead h = 1 to 5",
+    "persistence_share": "the share of the raw difference that the as-of spread band explains: one minus the stratified difference over the raw difference, and the rates conditional on an as-of spread above +5 bp (P | as-of spread > 5 bp) with and without the input, which is the plain persistence part",
+    "interval": "90% from 1000 stationary-bootstrap resamples of the days (metrics.stationary_bootstrap_indices, mean block 10, seed 688); a statistic is reported only where the strata it reads (all six, or the near band, or the band above +5 bp, or the band below 2 bp) hold 30 days with and without the input and 3 pressure days; a thinner statistic is not reported, point or interval (amended on 13 October 2026 after the first screen printed intervals for statistics on a handful of days: the first wording applied the minimum to the whole cell, and the stricter reading is the one used)",
+    "counts": "the number of cells computed is counted and reported; nothing is corrected for multiplicity"
+  },
+  "outputs": {
+    "result_page": "docs/pivot/near-threshold-688-result.md",
+    "evidence": "docs/pivot/evidence/near-threshold-688/"
+  },
+  "questions": [
+    "Reading the 'band x bill settlement' input as the raw bill column beside the as-of spread, with the trees forming the interaction, rather than as a product column. A product column would need a model column that mixes two rows (ml.py would have to build it from the as-of read and the scored day's)",
+    "Putting the 23-level grid on the control by refitting it at those levels, rather than by mapping the 13 levels of #632 onto the grid by the linear law. Refitting changes the control's own figures from #632's",
+    "Whether either input is worth a place in #634's model: that is for H5's step 2 after #634 lands, and this measurement does not decide it"
+  ],
+  "unchanged": "the information set, the as-of rule, the lockbox, the scorer and its benchmarks, every published declaration, the live record and the pin. No decision record is drafted and neither input joins a published declaration, so no 'Publish?' question arises."
+}
