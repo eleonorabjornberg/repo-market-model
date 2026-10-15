@@ -103,9 +103,21 @@ class ReaderTest(unittest.TestCase):
         self.assertEqual(self.model["variant_count"]["without_evidence"], ["c"])
         self.assertNotIn("c", [r["name"] for r in self.model["candidates"]])
 
-    def test_spread_declarations_are_counted(self):
-        self.assertEqual(self.model["variant_count"]["spread_declarations"], 1)
-        self.assertEqual(self.model["variant_count"]["spread_variants"], 1)
+    def test_declarations_are_counted(self):
+        self.assertEqual(self.model["variant_count"]["declarations"], 1)
+        self.assertEqual(self.model["variant_count"]["variants"], 1)
+
+    def test_variants_are_counted_by_content_not_by_file_name(self):
+        """#732: a declaration named anything, with `variants` at the top or under `model`, is counted."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture(tmp)
+            write(tmp, "metadata/near_threshold_900.json", {"model": {"variants": {"x": "", "y": "", "z": ""}}})
+            write(tmp, "metadata/other_900.json", {"variants": [{"id": "p"}, {"id": "q"}]})
+            write(tmp, "metadata/no_block_900.json", {"variants": "this row only", "status": "x"})
+            write(tmp, "metadata/rows_900.json", {"rows": [1, 2]})
+            write(tmp, "metadata/not_an_object.json", [1, 2])
+            count = emit_progress.build(tmp, order=["a", "b", "c"])["variant_count"]
+        self.assertEqual((count["declarations"], count["variants"]), (3, 6))
 
     def test_every_figure_is_labelled_development(self):
         self.assertIn("development, not a verdict", emit_progress.render(self.model))
