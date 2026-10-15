@@ -316,7 +316,7 @@ class VariantFeatureTests(unittest.TestCase):
 
 class RunGuardTests(unittest.TestCase):
     def args(self, **changes):
-        base = dict(horizon=1, panel=REPO / "no-such-panel.csv", published=REPO / "no-such-panel.csv",
+        base = dict(horizon=1, end=None, panel=REPO / "no-such-panel.csv", published=REPO / "no-such-panel.csv",
                     output=REPO / "no-such-output.json")
         base.update(changes)
         return argparse.Namespace(**base)
@@ -340,7 +340,7 @@ class RunGuardTests(unittest.TestCase):
         declared["scoring"]["last_day"] = "2026-09-10"
         with mock.patch.object(SCRIPT, "declared_document", return_value=declared):
             with self.assertRaises(LookAheadError):
-                SCRIPT.panel_command(argparse.Namespace(panel=REPO / "x.csv", output=REPO / "y.csv", check_every=40))
+                SCRIPT.panel_command(argparse.Namespace(panel=REPO / "x.csv", output=REPO / "y.csv", check_every=40, end=None))
 
 
 if __name__ == "__main__":

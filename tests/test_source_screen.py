@@ -216,7 +216,8 @@ class RunTests(unittest.TestCase):
         return path
 
     def test_a_panel_past_the_last_day_is_refused(self):
-        rows = synthetic_rows(date(2025, 8, 1), 140)
+        rows = synthetic_rows(date(2026, 6, 1), 140)  # runs past 2026-09-03, the end of the opened near-blind tier (#684)
+        self.assertGreater(rows[-1].date, date(2026, 9, 3))
         with tempfile.TemporaryDirectory() as directory:
             panel = self.write_panel(directory, rows)
             with self.assertRaises(SystemExit):
