@@ -65,6 +65,7 @@ def _script(name):
 #: Pressure model v1's published code path (#124).
 v1 = _script("pressure_model_v1")
 
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model import onset, pressure, pressure_v1_1 as v11, scarcity  # noqa: E402
 from repo_model.announced_iorb import load_announcements, with_announced_iorb  # noqa: E402
 from repo_model.asof import InformationRule  # noqa: E402
@@ -183,7 +184,8 @@ def panel_command(args) -> int:
         raise SystemExit("the scratch panel's dates are not the published panel's")
     observations = scarcity.with_reserve_scarcity_state(build.observations)
     observations = with_announced_iorb(observations, load_announcements(IORB_TABLE), decision_time=decision)
-    observations = [row for row in observations if row.date <= END]
+    end = panel_end(args.end, END, where="pressure_v1_1.panel")
+    observations = [row for row in observations if row.date <= end]
     header = ["date"] + list(manifest["built_columns"]) + list(EXTRA_COLUMNS) + [
         scarcity.RESERVE_SCARCITY_STATE, "iorb_announced_change_bps", "iorb_days_to_announced_change",
     ]
@@ -759,6 +761,7 @@ def main(argv=None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     panel = sub.add_parser("panel")
     panel.add_argument("--output", type=Path, required=True)
+    panel.add_argument("--end", help="last day kept, ISO; default this script's own end (at most 2026-09-03, #684)")
     panel.set_defaults(handler=panel_command)
     run = sub.add_parser("run")
     run.add_argument("--panel", type=Path, required=True)

@@ -80,7 +80,7 @@ class RunGuardTests(unittest.TestCase):
     def args(self, **changes):
         import argparse
 
-        base = dict(horizon=1, panel=ROOT / "no-such-panel.csv", published=ROOT / "no-such-panel.csv",
+        base = dict(horizon=1, end=None, panel=ROOT / "no-such-panel.csv", published=ROOT / "no-such-panel.csv",
                     parent=ROOT / "no-such-parent.json", output=ROOT / "no-such-output.json")
         base.update(changes)
         return argparse.Namespace(**base)
