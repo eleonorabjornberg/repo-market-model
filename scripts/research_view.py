@@ -151,9 +151,9 @@ def parse_log_entries(text):
     for number, match, heading, fields in check_research_log.parse_log(text):
         if not match:
             raise ResearchError(f"{LOG} line {number}: malformed heading {heading!r}")
-        date, hid, step, ref = match.groups()
-        by_h.setdefault(hid, []).append({"date": date, "step": int(step), "ref": ref, "line": number,
-                                         "fields": fields})
+        date, hid, step, groundwork, ref = match.group("date", "hyp", "step", "groundwork", "ref")
+        by_h.setdefault(hid, []).append({"date": date, "step": int(step) if step else None, "groundwork": groundwork,
+                                         "ref": ref, "line": number, "fields": fields})
     return by_h
 
 
@@ -176,7 +176,7 @@ def load(repo):
             raise ResearchError(f"{PROGRESS}: {stray} are not milestones of the {hid} manual")
         entries = log.get(hid, [])
         floor = progress.get("steps", {}).get(hid, 1)
-        step = max([floor] + [e["step"] for e in entries])
+        step = max([floor] + [e["step"] for e in entries if e["step"] is not None])
         status_text = (bullet(entry, "status") or "").split(".")[0].strip().lower()
         status = status_text.split(",")[0]
         hypotheses.append({
@@ -270,7 +270,7 @@ def log_html(h):
         link = f'<a href="{BLOB}{LOG}#L{e["line"]}">log entry</a>'
         f = e["fields"]
         items.append(
-            f'<li><b>{e["date"]}</b>, step {e["step"]}, {link}, tier {esc(f.get("Tier", ""))}'
+            f'<li><b>{e["date"]}</b>, {"groundwork " + e["groundwork"] if e["step"] is None else "step " + str(e["step"])}, {link}, tier {esc(f.get("Tier", ""))}'
             + (f' <span class="rs-tag">{esc(DEV_LABEL)}</span>' if f.get("Tier") == "development" else "")
             + f'<br>{inline(f.get("Result", ""))}<br><i>Against kill:</i> {inline(f.get("Against kill", ""))}</li>')
     return '<ul class="rs-log">' + "".join(items) + '</ul>'
@@ -324,7 +324,7 @@ def payload(hypotheses):
              "milestones": [{"id": mid, "text": text, "done": mid in h["done"],
                              "evidence": h["evidence"].get(mid)} for mid, text in h["manual"]["milestones"]],
              "markers": h["manual"]["markers"],
-             "log": [{"step": e["step"], "line": e["line"]} for e in h["log"]]}
+             "log": [{"step": e["step"], "groundwork": e["groundwork"], "line": e["line"]} for e in h["log"]]}
             for h in hypotheses]
 
 
