@@ -532,6 +532,12 @@ forecast is rebuilt, and those files carry points without an interval for a regi
 which the forecast is constant or the fit is not formed; `unstable` a near-separated fit (a slope beyond 25 in size); `†` a cell with fewer than 5
 pressure days, whose slope is a handful of events' worth. Development data, not a verdict.
 
+> *Correction, 15 October 2026 (#801).* The `†` mark and the `–` below were read off the cell's pressure days, but the fit keeps only days whose
+> forecast is above 1e-4, so many slopes rest on far fewer events than the mark implied (`+tailcap75` at h = 1 in 2018-19: 2 of 62 pressure days are
+> in the fit, 60 fall on zero forecasts). The tables below are unchanged, as published. `evidence/reliability-regimes/tracked-step1.md` and
+> `tracked-step2.md` are regenerated with the mark counting the pressure days in the fit, and a regime whose forecast is zero on every pressure day
+> reads `uncalibrated: zero on all N` instead of `–`. No slope moves. Read the regenerated files, not the copies here.
+
 ### Step 1 rows
 
 #### `risk_gbm+every_day+gate+settle+h41+iorb`

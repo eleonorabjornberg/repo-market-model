@@ -77,7 +77,10 @@ def tracked_command(args) -> int:
     for row, leads in data["rows"].items():
         out[row] = {
             h: {
-                cell: {"days": v["days"], "pressure_days": v["pressure_days"], "slope": v.get("slope")}
+                cell: {
+                    "days": v["days"], "pressure_days": v["pressure_days"], "slope": v.get("slope"),
+                    "positive_days": v.get("positive_days"), "pressure_days_on_zero": v.get("pressure_days_on_zero"),
+                }
                 for cell, v in body["cells"].items()
             }
             for h, body in leads.items()
@@ -95,11 +98,16 @@ def _slope_text(cell) -> str:
         return "–"
     if cell["pressure_days"] == 0:
         return "undefined"
+    on_zero = cell.get("pressure_days_on_zero") or 0
     if cell["slope"] is None:
+        # #801: a row that forecasts zero on every pressure day is uncalibrated, not a fit that "is not formed".
+        if on_zero >= cell["pressure_days"]:
+            return f"uncalibrated: zero on all {cell['pressure_days']}"
         return "–"
     if abs(cell["slope"]) > UNSTABLE:
         return "unstable"
-    mark = "†" if cell["pressure_days"] < FEW else ""
+    # #801: the fit keeps only days whose forecast is above RELIABILITY_FLOOR, so the mark counts the pressure days in the fit.
+    mark = "†" if cell["pressure_days"] - on_zero < FEW else ""
     return f"{cell['slope']:.2f}{mark}"
 
 
@@ -110,8 +118,10 @@ def tracked_text(result: dict) -> str:
         READING, "",
         f"Source: `{result['source']}`. Points only: that file carries no interval for a regime's slope. The slope is that of the logistic fit of "
         "the outcome on logit(forecast) on the days that are not risk dates where the forecast is above 1e-4 (1 is reliable); `undefined` is a regime with no pressure day; `–` a "
-        "regime whose forecast is constant or whose fit is not formed; `unstable` a near-separated fit (a slope beyond 25 in size); `†` a cell with "
-        "fewer than 5 pressure days, whose slope is a handful of events' worth.", "",
+        "regime whose forecast is constant or whose fit is not formed; `uncalibrated: zero on all N` a regime whose forecast is zero (1e-4 or "
+        "below) on all N pressure days, so no fit is formed and the row misses every event; `unstable` a near-separated fit (a slope beyond 25 in size); "
+        "`†` a cell with fewer than 5 pressure days in the fit (the pressure days on forecasts above 1e-4, not all the cell's), whose slope is a handful "
+        "of events' worth.", "",
     ]
     for row, leads in result["rows"].items():
         out += [
