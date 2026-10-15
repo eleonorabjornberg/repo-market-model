@@ -63,7 +63,7 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import contract, measurement_fields, ml, net_settlement as ns, pressure_judge as pj, projected_reserves as pr, scarcity  # noqa: E402
+from repo_model import contract, measurement_fields, ml, net_settlement as ns, pressure_judge as pj, projected_reserves as pr, risk_dates, scarcity  # noqa: E402
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
@@ -160,9 +160,7 @@ def is_risk_date(values, horizon: int, splits) -> bool:
     settlement is not public earlier, so the passer does not read it), when coupons settle on it.
     """
 
-    if splits.day_type(values) != "ordinary":
-        return True
-    return horizon == 1 and float(values.get("treasury_settlement_coupons") or 0.0) > 0.0
+    return risk_dates.is_risk_date(values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=horizon == 1)
 
 
 def combine(
