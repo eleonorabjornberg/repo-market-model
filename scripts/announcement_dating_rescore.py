@@ -40,6 +40,7 @@ from repo_model import h41_release, measurement_fields, ml, risk_dates, settleme
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "announcement_dating.json"
@@ -182,7 +183,7 @@ def run_command(args) -> int:
     if h not in declared["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
     settle, h41, suffix = ARMS[arm]
-    last = date.fromisoformat(declared["scoring"]["last_day"])
+    last = panel_end(args.end, date.fromisoformat(declared["scoring"]["last_day"]), where="announcement_dating_rescore.run")
     require_unlocked([last], where="announcement_dating_rescore")
     rows = load_daily_panel(args.panel)
     audit_panel(rows)
@@ -530,6 +531,7 @@ def main(argv=None) -> int:
     run.add_argument("--panel", type=Path, required=True)
     run.add_argument("--published", type=Path, required=True)
     run.add_argument("--horizon", type=int, required=True)
+    run.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     run.add_argument("--model", default=None)
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(func=run_command)
