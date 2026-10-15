@@ -81,6 +81,12 @@ variant floors the forecasts of `+tailcap75` (no refit), walk-forward on the jud
   The floors over-forecast the quiet years: predicted against realised, 2021-23 (no pressure day), `+tailcap75` 0.0027, (a) and (b) 0.0698, (c) 0.0027;
   2020 (4 pressure days), (a) and (b) 0.1532 against 0.0159, (c) 0.0590. By pressure-day type the ordinary days are over-forecast by (a) and (b)
   (-0.0342 and -0.0367, intervals below zero) and calibrated by (c) (+0.0046 [-0.0139, +0.0252]).
+
+  > *Note, 13 October 2026 (#683).* "Calibrated" in this section means the mean-based tier 3 and tier 5 criterion: the interval of realised minus
+  > predicted covers zero. It is not a reading of the reliability curve. The curve's slope inside each regime, for these rows, is in
+  > `docs/pivot/off-risk-day-result.md` ("Reliability within regimes") and `evidence/reliability-regimes/tracked-step1.md`; at h = 1 on the days
+  > that are not risk dates, 2018-19 slopes are 0.12 to 0.13 for (a), (b) and (c) against 1.39 for `+tailcap75` (pooled: 0.46, 0.73, 0.57 and 2.03). A
+  > row that is calibrated on the mean is still over-spread inside 2018-19; no pooled slope here says otherwise (`diagnostics-reconciliation.md`, point 11).
 - **Tier 5.** Realised minus predicted: `+tailcap75` +0.0537 [+0.0225, +0.0854]; (a) -0.0144 [-0.0480, +0.0190]; (b) -0.0157 [-0.0459, +0.0190]; (c) +0.0347
   [+0.0062, +0.0665]. Every row beats climatology on Brier. Full tables: [`evidence/tailcap-floor/calibration.md`](evidence/tailcap-floor/calibration.md).
 - **Paired Brier difference** (the reference's squared error less the row's, so positive favours the row, #604), h = 1, +5 bp, 90% interval, all days, against
