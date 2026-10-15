@@ -296,6 +296,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Sensitivity (ruling of 13 October 2026, item 2): with the protocol's mean block of 10 days in place of the declared 20, the same gain's interval is [-7.2 pp, -3.4 pp], so the reading is unchanged. Detail in `docs/pivot/ranking-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
 - Next: step 2, accepted by Eleonora on 13 October 2026: rank by tail probability combined with the day type (a directive for it is hers to queue).
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
 - Directive: #687
 - Step: 3 (diagnosis of avenue #674)
@@ -407,6 +408,17 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a correction to how step 3 figures are read).
 - Next: the per-regime slopes for #626's kinked page, and an account of why its rebuild never finishes, move to the follow-up directive #753 (Eleonora's ruling of 14 October 2026 on this pull request); any reliability-shape test (#628) is read within regimes.
 
+### 2026-10-13 [H2] step 1 · eleonorabjornberg/repo-market-model#710
+- Directive: #684
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `a69f6b9`
+- Tried: #629's source screen and #631's derived-feature screen re-run unchanged on a panel that runs to 2026-09-03 (the opened near-blind tier), with a 2026 column; one shared end date, `repo_model.exploration.EXPLORATORY_END`. Then, on the scratch scored span ruled on #710 (no published declaration moves), #631's model test (ordinary-day AUROC of the parent and the lagged-pressure test) and #624's steps 1 and 2 against persistence-logistic and the raw as-of spread, re-run to the same day, rows that reproduce on main only. Variants: n/a (re-run).
+- Result: the 2026 column is empty on both screens: 133 ordinary days and 2 pressure days (2026-01-02, 2026-02-18), under the declared minimum of 3. The 2018-2025 column reproduces the earlier page (82 pressure days on 1,469 ordinary days). #629 has 87 series, not 101: the 14 `fed_repo_*` series cannot be read in 2026 (the repo-operations snapshot ends 2025-12-31). #631's ranked leads move by one entry (`spread_rv5` enters, `days_since_pressure` becomes redundant). The 2018-2025 cells of #631's model test and of #624's steps 1 and 2 reproduce the earlier pages to the digit; the 2026 days (2 pressure days) move no AUROC by more than 0.02, and the conclusions stand: lagged pressure does not help (h = 1 difference -0.040 [-0.078, -0.013]), and the ordinary-day ranking is not beyond persistence-logistic or the raw as-of spread. The 2026 cell stays empty below the 3-pressure-day minimum. #624's three floor rows are not re-run, and the judge is not run on 2026 days.
+- Against kill: not applicable (H2's kill is not tested here; development data never gives a verdict).
+- Next: a 2026 repo-operations snapshot would restore the 14 series; nothing here is a verdict.
+
+
 ### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#737
 - Directive: #655 (follow-up: Eleonora's answers to Q-E, Q-B and Q-C on PR #695, comment 6159852603)
 - Step: 1
@@ -416,6 +428,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the verdict reads the grid comparison's values, 2.43 at 250 days and 3.42 at 125 (B3 − B1 on five levels: 5.45 and 9.50); null false detections on the full development history 0.85% and 0.25% by 250 and 125 days (B3 − B1: 0.0%). Futility values 1.93, 1.56 and 1.45 at 60, 125 and 250 days. Power at these values stays low (14% for a 3% skill by 250 days), and the confirmation design goes to a separate study.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
+
+### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#748
+- Directive: #734
+- Step: 2 (milestone M2, "Guard updated": the back-fill amendment of `docs/decisions/information-set.md` put in force)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `e9ce416`; posting instant from `metadata/backfill_posting.json` (2018-05-17)
+- Tried: no experiment and no new variant. A decision-record change for Eleonora to merge: the "Proposed" banner and sentence removed, the established posting instant recorded. Variants: 0.
+- Result: none scored. No code, declaration or published figure changes.
+- Against kill: not applicable (no result).
+- Next: step 3 follows Eleonora's decision on whether to register (step 4); the H5 models still need pre-2018 inputs the project does not hold.
 
 ### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
 - Directive: #707 (sub-question 1: 2021-23)
@@ -537,6 +559,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
+### 2026-10-14 [H5] step 4 · eleonorabjornberg/repo-market-model#775
+- Directive: #758
+- Step: 4 (the best candidate against H2's ceiling; stacked on #634)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panels `92bf10a4…` (ceiling fits) and as in `scripts/spread_distribution_634.py`; base `1bbee114`; declaration `metadata/h5_step4_758.json`
+- Tried: no new model. H2's cross-fitted and reachable gradient-boosted fits rerun, and #634's `gbm_funding` and variant (c) walks rerun, scored on H2's 1,598 walk-forward days by the protocol's grid CRPS against B1. Variants: 0.
+- Result: best candidate `gbm_funding` +0.257 [+0.114, +0.400] against B1 on ordinary targets, ceiling +0.168 [+0.003, +0.316], reachable line +0.196 [+0.019, +0.354]; headroom of the ceiling −0.090 [−0.161, −0.019]. Shown in one of 13 cells: regime 2024 (+0.110 [+0.027, +0.160]). The rerun differs from H2's recorded skills by 0.004 to 0.006. Detail in `docs/pivot/h5-step4-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: step 5, the model-risk validation report for `gbm_funding` (Eleonora's ruling of 15 October 2026: stop model work); the 2024 split is an avenue, not a next step.
+
 ### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#732
 - Directive: #732
 - Step: 5 (the running variant count that every registration publishes, §2 of the protocol)
@@ -576,3 +608,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the conflict block that reached main on 15 October (#794) would now fail the check; the tracked Markdown has none.
 - Against kill: not applicable (groundwork).
 - Next: none for this item.
+
+### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#792
+- Directive: #754 (power tested a different way; a design study, no verdict, nothing registered)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `801d4e7a`; rule `docs/research/power-replay-754.md`, committed before the study ran
+- Tried: windows of 60, 125 and 250 days slid every 5 days over real forecast pairs (B3 against B1; B2 against B1 and the reverse) and over three known-equal series (a relabelled copy, the demeaned pair, block sign-flips), and bootstrap paths of 60 to 500 days at true skill 0 to 50%; three test families (the current test with its critical value calibrated on circular blocks and on the path generator, a fixed-b Diebold-Mariano test, a betting e-process on lead 1 and on leads 1 to 5). Days after 2025-12-31 are not read. Variants: 5 families, 4 series.
+- Result: only B3 against B1 is a known-better pair (skill 21.8%); B2 scores worse than B1. At that gain the current test flags 66% to 73% of windows but flags 26% to 33% of sign-flipped B3 windows, so its size on a symmetric null is far above 5%; the fixed-b test flags 27% to 34% of the real windows and 4% to 10% of the sign-flipped. Synthetic gated power at a 3% gain, 250 days: 10% (current), 8% (matched null), 3% (fixed-b), 0% (e-process, whose bounded bets never grow on these scores). No family reaches 80% power at any gain up to 50% in 250 days; the current test does at 50% in 500 days. By normal-theory arithmetic the daily signal-to-noise of B3's 22% gain needs about 1,300 days. The rule's pick (the e-process on lead 1) holds the size limit with 0% power.
+- Against kill: not applicable (H1 is a validity check; development).
+- Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
