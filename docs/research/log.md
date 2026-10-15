@@ -688,3 +688,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: a true 3% skill is detected on 0.8% (full history, circular), 7.8% (post-2020-04, circular), 1.8% (full, stationary) and 13.9% (post-2020-04, stationary, #656's own) of paths by 250 days; none reaches 80% at either look, so days needed and the smallest skill detected at target power are null in every reading. Size with no true skill by 250 days: 0.5%, 6.1%, 1.3% and 10.9%. Detail in `docs/research/power-study-769-result.md`.
 - Against kill: not applicable (groundwork; development data gives no verdict).
 - Next: Eleonora settles the MME, B3's verdict rule (#768) and the confirmation design (#754, #733) after this result.
+
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#826
+- Directive: #802
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, narrowing #743's floor)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `7cebb08f`
+- Tried: an operation is no take-up only if it is a test trade (a whole-million trade of at most $7 mn; a small value exercise note still drops it), replacing the $0.1 bn floor; #743's evidence re-run, with an arm that zeroes all fourteen `fed_repo_*` columns. Variants: 1 rule, 3 arms.
+- Result: the six dates of the finding keep their take-up; the ordinary-day pressure AUROC of `fed_repo_days_since_positive` at lead 1 is 0.60 [0.42, 0.76] (counted 0.64, floor 0.50), and the 2018 warnings are 3 of 5 in every arm, including with all `fed_repo_*` columns zeroed.
+- Against kill: not applicable (no verdict; development data).
+- Next: #787 applies the rule to `srf_total_accepted` and publishes; H5 step 2 inputs.
