@@ -486,3 +486,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 3% is not detected within 250 days (power 0.16 at 125, 0.29 at 250 against a 0.80 target); look 1 (60 days) cannot be read with 10,000 draws; post-hoc, the test fires on 21.75% of paths with no true difference by 250 days.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#792
+- Directive: #754 (power tested a different way; a design study, no verdict, nothing registered)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `801d4e7a`; rule `docs/research/power-replay-754.md`, committed before the study ran
+- Tried: windows of 60, 125 and 250 days slid every 5 days over real forecast pairs (B3 against B1; B2 against B1 and the reverse) and over three known-equal series (a relabelled copy, the demeaned pair, block sign-flips), and bootstrap paths of 60 to 500 days at true skill 0 to 50%; three test families (the current test with its critical value calibrated on circular blocks and on the path generator, a fixed-b Diebold-Mariano test, a betting e-process on lead 1 and on leads 1 to 5). Days after 2025-12-31 are not read. Variants: 5 test readings, 4 series.
+- Result: only B3 against B1 is a known-better pair (skill 21.8%); B2 scores worse than B1. At that gain the current test flags 66% to 73% of windows but flags 26% to 33% of sign-flipped B3 windows, so its size on a symmetric null is far above 5%; the fixed-b test flags 27% to 34% of the real windows and 4% to 10% of the sign-flipped. Synthetic gated power at a 3% gain, 250 days: 10% (current), 8% (matched null), 3% (fixed-b), 0% (e-process, whose bounded bets never grow on these scores). No family reaches 80% power at any gain up to 50% in 250 days; the current test does at 50% in 500 days. By normal-theory arithmetic the daily signal-to-noise of B3's 22% gain needs about 1,300 days. The rule's pick (the e-process on lead 1) holds the size limit with 0% power.
+- Against kill: not applicable (H1 is a validity check; development).
+- Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
