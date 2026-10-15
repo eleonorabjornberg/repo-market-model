@@ -74,8 +74,8 @@ Table 3. Ordinary days, pooled: the 12 series with the largest absolute Spearman
 | change | `tail_spread_level` | 1 | -0.225 | 1602 |
 | change | `sofr_p75_iorb_bps` | 1 | -0.218 | 1600 |
 | change | `spread_bps` | 1 | -0.213 | 1602 |
+| change | `net_settlement_due_5d` | 1 | +0.187 | 1602 |
 | change | `spread_nowcast_bps` | 1 | -0.186 | 1602 |
-| change | `net_settlement_due_5d` | 1 | +0.175 | 1602 |
 | change | `days_to_month_end` | 1 | -0.170 | 1602 |
 | change | `dispersion_p99_p1` | 1 | -0.169 | 1602 |
 | change | `treasury_settlement@per_release` | 2 | +0.166 | 1602 |

@@ -332,7 +332,7 @@ The intervals are the stationary bootstrap's, resampling days within a split; th
 may read it. Nothing on it is a verdict, and none of it is out-of-sample evidence for a registered candidate (scoring protocol v1, #640). The blind tier
 (after 2026-09-03) stays shut: `repo_model.exploration.EXPLORATORY_END` is the one end date, and a panel past it is refused. The screen was re-run unchanged
 (same ordinary-day rule, leads, targets, bootstrap and seed) on a panel that runs to 2026-09-03; the declaration was regenerated and committed before the run
-(`metadata/source_matrix_629.json`, panel `c823a0ce…`). Evidence: `docs/pivot/evidence/source-matrix-684/` (`source_matrix.json`, `tables.md`).
+(`metadata/source_matrix_629.json`, panel `6a8388fb…`). Evidence: `docs/pivot/evidence/source-matrix-684/` (`source_matrix.json`, `tables.md`).
 
 * **Days.** 2,042 scored days (2018-06-29 to 2026-09-03), 1,602 ordinary, 145 days above +5 bp of which 84 are ordinary, 30 onsets of which 6 fall on ordinary days
   (the same six as above: none of the 2026 pressure days is an ordinary-day onset).
@@ -349,5 +349,13 @@ may read it. Nothing on it is a verdict, and none of it is out-of-sample evidenc
 * **What moves with the 2026 days.** Little in the pooled tables: the top of Table 2 is the same series in the same order (`policy_reserve_management_in_force`, Spearman -0.32 with the
   +5 bp indicator at lead 1 on both pages; it is a step that switches on at 2019-10-15, so it separates the 2018-19 days from the rest and is a period contrast, not a signal). The 2026 days add
   133 ordinary days with 2 pressure days to a pooled sample of 84, so they pull the pooled figures towards the calm side by a small amount.
+
+* **The declared panel, and why it moved.** The first run declared panel `c823a0ce…`. That panel rebuilds exactly at the commit that declared it (`49c690cf`) from the chain
+  `build` (published panel), then `pressure_v1_1.py panel`, `measurement_fields.py panel`, `net_settlement.py panel`, `policy_features.py panel`, `nowcast.py panel` (on the `policy_features` output; no `fed_liquidity.py` step),
+  `dvp_segment_inputs.py panel`, `early_warning_inputs.py panel` and `satiation_distance_598.py panel` (on the `nowcast` output), each with `--end 2026-09-03` where the script takes it, then
+  `source_screen.py panel --panel AUG6.csv --extra DVP.csv EW.csv AUG2D.csv`. On main the same chain gives `6a8388fb…`: #679 (a partly announced bill class is left out until it is fully announced) changed one column,
+  `net_settlement_due_5d`, on 96 rows, and no other column moves. The declaration is re-declared as `6a8388fb…` and the screen re-run on it. Figures that moved: only that series'
+  (pooled AUROC at lead 1 0.433 [0.350, 0.529] to 0.440 [0.352, 0.535]; at lead 5 0.509 [0.438, 0.588] to 0.525 [0.453, 0.606]; the lead-1 change correlation +0.175 to +0.187).
+  No other series, ranking, interval or 2026 cell moved, and no reading changes. The #631 screen, re-run on the new panel, differs from the committed one only in its recorded panel digest.
 
 See `docs/pivot/evidence/source-matrix-684/tables.md` for the nine tables on the extended window.
