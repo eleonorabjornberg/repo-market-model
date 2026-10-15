@@ -13,7 +13,7 @@ Recorded mutations (the new leakage guards; each run on the tests named, then re
   spread of a target row. `CalendarViewTests.test_a_column_that_is_not_a_calendar_column_is_refused` failed with
   `AssertionError` ("LookAheadError not raised"); restored, it passes. (No context reads such a column, so the other
   tests did not notice: `ContextTests.test_a_context_reads_no_column_but_the_calendar` passed under this mutation.)
-* `choose_weight`: `if index + max(HORIZONS) <= anchor` replaced with `if index + max(HORIZONS) <= anchor + 1`, so a
+* `choose_weight`: `if index + lead <= anchor` replaced with `if index + lead <= anchor + 1`, so a
   trailing day whose last target is the row after the anchor, not public at the decision instant, is scored.
   `WeightTests.test_a_trailing_day_with_a_target_after_the_anchor_is_not_scored` and
   `AsOfTests.test_a_future_spread_moves_no_forecast` both errored with `LookAheadError` ("... reads ..., after ..., the last
