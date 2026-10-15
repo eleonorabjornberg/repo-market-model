@@ -486,3 +486,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 3% is not detected within 250 days (power 0.16 at 125, 0.29 at 250 against a 0.80 target); look 1 (60 days) cannot be read with 10,000 draws; post-hoc, the test fires on 21.75% of paths with no true difference by 250 days.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+### 2026-10-15 [H4] step 2 · eleonorabjornberg/repo-market-model#790
+- Directive: #781
+- Step: 2 (milestone M2, evidence for the posting instant: the Liberty Street copy)
+- Tier: development
+- Pins: none (no panel read, no score); base `236d175`
+- Tried: no forecast variant and no new score. The Liberty Street post on the revised broad Treasuries financing rate fetched, tracked with its sha256 and cited on the posting-dates page. Variants: 0.
+- Result: the page's editor's note dates a correction of the linked historical-rates file to May 17, 2018 and gives no time of day; it does not state a first posting.
+- Against kill: not applicable (evidence for the posting-instant ruling; no figure moves).
+- Next: Eleonora's read of whether the correction note supports the 17 May 2018 ruling; whether the linked data file is fetched too.
