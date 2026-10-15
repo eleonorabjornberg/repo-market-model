@@ -50,7 +50,7 @@ H2's fits were re-run from the two H2-valued panels on **current main code** (`/
 
 ## Marked questions for Eleonora (judgement calls, not settled here)
 
-1. **Which ceiling stands for H5 step 4.** H5 step 4 relaxed the reproduction tolerance from 0.001 to 0.01 as a declared deviation. The trace shows the 0.001 check passes on the panel H2 declared, rebuilt at its own tree. Should the headroom be reported against that ceiling (H2's declared panel, recorded figures), against the current-main ceiling, or both?
+1. **Which ceiling stands for H5 step 4.** H5 step 4 relaxed the reproduction tolerance from 0.001 to 0.01 as a declared deviation. The trace shows the check at the original tolerance (the one H2 recorded) passes on the panel H2 declared, rebuilt at its own tree. Should the headroom be reported against that ceiling (H2's declared panel, recorded figures), against the current-main ceiling, or both?
 2. **The ceiling's interval.** On H2's panel the ceiling gbm's interval against B1 is [-0.009, +0.310] and covers 0; on `92bf10a4…` it is [+0.003, +0.316] and does not. The reachable fit's interval clears 0 on both. Whether H2's kill rule reads the ceiling or the reachable fit, and what a crossing at this size means, is hers.
 
 ## Reproduce
