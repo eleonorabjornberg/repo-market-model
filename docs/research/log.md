@@ -417,6 +417,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
 
+### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#748
+- Directive: #734
+- Step: 2 (milestone M2, "Guard updated": the back-fill amendment of `docs/decisions/information-set.md` put in force)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `e9ce416`; posting instant from `metadata/backfill_posting.json` (2018-05-17)
+- Tried: no experiment and no new variant. A decision-record change for Eleonora to merge: the "Proposed" banner and sentence removed, the established posting instant recorded. Variants: 0.
+- Result: none scored. No code, declaration or published figure changes.
+- Against kill: not applicable (no result).
+- Next: step 3 follows Eleonora's decision on whether to register (step 4); the H5 models still need pre-2018 inputs the project does not hold.
+
 ### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
 - Directive: #707 (sub-question 1: 2021-23)
 - Step: 3
@@ -576,3 +586,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
+
+### 2026-10-15 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#810
+- Directive: #795
+- Step: groundwork G1 (research-log infrastructure, #638; the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `6871c94`
+- Tried: `check_research_log.py check` now refuses a git conflict marker (a line starting `<<<<<<< ` or `>>>>>>> `, or exactly `=======`) and names the line, in the log and in every tracked Markdown file. Variants: n/a (a check, no model).
+- Result: the conflict block that reached main on 15 October (#794) would now fail the check; the tracked Markdown has none.
+- Against kill: not applicable (groundwork).
+- Next: none for this item.
