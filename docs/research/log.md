@@ -296,6 +296,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Sensitivity (ruling of 13 October 2026, item 2): with the protocol's mean block of 10 days in place of the declared 20, the same gain's interval is [-7.2 pp, -3.4 pp], so the reading is unchanged. Detail in `docs/pivot/ranking-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
 - Next: step 2, accepted by Eleonora on 13 October 2026: rank by tail probability combined with the day type (a directive for it is hers to queue).
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
 - Directive: #687
 - Step: 3 (diagnosis of avenue #674)
@@ -417,15 +418,15 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
 
-### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#728
-- Directive: #685
-- Step: 3 (judge hygiene for an exploratory tier report; no model is scored)
+### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#748
+- Directive: #734
+- Step: 2 (milestone M2, "Guard updated": the back-fill amendment of `docs/decisions/information-set.md` put in force)
 - Tier: development
-- Pins: published panel `4ddc3882…`; base `fa333ae7`; the judge in force, unchanged
-- Tried: 0 model variants; the always-flag reading of tier 1 amended to option B (a flag from an always-flag block is not a warning but still a false alarm, Eleonora's ruling of 13 October 2026 on #666), and `ngboost_laplace` and the three benchmarks re-scored with it off and on.
-- Result: `ngboost_laplace` 17 to 13 of 26 onsets warned, 2.34 false alarms per onset in both readings, tier 1 fails (the #588 draft passed it at 1.81 only because the dropped flags also left the false alarms). The benchmarks lose most of their 2019 warnings (calendar climatology 12 to 2, persistence-logistic 12 to 4, `published_v1` 14 to 8) and fail either way.
-- Against kill: not applicable (no verdict; the +5 bp judge is retired as a decision rule, #640).
-- Next: Eleonora decides whether the amended draft record `docs/decisions/always-flag-blocks.md` merges.
+- Pins: published panel `4ddc3882…`; base `e9ce416`; posting instant from `metadata/backfill_posting.json` (2018-05-17)
+- Tried: no experiment and no new variant. A decision-record change for Eleonora to merge: the "Proposed" banner and sentence removed, the established posting instant recorded. Variants: 0.
+- Result: none scored. No code, declaration or published figure changes.
+- Against kill: not applicable (no result).
+- Next: step 3 follows Eleonora's decision on whether to register (step 4); the H5 models still need pre-2018 inputs the project does not hold.
 
 ### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
 - Directive: #707 (sub-question 1: 2021-23)
@@ -586,3 +587,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the conflict block that reached main on 15 October (#794) would now fail the check; the tracked Markdown has none.
 - Against kill: not applicable (groundwork).
 - Next: none for this item.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#728
+- Directive: #685
+- Step: 3 (judge hygiene for an exploratory tier report; no model is scored)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `fa333ae7`; the judge in force, unchanged
+- Tried: 0 model variants; the always-flag reading of tier 1 amended to option B (a flag from an always-flag block is not a warning but still a false alarm, Eleonora's ruling of 13 October 2026 on #666), and `ngboost_laplace` and the three benchmarks re-scored with it off and on.
+- Result: `ngboost_laplace` 17 to 13 of 26 onsets warned, 2.34 false alarms per onset in both readings, tier 1 fails (the #588 draft passed it at 1.81 only because the dropped flags also left the false alarms). The benchmarks lose most of their 2019 warnings (calendar climatology 12 to 2, persistence-logistic 12 to 4, `published_v1` 14 to 8) and fail either way.
+- Against kill: not applicable (no verdict; the +5 bp judge is retired as a decision rule, #640).
+- Next: Eleonora decides whether the amended draft record `docs/decisions/always-flag-blocks.md` merges.
