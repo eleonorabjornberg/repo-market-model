@@ -24,6 +24,7 @@ from datetime import date, time
 from typing import Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
 
 from . import protocol_benchmarks as pb
+from . import risk_dates
 from . import spread_mean_reversion as smr
 from .data import DailyObservation
 from .evaluation_splits import DAY_TYPE_COLUMNS, SplitDeclaration
@@ -85,11 +86,7 @@ def calendar_view(row: DailyObservation) -> CalendarView:
 def is_risk_day(row: DailyObservation, splits: SplitDeclaration) -> bool:
     """A quarter-end, month-end or tax date, or a day that settles a coupon: read from the calendar columns alone."""
 
-    view = calendar_view(row)
-    if splits.reporting_day_type(row.date, view) != "ordinary":
-        return True
-    coupons = view.get(COUPON_COLUMN)
-    return coupons is not None and float(coupons) > 0.0
+    return risk_dates.is_risk_date(calendar_view(row), risk_dates.NON_ORDINARY, splits=splits, reporting_on=row.date)
 
 
 def target_context(panel: Sequence[DailyObservation], index: int, splits: SplitDeclaration) -> str:
