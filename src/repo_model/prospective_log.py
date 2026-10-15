@@ -13,9 +13,12 @@ exists. From record version 3 the file also carries a `protocol` block, built he
 - the **H7m hook**: a registered estimate read from a liquidity-repository snapshot pinned by digest (Eleonora's
   decision on eleonorabjornberg/repo-market-liquidity#20, Q4). Built only; nothing is registered (`REGISTERED_H7M`).
 
-**The guards.** A block is refused (`LookAheadError`) when it is written at or after the instant its first outcome is
-published (`require_written_before_outcome`): the record exists to be committed before the outcome, and a late one
-could have been made with it in view. An H7m estimate is refused when the snapshot's digest is not the pinned one
+**The guards.** A block is refused (`LookAheadError`) when it is written at or after 23:59 ET on its decision day
+(`require_written_by_decision_day_end`; Eleonora's ruling on #740, a reading of protocol §1: 16:00 would refuse every
+scheduled live-log run, and the outcome's first print, about 08:00, leaves the target day's session open), or at or
+after the instant its first outcome is published (`require_written_before_outcome`, which the cut-off now precedes).
+The block stores `written_at`, and `filled_candidate` refuses a day whose stored `written_at` or commit time is past
+the cut-off. An H7m estimate is refused when the snapshot's digest is not the pinned one
 (`ValueError`), or when the estimate was made available after the decision instant (`LookAheadError`).
 
 **Missing days (§11).** A candidate must log every business day. `filled_candidate` reads a log back and scores a day
@@ -57,7 +60,9 @@ B3 = {
     "reason": "the published v1 declaration forecasts five levels; how it is put on the protocol's 23-level grid is not decided",
 }
 H7M_KEYS = ("snapshot_sha256", "day", "available_at", "deployable", "lower", "upper", "state")
-BLOCK_KEYS = ("version", "grid", "benchmarks", "candidates", "h7m")
+BLOCK_KEYS = ("version", "grid", "benchmarks", "candidates", "h7m", "written_at")
+#: A block is written and committed before this time on its decision day (Eleonora's ruling on #740, 14 October 2026).
+DECISION_DAY_CUTOFF = time(23, 59)
 
 
 # -- the write-before-outcome guard ------------------------------------------------------------------------------------
@@ -91,6 +96,24 @@ def require_written_before_outcome(written_at: datetime, published_at: datetime)
         raise LookAheadError(
             f"the record was written at {local.isoformat()}, not before its first outcome is published at "
             f"{published_at.isoformat()}"
+        )
+
+
+def require_written_by_decision_day_end(written_at: datetime, decision_day: date) -> None:
+    """Refuse a record written at or after 23:59 ET on its decision day (#740).
+
+    Raises:
+        ValueError: `written_at` carries no time zone.
+        LookAheadError: the record was written at or after the cut-off (a record made on an earlier day passes).
+    """
+
+    if written_at.tzinfo is None:
+        raise ValueError("the instant a record is written needs a time zone")
+    local = written_at.astimezone(EASTERN).replace(tzinfo=None)
+    if local >= datetime.combine(decision_day, DECISION_DAY_CUTOFF):
+        raise LookAheadError(
+            f"the record for {decision_day} was written at {local.isoformat()}, not before "
+            f"{DECISION_DAY_CUTOFF.isoformat(timespec='minutes')} ET on its decision day"
         )
 
 
@@ -140,6 +163,7 @@ def protocol_block(
     """
 
     dates = [row.date for row in panel]
+    require_written_by_decision_day_end(written_at, dates[decision_index])
     require_written_before_outcome(written_at, outcome_published_at(dates, decision_index, registry, decision_time))
     b1 = pb.b1_forecast(panel, decision_index, registry=registry, decision_time=decision_time)
     b2 = pb.b2_forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
@@ -155,13 +179,17 @@ def protocol_block(
             str(name): _leads(forecast, f"candidate {name}") for name, forecast in sorted((candidates or {}).items())
         },
         "h7m": None if h7m is None else dict(h7m),
+        "written_at": written_at.astimezone(EASTERN).isoformat(),
     }
     validate_protocol_block(block)
     return block
 
 
-def validate_protocol_block(block: object) -> None:
-    """The block's schema. Raises `ValueError` naming what is wrong."""
+def validate_protocol_block(block: object, decision_day: Optional[date] = None) -> None:
+    """The block's schema. Raises `ValueError` naming what is wrong.
+
+    With `decision_day`, also refuses (`LookAheadError`) a block whose stored `written_at` is past the cut-off.
+    """
 
     if not isinstance(block, dict) or set(block) != set(BLOCK_KEYS):
         raise ValueError(f"a protocol block holds exactly {list(BLOCK_KEYS)}")
@@ -183,6 +211,14 @@ def validate_protocol_block(block: object) -> None:
     h7m = block["h7m"]
     if h7m is not None and (not isinstance(h7m, dict) or set(h7m) != set(H7M_KEYS)):
         raise ValueError(f"protocol.h7m is null or holds exactly {list(H7M_KEYS)}")
+    try:
+        written_at = datetime.fromisoformat(block["written_at"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"protocol.written_at is not an ISO instant: {exc}") from exc
+    if written_at.tzinfo is None:
+        raise ValueError("protocol.written_at needs a time zone")
+    if decision_day is not None:
+        require_written_by_decision_day_end(written_at, decision_day)
 
 
 # -- missing days (§11) ------------------------------------------------------------------------------------------------
@@ -201,20 +237,30 @@ def filled_candidate(
     blocks: Mapping[date, Mapping],
     candidate_id: str,
     decision_days: Sequence[date],
+    *,
+    committed_at: Mapping[date, datetime],
     b1_by_day: Optional[Mapping[date, Mapping[int, Sequence[float]]]] = None,
 ) -> sp.Filled:
     """The candidate's logged forecasts over `decision_days`, B1's standing in where one is missing (§11).
 
     `blocks` maps a decision day to its `protocol` block. A day with no block, or a block without the candidate, is
     missing. `b1_by_day` supplies B1 for a day with no block at all (rebuilt from the panel as of that day).
+    `committed_at` maps each logged day to the commit time of its file; a day's stored `written_at` and commit time
+    must both be before 23:59 ET on its decision day (#740).
 
     Raises:
+        LookAheadError: a block was written or committed at or after the cut-off on its decision day.
+        ValueError: a logged day has no commit time, or a block is malformed.
         RegistrationVoid: more than 5% of the days are missing.
         ProtocolError: a missing day has no B1 to stand in.
     """
 
     candidate: Dict[date, Dict[int, Sequence[float]]] = {}
     for day, block in blocks.items():
+        validate_protocol_block(block, decision_day=day)
+        if day not in committed_at:
+            raise ValueError(f"the log for {day} has no commit time to check against the cut-off")
+        require_written_by_decision_day_end(committed_at[day], day)
         logged = block["candidates"].get(candidate_id)
         if logged is not None:
             candidate[day] = {int(h): q for h, q in logged.items()}

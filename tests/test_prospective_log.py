@@ -21,6 +21,15 @@ record format in `scripts/live_record.py`.
 4. `prospective_log.read_h7m_estimate`: the digest comparison `if digest != pinned_sha256:` changed to `if False:`.
    `H7mHookTests.test_a_snapshot_whose_digest_is_not_the_pinned_one_is_refused` failed with
    `AssertionError: ValueError not raised`.
+5. `prospective_log.require_written_by_decision_day_end` (#740), 14 October 2026, same method: the guard
+   `if local >= datetime.combine(decision_day, DECISION_DAY_CUTOFF):` changed to `if False:`. Five
+   `DecisionDayCutoffTests` failed with `AssertionError: LookAheadError not raised`
+   (`test_a_block_written_from_23_59_on_its_decision_day_is_refused`,
+   `test_a_stored_written_at_after_the_cutoff_is_refused_on_validation`, `test_filling_checks_the_commit_times`,
+   `test_the_cutoff_is_read_on_the_markets_clock`, `test_the_oracle_block_of_the_finding_is_refused`).
+6. `prospective_log.filled_candidate` (#740): the commit-time check `require_written_by_decision_day_end(committed_at[day], day)`
+   replaced by `pass`. `DecisionDayCutoffTests.test_filling_checks_the_commit_times` failed with
+   `AssertionError: LookAheadError not raised` (the only failure).
 """
 
 from __future__ import annotations
@@ -163,11 +172,16 @@ class MissingDayTests(unittest.TestCase):
             block["candidates"]["cand"] = {h: [v - 0.4 for v in q] for h, q in ((str(h), b1[h]) for h in b1)}
             self.blocks[self.rows[t].date] = block
 
+    @staticmethod
+    def commits(blocks):
+        """Each logged day committed at 17:30 ET on its own decision day, as the scheduled live-log run does."""
+        return {day: _at(day, 17, 30) for day in blocks}
+
     def test_a_missing_day_is_scored_as_b1s_forecast_and_counted(self):
         missing = self.days[7]
         blocks = copy.deepcopy(self.blocks)
         blocks[missing]["candidates"] = {}
-        filled = pl.filled_candidate(blocks, "cand", self.days)
+        filled = pl.filled_candidate(blocks, "cand", self.days, committed_at=self.commits(blocks))
         self.assertEqual(filled.missing_days, (missing,))
         self.assertAlmostEqual(filled.missing_share, 1 / 21)
         b1 = {int(h): q for h, q in self.blocks[missing]["benchmarks"]["b1"].items()}
@@ -190,24 +204,111 @@ class MissingDayTests(unittest.TestCase):
         for day in self.days[:2]:
             blocks[day]["candidates"] = {}
         with self.assertRaises(sp.RegistrationVoid):
-            pl.filled_candidate(blocks, "cand", self.days)
+            pl.filled_candidate(blocks, "cand", self.days, committed_at=self.commits(blocks))
 
     def test_a_day_whose_block_has_no_such_candidate_is_missing(self):
         blocks = copy.deepcopy(self.blocks)
         blocks[self.days[5]]["candidates"] = {}
-        filled = pl.filled_candidate(blocks, "cand", self.days)
+        filled = pl.filled_candidate(blocks, "cand", self.days, committed_at=self.commits(blocks))
         self.assertEqual(filled.missing_days, (self.days[5],))
 
     def test_a_decision_day_with_no_record_at_all_still_needs_b1(self):
         blocks = {day: block for day, block in self.blocks.items() if day != self.days[0]}
         with self.assertRaises(ValueError):
-            pl.filled_candidate(blocks, "cand", self.days, b1_by_day=None)
+            pl.filled_candidate(blocks, "cand", self.days, committed_at=self.commits(blocks), b1_by_day=None)
         # B1 is a function of the panel as of that day, so it can be rebuilt for a day whose record was never written
         lost = self.days[0]
         rebuilt = {int(h): q for h, q in self.blocks[lost]["benchmarks"]["b1"].items()}
-        filled = pl.filled_candidate(blocks, "cand", self.days, b1_by_day={lost: rebuilt})
+        filled = pl.filled_candidate(blocks, "cand", self.days, committed_at=self.commits(blocks), b1_by_day={lost: rebuilt})
         self.assertEqual(filled.missing_days, (lost,))
         self.assertEqual({h: list(q) for h, q in filled.forecasts[lost].items()}, rebuilt)
+
+
+class DecisionDayCutoffTests(unittest.TestCase):
+    """Eleonora's ruling on #740 (14 October 2026): a block is written and committed before 23:59 ET on its decision day.
+
+    Her reading of protocol §1, not a change to it. Reads stay guarded at 16:00 by `InformationRule`.
+    """
+
+    def setUp(self):
+        self.rows = _rows()
+        self.day = self.rows[T].date
+
+    def test_a_block_written_before_the_cutoff_on_its_decision_day_is_accepted(self):
+        pl.require_written_by_decision_day_end(_at(self.day, 17, 30), self.day)
+        pl.require_written_by_decision_day_end(_at(self.day, 23, 58), self.day)
+
+    def test_a_block_written_from_23_59_on_its_decision_day_is_refused(self):
+        for late in (_at(self.day, 23, 59), _at(self.day + timedelta(days=1), 8), _at(self.day + timedelta(days=1), 23)):
+            with self.assertRaises(LookAheadError):
+                pl.require_written_by_decision_day_end(late, self.day)
+
+    def test_the_cutoff_is_read_on_the_markets_clock(self):
+        utc = ZoneInfo("UTC")
+        # 23:30 ET is 03:30 UTC the next day (or 04:30 in winter), still inside the cutoff
+        pl.require_written_by_decision_day_end(_at(self.day, 23, 30).astimezone(utc), self.day)
+        with self.assertRaises(LookAheadError):
+            pl.require_written_by_decision_day_end(_at(self.day + timedelta(days=1), 0, 30).astimezone(utc), self.day)
+
+    def test_an_instant_with_no_zone_is_refused(self):
+        with self.assertRaises(ValueError):
+            pl.require_written_by_decision_day_end(datetime.combine(self.day, time(12)), self.day)
+
+    def test_the_oracle_block_of_the_finding_is_refused(self):
+        """#740: written the evening after the decision day, before the 15:00 outcome instant, it was accepted."""
+        evening_after = _at(self.day + timedelta(days=1), 23)
+        with self.assertRaises(LookAheadError):
+            pl.protocol_block(
+                self.rows, T, registry=REGISTRY, decision_time=DECISION, splits=SPLITS, written_at=evening_after
+            )
+
+    def test_the_block_stores_when_it_was_written(self):
+        written = _at(self.day, 17, 30)
+        block = pl.protocol_block(
+            self.rows, T, registry=REGISTRY, decision_time=DECISION, splits=SPLITS, written_at=written
+        )
+        self.assertEqual(datetime.fromisoformat(block["written_at"]), written)
+        pl.validate_protocol_block(block)
+        del block["written_at"]
+        with self.assertRaises(ValueError):
+            pl.validate_protocol_block(block)
+
+    def test_a_stored_written_at_after_the_cutoff_is_refused_on_validation(self):
+        block = pl.protocol_block(
+            self.rows, T, registry=REGISTRY, decision_time=DECISION, splits=SPLITS, written_at=_at(self.day, 17)
+        )
+        block["written_at"] = _at(self.day + timedelta(days=1), 9).isoformat()
+        with self.assertRaises(LookAheadError):
+            pl.validate_protocol_block(block, decision_day=self.day)
+
+    def test_filling_checks_the_commit_times(self):
+        days = [self.rows[t].date for t in range(T, T + 21)]
+        blocks = {}
+        for t in range(T, T + 21):
+            block = pl.protocol_block(
+                self.rows, t, registry=REGISTRY, decision_time=DECISION, splits=SPLITS,
+                written_at=_at(self.rows[t].date, 17),
+            )
+            b1 = {int(h): q for h, q in block["benchmarks"]["b1"].items()}
+            block["candidates"]["cand"] = {str(h): q for h, q in b1.items()}
+            blocks[self.rows[t].date] = block
+        commits = {day: _at(day, 17, 30) for day in days}
+        pl.filled_candidate(blocks, "cand", days, committed_at=commits)
+        # committed the next morning: the block may have been made with the outcome in view
+        late = dict(commits)
+        late[days[4]] = _at(days[4] + timedelta(days=1), 9)
+        with self.assertRaises(LookAheadError):
+            pl.filled_candidate(blocks, "cand", days, committed_at=late)
+        # a logged day with no commit time cannot be checked
+        unknown = dict(commits)
+        del unknown[days[4]]
+        with self.assertRaises(ValueError):
+            pl.filled_candidate(blocks, "cand", days, committed_at=unknown)
+        # a stored written_at after the cutoff is refused even when the commit time is on time
+        forged = copy.deepcopy(blocks)
+        forged[days[2]]["written_at"] = _at(days[2] + timedelta(days=1), 9).isoformat()
+        with self.assertRaises(LookAheadError):
+            pl.filled_candidate(forged, "cand", days, committed_at=commits)
 
 
 class H7mHookTests(unittest.TestCase):
