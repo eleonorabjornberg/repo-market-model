@@ -507,6 +507,17 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
+<<<<<<< HEAD
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
+- Directive: #743
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9674324b`
+- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
+- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
+=======
 ### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
 - Directive: #740
 - Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
@@ -516,3 +527,4 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
 - Against kill: not applicable (no hypothesis test).
 - Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
+>>>>>>> origin/main
