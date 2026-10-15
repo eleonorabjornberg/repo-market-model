@@ -689,6 +689,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork; development data gives no verdict).
 - Next: Eleonora settles the MME, B3's verdict rule (#768) and the confirmation design (#754, #733) after this result.
 
+### 2026-10-15 [H6] step 1 · eleonorabjornberg/repo-market-model#783
+- Directive: #739
+- Step: 1 (the re-read of #693's development kill rule on the studentized bootstrap of protocol ruling 1; Eleonora's ruling on #739)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmark B1, unchanged (ruling 6); seed 693; base `9674324`
+- Tried: no new model. #693's 2 candidates on the same 383 risk target days, benchmarks and seed, with the interval read as skill − q·se on the studentized draws instead of the percentile of the draws. The calibrated critical value is not used (it belongs to checkpoints). Variants: 0.
+- Result: no development skill. The H5 mean-reverting row's pooled CRPS skill against B1 is +3.18% [−0.90%, +6.03%] (the percentile lower bound was +0.03%); its MAE skill against B1 is +0.70% [−3.00%, +3.12%]. Against the calendar benchmark CRPS skill is +26.80% [−2.58%, +46.79%]. By regime, CRPS skill against B1 is +4.45% in 2018-19, −1.82% in 2020-24 and +5.70% in 2025-26, every interval covering zero. Detail in `docs/research/risk-date-reread-739.md`. The entry of #719 is not edited.
+- Against kill: killed on the declared development rule (skill against both benchmarks on CRPS or MAE: none). H6 stays open: its kill is by futility on prospective days.
+- Next: #724 (H6 step 2) is out of the queue until H5 step 5 (ruling on #739).
+
 ### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#826
 - Directive: #802
 - Step: 1 (screening; data meaning of the Fed repo take-up columns, narrowing #743's floor)
