@@ -566,3 +566,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
+
+### 2026-10-15 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#810
+- Directive: #795
+- Step: groundwork G1 (research-log infrastructure, #638; the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `6871c94`
+- Tried: `check_research_log.py check` now refuses a git conflict marker (a line starting `<<<<<<< ` or `>>>>>>> `, or exactly `=======`) and names the line, in the log and in every tracked Markdown file. Variants: n/a (a check, no model).
+- Result: the conflict block that reached main on 15 October (#794) would now fail the check; the tracked Markdown has none.
+- Against kill: not applicable (groundwork).
+- Next: none for this item.
