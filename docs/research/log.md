@@ -296,6 +296,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Sensitivity (ruling of 13 October 2026, item 2): with the protocol's mean block of 10 days in place of the declared 20, the same gain's interval is [-7.2 pp, -3.4 pp], so the reading is unchanged. Detail in `docs/pivot/ranking-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
 - Next: step 2, accepted by Eleonora on 13 October 2026: rank by tail probability combined with the day type (a directive for it is hers to queue).
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
 - Directive: #687
 - Step: 3 (diagnosis of avenue #674)
@@ -537,35 +538,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
-<<<<<<< HEAD
-### 2026-10-15 [H4] step 2 · eleonorabjornberg/repo-market-model#790
-- Directive: #781
-- Step: 2 (milestone M2, evidence for the posting instant: the Liberty Street copy)
-- Tier: development
-- Pins: none (no panel read, no score); base `236d175`
-- Tried: no forecast variant and no new score. The Liberty Street post on the revised broad Treasuries financing rate fetched, tracked with its sha256 and cited on the posting-dates page. Variants: 0.
-- Result: the page's editor's note dates a correction of the linked historical-rates file to May 17, 2018 and gives no time of day; it does not state a first posting.
-- Against kill: not applicable (evidence for the posting-instant ruling; no figure moves).
-- Next: Eleonora's read of whether the correction note supports the 17 May 2018 ruling; whether the linked data file is fetched too.
-### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
-- Directive: #743
-- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
-- Tier: development
-- Pins: published panel `4ddc3882…`; base `9674324b`
-- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
-- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
-- Against kill: not applicable (no verdict; development data).
-- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
-### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
-- Directive: #740
-- Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
-- Tier: development
-- Pins: no panel and no scoring; tracked fixtures only; base `b0da43a`
-- Tried: a write-time guard at 23:59 ET on the decision day (`require_written_by_decision_day_end`), `written_at` stored in every block, and `filled_candidate` refusing a stored `written_at` or commit time past the cut-off. Variants: n/a (a guard, no model).
-- Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
-- Against kill: not applicable (no hypothesis test).
-- Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
-=======
 ### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#732
 - Directive: #732
 - Step: 5 (the running variant count that every registration publishes, §2 of the protocol)
@@ -575,4 +547,43 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the count moves from 2 declarations and 4 variants (the files named `spread_distribution_*`) to 19 declarations and 55 variants. `near_threshold_688.json`, the case that found the gap, is now seen (3 variants, under `model`). The 55 include the pre-pivot +5 bp classification variants as well as spread-forecast ones, because the ruling counts by content.
 - Against kill: not applicable (no verdict; a count, not a score).
 - Next: Eleonora's call on converting the exempt declarations to carry `hypothesis`, and on whether the page should show the count by hypothesis.
->>>>>>> origin/main
+
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
+- Directive: #740
+- Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `b0da43a`
+- Tried: a write-time guard at 23:59 ET on the decision day (`require_written_by_decision_day_end`), `written_at` stored in every block, and `filled_candidate` refusing a stored `written_at` or commit time past the cut-off. Variants: n/a (a guard, no model).
+- Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
+
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
+- Directive: #743
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9674324b`
+- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
+- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
+
+### 2026-10-15 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#810
+- Directive: #795
+- Step: groundwork G1 (research-log infrastructure, #638; the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `6871c94`
+- Tried: `check_research_log.py check` now refuses a git conflict marker (a line starting `<<<<<<< ` or `>>>>>>> `, or exactly `=======`) and names the line, in the log and in every tracked Markdown file. Variants: n/a (a check, no model).
+- Result: the conflict block that reached main on 15 October (#794) would now fail the check; the tracked Markdown has none.
+- Against kill: not applicable (groundwork).
+- Next: none for this item.
+
+### 2026-10-15 [H4] step 2 · eleonorabjornberg/repo-market-model#790
+- Directive: #781
+- Step: 2 (milestone M2, evidence for the posting instant: the Liberty Street copy)
+- Tier: development
+- Pins: none (no panel read, no score); base `236d175`
+- Tried: no forecast variant and no new score. The Liberty Street post on the revised broad Treasuries financing rate fetched, tracked with its sha256 and cited on the posting-dates page. Variants: 0.
+- Result: the page's editor's note dates a correction of the linked historical-rates file to May 17, 2018 and gives no time of day; it does not state a first posting.
+- Against kill: not applicable (evidence for the posting-instant ruling; no figure moves).
+- Next: Eleonora's read of whether the correction note supports the 17 May 2018 ruling; whether the linked data file is fetched too.
