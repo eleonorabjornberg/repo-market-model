@@ -229,5 +229,23 @@ class SummaryTests(unittest.TestCase):
         self.assertGreater(row["skill_upper_95_one_sided"], test.skill)
 
 
+class SensitivityTests(unittest.TestCase):
+    """Variant (a) stays on the grid against B1 and B2; a sensitivity scores it on its own five levels (ruling on #711)."""
+
+    def test_the_sensitivity_pairs_are_a_against_b1_and_b2(self):
+        self.assertEqual(script.SENSITIVITY_FIVE, (("B1", "a_published_new"), ("B2", "a_published_new")))
+
+    def test_the_sensitivity_table_is_labelled_and_reads_the_five_level_pairs(self):
+        entry = {"skill": 0.2, "skill_lower_95_one_sided": 0.1, "skill_upper_95_one_sided": 0.3, "mean_difference_lower_95_one_sided": 0.05}
+        tests = {"B1 -> a_published_new": entry, "B2 -> a_published_new": dict(entry, skill=0.25)}
+        means = {"B1": 2.3, "B2": 2.5, "a_published_new": 1.8}
+        lines = script.sensitivity_table(tests, means)
+        self.assertIn("sensitivity", lines[0])
+        row = next(line for line in lines if script.LABELS["a_published_new"] in line)
+        self.assertIn(script.cell(entry), row)
+        self.assertIn(script.cell(tests["B2 -> a_published_new"]), row)
+        self.assertIn("1.800", row)
+
+
 if __name__ == "__main__":
     unittest.main()

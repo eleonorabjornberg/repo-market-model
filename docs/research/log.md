@@ -5,7 +5,9 @@ One entry per scored experiment, newest last. The plan is [`plan.md`](plan.md); 
 CI. The same format serves both repositories (`repo-market-liquidity` results arrive as a fenced `research-log`
 block copied verbatim from that repository's pull request body).
 
-Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time).
+Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
+hypothesis manual, kept apart from the six steps) has its own heading,
+`### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR`; an item that covers two pieces of groundwork has one entry each.
 Lines: Directive, Step, Tier (`development` or `confirmation`), Pins, Tried, Result, Against kill, Next.
 
 **Backfill, 12 October 2026.** The entries from 10 to 12 October were written after the fact from the pull request
@@ -225,6 +227,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H3's kill is not tested here; the two series lose rank, and neither was a lead beyond #630's own reading).
 - Next: Eleonora decides whether the source is admitted given the withheld weeks.
 
+### 2026-10-13 [H2] step 2 · eleonorabjornberg/repo-market-model#709
+- Directive: #682
+- Step: 2 (groundwork)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d4`
+- Tried: one shared risk-date function with two named definitions; counts per lead under both. Variants: n/a.
+- Result: at h = 1 the ordinary set is 1568 days with 87 pressure days (`scheduled`) or 1469 with 82 (`non_ordinary`); the 99 month-ends that are not quarter-ends are the difference. No figure moves.
+- Against kill: not applicable.
+- Next: ruled 14 October 2026 (relayed): H2, H5 and #637 use the shared `risk_dates` definition, under which announced coupon settlements count as risk dates, from their next step on; past pages keep theirs and are not re-scored. Both named definitions count coupon settlements, so which of the two is still to be named by Eleonora.
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#712
 - Directive: #679
 - Step: 3
@@ -263,7 +275,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Tried: the phase 2 gbm and the published declaration re-scored under protocol v1 (grid CRPS, h = 1 to 5, against B1 and B2; against B3 on its own five levels), and 3 variants with the post-phase-2 inputs (published declaration, gbm, two-part). Variants: 3 new plus 1 re-fitted control; 9 spread-forecast variants in all with phase 2 (3) and #632 (2).
 - Result: published declaration 1.814 bp on its five levels, +21.8% [+14.4%, +41.0%] against B1 and +27.4% [+17.8%, +36.5%] against B2 there; phase 2 gbm on the grid +20.7% [+13.3%, +40.0%] and +27.4% [+17.4%, +36.6%]. The new inputs add nothing on the primary score (ablation −0.9% [−2.3%, +0.6%] for the published declaration, −0.8% [−2.3%, +0.6%] for the gbm); no variant beats B3 on its five levels. Upper-tail twCRPS: only the two-part form is ahead of B3, +5.3% [+0.7%, +10.5%]. In 2021-23 no variant beats persistence.
 - Against kill: not applicable (development days give no verdict); no CRPS gain over the phase 2 models on the primary score.
-- Next: the 2021-23 and upper-tail diagnoses (H5 step 3); B3 is scored on its own five levels by Eleonora's ruling (#660, #700); how variant (a) is put on the grid against B1 and B2 is her question.
+- Next: the 2021-23 and upper-tail diagnoses (H5 step 3); B3 is scored on its own five levels by Eleonora's ruling (#660, #700); variant (a) stays on the grid against B1 and B2 by her ruling on #711, with its own five levels as a sensitivity (+21.1% and +26.8%).
 
 ### 2026-10-13 [H5] step 2 · eleonorabjornberg/repo-market-model#713
 - Directive: #686
@@ -395,6 +407,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
 
+### 2026-10-14 [H1] step 2 · eleonorabjornberg/repo-market-model#751
+- Directive: #733 (a design study for the confirmation test; no verdict, nothing registered)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `6114a8e`; rule `docs/research/confirmation-design-733.md`, committed before the study ran
+- Tried: six declared designs (the in-force test at 250 days; 375 and 500 days; lead 1 alone; a standardized statistic at 250 and 375 days), each calibrated afresh on decision days to 2025-12-31 (no later day read) and simulated for size and for power at 3% and 10% skill (2,000 paths per scenario). A post-hoc addendum re-reads them at the critical value calibrated on the one comparison S(B2) − S(B1) (PR #695, Q-E (b)). Variants: 6 designs, 2 readings.
+- Result: at the critical value in force (the largest across four comparisons) no design has power: D0 to D2 under 1% at 3% and at 10% even on the post-2020 history, D3 2.6% and 3.9% there; the standardized D4 reaches 14.4% and 19.4% on the post-2020 history but fails size (8% to 13%). At reading (b) D0 reproduces PR #695's Q-E table on the post-2020 history (14.3% and 19.7% against 14.0% and 19.25%) with size 11.5%; every design fails size on that history. No design reaches 80% power at 3% or at 30% skill. The §7 rule's pick (D3) is the least bad of the admissible, not a useful design.
+- Against kill: not applicable (H1 is a validity check, not a gain claim); the page's reading is that the confirmation design cannot confirm the 3% MME in 500 days as the test stands.
+- Next: Eleonora decides the reading of the critical value (Q-E) and whether to change the MME or the days; a change is a draft decision record under §13.
+
 ### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
 - Directive: #747
 - Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
@@ -425,6 +447,36 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H5's kill is by the protocol's futility rule; development days give no verdict).
 - Next: whether the window flag belongs in #634's model after #634 lands (H5 step 2); the bill input's product form and bridged persistence are Eleonora's.
 
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#773
+- Directive: #755
+- Step: 3 (reading only: distribution forecasts under regime change, for the 2021–23 and upper-tail diagnoses of #707)
+- Tier: development
+- Pins: none (no data, model or score); base `c0c4525`
+- Tried: no forecast variant. A refresh of the literature scan of 30 September, read on 14 October 2026: regime-switching and time-varying quantile models, combination with time-varying weights, online and conformal recalibration newer than the recalibration track, and tail modelling for a bounded spread. Variants: 0.
+- Result: `docs/research/literature-2026-10.md`. Nothing found that fits a short-horizon spread directly; five leads, three for H5 (quantile-wise combination, tail calibration with twCRPS, conformal with a state predictor). No similar public SOFR − IORB forecasting project dated after 30 September was found.
+- Against kill: not applicable (reading only; development).
+- Next: Eleonora or the orchestrator decides whether any lead is queued, in plan order.
+
+### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#773
+- Directive: #755
+- Step: 3 (reading only: the power of forecast comparisons, for #754's three families)
+- Tier: development
+- Pins: none (no data, model or score); base `c0c4525`
+- Tried: no variant. Tests of equal predictive accuracy with serial dependence and heavy tails, anytime-valid sequential comparisons, and how confirmation periods are sized, read on 14 October 2026.
+- Result: `docs/research/literature-2026-10.md`. Power at 60 to 125 days depends mainly on the dependence and tail weight of the CRPS differences, which no test choice changes; the sequential tests need a declared cap and are weakest at horizons above 1. No source sizes a confirmation period for a CRPS comparison, and none quantifies a sign test under dependence: gaps.
+- Against kill: not applicable (reading only; development).
+- Next: #754 starts after #733 and #737 merge; leads 3 and 4 of the page bear on it.
+
+### 2026-10-14 [H5] step 2 · eleonorabjornberg/repo-market-model#767
+- Directive: #761
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmarks B1, B2; seed 761; base as in the pull request
+- Tried: 3 variants of `spread_mr_level10`: (i) residuals pooled by the target day's context, (ii) a quantile average with B2 whose weight is chosen at each refit on trailing scored days, (iii) both; B1 re-centred on the last ordinary day as a reference row. Variants: 3 (declaration `metadata/spread_distribution_761.json`).
+- Result: grid CRPS 1.737 / 1.780 / 1.745 bp against mean reversion's 1.778 over 1,855 decision days to 2025-12-31; gain over mean reversion, studentized 90%: (i) +2.3% [+1.0%, +3.6%], (ii) -0.1% [-4.5%, +3.1%], (iii) +1.9% [-2.7%, +5.2%]. Upper-tail twCRPS (i) +4.1% [+2.4%, +5.8%]. (i) loses in 2020 (-5.9%) and 2021-23 (-0.3%); (ii) loses after a risk day (-4.3%). Calm ordinary-day P(> +5 bp) error: mean reversion -0.046, (i) -0.021, (iii) -0.006. Detail in `docs/pivot/spread-mr-variants-result.md`.
+- Against kill: not applicable (no verdict; development data). Only (i) has an interval above zero against mean reversion.
+- Next: whether (i) joins #634's candidates is Eleonora's.
+
 ### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
 - Directive: #762
 - Step: 3 (is each benchmark computed as specified: B1, B2 and `richer_targets.b1_quantiles` on a simulated panel with known dynamics; finding #744)
@@ -434,3 +486,33 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
+
+### 2026-10-13 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#699
+- Directive: #656
+- Step: groundwork G3 (prospective logging)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: record version 3 with a protocol block (B1, B2, B3 note, candidates, H7m hook). Variants: n/a.
+- Result: no figure; the prospective log carries the protocol block (copied from the fenced block of PR #699, which the log could not hold until #701).
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+### 2026-10-13 [H5] groundwork G4 · eleonorabjornberg/repo-market-model#699
+- Directive: #656
+- Step: groundwork G4 (power study)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: a power study of the 3% MME under the protocol's test and spending. Variants: n/a.
+- Result: 3% is not detected within 250 days (power 0.16 at 125, 0.29 at 250 against a 0.80 target); look 1 (60 days) cannot be read with 10,000 draws; post-hoc, the test fires on 21.75% of paths with no true difference by 250 days.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
+- Directive: #740
+- Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `b0da43a`
+- Tried: a write-time guard at 23:59 ET on the decision day (`require_written_by_decision_day_end`), `written_at` stored in every block, and `filled_candidate` refusing a stored `written_at` or commit time past the cut-off. Variants: n/a (a guard, no model).
+- Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
