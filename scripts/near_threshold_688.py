@@ -564,13 +564,16 @@ def day_means(cells: Mapping[Tuple[date, int], float], include) -> Dict[date, fl
 
 
 def summarise(test: "sp.PairedTest") -> dict:
+    """One pair's row: both skill bounds are the scorer's studentized ones (ruling 1, #660 and #739), like mean(d)'s (#804)."""
+
+    skill_lower = test.skill - sp._bound(test.skill_t_draws, 1.0 - test.alpha, test.draws) * test.skill_standard_error
     return {
         "n": test.n,
         "benchmark_mean": test.benchmark_mean,
         "mean_difference": test.mean_difference,
         "skill": test.skill,
         "mean_difference_lower_95_one_sided": test.lower_mean_difference(),
-        "skill_lower_95_one_sided": sp._bound(test.skill_draws, test.alpha, test.draws),
+        "skill_lower_95_one_sided": skill_lower,
         "skill_upper_95_one_sided": test.upper_skill(),
         "bootstrap_p": test.p_value,
         "dm_statistic": test.dm_statistic,
@@ -586,8 +589,42 @@ def pair_table(
     if len(days) <= sp.HAC_LAG:
         return {}
     chosen = [({d: scores[b][d] for d in days}, {d: scores[c][d] for d in days}) for b, c in pairs]
-    tests = sp.paired_tests(chosen, seed=SEED, draws=draws)
+    try:
+        tests = sp.paired_tests(chosen, seed=SEED, draws=draws)
+    except sp.ProtocolError:
+        return {f"{b} -> {c}": _single_pair(scores, b, c, days, draws) for b, c in pairs}
     return {f"{b} -> {c}": summarise(test) for (b, c), test in zip(pairs, tests)}
+
+
+def _single_pair(scores: Mapping[str, Mapping[date, float]], reference: str, candidate: str, days: Sequence[date], draws: int) -> dict:
+    """One pair when the stream of pairs failed: a difference with no long-run variance cannot be studentized (#804).
+
+    The ruling replaced the percentile interval, so none stands in. A pair whose difference is zero on every day is a
+    zero row marked `identical`; any other pair the scorer refuses carries its point values and no bounds, marked
+    `not_studentizable`. Neither carries a bound or a p-value. A pair that studentizes is exactly `summarise`'s row.
+    """
+
+    try:
+        (test,) = sp.paired_tests(
+            [({d: scores[reference][d] for d in days}, {d: scores[candidate][d] for d in days})], seed=SEED, draws=draws
+        )
+        return summarise(test)
+    except sp.ProtocolError:
+        pass
+    difference = [scores[reference][d] - scores[candidate][d] for d in days]
+    mean = sum(difference) / len(days)
+    benchmark_mean = sum(scores[reference][d] for d in days) / len(days)
+    row = {
+        "n": len(days), "benchmark_mean": benchmark_mean, "mean_difference": mean,
+        "skill": mean / benchmark_mean if benchmark_mean else None,
+        "mean_difference_lower_95_one_sided": None, "skill_lower_95_one_sided": None, "skill_upper_95_one_sided": None,
+        "bootstrap_p": None, "dm_statistic": None, "dm_p": None,
+    }
+    if all(value == 0.0 for value in difference):
+        row.update({"identical": True})
+    else:
+        row.update({"not_studentizable": True})
+    return row
 
 
 def score_command(args) -> int:
@@ -811,6 +848,9 @@ def screen_text(screen: Mapping) -> str:
 
 
 def _skill(test: Mapping) -> str:
+    if test["skill_lower_95_one_sided"] is None:
+        why = "identical forecasts" if test.get("identical") else "no interval: the difference cannot be studentized"
+        return f"{test['mean_difference']:+.4f} ({100 * test['skill']:+.2f}%; {why})"
     return (
         f"{test['mean_difference']:+.4f} ({100 * test['skill']:+.2f}% [{100 * test['skill_lower_95_one_sided']:+.2f}%, "
         f"{100 * test['skill_upper_95_one_sided']:+.2f}%]), p {test['bootstrap_p']:.3f}"
@@ -825,7 +865,7 @@ def score_text(score: Mapping) -> str:
         f"Decision days: {score['decision_days']['n']} ({score['decision_days']['first']} to {score['decision_days']['last']}). Grid CRPS in bp, "
         "averaged over h = 1 to 5, per decision day. A paired cell is the reference's score minus the candidate's (positive favours the "
         "candidate), its skill the same over the reference's mean, with the one-sided 95% interval of the protocol "
-        f"({score['draws']} stationary-bootstrap draws, seed {score['seed']}). Development days: a description, not a verdict.",
+        f"({score['draws']} studentized stationary-bootstrap draws, seed {score['seed']}). Development days: a description, not a verdict.",
         "",
         "| row | mean grid CRPS | mean twCRPS above 0 bp | days filled with B1 |",
         "|---|---|---|---|",
