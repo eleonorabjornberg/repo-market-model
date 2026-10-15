@@ -43,7 +43,7 @@ Pressure AUROC (+5 bp) on ordinary days, 90% stationary-bootstrap interval, thre
 | `fed_repo_log_accepted` | 1 | 0.53 [0.43, 0.65] | 0.58 [0.50, 0.67] | 0.57 [0.49, 0.67] |
 | `fed_repo_ops` | 1 | 0.52 [0.42, 0.62] | 0.57 [0.49, 0.66] | 0.57 [0.49, 0.66] |
 
-Every interval contains 0.5 under the test-trade rule at lead 1 and 10 for `fed_repo_days_since_positive`; its pooled point estimate sits between the two earlier rules, so
+For `fed_repo_days_since_positive` at leads 1 and 10 the interval of the test-trade rule contains 0.5, and its pooled point estimate sits between the two earlier rules, so
 the floor's drop to 0.50 was partly the narrower rule's own gain removed. The 2018-19 AUROC is the same under all three rules, as in #743.
 
 ## 2. The 2018 onset warnings, by arm
