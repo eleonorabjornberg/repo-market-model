@@ -27,6 +27,7 @@ import random
 import sys
 import tempfile
 from dataclasses import dataclass
+from statistics import NormalDist
 from datetime import date
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -687,9 +688,257 @@ def run_command(args) -> int:
     return 0
 
 
-def report_command(args) -> int:
-    from power_replay_page import render_page  # noqa: F401  (placeholder replaced below)
+FAMILY_NAMES = {
+    "a1": "(a1) the current test, critical values from circular blocks",
+    "a2": "(a2) the current test, critical values matched to the paths (stationary bootstrap)",
+    "b": "(b) the self-normalised Diebold-Mariano test (fixed-b)",
+    "c1": "(c1) the anytime-valid e-process, lead 1",
+    "c5": "(c5) the anytime-valid e-process, mean of leads 1 to 5",
+}
+KIND_NAMES = {"real": "real pair", "E1": "E1 relabelled copy", "E2": "E2 demeaned", "E3": "E3 sign-flipped"}
+PAIR_NAMES = {"P2": "P2 B2 vs B1", "P2r": "P2r B1 vs B2", "P3": "P3 B3 vs B1"}
 
+
+def pct(value: float) -> str:
+    return f"{100.0 * value:.0f}%" if value not in (0.0, 1.0) else f"{100.0 * value:.0f}%"
+
+
+def share_cell(cell: Optional[Dict[str, object]], key: str) -> str:
+    if cell is None or key not in cell:
+        return "n/a"
+    share, low, high = cell[key]
+    if share in (0.0, 1.0) and low == high:
+        return f"{100.0 * share:.0f}%"
+    return f"{100.0 * share:.0f}% [{100.0 * low:.0f}, {100.0 * high:.0f}]"
+
+
+def table(header: Sequence[str], rows: Sequence[Sequence[str]]) -> List[str]:
+    out = ["| " + " | ".join(header) + " |", "|" + "|".join("---" for _ in header) + "|"]
+    out.extend("| " + " | ".join(row) + " |" for row in rows)
+    return out + [""]
+
+
+QUESTIONS = [
+    "## Sources read, and what they say", "",
+    "Read as abstracts only, on arXiv, on 15 October 2026; the full texts were not read, so what follows is limited to "
+    "the abstracts.", "",
+    "- Henzi and Ziegel, *Valid sequential inference on probability forecast performance* (arXiv 2103.08402): the "
+    "abstract is about **probability forecasts for binary events**, and its e-values are for score differences of such "
+    "forecasts. It does not say that they cover the CRPS of a distribution forecast, so family (c) here is a betting "
+    "e-process of the same kind applied to a CRPS difference, not their construction.",
+    "- Choe and Ramdas, *Comparing sequential forecasters* (arXiv 2110.00115): the abstract says the main theorems apply "
+    "to **bounded scores**, with alternative methods for unbounded ones, and that the procedures test a weak null "
+    "(better on average). Family (c) takes a declared bound `C` (the largest absolute difference in the development "
+    "history) and a plug-in bet; it is not their variance-adaptive confidence sequence.",
+    "- Diebold and Mariano (1995), Giacomini and White (2006), Kiefer and Vogelsang: not fetched. The fixed-b value of "
+    "(b) is simulated here on standard-normal series at the same lag, not taken from their tables.", "",
+    "## Questions for Eleonora (this page decides nothing)", "",
+    "1. **Is a confirmation test with no power at the MME acceptable to carry forward?** No family reaches 80% power "
+    "at any gain up to 30% in 250 days, and (a) reaches it only at a 50% gain in 500 days. The arithmetic above says why: "
+    "per day the signal is a small fraction of the noise, even for the 22% gain of B3. Whether to change the MME, the "
+    "days or the target is hers; #769 re-runs the power study on the test in force.",
+    "2. **Is the current test's size acceptable?** Its per-comparison critical value is calibrated on a skewed series, "
+    "so on a symmetric null (E3, the sign-flipped B3 pair) it flags 27% to 33% of windows, with the matched generator "
+    "(a2) as well as without it. A symmetrised or recentred null would be a change to the protocol: a draft decision "
+    "record, not code.",
+    "3. **Should family (c) be studied with a variance-adaptive confidence sequence?** As declared (a bound set by the "
+    "largest difference in history) its bets are too small to cross in the whole history; a different construction is a "
+    "different test, and one more step.",
+    "4. **The only known-better pair is B3 on development days.** The replay's power is for a gain of 22%, not 3%. Pairs "
+    "with a known gain near the MME are among the pairs declared.", ""
+]
+
+
+def render_page(result) -> str:
+    replay, synth = result["replay"], result["synthetic"]
+    k = result["constants"]
+    pool = result["pool"]
+    lines: List[str] = [
+        "# Power by empirical replay and three test families: result (H1 step 3, #754)", "",
+        "<!-- generated: scripts/power_replay.py report; never hand-edited -->", "",
+        f"The rule is [`power-replay-754.md`](power-replay-754.md) (committed before the study ran; sha256 "
+        f"`{result['rule_sha256'][:12]}…`). Development data only: {pool['days_p2']} decision days from {pool['first']} to "
+        f"{pool['last']}, panel `{result['panel_sha256'][:8]}…`; no day after {result['study_end']} is read. It is a "
+        f"design study: no verdict, nothing registered, no protocol code changed. Replay windows start every {k['step']} "
+        f"days and overlap, so each share is shown with a {k['interval_draws']}-draw moving-block bootstrap interval "
+        f"and the effective number of independent windows is given. Synthetic cells have {k['paths']} paths; "
+        f"critical values are calibrated on {k['windows']} windows.", ""]
+
+    lines += ["## The pairs", "",
+              "A pair is known better only if its mean skill is at least the MME (3%) and the studentized bootstrap "
+              "p-value is below 5%. P2 and P2r are the same noise in the two orientations (amendment in the rule).", ""]
+    lines += table(["pair", "days", "mean skill against its benchmark", "p-value", "known better"],
+                   [[PAIR_NAMES[p], str(v["days"]), f"{100 * v['skill']:.1f}%", f"{v['p_value']:.3f}",
+                     "yes" if v["known_better"] else "**no**"] for p, v in result["pairs"].items()])
+    better = [p for p, v in result["pairs"].items() if v["known_better"]]
+    lines += [("Only " + ", ".join(better) + " is a known-better pair; a detection share on the others is not power."
+               if len(better) < len(PAIRS) else "Every pair is known better."), "",
+              f"Day-type cells (lead-1 target day): {pool['ordinary_p2']} ordinary days and {pool['pressure_p2']} pressure "
+              f"days of P2's {pool['days_p2']}. Regime days: "
+              + ", ".join(f"{r} {n}" for r, n in pool["regime_days"].items()) + ".", ""]
+
+    lines += ["## Effective windows", "",
+              "Windows of `N` days every 5 days over the all-days series, and the effective number of independent windows "
+              "(`(windows - 1) * 5 / N + 1`).", ""]
+    rows = []
+    for pair in PAIRS:
+        for days in WINDOW_LENGTHS:
+            c = replay[f"{pair}|all|real|{days}"]["all"]
+            rows.append([PAIR_NAMES[pair], str(days), str(c["windows"]), str(c["effective"])])
+    lines += table(["pair", "N", "windows", "effective"], rows)
+
+    lines += ["## Replay: size and power on real forecast pairs", "",
+              "Each cell is the share of windows in which the family flags the candidate (the test alone; the MME-gated "
+              "share is in the next table), with its interval. The real pair's share is power only for a known-better "
+              "pair. E1 is the relabelled copy (always 0%; (a) and (b) are undefined there, because the two scores "
+              "never differ), E2 the demeaned pair, E3 the block sign-flip.", ""]
+    for family in FAMILIES:
+        lines += [f"### {FAMILY_NAMES[family]}", ""]
+        rows = []
+        for pair in PAIRS:
+            for kind in KINDS:
+                row = [PAIR_NAMES[pair], KIND_NAMES[kind]]
+                for days in WINDOW_LENGTHS:
+                    row.append(share_cell(replay[f"{pair}|all|{kind}|{days}"].get("all"), f"{family}.test"))
+                for days in WINDOW_LENGTHS:
+                    row.append(share_cell(replay[f"{pair}|all|{kind}|{days}"].get("all"), f"{family}.gated"))
+                rows.append(row)
+        lines += table(["pair", "series"] + [f"test, N={n}" for n in WINDOW_LENGTHS] + [f"gated, N={n}" for n in WINDOW_LENGTHS], rows)
+
+    lines += ["## Replay: the pooled figure beside its splits", "",
+              "The test alone, by the regime of the window's last day and by day-type cell. `ordinary` and `pressure` "
+              "cut the series (windows of `N` consecutive retained days); n/a is a cell with no windows.", ""]
+    for family in FAMILIES:
+        lines += [f"### {FAMILY_NAMES[family]}", ""]
+        rows = []
+        for pair in PAIRS:
+            for kind in ("real", "E2", "E3"):
+                for days in WINDOW_LENGTHS:
+                    allc = replay[f"{pair}|all|{kind}|{days}"]
+                    row = [PAIR_NAMES[pair], KIND_NAMES[kind], str(days), share_cell(allc.get("all"), f"{family}.test")]
+                    row += [share_cell(allc.get(r), f"{family}.test") for r in REGIMES]
+                    for which in ("ordinary", "pressure"):
+                        cell = replay.get(f"{pair}|{which}|{kind}|{days}")
+                        row.append(share_cell(cell.get("all") if cell else None, f"{family}.test"))
+                    rows.append(row)
+        lines += table(["pair", "series", "N", "all windows"] + list(REGIMES) + ["ordinary days", "pressure days"], rows)
+
+    lines += ["## Synthetic: size and power by gain", "",
+              "Paths drawn by the stationary bootstrap from the P2 full history; the candidate has true mean skill `delta` "
+              "against B1. Each cell is `test / gated` (standard error at most 1.1 points). The `delta = 0` row is size.", ""]
+    for family in FAMILIES:
+        lines += [f"### {FAMILY_NAMES[family]}", ""]
+        rows = []
+        for delta in FULL_DELTAS:
+            row = [f"{100 * delta:g}%"]
+            for days in SYNTHETIC_LENGTHS:
+                c = synth[f"full|{days}|{delta}"]
+                row.append(f"{pct(c[family + '.test'])} / {pct(c[family + '.gated'])}")
+            rows.append(row)
+        lines += table(["true skill"] + [f"N={n}" for n in SYNTHETIC_LENGTHS], rows)
+
+    lines += ["### Synthetic by regime and day type", "",
+              "Test / gated at `N` = 60, 125 and 250 for a path drawn from one regime's days or one day-type cell "
+              "(critical values of (a) still calibrated on the full history).", ""]
+    for family in FAMILIES:
+        lines += [f"#### {FAMILY_NAMES[family]}", ""]
+        rows = []
+        for history in ("full",) + REGIMES + ("ordinary", "pressure"):
+            for days in WINDOW_LENGTHS:
+                row = [history, str(days)]
+                for delta in OTHER_DELTAS:
+                    c = synth[f"{history}|{days}|{delta}"]
+                    row.append(f"{pct(c[family + '.test'])} / {pct(c[family + '.gated'])}")
+                rows.append(row)
+        lines += table(["history", "N", "size (0%)", "3% skill", "10% skill"], rows)
+
+    lines += ["## What matching the null generator changes", "",
+              "Critical values of (a) at looks 2 and 3 on the P2 full history, and synthetic size and power at 3% skill.", ""]
+    rows = []
+    for days in SYNTHETIC_LENGTHS:
+        c1, c2 = result["critical_a"][f"P2|all|{days}|a1"], result["critical_a"][f"P2|all|{days}|a2"]
+        first, last = sorted(c1, key=int)[0], sorted(c1, key=int)[-1]
+        s0, s3 = synth[f"full|{days}|0.0"], synth[f"full|{days}|0.03"]
+        rows.append([str(days), f"{c1[first]:.2f} / {c1[last]:.2f}", f"{c2[first]:.2f} / {c2[last]:.2f}",
+                     f"{pct(s0['a1.test'])} → {pct(s0['a2.test'])}", f"{pct(s3['a1.gated'])} → {pct(s3['a2.gated'])}"])
+    lines += table(["N", "critical value, a1 (look 2 / 3)", "a2 (look 2 / 3)", "synthetic size, a1 → a2",
+                    "synthetic gated power at 3%, a1 → a2"], rows)
+
+    lines += ["## The smallest detectable gain at 80% power", "",
+              "The smallest `delta` on the grid (3% to 50%) at which the synthetic gated power is at least 80%; `none` "
+              "means none on the grid.", ""]
+    rows = []
+    for family in FAMILIES:
+        row = [FAMILY_NAMES[family]]
+        for days in (125, 250, 500):
+            g = result["smallest_gain"]["gated"][family][str(days)]
+            t = result["smallest_gain"]["test"][family][str(days)]
+            row.append(("none" if g is None else f"{100 * g:g}%") + " (test alone: " + ("none" if t is None else f"{100 * t:g}%") + ")")
+        rows.append(row)
+    lines += table(["family", "125 days", "250 days", "500 days"], rows)
+
+    lines += ["## The e-process scale (post-hoc description, rule §9)", "",
+              "Over each pair's whole series. `mean / scale` is the daily average of the bounded bet; the last column is "
+              "the day the e-process first reaches 20 when run from the first day.", ""]
+    rows = []
+    for key, v in result["eprocess_diagnostics"].items():
+        pair, lead = key.split("|")
+        rows.append([PAIR_NAMES[pair], lead, f"{v['scale']:.3g}", f"{v['mean']:.3g}", f"{v['sd']:.3g}",
+                     f"{v['mean_over_scale']:.2g}", f"{v['sharpe']:.2f}",
+                     "never" if v["first_crossing_day"] is None else str(v["first_crossing_day"])])
+    lines += table(["pair", "reading", "scale C (max abs d)", "mean d", "sd d", "mean / C", "mean / sd", "first crossing (of "
+                    f"{pool['days_p2']})"], rows)
+
+    z = NormalDist().inv_cdf(1.0 - sp.ALPHA) + NormalDist().inv_cdf(TARGET_POWER)
+    lines += ["### The arithmetic behind it", "",
+              "With independent days and a known standard deviation, a one-sided 5% test has 80% power when "
+              f"`n = ({z:.3f} / s)^2`, `s` being the mean over the standard deviation of the daily difference. This is a "
+              "calculation from the whole-series figures above, not a simulation; serial dependence and a studentized "
+              "statistic need more days.", ""]
+    rows = []
+    for pair in PAIRS:
+        v = result["eprocess_diagnostics"][f"{pair}|lead5"]
+        skill = result["pairs"][pair]["skill"]
+        if v["sharpe"] <= 0.0:
+            rows.append([PAIR_NAMES[pair], f"{v['sharpe']:.3f}", "the pair is worse than its benchmark", "n/a"])
+            continue
+        at_mme = v["sharpe"] * sp.MME / skill
+        rows.append([PAIR_NAMES[pair], f"{v['sharpe']:.3f}", f"{(z / v['sharpe']) ** 2:,.0f} days",
+                     f"{(z / at_mme) ** 2:,.0f} days"])
+    lines += table(["pair", "s (mean / sd, leads 1 to 5)", "days at the pair's own gain", "days if the gain were the 3% MME"], rows)
+
+    reading_ = result["reading"]
+    lines += ["## Reading (§7)", ""]
+    rows = []
+    for family in CANDIDATE_FAMILIES:
+        r = reading_["families"][family]
+        worst = max(r["sizes"].values())
+        rows.append([FAMILY_NAMES[family], "yes" if r["admissible"] else "no", pct(worst), pct(r["power_at_3"])])
+    lines += table(["family", "size at most 5% everywhere", "largest size among the seven checks", "synthetic gated power at 3%, 250 days"], rows)
+    pick = reading_["pick"]
+    lines += [f"Families holding the size limit: {', '.join(reading_['admissible']) or 'none'}.", ""]
+    if pick is None:
+        lines += ["**No family holds the size limit and singles itself out; the rule recommends none.**", ""]
+    else:
+        power = reading_["families"][pick]["power_at_3"]
+        a1 = synth["full|250|0.03"]["a1.gated"]
+        gain = result["smallest_gain"]["gated"][pick]["250"]
+        lines += [f"**Recommended by the rule: {pick}** ({FAMILY_NAMES[pick]}).", "",
+                  f"Trade-off against the current design (a1, 250 days): synthetic gated power at 3% {pct(a1)} → {pct(power)}; "
+                  f"synthetic size {pct(synth['full|250|0.0']['a1.test'])} → {pct(synth['full|250|0.0'][pick + '.test'])}.", "",
+                  f"Smallest detectable gain at 250 days at 80% power: {'none on the grid (up to 50%)' if gain is None else f'{100 * gain:g}%'}.", ""]
+        if power < TARGET_POWER:
+            lines += [f"**The pick has no useful power:** its synthetic gated power at 3% is {pct(power)}. It holds the size "
+                      "limit because it almost never flags anything, which is not a recommendation of a test that can "
+                      "confirm the MME.", ""]
+    lines += QUESTIONS
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def report_command(args) -> int:
+    result = json.loads((Path(args.out) / "result.json").read_text(encoding="utf-8"))
+    PAGE.write_text(render_page(result), encoding="utf-8")
+    print("wrote", PAGE)
     return 0
 
 
@@ -699,6 +948,8 @@ def check_command(args) -> int:
         raise RuleError("result.json was made under another text of the rule")
     if result["pool"]["last"] > STUDY_END.isoformat():
         raise RuleError("the study scored a day after its end")
+    if PAGE.read_text(encoding="utf-8") != render_page(result):
+        raise RuleError("the result page is not the one result.json renders")
     print("ok")
     return 0
 
