@@ -54,6 +54,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import pressure_judge as pj  # noqa: E402
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -175,6 +176,10 @@ def forecasts_command(args) -> int:
     splits = load_split_declaration(SPLITS)
     registry = json.loads(REGISTRY.read_text())
     end = declaration.confirmation_last if args.confirmation else declaration.last_day
+    if args.end is not None:
+        if args.confirmation:
+            raise SystemExit("--end is a scratch scored span for development days; the confirmation look keeps the declared window")
+        end = panel_end(args.end, end, where="pressure_judge.forecasts")
     forecasts = pj.benchmark_forecasts(
         declaration, rows, splits, registry, horizon=args.horizon,
         decision_time=DECISION, minimum_history=MINIMUM_HISTORY, refit_every=REFIT_EVERY, end=end,
@@ -677,6 +682,7 @@ def main(argv=None) -> int:
     forecasts.add_argument("--horizon", type=int, required=True)
     forecasts.add_argument("--output", type=Path, required=True)
     forecasts.add_argument("--published", action="store_true")
+    forecasts.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     forecasts.add_argument(
         "--confirmation", action="store_true",
         help="score walk-forward through the confirmation window's last day (for the single look)",

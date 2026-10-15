@@ -49,6 +49,7 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model import contract, hierarchical_logistic as hl, measurement_fields, ml, net_settlement as ns  # noqa: E402
 from repo_model import pressure, pressure_judge as pj, scarcity  # noqa: E402
 from repo_model import scarcity_calendar as sc  # noqa: E402
@@ -133,7 +134,8 @@ def _auctions():
 
 def panel_command(args) -> int:
     declaration, auctions, payload, manifest = _auctions()
-    rows = [row for row in load_daily_panel(args.panel) if row.date <= END]
+    end = panel_end(args.end, END, where="net_settlement.panel")
+    rows = [row for row in load_daily_panel(args.panel) if row.date <= end]
     built = ns.with_net_settlement(rows, auctions, declaration)
     ns.check_known_columns(built, auctions, declaration)
     with args.panel.open(newline="", encoding="utf-8") as handle:
@@ -411,6 +413,7 @@ def main(argv=None) -> int:
     panel = commands.add_parser("panel")
     panel.add_argument("--panel", type=Path, required=True)
     panel.add_argument("--output", type=Path, required=True)
+    panel.add_argument("--end", help="last day kept, ISO; default this script's own end (at most 2026-09-03, #684)")
     panel.set_defaults(handler=panel_command)
     reconcile = commands.add_parser("reconcile")
     reconcile.add_argument("--panel", type=Path, required=True)

@@ -1,0 +1,98 @@
+[
+ {
+  "members": [
+   "bgcr_max_dist_20",
+   "bgcr_max_dist_60",
+   "bgcr_min_dist_60",
+   "bgcr_z_60",
+   "ofr_tri_rate_max_dist_20",
+   "ofr_tri_rate_max_dist_60",
+   "ofr_tri_rate_min_dist_60",
+   "ofr_tri_rate_z_60",
+   "sofr_max_dist_20",
+   "sofr_max_dist_60",
+   "sofr_min_dist_60",
+   "sofr_p1_max_dist_20",
+   "sofr_p1_max_dist_60",
+   "sofr_p1_min_dist_60",
+   "sofr_p1_z_60",
+   "sofr_p25_max_dist_20",
+   "sofr_p25_max_dist_60",
+   "sofr_p25_min_dist_60",
+   "sofr_p25_z_60",
+   "sofr_p75_max_dist_20",
+   "sofr_p75_max_dist_60",
+   "sofr_p75_min_dist_60",
+   "sofr_p75_z_60",
+   "sofr_p99_max_dist_20",
+   "sofr_p99_max_dist_60",
+   "sofr_p99_min_dist_60",
+   "sofr_p99_z_60",
+   "sofr_z_60",
+   "tgcr_max_dist_20",
+   "tgcr_max_dist_60",
+   "tgcr_min_dist_60",
+   "tgcr_z_60"
+  ],
+  "representative": "sofr_p75_z_60"
+ },
+ {
+  "members": [
+   "bgcr",
+   "effr",
+   "ofr_gcf_rate",
+   "ofr_tri_rate",
+   "sofr",
+   "sofr_p1",
+   "sofr_p25",
+   "sofr_p75",
+   "sofr_p99",
+   "tgcr"
+  ],
+  "representative": "sofr"
+ },
+ {
+  "members": [
+   "days_since_pressure",
+   "reserve_balances",
+   "reserve_scarcity_state",
+   "sofr_p75_iorb_bps",
+   "sofr_p99_iorb_bps",
+   "spread_bps",
+   "spread_lag1",
+   "spread_lag2",
+   "spread_lag5",
+   "tail_x_scarcity"
+  ],
+  "representative": "spread_bps"
+ },
+ {
+  "members": [
+   "bgcr_min_dist_20",
+   "sofr_min_dist_20",
+   "sofr_p25_min_dist_20",
+   "sofr_p75_min_dist_20",
+   "sofr_p99_min_dist_20",
+   "tgcr_min_dist_20"
+  ],
+  "representative": "tgcr_min_dist_20"
+ },
+ {
+  "members": [
+   "bgcr_z_20",
+   "sofr_p1_z_20",
+   "sofr_p25_z_20",
+   "sofr_p75_z_20",
+   "sofr_z_20",
+   "tgcr_z_20"
+  ],
+  "representative": "tgcr_z_20"
+ },
+ {
+  "members": [
+   "bday_of_month",
+   "days_to_month_end"
+  ],
+  "representative": "bday_of_month"
+ }
+]
