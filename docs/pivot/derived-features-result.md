@@ -182,6 +182,11 @@ Table M1. The judge in force (tiers 1, 3 and 5; the weighted rule is the one in 
 
 Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%], and the reliability intercept and slope (logistic of the outcome on logit(forecast); `-` where the forecast is constant or the fit is not formed). The control forecasts exactly 0 there.
 
+> *Note, 13 October 2026 (#683).* The slopes in Table M2 are **pooled across regimes**: the parent's slope of 1.00 at h = 1 is not evidence that it is
+> calibrated inside 2018-19 or 2025-26, where the pressure is. A regime with no pressure day (2021-23) forecasts near 0 and raises the pooled slope
+> (`docs/pivot/diagnostics-reconciliation.md`, point 11). The per-regime slopes of these rows were **not computed** by #683, because they need this
+> page's forecasts rebuilt; until they are, do not read Table M2 as a statement of calibration.
+
 | row | h | days | pressure days | mean forecast | realised | AUROC [90%] | intercept | slope |
 |---|---|---|---|---|---|---|---|---|
 | `risk_gbm+settle+h41+dist_roll` | 1 | 1469 | 82 | 0.0000 | 0.0558 | 0.500 (constant) | - | - |

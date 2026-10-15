@@ -150,6 +150,11 @@ NYFED_REPO_OPS_FIELDS = (
 #: offered, so a date with no operation is a structural zero; from it to `SRF_INCEPTION` a date with
 #: none is missing (`fed_liquidity.assemble`).
 REPO_FACILITY_START = date(2019, 9, 17)
+#: The take-up floor (#743, Eleonora's ruling of 14 October 2026, data meaning): in every era a Fed
+#: repo operation with less than $0.1 bn accepted counts as no take-up. It covers the $64-66 mn
+#: tests before the facility and the $1-7 mn trades after it; a rule that differs by era builds a
+#: regime dummy (#672). The operation still happened, so its date keeps a row, at zero.
+REPO_TAKE_UP_FLOOR = 100_000_000
 #: The OFR's Short-term Funding Monitor, repo collection (#187): one
 #: unmodified `timeseries` response per series mnemonic, saved by
 #: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
@@ -2065,6 +2070,12 @@ def _nyfed_on_rrp_rows(artifact: SnapshotArtifact, payload: bytes):
     return rows
 
 
+def _effective_accepted(accepted):
+    """The amount accepted that counts as take-up: zero below `REPO_TAKE_UP_FLOOR` (#743)."""
+
+    return accepted if accepted >= REPO_TAKE_UP_FLOOR else 0
+
+
 def _is_small_value_exercise(operation: Mapping[str, object]) -> bool:
     """Whether the Desk's `note` names the operation a small-value exercise.
 
@@ -2217,10 +2228,11 @@ def _nyfed_repo_ops_rows(artifact: SnapshotArtifact, payload: bytes):
                     f"one of its operations is not that day's total"
                 )
             amounts.append(value)
-        accepted[ref_date] = accepted.get(ref_date, 0) + amounts[0]
+        taken = _effective_accepted(amounts[0])
+        accepted[ref_date] = accepted.get(ref_date, 0) + taken
         submitted[ref_date] = submitted.get(ref_date, 0) + amounts[1]
-        counts[ref_date] = counts.get(ref_date, 0) + (1 if amounts[0] > 0 else 0)
-        for detail in operation.get("details") or ():
+        counts[ref_date] = counts.get(ref_date, 0) + (1 if taken > 0 else 0)
+        for detail in (operation.get("details") or ()) if taken > 0 else ():
             rate, amount = detail.get("percentWeightedAverageRate"), detail.get("amtAccepted")
             if (
                 isinstance(rate, (int, float)) and not isinstance(rate, bool)

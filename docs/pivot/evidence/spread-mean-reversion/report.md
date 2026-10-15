@@ -94,6 +94,30 @@ By lead (upper-tail twCRPS (weight 1{z > 0 bp})):
 | tax_date | 89 | 4.662 | 5.660 | 4.612 | undefined (benchmark scores 0) | undefined (benchmark scores 0) |
 | quarter_end | 30 | 5.377 | 5.541 | 5.560 | undefined (benchmark scores 0) | undefined (benchmark scores 0) |
 
+## grid CRPS by the type of the anchor, on the decision day (#741)
+
+B1 carries the anchor's spread forward, so a spike on the anchor (quarter-end, tax date, month-end) is carried to all five leads. The pooled figure is the first row; the groups are the decision days whose anchor, the last public row, is of that type.
+
+| group | days | B1 | B2 | candidate | vs B1 [90%] | vs B2 [90%] |
+|---|---|---|---|---|---|---|
+| pooled | 1855 | 2.289 | 2.518 | 1.778 | +22.3% [+13.7%, +29.5%] | +29.4% [+21.4%, +37.3%] |
+| ordinary | 1588 | 2.006 | 2.542 | 1.781 | +11.2% [+6.9%, +15.9%] | +29.9% [+22.1%, +37.9%] |
+| month_end | 149 | 2.482 | 2.196 | 1.634 | +34.2% [+18.7%, +42.7%] | +25.6% [+14.1%, +37.3%] |
+| tax_date | 89 | 5.613 | 2.640 | 1.823 | +67.5% [+9.3%, +79.0%] | +30.9% [+8.2%, +54.3%] |
+| quarter_end | 29 | 6.594 | 2.515 | 2.252 | +65.9% [+30.8%, +75.8%] | +10.5% [-43.5%, +35.8%] |
+
+## upper-tail twCRPS by the type of the anchor, on the decision day (#741)
+
+B1 carries the anchor's spread forward, so a spike on the anchor (quarter-end, tax date, month-end) is carried to all five leads. The pooled figure is the first row; the groups are the decision days whose anchor, the last public row, is of that type.
+
+| group | days | B1 | B2 | candidate | vs B1 [90%] | vs B2 [90%] |
+|---|---|---|---|---|---|---|
+| pooled | 1855 | 1.375 | 1.131 | 0.930 | +32.4% [+21.2%, +41.0%] | +17.8% [+8.4%, +29.5%] |
+| ordinary | 1588 | 1.130 | 1.172 | 0.952 | +15.7% [+8.7%, +24.1%] | +18.8% [+9.8%, +30.0%] |
+| month_end | 149 | 1.430 | 0.900 | 0.782 | +45.3% [+26.0%, +55.4%] | +13.1% [-3.0%, +26.0%] |
+| tax_date | 89 | 4.580 | 0.815 | 0.843 | +81.6% [+36.2%, +85.3%] | -3.5% [-36.2%, +44.0%] |
+| quarter_end | 29 | 4.689 | 1.053 | 0.718 | +84.7% [+75.4%, +93.4%] | +31.8% [+7.9%, +52.9%] |
+
 ## P(spread > +5 bp): reliability, read off each distribution
 
 Mean predicted probability, realised share of target days above +5 bp (whole basis points, strictly above), and realised minus predicted: negative means the model over-forecasts the tail. Pooled over leads 1 to 5; the per-lead cells are in the JSON. Avenue #675 quotes B1 at -0.06 to -0.085 in 2018-19 and -0.03 to -0.08 in 2025 on ordinary days.
