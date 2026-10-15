@@ -35,6 +35,7 @@ sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import lockbox, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
 from repo_model import spread_mean_reversion as smr  # noqa: E402
+from repo_model.anchor_day_type import anchor_day_types  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -373,6 +374,22 @@ def score(args) -> int:
                     "vs": run_pairs({"B1": series["B1"], "B2": series["B2"]}, series[NAME], members, draws=draws),
                 }
 
+    # split by the type of the anchor (#741): B1 carries a calendar spike forward from its anchor, so skill against B1 is
+    # also reported by the anchor's day type, beside the pooled figure. The unit is the decision day.
+    anchor_types = anchor_day_types(panel, days, registry=registry, decision_time=DECISION_TIME, splits=splits)
+    per_decision = {label: bench(table, by_decision) for label, table in (("grid_crps", crps), ("upper_tail_twcrps", tw))}
+    result["splits"]["anchor_day_type"] = {}
+    for label, members in group_days(days, anchor_types).items():
+        if len(members) < MIN_GROUP_DAYS:
+            result["splits"]["anchor_day_type"][label] = {"days": len(members), "note": f"fewer than {MIN_GROUP_DAYS} days; not tested"}
+            continue
+        result["splits"]["anchor_day_type"][label] = {"days": len(members)}
+        for metric, series in per_decision.items():
+            result["splits"]["anchor_day_type"][label][metric] = {
+                "means": {m: sum(series[m][d] for d in members) / len(members) for m in MODELS},
+                "vs": run_pairs({"B1": series["B1"], "B2": series["B2"]}, series[NAME], members, draws=draws),
+            }
+
     # the tail: reliability of P(spread > +5 bp), and Brier
     tails = {m: tail_cells(frame, m) for m in MODELS}
     ordinary = lambda d, h, t: frame.day_type(t) == "ordinary"  # noqa: E731
@@ -544,6 +561,22 @@ def render_report(r: dict) -> str:
                 m = cell[key]["means"]
                 out.append("| %s | %d | %.3f | %.3f | %.3f | %s | %s |" % (
                     group, cell["days"], m["B1"], m["B2"], m[NAME], skill_text(cell[key]["vs"]["B1"]), skill_text(cell[key]["vs"]["B2"])))
+    for key, label in (("grid_crps", "grid CRPS"), ("upper_tail_twcrps", "upper-tail twCRPS")):
+        out += ["", f"## {label} by the type of the anchor, on the decision day (#741)", "",
+                "B1 carries the anchor's spread forward, so a spike on the anchor (quarter-end, tax date, month-end) is carried "
+                "to all five leads. The pooled figure is the first row; the groups are the decision days whose anchor, the last "
+                "public row, is of that type.", "",
+                "| group | days | B1 | B2 | candidate | vs B1 [90%] | vs B2 [90%] |", "|---|---|---|---|---|---|---|"]
+        m = p[key]["means"]
+        out.append("| pooled | %d | %.3f | %.3f | %.3f | %s | %s |" % (
+            n["scored_decision_days"], m["B1"], m["B2"], m[NAME], skill_text(p[key]["vs"]["B1"]), skill_text(p[key]["vs"]["B2"])))
+        for group, cell in r["splits"]["anchor_day_type"].items():
+            if key not in cell:
+                out.append("| %s | %d | %s | | | | |" % (group, cell["days"], cell["note"]))
+                continue
+            m = cell[key]["means"]
+            out.append("| %s | %d | %.3f | %.3f | %.3f | %s | %s |" % (
+                group, cell["days"], m["B1"], m["B2"], m[NAME], skill_text(cell[key]["vs"]["B1"]), skill_text(cell[key]["vs"]["B2"])))
     out += ["", "## P(spread > +5 bp): reliability, read off each distribution", "",
             f"Mean predicted probability, realised share of target days above +{r['tail']['tau_bp']:g} bp (whole basis points, strictly above), "
             "and realised minus predicted: negative means the model over-forecasts the tail. Pooled over leads 1 to 5; the per-lead cells are in the JSON. "
@@ -633,6 +666,11 @@ def page(args) -> int:
         "| upper-tail twCRPS, candidate | %.3f | %s | %s |" % (t["means"][NAME], skill_text(t["vs"]["B1"]), skill_text(t["vs"]["B2"])),
         "| five-level CRPS vs the published distribution | %.3f against %.3f | %s | |" % (
             pub["means"][NAME], pub["means"]["published"], skill_text(pub["candidate_vs"]["published"])),
+        "", "Skill against B1 by the type of the anchor (grid CRPS; the pooled figure beside it):", "",
+        "| anchor day type | days | vs B1: skill [90%] |", "|---|---|---|",
+        "| pooled | %d | %s |" % (n["scored_decision_days"], skill_text(p["vs"]["B1"])),
+        *["| %s | %d | %s |" % (g, c["days"], skill_text(c["grid_crps"]["vs"]["B1"]) if "grid_crps" in c else c["note"])
+          for g, c in r["splits"]["anchor_day_type"].items()],
         "", "The splits by regime and pressure-day type, the reliability of P(spread > +5 bp) within regimes (against avenue #675's numbers), "
         "the Brier scores and the comparison with variant (b) of #632 are in `docs/pivot/evidence/spread-mean-reversion/report.md`.", "",
     ]
