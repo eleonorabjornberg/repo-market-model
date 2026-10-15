@@ -497,6 +497,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
+- Directive: #740
+- Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `b0da43a`
+- Tried: a write-time guard at 23:59 ET on the decision day (`require_written_by_decision_day_end`), `written_at` stored in every block, and `filled_candidate` refusing a stored `written_at` or commit time past the cut-off. Variants: n/a (a guard, no model).
+- Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
+
 ### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#779
 - Directive: #738
 - Step: 2 (the settlement family of inputs: a cash management bill is unknown until its own announcement)
