@@ -397,6 +397,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
 
+### 2026-10-13 [H5] step 3 · eleonorabjornberg/repo-market-model#723
+- Directive: #683
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d`
+- Tried: the reliability slope of earlier result pages read inside regimes and not pooled: a shared helper with bootstrap intervals, the per-regime slopes already in #624's tracked evidence, dated notes on the pages that reported pooled slopes. Variants: n/a (correction).
+- Result: `+offday` of #624 at h = 1 has a pooled slope of 0.83, 0.48 inside 2018-19 and 0.79 inside 2025-26; at h = 3 to 5, 0.14 to 0.22 inside 2018-19 against a pooled 0.78 to 0.80. #626's rows have no per-regime slope yet.
+- Against kill: not applicable (a correction to how step 3 figures are read).
+- Next: the per-regime slopes for #626's kinked page, and an account of why its rebuild never finishes, move to the follow-up directive #753 (Eleonora's ruling of 14 October 2026 on this pull request); any reliability-shape test (#628) is read within regimes.
+
 ### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#737
 - Directive: #655 (follow-up: Eleonora's answers to Q-E, Q-B and Q-C on PR #695, comment 6159852603)
 - Step: 1
@@ -406,6 +416,26 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the verdict reads the grid comparison's values, 2.43 at 250 days and 3.42 at 125 (B3 − B1 on five levels: 5.45 and 9.50); null false detections on the full development history 0.85% and 0.25% by 250 and 125 days (B3 − B1: 0.0%). Futility values 1.93, 1.56 and 1.45 at 60, 125 and 250 days. Power at these values stays low (14% for a 3% skill by 250 days), and the confirmation design goes to a separate study.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
+
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
+- Directive: #707 (sub-question 1: 2021-23)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `da1412d0…`; the walks of #634 (PR #711), read unchanged; declaration `metadata/h5_step3_707.json`
+- Tried: 6 variants, no new fit: three causal post-hoc transforms (shift by the trailing median error, best trailing scale, trailing shrink weight on B1) applied to 2 candidates (the phase 2 gbm and variant (c) of #634), on 748 decision days in 2021-23 of 1,868 (to 2025-12-23). Variants: 6, cumulative 15.
+- Result: (c) loses to B1 in 2021-23, -30.4% [-54.7%, -13.5%]; the phase 2 gbm does not resolvably (-0.9% [-17.8%, +10.1%]). For (c) the remainder after a constant level and scale correction is 0.184 of the 0.216 bp gap (lower bound +0.087), read as regime transfer: the loss is -60.8% in 2022 and +1.0% in 2023. Shrink toward B1 closes the gap (+1.2% [-2.6%, +4.6%]); the level and scale remedies do not.
+- Against kill: not applicable (no verdict; development data).
+- Next: whether a shrink weight belongs in H5's candidate is for the choice of candidate (step 5); not decided here.
+
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
+- Directive: #707 (sub-question 2: the upper tail)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `da1412d0…`; the walks of #634 (PR #711), read unchanged; declaration `metadata/h5_step3_707.json`
+- Tried: 0 new variants; twCRPS above 0 bp of 2 candidates against B1 and B2 by as-of scarcity state and day type, with the coverage of the 90th and 95th percentile forecasts on days above 0 bp.
+- Result: twCRPS skill pooled is +35.7% [+26.5%, +51.7%] against B1 and +21.3% [+8.8%, +34.4%] against B2 for (c) (+31.3% and +15.9% for the gbm); neither beats B2 in the abundant state, and neither has a resolved gain over B1 on quarter-end or tax-date targets. The q95 exceedance rate is 0.095 for (c) and 0.128 for the gbm (lower bounds 0.075 and 0.106, nominal 0.05) with a median PIT of 0.825 on days above 0 bp: under-dispersed, not mislocated pooled.
+- Against kill: not applicable (no verdict; development data).
+- Next: a state-dependent tail scale is not tested here; whether it is, is for the step 5 choice.
 
 ### 2026-10-14 [H1] step 2 · eleonorabjornberg/repo-market-model#751
 - Directive: #733 (a design study for the confirmation test; no verdict, nothing registered)
@@ -476,6 +506,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
+
+### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#784
+- Directive: #741
+- Step: 3 (are the benchmarks right: does a forecaster that only declines to copy a calendar spike beat B1 by the MME; finding #741)
+- Tier: development
+- Pins: simulated data only for the test (`tests/benchmark_simulation.py`, seeds 741000 to 741199); published panel `4ddc3882…` for the H5 page split; base `9674324`
+- Tried: B1 with its anchor replaced by the last ordinary-day spread at or before the anchor (no parameter, no ordinary-day skill, B1 exactly on ordinary anchors), on #762's AR(1)-plus-day-type-levels process, 200 panels, and on a no-spike control. Variants: 1 forecaster. And the split of #686's page by the type of the anchor.
+- Result: on the declared process the forecaster beats B1 by +17.58% [+17.33%, +17.84%] pooled, every panel at or above the 3% MME, all of it from spike anchors (ordinary 0.00%; month-end +52.3%, tax date +32.6%, quarter-end +84.5%); with no spikes it has no gain (-1.27% [-1.54%, -1.01%]). Candidate evidence (a) for a §13 change; B1, B2, B3 and the MME unchanged. #686's candidate against B1 by anchor type on the development days: pooled +22.3% [+13.7%, +29.5%], ordinary anchors +11.2% [+6.9%, +15.9%], month-end +34.2%, tax date +67.5%, quarter-end +65.9%. Detail in `docs/research/spike-blind-741.md`.
+- Against kill: not applicable (H1's checks are pre-registered; none failed, none run).
+- Next: the auditor's confirmation of the candidate evidence and Eleonora's decision on §13; H5 pages still in open pull requests take the anchor split when they merge.
 
 ### 2026-10-13 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#699
 - Directive: #656
