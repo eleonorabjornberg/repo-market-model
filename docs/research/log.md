@@ -507,6 +507,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
 
+### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#784
+- Directive: #741
+- Step: 3 (are the benchmarks right: does a forecaster that only declines to copy a calendar spike beat B1 by the MME; finding #741)
+- Tier: development
+- Pins: simulated data only for the test (`tests/benchmark_simulation.py`, seeds 741000 to 741199); published panel `4ddc3882…` for the H5 page split; base `9674324`
+- Tried: B1 with its anchor replaced by the last ordinary-day spread at or before the anchor (no parameter, no ordinary-day skill, B1 exactly on ordinary anchors), on #762's AR(1)-plus-day-type-levels process, 200 panels, and on a no-spike control. Variants: 1 forecaster. And the split of #686's page by the type of the anchor.
+- Result: on the declared process the forecaster beats B1 by +17.58% [+17.33%, +17.84%] pooled, every panel at or above the 3% MME, all of it from spike anchors (ordinary 0.00%; month-end +52.3%, tax date +32.6%, quarter-end +84.5%); with no spikes it has no gain (-1.27% [-1.54%, -1.01%]). Candidate evidence (a) for a §13 change; B1, B2, B3 and the MME unchanged. #686's candidate against B1 by anchor type on the development days: pooled +22.3% [+13.7%, +29.5%], ordinary anchors +11.2% [+6.9%, +15.9%], month-end +34.2%, tax date +67.5%, quarter-end +65.9%. Detail in `docs/research/spike-blind-741.md`.
+- Against kill: not applicable (H1's checks are pre-registered; none failed, none run).
+- Next: the auditor's confirmation of the candidate evidence and Eleonora's decision on §13; H5 pages still in open pull requests take the anchor split when they merge.
+
 ### 2026-10-13 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#699
 - Directive: #656
 - Step: groundwork G3 (prospective logging)
