@@ -8301,8 +8301,8 @@
  },
  "variant_count": {
   "candidate_files": 358,
-  "declarations": 19,
-  "variants": 55,
+  "declarations": 21,
+  "variants": 62,
   "without_evidence": [
    "vote_2_of_3",
    "window_onset_gbm+recalibrated",
