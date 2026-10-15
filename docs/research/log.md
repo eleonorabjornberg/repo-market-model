@@ -568,6 +568,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
+### 2026-10-14 [H5] step 4 · eleonorabjornberg/repo-market-model#775
+- Directive: #758
+- Step: 4 (the best candidate against H2's ceiling; stacked on #634)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panels `92bf10a4…` (ceiling fits) and as in `scripts/spread_distribution_634.py`; base `1bbee114`; declaration `metadata/h5_step4_758.json`
+- Tried: no new model. H2's cross-fitted and reachable gradient-boosted fits rerun, and #634's `gbm_funding` and variant (c) walks rerun, scored on H2's 1,598 walk-forward days by the protocol's grid CRPS against B1. Variants: 0.
+- Result: best candidate `gbm_funding` +0.257 [+0.114, +0.400] against B1 on ordinary targets, ceiling +0.168 [+0.003, +0.316], reachable line +0.196 [+0.019, +0.354]; headroom of the ceiling −0.090 [−0.161, −0.019]. Shown in one of 13 cells: regime 2024 (+0.110 [+0.027, +0.160]). The rerun differs from H2's recorded skills by 0.004 to 0.006. Detail in `docs/pivot/h5-step4-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: step 5, the model-risk validation report for `gbm_funding` (Eleonora's ruling of 15 October 2026: stop model work); the 2024 split is an avenue, not a next step.
+
 ### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#732
 - Directive: #732
 - Step: 5 (the running variant count that every registration publishes, §2 of the protocol)
