@@ -58,7 +58,7 @@ from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import backfill, contract, h41_release, pressure, scarcity, settlement_dating  # noqa: E402
+from repo_model import backfill, contract, h41_release, pressure, risk_dates, scarcity, settlement_dating  # noqa: E402
 from repo_model import satiation as sat  # noqa: E402
 from repo_model.asof import InformationRule, InformationSet, fold_grid  # noqa: E402
 from repo_model.baseline import _as_of_folds  # noqa: E402
@@ -149,7 +149,7 @@ def committed_declaration(path: Path) -> dict:
 def is_ordinary(day_type: str, coupons: Optional[float]) -> bool:
     """A day the risk-date part does not serve: an `ordinary` day type and no coupon settlement known for it."""
 
-    return day_type == "ordinary" and not float(coupons or 0.0) > 0.0
+    return not risk_dates.non_ordinary_day(day_type, coupons)
 
 
 # -- statistics -----------------------------------------------------------------
