@@ -12,6 +12,9 @@ Recorded mutations, 13 October 2026, each in a disposable copy and each killed b
   `AsOfReadTests.test_the_window_flag_is_read_for_the_scored_day_at_every_lead` errored with `contract.UndeclaredFeatureError`.
 - `scripts/near_threshold_688.py`, `refuse_locked`: the call to `require_unlocked` removed. `LockboxTests.test_a_locked_day_is_refused`
   failed with `AssertionError` (no `LookAheadError` was raised).
+- `scripts/near_threshold_688.py`, `summarise`: the lower skill bound read from the percentile draws again
+  (`sp._bound(test.skill_draws, test.alpha, test.draws)`, the interval ruling 1 replaced; #804). `SummaryTests.test_both_skill_bounds_are_the_studentized_ones`
+  failed with `AssertionError`.
 """
 
 from __future__ import annotations
@@ -266,6 +269,65 @@ class AsOfReadTests(unittest.TestCase):
                 seen += 1
                 self.assertLessEqual(known, self.raw_bills[day] + 1e-9, f"{day} lead {lead}: more bills than settle")
         self.assertGreater(seen, 0)
+
+
+class SummaryTests(unittest.TestCase):
+    """The reported interval is the scorer's own: studentized at both ends (Eleonora's ruling 1, #660 and #739; #804)."""
+
+    def test_both_skill_bounds_are_the_studentized_ones(self):
+        import random
+
+        from repo_model import scoring_protocol as sp
+
+        rng = random.Random(1)
+        days = [date(2020, 1, 1) + timedelta(days=i) for i in range(120)]
+        benchmark = {day: 2.0 + rng.random() for day in days}
+        candidate = {day: benchmark[day] - 0.2 + 0.5 * rng.random() for day in days}
+        (test,) = sp.paired_tests([(benchmark, candidate)], seed=7, draws=400)
+        row = SCRIPT.summarise(test)
+        studentized_lower = test.skill - sp._bound(test.skill_t_draws, 1.0 - test.alpha, test.draws) * test.skill_standard_error
+        self.assertAlmostEqual(row["skill_lower_95_one_sided"], studentized_lower)
+        self.assertAlmostEqual(row["skill_upper_95_one_sided"], test.upper_skill())
+        self.assertAlmostEqual(row["mean_difference_lower_95_one_sided"], test.lower_mean_difference())
+
+
+class PairTableTests(unittest.TestCase):
+    """A difference the scorer cannot studentize is reported as such; no percentile interval stands in (ruling 1; #804)."""
+
+    @staticmethod
+    def days(n=60):
+        return [date(2020, 1, 1) + timedelta(days=i) for i in range(n)]
+
+    def test_an_identically_zero_difference_is_a_zero_row_marked_identical(self):
+        days = self.days()
+        scores = {"a": {d: 1.0 + (i % 5) for i, d in enumerate(days)}}
+        scores["b"] = dict(scores["a"])
+        table = SCRIPT.pair_table(scores, [("a", "b")], days, 200)
+        row = table["a -> b"]
+        self.assertTrue(row["identical"])
+        self.assertEqual(row["mean_difference"], 0.0)
+        self.assertIsNone(row["skill_lower_95_one_sided"])
+
+    def test_a_difference_without_long_run_variance_has_no_interval_and_no_percentile_stand_in(self):
+        days = self.days()
+        scores = {"a": {d: 2.0 for d in days}, "b": {d: 1.5 for d in days}}
+        table = SCRIPT.pair_table(scores, [("a", "b")], days, 200)
+        row = table["a -> b"]
+        self.assertTrue(row["not_studentizable"])
+        self.assertAlmostEqual(row["mean_difference"], 0.5)
+        self.assertIsNone(row["skill_lower_95_one_sided"])
+        self.assertIsNone(row["skill_upper_95_one_sided"])
+
+    def test_a_studentizable_pair_is_untouched(self):
+        import random
+
+        rng = random.Random(3)
+        days = self.days(120)
+        a = {d: 2.0 + rng.random() for d in days}
+        b = {d: a[d] - 0.2 + 0.5 * rng.random() for d in days}
+        row = SCRIPT.pair_table({"a": a, "b": b}, [("a", "b")], days, 200)["a -> b"]
+        self.assertNotIn("not_studentizable", row)
+        self.assertIsNotNone(row["skill_lower_95_one_sided"])
 
 
 if __name__ == "__main__":
