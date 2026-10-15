@@ -296,6 +296,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Sensitivity (ruling of 13 October 2026, item 2): with the protocol's mean block of 10 days in place of the declared 20, the same gain's interval is [-7.2 pp, -3.4 pp], so the reading is unchanged. Detail in `docs/pivot/ranking-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
 - Next: step 2, accepted by Eleonora on 13 October 2026: rank by tail probability combined with the day type (a directive for it is hers to queue).
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
 - Directive: #687
 - Step: 3 (diagnosis of avenue #674)
@@ -608,6 +609,95 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: none for this item.
 
+### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#792
+- Directive: #754 (power tested a different way; a design study, no verdict, nothing registered)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `801d4e7a`; rule `docs/research/power-replay-754.md`, committed before the study ran
+- Tried: windows of 60, 125 and 250 days slid every 5 days over real forecast pairs (B3 against B1; B2 against B1 and the reverse) and over three known-equal series (a relabelled copy, the demeaned pair, block sign-flips), and bootstrap paths of 60 to 500 days at true skill 0 to 50%; three test families (the current test with its critical value calibrated on circular blocks and on the path generator, a fixed-b Diebold-Mariano test, a betting e-process on lead 1 and on leads 1 to 5). Days after 2025-12-31 are not read. Variants: 5 families, 4 series.
+- Result: only B3 against B1 is a known-better pair (skill 21.8%); B2 scores worse than B1. At that gain the current test flags 66% to 73% of windows but flags 26% to 33% of sign-flipped B3 windows, so its size on a symmetric null is far above 5%; the fixed-b test flags 27% to 34% of the real windows and 4% to 10% of the sign-flipped. Synthetic gated power at a 3% gain, 250 days: 10% (current), 8% (matched null), 3% (fixed-b), 0% (e-process, whose bounded bets never grow on these scores). No family reaches 80% power at any gain up to 50% in 250 days; the current test does at 50% in 500 days. By normal-theory arithmetic the daily signal-to-noise of B3's 22% gain needs about 1,300 days. The rule's pick (the e-process on lead 1) holds the size limit with 0% power.
+- Against kill: not applicable (H1 is a validity check; development).
+- Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
+
+### 2026-10-13 [H7] groundwork G5 · eleonorabjornberg/repo-market-liquidity#44
+- Directive: #27 (L3, SLR headroom, with answer 16), step 1 only
+- Step: groundwork G5 for H7m, before step 2 candidate D
+- Tier: development
+- Pins: parent repo-market-model 09640f5; panel 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999
+- Tried: read four quarters of the FFIEC CDR Call Report bulk files (2018-03-31, 2021-03-31, 2023-06-30, 2025-12-31) for the nine G-SIB depository subsidiaries and all filers, against the filing deadline
+- Result: first-filed figures are not recoverable from the public bulk files; for most G-SIB subsidiaries the file holds an amended figure last updated 30 to 1,611 days after quarter-end. No input built, nothing scored
+- Against kill: no goalpost is tested here; this is an input question
+- Next: the overlay, declaration, tests and snapshot of #27 under reading 2 (a new directive), and the archive (#46)
+
+### 2026-10-14 [H10] step 1 · eleonorabjornberg/repo-market-liquidity#66
+- Directive: eleonorabjornberg/repo-market-liquidity#62
+- Step: H10 method amended before step 2 (finding #52)
+- Tier: development
+- Pins: model 09640f5, panel digest none (synthetic series only), snapshot none
+- Tried: a selection-aware null and ON RRP as a driver, on synthetic episodes; variant count 1
+- Result: method amended, nothing scored
+- Against kill: not applicable
+- Next: H10 step 2 once the record is merged
+
+### 2026-10-14 [H7] groundwork G5 · eleonorabjornberg/repo-market-liquidity#67
+- Directive: #63 (L14, SLR headroom as a labelled latest-filed input), steps 2 to 6 of #27
+- Step: groundwork G5 for H7m, before step 2 candidate D
+- Tier: development
+- Pins: parent repo-market-model 09640f5; panel 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999
+- Tried: built the overlay, declaration, guards and snapshot for the latest-filed SLR headroom of nine G-SIB depository subsidiaries from 34 CDR bulk quarters, 2018-03-31 to 2026-06-30
+- Result: inputs built, nothing scored; 277 of 306 bank-quarters in the extract, the rest listed with reasons; headroom blank from 2026-04-01 (requirement not set in row 16); State Street's filed exposure not credible
+- Against kill: no goalpost is tested here; this is an input
+- Next: Eleonora's answers to Q1 to Q3; then H7 step 2 candidate D may read this snapshot
+
+### 2026-10-14 [H7] groundwork G5 · eleonorabjornberg/repo-market-liquidity#72
+- Directive: #71 (her decision on #69)
+- Step: groundwork G5 for H7m candidate D: the SLR requirement table (draft), State Street as a labelled sensitivity, the day-after rule
+- Tier: development
+- Pins: parent 09640f5; panel digest unchanged (4ddc3882…); slr_headroom 998c5aa1… to 09c138ad…
+- Tried: read the requirement from the OCC rule text (eCFR as of 2018-01-01, 2026-03-31, 2026-10-01); made the headroom read a per-period table; re-cut the snapshot with a measure column
+- Result: inputs revised, nothing scored; no figure moved; the headroom stays blank from 2026-04-01 pending her answer to open question 1
+- Against kill: not applicable; nothing scored
+- Next: H7 step 2 (#41), after #43 and #65, once she has ruled on the draft
+
+### 2026-10-14 [H10] step 2 · eleonorabjornberg/repo-market-liquidity#73
+- Directive: eleonorabjornberg/repo-market-liquidity#70, H10 step 2: record her section 9d answers, then apply the declared method to the development onsets.
+- Step: 2 of 3 (apply it to every development onset, once, at a pin).
+- Tier: development
+- Pins: parent 53e61af9b4175e854c196908d3c76b228c039667; panel version 1 acb77874e0ca2c9eeee1c33a229f5e12745e65bb1224088d52c391dbf54be2ab; seed 20261013; 31 onsets to 2026-09-03.
+- Tried: the leave-neighbourhood-out regression with Shapley shares over five drivers (ON RRP included), 10,000 bootstrap draws per episode, 20 placebo windows, the reserves-only benchmark, and the N1 selection-aware null (1,000 draws, 95th percentile bar 0.234).
+- Result: under the residual bar 4 of 31 (6% to 26%); beating the null 14 of 31 (31% to 60%); both 4 of 31 (6% to 26%). Median residual share 0.78 (0.66 to 0.85); explained share above reserves alone 0.23 (0.13 to 0.37); placebo gap -0.39 (-0.62 to -0.19). The development table reads residual dominates.
+- Against kill: the plan's outcome rule needs more than half the episodes under the bar; the development table has 4 of 31. Development data never gives a verdict; this is not one.
+- Next: step 3 (publish the table) after her review; the ON RRP interaction sensitivity of answer 5.
+
+### 2026-10-15 [H10] step 3 · eleonorabjornberg/repo-market-liquidity#78
+- Directive: eleonorabjornberg/repo-market-liquidity#77, H10 step 3: publish the development table, with the ON RRP interaction sensitivity.
+- Step: 3 of 3 (publish the table).
+- Tier: development
+- Pins: parent 53e61af9b4175e854c196908d3c76b228c039667; panel version 1 acb77874e0ca2c9eeee1c33a229f5e12745e65bb1224088d52c391dbf54be2ab; seed 20261013; 31 onsets to 2026-09-03; method record sha256 cae658c6d9a895d4db8f6427c81a11f7310fc79377528d71806e9f209c28f126.
+- Tried: rendered the step 2 record unchanged as a generated page; re-ran the step 2 application with ON RRP as on_rrp x 1(on_rrp < 100 bn) in place of its window change, as a sensitivity (the abundant regime has 2 onsets).
+- Result: what the development table shows: under the residual bar 4 of 31 (6% to 26%), beating the null 14 of 31 (31% to 60%), both 4 of 31 (6% to 26%); reads residual dominates. Sensitivity (labelled as such): 5 of 31 (8% to 30%), 16 of 31 (37% to 66%), both 5 of 31 (8% to 30%); also reads residual dominates.
+- Against kill: the plan's rule needs more than half the episodes under the bar; the development table has 4 of 31. Development data never gives a verdict; this is not one.
+- Next: her review; registering the frozen method is her attested action.
+
+### 2026-10-15 [H1] step 1 · eleonorabjornberg/repo-market-model#791
+- Directive: #769
+- Step: 1 (the power study re-run on the test in force after ruling 5)
+- Tier: development
+- Pins: calibration record `docs/research/protocol-calibration/result.json`; base `31774b83`
+- Tried: #656's power study re-run at the calibrated critical values (3.42 at 125 days, 2.43 at 250, look 1 futility only, MME gate) under four readings: the full or the post-2020-04 history, and circular-block or stationary-bootstrap paths. Variants: 4 readings, 9 cells each.
+- Result: a true 3% skill is detected on 0.8% (full history, circular), 7.8% (post-2020-04, circular), 1.8% (full, stationary) and 13.9% (post-2020-04, stationary, #656's own) of paths by 250 days; none reaches 80% at either look, so days needed and the smallest skill detected at target power are null in every reading. Size with no true skill by 250 days: 0.5%, 6.1%, 1.3% and 10.9%. Detail in `docs/research/power-study-769-result.md`.
+- Against kill: not applicable (groundwork; development data gives no verdict).
+- Next: Eleonora settles the MME, B3's verdict rule (#768) and the confirmation design (#754, #733) after this result.
+
+### 2026-10-15 [H6] step 1 · eleonorabjornberg/repo-market-model#783
+- Directive: #739
+- Step: 1 (the re-read of #693's development kill rule on the studentized bootstrap of protocol ruling 1; Eleonora's ruling on #739)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmark B1, unchanged (ruling 6); seed 693; base `9674324`
+- Tried: no new model. #693's 2 candidates on the same 383 risk target days, benchmarks and seed, with the interval read as skill − q·se on the studentized draws instead of the percentile of the draws. The calibrated critical value is not used (it belongs to checkpoints). Variants: 0.
+- Result: no development skill. The H5 mean-reverting row's pooled CRPS skill against B1 is +3.18% [−0.90%, +6.03%] (the percentile lower bound was +0.03%); its MAE skill against B1 is +0.70% [−3.00%, +3.12%]. Against the calendar benchmark CRPS skill is +26.80% [−2.58%, +46.79%]. By regime, CRPS skill against B1 is +4.45% in 2018-19, −1.82% in 2020-24 and +5.70% in 2025-26, every interval covering zero. Detail in `docs/research/risk-date-reread-739.md`. The entry of #719 is not edited.
+- Against kill: killed on the declared development rule (skill against both benchmarks on CRPS or MAE: none). H6 stays open: its kill is by futility on prospective days.
+- Next: #724 (H6 step 2) is out of the queue until H5 step 5 (ruling on #739).
 ### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#815
 - Directive: #799
 - Step: 2 (the re-score of #761's variants after the as-of fix; finding #799)
