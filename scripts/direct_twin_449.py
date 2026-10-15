@@ -23,6 +23,7 @@ the same call with `training_pairs="direct"` and nothing else changed. The contr
 from __future__ import annotations
 
 import argparse
+import ast
 import functools
 import importlib.util
 import json
@@ -103,12 +104,24 @@ def fitter(features: Sequence[str], **extra):
     )
 
 
+def settings_of(document: Mapping) -> Mapping:
+    """A walk's recorded fit settings. `spread_distribution_634.py walk` writes them with `default=str`, so a mapping
+    proxy is stored as the text of its dict; both forms are read."""
+
+    settings = document.get("settings", {})
+    if isinstance(settings, str):
+        settings = ast.literal_eval(settings)
+    if not isinstance(settings, Mapping):
+        raise ValueError(f"the walk's settings are not a mapping: {settings!r}")
+    return settings
+
+
 def check_pairing(control: Mapping, twin: Mapping) -> None:
     """The control is fitted on one-step pairs and the twin on direct pairs, as the walks' own settings say."""
 
-    if "training_pairs" in control.get("settings", {}):
-        raise ValueError(f"the control walk names training_pairs {control['settings']['training_pairs']!r}; it must be unset")
-    if twin.get("settings", {}).get("training_pairs") != "direct":
+    if "training_pairs" in settings_of(control):
+        raise ValueError(f"the control walk names training_pairs {settings_of(control)['training_pairs']!r}; it must be unset")
+    if settings_of(twin).get("training_pairs") != "direct":
         raise ValueError("the twin walk does not name training_pairs 'direct'")
 
 
@@ -222,7 +235,7 @@ def score_command(args) -> int:
     walks = load_walks(args.walks, args.published)
     pairing = {
         name: {
-            str(h): json.loads((args.walks / f"{name}_h{h}.json").read_text(encoding="utf-8"))["settings"].get("training_pairs", "unset (one-step)")
+            str(h): settings_of(json.loads((args.walks / f"{name}_h{h}.json").read_text(encoding="utf-8"))).get("training_pairs", "unset (one-step)")
             for h in HORIZONS
         }
         for name in MODELS

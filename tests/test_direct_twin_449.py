@@ -45,6 +45,11 @@ class TwinTests(unittest.TestCase):
     def test_the_target_is_not_its_own_regressor(self):
         self.assertEqual(self.fit().keywords["regressors"], ("a", "b"))
 
+    def test_settings_stored_as_text_are_read_as_a_mapping(self):
+        self.assertEqual(script.settings_of({"settings": "{'training_pairs': 'direct'}"}), {"training_pairs": "direct"})
+        self.assertEqual(script.settings_of({"settings": "{}"}), {})
+        script.check_pairing({"settings": "{}"}, {"settings": "{'training_pairs': 'direct'}"})
+
     def test_the_pairing_check_reads_the_walk_settings(self):
         script.check_pairing({"settings": {}}, {"settings": {"training_pairs": "direct"}})
         with self.assertRaises(ValueError):
