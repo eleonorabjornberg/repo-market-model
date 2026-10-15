@@ -343,10 +343,12 @@ def pair_cell(entry: dict, pair: str) -> str:
     if entry.get("thin"):
         return "too thin"
     row = entry["tests"][pair]
-    return f"{100 * row['skill']:+.1f}% (upper {100 * row['skill_upper_95_one_sided']:+.1f}%)"
+    return f"{100 * row['skill']:+.1f}% [{100 * row['skill_lower_95_one_sided']:+.1f}, {100 * row['skill_upper_95_one_sided']:+.1f}]"
 
 
 def table(title: str, scenario_tables: Mapping[str, dict], group: str, kind: str, leads: Sequence[str]) -> List[str]:
+    if not any(scenario_tables[group][kind][lead]["mean"] for lead in leads):
+        return []
     lines = [f"### {title}", "", "| lead | days | B1 | B2 | gbm | twin | gbm vs B1 | twin vs B1 | gbm vs B2 | twin vs B2 | twin vs gbm |", "|---|---|---|---|---|---|---|---|---|---|---|"]
     for lead in leads:
         entry = scenario_tables[group][kind][lead]
@@ -371,8 +373,8 @@ def report_command(args) -> int:
         "the published model and every published figure are as they were. Declaration: `metadata/direct_twin_449.json`.",
         "",
         f"Decision days {score['decision_days']['first']} to {score['decision_days']['last']} ({score['decision_days']['n']}). Panel `{score['panel_sha256'][:12]}…`.",
-        "Grid CRPS in bp (lower is better). A cell is the skill of the second forecast over the first named benchmark, with the one-sided 95% upper bound of skill",
-        "from the studentized stationary bootstrap (block 10, seed 449; "
+        "Grid CRPS in bp (lower is better). A cell is the skill of the second forecast over the first named benchmark (positive favours the second), with the one-sided",
+        "95% lower and upper bounds of skill from the studentized stationary bootstrap, as `[lower, upper]` (block 10, seed 449; "
         f"{score['draws']['headline']:,} draws on pooled and per-lead figures, {score['draws']['splits']:,} on splits).",
         "",
         "## How each model is fitted (read from the walks' own settings)",
@@ -380,12 +382,34 @@ def report_command(args) -> int:
     ]
     for name, by_lead in score["pairing"].items():
         out.append(f"- `{name}`: training_pairs = {', '.join(sorted(set(by_lead.values())))} at every lead")
+    out += [
+        "",
+        "Confirmed in code (acceptance 1): `ml.fit_gradient_boosted_quantiles` with `training_pairs` unset trains each target on the row before it, so every",
+        "regressor of a training row sits one row before its target; the walk (`spread_distribution_634.walk`) reads the model at the as-of read of the",
+        "decision instant at the lead (`asof.InformationRule(horizon=h)`), where the spread sits h + 1 rows before the target. The twin trains each target on its",
+        "own as-of read at the same lead (`_direct_pairs`). The walks' recorded settings above are read, not assumed; the score refuses to run if the control",
+        "names `training_pairs` or the twin does not name `direct`.",
+    ]
     out.append("")
     out.append(
         f"Decision day {score['excluded_day']} scores (grid CRPS, mean over its five leads): "
         + ", ".join(f"{n} {fmt(v, 1)}" for n, v in score["excluded_day_scores"].items() if v is not None)
         + "."
     )
+    out.append("")
+    out += ["## The twin against the control, in one place", ""]
+    for scenario in SCENARIOS:
+        pooled = score["tables"][scenario]["all"]["all"]
+        row = pooled["pooled"]["tests"][f"{CONTROL} -> {TWIN}"]
+        by_lead = {lead: pooled[lead]["tests"][f"{CONTROL} -> {TWIN}"] for lead in map(str, HORIZONS)}
+        worse = [lead for lead, r in by_lead.items() if r["skill_upper_95_one_sided"] < 0]
+        ahead = [lead for lead, r in by_lead.items() if r["skill_lower_95_one_sided"] > 0]
+        out.append(
+            f"- {scenario}: pooled over leads the twin's skill over the control is {100 * row['skill']:+.1f}% "
+            f"[{100 * row['skill_lower_95_one_sided']:+.1f}, {100 * row['skill_upper_95_one_sided']:+.1f}] "
+            f"(mean grid CRPS {fmt(row['benchmark_mean'], 3)} bp for the control); leads where the whole interval is below zero (twin worse): "
+            f"{', '.join(worse) or 'none'}; leads where it is above zero (twin ahead): {', '.join(ahead) or 'none'}."
+        )
     out.append("")
     for scenario in SCENARIOS:
         tables = score["tables"][scenario]
