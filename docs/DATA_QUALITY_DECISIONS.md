@@ -753,3 +753,37 @@ coerced.
 The bootstrap seed a re-scored record carries can be recomputed from the record itself with
 `baseline.backtest_record_seed`, and the decision time it digests is the `HH:MM:SS` form rather than
 the `HH:MM` the declaration states.
+
+## A Fed repo operation under $0.1 bn accepted is no take-up, in every era
+
+Decided by Eleonora on 14 October 2026 (ruling on #743; data meaning is hers, #735). In every era,
+a Fed repo operation with less than $0.1 bn accepted counts as no take-up. One amount, no date:
+`ingest.REPO_TAKE_UP_FLOOR` (USD 100 million), applied by `ingest._effective_accepted`.
+
+**Why.** #659 dropped the six test operations of $64-66 mn before 2019-09-17 and, from then on,
+only operations whose `note` names a small value exercise. The facility-era test trades of $1-7 mn
+(on hundreds of operation dates in 2021-2025 in the tracked snapshots, typically $1 mn per collateral type) carry
+no such note and were counted as take-up. So `fed_repo_days_since_positive` marked the pre-facility
+era (at its cap of 250 on every 2018 row) and never reached the cap after 2020. A rule that differs by
+era builds a regime dummy (#672); one floor covers both the tests and the trades.
+
+**What the rule does.**
+
+* An operation below the floor contributes zero to `fed_repo_accepted`,
+  is not counted by `fed_repo_ops`, and its detail rates do not enter `fed_repo_rate_iorb_bps`.
+  A day is zero take-up if all its operations are below the floor, and an operation at exactly
+  $0.1 bn counts.
+* The operation still happened, so its date keeps a row at zero (the facility operated that day) rather
+  than becoming missing. `fed_repo_submitted` is the amount submitted and is not changed.
+* Unchanged: `REPO_FACILITY_START` still decides which dates before the facility are structural zeros and
+  which are missing, and the small-value-exercise note still drops an operation. Both are about whether
+  the facility operated, not about how much was taken.
+* `srf_total_accepted` (`nyfed_srf`, the Standing Repo Facility total that the results page reads) is **not**
+  changed: it still counts the small trades. Applying the floor to it moves a published figure, so it waits for
+  her decision (a "Publish?" issue).
+* The columns stay off `FEATURE_FIELDS` and out of every published declaration; no published figure moves.
+  The material-use dates ($1 bn or more) are the same set.
+
+**Consequence for earlier evidence.** Any record that read the Fed repo take-up columns before this
+change read the $1-7 mn trades as take-up. #727's gains attributed to #662 are re-run in
+`docs/pivot/fed-repo-floor-743-result.md`; no 2018 warning gain is claimed before that re-run.
