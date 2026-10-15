@@ -417,6 +417,26 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
 
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
+- Directive: #707 (sub-question 1: 2021-23)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `da1412d0…`; the walks of #634 (PR #711), read unchanged; declaration `metadata/h5_step3_707.json`
+- Tried: 6 variants, no new fit: three causal post-hoc transforms (shift by the trailing median error, best trailing scale, trailing shrink weight on B1) applied to 2 candidates (the phase 2 gbm and variant (c) of #634), on 748 decision days in 2021-23 of 1,868 (to 2025-12-23). Variants: 6, cumulative 15.
+- Result: (c) loses to B1 in 2021-23, -30.4% [-54.7%, -13.5%]; the phase 2 gbm does not resolvably (-0.9% [-17.8%, +10.1%]). For (c) the remainder after a constant level and scale correction is 0.184 of the 0.216 bp gap (lower bound +0.087), read as regime transfer: the loss is -60.8% in 2022 and +1.0% in 2023. Shrink toward B1 closes the gap (+1.2% [-2.6%, +4.6%]); the level and scale remedies do not.
+- Against kill: not applicable (no verdict; development data).
+- Next: whether a shrink weight belongs in H5's candidate is for the choice of candidate (step 5); not decided here.
+
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
+- Directive: #707 (sub-question 2: the upper tail)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `da1412d0…`; the walks of #634 (PR #711), read unchanged; declaration `metadata/h5_step3_707.json`
+- Tried: 0 new variants; twCRPS above 0 bp of 2 candidates against B1 and B2 by as-of scarcity state and day type, with the coverage of the 90th and 95th percentile forecasts on days above 0 bp.
+- Result: twCRPS skill pooled is +35.7% [+26.5%, +51.7%] against B1 and +21.3% [+8.8%, +34.4%] against B2 for (c) (+31.3% and +15.9% for the gbm); neither beats B2 in the abundant state, and neither has a resolved gain over B1 on quarter-end or tax-date targets. The q95 exceedance rate is 0.095 for (c) and 0.128 for the gbm (lower bounds 0.075 and 0.106, nominal 0.05) with a median PIT of 0.825 on days above 0 bp: under-dispersed, not mislocated pooled.
+- Against kill: not applicable (no verdict; development data).
+- Next: a state-dependent tail scale is not tested here; whether it is, is for the step 5 choice.
+
 ### 2026-10-14 [H1] step 2 · eleonorabjornberg/repo-market-model#751
 - Directive: #733 (a design study for the confirmation test; no verdict, nothing registered)
 - Step: 2
@@ -527,15 +547,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
-### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
-- Directive: #743
-- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#732
+- Directive: #732
+- Step: 5 (the running variant count that every registration publishes, §2 of the protocol)
 - Tier: development
-- Pins: published panel `4ddc3882…`; base `9674324b`
-- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
-- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
-- Against kill: not applicable (no verdict; development data).
-- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
+- Pins: no panel (counting and a declaration check only); base `978dbcd`
+- Tried: no forecast variant. The progress page's variant count now reads every `metadata/*.json` that has a `variants` block (top level, or under `model`), by content and not by file name (ruling of 14 October 2026); a CI test refuses a model declaration with no `hypothesis` key or no `variants` block, with the 23 declarations that predate the rule listed as exempt.
+- Result: the count moves from 2 declarations and 4 variants (the files named `spread_distribution_*`) to 19 declarations and 55 variants. `near_threshold_688.json`, the case that found the gap, is now seen (3 variants, under `model`). The 55 include the pre-pivot +5 bp classification variants as well as spread-forecast ones, because the ruling counts by content.
+- Against kill: not applicable (no verdict; a count, not a score).
+- Next: Eleonora's call on converting the exempt declarations to carry `hypothesis`, and on whether the page should show the count by hypothesis.
+
 ### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
 - Directive: #740
 - Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
@@ -545,3 +566,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
 - Against kill: not applicable (no hypothesis test).
 - Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
+
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
+- Directive: #743
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9674324b`
+- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
+- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
