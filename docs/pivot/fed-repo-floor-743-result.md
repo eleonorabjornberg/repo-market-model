@@ -5,7 +5,7 @@ hypothesis under scoring protocol v1 (#640). No 2026 day is read (`docs/decision
 off `FEATURE_FIELDS`, and no earlier record is edited: the figures below are published anew and supersede #727's where they differ.
 
 **The rule** (Eleonora, 14 October 2026, ruling on #743; recorded in `docs/DATA_QUALITY_DECISIONS.md`). In every era a Fed repo
-operation with less than $0.1 bn accepted counts as no take-up (`ingest.REPO_TAKE_UP_FLOOR`). It covers the $64-66 mn tests before the
+operation with less than $0.1 bn accepted counts as no take-up (`ingest.REPO_TAKE_UP_FLOOR`). It covers the six test operations of $64-66 mn before the
 facility and the $1-7 mn trades after it. The operation still happened, so its date keeps a row at zero take-up.
 
 **What changed in the data.** On the scratch panel 350 rows differ in `fed_repo_accepted`, from 2019-11-05 to 2025-12-24 (the trades after the
