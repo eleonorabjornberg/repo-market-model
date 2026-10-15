@@ -131,7 +131,7 @@ _spec.loader.exec_module(screen)
 
 from unittest import mock  # noqa: E402
 
-from repo_model import measurement_fields, pressure  # noqa: E402
+from repo_model import measurement_fields, pressure, risk_dates  # noqa: E402
 from repo_model.data import DailyObservation, exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 
@@ -361,7 +361,7 @@ def screen_command(args) -> int:
     ordinary = [
         i
         for i, d in enumerate(scored)
-        if splits.day_type(values_of[d]) == "ordinary" and (values_of[d].get("treasury_settlement_coupons") or 0.0) <= 0.0
+        if not risk_dates.is_risk_date(values_of[d], risk_dates.NON_ORDINARY, splits=splits)
     ]
     spreads = [row.spread_bps for row in rows]
     targets = {

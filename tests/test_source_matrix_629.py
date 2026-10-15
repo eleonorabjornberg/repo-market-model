@@ -12,7 +12,7 @@ Recorded mutations, 12 October 2026, in a disposable copy of `scripts/source_mat
 3. in `complete_linkage`, the merge test `link >= threshold` where `link` is the smallest |rho| across the two clusters, replaced by
    the largest (single linkage). `ClusterTests.test_a_chain_is_not_one_group` then fails with
    `AssertionError: [['a', 'b', 'c'], ['d']] != [['a', 'b'], ['c'], ['d']]`.
-4. in `is_ordinary`, `> 0.0` -> `>= 0.0` on the coupon clause (a day with no coupon settlement is a risk date).
+4. in `risk_dates.non_ordinary_day` (which `is_ordinary` calls since #682), `> 0.0` -> `>= 0.0` on the coupon clause (a day with no coupon settlement is a risk date).
    `OrdinaryTests.test_a_day_with_no_coupon_settlement_is_ordinary` then fails with `AssertionError: False is not true`.
 """
 
