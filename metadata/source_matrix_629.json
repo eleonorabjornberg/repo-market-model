@@ -2,7 +2,7 @@
   "status": "declared by the pull request that closes #629 before any statistic; an exploratory screen, not a record. Nothing is selected into a model and nothing is published: no rule, threshold, onset definition or availability time changes, no day after 2026-09-03 is read, the back-filled 2014-18 history is not read while its posting instant is null (#572), and no hindsight regime label is used (ruling on #515). None of the tests below is corrected for multiplicity",
   "issue": 629,
   "panel": {
-    "sha256": "c823a0ce6a786137df9687c7b60a3750686dee28c8c19c9f5b9d525d03b8af55",
+    "sha256": "6a8388fb2cbf5ad8112f935d44d85389efb3207885f845838785616bab2b599d",
     "columns": 72,
     "built_by": "docs/pivot/source-matrix-ordinary-days-result.md (Reproduce): source_screen.py panel over the published panel's scratch panels and satiation_distance_598.py's"
   },
