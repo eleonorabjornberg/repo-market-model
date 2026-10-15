@@ -142,7 +142,13 @@ class Sources(unittest.TestCase):
 
     def test_the_step_is_never_below_the_log(self):
         for h in research_view.load(ROOT):
-            self.assertGreaterEqual(h["step"], max([1] + [e["step"] for e in h["log"]]))
+            self.assertGreaterEqual(h["step"], max([1] + [e["step"] for e in h["log"] if e["step"] is not None]))
+
+    def test_a_groundwork_entry_is_listed_and_moves_no_step(self):
+        text = ("### 2026-10-13 [H5] groundwork G3 · o/r#1\n- Directive: #1\n\n"
+                "### 2026-10-14 [H5] step 2 · o/r#2\n- Directive: #2\n")
+        entries = research_view.parse_log_entries(text)["H5"]
+        self.assertEqual([(e["step"], e["groundwork"]) for e in entries], [(None, "G3"), (2, None)])
 
 
 class CriticalPath(unittest.TestCase):
