@@ -718,7 +718,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; the +5 bp judge is retired as a decision rule, #640).
 - Next: Eleonora decides whether the amended draft record `docs/decisions/always-flag-blocks.md` merges.
 
-### 2026-10-15 [H2] step 3 · eleonorabjornberg/repo-market-model#827
+### 2026-10-15 [H2] step 3 · eleonorabjornberg/repo-market-model#828
 - Directive: #811
 - Step: 3 (a record trace: why H5 step 4's rerun of H2's ceiling did not rebuild H2's declared panel)
 - Tier: development
