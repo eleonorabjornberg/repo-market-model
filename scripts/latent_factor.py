@@ -45,7 +45,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Set
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import measurement_fields, ml  # noqa: E402
+from repo_model import measurement_fields, ml, risk_dates  # noqa: E402
 from repo_model import pressure_judge as pj  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
@@ -77,9 +77,7 @@ def _script(name: str):
 def is_risk_date(day_type: str, coupons: Optional[float], horizon: int) -> bool:
     """A risk date as `ml._RiskDateDesign.member` reads it: a day type other than ordinary, or, at h = 1, a coupon settlement."""
 
-    if day_type != "ordinary":
-        return True
-    return horizon == 1 and coupons is not None and coupons > 0.0
+    return risk_dates.non_ordinary_day(day_type, coupons, coupon_clause=horizon == 1)
 
 
 def combine(parent: Mapping[str, Mapping[str, float]], own: Mapping[str, Mapping[str, float]], risk_dates: Set[date]):

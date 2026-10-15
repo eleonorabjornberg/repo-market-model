@@ -46,7 +46,7 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import contract, measurement_fields, ml, scarcity  # noqa: E402
+from repo_model import contract, measurement_fields, ml, risk_dates, scarcity  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -82,9 +82,7 @@ def features_at_horizon(declared: dict, spec: dict, horizon: int) -> tuple:
 def is_risk_date(splits, values, horizon: int) -> bool:
     """The declared risk-date rule, read off a panel row (the same rule `ml._RiskDateDesign.member` serves)."""
 
-    if splits.day_type(values) != "ordinary":
-        return True
-    return horizon == 1 and float(values.get(COUPONS) or 0.0) > 0.0
+    return risk_dates.is_risk_date(values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=horizon == 1)
 
 
 @contextlib.contextmanager

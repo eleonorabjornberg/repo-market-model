@@ -36,7 +36,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import h41_release, measurement_fields, ml, settlement_dating  # noqa: E402
+from repo_model import h41_release, measurement_fields, ml, risk_dates, settlement_dating  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -172,9 +172,7 @@ def features_for(declared: dict, spec: dict, horizon: int, settle: bool) -> tupl
 def risk_flag(splits, values, coupon_clause: bool) -> bool:
     """The risk-date rule as the model serves it (`ml._RiskDateDesign.member`)."""
 
-    if splits.day_type(values) != "ordinary":
-        return True
-    return coupon_clause and float(values.get(rds.COUPONS) or 0.0) > 0.0
+    return risk_dates.is_risk_date(values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=coupon_clause)
 
 
 def run_command(args) -> int:
