@@ -36,6 +36,7 @@ from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import _as_of_folds, panel_sha256  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
@@ -217,7 +218,7 @@ def cap_command(args) -> int:
     declared = rds.committed_declaration(DECLARATION)
     for name in VARIANTS.values():
         rds.committed_declaration(CANDIDATES / f"{name}.json")
-    last = date.fromisoformat(declared["scoring"]["last_day"])
+    last = panel_end(args.end, date.fromisoformat(declared["scoring"]["last_day"]), where="every_day_conditioning_601.cap")
     require_unlocked([last], where="every_day_conditioning_601")
     scratch_rows = load_daily_panel(args.scratch)
     audit_panel(scratch_rows)
@@ -277,6 +278,7 @@ def main(argv=None) -> int:
     cap.add_argument("--panel", type=Path, dest="published", required=True, help="the published panel")
     cap.add_argument("--scratch", type=Path, required=True)
     cap.add_argument("--output-dir", type=Path, required=True)
+    cap.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     cap.add_argument("inputs", nargs="+", type=Path)
     cap.set_defaults(func=cap_command)
     through = sub.add_parser("pg")

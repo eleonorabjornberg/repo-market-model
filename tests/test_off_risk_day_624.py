@@ -156,6 +156,35 @@ class ClimatologyTests(unittest.TestCase):
             SCRIPT.gc.fit_floor([(date(2018, 1, 5), 0.0, 1, "")], date(2018, 1, 1), minimum_pairs=1)
 
 
+class PeriodCellTests(unittest.TestCase):
+    """The 2026 column of the exploratory re-run (#684; ruling of 13 October 2026 on PR #710): the 3-pressure-day minimum stays.
+
+    Written first and watched fail with `AttributeError: module 'off_risk_day_624_script' has no attribute 'PERIOD_MINIMUM_PRESSURE_DAYS'` (the first version of the test read the constant itself, so the mutation below could not have killed it; the days are literals now).
+    Recorded mutation: setting `PERIOD_MINIMUM_PRESSURE_DAYS` in `scripts/off_risk_day_624.py` to 2 makes
+    `test_the_2026_column_is_not_read_below_the_minimum` fail with `AssertionError: 'period 2026' unexpectedly found in {...}`.
+    """
+
+    @staticmethod
+    def _table(late_pressure_days):
+        dates = ["2025-06-02", "2025-06-03", "2025-06-04", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08"]
+        y = [0, 1, 0] + [1] * late_pressure_days + [0] * (4 - late_pressure_days)
+        return {"dates": dates, "y": y, "regime": ["r"] * 7, "state": ["0"] * 7}
+
+    def test_a_table_that_ends_in_2025_has_no_period_cells(self):
+        table = {"dates": ["2025-06-02", "2025-06-03"], "y": [0, 1], "regime": ["r"] * 2, "state": ["0"] * 2}
+        self.assertFalse([c for c in SCRIPT.split_cells(table) if c.startswith("period")])
+
+    def test_the_2026_column_is_not_read_below_the_minimum(self):
+        cells = SCRIPT.split_cells(self._table(2))
+        self.assertIn("period 2018-2025", cells)
+        self.assertNotIn("period 2026", cells)
+
+    def test_the_2026_column_is_read_at_the_minimum(self):
+        cells = SCRIPT.split_cells(self._table(3))
+        self.assertEqual(cells["period 2026"], [3, 4, 5, 6])
+        self.assertEqual(cells["period 2018-2025"], [0, 1, 2])
+
+
 class StatisticTests(unittest.TestCase):
     def test_the_brier_skill_is_zero_at_the_reference_and_one_when_perfect(self):
         y = [0, 1, 0, 1]
