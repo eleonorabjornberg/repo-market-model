@@ -40,12 +40,19 @@ except where a family says lead 1.
 | pair | candidate against B1 | score | days |
 |---|---|---|---|
 | **P2** | B2 | grid CRPS | all decision days |
+| **P2r** | B1, with B2 as the benchmark (amendment below) | grid CRPS | all decision days |
 | **P3** | B3, the published model's daily forecasts | five-level CRPS | the days B3 covers |
 
 A pair is **known better** only if its full-history mean skill `mean(d) / mean(b)` is at least the MME (3%) and the
 one-sided p-value of the studentized stationary-bootstrap test (`scoring_protocol.paired_test`, 10,000 draws, seed 754)
 is below 0.05. A pair that does not meet this is reported as not known better, and its detection share is then shown as
 "detection on a pair that is not known better", not as power.
+
+**Amendment (15 October 2026, before the full run).** A smoke run of the script (300 windows, 20 paths, nothing
+kept) showed that B2 scores *worse* than B1 on the pool, so P2 as declared is not a known-better pair. P2r is added: the
+reverse orientation, B1 as the candidate against B2 as the benchmark, whose skill is measured against B2's score. P2 stays
+in every table, reported as not known better (its detection share is then not power). P2r and P2 have the same noise, and
+a series built from one is the mirror of the other's. Nothing else in this document changes.
 
 Three **known-equal** series, built from each pair:
 
@@ -139,7 +146,7 @@ smallest detectable gain at 80% power at 125, 250 and 500 days.
 
 It ends with **one recommended confirmation test**, chosen by this rule and by nothing else: among the families
 (a2, b, c1; c5 and a1 are shown only as comparisons) those whose size on **both** E2 and E3 (all days, `N` = 250,
-both pairs) and in the synthetic study (full history, `N` = 250) is at most 5%, the one with the highest gated
+all three pairs) and in the synthetic study (full history, `N` = 250) is at most 5%, the one with the highest gated
 synthetic power at 3% and `N` = 250. If none holds the size limit it says so and recommends none. It gives the
 one-line trade-off against the current design (a1 at 250 days) and the smallest detectable gain at 250 days, followed
 by marked questions for Eleonora. A change to the protocol is a draft decision record for her to merge, not code.
