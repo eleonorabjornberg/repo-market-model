@@ -1208,14 +1208,18 @@ class AlwaysFlagBlockTests(unittest.TestCase):
     """The always-flag reading of tier 1 (#588, on Eleonora's ruling on #570): off in the in-force judge.
 
     A 21-day refit block (here 20 days) is always-flag when its chosen cut-off is at or below every probability in it, so
-    every day of it is flagged. With the option on, a flag in such a block counts neither as a warning nor as a false
-    alarm; the blocks and the onsets that only they warned are listed instead.
+    every day of it is flagged. With the option on, a flag in such a block is not a warning but is still a false alarm (option B,
+    Eleonora's ruling of 13 October 2026 on #666, directive #685); the blocks and the onsets that only they warned are listed.
 
     **Recorded mutation** (CLAUDE.md): the option reads a block's cut-off and probabilities and refuses nothing, but the
     single look cannot be cut into the development blocks, so `judge` refuses the option there. Mutation: in
     `pressure_judge.judge`, replace `if declaration.always_flag_not_warning and confirmation:` with `if False:`; the failing
     test was `test_the_single_look_refuses_the_option`, which raised `AssertionError` (the message of the later refusal did not match "always-flag"; a bare
     `assertRaises(ValueError)` was satisfied by that refusal, so the test matches the message).
+
+    **Recorded mutation** (#685, option B): in `pressure_judge._onset_tier`, replace the `warned[h] = _alarm_flags(declaration, name,
+    [0 if b else r ...], onset)` line by `warned[h] = flags[h]` (a dropped flag still warns). `test_on_a_blanket_flag_is_not_a_warning_and_is_listed`
+    and `test_on_a_flag_in_an_always_flag_block_is_still_a_false_alarm` then fail with `AssertionError: 19 != 0`.
     """
 
     LOOSE = {
@@ -1255,12 +1259,22 @@ class AlwaysFlagBlockTests(unittest.TestCase):
         self.assertEqual(near["recall"]["mean"], 0.0)
         self.assertFalse(near["passes"])
 
-    def test_on_a_flag_in_an_always_flag_block_is_not_a_false_alarm_either(self):
+    def test_on_a_flag_in_an_always_flag_block_is_still_a_false_alarm(self):
+        """#685, Eleonora's ruling of 13 October 2026 on #666 (option B): not a warning, but still a false alarm.
+
+        The false alarms are counted exactly as with the option off; only the warnings change. Failed before the change
+        with `AssertionError: 0 != 361` (the draft record's "neither a warning nor a false alarm"). The warning side is
+        held by `test_on_a_blanket_flag_is_not_a_warning_and_is_listed`.
+        """
+
         series = Series()
         off = self._judged(self._blanket(series), series, on=False)["tiers"]["onset_warning"]["lead_at_least_1"]
         on = self._judged(self._blanket(series), series, on=True)["tiers"]["onset_warning"]["lead_at_least_1"]
         self.assertEqual(off["false_alarms_by_horizon"]["1"]["false_alarms"], 19 * 19)
-        self.assertEqual(on["false_alarms_by_horizon"]["1"]["false_alarms"], 0)
+        self.assertEqual(on["false_alarms_by_horizon"]["1"]["false_alarms"], 19 * 19)
+        self.assertEqual(on["pooled_false_alarms"], off["pooled_false_alarms"])
+        self.assertEqual(on["pooled_false_alarms_per_onset"], off["pooled_false_alarms_per_onset"])
+        self.assertEqual(on["onsets_flagged"], 0)
         self.assertEqual(on["always_flag"]["flags_dropped_by_horizon"]["1"], 380)
 
     def test_on_a_sharp_candidate_is_unchanged(self):
@@ -1291,6 +1305,35 @@ class AlwaysFlagBlockTests(unittest.TestCase):
         on = replace(_load(), always_flag_not_warning=True).document()["tiers"]["onset_warning"]
         self.assertNotIn("always_flag_blocks", off)
         self.assertIn("always_flag_blocks", on)
+
+
+class AlwaysFlagOptionBEvidenceTests(unittest.TestCase):
+    """#685: `ngboost_laplace` under option B, as the re-score recorded it (`docs/pivot/evidence/always-flag-685/`).
+
+    Not a leakage or staleness guard, so no mutation is recorded. It pins the re-score to the figures #666 reproduced from rebuilt
+    forecasts: with the option on, 13 of 26 onsets are warned, there are 2.34 false alarms per onset, and tier 1 fails. The
+    re-score is `scripts/always_flag_685.py score` (the command is in its header); this test reads its output, it does not
+    rebuild the forecasts.
+    """
+
+    PATH = Path(__file__).resolve().parents[1] / "docs" / "pivot" / "evidence" / "always-flag-685" / "result.json"
+
+    def _cell(self, option):
+        record = json.loads(self.PATH.read_text(encoding="utf-8"))
+        return record["tier_1"]["weighted"][option]["ngboost_laplace"]["lead_at_least_1"]
+
+    def test_ngboost_laplace_with_the_option_on(self):
+        on = self._cell("on")
+        self.assertEqual((on["onsets"], on["onsets_flagged"]), (26, 13))
+        self.assertAlmostEqual(on["pooled_weighted_false_alarms_per_onset"], 2.34, places=2)
+        self.assertFalse(on["passes"])
+        self.assertEqual(on["always_flag"]["flags_dropped_by_horizon"], {"1": 63, "2": 63, "3": 84, "4": 105, "5": 105})
+
+    def test_the_option_leaves_the_false_alarms_alone(self):
+        off, on = self._cell("off"), self._cell("on")
+        self.assertEqual((off["onsets_flagged"], on["onsets_flagged"]), (17, 13))
+        self.assertEqual(on["pooled_weighted_false_alarms_per_onset"], off["pooled_weighted_false_alarms_per_onset"])
+        self.assertEqual(on["pooled_false_alarms_per_onset"], off["pooled_false_alarms_per_onset"])
 
 
 class RulingsOfTenOctoberTests(unittest.TestCase):

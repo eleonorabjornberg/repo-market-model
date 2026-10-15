@@ -1,0 +1,29 @@
+{
+  "status": "declared by the pull request that closes #685 before any score; the rows, the rules and everything reported are fixed here and are not tuned on a scored day; the judge in force, its bar, its cut-off rule, the weighted miss rule and every published declaration are unchanged. A scratch measurement: it chooses nothing and decides nothing, and it is exploration on development data that gives no verdict (the +5 bp judge is retired as a decision rule, #640).",
+  "issue": 685,
+  "ruling": "Eleonora, 13 October 2026, on #666 (option B): a flag from an always-flag block is not a tier 1 warning, as ruled on #570 (comment 6113212773), but it still counts as a false alarm.",
+  "supersedes": "metadata/always_flag_588.json, whose option counted such a flag as neither a warning nor a false alarm. That measurement and its evidence in docs/pivot/evidence/always-flag/ stay as they were published.",
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_day": "2025-12-31",
+    "primary_threshold_bp": 5,
+    "horizons": [1, 2, 3, 4, 5],
+    "leads": [1, 2, 3, 4, 5]
+  },
+  "rows": {
+    "frozen_candidates": ["ngboost_laplace"],
+    "parent": [],
+    "benchmarks": ["calendar_climatology", "persistence_logistic", "published_v1"],
+    "reading": "ngboost_laplace, the one frozen candidate whose tier 1 outcome the option moved (#594, #666), and the two declared benchmarks and the published baseline. The other rows the #588 measurement scored (risk_gbm and the two risk_gbm variants) are unchanged by the option in either reading and are not re-scored here; their forecasts need the augmented panel."
+  },
+  "rules": {
+    "weighted": "the rule in force: cut-offs chosen on the weighted count and tier 1's limit reads the weighted count",
+    "unweighted": "the flat count in both places, shown beside it"
+  },
+  "options": {
+    "off": "the judge in force",
+    "on": "Declaration.always_flag_not_warning, as amended by #685: a refit block of cutoff_rule.refit_every scored days whose cut-off (on its first day) is at or below every probability in it is always-flag; a flag in it is not a warning but still counts as a false alarm, and the blocks, the flags dropped from the warnings and the onsets only they warned are listed. Tier 1 only: tiers 2 to 5 are unchanged."
+  },
+  "reported": "tier 1 at lead of at least 1 (the pooled verdict) and at least 2, 3, 4 and 5, option off and on: onsets warned, recall with its 90% interval, pooled false alarms per onset (flat and weighted; the count the judge's limit reads), the three criteria and the pass; the always-flag blocks per row and horizon; the onsets lost.",
+  "unchanged": "the bar (recall at least 0.5 with the interval above climatology, false alarms per onset at most 2), the cut-off rule, the bootstrap, the weights and bands of metadata/weighted_miss.json. The cut-offs are chosen once per rule and shared by both options. No day after 2025-12-31 is read (docs/decisions/lockbox.md)."
+}
