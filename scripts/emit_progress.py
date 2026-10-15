@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PAGE = "docs/pivot/progress.md"
 DATA = "docs/research/progress.json"
 CANDIDATES = "metadata/pressure_judge/candidates"
-SPREAD_DECLARATIONS = "metadata/spread_distribution_*.json"
+DECLARATIONS = "metadata/*.json"
 EVIDENCE = "docs/pivot/evidence"
 SOURCES = {
     "spread": EVIDENCE + "/spread-distribution/distribution.json",
@@ -170,12 +170,30 @@ def candidate_order(root):
     return sorted(present, key=lambda n: (added.get(n, 0), n))
 
 
+def declared_variants(decl):
+    """The `variants` block of a declaration (top level, else under `model`), or None when it has none (#732)."""
+    if not isinstance(decl, dict):
+        return None
+    block = decl.get("variants")
+    if block is None and isinstance(decl.get("model"), dict):
+        block = decl["model"].get("variants")
+    return block if isinstance(block, (dict, list)) else None
+
+
+def is_model_declaration(decl):
+    """A model declaration has a `variants` block, or both `model` and `scoring` (#732)."""
+    return isinstance(decl, dict) and (declared_variants(decl) is not None or ("model" in decl and "scoring" in decl))
+
+
 def count_variants(root, order):
-    spread_files = sorted(glob.glob(str(Path(root) / SPREAD_DECLARATIONS)))
-    variants = 0
-    for path in spread_files:
-        variants += len((json.loads(Path(path).read_text()).get("variants") or {}))
-    return {"candidate_files": len(order), "spread_declarations": len(spread_files), "spread_variants": variants}
+    """Count by content, not by file name: every `metadata/*.json` with a `variants` block (#732)."""
+    declarations = variants = 0
+    for path in sorted(glob.glob(str(Path(root) / DECLARATIONS))):
+        block = declared_variants(json.loads(Path(path).read_text()))
+        if block is not None:
+            declarations += 1
+            variants += len(block)
+    return {"candidate_files": len(order), "declarations": declarations, "variants": variants}
 
 
 def build(root, order=None):
@@ -234,8 +252,8 @@ def render(model):
            "Primary goal H5: the SOFR - IORB spread distribution in bp. Secondary goal H9: richer targets.", "",
            "## Variant count", "",
            "- Candidate files under `%s/`: %d." % (CANDIDATES, c["candidate_files"]),
-           "- Spread-forecast declarations (`%s`): %d, declaring %d variants." % (
-               SPREAD_DECLARATIONS, c["spread_declarations"], c["spread_variants"]),
+           "- Declarations with a `variants` block (`%s`, by content): %d, declaring %d variants." % (
+               DECLARATIONS, c["declarations"], c["variants"]),
            "- Candidates with evidence in this page: %d. Candidate files with no committed evidence this page reads: "
            "%d (listed at the end)." % (len(rows), len(c["without_evidence"])),
            "", "Position is the order in which the candidate file was added.", "",

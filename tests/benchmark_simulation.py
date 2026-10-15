@@ -217,6 +217,92 @@ def realised_coverage(sample: Sample, t: int, h: int, quantiles: Sequence[float]
     return 1.0 if quantiles[LOW] <= sample.spreads[t + h] <= quantiles[HIGH] else 0.0
 
 
+# -- a forecaster that does not copy a calendar spike (#741) ----------------------------------------------------------
+
+
+def spike_blind_forecast(panel: Sequence[DailyObservation], t: int, *, splits=None):
+    """B1 with the anchor's spread replaced by the last ordinary-day spread at or before the anchor.
+
+    The forecaster of finding #741: no parameter, no model of the ordinary days. On an ordinary anchor it is B1
+    exactly; on a quarter-end, tax-date or month-end anchor it declines to carry the spike forward. It reads
+    nothing after the anchor (B1's own `_anchor` runs both as-of guards).
+    """
+
+    splits = SPLITS if splits is None else splits
+    b1 = pb.b1_forecast(panel, t, registry=REGISTRY, decision_time=DECISION)
+    anchor = pb._anchor(panel, t, REGISTRY, DECISION)
+    last = next(
+        s for s in range(anchor, -1, -1) if splits.reporting_day_type(panel[s].date, panel[s].values) == "ordinary"
+    )
+    shift = panel[last].spread_bps - panel[anchor].spread_bps
+    return {h: [q + shift for q in b1[h]] for h in b1}
+
+
+def _skill(benchmark: Sequence[float], candidate: Sequence[float]) -> float:
+    """`mean(d) / mean(benchmark)` with `d = benchmark - candidate`: positive favours the candidate (§5)."""
+
+    return (sum(benchmark) - sum(candidate)) / sum(benchmark)
+
+
+def spike_blind_replicate(spec: ProcessSpec, seed: int, decision_step: int = 3):
+    """One simulated panel: per decision day, B1's and the spike-blind forecaster's mean grid CRPS and the anchor's type.
+
+    Returns `(rows, kinds)` where each row is `(anchor type, B1 score, candidate score)`, over the evaluation
+    decisions (every `decision_step`-th row from `EVALUATION_FIRST`), the score being the mean over the five
+    leads as in `scoring_protocol.day_scores`.
+    """
+
+    sample = simulate(spec, seed)
+    days = [row.date for row in sample.rows]
+    start = next(i for i, d in enumerate(days) if d >= EVALUATION_FIRST)
+    out = []
+    for t in range(start, len(days) - 5, decision_step):
+        b1 = pb.b1_forecast(sample.rows, t, registry=REGISTRY, decision_time=DECISION)
+        mine = spike_blind_forecast(sample.rows, t)
+        score = lambda f: sum(sp.grid_crps(f[h], sample.spreads[t + h]) for h in sp.HORIZONS) / len(sp.HORIZONS)  # noqa: E731
+        out.append((sample.kinds[t - 1], score(b1), score(mine)))
+    return out
+
+
+def spike_blind_report(replicates: int, seed: int, decision_step: int = 3, spec: ProcessSpec = None):
+    """Skill of the spike-blind forecaster against B1, pooled and by the anchor's type, over simulated panels.
+
+    Per replicate the skill is the pooled one of the protocol (`mean(d) / mean(B1)`); a cell is the mean over
+    replicates with a normal-approximation 95% interval across them, and `share_at_mme` is the share of
+    replicates whose skill is at least `scoring_protocol.MME`.
+    """
+
+    spec = ProcessSpec() if spec is None else spec
+    groups = ("pooled", "ordinary", "month_end", "tax_date", "quarter_end")
+    skills = {g: [] for g in groups}
+    days = {g: 0 for g in groups}
+    for r in range(replicates):
+        rows = spike_blind_replicate(spec, seed + r, decision_step)
+        for g in groups:
+            kept = [(b, c) for kind, b, c in rows if g in ("pooled", kind)]
+            if kept and sum(b for b, _ in kept) > 0:
+                skills[g].append(_skill([b for b, _ in kept], [c for _, c in kept]))
+                days[g] += len(kept)
+    out = {}
+    for g in groups:
+        mean, interval = _interval(skills[g])
+        out[g] = {
+            "skill": mean, "interval": interval, "replicates": len(skills[g]),
+            "days": days[g] / max(len(skills[g]), 1),
+            "share_at_mme": sum(1 for v in skills[g] if v >= sp.MME) / max(len(skills[g]), 1),
+        }
+    return out
+
+
+def spike_blind_markdown(report) -> str:
+    lines = ["| anchor day type | decision days per panel | skill against B1 | 95% interval | share of panels at or above the MME |", "|---|---|---|---|---|"]
+    for group, c in report.items():
+        lines.append(
+            f"| {group} | {c['days']:.0f} | {c['skill']:+.2%} | [{c['interval'][0]:+.2%}, {c['interval'][1]:+.2%}] | {c['share_at_mme']:.0%} |"
+        )
+    return "\n".join(lines)
+
+
 # -- the report ------------------------------------------------------------------------------------------------------
 
 
@@ -293,9 +379,14 @@ def markdown(report) -> str:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Central 90% coverage of B1 and B2 on simulated panels (#762).")
+    parser = argparse.ArgumentParser(description="Simulated-panel reports on the benchmarks of protocol v1 (#762, #741).")
+    parser.add_argument("report", nargs="?", choices=("coverage", "spike-blind", "spike-blind-no-spikes"), default="coverage")
     parser.add_argument("--replicates", type=int, default=200)
-    parser.add_argument("--seed", type=int, default=762000)
+    parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--decision-step", type=int, default=3)
     args = parser.parse_args()
-    print(markdown(coverage_report(args.replicates, args.seed, args.decision_step)))
+    if args.report == "coverage":
+        print(markdown(coverage_report(args.replicates, 762000 if args.seed is None else args.seed, args.decision_step)))
+    else:
+        flat = ProcessSpec(levels={k: 0.0 for k in ProcessSpec().levels}) if args.report.endswith("no-spikes") else None
+        print(spike_blind_markdown(spike_blind_report(args.replicates, 741000 if args.seed is None else args.seed, args.decision_step, flat)))
