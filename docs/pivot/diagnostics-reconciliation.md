@@ -162,6 +162,28 @@ Over all scored days, read through the as-of rule (`scripts/setup_reads.py`, `ev
 old at the decision (median 8; older than 7 on 1,110 of 1,873 scored days at h = 1), the dealer position 9 to 19 (older than 7 on every scored day). The
 convention for the next pages: state the unit, and state whether the age is of the row or of the observation's Wednesday.
 
+### 11. Reliability slopes are pooled across regimes (added 13 October 2026, #683, finding #670)
+
+The reliability slopes the pages report for the days that are not risk dates are fitted on all scored days at once, and they read as nearly
+calibrated while the forecasts inside the regime that holds most of the pressure are badly over-spread.
+
+| page | pooled reading | within 2018-19 (`evidence/off-risk-day/step2-off-risk-days.md`) |
+|---|---|---|
+| `off-risk-day-result.md`, `+offday` | slope 0.78 to 0.85, all days | 0.48 at h = 1 and 0.14 to 0.22 at h = 3 to 5 (scarcity state 3: 0.44 at h = 1) |
+| `kinked-elasticity-result.md`, rolling form | "nearest to calibrated", slope 0.74 at h = 1 | not computed for these rows yet (the page's note says how); `+offday` of #624 is the nearest tracked comparator |
+
+**Why pooling misleads.** The slope is the weight the forecast's log-odds earn in a logistic fit of the outcome. 2021-23 has no pressure day and
+forecasts near 0, so it adds a long, well-ordered stretch at the bottom of the curve: many days whose low forecast is followed by no event. That
+stretch raises the pooled slope without making any day inside 2018-19 or 2025-26 better calibrated. Pooling also mixes regimes whose base rates
+differ by orders of magnitude, so the pooled line fits none of them.
+
+**The convention from now on.** Report the slope and intercept with an interval inside each regime (2018-19, 2020-24, 2025-26) and, where the page
+splits by it, inside each as-of scarcity state, with the pooled cell beside them and never alone (`repo_model.reliability_regimes`). A regime with no
+pressure day has no slope: say "undefined" and do not read the pooled value in its place. Do not call a row "calibrated" on a pooled slope. Any future
+reliability-shape test, such as the one #616's line of work leads to (#628), must be read within regimes: a pooled test could certify as calibrated
+a forecast that is over-spread inside 2018-19, which is where the pressure is. How tiers 3 and 5 read reliability is Eleonora's decision; this
+point only records how the figures are to be read.
+
 ## Commands that show the supported values
 
 ```
