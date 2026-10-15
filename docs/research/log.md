@@ -225,6 +225,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H3's kill is not tested here; the two series lose rank, and neither was a lead beyond #630's own reading).
 - Next: Eleonora decides whether the source is admitted given the withheld weeks.
 
+### 2026-10-13 [H2] step 2 · eleonorabjornberg/repo-market-model#709
+- Directive: #682
+- Step: 2 (groundwork)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d4`
+- Tried: one shared risk-date function with two named definitions; counts per lead under both. Variants: n/a.
+- Result: at h = 1 the ordinary set is 1568 days with 87 pressure days (`scheduled`) or 1469 with 82 (`non_ordinary`); the 99 month-ends that are not quarter-ends are the difference. No figure moves.
+- Against kill: not applicable.
+- Next: ruled 14 October 2026 (relayed): H2, H5 and #637 use the shared `risk_dates` definition, under which announced coupon settlements count as risk dates, from their next step on; past pages keep theirs and are not re-scored. Both named definitions count coupon settlements, so which of the two is still to be named by Eleonora.
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#712
 - Directive: #679
 - Step: 3
