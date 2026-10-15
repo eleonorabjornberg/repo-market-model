@@ -23,7 +23,8 @@ unchanged. Scored decision days end where their fifth target day is on or before
 target day s from the information public h business days earlier (`asof.InformationRule(horizon=h)`), so the five leads of
 one decision day d are the walks' laws for the targets d + 1 .. d + 5. `score` assembles them (`lead_forecasts`), adds the
 benchmarks of protocol section 4, scores every decision day with `scoring_protocol.day_scores` and pairs each candidate with
-each benchmark with `scoring_protocol.paired_tests`.
+each benchmark with `scoring_protocol.paired_tests`. A walk whose output already holds the same variant and lead, walked
+from the same panel bytes, is skipped (`finished_walk`), so a run stopped part-way resumes from the walks it wrote.
 """
 
 from __future__ import annotations
@@ -141,6 +142,34 @@ def on_grid(quantiles: Sequence[float], levels: Sequence[float], grid: Sequence[
     return sorted(out)
 
 
+def five_levels(quantiles: Sequence[float]) -> List[float]:
+    """A law at the five published levels: a 23-level law is read at them, a five-level law is kept as it is.
+
+    B3 (the published declaration) is scored on its own five levels (Eleonora, #660 and #700): it is never refitted or
+    interpolated to the grid. Every other forecast of the pairing is read at the same five, so the two are paired like for
+    like. The five are among the protocol's 23, so the reading is exact.
+    """
+
+    if len(quantiles) == len(REPORT_LEVELS):
+        return [float(v) for v in quantiles]
+    if len(quantiles) != len(GRID):
+        raise ValueError(f"a law carries {len(quantiles)} quantiles; expected {len(REPORT_LEVELS)} or {len(GRID)}")
+    return [float(quantiles[GRID.index(level)]) for level in REPORT_LEVELS]
+
+
+def five_crps(quantiles: Sequence[float], observed: float) -> float:
+    """Twice the mean pinball loss over the five published levels: the protocol's grid CRPS on five levels."""
+
+    return metrics.crps_from_quantiles(REPORT_LEVELS, [float(v) for v in quantiles], float(observed))
+
+
+def five_twcrps(quantiles: Sequence[float], observed: float) -> float:
+    """The upper-tail twCRPS (weight 1{y > 0 bp}) on the five published levels."""
+
+    floor = sp.TWCRPS_THRESHOLD_BP
+    return metrics.crps_from_quantiles(REPORT_LEVELS, [max(float(v), floor) for v in quantiles], max(float(observed), floor))
+
+
 def lead_forecasts(
     laws: Mapping[int, Mapping[date, Optional[Sequence[float]]]], calendar: Sequence[date]
 ) -> Tuple[Dict[date, Dict[int, Optional[List[float]]]], List[date]]:
@@ -206,10 +235,6 @@ def day_means(
 
 def pinball(level: float, predicted: float, observed: float) -> float:
     return metrics.pinball_loss(level, predicted, observed)
-
-
-def level_value(quantiles: Sequence[float], level: float) -> float:
-    return quantiles[GRID.index(level)]
 
 
 def brier(probability: float, happened: bool) -> float:
@@ -321,6 +346,28 @@ def two_part_every_day(horizon: int) -> Tuple[str, ...]:
     return tuple(name for name in TWO_PART_EVERY_DAY if horizon == 1 or name not in IORB_COLUMNS)
 
 
+def finished_walk(output: Path, *, variant: str, horizon: int, published: Path, panel: Path) -> bool:
+    """Whether `output` already holds this walk: the same variant and lead, read from the same panel bytes.
+
+    A walk takes hours, so a run that stops part-way keeps the walks it wrote and a later run starts from them. A file
+    that does not parse, or was walked for another variant, lead or panel, is not finished and is walked again.
+    """
+
+    try:
+        document = json.loads(output.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(document, dict) or not isinstance(document.get("laws"), dict):
+        return False
+    scratch = panel_sha256(panel) if variant in VARIANTS else None
+    return (
+        document.get("variant") == variant
+        and document.get("horizon") == horizon
+        and document.get("panel_sha256") == panel_sha256(published)
+        and document.get("scratch_panel_sha256") == scratch
+    )
+
+
 def walk_command(args) -> int:
     declared = committed_declaration()
     h, variant = args.horizon, args.variant
@@ -329,6 +376,9 @@ def walk_command(args) -> int:
     if variant not in VARIANTS + CONTROLS:
         raise SystemExit(f"{variant!r} is not a declared variant or control")
     require_unlocked([LAST_TARGET], where="spread_distribution_634")
+    if finished_walk(args.output, variant=variant, horizon=h, published=args.published, panel=args.panel):
+        print(json.dumps({"variant": variant, "horizon": h, "skipped": "finished walk at " + str(args.output)}))
+        return 0
     minimum = declared["scoring"]["minimum_history"]
     refit = declared["scoring"]["refit_every"]
     published = load_daily_panel(args.published)
@@ -406,7 +456,10 @@ def walk_command(args) -> int:
         "settings": json.loads(json.dumps(settings, default=str)),
         "laws": laws,
     }
-    args.output.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
+    # written whole, then renamed: a run stopped mid-write leaves no file that reads as a finished walk
+    partial = args.output.with_name(args.output.name + ".partial")
+    partial.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
+    partial.replace(args.output)
     print(json.dumps({"variant": variant, "horizon": h, "days": len(laws), "missing": sum(1 for v in laws.values() if v is None)}))
     return 0
 
@@ -441,13 +494,21 @@ def exceedance_command(args) -> int:
 
 # -- scoring -------------------------------------------------------------------------------------------------------
 
-BENCHMARKS = ("B1", "B2", "B3")
+#: the primary comparisons, on the 23-level grid; B3 is a secondary benchmark on its own five levels (see `FIVE`).
+BENCHMARKS = ("B1", "B2")
+#: a sensitivity, not the headline (Eleonora's ruling on #711): variant (a), which forecasts the five published levels, against
+#: B1 and B2 read at those five, beside its headline comparison on the grid.
+SENSITIVITY_FIVE = (("B1", "a_published_new"), ("B2", "a_published_new"))
 #: candidates tested against each benchmark; `published` is B3 itself.
 CANDIDATES = ("gbm_funding",) + VARIANTS
 
 
-def load_laws(directory: Path, variant: str) -> Dict[int, Dict[date, Optional[List[float]]]]:
-    """A variant's walks at the five leads as `{h: {target day: 23 quantiles or None}}`, on the protocol's grid."""
+def load_laws(directory: Path, variant: str, native: bool = False) -> Dict[int, Dict[date, Optional[List[float]]]]:
+    """A variant's walks at the five leads as `{h: {target day: quantiles or None}}`.
+
+    On the protocol's 23-level grid by default (a five-level law by `on_grid`); with `native` the laws are kept at the
+    levels they were fitted at (B3, scored on its own five levels).
+    """
 
     out: Dict[int, Dict[date, Optional[List[float]]]] = {}
     for h in HORIZONS:
@@ -459,7 +520,7 @@ def load_laws(directory: Path, variant: str) -> Dict[int, Dict[date, Optional[Li
         for day, quantiles in document["laws"].items():
             if quantiles is None:
                 laws[date.fromisoformat(day)] = None
-            elif len(levels) == len(GRID):
+            elif native or len(levels) == len(GRID):
                 laws[date.fromisoformat(day)] = [float(v) for v in quantiles]
             else:
                 laws[date.fromisoformat(day)] = on_grid(quantiles, levels)
@@ -468,13 +529,16 @@ def load_laws(directory: Path, variant: str) -> Dict[int, Dict[date, Optional[Li
 
 
 def summarise(test: "sp.PairedTest") -> dict:
+    """One pair's row: both skill bounds are the scorer's studentized ones (ruling on #660, item 1), like mean(d)'s."""
+
+    skill_lower = test.skill - sp._bound(test.skill_t_draws, 1.0 - test.alpha, test.draws) * test.skill_standard_error
     return {
         "n": test.n,
         "benchmark_mean": test.benchmark_mean,
         "mean_difference": test.mean_difference,
         "skill": test.skill,
         "mean_difference_lower_95_one_sided": test.lower_mean_difference(),
-        "skill_lower_95_one_sided": sp._bound(test.skill_draws, test.alpha, test.draws),
+        "skill_lower_95_one_sided": skill_lower,
         "skill_upper_95_one_sided": test.upper_skill(),
         "bootstrap_p": test.p_value,
         "dm_statistic": test.dm_statistic,
@@ -511,7 +575,7 @@ def score_command(args) -> int:
     outcomes = {row.date: row.spread_bps for row in rows}
     splits = load_split_declaration(SPLITS)
     registry = json.loads(SOURCES.read_text(encoding="utf-8"))
-    walks = {name: load_laws(args.walks, name) for name in CONTROLS + VARIANTS}
+    walks = {name: load_laws(args.walks, name, native=(name == "published")) for name in CONTROLS + VARIANTS}
     decisions: Dict[str, Dict[date, Dict[int, Optional[List[float]]]]] = {}
     days_by_name = {}
     for name, laws in walks.items():
@@ -539,19 +603,37 @@ def score_command(args) -> int:
     forecasts: Dict[str, Dict[date, Dict[int, Sequence[float]]]] = {"B1": b1, "B2": b2}
     missing = {}
     for name in CONTROLS + VARIANTS:
+        if name == "published":
+            continue
         filled = sp.fill_missing({day: decisions[name][day] for day in common}, b1, common)
-        label = "B3" if name == "published" else name
-        forecasts[label] = filled.forecasts
-        missing[label] = {"days": len(filled.missing_days), "share": filled.missing_share}
-    names = ["B1", "B2", "B3", "gbm_funding", *VARIANTS]
+        forecasts[name] = filled.forecasts
+        missing[name] = {"days": len(filled.missing_days), "share": filled.missing_share}
+    # B3 on its own five levels: a missing lead takes B1's, read at the same five levels
+    five_b1 = {day: {h: five_levels(b1[day][h]) for h in HORIZONS} for day in common}
+    filled = sp.fill_missing({day: decisions["published"][day] for day in common}, five_b1, common)
+    missing["B3"] = {"days": len(filled.missing_days), "share": filled.missing_share}
+    five: Dict[str, Dict[date, Dict[int, List[float]]]] = {
+        n: {day: {h: five_levels(leads[h]) for h in HORIZONS} for day, leads in forecasts[n].items()} for n in forecasts
+    }
+    five["B3"] = {day: {h: five_levels(leads[h]) for h in HORIZONS} for day, leads in filled.forecasts.items()}
+    names = ["B1", "B2", "gbm_funding", *VARIANTS]
+    names5 = ["B1", "B2", "B3", "gbm_funding", *VARIANTS]
     primary = {n: sp.day_scores(forecasts[n], outcomes, calendar) for n in names}
     secondary = {n: sp.day_scores(forecasts[n], outcomes, calendar, score=sp.upper_tail_twcrps) for n in names}
+    primary5 = {n: sp.day_scores(five[n], outcomes, calendar, score=five_crps) for n in names5}
+    secondary5 = {n: sp.day_scores(five[n], outcomes, calendar, score=five_twcrps) for n in names5}
     days = sorted(primary["B1"])
+    for n in names5:
+        if sorted(primary5[n]) != days or sorted(secondary5[n]) != days:
+            raise SystemExit(f"{n} does not score the same decision days as B1")
     for n in names:
         if sorted(primary[n]) != days or sorted(secondary[n]) != days:
             raise SystemExit(f"{n} does not score the same decision days as B1")
-    pairs = [(b, c) for c in CANDIDATES for b in BENCHMARKS] + [("B1", "B3"), ("B2", "B3")]
-    ablation = [("B3", "a_published_new"), ("gbm_funding", "b_gbm_new"), ("b_gbm_new", "c_two_part_new")]
+    pairs = [(b, c) for c in CANDIDATES for b in BENCHMARKS]
+    ablation = [("gbm_funding", "b_gbm_new"), ("b_gbm_new", "c_two_part_new")]
+    # secondary, on the five published levels: B3 against every candidate and against B1 and B2, like for like
+    pairs5 = [("B3", c) for c in CANDIDATES] + [("B1", "B3"), ("B2", "B3")]
+    ablation5 = [("B3", "a_published_new")]
     document: dict = {
         "declaration": "metadata/spread_distribution_634.json",
         "panel_sha256": panel_sha256(args.published),
@@ -561,16 +643,26 @@ def score_command(args) -> int:
         "decision_days_without_a_benchmark": unbuilt,
         "missing": missing,
         "names": names,
+        "names_five": names5,
         "mean_primary": {n: sum(primary[n].values()) / len(days) for n in names},
         "mean_key_secondary": {n: sum(secondary[n].values()) / len(days) for n in names},
+        "mean_primary_five": {n: sum(primary5[n].values()) / len(days) for n in names5},
+        "mean_key_secondary_five": {n: sum(secondary5[n].values()) / len(days) for n in names5},
     }
     document["pooled_primary"] = pair_table(primary, pairs + ablation, days, draws)
     document["pooled_key_secondary"] = pair_table(secondary, pairs + ablation, days, draws)
+    document["pooled_primary_five"] = pair_table(primary5, pairs5 + ablation5 + list(SENSITIVITY_FIVE), days, draws)
+    document["pooled_key_secondary_five"] = pair_table(secondary5, pairs5 + ablation5 + list(SENSITIVITY_FIVE), days, draws)
     # by lead: the grid CRPS of each lead alone
     cells = {n: cell_scores(forecasts[n], outcomes, calendar, sp.grid_crps) for n in names}
     document["by_lead"] = {
         n: {str(h): sum(v for (d, hh), v in cells[n].items() if hh == h) / sum(1 for (d, hh) in cells[n] if hh == h) for h in HORIZONS}
         for n in names
+    }
+    cells5 = {n: cell_scores(five[n], outcomes, calendar, five_crps) for n in names5}
+    document["by_lead_five"] = {
+        n: {str(h): sum(v for (d, hh), v in cells5[n].items() if hh == h) / sum(1 for (d, hh) in cells5[n] if hh == h) for h in HORIZONS}
+        for n in names5
     }
     # splits: regime of the decision day; pressure-day type of the target day
     by_regime: Dict[str, dict] = {}
@@ -581,6 +673,8 @@ def score_command(args) -> int:
                 "n": len(group),
                 "mean_primary": {n: sum(primary[n][d] for d in group) / len(group) for n in names},
                 "tests": pair_table(primary, pairs, group, draws),
+                "mean_primary_five": {n: sum(primary5[n][d] for d in group) / len(group) for n in names5},
+                "tests_five": pair_table(primary5, pairs5, group, draws),
             }
     document["by_regime"] = by_regime
     position = {day: index for index, day in enumerate(calendar)}
@@ -594,44 +688,48 @@ def score_command(args) -> int:
     for kind in kinds:
         include = lambda d, h, kind=kind: kind_of(calendar[position[d] + h]) == kind
         means = {n: day_means(cells[n], include) for n in names}
-        group = sorted(set.intersection(*(set(m) for m in means.values())))
+        means5 = {n: day_means(cells5[n], include) for n in names5}
+        group = sorted(set.intersection(*(set(m) for m in means.values()), *(set(m) for m in means5.values())))
         if len(group) > sp.HAC_LAG:
             by_type[kind] = {
                 "decision_days": len(group),
                 "target_cells": sum(1 for d in days for h in HORIZONS if include(d, h)),
                 "mean_primary": {n: sum(means[n][d] for d in group) / len(group) for n in names},
                 "tests": pair_table(means, pairs, group, draws),
+                "mean_primary_five": {n: sum(means5[n][d] for d in group) / len(group) for n in names5},
+                "tests_five": pair_table(means5, pairs5, group, draws),
             }
     document["by_type"] = by_type
     # pinball at the fixed grid, MAE of the median, central coverage: pooled over cells, paired against B1 and B3
-    detail: Dict[str, Dict[Tuple[date, int], Dict[str, float]]] = {n: {} for n in names}
-    for n in names:
-        for decision, leads in forecasts[n].items():
+    # (read at the five published levels, which B3 carries natively and the others carry exactly)
+    detail: Dict[str, Dict[Tuple[date, int], Dict[str, float]]] = {n: {} for n in names5}
+    for n in names5:
+        for decision, leads in five[n].items():
             for h in HORIZONS:
                 y = outcomes[calendar[position[decision] + h]]
-                q = leads[h]
-                cell = {f"pinball_{level:g}": pinball(level, level_value(q, level), y) for level in REPORT_LEVELS}
-                cell["mae_median"] = abs(level_value(q, 0.5) - y)
-                cell["hit_50"] = 1.0 if level_value(q, 0.25) <= y <= level_value(q, 0.75) else 0.0
-                cell["hit_90"] = 1.0 if level_value(q, 0.05) <= y <= level_value(q, 0.95) else 0.0
+                q = dict(zip(REPORT_LEVELS, leads[h]))
+                cell = {f"pinball_{level:g}": pinball(level, q[level], y) for level in REPORT_LEVELS}
+                cell["mae_median"] = abs(q[0.5] - y)
+                cell["hit_50"] = 1.0 if q[0.25] <= y <= q[0.75] else 0.0
+                cell["hit_90"] = 1.0 if q[0.05] <= y <= q[0.95] else 0.0
                 detail[n][(decision, h)] = cell
     measures = [f"pinball_{level:g}" for level in REPORT_LEVELS] + ["mae_median"]
     also = {}
     for measure in measures:
-        daily = {n: day_means({k: v[measure] for k, v in detail[n].items()}, lambda d, h: True) for n in names}
+        daily = {n: day_means({k: v[measure] for k, v in detail[n].items()}, lambda d, h: True) for n in names5}
         also[measure] = {
-            "mean": {n: sum(daily[n].values()) / len(daily[n]) for n in names},
+            "mean": {n: sum(daily[n].values()) / len(daily[n]) for n in names5},
             "tests": pair_table(daily, [(b, c) for c in CANDIDATES for b in ("B1", "B3")], days, draws),
         }
     document["also"] = also
     document["coverage"] = {
         key: {
-            "pooled": {n: sum(v[key] for v in detail[n].values()) / len(detail[n]) for n in names},
+            "pooled": {n: sum(v[key] for v in detail[n].values()) / len(detail[n]) for n in names5},
             "by_regime": {
                 label: {
                     n: sum(v[key] for (d, h), v in detail[n].items() if splits.regime(d) == label)
                     / max(1, sum(1 for (d, h) in detail[n] if splits.regime(d) == label))
-                    for n in names
+                    for n in names5
                 }
                 for label in by_regime
             },
@@ -675,7 +773,7 @@ def score_command(args) -> int:
             "mean_brier": {n: sum(group_daily[n].values()) / len(group) for n in every},
             "tests": pair_table(
                 group_daily,
-                [(b, c) for c in ("B3", "gbm_funding", *VARIANTS) for b in ("persistence_logistic", "calendar_climatology")],
+                [(b, c) for c in ("gbm_funding", *VARIANTS) for b in ("persistence_logistic", "calendar_climatology")],
                 group, draws,
             )
             if events
@@ -719,8 +817,8 @@ def cell(entry: Optional[dict]) -> str:
 
 def benchmark_table(tests: Mapping[str, dict], names: Sequence[str], means: Mapping[str, float]) -> List[str]:
     lines = [
-        "| model | mean | vs B1 | vs B2 | vs B3 |",
-        "|---|---|---|---|---|",
+        "| model | mean | vs B1 | vs B2 |",
+        "|---|---|---|---|",
     ]
     for name in names:
         row = [LABELS[name], f"{means[name]:.3f}"]
@@ -730,27 +828,81 @@ def benchmark_table(tests: Mapping[str, dict], names: Sequence[str], means: Mapp
     return lines
 
 
+def sensitivity_table(tests: Mapping[str, dict], means: Mapping[str, float]) -> List[str]:
+    """Variant (a) against B1 and B2 on its own five levels: a sensitivity, not the headline (ruling on #711)."""
+
+    name = "a_published_new"
+    return [
+        "| model (five levels, sensitivity) | mean | vs B1 | vs B2 |",
+        "|---|---|---|---|",
+        "| " + " | ".join([LABELS[name], f"{means[name]:.3f}"] + [cell(tests.get(f"{b} -> {name}")) for b, _ in SENSITIVITY_FIVE]) + " |",
+    ]
+
+
+def five_table(tests: Mapping[str, dict], names: Sequence[str], means: Mapping[str, float]) -> List[str]:
+    """B3 as the secondary benchmark on its own five levels: every row is read at the same five levels."""
+
+    lines = [
+        "| model (five levels) | mean | vs B3 |",
+        "|---|---|---|",
+    ]
+    for name in names:
+        row = [LABELS[name], f"{means[name]:.3f}"]
+        if name == "B3":
+            row.append("-")
+        elif name in ("B1", "B2"):
+            row.append(f"B3 vs {name}: {cell(tests.get(f'{name} -> B3'))}")
+        else:
+            row.append(cell(tests.get(f"B3 -> {name}")))
+        lines.append("| " + " | ".join(row) + " |")
+    return lines
+
+
 def report_command(args) -> int:
     d = json.loads(args.score.read_text(encoding="utf-8"))
     names = d["names"]
+    names5 = d["names_five"]
     out: List[str] = []
     w = out.append
     days = d["decision_days"]
     w(f"Decision days scored: {days['n']} ({days['first']} to {days['last']}); every target day on or before 2025-12-31. "
-      f"Bootstrap: stationary, mean block 10, {d['draws']:,} draws, seed {d['seed']}, one-sided 95%.")
+      f"Bootstrap: studentized stationary (Newey-West at lag 10; ruling on #660, item 1), mean block 10, {d['draws']:,} draws, seed {d['seed']}, one-sided 95%.")
     w("")
     w("Reading of each cell: **skill [one-sided 95% lower bound, upper bound] / lower bound of the mean daily difference** "
       "(bp). Skill is mean(d) / mean(benchmark score), d = benchmark − candidate, positive favours the candidate. "
       "The protocol would call a candidate better only if the lower bound of the mean difference is above 0 against "
-      "B1 and B2 and the skill is at least 3%; on development days this is a reading, not a verdict.")
+      "B1 and B2 and the skill is at least 3%; on development days this is a reading, not a verdict. Tables 1 to 6 are on the "
+      "protocol's 23-level grid against B1 and B2 (the primary comparisons). B3, the published declaration, is a secondary "
+      "benchmark scored on its own five levels (0.05, 0.25, 0.5, 0.75, 0.95), never refitted or interpolated to the grid "
+      "(Eleonora, #660 and #700); every row of a five-level table is read at the same five levels, so B3 and each candidate "
+      "are paired like for like (Tables 1b, 2b, 3, 5b, 6b).")
     w("")
     w("### Table 1. Primary score: grid CRPS (bp), averaged over h = 1 to 5, pooled")
     w("")
     out.extend(benchmark_table(d["pooled_primary"], names, d["mean_primary"]))
     w("")
+    w("### Table 1b. Secondary benchmark B3: CRPS on the five published levels (bp), averaged over h = 1 to 5, pooled")
+    w("")
+    out.extend(five_table(d["pooled_primary_five"], names5, d["mean_primary_five"]))
+    w("")
+    w("### Table 1c. Sensitivity, not the headline: (a) against B1 and B2 on its own five levels (bp), pooled")
+    w("")
+    w("Variant (a) forecasts the five published levels. Its headline comparison with B1 and B2 is on the grid (Table 1, by the "
+      "linear law of the gbm exceedance); here B1 and B2 are read at the same five levels instead (Eleonora's ruling on #711).")
+    w("")
+    out.extend(sensitivity_table(d["pooled_primary_five"], d["mean_primary_five"]))
+    w("")
+    w("Upper-tail twCRPS on the same five levels (sensitivity):")
+    w("")
+    out.extend(sensitivity_table(d["pooled_key_secondary_five"], d["mean_key_secondary_five"]))
+    w("")
     w("### Table 2. Key secondary: upper-tail twCRPS (weight 1{y > 0 bp}), pooled")
     w("")
     out.extend(benchmark_table(d["pooled_key_secondary"], names, d["mean_key_secondary"]))
+    w("")
+    w("### Table 2b. Key secondary against B3: upper-tail twCRPS on the five published levels, pooled")
+    w("")
+    out.extend(five_table(d["pooled_key_secondary_five"], names5, d["mean_key_secondary_five"]))
     w("")
     w("### Table 3. Ablation: each variant against the same model without the new inputs (primary score)")
     w("")
@@ -758,7 +910,10 @@ def report_command(args) -> int:
     w("|---|---|")
     for key in ("B3 -> a_published_new", "gbm_funding -> b_gbm_new", "b_gbm_new -> c_two_part_new"):
         parent, variant = key.split(" -> ")
-        w(f"| {LABELS[parent]} → {LABELS[variant]} | {cell(d['pooled_primary'].get(key))} |")
+        if parent == "B3":
+            w(f"| {LABELS[parent]} → {LABELS[variant]} (five levels) | {cell(d['pooled_primary_five'].get(key))} |")
+        else:
+            w(f"| {LABELS[parent]} → {LABELS[variant]} | {cell(d['pooled_primary'].get(key))} |")
     w("")
     w("### Table 4. Grid CRPS by lead (bp)")
     w("")
@@ -766,6 +921,13 @@ def report_command(args) -> int:
     w("|---|---|---|---|---|---|")
     for n in names:
         w(f"| {LABELS[n]} | " + " | ".join(f"{d['by_lead'][n][str(h)]:.3f}" for h in HORIZONS) + " |")
+    w("")
+    w("Five published levels (B3 on its own levels), CRPS by lead (bp):")
+    w("")
+    w("| model | h = 1 | h = 2 | h = 3 | h = 4 | h = 5 |")
+    w("|---|---|---|---|---|---|")
+    for n in names5:
+        w(f"| {LABELS[n]} | " + " | ".join(f"{d['by_lead_five'][n][str(h)]:.3f}" for h in HORIZONS) + " |")
     w("")
     w("### Table 5. By regime of the decision day (primary score)")
     w("")
@@ -776,6 +938,8 @@ def report_command(args) -> int:
         w("")
         out.extend(benchmark_table(group["tests"], names, group["mean_primary"]))
         w("")
+        out.extend(five_table(group["tests_five"], names5, group["mean_primary_five"]))
+        w("")
     w("### Table 6. By pressure-day type of the target day (primary score)")
     w("")
     for kind, group in d["by_type"].items():
@@ -783,12 +947,14 @@ def report_command(args) -> int:
         w("")
         out.extend(benchmark_table(group["tests"], names, group["mean_primary"]))
         w("")
+        out.extend(five_table(group["tests_five"], names5, group["mean_primary_five"]))
+        w("")
     w("### Table 7. Pinball loss at the fixed levels and MAE of the median (pooled, bp), paired against B1 and B3")
     w("")
-    w("| measure | " + " | ".join(LABELS[n] for n in names) + " |")
-    w("|---|" + "---|" * len(names))
+    w("| measure | " + " | ".join(LABELS[n] for n in names5) + " |")
+    w("|---|" + "---|" * len(names5))
     for measure, entry in d["also"].items():
-        w(f"| {measure} | " + " | ".join(f"{entry['mean'][n]:.3f}" for n in names) + " |")
+        w(f"| {measure} | " + " | ".join(f"{entry['mean'][n]:.3f}" for n in names5) + " |")
     w("")
     w("Paired skill against B1 / B3 (one-sided 95% lower bound of the mean difference):")
     w("")
@@ -800,12 +966,15 @@ def report_command(args) -> int:
     w("")
     w("### Table 8. Central coverage (share of target cells inside the interval), pooled")
     w("")
-    w("| level | nominal | " + " | ".join(LABELS[n] for n in names) + " |")
-    w("|---|---|" + "---|" * len(names))
+    w("| level | nominal | " + " | ".join(LABELS[n] for n in names5) + " |")
+    w("|---|---|" + "---|" * len(names5))
     for key, nominal in (("hit_50", 0.5), ("hit_90", 0.9)):
-        w(f"| {key[-2:]}% | {nominal:.2f} | " + " | ".join(f"{d['coverage'][key]['pooled'][n]:.3f}" for n in names) + " |")
+        w(f"| {key[-2:]}% | {nominal:.2f} | " + " | ".join(f"{d['coverage'][key]['pooled'][n]:.3f}" for n in names5) + " |")
     w("")
     w("### Table 9. Upper tail: Brier score of P(spread > threshold), read off each distribution, against the models fitted at the threshold and lead")
+    w("")
+    w("B3 is not in this table: a probability of exceeding a threshold is not a statistic of its five levels, and reading one "
+      "would place the five levels on a continuous law, which the ruling excludes.")
     w("")
     for tau, entry in d["upper_tail"].items():
         w(f"**> {float(tau):+g} bp** ({entry['days']} decision days, {entry['event_cells']} event cells)")
