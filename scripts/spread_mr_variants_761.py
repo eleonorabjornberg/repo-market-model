@@ -332,10 +332,14 @@ def score(args) -> int:
     # the tail
     tails = {m: s686.tail_cells(frame, m) for m in MODELS}
     contexts = {t: var.target_context(panel, frame.position[t], splits) for t in {frame.target(d, h) for d in days for h in sp.HORIZONS}}
+    # the reporting day type, a third population the risk-date reconciliation names and leaves alone
+    def reporting_ordinary(t):
+        return frame.splits.reporting_day_type(t, frame.values[t]) == "ordinary"
+
     scopes = {
-        "ordinary": lambda d, h, t: frame.day_type(t) == "ordinary",
-        "calm": lambda d, h, t: frame.day_type(t) == "ordinary" and contexts[t] == "ordinary_after_ordinary",
-        "after_risk": lambda d, h, t: frame.day_type(t) == "ordinary" and contexts[t] == "ordinary_after_risk",
+        "ordinary": lambda d, h, t: reporting_ordinary(t),
+        "calm": lambda d, h, t: reporting_ordinary(t) and contexts[t] == "ordinary_after_ordinary",
+        "after_risk": lambda d, h, t: reporting_ordinary(t) and contexts[t] == "ordinary_after_risk",
         "risk_day": lambda d, h, t: contexts[t] == "risk_day",
         "all": lambda d, h, t: True,
     }
