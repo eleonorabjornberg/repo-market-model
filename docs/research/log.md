@@ -576,3 +576,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 38 of 4,972 cases change. On them the mean absolute error against the completed net falls from 71.6 to 42.2 bn (2020: 96.9 to 47.3 on 22 cases; 2025-26: 36.0 to 50.0 on 2); over all cases 1.9 to 1.6. 68 `ahead_columns` cells move, 43 of them in 2020. No published figure moves. Detail in `docs/pivot/evidence/cmb-point-in-time-738/result.md`.
 - Against kill: not applicable (an input-timing correction; development data gives no verdict).
 - Next: H5 step 2 and H6 read the corrected settlement columns.
+
+### 2026-10-15 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#810
+- Directive: #795
+- Step: groundwork G1 (research-log infrastructure, #638; the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `6871c94`
+- Tried: `check_research_log.py check` now refuses a git conflict marker (a line starting `<<<<<<< ` or `>>>>>>> `, or exactly `=======`) and names the line, in the log and in every tracked Markdown file. Variants: n/a (a check, no model).
+- Result: the conflict block that reached main on 15 October (#794) would now fail the check; the tracked Markdown has none.
+- Against kill: not applicable (groundwork).
+- Next: none for this item.
