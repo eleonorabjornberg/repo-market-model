@@ -445,7 +445,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
 
-### 2026-10-15 [H6] step 1 · eleonorabjornberg/repo-market-model#PRNUM
+### 2026-10-15 [H6] step 1 · eleonorabjornberg/repo-market-model#783
 - Directive: #739
 - Step: 1 (the re-read of #693's development kill rule on the studentized bootstrap of protocol ruling 1; Eleonora's ruling on #739)
 - Tier: development
