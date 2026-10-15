@@ -424,3 +424,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the ruled alignment holds (anchor = last public row; B1 adds h-row changes; B2 = same-type trailing-year climatology), and three recorded mutations fail it. Coverage of the central 90% is below 0.90 at every lead: B1 0.804 [0.802, 0.805] at lead 1 to 0.889 [0.887, 0.890] at lead 3; B2 0.863 to 0.870. B1's shortfall is the one-row gap between its anchor and h-row changes; B2's sits in the rare day types. Detail in `docs/research/benchmark-simulation-762.md`.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#779
+- Directive: #738
+- Step: 2 (the settlement family of inputs: a cash management bill is unknown until its own announcement)
+- Tier: development
+- Pins: no panel; tracked Treasury auctions fixture `20261008T205048Z_568c69347867`, decision days 2018-01-01 to 2026-09-03; base `68574916`
+- Tried: 1 rule change (a CMB counts toward a bill class's partial status only from its own announcement), compared with the rule of #679 on the (day, lead 1-5) cases, split by declared regime; the ahead columns rebuilt both ways. Variants: 1.
+- Result: 38 of 4,972 cases change. On them the mean absolute error against the completed net falls from 71.6 to 42.2 bn (2020: 96.9 to 47.3 on 22 cases; 2025-26: 36.0 to 50.0 on 2); over all cases 1.9 to 1.6. 68 `ahead_columns` cells move, 43 of them in 2020. No published figure moves. Detail in `docs/pivot/evidence/cmb-point-in-time-738/result.md`.
+- Against kill: not applicable (an input-timing correction; development data gives no verdict).
+- Next: H5 step 2 and H6 read the corrected settlement columns.
