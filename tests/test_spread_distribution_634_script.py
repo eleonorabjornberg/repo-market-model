@@ -135,6 +135,10 @@ class LockboxTests(unittest.TestCase):
 
 
 class ExceedanceTests(unittest.TestCase):
+    def setUp(self):
+        if importlib.util.find_spec("numpy") is None:  # pragma: no cover - the ml extra is optional
+            self.skipTest("the ml extra is not installed")
+
     def test_a_law_wholly_below_the_threshold_has_a_small_exceedance_and_the_reading_falls_with_the_threshold(self):
         law = [-8.0 + 0.5 * k for k in range(len(sp.GRID))]
         probabilities = [script.exceedance(law, tau) for tau in script.THRESHOLDS_BP]
@@ -223,6 +227,24 @@ class SummaryTests(unittest.TestCase):
         self.assertAlmostEqual(row["skill_upper_95_one_sided"], test.upper_skill())
         self.assertLess(row["skill_lower_95_one_sided"], test.skill)
         self.assertGreater(row["skill_upper_95_one_sided"], test.skill)
+
+
+class SensitivityTests(unittest.TestCase):
+    """Variant (a) stays on the grid against B1 and B2; a sensitivity scores it on its own five levels (ruling on #711)."""
+
+    def test_the_sensitivity_pairs_are_a_against_b1_and_b2(self):
+        self.assertEqual(script.SENSITIVITY_FIVE, (("B1", "a_published_new"), ("B2", "a_published_new")))
+
+    def test_the_sensitivity_table_is_labelled_and_reads_the_five_level_pairs(self):
+        entry = {"skill": 0.2, "skill_lower_95_one_sided": 0.1, "skill_upper_95_one_sided": 0.3, "mean_difference_lower_95_one_sided": 0.05}
+        tests = {"B1 -> a_published_new": entry, "B2 -> a_published_new": dict(entry, skill=0.25)}
+        means = {"B1": 2.3, "B2": 2.5, "a_published_new": 1.8}
+        lines = script.sensitivity_table(tests, means)
+        self.assertIn("sensitivity", lines[0])
+        row = next(line for line in lines if script.LABELS["a_published_new"] in line)
+        self.assertIn(script.cell(entry), row)
+        self.assertIn(script.cell(tests["B2 -> a_published_new"]), row)
+        self.assertIn("1.800", row)
 
 
 if __name__ == "__main__":
