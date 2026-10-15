@@ -537,24 +537,12 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
-<<<<<<< HEAD
-### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
-- Directive: #743
-- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#732
+- Directive: #732
+- Step: 5 (the running variant count that every registration publishes, §2 of the protocol)
 - Tier: development
-- Pins: published panel `4ddc3882…`; base `9674324b`
-- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
-- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
-- Against kill: not applicable (no verdict; development data).
-- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
-=======
-### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
-- Directive: #740
-- Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
-- Tier: development
-- Pins: no panel and no scoring; tracked fixtures only; base `b0da43a`
-- Tried: a write-time guard at 23:59 ET on the decision day (`require_written_by_decision_day_end`), `written_at` stored in every block, and `filled_candidate` refusing a stored `written_at` or commit time past the cut-off. Variants: n/a (a guard, no model).
-- Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
-- Against kill: not applicable (no hypothesis test).
-- Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
->>>>>>> origin/main
+- Pins: no panel (counting and a declaration check only); base `978dbcd`
+- Tried: no forecast variant. The progress page's variant count now reads every `metadata/*.json` that has a `variants` block (top level, or under `model`), by content and not by file name (ruling of 14 October 2026); a CI test refuses a model declaration with no `hypothesis` key or no `variants` block, with the 23 declarations that predate the rule listed as exempt.
+- Result: the count moves from 2 declarations and 4 variants (the files named `spread_distribution_*`) to 19 declarations and 55 variants. `near_threshold_688.json`, the case that found the gap, is now seen (3 variants, under `model`). The 55 include the pre-pivot +5 bp classification variants as well as spread-forecast ones, because the ruling counts by content.
+- Against kill: not applicable (no verdict; a count, not a score).
+- Next: Eleonora's call on converting the exempt declarations to carry `hypothesis`, and on whether the page should show the count by hypothesis.
