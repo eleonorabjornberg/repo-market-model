@@ -679,6 +679,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the plan's rule needs more than half the episodes under the bar; the development table has 4 of 31. Development data never gives a verdict; this is not one.
 - Next: her review; registering the frozen method is her attested action.
 
+### 2026-10-15 [H1] step 1 · eleonorabjornberg/repo-market-model#791
+- Directive: #769
+- Step: 1 (the power study re-run on the test in force after ruling 5)
+- Tier: development
+- Pins: calibration record `docs/research/protocol-calibration/result.json`; base `31774b83`
+- Tried: #656's power study re-run at the calibrated critical values (3.42 at 125 days, 2.43 at 250, look 1 futility only, MME gate) under four readings: the full or the post-2020-04 history, and circular-block or stationary-bootstrap paths. Variants: 4 readings, 9 cells each.
+- Result: a true 3% skill is detected on 0.8% (full history, circular), 7.8% (post-2020-04, circular), 1.8% (full, stationary) and 13.9% (post-2020-04, stationary, #656's own) of paths by 250 days; none reaches 80% at either look, so days needed and the smallest skill detected at target power are null in every reading. Size with no true skill by 250 days: 0.5%, 6.1%, 1.3% and 10.9%. Detail in `docs/research/power-study-769-result.md`.
+- Against kill: not applicable (groundwork; development data gives no verdict).
+- Next: Eleonora settles the MME, B3's verdict rule (#768) and the confirmation design (#754, #733) after this result.
+
 ### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#824
 - Directive: #803
 - Step: 5 (variant count by content; groundwork for the registration's record of what was tried, #567)
@@ -688,4 +698,3 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the page still reads 22 declarations with a `variants` block, 65 variants. Beside it, 18 more files name 72 arms as `candidates` or `arms`, and 33 declarations carry no block the count can read. These are not added to the 65: what counts as a variant is Eleonora's question in the PR.
 - Against kill: not applicable (no hypothesis test).
 - Next: Eleonora's reading of what counts as a variant under protocol section 2.
-
