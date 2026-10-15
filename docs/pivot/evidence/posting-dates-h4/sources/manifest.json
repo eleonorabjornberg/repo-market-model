@@ -8,7 +8,7 @@
    "raw_sha256": "3a0348372716cf02d7cfb1de79400e79a8ee7f4846d80cec40e04c88846f3f38",
    "raw_bytes": 165056,
    "file": "liberty_street_revised_btfr_2017-06.html",
-   "what_it_says": "Editor's note on the page: when the post was first published, the linked file with historical rates and volumes for the three Treasury repo rates had minor errors; the data and related charts and table were corrected (May 17, 2018). The page links an expanded 2014-2018 sample of TGCR, BGCR and SOFR rate and volume data. It gives no time of day."
+   "what_it_says": "Editor's note on the page: when the post was first published, the linked file with historical rates and volumes for the three Treasury repo rates had minor errors; the data and related charts and table were corrected (May 17, 2018). The page links an expanded 2014-2018 sample of TGCR, BGCR and SOFR rate and volume data. It gives no time of day. The note carries a second change, dated March 19, 2019, about the three-month geometric averages not being calculated by the OIS methodology; only the May 17, 2018 change concerns the data file."
   }
  ]
 }

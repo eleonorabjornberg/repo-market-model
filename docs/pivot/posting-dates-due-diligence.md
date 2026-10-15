@@ -22,7 +22,8 @@ Serves H4 (longer history fixes part of 2018-19), step 1 of #633. The table belo
 > sha256 `3a034837...` (full checksum in the folder's `manifest.json`). Its editor's note says the linked historical-rates
 > file had minor errors when the post was first published and that the data and related charts and table were corrected
 > on May 17, 2018; it states no time of day. The note dates a correction of the file, which is what the ruling takes as the date
-> the series were public; it is not a statement of a first posting.
+> the series were public; it is not a statement of a first posting. The note carries a second, separate change dated 19 March 2019 (the three-month geometric averages were not
+> calculated by the OIS methodology); it does not concern the data file.
 
 Rule used (the directive's): a series is usable only if the instant it became public is established from a source that
 is cited here. Where the evidence is ambiguous it is marked not usable and listed for Eleonora. No pattern is inferred.
