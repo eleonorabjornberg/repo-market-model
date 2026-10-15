@@ -14,6 +14,15 @@ Serves H4 (longer history fixes part of 2018-19), step 1 of #633. The table belo
 > (`tests/test_backfill.py`, `TheRuledPostingInstant`). The first fit that trains on the back-fill in the measurements
 > so far ends on 2018-06-27, so every scored day from 2018-06-29 may train on it. The measurement is
 > [`posting-dates-h4-result.md`](posting-dates-h4-result.md). The other rows of the table are unchanged.
+>
+> **Source copy (#781).** The Liberty Street post the 17 May 2018 date rests on, "Introducing the Revised Broad
+> Treasuries Financing Rate" (`https://libertystreeteconomics.newyorkfed.org/2017/06/introducing-the-revised-broad-treasuries-financing-rate/`),
+> was fetched on 2026-10-15 and is tracked as
+> [`evidence/posting-dates-h4/sources/liberty_street_revised_btfr_2017-06.html`](evidence/posting-dates-h4/sources/liberty_street_revised_btfr_2017-06.html),
+> sha256 `3a034837...` (full checksum in the folder's `manifest.json`). Its editor's note says the linked historical-rates
+> file had minor errors when the post was first published and that the data and related charts and table were corrected
+> on May 17, 2018; it states no time of day. The note dates a correction of the file, which is what the ruling takes as the date
+> the series were public; it is not a statement of a first posting.
 
 Rule used (the directive's): a series is usable only if the instant it became public is established from a source that
 is cited here. Where the evidence is ambiguous it is marked not usable and listed for Eleonora. No pattern is inferred.

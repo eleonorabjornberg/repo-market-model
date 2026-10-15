@@ -1,0 +1,14 @@
+{
+ "note": "Fetched on 2026-10-15 with one plain request (curl, no cookies, HTTP 200). The raw bytes are tracked; raw_sha256 is their checksum. Pages move, so a re-fetch need not reproduce these bytes. Directive #781, split from #742 criterion 5.",
+ "pages": [
+  {
+   "name": "liberty_street_revised_btfr_2017-06",
+   "url": "https://libertystreeteconomics.newyorkfed.org/2017/06/introducing-the-revised-broad-treasuries-financing-rate/",
+   "retrieved_at": "2026-10-15",
+   "raw_sha256": "3a0348372716cf02d7cfb1de79400e79a8ee7f4846d80cec40e04c88846f3f38",
+   "raw_bytes": 165056,
+   "file": "liberty_street_revised_btfr_2017-06.html",
+   "what_it_says": "Editor's note on the page: when the post was first published, the linked file with historical rates and volumes for the three Treasury repo rates had minor errors; the data and related charts and table were corrected (May 17, 2018). The page links an expanded 2014-2018 sample of TGCR, BGCR and SOFR rate and volume data. It gives no time of day."
+  }
+ ]
+}
