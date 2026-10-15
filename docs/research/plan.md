@@ -108,6 +108,27 @@ queued" have no first directive yet.
 - **Next:** it tells H5–H9 which drivers to forecast.
 - **Status:** open, not yet queued here. Manual: [`hypotheses/H10.md`](hypotheses/H10.md).
 
+## Critical path
+
+**Draft for Eleonora's review (#704); in force only once she merges it.** The ordered chain of milestones that
+gates the primary goal (H5) and the secondary goal (H9), taken from the manuals in [`hypotheses/`](hypotheses/)
+and the queue's top block. The results page reads it, and `scripts/research_view.py` refuses a milestone that no
+manual has. A link is done only when `milestones.json` says so; this section marks nothing done. Link format:
+`- CP<n>. H<k>.M<j> (gates H5, H9). Waits on: ...`; a link waits only on links before it.
+
+- CP1. H1.M3 (gates H5, H9). Waits on: the ruling on the scorer's marked questions (#695), whose check 2 is the coverage check.
+- CP2. H1.M4 (gates H5, H9). Waits on: CP1.
+- CP3. H5.M1 (gates H5, H9). Waits on: CP2; prospective logging and the live pin (#699); the power study and the MME (#656, #700); the construction fixes (#623).
+- CP4. H5.M2 (gates H5, H9). Waits on: CP1; the scorer and its synthetic suite (#655).
+- CP5. H5.M3 (gates H5). Waits on: CP4; the post-phase-2 inputs (#634, #632).
+- CP6. H5.M4 (gates H5). Waits on: CP4; the 2021–23 and upper-tail diagnoses (#707).
+- CP7. H5.M5 (gates H5). Waits on: CP3, CP5, CP6; H2's upper-bound result (#635). Registration is her attested action.
+- CP8. H9.M1 (gates H9). Waits on: sources with established publication instants (#629, #630, #659).
+- CP9. H9.M2 (gates H9). Waits on: CP8; the screen (#639).
+- CP10. H9.M3 (gates H9). Waits on: CP4, CP9; the models of the chosen targets (#706).
+- CP11. H9.M4 (gates H9). Waits on: CP5, CP10; the nested test, not yet queued.
+- CP12. H9.M5 (gates H9). Waits on: CP3, CP11. Registration is her attested action.
+
 ## Why
 
 What 10–12 October showed, in her words and from the records:
