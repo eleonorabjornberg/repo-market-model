@@ -397,6 +397,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check failed as first written, and passes with the calibrated value; per Eleonora's ruling no candidate is registered until #656's power study confirms coverage.
 - Next: prospective logging and the power study (#656).
 
+### 2026-10-13 [H5] step 3 · eleonorabjornberg/repo-market-model#723
+- Directive: #683
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `374fe3d`
+- Tried: the reliability slope of earlier result pages read inside regimes and not pooled: a shared helper with bootstrap intervals, the per-regime slopes already in #624's tracked evidence, dated notes on the pages that reported pooled slopes. Variants: n/a (correction).
+- Result: `+offday` of #624 at h = 1 has a pooled slope of 0.83, 0.48 inside 2018-19 and 0.79 inside 2025-26; at h = 3 to 5, 0.14 to 0.22 inside 2018-19 against a pooled 0.78 to 0.80. #626's rows have no per-regime slope yet.
+- Against kill: not applicable (a correction to how step 3 figures are read).
+- Next: the per-regime slopes for #626's kinked page, and an account of why its rebuild never finishes, move to the follow-up directive #753 (Eleonora's ruling of 14 October 2026 on this pull request); any reliability-shape test (#628) is read within regimes.
+
 ### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#737
 - Directive: #655 (follow-up: Eleonora's answers to Q-E, Q-B and Q-C on PR #695, comment 6159852603)
 - Step: 1
@@ -477,6 +487,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: no pre-registered check failed; coverage is reported, not a check. B1's definition is Eleonora's, so the departure is a marked question.
 - Next: Eleonora's answer on B1's change span and on whether the coverage matters to protocol v1.
 
+### 2026-10-15 [H1] step 3 · eleonorabjornberg/repo-market-model#784
+- Directive: #741
+- Step: 3 (are the benchmarks right: does a forecaster that only declines to copy a calendar spike beat B1 by the MME; finding #741)
+- Tier: development
+- Pins: simulated data only for the test (`tests/benchmark_simulation.py`, seeds 741000 to 741199); published panel `4ddc3882…` for the H5 page split; base `9674324`
+- Tried: B1 with its anchor replaced by the last ordinary-day spread at or before the anchor (no parameter, no ordinary-day skill, B1 exactly on ordinary anchors), on #762's AR(1)-plus-day-type-levels process, 200 panels, and on a no-spike control. Variants: 1 forecaster. And the split of #686's page by the type of the anchor.
+- Result: on the declared process the forecaster beats B1 by +17.58% [+17.33%, +17.84%] pooled, every panel at or above the 3% MME, all of it from spike anchors (ordinary 0.00%; month-end +52.3%, tax date +32.6%, quarter-end +84.5%); with no spikes it has no gain (-1.27% [-1.54%, -1.01%]). Candidate evidence (a) for a §13 change; B1, B2, B3 and the MME unchanged. #686's candidate against B1 by anchor type on the development days: pooled +22.3% [+13.7%, +29.5%], ordinary anchors +11.2% [+6.9%, +15.9%], month-end +34.2%, tax date +67.5%, quarter-end +65.9%. Detail in `docs/research/spike-blind-741.md`.
+- Against kill: not applicable (H1's checks are pre-registered; none failed, none run).
+- Next: the auditor's confirmation of the candidate evidence and Eleonora's decision on §13; H5 pages still in open pull requests take the anchor split when they merge.
+
 ### 2026-10-13 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#699
 - Directive: #656
 - Step: groundwork G3 (prospective logging)
@@ -507,6 +527,15 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H1 is a validity check; development).
 - Next: Eleonora's questions on the page (a test with no power at the MME, the current test's size on a symmetric null, a variance-adaptive sequential test); #769 re-runs the power study on the test in force.
 
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
+- Directive: #743
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9674324b`
+- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
+- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
 ### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
 - Directive: #740
 - Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
