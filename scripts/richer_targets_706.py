@@ -556,9 +556,9 @@ def report_markdown(document: dict, declared: dict) -> str:
             shown_both.append(target)
     lines.append("")
     if shown_both:
-        lines.append(f"**Reading.** {', '.join('`' + t + '`' for t in shown_both)} show both; the kill criterion is not met for them on development data. This is not a verdict.")
+        lines.append(f"**Reading.** {', '.join('`' + t + '`' for t in shown_both)} show both skill over persistence and a lead on the episodes on development data. This is not a verdict, and the kill criterion cannot be assessed until step 3's nested test.")
     else:
-        lines.append("**Reading.** No chosen target shows both skill over persistence and a lead on the +5 bp episodes on development data; the kill criterion as worded is met. This is not a verdict, and it rests on days that confirmation will not use.")
+        lines.append("**Reading.** No chosen target shows both skill over persistence and a lead on the +5 bp episodes on development data. H9's kill criterion (`H9.md`: \"No skill over the target's own persistence, and no nested gain for H5\") cannot be assessed until step 3's nested test; this reading is not a verdict, and it rests on days that confirmation will not use.")
     lines.append("")
     return "\n".join(lines)
 

@@ -60,5 +60,5 @@ Skill is `mean(S(benchmark) − S(model)) / mean(S(benchmark))`; positive favour
 * `on_rrp_change_bn`: skill over persistence shown; lead on the episodes not shown. Beside it: against the climatology B2 the lower bound of the mean CRPS difference is -2.079 (not above zero).
 * `sofr_dispersion_bps`: skill over persistence shown; lead on the episodes not shown. Beside it: against the climatology B2 the lower bound of the mean CRPS difference is +0.298 (above zero).
 
-**Reading.** No chosen target shows both skill over persistence and a lead on the +5 bp episodes on development data; the kill criterion as worded is met. This is not a verdict, and it rests on days that confirmation will not use.
+**Reading.** No chosen target shows both skill over persistence and a lead on the +5 bp episodes on development data. H9's kill criterion (`H9.md`: "No skill over the target's own persistence, and no nested gain for H5") cannot be assessed until step 3's nested test; this reading is not a verdict, and it rests on days that confirmation will not use.
 

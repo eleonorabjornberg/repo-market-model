@@ -18,7 +18,7 @@ on main before review.
 | 3 | `tgcr_dispersion_bps` | −0.16 | 26 | 0.536 / 0.434 / 0.485 | fourth |
 | 3 | `effr_iorb_bps` | +0.63 | 26 | 0.264 / 0.520 / 0.392 | fifth |
 
-Two readings are marked as questions for Eleonora in the pull request, because they change what is modelled:
+Two readings changed what is modelled; Eleonora ruled on both on 15 October 2026 (Q1: the AUC sign is kept as applied, since the direction is step 1's, declared before scoring; Q2: the rule's choice, SOFR dispersion, stands and TGCR dispersion is not added):
 
 * **The AUC is taken as step 1 tabulated it** (above one half when the value reads high before onsets). The rule's words are "the pre-onset AUC". A target that reads *low* before onsets (EFFR − IORB at 0.39) ranks low. Ranked by distance from one half, the
   order would be EFFR − IORB, BGCR dispersion, TGCR dispersion, SOFR dispersion, ON RRP change, and the top three would differ by two targets. The declaration records both orders; the signed one is applied.
@@ -89,7 +89,7 @@ Skill is `mean(S(benchmark) − S(model)) / mean(S(benchmark))`; positive favour
 * `on_rrp_change_bn`: skill over persistence shown; lead on the episodes not shown. Beside it: against the climatology B2 the lower bound of the mean CRPS difference is -2.079 (not above zero).
 * `sofr_dispersion_bps`: skill over persistence shown; lead on the episodes not shown. Beside it: against the climatology B2 the lower bound of the mean CRPS difference is +0.298 (above zero).
 
-**Reading.** No chosen target shows both skill over persistence and a lead on the +5 bp episodes on development data; the kill criterion as worded is met. This is not a verdict, and it rests on days that confirmation will not use.
+**Reading.** No chosen target shows both skill over persistence and a lead on the +5 bp episodes on development data. H9's kill criterion (`H9.md`: "No skill over the target's own persistence, and no nested gain for H5") cannot be assessed until step 3's nested test; this reading is not a verdict, and it rests on days that confirmation will not use.
 
 
 ## What the tables say, and what they do not
@@ -104,15 +104,12 @@ Skill is `mean(S(benchmark) − S(model)) / mean(S(benchmark))`; positive favour
 
 ## Reading against H9's kill criterion
 
-The criterion ("no forecast skill over persistence, or no lead on the +5 bp episodes") is read as the declaration reads it: a target meets it when it shows no skill or no lead, and H9 is alive on development data only if at least one target shows both. On
-development data **no chosen target shows both**, so the criterion as worded is met. This is a reading, not a verdict, and it rests on days that confirmation will not use. Whether the wording is "or" or "and" (`H9.md` says "and no nested gain for H5"; the queue says "or")
-is Eleonora's call: under "and" the criterion also needs step 3's nested test, which this page does not run.
+The criterion is `H9.md`'s wording (Eleonora's ruling of 15 October 2026 on Q4): "No skill over the target's own persistence, and no nested gain for H5." It has two parts, and this page can read only the first. On development data the skill over persistence is shown for all three targets, and a lead on the +5 bp episodes is shown for none. The second part of the criterion is a nested gain for H5, which is step 3's nested test (the nested comparison is step 3: H5's best candidate with and without each target's forecast as an input). That test is not run here, so **the kill criterion cannot be assessed on this page**. This is a reading, not a verdict, and it rests on days that confirmation will not use.
 
 ## Not done, and for Eleonora
 
 * The next step, the nested test with H5's best candidate with and without each target's forecast as an input, is not run (it needs #634 merged).
-* The nested test of the directive is read as "beside #634's spread row", not as a nested model comparison (marked as a question in the pull request).
-* The two readings of the target choice above, and the kill-criterion wording.
+* "Nested test" in this step means same-class skill, shown beside #634's spread row; the nested comparison is step 3 (ruling of 15 October 2026 on Q3).
 * Intervals are not corrected for the three targets, five leads and several splits. A cell that stands out is a candidate for a declared test, not evidence.
 
 Reproduce: the commands in the docstring of `scripts/richer_targets_706.py`; the scratch panel digest is in the declaration. Evidence: `docs/pivot/evidence/richer-targets-706/` (`score.json`, `report.md`).
