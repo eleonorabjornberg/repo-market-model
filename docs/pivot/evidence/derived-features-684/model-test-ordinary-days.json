@@ -1,0 +1,296 @@
+{
+ "paired": {
+  "1": {
+   "auroc_difference": -0.03992173285651546,
+   "interval": [
+    -0.07787331134278255,
+    -0.01288987801025664
+   ]
+  },
+  "2": {
+   "auroc_difference": -0.04271362695275738,
+   "interval": [
+    -0.09290724166597557,
+    0.004171802504150698
+   ]
+  },
+  "3": {
+   "auroc_difference": -0.02257042474433779,
+   "interval": [
+    -0.08105473260117053,
+    0.030029162024839295
+   ]
+  },
+  "4": {
+   "auroc_difference": -0.03764871142919923,
+   "interval": [
+    -0.09436438076720215,
+    0.01191229110084191
+   ]
+  },
+  "5": {
+   "auroc_difference": 0.005489068978514866,
+   "interval": [
+    -0.04326402124032279,
+    0.05169630926578077
+   ]
+  }
+ },
+ "rows": {
+  "risk_gbm+settle+h41+dist_roll": {
+   "1": {
+    "auroc": 0.5,
+    "calibration": null,
+    "constant": true,
+    "days": 1602,
+    "interval": [
+     0.5,
+     0.5
+    ],
+    "mean_forecast": 0.0,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "2": {
+    "auroc": 0.5,
+    "calibration": null,
+    "constant": true,
+    "days": 1602,
+    "interval": [
+     0.5,
+     0.5
+    ],
+    "mean_forecast": 0.0,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "3": {
+    "auroc": 0.5,
+    "calibration": null,
+    "constant": true,
+    "days": 1602,
+    "interval": [
+     0.5,
+     0.5
+    ],
+    "mean_forecast": 0.0,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "4": {
+    "auroc": 0.5,
+    "calibration": null,
+    "constant": true,
+    "days": 1601,
+    "interval": [
+     0.5,
+     0.5
+    ],
+    "mean_forecast": 0.0,
+    "pressure_days": 84,
+    "realised": 0.05246720799500312
+   },
+   "5": {
+    "auroc": 0.5,
+    "calibration": null,
+    "constant": true,
+    "days": 1600,
+    "interval": [
+     0.5,
+     0.5
+    ],
+    "mean_forecast": 0.0,
+    "pressure_days": 84,
+    "realised": 0.0525
+   }
+  },
+  "risk_gbm+settle+h41+dist_roll+every_day": {
+   "1": {
+    "auroc": 0.9002995796474057,
+    "calibration": {
+     "intercept": -0.609217579728313,
+     "slope": 0.996706894306747
+    },
+    "constant": false,
+    "days": 1602,
+    "interval": [
+     0.8569296790821217,
+     0.9346111004811114
+    ],
+    "mean_forecast": 0.08194527294010408,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "2": {
+    "auroc": 0.842254062362758,
+    "calibration": {
+     "intercept": -0.7164303832777449,
+     "slope": 0.9400907699779825
+    },
+    "constant": false,
+    "days": 1602,
+    "interval": [
+     0.7729915594455443,
+     0.8968172367806029
+    ],
+    "mean_forecast": 0.08457473277529563,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "3": {
+    "auroc": 0.8024342806951502,
+    "calibration": {
+     "intercept": -0.7720362186744972,
+     "slope": 0.9891890255903809
+    },
+    "constant": false,
+    "days": 1602,
+    "interval": [
+     0.7211668090767759,
+     0.8670409798989887
+    ],
+    "mean_forecast": 0.0988840547440485,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "4": {
+    "auroc": 0.8207301378033085,
+    "calibration": {
+     "intercept": -0.7106053032519241,
+     "slope": 0.9669199069480239
+    },
+    "constant": false,
+    "days": 1601,
+    "interval": [
+     0.7262714590388543,
+     0.8855133497804093
+    ],
+    "mean_forecast": 0.08871301411975142,
+    "pressure_days": 84,
+    "realised": 0.05246720799500312
+   },
+   "5": {
+    "auroc": 0.8069520354315869,
+    "calibration": {
+     "intercept": -0.96133086040778,
+     "slope": 0.8315100894622366
+    },
+    "constant": false,
+    "days": 1600,
+    "interval": [
+     0.7066154779107995,
+     0.8787886821555962
+    ],
+    "mean_forecast": 0.08851344163176464,
+    "pressure_days": 84,
+    "realised": 0.0525
+   }
+  },
+  "risk_gbm+settle+h41+dist_roll+every_day+lagpress": {
+   "1": {
+    "auroc": 0.8603778467908902,
+    "calibration": {
+     "intercept": -0.7249231878814132,
+     "slope": 0.9636744369186655
+    },
+    "constant": false,
+    "days": 1602,
+    "interval": [
+     0.7874387919610647,
+     0.9161823533617088
+    ],
+    "mean_forecast": 0.08290203188922206,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "2": {
+    "auroc": 0.7995404354100006,
+    "calibration": {
+     "intercept": -0.9948548700412099,
+     "slope": 0.7991217787898307
+    },
+    "constant": false,
+    "days": 1602,
+    "interval": [
+     0.6957495832159234,
+     0.8824124623778407
+    ],
+    "mean_forecast": 0.0833746402068931,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "3": {
+    "auroc": 0.7798638559508124,
+    "calibration": {
+     "intercept": -1.128601969732616,
+     "slope": 0.7570273170050018
+    },
+    "constant": false,
+    "days": 1602,
+    "interval": [
+     0.6782632979709142,
+     0.8647154617016998
+    ],
+    "mean_forecast": 0.088478248869212,
+    "pressure_days": 84,
+    "realised": 0.052434456928838954
+   },
+   "4": {
+    "auroc": 0.7830814263741093,
+    "calibration": {
+     "intercept": -1.1062586103376868,
+     "slope": 0.7329118294462414
+    },
+    "constant": false,
+    "days": 1601,
+    "interval": [
+     0.6832133559051954,
+     0.8665326013071405
+    ],
+    "mean_forecast": 0.08306545281267548,
+    "pressure_days": 84,
+    "realised": 0.05246720799500312
+   },
+   "5": {
+    "auroc": 0.8124411044101018,
+    "calibration": {
+     "intercept": -1.0388848602618606,
+     "slope": 0.7845766040756305
+    },
+    "constant": false,
+    "days": 1600,
+    "interval": [
+     0.7015349855676385,
+     0.8820845928166802
+    ],
+    "mean_forecast": 0.08495236445503787,
+    "pressure_days": 84,
+    "realised": 0.0525
+   }
+  }
+ },
+ "scope": {
+  "h1": {
+   "ordinary_days": 1602,
+   "pressure_days": 84
+  },
+  "h2": {
+   "ordinary_days": 1602,
+   "pressure_days": 84
+  },
+  "h3": {
+   "ordinary_days": 1602,
+   "pressure_days": 84
+  },
+  "h4": {
+   "ordinary_days": 1601,
+   "pressure_days": 84
+  },
+  "h5": {
+   "ordinary_days": 1600,
+   "pressure_days": 84
+  },
+  "last_day": "2026-09-03",
+  "threshold_bp": 5
+ }
+}

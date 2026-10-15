@@ -296,6 +296,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: top-5 precision of the probability ranker 7.9% against 13.0% for the calendar, gain -5.2 pp [-7.7 pp, -3.0 pp] over 1,825 decision days to 2025-12-31; against climatology by day type -1.7 pp [-2.8, -0.6]; against persistence +0.1 pp [-0.3, +0.6]. The median ranker is lower still. The model's top 5 are scheduled risk dates 16% of the time (calendar 64%); the calendar holds 36% of the pressure days. Sensitivity (ruling of 13 October 2026, item 2): with the protocol's mean block of 10 days in place of the declared 20, the same gain's interval is [-7.2 pp, -3.4 pp], so the reading is unchanged. Detail in `docs/pivot/ranking-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is met on development data, as exploration and not a verdict: the model carries no calendar information and the calendar alone out-ranks it in every year with pressure days.
 - Next: step 2, accepted by Eleonora on 13 October 2026: rank by tail probability combined with the day type (a directive for it is hers to queue).
+
 ### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#721
 - Directive: #687
 - Step: 3 (diagnosis of avenue #674)
@@ -406,6 +407,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `+offday` of #624 at h = 1 has a pooled slope of 0.83, 0.48 inside 2018-19 and 0.79 inside 2025-26; at h = 3 to 5, 0.14 to 0.22 inside 2018-19 against a pooled 0.78 to 0.80. #626's rows have no per-regime slope yet.
 - Against kill: not applicable (a correction to how step 3 figures are read).
 - Next: the per-regime slopes for #626's kinked page, and an account of why its rebuild never finishes, move to the follow-up directive #753 (Eleonora's ruling of 14 October 2026 on this pull request); any reliability-shape test (#628) is read within regimes.
+
+### 2026-10-13 [H2] step 1 · eleonorabjornberg/repo-market-model#710
+- Directive: #684
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `a69f6b9`
+- Tried: #629's source screen and #631's derived-feature screen re-run unchanged on a panel that runs to 2026-09-03 (the opened near-blind tier), with a 2026 column; one shared end date, `repo_model.exploration.EXPLORATORY_END`. Then, on the scratch scored span ruled on #710 (no published declaration moves), #631's model test (ordinary-day AUROC of the parent and the lagged-pressure test) and #624's steps 1 and 2 against persistence-logistic and the raw as-of spread, re-run to the same day, rows that reproduce on main only. Variants: n/a (re-run).
+- Result: the 2026 column is empty on both screens: 133 ordinary days and 2 pressure days (2026-01-02, 2026-02-18), under the declared minimum of 3. The 2018-2025 column reproduces the earlier page (82 pressure days on 1,469 ordinary days). #629 has 87 series, not 101: the 14 `fed_repo_*` series cannot be read in 2026 (the repo-operations snapshot ends 2025-12-31). #631's ranked leads move by one entry (`spread_rv5` enters, `days_since_pressure` becomes redundant). The 2018-2025 cells of #631's model test and of #624's steps 1 and 2 reproduce the earlier pages to the digit; the 2026 days (2 pressure days) move no AUROC by more than 0.02, and the conclusions stand: lagged pressure does not help (h = 1 difference -0.040 [-0.078, -0.013]), and the ordinary-day ranking is not beyond persistence-logistic or the raw as-of spread. The 2026 cell stays empty below the 3-pressure-day minimum. #624's three floor rows are not re-run, and the judge is not run on 2026 days.
+- Against kill: not applicable (H2's kill is not tested here; development data never gives a verdict).
+- Next: a 2026 repo-operations snapshot would restore the 14 series; nothing here is a verdict.
 
 ### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#737
 - Directive: #655 (follow-up: Eleonora's answers to Q-E, Q-B and Q-C on PR #695, comment 6159852603)
