@@ -14,7 +14,7 @@ Recorded mutations, each killing the named test:
   `test_a_result_page_without_a_new_entry_is_refused` (`AssertionError: [] is not true`);
 * `new_entries` returning every entry of the head log, not those absent from the base, fails
   `test_an_entry_already_in_the_base_does_not_count` (`AssertionError: [] is not true`);
-* groundwork headings (#701; the tests failed first on the old `HEADING`): `G[1-9]\d*` replaced by `G\d*` in
+* groundwork headings (#701; the tests failed first on the old `HEADING`): `G[1-9]\\d*` replaced by `G\\d*` in
   `HEADING` fails `test_a_malformed_groundwork_heading_is_refused` for `groundwork G` and `groundwork G0`
   (`AssertionError: [] is not true`).
 """
