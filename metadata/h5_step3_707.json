@@ -1,0 +1,55 @@
+{
+  "status": "declared by the pull request that closes #707 before any number was computed; a measurement, not a record. Nothing is published, no day after 2025-12-31 is read (docs/decisions/lockbox.md), no rule changes. Development data gives a diagnosis and an interval, never a verdict (scoring protocol v1, #640; #46 top block).",
+  "issue": 707,
+  "hypothesis": "H5 (primary goal), development step 3 of docs/research/hypotheses/H5.md (milestone M4): two diagnoses, each its own logged sub-question",
+  "input": {
+    "walks": "the walk-forward laws of #634 (scripts/spread_distribution_634.py walk), read unchanged: the same panels, folds and fits; this measurement fits no model",
+    "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+    "scratch_panel_sha256": "da1412d0c5c9c4a35786438a47496e405c303676f75005c59948343507a06077",
+    "scorer": "repo_model.scoring_protocol (grid CRPS over the protocol's 23 levels averaged over h = 1 to 5; upper-tail twCRPS with weight 1{y > 0 bp}); stationary bootstrap, mean block 10, 10,000 draws, studentized (ruling on #660), one-sided 95%, seed 707",
+    "benchmarks": "B1 as-of persistence and B2 calendar climatology (repo_model.protocol_benchmarks); a missing lead of a candidate takes B1's, as in #634",
+    "decision_days": "the 1,868 decision days of #634 (2018-06-29 to 2025-12-23)",
+    "calibrated_critical_value": "not applied: #695 has merged its calibrated critical value for confirmation windows (250 and 125 days); these are development days and give no verdict, so the interval is the plain one-sided 95% bound and is labelled as such"
+  },
+  "candidates": {
+    "gbm_funding": "the phase 2 gbm at the 23 levels on the published features: the best pooled primary score of #634, and the model of 'every gbm loses in 2021-23'",
+    "c_two_part_new": "variant (c) of #634, the two-part form with the new inputs: the one variant ahead of the published declaration on the upper tail, and the worst in 2021-23"
+  },
+  "windows": {
+    "2021-23": "decision days whose regime label in metadata/evaluation_splits.json is '2021-23' (2021-01-01 to 2023-12-31). A reporting cut only: no regime label is an input to any forecast, remedy or selection below.",
+    "scarcity_state": "the as-of scarcity state of the decision day: scripts/pressure_judge.py _scarcity_states at lead 1, read for the first business day after the decision day, each leg at its own latest public row (#586). Groups: abundant, ample, tight, scarce (repo_model.scarcity.STATE_LABELS); a group with 10 decision days or fewer is reported without a test.",
+    "day_type": "metadata/evaluation_splits.json reporting_day_type of the target day"
+  },
+  "sub_question_1_2021_23": {
+    "question": "Why does every gbm lose to persistence in 2021-23? Which of (a) a level error, (b) over-dispersion, (c) regime transfer accounts for most of the loss?",
+    "measures": [
+      "per candidate and for B1 on the 2021-23 cells (decision day, lead): grid CRPS; the bias of the median (mean of y - q50); the mean absolute error of the median; the width of the central 90% interval (q95 - q05) and its coverage; the variance of the outcome",
+      "PIT histogram of each candidate in six bins (edges at the levels 0.10, 0.25, 0.50, 0.75, 0.90; expected shares 0.10, 0.15, 0.25, 0.25, 0.15, 0.10), pooled and per as-of scarcity state of the decision day. The PIT of a cell is the midpoint of the level bracket the outcome falls in among the 23 forecast quantiles (a tie takes the midpoint of the tied levels); the PIT is read at the cell's outcome, so it is a diagnostic, not an input",
+      "a loss split by counterfactual recalibration within the window (a hindsight diagnostic, not a remedy, fitted on the window it explains): S0 the forecast as made; S1 the forecast shifted by the window's median of y - q50 (removes the level error); S2 S1 with its spread about the median scaled by the factor in {0.25, 0.4, 0.55, 0.7, 0.85, 1, 1.2} that minimises the window's mean grid CRPS (removes the over-dispersion); B1. Gap = mean S0 - mean B1. Level part = mean S0 - mean S1; dispersion part = mean S1 - mean S2; remainder = mean S2 - mean B1, which is what neither a constant level nor a constant scale explains (regime transfer, the shape of the law, and anything else). Each part carries the paired studentized bootstrap interval of its daily difference."
+    ],
+    "reading_rule": "The component named is the one whose part is largest among the three; it 'accounts for most of the loss' only if it is above half the gap, otherwise the line says 'no single component'. Regime transfer is read as the remainder together with a second check: the candidate's skill against B1 by calendar year inside 2021-23 (a transfer failure that is absorbed by an expanding training window shrinks from 2021 to 2023). A part whose interval includes 0 is called unresolved.",
+    "remedies": {
+      "note": "one remedy per cause, each causal and declared before it is scored. Each uses only cells (decision day, lead) whose target day is strictly before the decision day it is applied to (LookAheadError otherwise), the last 250 such cells at that lead, and no regime label. With fewer than 60 such cells the remedy is the identity. Applied to every decision day, so its pooled cost is reported beside its 2021-23 effect.",
+      "R_level": "(cause a) shift every quantile by the trailing median of y - q50",
+      "R_scale": "(cause b) scale the spread about the median by the factor in {0.5, 0.7, 0.85, 1} that minimised the trailing mean pinball loss over the 23 levels",
+      "R_shrink": "(cause c) replace the law by the quantile average w * candidate + (1 - w) * B1 with w in {0, 0.25, 0.5, 0.75, 1} minimising the trailing mean pinball loss over the 23 levels"
+    },
+    "remedy_reading": "A remedy 'closed the gap' in 2021-23 if the lower one-sided 95% bound of its skill against B1 in that window is above 0 or its skill against B1 is at least 0 with an interval that includes 0. It 'did not' if its upper skill bound is below 0 or its skill is below 0. Nothing is tuned after a score; the remedy grids are fixed here."
+  },
+  "sub_question_2_upper_tail": {
+    "question": "Is the upper tail under-dispersed, mislocated or both?",
+    "measures": [
+      "twCRPS above 0 bp of each candidate against B1 and B2: pooled, by as-of scarcity state of the decision day, by day type of the target day, with the studentized interval",
+      "coverage of the 90th and 95th percentile forecasts on the cells whose outcome is above 0 bp (share of those cells with y <= q90, y <= q95), and the unconditional exceedance rates P(y > q90) and P(y > q95) against nominal 0.10 and 0.05, with a stationary-bootstrap interval for each (block 10)",
+      "location of the miss on the cells above 0 bp: the median PIT, the share with PIT above 0.5, and the share of cells beyond q99 (expected 0.01 unconditionally); and the ratio mean(y - q50) / mean(q95 - q50) on those cells"
+    ],
+    "reading_rule": "Two flags. U (spread too narrow): the lower bound of the unconditional exceedance rate of q95 is above 0.05. L (law displaced): the median PIT on cells above 0 bp is at least 0.9 and the share of those cells beyond q99 is above 0.5, that is the whole law sits below the outcome. Under-dispersed: U and not L. Mislocated: L and not U. Both: U and L. Otherwise 'neither resolved'. The coverage on cells above 0 bp is conditioned on the outcome and is below nominal by construction; it is reported as asked and is not the rule."
+  },
+  "variants": {
+    "scored": "6 post-hoc transforms: R_level, R_scale and R_shrink, each applied to the 2 candidates. No model is refitted.",
+    "count": "added by this measurement: 6 (no new fit); cumulative with #634: 9 + 6 = 15",
+    "ruled_out": "the +5 bp classification (paused, #46), any 2026 day, any new input"
+  },
+  "amended": "The tail reading rule was restated as two flags (U, L) in a second commit, before any number was computed; the first commit made 'under-dispersed' and 'both' contradict each other.",
+  "amended_2": "Where the scorer's studentized interval refuses a series (a daily difference that is zero on most days resamples to a series with no variance), the row is reported with the stationary bootstrap's percentile bounds (same block, draws and seed) and marked 'method: percentile'. Added before any number was computed."
+}
