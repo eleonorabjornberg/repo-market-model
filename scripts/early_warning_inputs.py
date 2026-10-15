@@ -44,6 +44,7 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model import contract, early_warning, pressure  # noqa: E402
 from repo_model.baseline import (  # noqa: E402
     panel_sha256,
@@ -190,7 +191,8 @@ def panel_command(args) -> int:
             if values[name] is None and not (name == "srf_take_up" and row.date < early_warning.SRF_INCEPTION):
                 holes[name].append(row.date.isoformat())
         added.append(DailyObservation(row.date, values))
-    built = [row for row in early_warning.build_columns(added) if row.date <= END]
+    end = panel_end(args.end, END, where="early_warning_inputs.panel")
+    built = [row for row in early_warning.build_columns(added) if row.date <= end]
     # SOFR's percentiles have two one-day holes (2019-05-31, 2021-08-05), as
     # the published panel's sofr_p25/sofr_p75 do. The gbm reads a hole as
     # missing; the direct logistic refuses a forecast on one. So in this scratch
@@ -639,6 +641,7 @@ def main(argv=None) -> int:
     one = sub.add_parser("panel")
     one.add_argument("--panel", type=Path, required=True)
     one.add_argument("--output", type=Path, required=True)
+    one.add_argument("--end", help="last day kept, ISO; default this script's own end (at most 2026-09-03, #684)")
     one.set_defaults(handler=panel_command)
     two = sub.add_parser("crps")
     two.add_argument("--panel", type=Path, required=True)

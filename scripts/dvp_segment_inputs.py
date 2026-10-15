@@ -77,6 +77,7 @@ def _script(name):
 v1 = _script("pressure_model_v1")
 ew = _script("early_warning_inputs")
 
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model import contract, dvp_segment, early_warning, pressure  # noqa: E402
 from repo_model.baseline import (  # noqa: E402
     benchmark_comparison_document,
@@ -328,8 +329,9 @@ def panel_command(args) -> int:
             raise SystemExit(f"{row.date}: parsed SOFR volume differs from the panel's")
     added = []
     holes = {name: [] for name in RAW_COLUMNS}
+    end = panel_end(args.end, END, where="dvp_segment_inputs.panel")
     for row in rows:
-        if row.date > END:
+        if row.date > end:
             continue
         values = dict(row.values)
         values["bgcr_volume"] = funding["BGCR_volume"].get(row.date)
@@ -788,6 +790,7 @@ def main(argv=None) -> int:
     one = sub.add_parser("panel")
     one.add_argument("--panel", type=Path, required=True)
     one.add_argument("--output", type=Path, required=True)
+    one.add_argument("--end", help="last day kept, ISO; default this script's own end (at most 2026-09-03, #684)")
     one.set_defaults(handler=panel_command)
     two = sub.add_parser("check")
     two.add_argument("--panel", type=Path, required=True)

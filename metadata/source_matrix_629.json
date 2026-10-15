@@ -1,12 +1,12 @@
 {
-  "status": "declared by the pull request that closes #629 before any statistic; an exploratory screen, not a record. Nothing is selected into a model and nothing is published: no rule, threshold, onset definition or availability time changes, no day after 2025-12-31 is read, the back-filled 2014-18 history is not read while its posting instant is null (#572), and no hindsight regime label is used (ruling on #515). None of the tests below is corrected for multiplicity",
+  "status": "declared by the pull request that closes #629 before any statistic; an exploratory screen, not a record. Nothing is selected into a model and nothing is published: no rule, threshold, onset definition or availability time changes, no day after 2026-09-03 is read, the back-filled 2014-18 history is not read while its posting instant is null (#572), and no hindsight regime label is used (ruling on #515). None of the tests below is corrected for multiplicity",
   "issue": 629,
   "panel": {
-    "sha256": "8299bac39372dee204dad99a5118aa0930c99eaa33fea74e47b04bac4f527d89",
-    "columns": 86,
+    "sha256": "6a8388fb2cbf5ad8112f935d44d85389efb3207885f845838785616bab2b599d",
+    "columns": 72,
     "built_by": "docs/pivot/source-matrix-ordinary-days-result.md (Reproduce): source_screen.py panel over the published panel's scratch panels and satiation_distance_598.py's"
   },
-  "days": "the scored days of the lead-1 fold grid, 2018-06-29 to 2025-12-31 (source_screen), the same days at every lead",
+  "days": "the scored days of the lead-1 fold grid, 2018-06-29 to 2026-09-03 (source_screen, EXPLORATORY_END), the same days at every lead",
   "ordinary_days": "a scored day whose day type (metadata/evaluation_splits.json) is ordinary and whose treasury_settlement_coupons, dated from the auction announcement (#541) and read at lead 1, is not positive: the risk-date rule of the every-day part (announcement_dating_rescore.risk_flag)",
   "leads": [
     1,
@@ -26,7 +26,7 @@
     "change": "the spread of the scored day less that of the day before"
   },
   "series": {
-    "count": 101,
+    "count": 87,
     "names": [
       "sofr_volume",
       "sofr_p25",
@@ -73,20 +73,6 @@
       "policy_slr_exclusion_in_force",
       "policy_reserve_management_in_force",
       "policy_debt_limit_reinstated",
-      "fed_repo_accepted",
-      "fed_repo_submitted",
-      "fed_repo_rate_iorb_bps",
-      "fed_repo_ops",
-      "fed_repo_log_accepted",
-      "fed_repo_log_accepted_change",
-      "fed_repo_days_since_positive",
-      "fed_repo_accepted_sameday",
-      "fed_repo_submitted_sameday",
-      "fed_repo_rate_iorb_bps_sameday",
-      "fed_repo_ops_sameday",
-      "fed_repo_log_accepted_sameday",
-      "fed_repo_log_accepted_change_sameday",
-      "fed_repo_days_since_positive_sameday",
       "on_rrp_sameday",
       "spread_nowcast_bps",
       "bgcr_volume",
