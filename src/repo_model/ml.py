@@ -6585,12 +6585,29 @@ PRESSURE_SPREAD_DISTRIBUTION_SETTINGS = MappingProxyType(
 SPREAD_DISTRIBUTION_STRUCTURES = ("risk_date", "two_part")
 
 
+def _spread_distribution_grid(grid: Optional[Sequence[float]]) -> Tuple[float, ...]:
+    """The levels a spread distribution is fitted at: the declared grid, or `grid` (#634), ascending inside (0, 1)."""
+
+    if grid is None:
+        return tuple(PRESSURE_SPREAD_DISTRIBUTION_SETTINGS["quantile_grid"])
+    levels = tuple(float(level) for level in grid)
+    if len(levels) < 2 or not all(0.0 < level < 1.0 for level in levels) or any(
+        later <= earlier for earlier, later in zip(levels, levels[1:])
+    ):
+        raise ValueError(f"a spread distribution grid is at least two levels, strictly ascending inside (0, 1), got {levels}")
+    return levels
+
+
 def _gbm_quantile_matrix(
-    xs: Sequence[Sequence[float]], spreads: Sequence[float], served: Sequence[Sequence[float]]
+    xs: Sequence[Sequence[float]],
+    spreads: Sequence[float],
+    served: Sequence[Sequence[float]],
+    grid: Optional[Sequence[float]] = None,
 ) -> Any:
     """The predicted quantiles of the spread at each served row: one row per served row, one column per grid level.
 
-    A day's quantiles are sorted (the crossing fix).
+    A day's quantiles are sorted (the crossing fix). `grid` defaults to the declared 13 levels (#632); the scoring
+    protocol's 23 are passed by #634.
     """
 
     _estimator_class()
@@ -6602,7 +6619,7 @@ def _gbm_quantile_matrix(
     y = numpy.asarray(spreads, dtype=float)
     z = numpy.asarray(served, dtype=float)
     columns = []
-    for level in settings["quantile_grid"]:
+    for level in _spread_distribution_grid(grid):
         model = HistGradientBoostingRegressor(
             loss="quantile",
             quantile=float(level),
@@ -6627,6 +6644,7 @@ def pressure_spread_distribution_exceedance(
     structure: str = "risk_date",
     component_inputs: Sequence[str] = EVERY_DAY_COMPONENT_INPUTS,
     record: Optional[List[Tuple[Optional[str], Optional[Tuple[float, ...]]]]] = None,
+    grid: Optional[Sequence[float]] = None,
 ) -> ExceedancePredictor:
     """The spread forecast as a distribution, read as P(spread > tau) (#632).
 
@@ -6655,7 +6673,7 @@ def pressure_spread_distribution_exceedance(
     component = _PressureDesign(component_inputs, declaration) if structure == "two_part" else None
     cache: dict = {}
     component_cache: dict = {}
-    grid = PRESSURE_SPREAD_DISTRIBUTION_SETTINGS["quantile_grid"]
+    grid = _spread_distribution_grid(grid)
 
     def fit_predict(
         train_rows: Sequence[DailyObservation],
@@ -6692,7 +6710,7 @@ def pressure_spread_distribution_exceedance(
         if members:
             if not xs:
                 raise ValueError("no risk-date training label has a complete as-of read")
-            matrix = _gbm_quantile_matrix(xs, risk_spreads, served)
+            matrix = _gbm_quantile_matrix(xs, risk_spreads, served, grid)
             for day, quantiles in zip(members, matrix):
                 laws[day] = ("risk_date", tuple(float(value) for value in quantiles))
         component_pairs = 0
@@ -6712,7 +6730,7 @@ def pressure_spread_distribution_exceedance(
                 component_pairs = len(component_xs)
                 if not component_xs:
                     raise ValueError("no training label has a complete as-of read of the every-day inputs")
-                matrix = _gbm_quantile_matrix(component_xs, component_spreads, rows)
+                matrix = _gbm_quantile_matrix(component_xs, component_spreads, rows, grid)
                 for day, quantiles in zip(others, matrix):
                     laws[day] = ("every_day", tuple(float(value) for value in quantiles))
         curves = []
@@ -6729,6 +6747,7 @@ def pressure_spread_distribution_exceedance(
             if record is not None:
                 record.append(entry)
         settings = dict(PRESSURE_SPREAD_DISTRIBUTION_SETTINGS)
+        settings["quantile_grid"] = grid
         settings["design"] = list(design.names)
         settings["structure"] = structure
         settings["risk_date_training_pairs"] = len(xs)
