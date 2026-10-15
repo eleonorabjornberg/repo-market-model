@@ -36,10 +36,14 @@ ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / "docs" / "research" / "plan.md"
 LOG = ROOT / "docs" / "research" / "log.md"
 
-# The log format, in one place. A heading `### YYYY-MM-DD [H#] step N · owner/repo#PR`, then one `- Name: value`
-# line for each of REQUIRED_LINES.
+# The log format, in one place. A heading `### YYYY-MM-DD [H#] step N · owner/repo#PR`, or for groundwork (G1 to G5
+# in a hypothesis manual, kept apart from the six steps) `### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR`, then
+# one `- Name: value` line for each of REQUIRED_LINES.
 ENTRY_FORMAT = "### YYYY-MM-DD [H#] step N · owner/repo#PR"
-HEADING = re.compile(r"^### (\d{4}-\d{2}-\d{2}) \[(H\d+)\] step (\d+) · ([\w.-]+/[\w.-]+#\d+)\s*$")
+GROUNDWORK_FORMAT = "### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR"
+HEADING = re.compile(r"^### (?P<date>\d{4}-\d{2}-\d{2}) \[(?P<hyp>H\d+)\] "
+                     r"(?:step (?P<step>\d+)|groundwork (?P<groundwork>G[1-9]\d*)) · "
+                     r"(?P<ref>[\w.-]+/[\w.-]+#\d+)\s*$")
 REQUIRED_LINES = ("Directive", "Step", "Tier", "Pins", "Tried", "Result", "Against kill", "Next")
 TIERS = ("development", "confirmation")
 STEPS = range(1, 7)
@@ -83,16 +87,16 @@ def validate_log(text, hypotheses):
     for number, heading, raw, fields in parse_log(text):
         where = "log.md line %d" % number
         if heading is None:
-            errors.append("%s: heading is not `%s`: %r" % (where, ENTRY_FORMAT, raw))
+            errors.append("%s: heading is not `%s` or `%s`: %r" % (where, ENTRY_FORMAT, GROUNDWORK_FORMAT, raw))
             continue
-        date, hypothesis, step, _ = heading.groups()
+        date, hypothesis, step = heading.group("date", "hyp", "step")
         try:
             datetime.date.fromisoformat(date)
         except ValueError:
             errors.append("%s: %s is not a date" % (where, date))
         if hypothesis not in hypotheses:
             errors.append("%s: hypothesis %s is not in the plan (docs/research/plan.md)" % (where, hypothesis))
-        if int(step) not in STEPS:
+        if step is not None and int(step) not in STEPS:
             errors.append("%s: step %s is not 1 to 6" % (where, step))
         for name in REQUIRED_LINES:
             if not fields.get(name, "").strip():

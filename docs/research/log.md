@@ -5,7 +5,9 @@ One entry per scored experiment, newest last. The plan is [`plan.md`](plan.md); 
 CI. The same format serves both repositories (`repo-market-liquidity` results arrive as a fenced `research-log`
 block copied verbatim from that repository's pull request body).
 
-Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time).
+Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
+hypothesis manual, kept apart from the six steps) has its own heading,
+`### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR`; an item that covers two pieces of groundwork has one entry each.
 Lines: Directive, Step, Tier (`development` or `confirmation`), Pins, Tried, Result, Against kill, Next.
 
 **Backfill, 12 October 2026.** The entries from 10 to 12 October were written after the fact from the pull request
@@ -454,3 +456,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: on the declared process the forecaster beats B1 by +17.58% [+17.33%, +17.84%] pooled, every panel at or above the 3% MME, all of it from spike anchors (ordinary 0.00%; month-end +52.3%, tax date +32.6%, quarter-end +84.5%); with no spikes it has no gain (-1.27% [-1.54%, -1.01%]). Candidate evidence (a) for a §13 change; B1, B2, B3 and the MME unchanged. #686's candidate against B1 by anchor type on the development days: pooled +22.3% [+13.7%, +29.5%], ordinary anchors +11.2% [+6.9%, +15.9%], month-end +34.2%, tax date +67.5%, quarter-end +65.9%. Detail in `docs/research/spike-blind-741.md`.
 - Against kill: not applicable (H1's checks are pre-registered; none failed, none run).
 - Next: the auditor's confirmation of the candidate evidence and Eleonora's decision on §13; H5 pages still in open pull requests take the anchor split when they merge.
+
+### 2026-10-13 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#699
+- Directive: #656
+- Step: groundwork G3 (prospective logging)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: record version 3 with a protocol block (B1, B2, B3 note, candidates, H7m hook). Variants: n/a.
+- Result: no figure; the prospective log carries the protocol block (copied from the fenced block of PR #699, which the log could not hold until #701).
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+### 2026-10-13 [H5] groundwork G4 · eleonorabjornberg/repo-market-model#699
+- Directive: #656
+- Step: groundwork G4 (power study)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09640f5`
+- Tried: a power study of the 3% MME under the protocol's test and spending. Variants: n/a.
+- Result: 3% is not detected within 250 days (power 0.16 at 125, 0.29 at 250 against a 0.80 target); look 1 (60 days) cannot be read with 10,000 draws; post-hoc, the test fires on 21.75% of paths with no true difference by 250 days.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
