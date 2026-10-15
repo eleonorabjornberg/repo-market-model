@@ -21,7 +21,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import pressure, setup_diagnostic  # noqa: E402
+from repo_model import pressure, risk_dates, setup_diagnostic  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 
@@ -134,9 +134,7 @@ def _block(folds, day):
 def _risk_date(splits, values, horizon):
     """The declared risk-date rule (`metadata/risk_date_severity.json`), read off a panel row."""
 
-    if splits.day_type(values) != "ordinary":
-        return True
-    return horizon == 1 and float(values.get("treasury_settlement_coupons") or 0.0) > 0.0
+    return risk_dates.is_risk_date(values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=horizon == 1)
 
 
 def training_history(runs, published, extended, horizons=(1, 5)):
