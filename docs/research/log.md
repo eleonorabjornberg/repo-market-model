@@ -467,6 +467,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (reading only; development).
 - Next: #754 starts after #733 and #737 merge; leads 3 and 4 of the page bear on it.
 
+### 2026-10-14 [H5] step 2 · eleonorabjornberg/repo-market-model#767
+- Directive: #761
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmarks B1, B2; seed 761; base as in the pull request
+- Tried: 3 variants of `spread_mr_level10`: (i) residuals pooled by the target day's context, (ii) a quantile average with B2 whose weight is chosen at each refit on trailing scored days, (iii) both; B1 re-centred on the last ordinary day as a reference row. Variants: 3 (declaration `metadata/spread_distribution_761.json`).
+- Result: grid CRPS 1.737 / 1.780 / 1.745 bp against mean reversion's 1.778 over 1,855 decision days to 2025-12-31; gain over mean reversion, studentized 90%: (i) +2.3% [+1.0%, +3.6%], (ii) -0.1% [-4.5%, +3.1%], (iii) +1.9% [-2.7%, +5.2%]. Upper-tail twCRPS (i) +4.1% [+2.4%, +5.8%]. (i) loses in 2020 (-5.9%) and 2021-23 (-0.3%); (ii) loses after a risk day (-4.3%). Calm ordinary-day P(> +5 bp) error: mean reversion -0.046, (i) -0.021, (iii) -0.006. Detail in `docs/pivot/spread-mr-variants-result.md`.
+- Against kill: not applicable (no verdict; development data). Only (i) has an interval above zero against mean reversion.
+- Next: whether (i) joins #634's candidates is Eleonora's.
+
 ### 2026-10-14 [H1] step 3 · eleonorabjornberg/repo-market-model#762
 - Directive: #762
 - Step: 3 (is each benchmark computed as specified: B1, B2 and `richer_targets.b1_quantiles` on a simulated panel with known dynamics; finding #744)
@@ -496,3 +506,25 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 3% is not detected within 250 days (power 0.16 at 125, 0.29 at 250 against a 0.80 target); look 1 (60 days) cannot be read with 10,000 draws; post-hoc, the test fires on 21.75% of paths with no true difference by 250 days.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
+
+<<<<<<< HEAD
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
+- Directive: #743
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9674324b`
+- Tried: one take-up floor ($0.1 bn accepted, every era) for the Fed repo columns; the two #727 results re-run on the rebuilt column (the source matrix, and `risk_logistic_base_dealer` at h = 1 to 5, with the column present and removed). Variants: 1 (the floor).
+- Result: the ordinary-day pressure AUROC of `fed_repo_days_since_positive` falls from 0.64 [0.48, 0.79] to 0.50 [0.35, 0.65] at lead 1 and from 0.68 [0.51, 0.82] to 0.54 [0.39, 0.67] at lead 10, all intervals containing 0.5. The 2018 warnings of `risk_logistic_base_dealer` (3 of 5 onsets) are the same with the floor and with the column removed, so they do not rest on it.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora's answer on whether the floor applies to `srf_total_accepted` (a "Publish?" issue); H5 step 2 inputs.
+=======
+### 2026-10-14 [H5] step 5 · eleonorabjornberg/repo-market-model#776
+- Directive: #740
+- Step: 5 (goal G3, prospective logging; Eleonora's ruling that a block is written and committed before 23:59 ET on its decision day)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `b0da43a`
+- Tried: a write-time guard at 23:59 ET on the decision day (`require_written_by_decision_day_end`), `written_at` stored in every block, and `filled_candidate` refusing a stored `written_at` or commit time past the cut-off. Variants: n/a (a guard, no model).
+- Result: the oracle block of the finding, written the evening after its decision day, is now refused; two recorded mutations kill the guard and the commit-time check. Nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); no candidate is logged yet.
+>>>>>>> origin/main
