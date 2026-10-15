@@ -34,6 +34,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import contract, measurement_fields  # noqa: E402
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 
 SNAPSHOTS = REPO / "tests" / "fixtures" / "snapshots"
@@ -72,7 +73,7 @@ def _cell(value):
 def panel_command(args) -> int:
     published = load_daily_panel(args.panel)
     rows, summary = measurement_fields.assemble(
-        published, SNAPSHOTS, cutoff=BUILD_CUTOFF, end=END
+        published, SNAPSHOTS, cutoff=BUILD_CUTOFF, end=panel_end(args.end, END, where="measurement_fields.panel")
     )
     with args.panel.open(newline="", encoding="utf-8") as handle:
         base = next(csv.reader(handle))
@@ -99,6 +100,7 @@ def main(argv=None) -> int:
     panel = commands.add_parser("panel", help="the published panel plus the measurement fields")
     panel.add_argument("--panel", type=Path, required=True)
     panel.add_argument("--output", type=Path, required=True)
+    panel.add_argument("--end", help="last day kept, ISO; default this script's own end (at most 2026-09-03, #684)")
     panel.set_defaults(handler=panel_command)
     args = parser.parse_args(argv)
     return args.handler(args)

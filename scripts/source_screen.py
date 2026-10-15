@@ -21,7 +21,7 @@ The numbers belong to the pull request that closes #478 and to the evidence fold
     PYTHONPATH=src python3 scripts/source_screen.py run --panel SCREEN.csv --output OUT/screen.json
     PYTHONPATH=src python3 scripts/source_screen.py report OUT/screen.json --tables OUT/tables.md --heatmap OUT/heatmap.svg
 
-* `panel` joins the columns of the scratch panels above onto one panel by date, up to 2025-12-31.
+* `panel` joins the columns of the scratch panels above onto one panel by date, up to 2026-09-03 (`repo_model.exploration.EXPLORATORY_END`, #684).
   A column two panels both carry must agree to the last digit, or the command refuses.
 * `run` reads every series **as of each decision instant** with the as-of rule
   (`repo_model.asof.InformationRule`, `docs/decisions/information-set.md`), at leads of
@@ -33,7 +33,7 @@ The numbers belong to the pull request that closes #478 and to the evidence fold
   does). A column with no row-relative availability is refused by the rule and is listed under
   `unreadable` with the refusal, never read at the row it sits on. The spread's own as-of lag
   (`spread_bps`, the latest spread public at the decision) is screened beside them.
-* The target days are the lead-1 fold grid from 2018-06-29 to 2025-12-31, the days every
+* The target days are the lead-1 fold grid from 2018-06-29 to 2026-09-03 (`EXPLORATORY_END`), the days every
   published comparison scores, the same days at every lead. The screen fits nothing, so a longer
   lead does not need a longer training history; it only needs the earlier row to exist.
 * Three targets: the spread level `s_T`; the change `s_T - s_(T-1)` over the scored day (at a lead
@@ -77,12 +77,14 @@ from repo_model import contract, dvp_segment, early_warning, fed_liquidity, meas
 from repo_model import net_settlement, nowcast, policy_features, pressure, scarcity  # noqa: E402
 from repo_model.asof import KIND_OBSERVED, InformationRule, InformationSet, fold_grid  # noqa: E402
 from repo_model.data import DailyObservation, exceeds_bp, load_daily_panel  # noqa: E402
+from repo_model.exploration import EXPLORATORY_END  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.registry import RegistryContractError  # noqa: E402
 from repo_model.splits import LookAheadError, SplitError  # noqa: E402
 
 FIRST_DAY = date(2018, 6, 29)
-LAST_DAY = date(2025, 12, 31)
+#: The exploratory end, shared by every screen (#684): the last day of the opened near-blind tier. The blind tier stays shut.
+LAST_DAY = EXPLORATORY_END
 LEADS = (1, 2, 3, 5, 10)
 THRESHOLD_BP = 5.0
 DECISION_TIME = time(16, 0)
