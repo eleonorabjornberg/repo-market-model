@@ -81,9 +81,16 @@ def parse_log(text):
     return entries
 
 
+def conflict_markers(text, name):
+    """Lines of `text` that are git conflict markers (#795): `<<<<<<< `, `>>>>>>> ` or a bare `=======`."""
+    return ["%s line %d: unresolved merge conflict marker %r" % (name, number, line)
+            for number, line in enumerate(text.splitlines(), 1)
+            if line.startswith(("<<<<<<< ", ">>>>>>> ")) or line == "======="]
+
+
 def validate_log(text, hypotheses):
     """Every way the log's entries break the format or the plan. Empty when it is sound."""
-    errors = []
+    errors = conflict_markers(text, "log.md")
     for number, heading, raw, fields in parse_log(text):
         where = "log.md line %d" % number
         if heading is None:
@@ -173,6 +180,9 @@ def main(argv=None):
         errors = validate_log(Path(args.file).read_text(), hypotheses)
     else:
         errors = validate_log(LOG.read_text(), hypotheses)
+        for name in _git("ls-files", "*.md").split("\n"):
+            if name and name != "docs/research/log.md":
+                errors += conflict_markers((ROOT / name).read_text(), name)
         if args.base:
             merge_base = _git("merge-base", args.base, args.head).strip()
             changed = _git("diff", "--name-only", "--diff-filter=AMR", merge_base, args.head).split()

@@ -57,12 +57,12 @@ By the rule the reading cells are the best candidate's pooled cells, five regime
 
 ## Recommendation
 
-**Continue model work, in 2024 only, by the declared rule.** Trade-off in one line: one split of thirteen clears the rule (a one-sided 95% reading with no multiplicity adjustment, +0.11 skill in a regime where the candidate is already +0.16 ahead of B1), while pooled, 2021-23 and the upper tail show the ceiling no better than the candidate, so the model work the 159 inputs could buy is small and local; stopping here and going to step 5 costs that one regime.
+**Stop model work and go to H5 step 5, the model-risk validation report for `gbm_funding`.** This reading was chosen by Eleonora's ruling of 15 October 2026 (comment on PR #775, Q1). The declared rule, applied mechanically, returns "continue model work, in 2024 only"; the ruling reads it as a whole: the single split with headroom (2024, +0.110 [+0.027, +0.160]) is one of 13, which multiplicity alone can give. The 2024 split is logged as an avenue, not a next step. Nothing is registered and no verdict is given (development data).
 
-## Not checked, and marked questions for Eleonora (not settled in code)
+## Not checked, and rulings of 15 October 2026
 
-1. **Question (hers): which reading do you want?** The declared rule returns "continue, in 2024". Read as a whole (one split in thirteen, the candidate ahead of the ceiling pooled), "stop at the best available candidate and move to step 5" is the other defensible reading. This page reports the rule's result; it does not choose.
-2. **Question (hers): may the rerun stand in for H2's fits?** It differs from the recorded skills by +0.004 and +0.006 (above).
+1. **Reading (ruled, Q1):** stop and go to step 5, as above.
+2. **Rerun of H2's fits (ruled, Q2):** the declared tolerance deviation, from 0.001 to 0.01, is accepted for this step by her ruling. The rerun differs from H2's recorded skills by +0.004 and +0.006, under 7% of the -0.090 headroom. The scratch panel digest difference (`92bf10a4...` against `08df8d19...`, cause not found) is a separate reproducibility finding: #813.
 3. The ceiling is H2's cross-fitted fit, not a bound; the candidate scores above it pooled. Whether H2's ceiling should be restated against the walk-forward candidate is H2's question.
 4. The step 3 diagnoses of #707 have not merged and are not read. The candidate is not changed by them.
 5. The outcome is the panel's `spread_bps`, not re-derived from first-published vintages (protocol §11). The as-of scarcity-state split (§7) was not run. No 2026 day is read. The declaration's `regime: 2027` has no days and is not scored.
