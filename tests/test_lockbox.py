@@ -469,6 +469,11 @@ NOT_ENTRY_POINTS = {
         "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
         "(tests/test_derived_features_631.py)"
     ),
+    "scripts/near_threshold_688.read_inputs": (
+        "reads the scored days' inputs as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "screen of #688; selects no model and scores no forecast, calls lockbox.require_unlocked on every day "
+        "before it reads one, and `refuse_locked` is tested (tests/test_near_threshold_688.py)"
+    ),
     "scripts/upper_bound_635.read_inputs": (
         "reads each input as of the decision instant at leads 1 to 5 on the lead-1 fold grid, for the upper-bound study of #635; "
         "selects no model and scores no forecast, calls lockbox.require_unlocked on every day before it reads one, and its `fit` "
@@ -519,6 +524,10 @@ NOT_ENTRY_POINTS = {
         "reads each scored day's as-of inputs at a lead for the descriptive "
         "diagnostic of the unwarned onsets (#560); compares nothing, and walks "
         "_as_of_folds, which refuses a locked day (tests/test_unwarned_onsets.py)"
+    ),
+    "scripts/spread_distribution_634.walk": (
+        "the #634 measurement's walk of a variant at one lead, as distribution_walk is; it refuses a locked "
+        "scored day itself (refuse_locked, tests/test_spread_distribution_634_script.py, LockboxTests) before any fit"
     ),
     "scripts/final_test_opening.distribution_walk": (
         "the final test opening's walk of the published distribution and as-of "
@@ -1041,6 +1050,8 @@ CRPS_SCORERS = {
     "scripts/quarter_end_remedy._crps": ("delegates", "one loss; " + _WALK),
     "scripts/desk_outputs.check_against_published": ("delegates", "compares the days `history_command` chose, after its `require_unlocked`"),
     "scripts/spread_distribution_632.crps_contract": ("delegates", "one loss on the contract's levels; `distribution_command` calls `require_unlocked` on the last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the published daily file is read to that day only (#632)"),
+    "scripts/spread_distribution_634.five_crps": ("delegates", "B3's secondary loss of one vector on its own five levels at one outcome; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634, ruling on #660 and #700)"),
+    "scripts/spread_distribution_634.five_twcrps": ("delegates", "the upper-tail loss on the same five levels; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634)"),
     "scripts/desk_outputs._series": ("delegates", "the series of days `history_command` chose, after its `require_unlocked`"),
 }
 
