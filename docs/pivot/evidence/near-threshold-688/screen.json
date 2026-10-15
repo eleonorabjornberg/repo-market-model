@@ -1,0 +1,4399 @@
+{
+ "block": 10,
+ "cells": 60,
+ "declaration": "metadata/near_threshold_688.json",
+ "first_day": "2018-06-29",
+ "last_day": "2025-12-31",
+ "panel_sha256": "da1412d0c5c9c4a35786438a47496e405c303676f75005c59948343507a06077",
+ "regimes": [
+  "2018-19",
+  "2020",
+  "2021-23",
+  "2024",
+  "2025-26",
+  "2027"
+ ],
+ "resamples": 1000,
+ "scope": {
+  "1": {
+   "ordinary_days": 1468,
+   "scored_days": 1873
+  },
+  "2": {
+   "ordinary_days": 1468,
+   "scored_days": 1873
+  },
+  "3": {
+   "ordinary_days": 1468,
+   "scored_days": 1873
+  },
+  "4": {
+   "ordinary_days": 1468,
+   "scored_days": 1873
+  },
+  "5": {
+   "ordinary_days": 1468,
+   "scored_days": 1873
+  }
+ },
+ "screen": {
+  "bill_x_band": {
+   "1": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 631,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.1525189786059351,
+       "with_events": 26,
+       "with_n": 46,
+       "with_rate": 0.5652173913043478,
+       "without_events": 26,
+       "without_n": 63,
+       "without_rate": 0.4126984126984127
+      },
+      "low": {
+       "difference": 0.002687211668401187,
+       "with_events": 6,
+       "with_n": 541,
+       "with_rate": 0.011090573012939002,
+       "without_events": 6,
+       "without_n": 714,
+       "without_rate": 0.008403361344537815
+      },
+      "near": {
+       "difference": 0.21212121212121215,
+       "with_events": 13,
+       "with_n": 44,
+       "with_rate": 0.29545454545454547,
+       "without_events": 5,
+       "without_n": 60,
+       "without_rate": 0.08333333333333333
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.4434836469846446,
+        0.16898848473173855
+       ],
+       "value": -0.07005865705790826
+      },
+      "raw_all": {
+       "interval": [
+        0.011324939135727326,
+        0.04506427894568663
+       ],
+       "value": 0.027109876606323614
+      },
+      "raw_high": {
+       "interval": [
+        0.047150502041266674,
+        0.26137111244019134
+       ],
+       "value": 0.1525189786059351
+      },
+      "raw_low": {
+       "interval": [
+        -0.0064483626803912945,
+        0.013189185443975855
+       ],
+       "value": 0.002687211668401187
+      },
+      "raw_near": {
+       "interval": [
+        0.08329741379310346,
+        0.33635912698412695
+       ],
+       "value": 0.21212121212121215
+      },
+      "stratified_all": {
+       "interval": [
+        0.013815160027638594,
+        0.045194297393813386
+       ],
+       "value": 0.02900915815436825
+      },
+      "stratified_near": {
+       "interval": [
+        0.0834795591675902,
+        0.33366093947751135
+       ],
+       "value": 0.21043727225403433
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 113,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.14561500275785993,
+       "with_events": 22,
+       "with_n": 37,
+       "with_rate": 0.5945945945945946,
+       "without_events": 22,
+       "without_n": 49,
+       "without_rate": 0.4489795918367347
+      },
+      "low": {
+       "difference": 0.007333682556312206,
+       "with_events": 2,
+       "with_n": 46,
+       "with_rate": 0.043478260869565216,
+       "without_events": 3,
+       "without_n": 83,
+       "without_rate": 0.03614457831325301
+      },
+      "near": {
+       "difference": 0.16462585034013605,
+       "with_events": 8,
+       "with_n": 30,
+       "with_rate": 0.26666666666666666,
+       "without_events": 5,
+       "without_n": 49,
+       "without_rate": 0.10204081632653061
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.00765538154574162,
+        0.48641011060262884
+       ],
+       "value": 0.21959388925878265
+      },
+      "raw_all": {
+       "interval": [
+        0.045306383274749784,
+        0.1939713377304669
+       ],
+       "value": 0.11743998435437344
+      },
+      "raw_high": {
+       "interval": [
+        0.020437352245862912,
+        0.27437106918238996
+       ],
+       "value": 0.14561500275785993
+      },
+      "raw_low": {
+       "interval": [
+        -0.051285288785288784,
+        0.08747503562081561
+       ],
+       "value": 0.007333682556312206
+      },
+      "raw_near": {
+       "interval": [
+        0.04730248917748918,
+        0.30183732443879
+       ],
+       "value": 0.16462585034013605
+      },
+      "stratified_all": {
+       "interval": [
+        0.027291982893740838,
+        0.15689942409711433
+       ],
+       "value": 0.091650881435506
+      },
+      "stratified_near": {
+       "interval": [
+        0.04730248917748918,
+        0.30183732443879
+       ],
+       "value": 0.16462585034013605
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 90,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.012727272727272728,
+       "with_events": 2,
+       "with_n": 88,
+       "with_rate": 0.022727272727272728,
+       "without_events": 1,
+       "without_n": 100,
+       "without_rate": 0.01
+      },
+      "near": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 3,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.028559434968731756,
+        1.8938399128569474
+       ],
+       "value": 0.2700599492736915
+      },
+      "raw_all": {
+       "interval": [
+        -0.009708737864077669,
+        0.04404863890644381
+       ],
+       "value": 0.012698412698412698
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        -0.01,
+        0.04543855021383111
+       ],
+       "value": 0.012727272727272728
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.012650596693115575,
+        0.036912396137186124
+       ],
+       "value": 0.009269080009222965
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 260,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 260,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 326,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 83,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 1,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.024390243902439025,
+       "with_events": 2,
+       "with_n": 82,
+       "with_rate": 0.024390243902439025,
+       "without_events": 0,
+       "without_n": 113,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 85,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.20779220779220775,
+       "with_events": 4,
+       "with_n": 7,
+       "with_rate": 0.5714285714285714,
+       "without_events": 4,
+       "without_n": 11,
+       "without_rate": 0.36363636363636365
+      },
+      "low": {
+       "difference": -0.021739130434782608,
+       "with_events": 0,
+       "with_n": 65,
+       "with_rate": 0.0,
+       "without_events": 2,
+       "without_n": 92,
+       "without_rate": 0.021739130434782608
+      },
+      "near": {
+       "difference": 0.38461538461538464,
+       "with_events": 5,
+       "with_n": 13,
+       "with_rate": 0.38461538461538464,
+       "without_events": 0,
+       "without_n": 8,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.18885601863265075,
+        0.5962663084818411
+       ],
+       "value": 0.18641520898873365
+      },
+      "raw_all": {
+       "interval": [
+        0.0033353923330338453,
+        0.10473140607634276
+       ],
+       "value": 0.05182829888712241
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.0,
+        0.0888487991970252
+       ],
+       "value": 0.042166715718548936
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "2": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 629,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.0934551886792453,
+       "with_events": 24,
+       "with_n": 53,
+       "with_rate": 0.4528301886792453,
+       "without_events": 23,
+       "without_n": 64,
+       "without_rate": 0.359375
+      },
+      "low": {
+       "difference": 0.007998033184776014,
+       "with_events": 8,
+       "with_n": 534,
+       "with_rate": 0.0149812734082397,
+       "without_events": 5,
+       "without_n": 716,
+       "without_rate": 0.006983240223463687
+      },
+      "near": {
+       "difference": 0.1569814366424536,
+       "with_events": 13,
+       "with_n": 42,
+       "with_rate": 0.30952380952380953,
+       "without_events": 9,
+       "without_n": 59,
+       "without_rate": 0.15254237288135594
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.2689854173398703,
+        0.2187655368805869
+       ],
+       "value": 0.012312689272305999
+      },
+      "raw_all": {
+       "interval": [
+        0.011703949738041865,
+        0.047126326796790116
+       ],
+       "value": 0.027442011176148452
+      },
+      "raw_high": {
+       "interval": [
+        -0.014530311063980212,
+        0.20757540596601
+       ],
+       "value": 0.0934551886792453
+      },
+      "raw_low": {
+       "interval": [
+        -0.0006859263450047019,
+        0.01749799204169839
+       ],
+       "value": 0.007998033184776014
+      },
+      "raw_near": {
+       "interval": [
+        0.04054476261443478,
+        0.278290188991065
+       ],
+       "value": 0.1569814366424536
+      },
+      "stratified_all": {
+       "interval": [
+        0.01237735873299636,
+        0.045017053125985515
+       ],
+       "value": 0.027104126219529387
+      },
+      "stratified_near": {
+       "interval": [
+        0.038196249722518935,
+        0.2780025068345549
+       ],
+       "value": 0.15484945192174276
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 112,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.09502262443438914,
+       "with_events": 19,
+       "with_n": 39,
+       "with_rate": 0.48717948717948717,
+       "without_events": 20,
+       "without_n": 51,
+       "without_rate": 0.39215686274509803
+      },
+      "low": {
+       "difference": 0.016799292661361626,
+       "with_events": 2,
+       "with_n": 39,
+       "with_rate": 0.05128205128205128,
+       "without_events": 3,
+       "without_n": 87,
+       "without_rate": 0.034482758620689655
+      },
+      "near": {
+       "difference": 0.1644385026737968,
+       "with_events": 11,
+       "with_n": 34,
+       "with_rate": 0.3235294117647059,
+       "without_events": 7,
+       "without_n": 44,
+       "without_rate": 0.1590909090909091
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        0.10140529917742558,
+        0.6859264843725862
+       ],
+       "value": 0.3079108016060239
+      },
+      "raw_all": {
+       "interval": [
+        0.053399037852200334,
+        0.19072760302983327
+       ],
+       "value": 0.12087912087912087
+      },
+      "raw_high": {
+       "interval": [
+        -0.046032812082330926,
+        0.22507556382236688
+       ],
+       "value": 0.09502262443438914
+      },
+      "raw_low": {
+       "interval": [
+        -0.04260321797207042,
+        0.08559232385576628
+       ],
+       "value": 0.016799292661361626
+      },
+      "raw_near": {
+       "interval": [
+        0.03122596153846154,
+        0.2923181276088251
+       ],
+       "value": 0.1644385026737968
+      },
+      "stratified_all": {
+       "interval": [
+        0.019580182945089734,
+        0.1538501511505721
+       ],
+       "value": 0.0836591338717993
+      },
+      "stratified_near": {
+       "interval": [
+        0.03122596153846154,
+        0.2923181276088251
+       ],
+       "value": 0.1644385026737968
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 90,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": 0.5,
+       "with_events": 1,
+       "with_n": 2,
+       "with_rate": 0.5,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.0015932627745533171,
+       "with_events": 1,
+       "with_n": 87,
+       "with_rate": 0.011494252873563218,
+       "without_events": 1,
+       "without_n": 101,
+       "without_rate": 0.009900990099009901
+      },
+      "near": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.08960472780775636,
+        1.399460446147319
+       ],
+       "value": 0.18197674418604648
+      },
+      "raw_all": {
+       "interval": [
+        -0.00980392156862745,
+        0.04586305044821043
+       ],
+       "value": 0.012698412698412698
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.012203262066692356,
+        0.03954519464951127
+       ],
+       "value": 0.010387596899224806
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 260,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 260,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 326,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 82,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 1,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.024691358024691357,
+       "with_events": 2,
+       "with_n": 81,
+       "with_rate": 0.024691358024691357,
+       "without_events": 0,
+       "without_n": 114,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 85,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.06363636363636366,
+       "with_events": 4,
+       "with_n": 11,
+       "with_rate": 0.36363636363636365,
+       "without_events": 3,
+       "without_n": 10,
+       "without_rate": 0.3
+      },
+      "low": {
+       "difference": 0.03341248303934871,
+       "with_events": 3,
+       "with_n": 67,
+       "with_rate": 0.04477611940298507,
+       "without_events": 1,
+       "without_n": 88,
+       "without_rate": 0.011363636363636364
+      },
+      "near": {
+       "difference": 0.13186813186813184,
+       "with_events": 2,
+       "with_n": 7,
+       "with_rate": 0.2857142857142857,
+       "without_events": 2,
+       "without_n": 13,
+       "without_rate": 0.15384615384615385
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.2162297472164285,
+        1.0563835957021255
+       ],
+       "value": 0.30341087894341834
+      },
+      "raw_all": {
+       "interval": [
+        0.0008588298443370848,
+        0.10690211744921396
+       ],
+       "value": 0.05182829888712241
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        0.0,
+        0.08387451498910324
+       ],
+       "value": 0.03341248303934871
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.002741776656161583,
+        0.09039719784712608
+       ],
+       "value": 0.03610302916763841
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "3": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 623,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.14090019569471623,
+       "with_events": 21,
+       "with_n": 49,
+       "with_rate": 0.42857142857142855,
+       "without_events": 21,
+       "without_n": 73,
+       "without_rate": 0.2876712328767123
+      },
+      "low": {
+       "difference": 0.010240884559694616,
+       "with_events": 10,
+       "with_n": 535,
+       "with_rate": 0.018691588785046728,
+       "without_events": 6,
+       "without_n": 710,
+       "without_rate": 0.008450704225352112
+      },
+      "near": {
+       "difference": 0.15591397849462363,
+       "with_events": 13,
+       "with_n": 39,
+       "with_rate": 0.3333333333333333,
+       "without_events": 11,
+       "without_n": 62,
+       "without_rate": 0.1774193548387097
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.6864439940589426,
+        -0.04215786529387564
+       ],
+       "value": -0.232587731084114
+      },
+      "raw_all": {
+       "interval": [
+        0.009295098956783274,
+        0.042827781913461774
+       ],
+       "value": 0.025655589009089444
+      },
+      "raw_high": {
+       "interval": [
+        0.02967121588089332,
+        0.26212837497681574
+       ],
+       "value": 0.14090019569471623
+      },
+      "raw_low": {
+       "interval": [
+        0.00020927951556719466,
+        0.021687256950631215
+       ],
+       "value": 0.010240884559694616
+      },
+      "raw_near": {
+       "interval": [
+        0.01639033481138747,
+        0.3099911320326981
+       ],
+       "value": 0.15591397849462363
+      },
+      "stratified_all": {
+       "interval": [
+        0.015336380741315998,
+        0.04937059248932422
+       ],
+       "value": 0.03162276424634009
+      },
+      "stratified_near": {
+       "interval": [
+        0.029546093497711017,
+        0.3274160416975336
+       ],
+       "value": 0.166212142959667
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 111,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.09627479438800196,
+       "with_events": 17,
+       "with_n": 39,
+       "with_rate": 0.4358974358974359,
+       "without_events": 18,
+       "without_n": 53,
+       "without_rate": 0.33962264150943394
+      },
+      "low": {
+       "difference": 0.050914205344585094,
+       "with_events": 4,
+       "with_n": 45,
+       "with_rate": 0.08888888888888889,
+       "without_events": 3,
+       "without_n": 79,
+       "without_rate": 0.0379746835443038
+      },
+      "near": {
+       "difference": 0.17429193899782133,
+       "with_events": 10,
+       "with_n": 27,
+       "with_rate": 0.37037037037037035,
+       "without_events": 10,
+       "without_n": 51,
+       "without_rate": 0.19607843137254902
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.1703988752956752,
+        0.35998452964377925
+       ],
+       "value": 0.11365550039410655
+      },
+      "raw_all": {
+       "interval": [
+        0.04244796883299399,
+        0.17443638666781608
+       ],
+       "value": 0.10988037217545413
+      },
+      "raw_high": {
+       "interval": [
+        -0.029797757274172373,
+        0.23228686672248777
+       ],
+       "value": 0.09627479438800196
+      },
+      "raw_low": {
+       "interval": [
+        -0.028640978998856256,
+        0.15225752508361198
+       ],
+       "value": 0.050914205344585094
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.034664138765764116,
+        0.15880631071786297
+       ],
+       "value": 0.09739186349236223
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 88,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 3,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.00196078431372549,
+       "with_events": 1,
+       "with_n": 85,
+       "with_rate": 0.011764705882352941,
+       "without_events": 1,
+       "without_n": 102,
+       "without_rate": 0.00980392156862745
+      },
+      "near": {
+       "difference": 0.5,
+       "with_events": 1,
+       "with_n": 2,
+       "with_rate": 0.5,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.4118770619796218,
+        1.208441540002354
+       ],
+       "value": -0.017928428792081785
+      },
+      "raw_all": {
+       "interval": [
+        -0.009615384615384616,
+        0.04603174603174603
+       ],
+       "value": 0.013381478334749364
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.011895399405436019,
+        0.04469065253280578
+       ],
+       "value": 0.013621387216206704
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 258,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 258,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 328,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 82,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.024390243902439025,
+       "with_events": 2,
+       "with_n": 82,
+       "with_rate": 0.024390243902439025,
+       "without_events": 0,
+       "without_n": 113,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 84,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.2444444444444444,
+       "with_events": 4,
+       "with_n": 9,
+       "with_rate": 0.4444444444444444,
+       "without_events": 3,
+       "without_n": 15,
+       "without_rate": 0.2
+      },
+      "low": {
+       "difference": 0.02342657342657343,
+       "with_events": 3,
+       "with_n": 65,
+       "with_rate": 0.046153846153846156,
+       "without_events": 2,
+       "without_n": 88,
+       "without_rate": 0.022727272727272728
+      },
+      "near": {
+       "difference": 0.0888888888888889,
+       "with_events": 2,
+       "with_n": 10,
+       "with_rate": 0.2,
+       "without_events": 1,
+       "without_n": 9,
+       "without_rate": 0.1111111111111111
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.7852774087598802,
+        0.3317710695768924
+       ],
+       "value": -0.0531868882543598
+      },
+      "raw_all": {
+       "interval": [
+        0.005952380952380952,
+        0.1101467342187968
+       ],
+       "value": 0.05357142857142857
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        -0.005724137931034483,
+        0.06520949406701272
+       ],
+       "value": 0.02342657342657343
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.008893460776001135,
+        0.10935094447868435
+       ],
+       "value": 0.05642072615648356
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "4": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 619,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.1585999453103637,
+       "with_events": 23,
+       "with_n": 53,
+       "with_rate": 0.4339622641509434,
+       "without_events": 19,
+       "without_n": 69,
+       "without_rate": 0.2753623188405797
+      },
+      "low": {
+       "difference": 0.006475332068311194,
+       "with_events": 10,
+       "with_n": 527,
+       "with_rate": 0.018975332068311195,
+       "without_events": 9,
+       "without_n": 720,
+       "without_rate": 0.0125
+      },
+      "near": {
+       "difference": 0.11538461538461539,
+       "with_events": 11,
+       "with_n": 39,
+       "with_rate": 0.28205128205128205,
+       "without_events": 10,
+       "without_n": 60,
+       "without_rate": 0.16666666666666666
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.428595321908161,
+        0.1266905804193025
+       ],
+       "value": -0.0557298546956424
+      },
+      "raw_all": {
+       "interval": [
+        0.010169974130333742,
+        0.04444896437622324
+       ],
+       "value": 0.02632385149496415
+      },
+      "raw_high": {
+       "interval": [
+        0.04382962796616517,
+        0.2575048514703687
+       ],
+       "value": 0.1585999453103637
+      },
+      "raw_low": {
+       "interval": [
+        -0.002516027674334233,
+        0.016317426274051902
+       ],
+       "value": 0.006475332068311194
+      },
+      "raw_near": {
+       "interval": [
+        0.01820402083943399,
+        0.2131280377549034
+       ],
+       "value": 0.11538461538461539
+      },
+      "stratified_all": {
+       "interval": [
+        0.01287286057768845,
+        0.04453719519739702
+       ],
+       "value": 0.02779087591380817
+      },
+      "stratified_near": {
+       "interval": [
+        0.016873928414792818,
+        0.211282995702885
+       ],
+       "value": 0.11375661375661375
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 111,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.13627450980392158,
+       "with_events": 18,
+       "with_n": 40,
+       "with_rate": 0.45,
+       "without_events": 16,
+       "without_n": 51,
+       "without_rate": 0.3137254901960784
+      },
+      "low": {
+       "difference": 0.047619047619047616,
+       "with_events": 5,
+       "with_n": 42,
+       "with_rate": 0.11904761904761904,
+       "without_events": 6,
+       "without_n": 84,
+       "without_rate": 0.07142857142857142
+      },
+      "near": {
+       "difference": 0.08836206896551724,
+       "with_events": 8,
+       "with_n": 29,
+       "with_rate": 0.27586206896551724,
+       "without_events": 9,
+       "without_n": 48,
+       "without_rate": 0.1875
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        0.013202558977958613,
+        0.46403337662666316
+       ],
+       "value": 0.204699278689779
+      },
+      "raw_all": {
+       "interval": [
+        0.04309411119781887,
+        0.17521165590067506
+       ],
+       "value": 0.10988037217545413
+      },
+      "raw_high": {
+       "interval": [
+        0.008839957035445763,
+        0.2541660886052534
+       ],
+       "value": 0.13627450980392158
+      },
+      "raw_low": {
+       "interval": [
+        -0.025998006707802404,
+        0.14571331310301897
+       ],
+       "value": 0.047619047619047616
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.0261128295068912,
+        0.1442723147842972
+       ],
+       "value": 0.0873879392489742
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 86,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 2,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.002671312427409988,
+       "with_events": 1,
+       "with_n": 82,
+       "with_rate": 0.012195121951219513,
+       "without_events": 1,
+       "without_n": 105,
+       "without_rate": 0.009523809523809525
+      },
+      "near": {
+       "difference": 0.5,
+       "with_events": 1,
+       "with_n": 2,
+       "with_rate": 0.5,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.11885858977618768,
+        1.6582244864729994
+       ],
+       "value": 0.25043625534156555
+      },
+      "raw_all": {
+       "interval": [
+        -0.009523809523809525,
+        0.047619047619047616
+       ],
+       "value": 0.014081502026882867
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.015705380969542267,
+        0.04110434075425181
+       ],
+       "value": 0.010554983389685656
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 256,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 256,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 330,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 82,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 1,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.024691358024691357,
+       "with_events": 2,
+       "with_n": 81,
+       "with_rate": 0.024691358024691357,
+       "without_events": 0,
+       "without_n": 114,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 84,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.3,
+       "with_events": 5,
+       "with_n": 10,
+       "with_rate": 0.5,
+       "without_events": 3,
+       "without_n": 15,
+       "without_rate": 0.2
+      },
+      "low": {
+       "difference": 0.007314524555903867,
+       "with_events": 2,
+       "with_n": 66,
+       "with_rate": 0.030303030303030304,
+       "without_events": 2,
+       "without_n": 87,
+       "without_rate": 0.022988505747126436
+      },
+      "near": {
+       "difference": 0.15,
+       "with_events": 2,
+       "with_n": 8,
+       "with_rate": 0.25,
+       "without_events": 1,
+       "without_n": 10,
+       "without_rate": 0.1
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.424411217596265,
+        0.48281082261713765
+       ],
+       "value": 0.04057747738726425
+      },
+      "raw_all": {
+       "interval": [
+        0.002216589252086266,
+        0.11310643813550787
+       ],
+       "value": 0.05357142857142857
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        -0.02326107715813598,
+        0.043478260869565216
+       ],
+       "value": 0.007314524555903867
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.0,
+        0.10545127807995279
+       ],
+       "value": 0.051397635139967986
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "5": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 503,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.08493150684931511,
+       "with_events": 18,
+       "with_n": 45,
+       "with_rate": 0.4,
+       "without_events": 23,
+       "without_n": 73,
+       "without_rate": 0.3150684931506849
+      },
+      "low": {
+       "difference": 0.0041025641025641026,
+       "with_events": 8,
+       "with_n": 429,
+       "with_rate": 0.018648018648018648,
+       "without_events": 12,
+       "without_n": 825,
+       "without_rate": 0.014545454545454545
+      },
+      "near": {
+       "difference": 0.03242408646423059,
+       "with_events": 7,
+       "with_n": 29,
+       "with_rate": 0.2413793103448276,
+       "without_events": 14,
+       "without_n": 67,
+       "without_rate": 0.208955223880597
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.6775143030919795,
+        0.2927447703510461
+       ],
+       "value": -0.1083296903262787
+      },
+      "raw_all": {
+       "interval": [
+        -0.0010052145462344346,
+        0.03294586025437949
+       ],
+       "value": 0.014829159756486993
+      },
+      "raw_high": {
+       "interval": [
+        -0.013834813296903456,
+        0.1717257318952234
+       ],
+       "value": 0.08493150684931511
+      },
+      "raw_low": {
+       "interval": [
+        -0.007266897176836721,
+        0.017548705263986962
+       ],
+       "value": 0.0041025641025641026
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.0028914648254774818,
+        0.030405698261508525
+       ],
+       "value": 0.016435598040706142
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 90,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.062211981566820285,
+       "with_events": 13,
+       "with_n": 31,
+       "with_rate": 0.41935483870967744,
+       "without_events": 20,
+       "without_n": 56,
+       "without_rate": 0.35714285714285715
+      },
+      "low": {
+       "difference": 0.021502209131075103,
+       "with_events": 4,
+       "with_n": 35,
+       "with_rate": 0.11428571428571428,
+       "without_events": 9,
+       "without_n": 97,
+       "without_rate": 0.09278350515463918
+      },
+      "near": {
+       "difference": 0.11519607843137256,
+       "with_events": 7,
+       "with_n": 24,
+       "with_rate": 0.2916666666666667,
+       "without_events": 9,
+       "without_n": 51,
+       "without_rate": 0.17647058823529413
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.0038345872577705917,
+        0.7825294073346506
+       ],
+       "value": 0.26273063091978055
+      },
+      "raw_all": {
+       "interval": [
+        0.010037092321220421,
+        0.14615313262108617
+       ],
+       "value": 0.08039215686274509
+      },
+      "raw_high": {
+       "interval": [
+        -0.05920490620490618,
+        0.17688888888888887
+       ],
+       "value": 0.062211981566820285
+      },
+      "raw_low": {
+       "interval": [
+        -0.06843280832642534,
+        0.11885872525751884
+       ],
+       "value": 0.021502209131075103
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.0013908634460070503,
+        0.11719471449017418
+       ],
+       "value": 0.05927067476919411
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 69,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": 0.5,
+       "with_events": 1,
+       "with_n": 2,
+       "with_rate": 0.5,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.007187894073139975,
+       "with_events": 1,
+       "with_n": 65,
+       "with_rate": 0.015384615384615385,
+       "without_events": 1,
+       "without_n": 122,
+       "without_rate": 0.00819672131147541
+      },
+      "near": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 2,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.14260530919732622,
+        1.0
+       ],
+       "value": 0.0600520413078206
+      },
+      "raw_all": {
+       "interval": [
+        -0.008130081300813009,
+        0.062151514399489904
+       ],
+       "value": 0.021048999309868876
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.010601324713946533,
+        0.05576041192301576
+       ],
+       "value": 0.019784963933824343
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 209,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 209,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 377,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 67,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 1,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.007399577167019028,
+       "with_events": 1,
+       "with_n": 66,
+       "with_rate": 0.015151515151515152,
+       "without_events": 1,
+       "without_n": 129,
+       "without_rate": 0.007751937984496124
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 68,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.14935064935064937,
+       "with_events": 4,
+       "with_n": 11,
+       "with_rate": 0.36363636363636365,
+       "without_events": 3,
+       "without_n": 14,
+       "without_rate": 0.21428571428571427
+      },
+      "low": {
+       "difference": 0.027037037037037033,
+       "with_events": 2,
+       "with_n": 54,
+       "with_rate": 0.037037037037037035,
+       "without_events": 1,
+       "without_n": 100,
+       "without_rate": 0.01
+      },
+      "near": {
+       "difference": -0.35714285714285715,
+       "with_events": 0,
+       "with_n": 3,
+       "with_rate": 0.0,
+       "without_events": 5,
+       "without_n": 14,
+       "without_rate": 0.35714285714285715
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -2.043995670603885,
+        0.7737432439586419
+       ],
+       "value": 0.03914758322998024
+      },
+      "raw_all": {
+       "interval": [
+        -0.02018199452757887,
+        0.06403731090812428
+       ],
+       "value": 0.017922794117647065
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        -0.004318060971286769,
+        0.085307042002403
+       ],
+       "value": 0.027037037037037033
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.009264956911571816,
+        0.05792864513615721
+       ],
+       "value": 0.017221160043212676
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   }
+  },
+  "post_month_end_window": {
+   "1": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 243,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": -0.029343629343629385,
+       "with_events": 16,
+       "with_n": 35,
+       "with_rate": 0.45714285714285713,
+       "without_events": 36,
+       "without_n": 74,
+       "without_rate": 0.4864864864864865
+      },
+      "low": {
+       "difference": 0.007158396048918157,
+       "with_events": 3,
+       "with_n": 192,
+       "with_rate": 0.015625,
+       "without_events": 9,
+       "without_n": 1063,
+       "without_rate": 0.008466603951081843
+      },
+      "near": {
+       "difference": 0.017045454545454558,
+       "with_events": 3,
+       "with_n": 16,
+       "with_rate": 0.1875,
+       "without_events": 15,
+       "without_n": 88,
+       "without_rate": 0.17045454545454544
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        0.33069597111035864,
+        1.9018014704172623
+       ],
+       "value": 0.7049650638309265
+      },
+      "raw_all": {
+       "interval": [
+        0.008023939183397362,
+        0.07545214807680914
+       ],
+       "value": 0.041555387587133626
+      },
+      "raw_high": {
+       "interval": [
+        -0.21776335635468763,
+        0.16119047619047616
+       ],
+       "value": -0.029343629343629385
+      },
+      "raw_low": {
+       "interval": [
+        -0.0062854007360838085,
+        0.022629902466523442
+       ],
+       "value": 0.007158396048918157
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.01347067586065576,
+        0.03826666147144761
+       ],
+       "value": 0.012260291124251078
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 48,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": -0.01666666666666672,
+       "with_events": 13,
+       "with_n": 26,
+       "with_rate": 0.5,
+       "without_events": 31,
+       "without_n": 60,
+       "without_rate": 0.5166666666666667
+      },
+      "low": {
+       "difference": 0.07777777777777778,
+       "with_events": 1,
+       "with_n": 9,
+       "with_rate": 0.1111111111111111,
+       "without_events": 4,
+       "without_n": 120,
+       "without_rate": 0.03333333333333333
+      },
+      "near": {
+       "difference": 0.07925407925407926,
+       "with_events": 3,
+       "with_n": 13,
+       "with_rate": 0.23076923076923078,
+       "without_events": 10,
+       "without_n": 66,
+       "without_rate": 0.15151515151515152
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        0.4094193922972287,
+        2.5531833853324875
+       ],
+       "value": 0.8109899288739786
+      },
+      "raw_all": {
+       "interval": [
+        0.03679088099022738,
+        0.31116740688795386
+       ],
+       "value": 0.171239837398374
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.09276690400637212,
+        0.1668260292813334
+       ],
+       "value": 0.03236605384627501
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 33,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 3,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.017399804496578693,
+       "with_events": 1,
+       "with_n": 33,
+       "with_rate": 0.030303030303030304,
+       "without_events": 2,
+       "without_n": 155,
+       "without_rate": 0.012903225806451613
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 4,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.20199479771887602,
+        0.8594282109885067
+       ],
+       "value": 0.20226929107402847
+      },
+      "raw_all": {
+       "interval": [
+        -0.01852426961122613,
+        0.06516765285996048
+       ],
+       "value": 0.017957351290684626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        -0.01948051948051948,
+        0.06427741307283977
+       ],
+       "value": 0.017399804496578693
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.020280732176813674,
+        0.058188322721587964
+       ],
+       "value": 0.014325130575550557
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 98,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 98,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 488,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 31,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 2,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.028458662235147487,
+       "with_events": 1,
+       "with_n": 29,
+       "with_rate": 0.034482758620689655,
+       "without_events": 1,
+       "without_n": 166,
+       "without_rate": 0.006024096385542169
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 33,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": -0.025974025974025983,
+       "with_events": 3,
+       "with_n": 7,
+       "with_rate": 0.42857142857142855,
+       "without_events": 5,
+       "without_n": 11,
+       "without_rate": 0.45454545454545453
+      },
+      "low": {
+       "difference": -0.014925373134328358,
+       "with_events": 0,
+       "with_n": 23,
+       "with_rate": 0.0,
+       "without_events": 2,
+       "without_n": 134,
+       "without_rate": 0.014925373134328358
+      },
+      "near": {
+       "difference": -0.2777777777777778,
+       "with_events": 0,
+       "with_n": 3,
+       "with_rate": 0.0,
+       "without_events": 5,
+       "without_n": 18,
+       "without_rate": 0.2777777777777778
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.8336609456252513,
+        6.353486638222806
+       ],
+       "value": 1.5447087258630616
+      },
+      "raw_all": {
+       "interval": [
+        -0.03731004479086321,
+        0.08697955657932621
+       ],
+       "value": 0.017289459007250416
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.056360588419046086,
+        0.04852922048414446
+       ],
+       "value": -0.00941771918670101
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "2": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 243,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.055555555555555525,
+       "with_events": 12,
+       "with_n": 27,
+       "with_rate": 0.4444444444444444,
+       "without_events": 35,
+       "without_n": 90,
+       "without_rate": 0.3888888888888889
+      },
+      "low": {
+       "difference": 0.0053924846691234,
+       "with_events": 3,
+       "with_n": 201,
+       "with_rate": 0.014925373134328358,
+       "without_events": 10,
+       "without_n": 1049,
+       "without_rate": 0.009532888465204958
+      },
+      "near": {
+       "difference": 0.2922480620155039,
+       "with_events": 7,
+       "with_n": 15,
+       "with_rate": 0.4666666666666667,
+       "without_events": 15,
+       "without_n": 86,
+       "without_rate": 0.1744186046511628
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.20655209828235555,
+        0.5091620211557246
+       ],
+       "value": 0.18652608222866396
+      },
+      "raw_all": {
+       "interval": [
+        0.01177579696954737,
+        0.07777145056782098
+       ],
+       "value": 0.041555387587133626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        -0.007730672066725479,
+        0.02282969905272498
+       ],
+       "value": 0.0053924846691234
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.008429021536507472,
+        0.06519616690463736
+       ],
+       "value": 0.03380422394501194
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 48,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.08333333333333331,
+       "with_events": 9,
+       "with_n": 18,
+       "with_rate": 0.5,
+       "without_events": 30,
+       "without_n": 72,
+       "without_rate": 0.4166666666666667
+      },
+      "low": {
+       "difference": 0.026136363636363638,
+       "with_events": 1,
+       "with_n": 16,
+       "with_rate": 0.0625,
+       "without_events": 4,
+       "without_n": 110,
+       "without_rate": 0.03636363636363636
+      },
+      "near": {
+       "difference": 0.328125,
+       "with_events": 7,
+       "with_n": 14,
+       "with_rate": 0.5,
+       "without_events": 11,
+       "without_n": 64,
+       "without_rate": 0.171875
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        0.054398041835432905,
+        0.6816146552763918
+       ],
+       "value": 0.2183975388417717
+      },
+      "raw_all": {
+       "interval": [
+        0.03655428163746645,
+        0.3057425655211911
+       ],
+       "value": 0.171239837398374
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.009977943313066435,
+        0.2555306609143245
+       ],
+       "value": 0.13384147835890395
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 33,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 1,
+       "without_n": 4,
+       "without_rate": 0.25
+      },
+      "low": {
+       "difference": 0.0238514173998045,
+       "with_events": 1,
+       "with_n": 33,
+       "with_rate": 0.030303030303030304,
+       "without_events": 1,
+       "without_n": 155,
+       "without_rate": 0.0064516129032258064
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 3,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.4024980701583767,
+        0.16405065107293532
+       ],
+       "value": -0.21558965169671862
+      },
+      "raw_all": {
+       "interval": [
+        -0.012903225806451613,
+        0.06827180527383364
+       ],
+       "value": 0.017957351290684626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.008843498676842466,
+        0.0731417370384901
+       ],
+       "value": 0.021828770400838943
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 98,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 98,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 488,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 31,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 1,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.02727272727272727,
+       "with_events": 1,
+       "with_n": 30,
+       "with_rate": 0.03333333333333333,
+       "without_events": 1,
+       "without_n": 165,
+       "without_rate": 0.006060606060606061
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 33,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.06730769230769229,
+       "with_events": 3,
+       "with_n": 8,
+       "with_rate": 0.375,
+       "without_events": 4,
+       "without_n": 13,
+       "without_rate": 0.3076923076923077
+      },
+      "low": {
+       "difference": -0.030534351145038167,
+       "with_events": 0,
+       "with_n": 24,
+       "with_rate": 0.0,
+       "without_events": 4,
+       "without_n": 131,
+       "without_rate": 0.030534351145038167
+      },
+      "near": {
+       "difference": -0.21052631578947367,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 4,
+       "without_n": 19,
+       "without_rate": 0.21052631578947367
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -2.968703463623843,
+        4.409709877925548
+       ],
+       "value": 0.8834567132683876
+      },
+      "raw_all": {
+       "interval": [
+        -0.04120313126282931,
+        0.08385133118959726
+       ],
+       "value": 0.017289459007250416
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.06374345099835986,
+        0.07417990322980746
+       ],
+       "value": 0.002014970378516444
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "3": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 243,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.29158878504672897,
+       "with_events": 9,
+       "with_n": 15,
+       "with_rate": 0.6,
+       "without_events": 33,
+       "without_n": 107,
+       "without_rate": 0.308411214953271
+      },
+      "low": {
+       "difference": 0.012936309338983362,
+       "with_events": 5,
+       "with_n": 212,
+       "with_rate": 0.02358490566037736,
+       "without_events": 11,
+       "without_n": 1033,
+       "without_rate": 0.010648596321393998
+      },
+      "near": {
+       "difference": 0.31176470588235294,
+       "with_events": 8,
+       "with_n": 16,
+       "with_rate": 0.5,
+       "without_events": 16,
+       "without_n": 85,
+       "without_rate": 0.18823529411764706
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.114564066287847,
+        0.053310097176335024
+       ],
+       "value": -0.21736010259267302
+      },
+      "raw_all": {
+       "interval": [
+        0.010157644837781431,
+        0.07780453010527387
+       ],
+       "value": 0.041555387587133626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        -0.0043210219314272795,
+        0.03131269839079204
+       ],
+       "value": 0.012936309338983362
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.019039980498574152,
+        0.08137736143859622
+       ],
+       "value": 0.05058787089635128
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 48,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.40476190476190477,
+       "with_events": 6,
+       "with_n": 8,
+       "with_rate": 0.75,
+       "without_events": 29,
+       "without_n": 84,
+       "without_rate": 0.34523809523809523
+      },
+      "low": {
+       "difference": 0.07959595959595958,
+       "with_events": 3,
+       "with_n": 25,
+       "with_rate": 0.12,
+       "without_events": 4,
+       "without_n": 99,
+       "without_rate": 0.04040404040404041
+      },
+      "near": {
+       "difference": 0.34285714285714286,
+       "with_events": 8,
+       "with_n": 15,
+       "with_rate": 0.5333333333333333,
+       "without_events": 12,
+       "without_n": 63,
+       "without_rate": 0.19047619047619047
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.1990029877843635,
+        -0.04365509373256195
+       ],
+       "value": -0.2900281677080849
+      },
+      "raw_all": {
+       "interval": [
+        0.04190845918787095,
+        0.30821139512139234
+       ],
+       "value": 0.171239837398374
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.09773223457681839,
+        0.3472607413621595
+       ],
+       "value": 0.2209042136776548
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 33,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 4,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.023809523809523808,
+       "with_events": 1,
+       "with_n": 33,
+       "with_rate": 0.030303030303030304,
+       "without_events": 1,
+       "without_n": 154,
+       "without_rate": 0.006493506493506494
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 1,
+       "without_n": 4,
+       "without_rate": 0.25
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.0305687778226889,
+        0.16355354458979748
+       ],
+       "value": -0.2016928571428569
+      },
+      "raw_all": {
+       "interval": [
+        -0.012907415165479682,
+        0.07252104377104365
+       ],
+       "value": 0.017957351290684626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.009177355249534405,
+        0.07748807381811812
+       ],
+       "value": 0.021579220779220778
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 98,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 98,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 488,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 31,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.026160503540519277,
+       "with_events": 1,
+       "with_n": 31,
+       "with_rate": 0.03225806451612903,
+       "without_events": 1,
+       "without_n": 164,
+       "without_rate": 0.006097560975609756
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 33,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.19327731092436973,
+       "with_events": 3,
+       "with_n": 7,
+       "with_rate": 0.42857142857142855,
+       "without_events": 4,
+       "without_n": 17,
+       "without_rate": 0.23529411764705882
+      },
+      "low": {
+       "difference": -0.0390625,
+       "with_events": 0,
+       "with_n": 25,
+       "with_rate": 0.0,
+       "without_events": 5,
+       "without_n": 128,
+       "without_rate": 0.0390625
+      },
+      "near": {
+       "difference": -0.16666666666666666,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 3,
+       "without_n": 18,
+       "without_rate": 0.16666666666666666
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -2.9534942722047064,
+        3.8143715876731816
+       ],
+       "value": 0.64247637006453
+      },
+      "raw_all": {
+       "interval": [
+        -0.04101941949434465,
+        0.09247311827956989
+       ],
+       "value": 0.017289459007250416
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.05670680524690374,
+        0.1092802336593767
+       ],
+       "value": 0.006181390143892678
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "4": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 243,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.29158878504672897,
+       "with_events": 9,
+       "with_n": 15,
+       "with_rate": 0.6,
+       "without_events": 33,
+       "without_n": 107,
+       "without_rate": 0.308411214953271
+      },
+      "low": {
+       "difference": 0.026550387596899226,
+       "with_events": 8,
+       "with_n": 215,
+       "with_rate": 0.037209302325581395,
+       "without_events": 11,
+       "without_n": 1032,
+       "without_rate": 0.01065891472868217
+      },
+      "near": {
+       "difference": 0.19856887298747766,
+       "with_events": 5,
+       "with_n": 13,
+       "with_rate": 0.38461538461538464,
+       "without_events": 16,
+       "without_n": 86,
+       "without_rate": 0.18604651162790697
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.0518244573048086,
+        0.02034258031960781
+       ],
+       "value": -0.24742508105486216
+      },
+      "raw_all": {
+       "interval": [
+        0.009862274094410926,
+        0.07662764302239151
+       ],
+       "value": 0.041555387587133626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        0.00248255913696445,
+        0.05675477902197751
+       ],
+       "value": 0.026550387596899226
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.020372989728701323,
+        0.08532881515123703
+       ],
+       "value": 0.05183723272914638
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 48,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.4126506024096386,
+       "with_events": 6,
+       "with_n": 8,
+       "with_rate": 0.75,
+       "without_events": 28,
+       "without_n": 83,
+       "without_rate": 0.3373493975903614
+      },
+      "low": {
+       "difference": 0.16326530612244897,
+       "with_events": 6,
+       "with_n": 28,
+       "with_rate": 0.21428571428571427,
+       "without_events": 5,
+       "without_n": 98,
+       "without_rate": 0.05102040816326531
+      },
+      "near": {
+       "difference": 0.23205128205128206,
+       "with_events": 5,
+       "with_n": 12,
+       "with_rate": 0.4166666666666667,
+       "without_events": 12,
+       "without_n": 65,
+       "without_rate": 0.18461538461538463
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.5337162476837989,
+        -0.08540142642656717
+       ],
+       "value": -0.3282784700017398
+      },
+      "raw_all": {
+       "interval": [
+        0.03172421013330104,
+        0.30692065855878214
+       ],
+       "value": 0.171239837398374
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.0862768855685019,
+        0.35469413497666785
+       ],
+       "value": 0.22745418922285893
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 33,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 4,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.023809523809523808,
+       "with_events": 1,
+       "with_n": 33,
+       "with_rate": 0.030303030303030304,
+       "without_events": 1,
+       "without_n": 154,
+       "without_rate": 0.006493506493506494
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 1,
+       "without_n": 4,
+       "without_rate": 0.25
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.1421835975513663,
+        0.1515992428819387
+       ],
+       "value": -0.2016928571428569
+      },
+      "raw_all": {
+       "interval": [
+        -0.016302062505301675,
+        0.07077771680358956
+       ],
+       "value": 0.017957351290684626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.010879360731754025,
+        0.07358051964418681
+       ],
+       "value": 0.021579220779220778
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 98,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 98,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 488,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 31,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.026160503540519277,
+       "with_events": 1,
+       "with_n": 31,
+       "with_rate": 0.03225806451612903,
+       "without_events": 1,
+       "without_n": 164,
+       "without_rate": 0.006097560975609756
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 33,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.15079365079365076,
+       "with_events": 3,
+       "with_n": 7,
+       "with_rate": 0.42857142857142855,
+       "without_events": 5,
+       "without_n": 18,
+       "without_rate": 0.2777777777777778
+      },
+      "low": {
+       "difference": -0.03125,
+       "with_events": 0,
+       "with_n": 25,
+       "with_rate": 0.0,
+       "without_events": 4,
+       "without_n": 128,
+       "without_rate": 0.03125
+      },
+      "near": {
+       "difference": -0.17647058823529413,
+       "with_events": 0,
+       "with_n": 1,
+       "with_rate": 0.0,
+       "without_events": 3,
+       "without_n": 17,
+       "without_rate": 0.17647058823529413
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -3.0785252650911294,
+        2.9426427118756537
+       ],
+       "value": 0.6084526149767033
+      },
+      "raw_all": {
+       "interval": [
+        -0.040733796614834186,
+        0.09442628309905196
+       ],
+       "value": 0.017289459007250416
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.04298882164869958,
+        0.08253914962907744
+       ],
+       "value": 0.006769642462756383
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   },
+   "5": {
+    "pooled": {
+     "days": 1468,
+     "input_days": 243,
+     "pressure_days": 82,
+     "rates": {
+      "high": {
+       "difference": 0.09203296703296698,
+       "with_events": 6,
+       "with_n": 14,
+       "with_rate": 0.42857142857142855,
+       "without_events": 35,
+       "without_n": 104,
+       "without_rate": 0.33653846153846156
+      },
+      "low": {
+       "difference": 0.036886988830942095,
+       "with_events": 10,
+       "with_n": 215,
+       "with_rate": 0.046511627906976744,
+       "without_events": 10,
+       "without_n": 1039,
+       "without_rate": 0.009624639076034648
+      },
+      "near": {
+       "difference": 0.24564459930313587,
+       "with_events": 6,
+       "with_n": 14,
+       "with_rate": 0.42857142857142855,
+       "without_events": 15,
+       "without_n": 82,
+       "without_rate": 0.18292682926829268
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -1.1850052071822266,
+        0.06582688792785472
+       ],
+       "value": -0.20383509294927404
+      },
+      "raw_all": {
+       "interval": [
+        0.007418239622078481,
+        0.07528576496504129
+       ],
+       "value": 0.041555387587133626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": [
+        0.008771631736889503,
+        0.06866864294416197
+       ],
+       "value": 0.036886988830942095
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.016651454354960796,
+        0.0833391822327921
+       ],
+       "value": 0.05002583387850012
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2018-19": {
+     "days": 294,
+     "input_days": 48,
+     "pressure_days": 62,
+     "rates": {
+      "high": {
+       "difference": 0.07264957264957261,
+       "with_events": 4,
+       "with_n": 9,
+       "with_rate": 0.4444444444444444,
+       "without_events": 29,
+       "without_n": 78,
+       "without_rate": 0.3717948717948718
+      },
+      "low": {
+       "difference": 0.24867724867724866,
+       "with_events": 8,
+       "with_n": 27,
+       "with_rate": 0.2962962962962963,
+       "without_events": 5,
+       "without_n": 105,
+       "without_rate": 0.047619047619047616
+      },
+      "near": {
+       "difference": 0.2420634920634921,
+       "with_events": 5,
+       "with_n": 12,
+       "with_rate": 0.4166666666666667,
+       "without_events": 11,
+       "without_n": 63,
+       "without_rate": 0.1746031746031746
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.9673844385114121,
+        -0.014477775090877902
+       ],
+       "value": -0.23307114862328704
+      },
+      "raw_all": {
+       "interval": [
+        0.03364081968626797,
+        0.30575694212111076
+       ],
+       "value": 0.171239837398374
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        0.07270318895945552,
+        0.3452102585475851
+       ],
+       "value": 0.21115090299087794
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2020": {
+     "days": 195,
+     "input_days": 33,
+     "pressure_days": 3,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 1,
+       "without_n": 4,
+       "without_rate": 0.25
+      },
+      "low": {
+       "difference": 0.023809523809523808,
+       "with_events": 1,
+       "with_n": 33,
+       "with_rate": 0.030303030303030304,
+       "without_events": 1,
+       "without_n": 154,
+       "without_rate": 0.006493506493506494
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 4,
+       "without_rate": 0.0
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -0.9626102820324495,
+        0.11907627868907825
+       ],
+       "value": -0.21680691252047235
+      },
+      "raw_all": {
+       "interval": [
+        -0.013004329004329004,
+        0.0692101226993865
+       ],
+       "value": 0.017957351290684626
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.010010746997641906,
+        0.07270593691601338
+       ],
+       "value": 0.021850629181063477
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2021-23": {
+     "days": 586,
+     "input_days": 98,
+     "pressure_days": 0,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      },
+      "low": {
+       "difference": 0.0,
+       "with_events": 0,
+       "with_n": 98,
+       "with_rate": 0.0,
+       "without_events": 0,
+       "without_n": 488,
+       "without_rate": 0.0
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2024": {
+     "days": 197,
+     "input_days": 31,
+     "pressure_days": 2,
+     "rates": {
+      "high": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 2,
+       "without_rate": 0.0
+      },
+      "low": {
+       "difference": 0.026160503540519277,
+       "with_events": 1,
+       "with_n": 31,
+       "with_rate": 0.03225806451612903,
+       "without_events": 1,
+       "without_n": 164,
+       "without_rate": 0.006097560975609756
+      },
+      "near": {
+       "difference": null,
+       "with_events": 0,
+       "with_n": 0,
+       "with_rate": null,
+       "without_events": 0,
+       "without_n": 0,
+       "without_rate": null
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": null,
+       "value": null
+      },
+      "raw_all": {
+       "interval": null,
+       "value": null
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    },
+    "regime:2025-26": {
+     "days": 196,
+     "input_days": 33,
+     "pressure_days": 15,
+     "rates": {
+      "high": {
+       "difference": 0.15000000000000002,
+       "with_events": 2,
+       "with_n": 5,
+       "with_rate": 0.4,
+       "without_events": 5,
+       "without_n": 20,
+       "without_rate": 0.25
+      },
+      "low": {
+       "difference": -0.0234375,
+       "with_events": 0,
+       "with_n": 26,
+       "with_rate": 0.0,
+       "without_events": 3,
+       "without_n": 128,
+       "without_rate": 0.0234375
+      },
+      "near": {
+       "difference": 0.23333333333333334,
+       "with_events": 1,
+       "with_n": 2,
+       "with_rate": 0.5,
+       "without_events": 4,
+       "without_n": 15,
+       "without_rate": 0.26666666666666666
+      }
+     },
+     "statistics": {
+      "persistence_share": {
+       "interval": [
+        -4.421769018900546,
+        3.078297900872229
+       ],
+       "value": -0.05808618950437916
+      },
+      "raw_all": {
+       "interval": [
+        -0.04223602484472049,
+        0.08772960230218665
+       ],
+       "value": 0.017289459007250416
+      },
+      "raw_high": {
+       "interval": null,
+       "value": null
+      },
+      "raw_low": {
+       "interval": null,
+       "value": null
+      },
+      "raw_near": {
+       "interval": null,
+       "value": null
+      },
+      "stratified_all": {
+       "interval": [
+        -0.04240081781230376,
+        0.07955739813708443
+       ],
+       "value": 0.01829373779957376
+      },
+      "stratified_near": {
+       "interval": null,
+       "value": null
+      }
+     }
+    }
+   }
+  }
+ },
+ "seed": 688,
+ "statistics_with_interval": 164
+}

@@ -469,6 +469,11 @@ NOT_ENTRY_POINTS = {
         "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
         "(tests/test_derived_features_631.py)"
     ),
+    "scripts/near_threshold_688.read_inputs": (
+        "reads the scored days' inputs as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "screen of #688; selects no model and scores no forecast, calls lockbox.require_unlocked on every day "
+        "before it reads one, and `refuse_locked` is tested (tests/test_near_threshold_688.py)"
+    ),
     "scripts/upper_bound_635.read_inputs": (
         "reads each input as of the decision instant at leads 1 to 5 on the lead-1 fold grid, for the upper-bound study of #635; "
         "selects no model and scores no forecast, calls lockbox.require_unlocked on every day before it reads one, and its `fit` "
