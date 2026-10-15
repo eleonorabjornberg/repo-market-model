@@ -124,6 +124,12 @@ for the references. That is the gap the directive asked about, and the spread-le
 gained is the information in the latest spread that a persistence model already uses; this measurement does not separate the two. The reliability slope of (b) is 0.42 pooled (0.46 [0.29, 0.88] at h = 1): the forecasts are more spread out than the outcomes support,
 and the intercept is negative. The row that passes tiers 3 and 5 does so on the mean (#616); a test on the curve's shape would not pass it, and `persistence_logistic` (slope 0.99) is the better calibrated of the two.
 
+> *Note, 13 October 2026 (#683).* Every slope on this page is **pooled across regimes**, including "0.42 pooled", "0.46 [0.29, 0.88] at h = 1" and
+> `persistence_logistic` "slope 0.99", so none of them is a reading of calibration inside 2018-19 or 2025-26, and "the better calibrated of the two" is a
+> pooled statement. A regime with no pressure day (2021-23) forecasts near 0 and raises the pooled slope; for the rows of #624 the slopes inside 2018-19 are far lower (see
+> `docs/pivot/diagnostics-reconciliation.md`, point 11). The per-regime slopes of these rows were **not computed** by #683: they need this page's
+> forecasts rebuilt, which that directive did not do. Until they are, the pooled slope is not evidence of calibration in any regime.
+
 ## Calibration of (b) (predicted against realised, +5 bp, pooled over h = 1 to 5)
 
 | cell | days | predicted | realised |

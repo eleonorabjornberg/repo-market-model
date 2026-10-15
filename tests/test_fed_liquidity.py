@@ -167,6 +167,85 @@ class ParserTests(unittest.TestCase):
             rows_for(broken)
 
 
+class TakeUpFloorTests(unittest.TestCase):
+    """#743: in every era a repo operation with less than $0.1 bn accepted is no take-up (Eleonora, 14 October 2026).
+
+    A rule that differs by era builds a regime dummy (#672), so the floor is one amount and has no date.
+    The operation still happened (the facility operated that day), so the date keeps a row at zero.
+
+    Recorded mutation (CLAUDE.md), 15 October 2026, in a disposable copy:
+    `src/repo_model/ingest.py`, `_effective_accepted`,
+    `return accepted if accepted >= REPO_TAKE_UP_FLOOR else 0` mutated to `return accepted`
+    (the $1 mn trade counted as take-up). `test_a_trade_below_the_floor_is_no_take_up_in_either_era` then
+    fails with `AssertionError` (`0.005 != 0.0 : 2019-12-18`: the $5 mn trade reads as take-up).
+
+    The Standing Repo Facility total `srf_total_accepted` (`ingest._nyfed_srf_rows`) feeds the results
+    page and is not changed here; whether the floor applies to it is a question for Eleonora on the PR.
+    """
+
+    def test_the_floor_is_a_tenth_of_a_billion_dollars(self):
+        self.assertEqual(ingest.REPO_TAKE_UP_FLOOR, BN // 10)
+
+    def test_a_trade_below_the_floor_is_no_take_up_in_either_era(self):
+        rows = by_series(
+            rows_for(
+                operation("2019-12-18", 5_000_000, rate=1.60),
+                operation("2023-12-18", 1_000_000, rate=5.40),
+                operation("2023-12-18", 1_000_000, term="Term", rate=5.40, maturity="2023-12-20"),
+            )
+        )
+        for day in (date(2019, 12, 18), date(2023, 12, 18)):
+            self.assertEqual(rows["repo_accepted"][day].value, 0.0, day)
+            self.assertEqual(rows["repo_ops_accepting"][day].value, 0.0, day)
+            self.assertNotIn(day, rows.get("repo_rate", {}), day)
+
+    def test_the_floor_itself_counts_and_a_larger_trade_is_untouched(self):
+        rows = by_series(
+            rows_for(
+                operation("2022-03-16", BN // 10, rate=0.50),
+                operation("2022-03-17", BN // 10 - 1, rate=0.50),
+                operation("2022-03-18", 3 * BN, rate=0.60),
+            )
+        )
+        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 16)].value, 0.1)
+        self.assertEqual(rows["repo_accepted"][date(2022, 3, 17)].value, 0.0)
+        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 18)].value, 3.0)
+
+    def test_a_small_trade_does_not_pull_the_days_rate(self):
+        rows = by_series(
+            rows_for(
+                operation("2024-06-28", 2 * BN, rate=5.40),
+                operation("2024-06-28", 1_000_000, term="Term", rate=9.00, maturity="2024-07-01"),
+            )
+        )
+        self.assertAlmostEqual(rows["repo_rate"][date(2024, 6, 28)].value, 5.40)
+
+    def test_a_day_of_small_trades_resets_nothing_in_days_since_positive(self):
+        panel = [DailyObservation(date(2023, 12, d), {"iorb": 5.4}) for d in (14, 15, 18, 19)]
+        ops = [
+            operation("2023-12-14", 2 * BN, rate=5.5),
+            operation("2023-12-18", 1_000_000, rate=5.5),
+        ]
+        with mock.patch.object(
+            fed_liquidity, "series_from_snapshots",
+            return_value=ingest_series(ops),
+        ):
+            rows, _ = fed_liquidity.assemble(
+                panel, SNAPSHOTS, cutoff=datetime(2026, 10, 9, tzinfo=NEW_YORK),
+                end=date(2023, 12, 19), coverage_end=date(2026, 1, 1),
+            )
+        self.assertEqual([r.values["fed_repo_days_since_positive"] for r in rows], [0.0, 1.0, 2.0, 3.0])
+
+
+def ingest_series(operations):
+    """`series_from_snapshots`'s shape, built from operation records as the parser reads them."""
+
+    out = {}
+    for row in rows_for(*operations):
+        out.setdefault(row.series_id, {})[row.ref_date] = row.value
+    return out
+
+
 class BuildColumnsTests(unittest.TestCase):
     def rows(self, amounts):
         days = [date(2024, 1, 1) + timedelta(days=i) for i in range(len(amounts))]
