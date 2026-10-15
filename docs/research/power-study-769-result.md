@@ -20,6 +20,21 @@ Reading (d) is the one the committed #656 study used; it reproduces the figures 
 14.0% by 250) within Monte Carlo error (other seeds). No reading reaches the 80% target at either look, so `days_needed`
 is `null` in all four.
 
+## Power by true skill, with Monte Carlo intervals, beside #656's figures for the old test
+
+Seed 76902307 (path *i* of every cell is seeded `seed + i`), 2,000 paths per cell in this study; #656's committed study used seed 656 and 400 paths. Each figure is a share of paths; ± is 1.96 × the Monte Carlo standard error `sqrt(p(1-p)/paths)`, so the interval is the share ± that. All cells are `NOISE` = 1. "Old test" is #656's committed result (`docs/research/power-study-656/result.json`, the test as written before ruling 5, reading (d)'s history and generator); it is untouched. Gated power; the B2 half of Supported is not simulated, so each is an upper bound.
+
+| true skill | old test (#656), 125 / 250 days | (a), 125 / 250 | (b), 125 / 250 | (c), 125 / 250 | (d), 125 / 250 |
+|---|---|---|---|---|---|
+| 3% | 16.2% ± 3.6 / 29.2% ± 4.5 | 0.2% ± 0.2 / 0.8% ± 0.4 | 3.1% ± 0.8 / 7.8% ± 1.2 | 0.5% ± 0.3 / 1.8% ± 0.6 | 5.8% ± 1.0 / 13.9% ± 1.5 |
+| 4% | 16.5% ± 3.6 / 30.2% ± 4.5 | 0.2% ± 0.2 / 0.9% ± 0.4 | 3.4% ± 0.8 / 8.6% ± 1.2 | 0.5% ± 0.3 / 2.0% ± 0.6 | 6.0% ± 1.0 / 14.5% ± 1.5 |
+| 5% | 17.0% ± 3.7 / 30.5% ± 4.5 | 0.2% ± 0.2 / 1.1% ± 0.5 | 3.5% ± 0.8 / 9.0% ± 1.3 | 0.5% ± 0.3 / 2.2% ± 0.6 | 6.2% ± 1.1 / 15.2% ± 1.6 |
+| 6% | 17.8% ± 3.7 / 32.2% ± 4.6 | 0.2% ± 0.2 / 1.4% ± 0.5 | 3.6% ± 0.8 / 9.3% ± 1.3 | 0.6% ± 0.3 / 2.6% ± 0.7 | 6.6% ± 1.1 / 15.8% ± 1.6 |
+| 8% | 19.5% ± 3.9 / 35.8% ± 4.7 | 0.3% ± 0.2 / 1.7% ± 0.6 | 4.0% ± 0.9 / 10.5% ± 1.3 | 0.7% ± 0.4 / 3.1% ± 0.8 | 7.0% ± 1.1 / 17.0% ± 1.6 |
+| 10% | 19.8% ± 3.9 / 37.2% ± 4.7 | 0.4% ± 0.3 / 2.1% ± 0.6 | 4.3% ± 0.9 / 11.9% ± 1.4 | 0.9% ± 0.4 / 3.7% ± 0.8 | 7.7% ± 1.2 / 19.2% ± 1.7 |
+
+The old test's 60-day look is absent from the new rule (look 1 is futility only), so only 125 and 250 days are compared; the old test's figure at 60 days was 0% (look 1 unresolvable as written). In every reading and at every effect size the new test's power is below the old test's: at 3% and 250 days, 0.8% / 7.8% / 1.8% / 13.9% in (a)-(d) against the old 29.2%. The 6.0% / 14.0% quoted from PR #737 are the new test's, not #656's committed figures for the old test (16.25% by 125 days, 29.25% by 250).
+
 ## What can be detected
 
 At `NOISE` = 1 no skill on the grid (3% to 10%) reaches 80% by 250 days in any reading. The best is reading (d) at a
