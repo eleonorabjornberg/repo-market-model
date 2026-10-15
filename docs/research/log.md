@@ -467,7 +467,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's decisions on the MME and the test's size; the auditor's check of §12 items 1-3.
 
-### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#784
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#788
 - Directive: #743
 - Step: 1 (screening; data meaning of the Fed repo take-up columns, after #692/#727)
 - Tier: development
