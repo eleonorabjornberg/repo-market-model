@@ -418,6 +418,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the second check passes at the grid comparison's value; no registration until the confirmation-design study is decided.
 - Next: the confirmation-design study (horizon, statistic, MME).
 
+### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#748
+- Directive: #734
+- Step: 2 (milestone M2, "Guard updated": the back-fill amendment of `docs/decisions/information-set.md` put in force)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `e9ce416`; posting instant from `metadata/backfill_posting.json` (2018-05-17)
+- Tried: no experiment and no new variant. A decision-record change for Eleonora to merge: the "Proposed" banner and sentence removed, the established posting instant recorded. Variants: 0.
+- Result: none scored. No code, declaration or published figure changes.
+- Against kill: not applicable (no result).
+- Next: step 3 follows Eleonora's decision on whether to register (step 4); the H5 models still need pre-2018 inputs the project does not hold.
+
 ### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#756
 - Directive: #707 (sub-question 1: 2021-23)
 - Step: 3
