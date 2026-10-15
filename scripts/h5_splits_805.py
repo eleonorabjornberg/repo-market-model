@@ -410,9 +410,10 @@ def report_command(args) -> int:
     out += ["## Calibrated critical value c (`sp.calibrate_critical_value`)", "",
             f"{calibration['days']}-day pool, {calibration['windows']} windows, seed {calibration['seed']}. In force (grid comparison): "
             + ", ".join(f"{n} days {v:.3f}" for n, v in calibration["in_force_grid_comparison"].items()) + ".", "",
-            "| pool and orientation | c at 125 days | c at 250 days |", "|---|---|---|"]
+            "| pool | series | c at 125 days | c at 250 days |", "|---|---|---|---|"]
     for label, values in calibration["values"].items():
-        out.append(f"| {label} | {values['125']:.3f} | {values['250']:.3f} |")
+        pool_label, series_label = label.split(" | ")
+        out.append(f"| {pool_label} | {series_label} | {values['125']:.3f} | {values['250']:.3f} |")
     args.output.write_text("\n".join(out) + "\n", encoding="utf-8")
     return 0
 
