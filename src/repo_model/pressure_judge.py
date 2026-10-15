@@ -110,7 +110,7 @@ from operator import itemgetter
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from . import lockbox
+from . import lockbox, risk_dates
 from .metrics import (
     MetricError,
     average_precision,
@@ -2496,9 +2496,4 @@ def _scheduled_risk_date(values: Mapping[str, Optional[float]]) -> bool:
     Calendar facts, known ahead of the day, as the day-type grouping already reads them.
     """
 
-    coupons = values.get("treasury_settlement_coupons")
-    return (
-        float(values["quarter_end"] or 0.0) == 1.0
-        or float(values["tax_date"] or 0.0) == 1.0
-        or (coupons is not None and float(coupons) > 0.0)
-    )
+    return risk_dates.is_risk_date(values, risk_dates.SCHEDULED)
