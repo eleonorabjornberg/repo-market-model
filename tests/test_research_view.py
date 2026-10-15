@@ -151,5 +151,69 @@ class Sources(unittest.TestCase):
         self.assertEqual([(e["step"], e["groundwork"]) for e in entries], [(None, "G3"), (2, None)])
 
 
+class CriticalPath(unittest.TestCase):
+    """The plan's "Critical path" section (#704): parsed, checked against the manuals, shown on the page."""
+
+    copy_tree = Sources.copy_tree
+
+    def chain(self, root=ROOT):
+        return research_view.load_critical_path(root, research_view.load(root))
+
+    def test_the_real_plan_has_a_chain_for_each_goal(self):
+        links = self.chain()
+        for goal in ("H5", "H9"):
+            self.assertTrue([l for l in links if goal in l["gates"]], goal)
+        self.assertEqual([l["id"] for l in links], [f"CP{i}" for i in range(1, len(links) + 1)])
+
+    def test_every_link_names_a_milestone_of_a_manual(self):
+        manuals = {h["id"]: {m for m, _ in h["manual"]["milestones"]} for h in research_view.load(ROOT)}
+        for link in self.chain():
+            hid, mid = link["milestone"].split(".")
+            self.assertIn(mid, manuals[hid], link["id"])
+
+    def test_a_milestone_no_manual_has_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.copy_tree(tmp)
+            plan = out / "docs/research/plan.md"
+            plan.write_text(plan.read_text(encoding="utf-8").replace("- CP1. H1.M3 ", "- CP1. H1.M9 "), encoding="utf-8")
+            with self.assertRaisesRegex(research_view.ResearchError, "H1.M9"):
+                self.chain(out)
+
+    def test_a_plan_without_the_section_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.copy_tree(tmp)
+            plan = out / "docs/research/plan.md"
+            plan.write_text(plan.read_text(encoding="utf-8").replace("## Critical path", "## Something else"),
+                            encoding="utf-8")
+            with self.assertRaisesRegex(research_view.ResearchError, "Critical path"):
+                self.chain(out)
+
+    def test_a_link_cannot_wait_on_a_later_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.copy_tree(tmp)
+            plan = out / "docs/research/plan.md"
+            plan.write_text(re.sub(r"(- CP1\. [^\n]*Waits on: )", r"\1CP2; ", plan.read_text(encoding="utf-8"), count=1),
+                            encoding="utf-8")
+            with self.assertRaisesRegex(research_view.ResearchError, "CP1 waits on CP2"):
+                self.chain(out)
+
+    def test_the_page_shows_the_first_open_link_of_each_goal(self):
+        hypotheses = research_view.load(ROOT)
+        links = research_view.load_critical_path(ROOT, hypotheses)
+        done = {h["id"] + "." + m for h in hypotheses for m in h["done"]}
+        block = PAGE[at("Next on the critical path"):]
+        block = block[:block.find("</div>")]
+        for goal in ("H5", "H9"):
+            first = next(l for l in links if goal in l["gates"] and l["milestone"] not in done)
+            self.assertIn(first["milestone"], block, goal)
+        self.assertNotIn("stand-in", block)
+        self.assertNotIn("first milestone not yet marked done", block)
+
+    def test_done_comes_only_from_milestones_json(self):
+        done = json.loads((ROOT / "docs/research/milestones.json").read_text(encoding="utf-8"))["milestones"]
+        for link in self.chain():
+            self.assertEqual(link["done"], link["milestone"] in done, link["id"])
+
+
 if __name__ == "__main__":
     unittest.main()
