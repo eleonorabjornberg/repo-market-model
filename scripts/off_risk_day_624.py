@@ -50,6 +50,7 @@ from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import _as_of_folds, climatology_exceedance, panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import stationary_bootstrap_indices  # noqa: E402
 
@@ -377,6 +378,12 @@ def day_table(name: str, document: Mapping, horizon: int, rows, splits, scoring:
     }
 
 
+#: The minimum of pressure days for the 2026 column to be read (ruling of 13 October 2026 on PR #710: the minimum stays).
+PERIOD_MINIMUM_PRESSURE_DAYS = 3
+#: The last day of the history the earlier pages read; a table that reaches past it gets a column for the days after it (#684).
+EARLIER_END = "2025-12-31"
+
+
 def split_cells(table: Mapping, minimum_days: int = 1) -> Dict[str, List[int]]:
     cells: Dict[str, List[int]] = {"all": list(range(len(table["y"])))}
     for key, prefix in (("regime", "regime "), ("state", "scarcity state ")):
@@ -384,6 +391,12 @@ def split_cells(table: Mapping, minimum_days: int = 1) -> Dict[str, List[int]]:
             positions = [i for i, v in enumerate(table[key]) if v == label]
             if len(positions) >= minimum_days:
                 cells[prefix + label] = positions
+    if any(d > EARLIER_END for d in table.get("dates", ())):
+        earlier = [i for i, d in enumerate(table["dates"]) if d <= EARLIER_END]
+        later = [i for i, d in enumerate(table["dates"]) if d > EARLIER_END]
+        cells["period 2018-2025"] = earlier
+        if sum(table["y"][i] for i in later) >= PERIOD_MINIMUM_PRESSURE_DAYS:
+            cells["period 2026"] = later
     return cells
 
 
@@ -584,7 +597,7 @@ def per_release_panel_command(args) -> int:
     is a scratch input of this measurement and is not committed.
     """
 
-    end = date.fromisoformat(rds.committed_declaration(STEP_ONE_DECLARATION)["scoring"]["last_day"])
+    end = panel_end(args.end, date.fromisoformat(rds.committed_declaration(STEP_ONE_DECLARATION)["scoring"]["last_day"]), where="off_risk_day_624.panel")
     require_unlocked([end], where="off_risk_day_624")
     rolling = sd.rolling_constants()
     rows = [row for row in load_daily_panel(args.panel) if row.date <= end]
@@ -854,9 +867,11 @@ def run_command(args) -> int:
     if h not in declared["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
     scoring = declared["scoring"]
-    last = date.fromisoformat(scoring["last_day"])
+    last = panel_end(args.end, date.fromisoformat(scoring["last_day"]), where="off_risk_day_624.run")
     require_unlocked([last], where="off_risk_day_624")
-    pj.require_scored_days(pj.load_declaration(), [last], where="off_risk_day_624")
+    published_judge = pj.load_declaration()
+    if last <= published_judge.last_day:
+        pj.require_scored_days(published_judge, [last], where="off_risk_day_624")
     best_name = declared["parent"]["row"]
     best_document = json.loads(args.best.read_text(encoding="utf-8"))
     if best_document["horizon"] != h or best_document["panel_sha256"] != panel_sha256(args.published) or best_name not in best_document["forecasts"]:
@@ -962,9 +977,11 @@ def measure_command(args) -> int:
 
     declared = rds.committed_declaration(args.declaration)
     scoring = declared["scoring"]
-    last = date.fromisoformat(scoring["last_day"])
+    last = panel_end(args.end, date.fromisoformat(scoring["last_day"]), where="off_risk_day_624.measure")
     require_unlocked([last], where="off_risk_day_624")
-    pj.require_scored_days(pj.load_declaration(), [last], where="off_risk_day_624")
+    published = pj.load_declaration()
+    if last <= published.last_day:
+        pj.require_scored_days(published, [last], where="off_risk_day_624")
     rows = load_daily_panel(args.scratch)
     audit_panel(rows)
     splits = load_split_declaration(SPLITS)
@@ -1014,6 +1031,8 @@ def measure_command(args) -> int:
     document = {
         "declaration": declared, "panel_sha256": panel_sha256(args.panel), "scratch_panel_sha256": panel_sha256(args.scratch), "rows": result,
     }
+    if last > published.last_day:
+        document["scratch_scored_span"] = {"last_day": last.isoformat(), "published_judge_last_day": published.last_day.isoformat(), "note": "exploration on development days (#684); the published declarations are unchanged"}
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
     if args.markdown:
         args.markdown.write_text(markdown(document, args.title), encoding="utf-8")
@@ -1262,6 +1281,7 @@ def main(argv=None) -> int:
     m.add_argument("--title", default="Step 1: skill on the days that are not risk dates (#624)")
     m.add_argument("--output", type=Path, required=True)
     m.add_argument("--markdown", type=Path)
+    m.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     m.set_defaults(func=measure_command)
     r = sub.add_parser("run")
     r.add_argument("--panel", type=Path, required=True, help="the scratch panel with the distance built per release (AUG2R.csv)")
@@ -1269,6 +1289,7 @@ def main(argv=None) -> int:
     r.add_argument("--horizon", type=int, required=True)
     r.add_argument("--best", type=Path, required=True, help="the file of the best row's forecasts at this lead (OUT/dist_h?.json)")
     r.add_argument("--output", type=Path, required=True)
+    r.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     r.set_defaults(func=run_command)
     c = sub.add_parser("compare")
     c.add_argument("--rule", choices=("unweighted", "weighted"), default="weighted")
@@ -1309,6 +1330,7 @@ def main(argv=None) -> int:
     pn.add_argument("--output", type=Path, required=True)
     pn.add_argument("--compare-with", type=Path, help="AUG2D.csv (the old-lag build), to count the rows that differ")
     pn.add_argument("--check-every", type=int, default=25)
+    pn.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     pn.set_defaults(func=per_release_panel_command)
     args = parser.parse_args(argv)
     return args.func(args)
