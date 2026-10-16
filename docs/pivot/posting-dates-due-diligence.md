@@ -14,6 +14,16 @@ Serves H4 (longer history fixes part of 2018-19), step 1 of #633. The table belo
 > (`tests/test_backfill.py`, `TheRuledPostingInstant`). The first fit that trains on the back-fill in the measurements
 > so far ends on 2018-06-27, so every scored day from 2018-06-29 may train on it. The measurement is
 > [`posting-dates-h4-result.md`](posting-dates-h4-result.md). The other rows of the table are unchanged.
+>
+> **Source copy (#781).** The Liberty Street post the 17 May 2018 date rests on, "Introducing the Revised Broad
+> Treasuries Financing Rate" (`https://libertystreeteconomics.newyorkfed.org/2017/06/introducing-the-revised-broad-treasuries-financing-rate/`),
+> was fetched on 2026-10-15 and is tracked as
+> [`evidence/posting-dates-h4/sources/liberty_street_revised_btfr_2017-06.html`](evidence/posting-dates-h4/sources/liberty_street_revised_btfr_2017-06.html),
+> sha256 `3a034837...` (full checksum in the folder's `manifest.json`). Its editor's note says the linked historical-rates
+> file had minor errors when the post was first published and that the data and related charts and table were corrected
+> on May 17, 2018; it states no time of day. The note dates a correction of the file, which is what the ruling takes as the date
+> the series were public; it is not a statement of a first posting. The note carries a second, separate change dated 19 March 2019 (the three-month geometric averages were not
+> calculated by the OIS methodology); it does not concern the data file.
 
 Rule used (the directive's): a series is usable only if the instant it became public is established from a source that
 is cited here. Where the evidence is ambiguous it is marked not usable and listed for Eleonora. No pattern is inferred.
@@ -35,11 +45,15 @@ is cited here. Where the evidence is ambiguous it is marked not usable and liste
 
 - The TGCR/BGCR/SOFR workbook is usable as training history with one instant, 17 May 2018, for all three series
   (Eleonora's ruling above). Its SOFR before 2018-04-02 remains an indicative series computed after the fact.
-- Only the H.8 total-assets series otherwise meets the rule, and the guard reads one workbook-level instant. Whether
-  other series get their own instants was not asked by the ruling and is not done here.
+- Only the H.8 total-assets series otherwise meets the rule. The guard now reads one instant per listed series
+  (#742); H.8 is not listed, so a fit that reads it from back-filled rows is refused.
 - The ON RRP results, bill rates and Treasury auctions of 2014-2017 keep their verdicts (not usable). The extended
-  panel of `scripts/backfill_history.py panel` still carries them on back-filled rows; a model that reads them trains on
-  values whose posting is not established. The H4 measurement reads none of them.
+  panel of `scripts/backfill_history.py panel` still carries them, and FRED's reserves and TGA, on back-filled rows.
+  **Correction (#742):** an earlier version of this page said the H4 measurement reads none of them. That was false for
+  the declared model of #633, which reads the bill rate, reserves and the TGA from those rows; its pooled and 2021-23
+  gains rest on them (`posting-dates-h4-result.md`). Since #742 the guard admits only the listed series, TGCR, BGCR
+  and SOFR from 2018-05-17 (`metadata/backfill_posting.json`, `admitted`), and
+  `backfill.require_series_admitted` raises `LookAheadError` on any other series a fit reads from back-filled rows.
 
 ## For Eleonora
 

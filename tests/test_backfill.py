@@ -326,6 +326,102 @@ class TheRuledPostingInstant(unittest.TestCase):
             backfill.require_training_only([_fold(date(2018, 6, 29), date(2018, 3, 29))], where="test")
 
 
+class RefusesSeriesThatAreNotAdmitted(unittest.TestCase):
+    """A fit that trains on back-filled values reads only admitted series, each past its own instant (#742).
+
+    Eleonora's ruling on #742 (14 October 2026, relayed by the orchestrating session): the back-fill guard
+    admits only listed series, each with its own posting instant; for now TGCR, BGCR and SOFR, from
+    2018-05-17. It raises `LookAheadError` on any other series. `metadata/backfill_posting.json` lists them
+    under `admitted`. `backfill.require_series_admitted` is the guard: it reads the series a fit reads from
+    the back-filled rows, which `require_posting_established` never saw (the finding of #742: the declared H4
+    model read the bill rate, reserves and the TGA, none of which has an established posting).
+
+    Red first: written before `require_series_admitted` existed (`AttributeError`).
+
+    Mutation record. In a copy of the working tree under the session's scratchpad, CPython 3.11
+    (`/opt/rmm-venv`), `PYTHONDONTWRITEBYTECODE=1`, `python -B`, this class run alone, unmutated control green
+    before and after, the mutated line confirmed applied by grep. In `backfill.require_series_admitted` the
+    refusal condition `if instant is None:` (a series that is not listed) was mutated to `if False:`. Killed, 2
+    errors, both `TypeError: '>' not supported between instances of 'NoneType' and 'datetime.datetime'` (the
+    unlisted series fell through to the instant comparison instead of raising `LookAheadError`):
+    `test_a_series_that_is_not_admitted_is_refused` and
+    `test_the_declared_h4_inputs_are_refused_on_the_extended_panel`.
+    """
+
+    ADMITTED = {name: datetime(2018, 5, 17, 0, 0) for name in ("tgcr", "bgcr", "sofr")}
+
+    def _fit(self, end=date(2018, 6, 27)):
+        return [_fold(end + timedelta(days=2), end)]
+
+    def test_the_admitted_series_pass_after_their_instant(self):
+        backfill.require_series_admitted(self._fit(), ("tgcr", "bgcr", "sofr"), self.ADMITTED, where="test")
+
+    def test_a_series_that_is_not_admitted_is_refused(self):
+        for name in ("tbill_4w", "reserve_balances", "tga", "on_rrp", "treasury_auctions", "iorb_h8"):
+            with self.assertRaises(LookAheadError) as caught:
+                backfill.require_series_admitted(self._fit(), ("tgcr", name), self.ADMITTED, where="test")
+            self.assertIn(name, str(caught.exception))
+            self.assertIn("not admitted", str(caught.exception))
+
+    def test_an_admitted_series_is_refused_before_its_own_instant(self):
+        admitted = dict(self.ADMITTED, bgcr=datetime(2018, 6, 28, 0, 0))
+        with self.assertRaises(LookAheadError) as caught:
+            backfill.require_series_admitted(self._fit(), ("tgcr", "bgcr"), admitted, where="test")
+        self.assertIn("bgcr", str(caught.exception))
+        backfill.require_series_admitted(self._fit(), ("tgcr",), admitted, where="test")
+
+    def test_a_fit_on_published_days_only_reads_any_series(self):
+        published = _fold(date(2018, 6, 29), date(2018, 6, 27), start=backfill.FIRST_PUBLISHED)
+        backfill.require_series_admitted([published], ("tbill_4w", "tga"), self.ADMITTED, where="test")
+
+    def test_a_fit_that_declares_no_series_is_refused(self):
+        with self.assertRaises(ValueError):
+            backfill.require_series_admitted(self._fit(), (), self.ADMITTED, where="test")
+
+    def test_the_declaration_lists_the_three_workbook_series_at_the_ruled_instant(self):
+        admitted = backfill.load_admitted_series(ROOT / "metadata" / "backfill_posting.json")
+        self.assertEqual(admitted, self.ADMITTED)
+
+    def test_a_malformed_list_is_refused(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "p.json"
+            for bad in ({}, {"admitted": []}, {"admitted": {"tgcr": None}}, {"admitted": {"tgcr": "May"}}):
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    backfill.load_admitted_series(path)
+
+    def test_the_declared_h4_inputs_are_refused_on_the_extended_panel(self):
+        script = _spread_633()
+        admitted = backfill.load_admitted_series(ROOT / "metadata" / "backfill_posting.json")
+        with self.assertRaises(LookAheadError) as caught:
+            backfill.require_series_admitted(self._fit(), script.series_read("declared"), admitted, where="test")
+        self.assertIn("tbill_4w", str(caught.exception))
+
+    def test_the_workbook_only_inputs_pass(self):
+        script = _spread_633()
+        admitted = backfill.load_admitted_series(ROOT / "metadata" / "backfill_posting.json")
+        backfill.require_series_admitted(self._fit(), script.series_read("workbook"), admitted, where="test")
+
+    def test_the_scripts_apply_it(self):
+        for name, call in (
+            ("backfill_history.py", "backfill.require_series_admitted(report.folds"),
+            ("backfill_spread_633.py", "backfill.require_series_admitted(folds"),
+        ):
+            text = (ROOT / "scripts" / name).read_text(encoding="utf-8")
+            self.assertIn(call, text)
+
+
+def _spread_633():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("backfill_spread_633_742", ROOT / "scripts" / "backfill_spread_633.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class TheShiftKeepsTheScoredDays(unittest.TestCase):
     """Raising `minimum_history` by the prefix scores the very days the published rows score."""
 
