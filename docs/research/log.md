@@ -736,3 +736,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the difference is in the build, not the inputs. `08df8d19…` rebuilds exactly (two satiation columns placed as declared); `92bf10a4…` is main without #743; its only value difference from H2's is `net_settlement_due_5d` (#679). Both controls reproduce H2's recorded skill against B1 (reachable +0.192 [+0.007, +0.352], ceiling +0.162 [-0.009, +0.310]) to every digit; H5 step 4's panel gives +0.196 [+0.019, +0.354] and +0.168 [+0.003, +0.316]. No published figure moves
 - Against kill: not applicable (a reproducibility trace; no hypothesis is tested)
 - Next: Eleonora's two marked questions on the page (which ceiling stands for H5 step 4; the ceiling interval that now excludes 0); a fit on today's main panel is not made
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#827
+- Directive: #725 (the three reliability-slope helpers call the shared fit)
+- Step: 2 (groundwork; no forecast scored)
+- Tier: development
+- Pins: base `028ab0a`; no panel read
+- Tried: no new variant. `off_risk_day_624.py`, `kinked_626.py` and `spread_distribution_632.py` call `reliability_regimes.fit` instead of their own Newton loops. Variants: 0.
+- Result: the helpers agree with the old ones to 4e-13 (624), exactly (632) and within 5e-3 in small samples (626) on 1,840 synthetic cells; a cell on which the shared fit does not converge now reads undefined, which happened in 137 cells with forecasts far below the event rate. The published panels are not tracked, so no page was re-run.
+- Against kill: not applicable (groundwork; development data gives no verdict).
+- Next: Eleonora decides whether the shared fit gets a line search (question in the PR).
