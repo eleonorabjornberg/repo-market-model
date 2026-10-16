@@ -1,0 +1,123 @@
+{
+ "figures": {
+  "H2 as recorded (docs/pivot/evidence/upper-bound/score.json)": {
+   "ceiling gbm": {
+    "interval_90": [
+     -0.008731580433851072,
+     0.3100718863739257
+    ],
+    "skill": 0.16205587803380014
+   },
+   "reachable gbm": {
+    "interval_90": [
+     0.007263987700917903,
+     0.3518421373799831
+    ],
+    "skill": 0.19225518932108002
+   }
+  },
+  "H5 step 4 rerun (#775 panel 92bf10a4; docs/pivot/evidence/h5-step4/score.json)": {
+   "ceiling gbm": {
+    "interval_90": [
+     0.002909032626878898,
+     0.3157251353120861
+    ],
+    "skill": 0.16765399685785035
+   },
+   "reachable gbm": {
+    "interval_90": [
+     0.01889827363609142,
+     0.3544440495842912
+    ],
+    "skill": 0.1961414146364213
+   }
+  },
+  "control A: H2 tree's panel (08df8d19), current main code, fit and score rerun": {
+   "ceiling gbm": {
+    "interval_90": [
+     -0.008731580433855952,
+     0.31007188637392197
+    ],
+    "skill": 0.16205587803380014
+   },
+   "reachable gbm": {
+    "interval_90": [
+     0.007263987700915681,
+     0.3518421373799973
+    ],
+    "skill": 0.19225518932108002
+   }
+  },
+  "control B: same values, columns in chain order (1e5b748a), current main code": {
+   "ceiling gbm": {
+    "interval_90": [
+     -0.008731580433855952,
+     0.31007188637392197
+    ],
+    "skill": 0.16205587803380014
+   },
+   "reachable gbm": {
+    "interval_90": [
+     0.007263987700915681,
+     0.3518421373799973
+    ],
+    "skill": 0.19225518932108002
+   }
+  }
+ },
+ "issue": 811,
+ "panels": {
+  "H2_tree_chain_order": {
+   "rows": 1935,
+   "sha256": "1e5b748a00ad6334e09f39b3b4135db969da5d32218f66dae3572fb8fca10e34"
+  },
+  "H2_tree_declared_order": {
+   "note": "satiation_dist_roll and satiation_hinge_roll moved to just after srf_take_up_positive, the order of metadata/upper_bound_635.json",
+   "sha256": "08df8d195dbd5d474e95e856bb49fcdb4ce9a9cdd6d6e3b66b8f09e8f28af7fc"
+  },
+  "main_today": {
+   "columns_differing_from_H2_tree_values": {
+    "fed_repo_accepted": 350,
+    "fed_repo_accepted_sameday": 348,
+    "fed_repo_days_since_positive": 1211,
+    "fed_repo_days_since_positive_sameday": 1211,
+    "fed_repo_log_accepted": 350,
+    "fed_repo_log_accepted_change": 523,
+    "fed_repo_log_accepted_change_sameday": 521,
+    "fed_repo_log_accepted_sameday": 348,
+    "fed_repo_ops": 350,
+    "fed_repo_ops_sameday": 348,
+    "fed_repo_rate_iorb_bps": 340,
+    "fed_repo_rate_iorb_bps_sameday": 338,
+    "net_settlement_due_5d": 96
+   },
+   "rows": 1935,
+   "sha256": "69be91b6270e1e42421dc1f0ba530e441e31949f746178f41c31a00a8074a052"
+  },
+  "main_without_679": {
+   "columns_differing_from_H2_tree_values": {
+    "fed_repo_accepted": 350,
+    "fed_repo_accepted_sameday": 348,
+    "fed_repo_days_since_positive": 1211,
+    "fed_repo_days_since_positive_sameday": 1211,
+    "fed_repo_log_accepted": 350,
+    "fed_repo_log_accepted_change": 523,
+    "fed_repo_log_accepted_change_sameday": 521,
+    "fed_repo_log_accepted_sameday": 348,
+    "fed_repo_ops": 350,
+    "fed_repo_ops_sameday": 348,
+    "fed_repo_rate_iorb_bps": 340,
+    "fed_repo_rate_iorb_bps_sameday": 338
+   },
+   "rows": 1935,
+   "sha256": "90f8ada9bd259d4aba72226344a17451c982efc895da2391cea77f13a533aec7"
+  },
+  "main_without_743": {
+   "columns_differing_from_H2_tree_values": {
+    "net_settlement_due_5d": 96
+   },
+   "rows": 1935,
+   "sha256": "92bf10a4906f2fa13f7c9d0881d84880a2d3d1c90cbe41d7769bd6eb3b28bb93"
+  }
+ }
+}
