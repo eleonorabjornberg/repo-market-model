@@ -80,6 +80,8 @@ VARIANTS = ("base",) + tuple(f"plus_{t}" for t in TARGETS)
 RECORDED = REPO / "docs" / "pivot" / "evidence" / "spread-distribution-protocol" / "score.json"
 MEASUREMENT = REPO / "metadata" / "sources_measurement.json"
 #: the as-of scarcity states of a decision day.
+#: a plus walk may start at most this many refit blocks after the base's (the target walk starts after 61 labels).
+MAX_SKIPPED_BLOCKS = 6
 BANDS = ("ample", "scarce", "unknown")
 
 
@@ -239,16 +241,25 @@ def walk_command(args) -> int:
         registry = {**registry, tf.SOURCE_ID: measurement[tf.SOURCE_ID]}
         context = tf.switched_on()
     fit = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=tuple(f for f in features if f != "spread_bps"), levels=GRID)
+    blocks_skipped = 0
     with context:
-        result, levels, settings = m634.walk(
-            rows, fit=fit, features=features, online_calibration=None, registry=registry, horizon=h,
-            minimum_history=minimum, refit_every=refit, expected_levels=GRID,
-        )
+        while True:
+            try:
+                result, levels, settings = m634.walk(
+                    rows, fit=fit, features=features, online_calibration=None, registry=registry, horizon=h,
+                    minimum_history=minimum + refit * blocks_skipped, refit_every=refit, expected_levels=GRID,
+                )
+                break
+            except ValueError as error:
+                # the first training windows hold no forecast of the target: start at the base's next refit block
+                if target is None or "unobserved on every row" not in str(error) or blocks_skipped >= MAX_SKIPPED_BLOCKS:
+                    raise
+                blocks_skipped += 1
     laws = {rows[i].date.isoformat(): q for i, q in result}
     document_out = {
         "variant": variant, "horizon": h, "levels": levels,
         "panel_sha256": panel_sha256(args.published), "scratch_panel_sha256": scratch_digest,
-        "target_walk_sha256": target_digest, "forecasts_attached": attached,
+        "target_walk_sha256": target_digest, "forecasts_attached": attached, "blocks_skipped": blocks_skipped,
         "features": list(features), "settings": json.loads(json.dumps(settings, default=str)), "laws": laws,
     }
     partial = args.output.with_name(args.output.name + ".partial")
@@ -286,20 +297,29 @@ def score_command(args) -> int:
     decisions, days_by = {}, {}
     for name, laws in walks.items():
         decisions[name], days_by[name] = m634.lead_forecasts(laws, calendar)
-    common = sorted(set.intersection(*(set(days) for days in days_by.values())))
-    common = [day for day in common if all(calendar[position[day] + h] <= LAST_TARGET for h in HORIZONS)]
-    refuse_locked(common + [calendar[position[day] + h] for day in common for h in HORIZONS])
-    usable, unbuilt = [], []
-    for day in common:
-        try:
-            pb.forecasts(pb.b1_forecast, rows, [day], registry=registry, decision_time=DECISION)
-            pb.forecasts(pb.b2_forecast, rows, [day], registry=registry, decision_time=DECISION, splits=splits)
-            usable.append(day)
-        except sp.ProtocolError as error:
-            unbuilt.append((day.isoformat(), str(error)))
-    common = usable
+    def scorable(candidates: Sequence[date]):
+        """The decision days of `candidates` whose five targets are in range, unlocked and with both benchmarks."""
+
+        inside = [day for day in candidates if all(calendar[position[day] + h] <= LAST_TARGET for h in HORIZONS)]
+        refuse_locked(inside + [calendar[position[day] + h] for day in inside for h in HORIZONS])
+        usable_days, unbuilt_days = [], []
+        for day in inside:
+            try:
+                pb.forecasts(pb.b1_forecast, rows, [day], registry=registry, decision_time=DECISION)
+                pb.forecasts(pb.b2_forecast, rows, [day], registry=registry, decision_time=DECISION, splits=splits)
+                usable_days.append(day)
+            except sp.ProtocolError as error:
+                unbuilt_days.append((day.isoformat(), str(error)))
+        return usable_days, unbuilt_days
+
+    base_days, _ = scorable(sorted(days_by["base"]))
+    common_all = sorted(set.intersection(*(set(days) for days in days_by.values())))
+    common, unbuilt = scorable(common_all)
     if not common:
         raise SystemExit("no decision day has both benchmarks")
+    base_b1 = pb.forecasts(pb.b1_forecast, rows, base_days, registry=registry, decision_time=DECISION)
+    base_filled = sp.fill_missing({day: decisions["base"][day] for day in base_days}, base_b1, base_days)
+    base_all = sp.day_scores(base_filled.forecasts, outcomes, calendar)
     b1 = pb.forecasts(pb.b1_forecast, rows, common, registry=registry, decision_time=DECISION)
     b2 = pb.forecasts(pb.b2_forecast, rows, common, registry=registry, decision_time=DECISION, splits=splits)
     forecasts: Dict[str, Dict[date, Dict[int, Sequence[float]]]] = {"B1": b1, "B2": b2}
@@ -334,8 +354,9 @@ def score_command(args) -> int:
     document["reproduction"] = {
         "recorded_gbm_funding_mean_primary": recorded["mean_primary"]["gbm_funding"],
         "recorded_days": recorded["decision_days"]["n"],
-        "here_base_mean_primary": document["mean_primary"]["base"],
-        "here_days": len(days),
+        "here_base_mean_primary": sum(base_all.values()) / len(base_all),
+        "here_days": len(base_all),
+        "base_mean_primary_on_the_common_days": document["mean_primary"]["base"],
     }
     # decision-day attributes
     state = as_of_state(args.panel, days)
@@ -513,7 +534,8 @@ def report_markdown(document: dict, declared: dict) -> str:
         "",
         f"The base re-walks #634's `gbm_funding`: grid CRPS {fmt(reproduction['here_base_mean_primary'], 4)} on {reproduction['here_days']} days here; "
         f"{fmt(reproduction['recorded_gbm_funding_mean_primary'], 4)} on {reproduction['recorded_days']} days recorded in "
-        "`docs/pivot/evidence/spread-distribution-protocol/score.json`.",
+        "`docs/pivot/evidence/spread-distribution-protocol/score.json`. On the days every walk covers (the plus walks start at a later refit block) "
+        f"the base reads {fmt(reproduction['base_mean_primary_on_the_common_days'], 4)}.",
         "",
         "## Readings (development data, not a verdict)",
         "",
