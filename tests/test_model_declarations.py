@@ -55,11 +55,13 @@ LEGACY = {
 }
 
 # Declarations on `metadata/` that predate #803 and lack a `hypothesis` or a block the count can read (`variants`,
-# `candidates` or `arms`). Frozen: a new declaration is not added here, it is made complete.
+# `candidates` or `arms`). Frozen: a new declaration is not added here, it is made complete. `always_flag_685.json`
+# (#728) was merged on 15 October 2026, before this rule, so it joined the list at the merge of main into #803.
 PRE_803 = {
     "alarm_cooldown.json",
     "all_inputs.json",
     "always_flag_588.json",
+    "always_flag_685.json",
     "announcement_dating.json",
     "backfill_tier1.json",
     "calibrated_stack.json",
