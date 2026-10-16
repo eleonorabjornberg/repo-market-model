@@ -468,6 +468,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H1 is a validity check, not a gain claim); the page's reading is that the confirmation design cannot confirm the 3% MME in 500 days as the test stands.
 - Next: Eleonora decides the reading of the critical value (Q-E) and whether to change the MME or the days; a change is a draft decision record under §13.
 
+### 2026-10-14 [H4] step 3 · eleonorabjornberg/repo-market-model#726
+- Directive: #726
+- Step: 3 (development nested test of the back-fill against H5's candidate, #634's gbm_funding; steps 1 and 2 were done in #661)
+- Tier: development
+- Pins: published panel `4ddc3882…`; extended panel `1e09ae43…`; base `49ff40d9`; declaration `metadata/backfill_h5_726.json`; resynced and re-scored on main at `31774b83` (the 250-day reference is now the grid comparison's calibrated value, #737; every other figure unchanged)
+- Tried: the candidate trained without and with the 899 back-filled rows (only SOFR, IORB, volume, TGCR, BGCR and calendar columns carried, the rest blank and imputed by the fitter), 23 levels, leads 1 to 5, scored by the protocol's scorer on 1869 decision days. Variants: 1 new (the with arm), 5 fits.
+- Result: 2018-19 grid CRPS 4.005 → 4.119, d −0.114 [−0.168, −0.061] (worse); all days d −0.001 [−0.038, +0.040]; 2018-19 90% coverage 0.688 → 0.659 (−0.029 [−0.064, +0.007]); 2024 and 2025-26 slightly worse, 2020 and 2021-23 better with intervals covering zero. Detail in `docs/pivot/backfill-h5-726-result.md`.
+- Against kill: no development gain beyond the interval, so H4 is not supported by this test, as exploration only; the test is narrow, since the candidate's other inputs are imputed on back-filled rows.
+- Next: step 4 is Eleonora's; which candidate and which reading of the blank inputs are her questions on the PR.
+
 ### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
 - Directive: #747
 - Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
