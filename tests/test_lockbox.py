@@ -505,6 +505,11 @@ NOT_ENTRY_POINTS = {
         "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls lockbox.require_unlocked on every "
         "scored day before it reads one, refuses a panel past 2025-12-31 and fits and selects nothing"
     ),
+    "scripts/richer_targets_706.lead_on_onsets": (
+        "the pre-onset AUC of a modelled target's lead-1 median and of its as-of value (H9 step 2, #706); walks the lead-1 "
+        "fold grid, calls refuse_locked on every scored day before it reads one, and fits and selects nothing "
+        "(tests/test_richer_targets_706_script.py, LockedDayTests)"
+    ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
         "nothing, and leaves locked days out of every count through `counted` "
