@@ -788,7 +788,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data). H5's kill, no CRPS gain over phase 2 and no ordinary-day ranking gain, is not assessed here; the ordinary-anchor gain is resolved and about +9%.
 - Next: #741 (does avoiding calendar spikes alone reach the pooled figure); the critical value and the MME are Eleonora's.
 
-
 ### 2026-10-15 [H5] groundwork G1 · eleonorabjornberg/repo-market-model#821
 - Directive: #800 (the shared "not a risk date" function, asked by the code merged after #709)
 - Step: groundwork G1 (the ordinary-day population across H2, H5, H6 and H8; no step of H5 itself)
@@ -798,3 +797,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: no figure moves. H5's 386 risk days and H6's 386 (every type) are identical before and after. The shared definition read the calendar-day month-end window has 404; the two readings disagree on 58 days (20 only in the business-day reading, 38 only in the calendar-day one).
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's question: which month-end window is the shared definition. The by-type groupings (H8 climatology, #707, #688, #639) stay as they are.
+
+### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#777
+- Directive: #742
+- Step: 2 (milestone M2, guard updated: a per-series admitted list)
+- Tier: development
+- Pins: scratch panel `4137d0ad…`, extended panel `f3acce04…`, workbook `1c889930…`; base `978dbcd`
+- Tried: no forecast variant and no new score. A guard that admits only listed series (TGCR, BGCR, SOFR, each from 2018-05-17), applied to the refits of #633's script and to `backfill_history.py run`; the recorded figures of #633 re-read by which series each rests on. Variants: 0.
+- Result: the declared model of #633 reads the bill rate, reserves and the TGA from the back-filled rows and is now refused (`LookAheadError`); its pooled (+0.081 [+0.035, +0.133]) and 2021-23 (+0.149 [+0.061, +0.257]) CRPS gains rest on series that are not admitted. The workbook-only variant passes: pooled +0.032 [−0.002, +0.072], 2021-23 +0.033 [−0.041, +0.125], 2018-19 central-90% coverage +0.035 [+0.017, +0.054]. Detail in `docs/pivot/posting-dates-h4-result.md`.
+- Against kill: not killed on the workbook-only variant (a posting time is established; the 2018-19 calibration move's interval excludes zero).
+- Next: the Liberty Street copy as tracked evidence (fetch blocked here); whether IORB needs its own admitted instant (Eleonora); #726 against H5's candidate uses the workbook-only variant.

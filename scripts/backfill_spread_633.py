@@ -21,6 +21,11 @@ declared in `metadata/backfill_posting.json` (17 May 2018, Eleonora's ruling on 
 
 The workbook-only sensitivity (declared after the first score): `forecasts ... --inputs workbook --output
 OUT/${arm}_h${h}_wb.json`, then `score ... --suffix _wb`.
+
+Since #742 the extended arm also passes `backfill.require_series_admitted`: only TGCR, BGCR and SOFR are admitted
+(`metadata/backfill_posting.json`), so `--arm with --inputs declared` raises `LookAheadError` on the bill rate,
+reserves and the TGA, and the workbook-only inputs are the run the guard allows. The declared model's recorded
+figures are kept as they were made, marked as resting on series that are not admitted.
 """
 
 from __future__ import annotations
@@ -63,6 +68,22 @@ NAMES = (
 ARMS = ("without", "with")
 #: The sensitivity declared after the first score: the inputs the ruled workbook and the calendar carry.
 WORKBOOK_ONLY = ("spread", "spread_change_5", "tgcr_iorb", "bgcr_iorb") + CALENDAR
+#: The back-fill series each input draws on. IORB (an administered rate that defines the spread) and the
+#: calendar columns are not back-fill series and are not listed; whether IORB needs its own entry is a
+#: marked question on #742's pull request.
+SOURCE_SERIES = {
+    "spread": "sofr", "spread_change_5": "sofr", "tgcr_iorb": "tgcr", "bgcr_iorb": "bgcr",
+    "tbill_4w_iorb": "tbill_4w", "reserve_balances": "reserve_balances", "tga": "tga",
+}
+
+
+def series_read(inputs: str) -> Tuple[str, ...]:
+    """The back-fill series a fit of the `declared` or `workbook` inputs reads (#742)."""
+
+    names = NAMES if inputs == "declared" else WORKBOOK_ONLY
+    return tuple(dict.fromkeys(SOURCE_SERIES[name] for name in names if name in SOURCE_SERIES))
+
+
 LOW90, HIGH90 = sp.GRID.index(0.05), sp.GRID.index(0.95)
 LOW50, HIGH50 = sp.GRID.index(0.25), sp.GRID.index(0.75)
 
@@ -142,6 +163,7 @@ def forecasts_command(args) -> int:
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     rule = InformationRule(registry, FEATURES, decision_time=DECISION, horizon=h)
     posting = backfill.load_posting_instant(POSTING)
+    admitted = backfill.load_admitted_series(POSTING)
     settings = {key: value for key, value in PRESSURE_CLASSIFIER_SETTINGS.items() if key != "estimator"}
 
     pairs: Dict[int, List[float]] = {}
@@ -168,6 +190,7 @@ def forecasts_command(args) -> int:
         ]
         backfill.require_training_only(folds, where="backfill_spread_633")
         backfill.require_posting_established(folds, posting, where="backfill_spread_633")
+        backfill.require_series_admitted(folds, series_read(args.inputs), admitted, where="backfill_spread_633")
         xs = [_select(pairs[s], args.inputs) for s in labels]
         ys = [rows[s].spread_bps for s in labels]
         models = [

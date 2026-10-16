@@ -21,6 +21,12 @@ Bank first posted the workbook is established, and a back-filled value is stampe
 2014 by the ordinary parser. A fit that trains on it is refused unless the posting instant is declared
 (`metadata/backfill_posting.json`) and is no later than the start of the fit's training-end day.
 
+`require_series_admitted` is the third (#742): the posting instant above is the workbook's, but the extended
+panel also carries series from other sources (bill rates, reserves, the TGA, ON RRP results, auctions) whose
+posting is not established. A fit that trains on back-filled rows must name the series it reads, and each must be
+listed under `admitted` in `metadata/backfill_posting.json` with its own instant; any other series raises
+`LookAheadError` (Eleonora's ruling on #742, 14 October 2026).
+
 Standard library only: the workbook is read with `zipfile` and `xml.etree`.
 """
 
@@ -41,6 +47,7 @@ __all__ = [
     "BACKFILL_SOURCE_ID",
     "augment_rows",
     "BackfilledDay",
+    "load_admitted_series",
     "load_posting_instant",
     "FIRST_PUBLISHED",
     "RATE_NAMES",
@@ -48,6 +55,7 @@ __all__ = [
     "parse_workbook",
     "prefix_length",
     "require_posting_established",
+    "require_series_admitted",
     "require_training_only",
 ]
 
@@ -262,6 +270,63 @@ def require_posting_established(
                 f"no back-filled value is training history before it is established "
                 f"(docs/decisions/information-set.md, metadata/backfill_posting.json)"
             )
+
+
+def load_admitted_series(path: Path) -> Dict[str, datetime]:
+    """The series the back-fill guard admits, each with its own posting instant (#742).
+
+    Raises:
+        ValueError: the file has no non-empty `admitted` mapping, or an instant is not an ISO date-time.
+    """
+
+    declaration = json.loads(Path(path).read_text(encoding="utf-8"))
+    listed = declaration.get("admitted")
+    if not isinstance(listed, dict) or not listed:
+        raise ValueError(f"{path}: the back-fill posting declaration lacks a non-empty 'admitted' mapping")
+    out: Dict[str, datetime] = {}
+    for name, value in listed.items():
+        try:
+            out[name] = datetime.fromisoformat(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{path}: admitted[{name!r}] must be an ISO date-time, got {value!r}") from exc
+    return out
+
+
+def require_series_admitted(
+    folds: Iterable, reads: Sequence[str], admitted: Mapping[str, datetime], *, where: str
+) -> None:
+    """Refuse a fit that trains on back-filled values of a series that is not admitted (#742).
+
+    `reads` names every series the fit reads from the back-filled rows. A fold whose training window begins
+    before `FIRST_PUBLISHED` uses them. Each must be in `admitted`, and its own instant must be no later than
+    the start of the day the fit's training ends. A fold trained on published days only is not affected.
+
+    Raises:
+        ValueError: a back-filled fit names no series (what it reads is not declared).
+        LookAheadError: a series is not admitted, or is read before its own instant; naming `where`, the
+            series and the fold.
+    """
+
+    for fold in folds:
+        if fold.train_start >= FIRST_PUBLISHED:
+            continue
+        if not reads:
+            raise ValueError(f"{where}: a fit on back-filled values must name the series it reads")
+        start = datetime.combine(fold.train_end, time.min)
+        for name in reads:
+            instant = admitted.get(name)
+            if instant is None:
+                raise LookAheadError(
+                    f"{where}: the fit scored on {fold.scored_date} trains on back-filled values of {name!r} "
+                    f"(from {fold.train_start}), which is not admitted; only {sorted(admitted)} are "
+                    f"(metadata/backfill_posting.json, #742)"
+                )
+            if instant > start:
+                raise LookAheadError(
+                    f"{where}: the fit scored on {fold.scored_date} trains on back-filled values of {name!r} "
+                    f"and ends {fold.train_end}, but its posting instant is {instant.isoformat()} "
+                    f"(metadata/backfill_posting.json, #742)"
+                )
 
 
 def augment_rows(
