@@ -918,3 +918,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: provenance relabelled, no value changed, nothing scored.
 - Against kill: not applicable.
 - Next: Eleonora's rulings on Q1 and Q2 above; then H7m G6 resumes.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#847
+- Directive: #843 (finding #840)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `0065b4e3`
+- Tried: rebuilt #632's variants (a) and (b) at h = 1 in trees at `011023cb`, `09640f5b`, `e56c4fb3`, `dbbe3d8d` and main, then on main with the older `satiation_distance_598.py`. Variants: 0 new models.
+- Result: `ml.py` is not the cause: all five trees give the same rows ((a) AUROC 0.5673, (b) 0.9072, slope 0.497). The cause is the two distance columns, rebuilt per H.4.1 release since #622: with the older columns the page's 0.5629, 0.9029 and slope 0.463 return to the digit. Development data, no verdict.
+- Against kill: not applicable.
+- Next: whether #632's tracked tables are re-scored and published anew is Eleonora's (marked question in the PR); the other pages on `satiation_dist_roll` may have the same history.
