@@ -807,3 +807,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the declared model of #633 reads the bill rate, reserves and the TGA from the back-filled rows and is now refused (`LookAheadError`); its pooled (+0.081 [+0.035, +0.133]) and 2021-23 (+0.149 [+0.061, +0.257]) CRPS gains rest on series that are not admitted. The workbook-only variant passes: pooled +0.032 [−0.002, +0.072], 2021-23 +0.033 [−0.041, +0.125], 2018-19 central-90% coverage +0.035 [+0.017, +0.054]. Detail in `docs/pivot/posting-dates-h4-result.md`.
 - Against kill: not killed on the workbook-only variant (a posting time is established; the 2018-19 calibration move's interval excludes zero).
 - Next: the Liberty Street copy as tracked evidence (fetch blocked here); whether IORB needs its own admitted instant (Eleonora); #726 against H5's candidate uses the workbook-only variant.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
+- Directive: #785
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `dfbbc03`
+- Tried: #631's two every-day rows (`+every_day` and `+every_day+lagpress`) rebuilt at h = 1 to 5 and tabulated for the reliability slope on the ordinary days inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals (2,000 replications). Variants: 0 new models.
+- Result: inside 2018-19 (62 of 82 pressure days) the parent reads 0.32 to 0.61 at h = 1 to 5 and lagged pressure 0.21 to 0.51, intervals below 1 from h = 2; the pooled 0.85 to 1.00 is not calibration by regime. In 2025-26 the rows read 0.62 to 0.94 with intervals including 1. Two pooled cells differ from Table M2 (parent h = 3: 0.91 against 0.98; lagpress h = 4: 0.71 against 0.73), the fit definition being #725's.
+- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
+- Next: any reliability-shape test (#628) is read within regimes; the two moved cells are not traced to the fit or to `ml.py`.
