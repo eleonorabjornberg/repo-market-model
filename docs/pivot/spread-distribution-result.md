@@ -132,9 +132,46 @@ and the intercept is negative. The row that passes tiers 3 and 5 does so on the 
 >
 > *Update, 14 October 2026 (#753).* Still not computed. #626's per-regime slopes are now (`docs/pivot/kinked-elasticity-result.md`, "Reliability within regimes"): inside 2018-19 the
 > slopes of the structural rows are 0.18 to 0.47 against a pooled 0.39 to 0.74, so a pooled slope is not a reading of this page's calibration either.
-> Computing this page's rows needs, per horizon, the references of `spread_distribution_632.py refs` (`both`, `dist` of #598, `iorb` of #579 and the cap of #601, all behind
-> the AUG2D panel of `satiation_distance_598.py`) and `spread_distribution_632.py run` rebuilt, then a `scripts/reliability_regimes_683.py` command that reads the `sd_h?` files and
-> the references it pairs with. That chain is five to seven scripts per horizon and was not timed here.
+> The per-regime slopes of this page's rows follow (#786).
+
+### Reliability within regimes (16 October 2026, #786)
+
+Development data only (days to 2025-12-31, ordinary days, +5 bp); not a verdict. Slope of the logistic reliability line, 90% stationary-bootstrap interval (2,000
+replications, the judge's block length), pressure days in the pooled cell (101 at h = 1, 100 at h = 3 to 5); 1 is reliable. `†` is a figure without an interval (a
+handful of pressure days). 2018-19 holds 73 or 74 of the pressure days, 2020-24 holds 7 and 2025-26 holds 20. The full tables, with intercepts, every row and horizon and the split by
+as-of scarcity state, are in `docs/pivot/evidence/reliability-regimes/spread-632.md` (and `.json`), written by `scripts/reliability_regimes_683.py spread632`.
+
+| row | h | pooled | 2018-19 | 2020-24 | 2025-26 |
+|---|---|---|---|---|---|
+| (b) | 1 | 0.50 [0.31, 0.84] | 0.33 [0.06, 0.93] | 0.25† | 0.82 [0.63, 1.09] |
+| (b) | 3 | 0.60 [0.40, 0.88] | 0.59 [0.35, 0.92] | 0.19† | 0.65 [0.40, 1.38] |
+| (b) | 5 | 0.42 [0.28, 0.71] | 0.21 [0.06, 0.59] | 0.29† | 0.30 [0.12, 1.20] |
+| `persistence_logistic` | 1 | 1.05 [0.74, 1.41] | 0.56 [0.28, 1.11] | 0.78 [-0.03, 1.48] | 0.98 [0.73, 1.54] |
+| `persistence_logistic` | 3 | 0.92 [0.54, 1.43] | 0.35 [0.10, 0.91] | 0.86 [-7.28, 4.32] | 1.07 [0.62, 2.30] |
+| `persistence_logistic` | 5 | 0.89 [0.53, 1.33] | 0.32 [0.16, 0.63] | 1.05 [-1.00, 2.31] | 0.89 [0.54, 1.73] |
+| `ngboost_laplace` | 1 | 0.61 [0.48, 0.77] | 0.63 [0.44, 0.87] | 0.27 [-0.02, 0.61] | 0.80 [0.62, 1.89] |
+| `ngboost_laplace` | 5 | 0.34 [0.26, 0.48] | 0.14 [-0.03, 0.42] | 0.34 [0.06, 1.63] | 0.35 [0.21, 0.90] |
+| `risk_gbm+settle+h41+dist_roll` | 1 | 0.16 [0.13, 0.21] | 0.09 [0.05, 0.13] | 0.24† | 0.22 [0.15, 0.36] |
+
+**What the regimes show, and the restated claims.**
+
+- **"`persistence_logistic` (slope 0.99) is the better calibrated of the two" is a pooled statement and does not hold inside 2018-19.** There its slope is 0.32 to 0.58 at h = 1 to 5, with intervals that
+  exclude 1 at h = 3 and h = 5 (and cover it at h = 1). It reads near 1 only in 2025-26 (0.82 to 1.07, intervals that include 1). The pooled 0.89 to 1.08 is a mean of an over-spread regime and a regime near 1.
+- **(b) is over-spread in 2018-19 and not shown calibrated in 2025-26.** Its 2018-19 slope is 0.33, 0.60, 0.59, 0.07 and 0.21 at h = 1 to 5, with the interval below 1 at every horizon. In 2025-26 it is 0.82, 0.66, 0.65, 0.90
+  and 0.30, with wide intervals that include 1 at every horizon. "(b) is the worse calibrated" is also pooled: inside 2018-19 (b) is nearer 1 than `persistence_logistic` at h = 2 and 3 (0.60, 0.59 against 0.48, 0.35), and farther at h = 1, 4 and 5; the intervals overlap, so there is no separation either way.
+- **The 0.42 pooled slope of (b) averages regimes of 0.07 to 0.60 (2018-19) and 0.30 to 0.90 (2025-26).** 2020-24 holds 7 pressure days and says nothing (every slope there is a figure without an interval or covers everything from negative to 4).
+- By as-of scarcity state almost all pressure days are in state 3 (90 of 101 at h = 1), where (b) reads 0.38 at h = 1 and 0.07 at h = 4; states 0 and 1 hold at most 3 pressure days each and give no slope worth reading (the evidence file).
+- The calibration table below (predicted against realised, +5 bp, pooled over h = 1 to 5) is unchanged: it is a rate by regime, not a slope.
+
+**The rebuilt rows differ slightly from the page's first run.** The references and the risk-date passers reproduce the tracked AUROC at h = 1 to within 0.0002 (`persistence_logistic`, `ngboost_laplace` and the climatology exactly), but the two new rows
+do not: (b) AUROC 0.9072 against 0.9029 and pooled slope 0.445 against 0.425 (h = 1 to 5), (a) 0.5673 against 0.5629. The fit used for the slopes is the one definition of #725, so a slope on this page
+before and after this section is not computed by the same code; `ml.py` changed after the page was written (the quantile grid option of #634, the missing-column rule of #635), and this run did not isolate
+which change moved the two rows. The figures in this section are those of the rebuilt rows; the tables above were not edited.
+
+The chain was rebuilt in this order (`/opt/rmm-venv`, one thread each, about 10 minutes for the forecasts of all five horizons in parallel and 30 minutes for the bootstrap on four processes; `risk_date_severity.py` is needed for `risk_gbm`): `build` and `verify-panel` of
+`REPRODUCIBILITY.md`, `pressure_v1_1.py panel`, `measurement_fields.py panel`, `satiation_distance_598.py panel`, then for each horizon `pressure_judge.py forecasts`, `pressure_track_q.py forecasts` and
+`satiation_587.py reference`, `announcement_dating_rescore.py run --arm both` for `risk_gbm` and `risk_gbm_base` and `satiation_587.py merge`, `risk_date_severity.py run`, `satiation_distance_598.py run`, `iorb_every_day_579.py run`; once for all horizons
+`every_day_conditioning_601.py cap`; then per horizon `spread_distribution_632.py run` and `refs`; and `reliability_regimes_683.py spread632` (its docstring has the arguments).
 
 ## Calibration of (b) (predicted against realised, +5 bp, pooled over h = 1 to 5)
 

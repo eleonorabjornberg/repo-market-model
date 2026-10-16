@@ -347,6 +347,11 @@ NOT_ENTRY_POINTS = {
         "target on or before 2025-12-31 (`decision_indices`) and no training label after it is read; "
         "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
     ),
+    "scripts/backfill_h5_726.forecasts_command": (
+        "makes the H4 nested test's forecasts and scores nothing (#726): it calls require_unlocked, then "
+        "spread_distribution_634.walk, which refuses a locked scored day (refuse_locked) before any fit; "
+        "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
+    ),
     "protocol_benchmarks._anchor": (
         "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a forecast, "
         "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls "

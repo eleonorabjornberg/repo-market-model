@@ -59,8 +59,10 @@ def net(auctions, instant, rule):
     """The day's net under `rule`, all classes, as announced by `instant`."""
 
     total = 0.0
+    pit = rule == "left_out_pit"  # the rule in force since #738: a CMB is on the schedule only once announced
+    rule = "left_out" if pit else rule
     for is_bill in (True, False):
-        everything = [a for a in auctions if a.is_bill == is_bill]
+        everything = [a for a in auctions if a.is_bill == is_bill and (not pit or not a.cmb or a.announced_at <= instant)]
         members = [a for a in everything if a.announced_at <= instant]
         if members:
             total += group_value(members, everything, rule)

@@ -28,7 +28,10 @@ total covers securities not yet announced, so netting it against part of the off
 inflow (#620), and counting that part with no maturing amount read a drain (#665). `check_known_columns` is the
 guard: a column that counts an auction announced after the instant raises
 `LookAheadError`, and one that leaves out an announced auction raises
-`StaleReadError`.
+`StaleReadError`. Whether a class is partly announced is read from the day's schedule as it stood at the
+instant: a cash management bill (`cash_management_bill_cmb == "Yes"`) is on no published schedule, so it
+counts toward a class's partial status only from its own announcement (#738); a column that read a later CMB
+into it also raises `LookAheadError`.
 
 Off in every published declaration: no published panel, declaration or record reads
 these columns (`COLUMN_FIELDS` is not part of `contract.FEATURE_FIELDS`).
@@ -86,7 +89,9 @@ class Auction(NamedTuple):
     """One auction: what settles, how much, what matures with it, and when each became public.
 
     `maturing` is `None` when the record carries no figure. `soma` and `result_at`
-    are `None` for an auction not held at retrieval.
+    are `None` for an auction not held at retrieval. `cmb` is the record's
+    `cash_management_bill_cmb` flag: a cash management bill is ad hoc and on no published
+    schedule, so it is unknown until its own announcement (#738).
     """
 
     settles: date
@@ -97,6 +102,7 @@ class Auction(NamedTuple):
     soma: Optional[float]
     announced_at: datetime
     result_at: Optional[datetime]
+    cmb: bool = False
 
 
 def load_declaration(path: Path) -> dict:
@@ -148,14 +154,17 @@ def auction_records(
             offering = _billions(record["offering_amt"])
             maturing = _billions(record["est_pub_held_mat_by_type_amt"])
             soma = _billions(record["soma_accepted"])
+            cmb_flag = str(record["cash_management_bill_cmb"])
             held = str(record["total_accepted"]) != WITHHELD
         except (KeyError, ValueError) as exc:
             raise ValueError(
                 f"auction record {number} lacks issue_date, {announce_field}, {result_field}, "
-                f"security_type, offering_amt, est_pub_held_mat_by_type_amt, soma_accepted or total_accepted"
+                f"security_type, offering_amt, est_pub_held_mat_by_type_amt, soma_accepted, total_accepted or cash_management_bill_cmb"
             ) from exc
         if offering is None:
             raise ValueError(f"auction record {number} has no offering_amt")
+        if cmb_flag not in ("Yes", "No"):
+            raise ValueError(f"auction record {number} has cash_management_bill_cmb {cmb_flag!r}, not Yes or No")
         if kind in TREASURY_BILL_SECURITY_TYPES:
             is_bill = True
         elif kind in TREASURY_COUPON_SECURITY_TYPES:
@@ -177,6 +186,7 @@ def auction_records(
                 soma,
                 datetime.combine(announced, announced_time),
                 datetime.combine(auctioned, result_time) if held else None,
+                cmb_flag == "Yes",
             )
         )
     return tuple(out)
@@ -205,7 +215,18 @@ def known_auctions(auctions: Sequence[Auction], instant: datetime) -> List[Aucti
     return [auction for auction in auctions if auction.announced_at <= instant]
 
 
-def net_for_day(auctions: Sequence[Auction], instant: datetime) -> Tuple[float, float, int]:
+def _visible_to_schedule(auctions: Sequence[Auction], instant: datetime, future_cmb: bool) -> List[Auction]:
+    """The auctions the published schedule shows at `instant`: all but the cash management bills not yet announced.
+
+    With `future_cmb` the unannounced cash management bills stay in, which is the reading #738 rules out.
+    """
+
+    return [a for a in auctions if future_cmb or not a.cmb or a.announced_at <= instant]
+
+
+def net_for_day(
+    auctions: Sequence[Auction], instant: datetime, *, future_cmb: bool = False
+) -> Tuple[float, float, int]:
     """`(net, net of the bill types, groups with no maturing figure)` of one settlement day's auctions.
 
     The auctions announced by `instant` are grouped into the bill types and the coupon
@@ -222,11 +243,16 @@ def net_for_day(auctions: Sequence[Auction], instant: datetime) -> Tuple[float, 
     smallest mean absolute error of the three rules against the completed net (`scripts/partly_announced_679.py`). That a class has more auctions settling the day is read from
     `auctions`, the day's whole list, as the Treasury's published schedule would show it; no unannounced
     offering enters any figure.
+
+    The schedule does not show a cash management bill (CMB) before its own announcement: CMBs are ad hoc, so
+    one announced after `instant` neither makes a class partly announced nor is counted (#738, Eleonora,
+    14 October 2026). `future_cmb=True` restores the earlier reading, which counted every CMB of the day; it
+    exists only so `check_known_columns` can recognise a column built that way.
     """
 
     groups: Dict[bool, List[Auction]] = {}
     everything: Dict[bool, List[Auction]] = {}
-    for auction in auctions:
+    for auction in _visible_to_schedule(auctions, instant, future_cmb):
         everything.setdefault(auction.is_bill, []).append(auction)
     for auction in known_auctions(auctions, instant):
         groups.setdefault(auction.is_bill, []).append(auction)
@@ -251,14 +277,14 @@ def _instant(day: date, declaration: Mapping[str, object]) -> datetime:
 
 
 def _columns_for(
-    day: date, by_day: Mapping[date, Sequence[Auction]], instant: datetime
+    day: date, by_day: Mapping[date, Sequence[Auction]], instant: datetime, future_cmb: bool = False
 ) -> Dict[str, float]:
-    net, bills, _unknown = net_for_day(by_day.get(day, ()), instant)
+    net, bills, _unknown = net_for_day(by_day.get(day, ()), instant, future_cmb=future_cmb)
     ahead = 0.0
     current = day
     for _ in range(WINDOW_DAYS):
         current = next_business_day(current, 1)
-        ahead += net_for_day(by_day.get(current, ()), instant)[0]
+        ahead += net_for_day(by_day.get(current, ()), instant, future_cmb=future_cmb)[0]
     return {"net_settlement": net, "net_settlement_bills": bills, "net_settlement_due_5d": ahead}
 
 
@@ -313,6 +339,12 @@ def check_known_columns(
             value = row.values.get(column)
             if value is None or abs(float(value) - known[column]) <= TOLERANCE:
                 continue
+            if abs(float(value) - _columns_for(row.date, by_day, instant, future_cmb=True)[column]) <= TOLERANCE:
+                raise LookAheadError(
+                    f"{column} for {row.date.isoformat()} is {value}, which reads a cash management bill "
+                    f"announced after {instant} into a class's partly announced status; only {known[column]} "
+                    f"was public (#738)"
+                )
             later = [
                 _columns_for(row.date, by_day, moment)[column] for moment in announcements if moment > instant
             ]
