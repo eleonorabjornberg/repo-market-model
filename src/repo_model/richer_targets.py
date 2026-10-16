@@ -28,11 +28,14 @@ from __future__ import annotations
 
 import math
 import random
+from contextlib import contextmanager
 from bisect import bisect_left, bisect_right
 from datetime import date, datetime, time
 from pathlib import Path
+from types import MappingProxyType
 from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from . import contract
 from .asof import InformationRule
 from .contract import (
     FEATURE_FIELDS,
@@ -55,13 +58,17 @@ __all__ = [
     "assemble",
     "b1_quantiles",
     "b2_quantiles",
+    "as_target",
     "build_columns",
+    "choose_targets",
     "crps",
     "median",
     "median_error",
     "percentile_series",
     "pre_onset_interval",
     "spearman",
+    "swap_target_fields",
+    "target_fields",
     "spearman_interval",
     "window_first",
 ]
@@ -460,3 +467,123 @@ def pre_onset_interval(
         "auc_low": _quantile_of(aucs, tail),
         "auc_high": _quantile_of(aucs, 1.0 - tail),
     }
+
+
+# -- step 2 (#706): the choice of targets, and the label swap ------------------------------------------------------
+
+#: Eleonora's rule of 13 October 2026 (comment 6149435134 on #639): drop a target whose rank correlation with SOFR - IORB has
+#: this magnitude or more, drop one with fewer onsets than `MINIMUM_ONSETS` in the development sample, take the best `TAKE`.
+OVERLAP_LIMIT = 0.8
+MINIMUM_ONSETS = 15
+TAKE = 3
+
+
+def _figure(screen: Mapping[str, object], path: Sequence[str], target: str) -> float:
+    node: object = screen
+    for key in path:
+        if not isinstance(node, Mapping) or key not in node:
+            raise ValueError(f"step 1's screen has no {'/'.join(path)} for {target}")
+        node = node[key]
+    if not isinstance(node, Mapping) or target not in node:
+        raise ValueError(f"step 1's screen has no {'/'.join(path)} for {target}")
+    return node[target]
+
+
+def choose_targets(
+    screen: Mapping[str, object],
+    *,
+    overlap_limit: float = OVERLAP_LIMIT,
+    minimum_onsets: int = MINIMUM_ONSETS,
+    take: int = TAKE,
+) -> Dict[str, object]:
+    """The targets step 2 models, by Eleonora's rule applied to step 1's `screen.json` (#639 ruling, 13 October 2026).
+
+    1. Drop a target whose pooled rank correlation with SOFR - IORB (`overlap[t]["all:level"]["rho"]`) has magnitude
+       `overlap_limit` or more.
+    2. Drop a target with fewer than `minimum_onsets` onsets (`lead.pre_onset[t]["all"]["onsets"]`).
+    3. Rank the rest by the pre-onset AUC at lead 1 within the as-of state, averaged over the ample and scarce states, taken as
+       published (a value read high before onsets is above one half). Ties go to the larger of the grid-CRPS skill of B1 over B2
+       and of B2 over B1 at lead 1.
+    4. Take the best `take`; fewer survivors are all taken (`fewer_than_requested`).
+
+    A figure the screen does not hold is a `ValueError`: a target is never dropped for a missing number.
+    """
+
+    targets = sorted(screen["overlap"])
+    dropped: Dict[str, Tuple[str, float]] = {}
+    ranking: List[Dict[str, object]] = []
+    for target in targets:
+        rho = _figure(screen, ("overlap",), target)["all:level"]["rho"]
+        onsets = _figure(screen, ("lead", "pre_onset"), target)["all"]["onsets"]
+        if rho is None:
+            raise ValueError(f"step 1's screen holds no pooled correlation for {target}")
+        if abs(rho) >= overlap_limit:
+            dropped[target] = ("overlap", rho)
+            continue
+        if onsets < minimum_onsets:
+            dropped[target] = ("onsets", onsets)
+            continue
+        try:
+            states = _figure(screen, ("lead", "pre_onset"), target)
+            ample, scarce = states["regime:ample"]["auc"], states["regime:scarce"]["auc"]
+            cell = _figure(screen, ("forecastability",), target)["1"]["all"]
+            b1, b2 = cell["b1"], cell["b2"]
+        except KeyError as error:
+            raise ValueError(f"step 1's screen holds no {error} for {target}") from error
+        if ample is None or scarce is None:
+            raise ValueError(f"step 1's screen holds no state AUC for {target}")
+        skill = max((b2 - b1) / b2 if b2 else 0.0, (b1 - b2) / b1 if b1 else 0.0)
+        ranking.append(
+            {"target": target, "auc_ample": ample, "auc_scarce": scarce, "auc_mean": (ample + scarce) / 2.0, "skill_lead_1": skill}
+        )
+    ranking.sort(key=lambda row: (-row["auc_mean"], -row["skill_lead_1"], row["target"]))
+    chosen = [row["target"] for row in ranking[:take]]
+    return {"chosen": chosen, "ranking": ranking, "dropped": dropped, "fewer_than_requested": len(ranking) < take}
+
+
+def target_fields(column: str) -> Tuple[Tuple[str, str], ...]:
+    """The source fields a target is read from (`COLUMN_FIELDS`); only the H9 target columns have a swap."""
+
+    if column not in {t.column for t in TARGETS}:
+        raise ValueError(f"{column!r} is not an H9 target column")
+    return COLUMN_FIELDS[column]
+
+
+@contextmanager
+def swap_target_fields(column: str):
+    """For this block, the field map's `sofr` and `iorb` are the target's own sources, so the as-of rule reads `spread_bps` under them.
+
+    The model class of #634 forecasts `spread_bps = 100 * (sofr - iorb)`. `as_target` puts a target in that slot; this puts its
+    release lag there too, so its decision-instant reads obey the sources it comes from (the ON RRP operation results, or the
+    secured rate's percentiles), not SOFR's and not IORB's. **Off** outside the block: nothing published reads the swapped map.
+    """
+
+    fields = target_fields(column)
+    sources = tuple(sorted({source for source, _field in fields}))
+    saved = (contract.FEATURE_FIELDS, contract.FEATURE_SOURCES)
+    contract.FEATURE_FIELDS = MappingProxyType({**saved[0], "sofr": fields, "iorb": fields})
+    contract.FEATURE_SOURCES = MappingProxyType({**saved[1], "sofr": sources, "iorb": sources})
+    try:
+        yield
+    finally:
+        contract.FEATURE_FIELDS, contract.FEATURE_SOURCES = saved
+
+
+def as_target(rows: Sequence[DailyObservation], column: str) -> List[DailyObservation]:
+    """`rows` with `column` in the slot the model reads as SOFR - IORB: `iorb` is 0 and `sofr` the target, so `spread_bps` equals it.
+
+    A row with no value is a `ValueError`; the caller drops a leading hole (the first ON RRP change) before swapping.
+    """
+
+    if column not in {t.column for t in TARGETS}:
+        raise ValueError(f"{column!r} is not an H9 target column")
+    out: List[DailyObservation] = []
+    for row in rows:
+        value = row.values.get(column)
+        if value is None:
+            raise ValueError(f"{column} is missing on {row.date}")
+        values = dict(row.values)
+        values["iorb"] = 0.0
+        values["sofr"] = float(value) / 100.0
+        out.append(DailyObservation(row.date, values))
+    return out

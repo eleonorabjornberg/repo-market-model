@@ -186,6 +186,11 @@ Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%
 > calibrated inside 2018-19 or 2025-26, where the pressure is. A regime with no pressure day (2021-23) forecasts near 0 and raises the pooled slope
 > (`docs/pivot/diagnostics-reconciliation.md`, point 11). The per-regime slopes of these rows were **not computed** by #683, because they need this
 > page's forecasts rebuilt; until they are, do not read Table M2 as a statement of calibration.
+>
+> *Update, 14 October 2026 (#753).* Still not computed. #626's per-regime slopes are now (`docs/pivot/kinked-elasticity-result.md`, "Reliability within regimes"), and
+> they differ sharply from the pooled ones, so this table's slopes stay uncalibrated by regime. Computing this page's rows needs the forecasts of `risk_gbm+settle+h41+dist_roll+every_day`
+> and `+lagpress` rebuilt (the every-day component of #506 and the lagged-pressure inputs, at five horizons, each walk-forward on top of the parents of #598 and #601),
+> and a `scripts/reliability_regimes_683.py` command that reads them; neither is in #753's measured chain, and no timing for them is claimed here.
 
 | row | h | days | pressure days | mean forecast | realised | AUROC [90%] | intercept | slope |
 |---|---|---|---|---|---|---|---|---|

@@ -14,6 +14,9 @@ Recorded mutations, 13 October 2026, in a disposable copy of `src/repo_model/rel
    pooled slope). `test_a_pooled_slope_can_hide_over_spread_regimes` then fails with `AssertionError: 0.7514317124571822 not greater than
    0.9514317124571823`, and two more tests fail.
 Neither is a leakage guard; no mutation ritual is required for the rest.
+
+14 October 2026 (#753): `fit` halves a Newton step that lowers the likelihood. `ConvergenceTests` failed first (`AssertionError: unexpectedly None`) on a cell
+whose undamped steps cycle between two points, the shape of #626's 2018-19 cell at h = 1 (63 pressure days, reported "undefined").
 """
 
 import unittest
@@ -76,6 +79,41 @@ class FitTests(unittest.TestCase):
     def test_a_probability_outside_the_unit_interval_is_refused(self):
         with self.assertRaises(ValueError):
             rr.fit([0.2, 1.5], [0, 1])
+
+
+def _cycling_cell():
+    """A cell on which undamped Newton steps cycle (#753): a hundred days of well-ordered low forecasts, 30 non-events forecast at
+    0.99999 and 25 events forecast low. The numbers are those of 2018-19 at h = 1 in `structural_liquidity` (#626), in miniature."""
+
+    import random
+
+    rng = random.Random(0)
+    p, y = [], []
+    for _ in range(250):
+        q = min(0.99, max(0.01, rng.betavariate(1, 6)))
+        p.append(q)
+        y.append(1 if rng.random() < 0.1 + q * 0.8 * rng.random() else 0)
+    for _ in range(30):
+        p.append(0.99999)
+        y.append(0)
+    for _ in range(25):
+        p.append(rng.uniform(0.01, 0.3))
+        y.append(1)
+    return p, y
+
+
+class ConvergenceTests(unittest.TestCase):
+    def test_a_cell_on_which_newton_steps_cycle_still_gets_its_fit(self):
+        p, y = _cycling_cell()
+        r = rr.fit(p, y)
+        self.assertIsNotNone(r)
+        # it is the maximum: the score equations are zero there
+        import math
+
+        xs = [rr._logit(q) for q in p]
+        mu = [1.0 / (1.0 + math.exp(-(r.intercept + r.slope * x))) for x in xs]
+        self.assertAlmostEqual(sum(o - m for o, m in zip(y, mu)), 0.0, places=5)
+        self.assertAlmostEqual(sum((o - m) * x for o, m, x in zip(y, mu, xs)), 0.0, places=5)
 
 
 class RegimeTests(unittest.TestCase):

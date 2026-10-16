@@ -6,7 +6,8 @@ slope 1, a slope below 1 means the forecast is spread further than the outcomes,
 **A pooled slope misleads here.** A regime with no pressure days (2021-23) forecasts near 0 and adds a long, well-ordered stretch at the
 bottom of the curve, which raises the pooled slope; inside 2018-19 the same forecasts are badly over-spread. So every reading of
 calibration is made inside a regime (`REGIMES`) and, where a page splits by it, inside a scarcity state, with the pooled cell beside
-them and never alone. A cell with no event, or with a constant forecast, has no slope and says "undefined".
+them and never alone. A cell with no event, or with a constant forecast, has no slope and says "undefined"; so does one on which the fit does not converge
+(the Newton step is halved until it raises the likelihood, #753, so that is a cell with no maximum, not one whose iteration cycled).
 
 Intervals are 90% stationary-block-bootstrap percentile intervals (`repo_model.metrics.stationary_bootstrap_indices`), each cell
 resampled on its own days. A resample on which the slope is undefined (it drew no event) is counted, not dropped silently: a cell
@@ -91,6 +92,13 @@ def fit(probabilities: Sequence[float], outcomes: Sequence[int]) -> Optional[Rel
     xs = [_logit(p) for p in probabilities]
     if events == 0 or events == len(outcomes) or max(xs) - min(xs) < 1e-9:
         return None
+    def loglik(a: float, b: float) -> float:
+        total = 0.0
+        for x, y in zip(xs, outcomes):
+            z = max(-40.0, min(40.0, a + b * x))
+            total += y * z - (z if z > 0 else 0.0) - math.log1p(math.exp(-abs(z)))
+        return total
+
     a, b = 0.0, 1.0
     for _ in range(100):
         g0 = g1 = h00 = h01 = h11 = 0.0
@@ -113,6 +121,13 @@ def fit(probabilities: Sequence[float], outcomes: Sequence[int]) -> Optional[Rel
         size = max(abs(da), abs(db))
         if size > 5.0:  # damp a runaway step on near-separated data
             da, db = da * 5.0 / size, db * 5.0 / size
+        # Step-halving (#753): a Newton step that lowers the likelihood is halved until it does not. Undamped, the steps cycle
+        # between two points on a cell with a saturated forecast, and a cell of 63 pressure days reported no slope.
+        here = loglik(a, b)
+        scale = 1.0
+        while scale > 1e-6 and loglik(a + scale * da, b + scale * db) < here - 1e-12:
+            scale *= 0.5
+        da, db = da * scale, db * scale
         a, b = a + da, b + db
         if abs(da) + abs(db) < 1e-9:
             break

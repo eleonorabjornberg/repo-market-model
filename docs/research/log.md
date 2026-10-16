@@ -468,6 +468,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H1 is a validity check, not a gain claim); the page's reading is that the confirmation design cannot confirm the 3% MME in 500 days as the test stands.
 - Next: Eleonora decides the reading of the critical value (Q-E) and whether to change the MME or the days; a change is a draft decision record under §13.
 
+### 2026-10-14 [H4] step 3 · eleonorabjornberg/repo-market-model#726
+- Directive: #726
+- Step: 3 (development nested test of the back-fill against H5's candidate, #634's gbm_funding; steps 1 and 2 were done in #661)
+- Tier: development
+- Pins: published panel `4ddc3882…`; extended panel `1e09ae43…`; base `49ff40d9`; declaration `metadata/backfill_h5_726.json`; resynced and re-scored on main at `31774b83` (the 250-day reference is now the grid comparison's calibrated value, #737; every other figure unchanged)
+- Tried: the candidate trained without and with the 899 back-filled rows (only SOFR, IORB, volume, TGCR, BGCR and calendar columns carried, the rest blank and imputed by the fitter), 23 levels, leads 1 to 5, scored by the protocol's scorer on 1869 decision days. Variants: 1 new (the with arm), 5 fits.
+- Result: 2018-19 grid CRPS 4.005 → 4.119, d −0.114 [−0.168, −0.061] (worse); all days d −0.001 [−0.038, +0.040]; 2018-19 90% coverage 0.688 → 0.659 (−0.029 [−0.064, +0.007]); 2024 and 2025-26 slightly worse, 2020 and 2021-23 better with intervals covering zero. Detail in `docs/pivot/backfill-h5-726-result.md`.
+- Against kill: no development gain beyond the interval, so H4 is not supported by this test, as exploration only; the test is narrow, since the candidate's other inputs are imputed on back-filled rows.
+- Next: step 4 is Eleonora's; which candidate and which reading of the blank inputs are her questions on the PR.
+
 ### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#749
 - Directive: #747
 - Step: 1 (model-repo side: the tie fix in `satiation.fit_level`, gating liquidity H7 step 2)
@@ -737,6 +747,117 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the difference is in the build, not the inputs. `08df8d19…` rebuilds exactly (two satiation columns placed as declared); `92bf10a4…` is main without #743; its only value difference from H2's is `net_settlement_due_5d` (#679). Both controls reproduce H2's recorded skill against B1 (reachable +0.192 [+0.007, +0.352], ceiling +0.162 [-0.009, +0.310]) to every digit; H5 step 4's panel gives +0.196 [+0.019, +0.354] and +0.168 [+0.003, +0.316]. No published figure moves
 - Against kill: not applicable (a reproducibility trace; no hypothesis is tested)
 - Next: Eleonora's two marked questions on the page (which ceiling stands for H5 step 4; the ceiling interval that now excludes 0); a fit on today's main panel is not made
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#827
+- Directive: #725 (the three reliability-slope helpers call the shared fit)
+- Step: 2 (groundwork; no forecast scored)
+- Tier: development
+- Pins: base `028ab0a`; no panel read
+- Tried: no new variant. `off_risk_day_624.py`, `kinked_626.py` and `spread_distribution_632.py` call `reliability_regimes.fit` instead of their own Newton loops. Variants: 0.
+- Result: the helpers agree with the old ones to 4e-13 (624), exactly (632) and within 5e-3 in small samples (626) on 1,840 synthetic cells; a cell on which the shared fit does not converge now reads undefined, which happened in 137 cells with forecasts far below the event rate. The published panels are not tracked, so no page was re-run.
+- Against kill: not applicable (groundwork; development data gives no verdict).
+- Next: Eleonora decides whether the shared fit gets a line search (question in the PR).
+
+### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#817
+- Directive: #801
+- Step: 3 (calibration diagnosis of the kinked and #624 rows; per-regime reliability slopes, #683)
+- Tier: development
+- Pins: no panel and no scoring; tracked evidence of #624 only; base `8474e69f`
+- Tried: the per-regime slope tables now mark `†` by the pressure days in the fit (those on forecasts above 1e-4) and read a regime that forecasts zero on every pressure day as `uncalibrated: zero on all N`; no fit re-run; variants: n/a (reporting).
+- Result: no slope or other figure moves; 66 table cells change their mark only (24 in step 1, 42 in step 2) (for example `+tailcap75` at h = 1 in 2018-19: 1.39 now carries `†`, 2 events in the fit of 62 pressure days). The regime convention (three or five regimes) is left to Eleonora.
+- Against kill: not applicable (no hypothesis test).
+- Next: Eleonora's answer on the regime convention; the #624 slopes are not re-fitted on all days unless she asks.
+
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#760
+- Directive: #753
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; stacked on #723 (the shared reliability helper), with origin/main merged at `53e61af`
+- Tried: #626's rows (the fixed and fitted-kink structural forms, the rolling form, the best tier-1 row) and the two references, rebuilt and tabulated for the reliability slope inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals. Variants: 0 new models.
+- Result: inside 2018-19 (63 of 87 pressure days) the structural rows read 0.18 to 0.27 (fixed and fitted kink) and 0.30 to 0.47 (rolling) at h = 1 to 5, intervals below 1; inside 2025-26, 0.98 to 1.51, intervals including 1; the pooled 0.39 to 0.74 is a mean of the two. The rolling form is nearer 1 than the other two only in 2018-19, and `persistence_logistic` is nearer than it at h = 1 to 4. Slow step found: the five-horizon rebuild of what the table reads is 16 minutes; the slow steps are `risk_date_severity.py` (a skew-t fit, about 0.6 s a day, not needed for this table) and the single-process bootstrap (about 26 minutes on four processes).
+- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
+- Next: #631's and #632's per-regime slopes need their own forecast chains rebuilt (not done here); any reliability-shape test (#628) is read within regimes.
+
+### 2026-10-15 [H8] step 1 · eleonorabjornberg/repo-market-model#819
+- Directive: #770
+- Step: 1 (correction to the development score of #694: the calendar benchmark read a coupon settlement before it was announced)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9eaecfb5`; seed 694; declaration `metadata/ranking_694.json` unchanged
+- Tried: the calendar ranker counts a coupon settlement only at leads where its column is declared observable at the decision instant (ruling on #720, point 2), so at lead 1 under the published declaration; the model and the other benchmarks are untouched. Variants: 0 (a correction, no new candidate).
+- Result: the calendar's top-5 precision falls from 13.0% to 9.4% (recall@5 from 56.8% to 37.7%); the probability ranker's top-5 precision gain over it moves from -5.2 pp [-7.7 pp, -3.0 pp] to -1.6 pp [-2.9 pp, -0.3 pp] over 1,825 decision days to 2025-12-31. Gains over persistence and climatology do not move. Detail in `docs/pivot/ranking-770-result.md`.
+- Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is still met on development data, as exploration and not a verdict: the interval still lies wholly below zero, by a third of the earlier gap.
+- Next: step 2 (#765) reads the corrected calendar.
+
+### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#820
+- Directive: #805
+- Step: 3 (the splits the headline pages of #634 and #707 lacked: by the anchor's day type, without decision day 2019-09-18, and the upper-tail Brier claims by regime and pressure-day type; no new model)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `06801bbd`; script `scripts/h5_splits_805.py`
+- Tried: #634's 25 walks re-run on the rebuilt panels and scored with the protocol's scorer, all pooled figures reproduced exactly; then cut by anchor day type, without 2019-09-18 (real walk scores that day), by regime and target-day type for the Brier claims, and c at 125 and 250 days with and without the day. Variants: 0 new (re-score of the existing nine and #707's six transforms).
+- Result: grid CRPS skill against B1, pooled → ordinary-anchor days → without 2019-09-18: gbm +20.7% [+13.3%, +40.0%] → +9.0% [+4.6%, +14.9%] → +14.9% [+10.3%, +21.3%]; (c) +20.3% [+11.0%, +38.0%] → +9.0% [+2.9%, +15.8%] → +14.5% [+7.7%, +22.2%]. The gain concentrates on days after a calendar spike. (c)'s Brier gain at +5 bp holds pooled (+19.0% [+13.7%, +23.7%] against persistence-logistic) and in 2018-19 and 2025-26, not in 2020; 2021-23 has no events. Detail in `docs/pivot/h5-splits-805-result.md`.
+- Against kill: not applicable (no verdict; development data). H5's kill, no CRPS gain over phase 2 and no ordinary-day ranking gain, is not assessed here; the ordinary-anchor gain is resolved and about +9%.
+- Next: #741 (does avoiding calendar spikes alone reach the pooled figure); the critical value and the MME are Eleonora's.
+
+### 2026-10-15 [H5] groundwork G1 · eleonorabjornberg/repo-market-model#821
+- Directive: #800 (the shared "not a risk date" function, asked by the code merged after #709)
+- Step: groundwork G1 (the ordinary-day population across H2, H5, H6 and H8; no step of H5 itself)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `06801bbd`
+- Tried: H5's `spread_mr_variants.is_risk_day` and H6's `risk_date_spread.risk_day_type` now decide through `risk_dates.is_risk_date` (`reporting_on=` reads the reporting day type); compared with the old answers on all 1873 scored days. Variants: none (no model).
+- Result: no figure moves. H5's 386 risk days and H6's 386 (every type) are identical before and after. The shared definition read the calendar-day month-end window has 404; the two readings disagree on 58 days (20 only in the business-day reading, 38 only in the calendar-day one).
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's question: which month-end window is the shared definition. The by-type groupings (H8 climatology, #707, #688, #639) stay as they are.
+
+### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#777
+- Directive: #742
+- Step: 2 (milestone M2, guard updated: a per-series admitted list)
+- Tier: development
+- Pins: scratch panel `4137d0ad…`, extended panel `f3acce04…`, workbook `1c889930…`; base `978dbcd`
+- Tried: no forecast variant and no new score. A guard that admits only listed series (TGCR, BGCR, SOFR, each from 2018-05-17), applied to the refits of #633's script and to `backfill_history.py run`; the recorded figures of #633 re-read by which series each rests on. Variants: 0.
+- Result: the declared model of #633 reads the bill rate, reserves and the TGA from the back-filled rows and is now refused (`LookAheadError`); its pooled (+0.081 [+0.035, +0.133]) and 2021-23 (+0.149 [+0.061, +0.257]) CRPS gains rest on series that are not admitted. The workbook-only variant passes: pooled +0.032 [−0.002, +0.072], 2021-23 +0.033 [−0.041, +0.125], 2018-19 central-90% coverage +0.035 [+0.017, +0.054]. Detail in `docs/pivot/posting-dates-h4-result.md`.
+- Against kill: not killed on the workbook-only variant (a posting time is established; the 2018-19 calibration move's interval excludes zero).
+- Next: the Liberty Street copy as tracked evidence (fetch blocked here); whether IORB needs its own admitted instant (Eleonora); #726 against H5's candidate uses the workbook-only variant.
+
+### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#824
+- Directive: #803
+- Step: 5 (variant count by content; groundwork for the registration's record of what was tried, #567)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `06801bb`
+- Tried: `scripts/emit_progress.py` reads every `metadata/*.json` for arms named `candidates` or `arms` (top level or under `model`), counts them apart from the `variants` figure, and lists declarations whose arms it cannot read; `tests/test_model_declarations.py` now checks every such file (`PRE_803` freezes the 44 that predate the rule). Variants: n/a (a count, no model).
+- Result: the page still reads 22 declarations with a `variants` block, 65 variants. Beside it, 18 more files name 72 arms as `candidates` or `arms`, and 33 declarations carry no block the count can read. These are not added to the 65: what counts as a variant is Eleonora's question in the PR.
+- Against kill: not applicable (no hypothesis test).
+- Next: Eleonora's reading of what counts as a variant under protocol section 2.
+- Next: Eleonora's two marked questions on the page (which ceiling stands for H5 step 4; the ceiling interval that now excludes 0); a fit on today's main panel is not made
+
+### 2026-10-14 [H9] step 2 · eleonorabjornberg/repo-market-model#774
+- Directive: #706
+- Step: 2
+- Tier: development
+- Pins: scratch panel `26c51093…`; base `c0c45259`; declaration `metadata/richer_targets_706.json`; stacked on #711 (#634)
+- Tried: the three targets chosen by Eleonora's rule of 13 October on step 1's tables (BGCR 99th − 1st percentile, ON RRP daily change, SOFR 99th − 1st percentile) modelled with #634's candidate (b) (gradient-boosted 23-level quantiles, same inputs, the target's own lag), leads 1 to 5, scored by the protocol's grid CRPS against each target's own B1 and B2. Variants: 1 model, 3 targets.
+- Result: skill over B1 +0.329 [lower +0.271], +0.310 [+0.286], +0.330 [+0.241]; over B2 +0.156 [+0.080], −0.103 [−0.142], +0.155 [+0.054]; the spread (#634 b) +0.201 over B1 and +0.268 over B2. Negative on quarter-end target days for all three. No lead on the +5 bp episodes in the scarce state (pre-onset AUC of the modelled median 0.38, 0.53, 0.39, intervals not above one half). Detail in `docs/pivot/richer-targets-706-result.md`.
+- Against kill: `H9.md`'s wording ("no skill over the target's own persistence, and no nested gain for H5", Eleonora's ruling of 15 October 2026) cannot be assessed until step 3's nested test; on development data skill over persistence is shown for all three targets and a lead on the +5 bp episodes for none. Not a verdict.
+- Next: the nested test with H5's best candidate (H9 step 3), after #634 merges.
+
+### 2026-10-15 [H4] step 2 · eleonorabjornberg/repo-market-model#790
+- Directive: #781
+- Step: 2 (milestone M2, evidence for the posting instant: the Liberty Street copy)
+- Tier: development
+- Pins: none (no panel read, no score); base `236d175`
+- Tried: no forecast variant and no new score. The Liberty Street post on the revised broad Treasuries financing rate fetched, tracked with its sha256 and cited on the posting-dates page. Variants: 0.
+- Result: the page's editor's note dates a correction of the linked historical-rates file to May 17, 2018 and gives no time of day; it does not state a first posting.
+- Against kill: not applicable (evidence for the posting-instant ruling; no figure moves).
+- Next: Eleonora's read of whether the correction note supports the 17 May 2018 ruling; whether the linked data file is fetched too.
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#779
+- Directive: #738
+- Step: 2 (the settlement family of inputs: a cash management bill is unknown until its own announcement)
+- Tier: development
+- Pins: no panel; tracked Treasury auctions fixture `20261008T205048Z_568c69347867`, decision days 2018-01-01 to 2026-09-03; base `68574916`
+- Tried: 1 rule change (a CMB counts toward a bill class's partial status only from its own announcement), compared with the rule of #679 on the (day, lead 1-5) cases, split by declared regime; the ahead columns rebuilt both ways. Variants: 1.
+- Result: 38 of 4,972 cases change. On them the mean absolute error against the completed net falls from 71.6 to 42.2 bn (2020: 96.9 to 47.3 on 22 cases; 2025-26: 36.0 to 50.0 on 2); over all cases 1.9 to 1.6. 68 `ahead_columns` cells move, 43 of them in 2020. No published figure moves. Detail in `docs/pivot/evidence/cmb-point-in-time-738/result.md`.
+- Against kill: not applicable (an input-timing correction; development data gives no verdict).
+- Next: H5 step 2 and H6 read the corrected settlement columns.
 
 ### 2026-10-14 [H7] step 1 · eleonorabjornberg/repo-market-model#772
 - Directive: #766

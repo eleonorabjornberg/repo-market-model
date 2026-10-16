@@ -278,3 +278,13 @@ their published figures, so they stay as they are; they are a finding for Eleono
   as a risk date, so the ruling does not say which of the two the "shared definition" is. They differ by the 99 month-ends that are not
   quarter-ends (1568 / 87 against 1469 / 82 at lead 1). Until she names one, each script keeps its current definition, and an
   ordinary-day figure is quoted with the name of the definition it was read under.
+
+### Addendum (#800, finding on #709): who asks `risk_dates`, and who still groups by day type
+
+The finding checked the code after #709 and found the shared function unused in two risk-date decisions that were merged after it. Both now ask it, and no figure moves.
+
+- **Routed through `risk_dates.is_risk_date`** (`NON_ORDINARY`, with `reporting_on=` the row's date, which reads the day type as `reporting_day_type` does): H5's context rule, `spread_mr_variants.is_risk_day` (#767, #761), and H6's risk dates, `risk_date_spread.risk_day_type` (#693, #739).
+- **Nothing moved.** On the published panel (2018-06-29 to 2025-12-31, 1873 days) each routed function returns the same answer as before on every day: H5's 386 risk days, and H6's 386 with every type unchanged. The shared `NON_ORDINARY` with the calendar-day month-end window has 404.
+- **Why they differ.** The two readings differ only in the month-end window: `day_type` counts the days within two *calendar* days of the month's end, and `reporting_day_type` the month's last two *business* days. They disagree on 58 days (20 only in the business-day reading, 38 only in the calendar-day one). This is the gap `evaluation_splits.reporting_day_type` documents ("a v2 candidate"), not a bug in either.
+- **Left as they are, by design.** These group days by the reporting day type (a population or a share by type, not a decision that a day is a risk date), and moving them to the shared function would move published figures: `ranking.py` climatology (H8: the pressure share among days of the target's type); `scripts/h5_step3_707.py` and `scripts/near_threshold_688.py` (a split of the scores by type); `scripts/richer_targets_639.py` (H9's "ordinary days" column, by day type alone, which leaves the coupon days in).
+- **Open, hers.** Which reading the "shared definition" is (calendar-day or business-day month-end window). The two routed callers keep the business-day one until she names it; a figure that is quoted with an ordinary-day population still names the definition it was read under.
