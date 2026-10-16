@@ -1,0 +1,84 @@
+{
+  "title": "Scratch declaration for H5's calibration after reserve-management purchases began (#845; avenue #835)",
+  "status": "exploration on development data; nothing here is a verdict under scoring protocol v1 (#640). Declared by the pull request that closes #845 before any number was computed. No model is fitted or changed, no remedy is added, nothing is published, and no published declaration, record or pin moves",
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (evaluation: calibration in the regime where the confirmation days fall)",
+  "issue": 845,
+  "avenue": 835,
+  "rulings": {
+    "710": "Eleonora, 13 October 2026, on PR #710: a separate scratch declaration for runs that read the 2026 development days; the 3-pressure-day minimum per period cell stays. This file is that declaration for #845; it follows metadata/exploration_684.json",
+    "minimum_pressure_days": 3
+  },
+  "scored_span": {
+    "last_day": "2026-09-03",
+    "shared_constant": "repo_model.exploration.EXPLORATORY_END",
+    "guard": "repo_model.exploration.panel_end and require_unlocked: a day after EXPLORATORY_END, or in a tier the lockbox still locks, raises LookAheadError and the run stops. Every walk and every cell is checked; no workaround",
+    "panel": "the published panel (metadata/funding_panel_manifest.json) with rows after the last day dropped before any law is fitted or read"
+  },
+  "laws": {
+    "mean_reversion": "spread_mr_level10 (#686), repo_model.spread_mean_reversion, unchanged, walked as scripts/spread_mean_reversion_686.py walks it (refit every 21 decision days)",
+    "variant_i": "spread_mr_ctx (#761's variant (i): residuals pooled by the target day's context), repo_model.spread_mr_variants, unchanged",
+    "c_two_part_new": "#634's variant (c), scripts/spread_distribution_634.py walk, unchanged, walked to the last day",
+    "gbm_funding": "#634's control gbm_funding, scripts/spread_distribution_634.py walk, unchanged, walked to the last day",
+    "reference": "persistence_logistic, exactly as scripts/spread_distribution_634.py exceedance computes it (repo_model.baseline.persistence_logistic_exceedance), taken at +5 bp; it has no distribution, so it has no decomposition",
+    "no_other_law": "no variant is added, no setting of any law is changed"
+  },
+  "stretches": {
+    "after_purchases_2025_26": {
+      "first_target_day": "2025-12-12",
+      "last_target_day": "2026-09-03",
+      "why": "reserve_management-20251210 in metadata/policy_events.json; the development days of the near-blind tier end at EXPLORATORY_END"
+    },
+    "earlier_case_2019_20": {
+      "first_target_day": "2019-10-15",
+      "last_target_day": "2020-02-28",
+      "why": "reserve_management-20191011 in metadata/policy_events.json; the stretch stops before the March 2020 QE, which confounds later days",
+      "parts": {
+        "2019-10-15 to 2019-12-31": ["2019-10-15", "2019-12-31"],
+        "2020-01-01 to 2020-02-28": ["2020-01-01", "2020-02-28"]
+      },
+      "parts_why": "the two parts the audit of #835 quoted; shown beside the whole stretch, not instead of it"
+    }
+  },
+  "cells": {
+    "unit": "a cell is a (target day, lead h) pair: the lead-h law made h business days before the target day, from the information public then",
+    "leads": [1, 2, 3, 4, 5],
+    "target_days": "ordinary target days only: SplitDeclaration.reporting_day_type(target) == 'ordinary' (metadata/evaluation_splits.json), the type the pressure-day split of #686 and #634 calls ordinary",
+    "stretch_membership": "by the target day, not the decision day",
+    "common_cells": "a cell is read only if every law has a forecast for it, so every law is compared on the same cells; a missing law is counted, not filled",
+    "event": "the realised spread is above +5 bp as data.exceeds_bp reads it (the whole-basis-point event); a cell with the event is a pressure-day cell, and its target day a pressure day"
+  },
+  "report": {
+    "per_stretch_and_lead": ["mean P(spread > +5 bp)", "realised share", "cells", "pressure days (distinct target days with the event)", "mean P minus realised share"],
+    "p_from_law": "smr.exceedance(23 quantiles, 5.0), the curve of ml.exceedance_from_quantiles; never a fitted classifier (the +5 bp classification variants are paused)",
+    "interval": {
+      "kind": "90% percentile interval (5th and 95th) of the stationary bootstrap (Politis-Romano) over the stretch's cells of one lead, in target-day order",
+      "mean_block_length": 10,
+      "draws": 10000,
+      "seed": 845,
+      "applies_to": ["mean P", "realised share", "mean P minus realised share (resampled jointly)"]
+    }
+  },
+  "decomposition": {
+    "applies_to": "every law that has a 23-quantile distribution (not persistence_logistic)",
+    "definition": "error = mean P - realised share, per stretch and lead. delta = mean over the cells of (realised spread - the law's median): the law's mean location error on those cells, in bp. P_centred = the mean over the same cells of smr.exceedance(the law's quantiles + delta, 5.0): the same law with its centre moved, its shape (the residual pool) unchanged. Level part = mean P - P_centred. Residual-pool part = P_centred - realised share. The two parts add to the error exactly",
+    "reading": "the level part is the over-warning that a correct centre would remove; the residual-pool part is what remains with the centre correct: the pool is too wide in the upper tail for the regime. delta uses the realised outcomes of the stretch, so it is a hindsight diagnostic of where the error sits, never a forecast and never a remedy",
+    "also_reported": "the mean law median and the mean realised spread (bp), and delta, by lead"
+  },
+  "ruling_710_cells": {
+    "minimum_pressure_days": 3,
+    "rule": "event-based figures follow the minimum of 3 pressure days per cell of (stretch, lead). Calibration in the large needs no events, but whether it may be reported for a cell under that minimum is Eleonora's. A (stretch, lead) cell with fewer than 3 pressure days therefore has only its counts (cells, pressure days) in every tracked file and on the results page. Its mean P, realised share, decomposition and interval are computed, written to a file that is not tracked, and put in the pull request body as a marked question",
+    "same_for_all_laws": "the events depend on the outcomes alone, so the cells under the minimum are the same for every law"
+  },
+  "not_done": [
+    "no remedy: a residual pool conditioned on the as-of policy register would be a later, separately declared variant",
+    "no registration, no verdict, no comparison with a benchmark's score: this is calibration in the large of the existing laws",
+    "no day after 2026-09-03 and no locked day is read",
+    "the March 2020 onward days are not read for the earlier case (QE confounds them)"
+  ],
+  "commands": [
+    "scripts/calibration_reserve_mgmt_845.py walk (the two #634 laws, to the last day)",
+    "scripts/calibration_reserve_mgmt_845.py exceedance (persistence_logistic, to the last day)",
+    "scripts/calibration_reserve_mgmt_845.py score",
+    "scripts/calibration_reserve_mgmt_845.py page"
+  ]
+}
