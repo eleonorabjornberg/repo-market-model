@@ -868,3 +868,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 510 operations on 169 operation dates, 2026-01-02 to 2026-09-03. Rows before 2026-01-01 read identically with and without the new file (both readings), the eight earlier files and manifests are byte-for-byte unchanged, and a date after 2026-09-03 is still refused. The published panel digest does not move.
 - Against kill: not applicable (no verdict; nothing scored on a 2026 day).
 - Next: the liquidity repo bumps its parent pin to the merge commit and reads the 2026 labels.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#829
+- Directive: #786
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `62009b23`
+- Tried: #632's rows (the passer, the two #598 and #601 controls, variants (a) and (b)) and the references (`risk_gbm`, `ngboost_laplace`, `calendar_climatology`, `persistence_logistic`), rebuilt at h = 1 to 5 and tabulated for the reliability slope on the ordinary days inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals (2,000 replications). Variants: 0 new models.
+- Result: inside 2018-19 (73 or 74 of 100 or 101 pressure days) (b) reads 0.07 to 0.60 at h = 1 to 5, intervals below 1; `persistence_logistic` reads 0.32 to 0.58, so its pooled 0.89 to 1.08 ("the better calibrated of the two") holds only in 2025-26 (0.82 to 1.07). In 2025-26 (b) reads 0.30 to 0.90 with intervals including 1. The rebuilt rows (a) and (b) differ slightly from the page's first run (AUROC 0.9072 against 0.9029 at h = 1 for (b)); references reproduce.
+- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
+- Next: #785 does the same for #631's page; any reliability-shape test (#628) is read within regimes; the drift of (a) and (b) is not traced to a change in `ml.py`.
