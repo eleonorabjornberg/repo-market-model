@@ -45,11 +45,15 @@ is cited here. Where the evidence is ambiguous it is marked not usable and liste
 
 - The TGCR/BGCR/SOFR workbook is usable as training history with one instant, 17 May 2018, for all three series
   (Eleonora's ruling above). Its SOFR before 2018-04-02 remains an indicative series computed after the fact.
-- Only the H.8 total-assets series otherwise meets the rule, and the guard reads one workbook-level instant. Whether
-  other series get their own instants was not asked by the ruling and is not done here.
+- Only the H.8 total-assets series otherwise meets the rule. The guard now reads one instant per listed series
+  (#742); H.8 is not listed, so a fit that reads it from back-filled rows is refused.
 - The ON RRP results, bill rates and Treasury auctions of 2014-2017 keep their verdicts (not usable). The extended
-  panel of `scripts/backfill_history.py panel` still carries them on back-filled rows; a model that reads them trains on
-  values whose posting is not established. The H4 measurement reads none of them.
+  panel of `scripts/backfill_history.py panel` still carries them, and FRED's reserves and TGA, on back-filled rows.
+  **Correction (#742):** an earlier version of this page said the H4 measurement reads none of them. That was false for
+  the declared model of #633, which reads the bill rate, reserves and the TGA from those rows; its pooled and 2021-23
+  gains rest on them (`posting-dates-h4-result.md`). Since #742 the guard admits only the listed series, TGCR, BGCR
+  and SOFR from 2018-05-17 (`metadata/backfill_posting.json`, `admitted`), and
+  `backfill.require_series_admitted` raises `LookAheadError` on any other series a fit reads from back-filled rows.
 
 ## For Eleonora
 

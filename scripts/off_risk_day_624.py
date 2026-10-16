@@ -44,7 +44,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import (  # noqa: E402
-    group_calibration as gc, h41_release, measurement_fields, probability_calibration as pc, pressure_judge as pj, satiation as sat,
+    group_calibration as gc, h41_release, measurement_fields, probability_calibration as pc, pressure_judge as pj, reliability_regimes, satiation as sat,
 )
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import _as_of_folds, climatology_exceedance, panel_sha256, rolling_exceedance_backtest  # noqa: E402
@@ -131,43 +131,16 @@ def brier_skill(probabilities: Sequence[float], outcomes: Sequence[int], referen
     return None if base == 0.0 else 1.0 - brier(probabilities, outcomes) / base
 
 
-def _logit(p: float) -> float:
-    p = min(1.0 - RELIABILITY_FLOOR, max(RELIABILITY_FLOOR, p))
-    return math.log(p / (1.0 - p))
-
-
-def reliability(probabilities: Sequence[float], outcomes: Sequence[int], *, iterations: int = 50) -> Optional[Tuple[float, float]]:
-    """`(intercept, slope)` of the logistic recalibration of the outcome on the logit of the forecast, by Newton's method.
+def reliability(probabilities: Sequence[float], outcomes: Sequence[int]) -> Optional[Tuple[float, float]]:
+    """`(intercept, slope)` of the logistic recalibration of the outcome on the logit of the forecast (`repo_model.reliability_regimes.fit`).
 
     A calibrated forecast has intercept 0 and slope 1; a slope below 1 means the forecast spreads further than the outcomes do, a slope
     above 1 that it is too tight, and a slope of 0 that it ranks nothing. None when the forecasts are all alike, or the outcomes are all
     one class, or the fit does not converge.
     """
 
-    xs = [_logit(p) for p in probabilities]
-    ys = list(outcomes)
-    if not xs or len(set(ys)) < 2 or max(xs) - min(xs) < 1e-9:
-        return None
-    a, b = math.log(max(sum(ys), 0.5) / max(len(ys) - sum(ys), 0.5)), 0.0
-    for _ in range(iterations):
-        g0 = g1 = h00 = h01 = h11 = 0.0
-        for x, y in zip(xs, ys):
-            z = a + b * x
-            p = 1.0 / (1.0 + math.exp(-z)) if z > -700 else 0.0
-            w = p * (1.0 - p)
-            g0 += y - p
-            g1 += (y - p) * x
-            h00 += w
-            h01 += w * x
-            h11 += w * x * x
-        det = h00 * h11 - h01 * h01
-        if det <= 1e-12:
-            return None
-        step_a, step_b = (h11 * g0 - h01 * g1) / det, (h00 * g1 - h01 * g0) / det
-        a, b = a + step_a, b + step_b
-        if abs(step_a) < 1e-9 and abs(step_b) < 1e-9:
-            return a, b
-    return None
+    line = reliability_regimes.fit(probabilities, outcomes)
+    return None if line is None else (line.intercept, line.slope)
 
 
 def cell_statistics(

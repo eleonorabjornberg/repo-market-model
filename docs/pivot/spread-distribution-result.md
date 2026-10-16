@@ -129,6 +129,12 @@ and the intercept is negative. The row that passes tiers 3 and 5 does so on the 
 > pooled statement. A regime with no pressure day (2021-23) forecasts near 0 and raises the pooled slope; for the rows of #624 the slopes inside 2018-19 are far lower (see
 > `docs/pivot/diagnostics-reconciliation.md`, point 11). The per-regime slopes of these rows were **not computed** by #683: they need this page's
 > forecasts rebuilt, which that directive did not do. Until they are, the pooled slope is not evidence of calibration in any regime.
+>
+> *Update, 14 October 2026 (#753).* Still not computed. #626's per-regime slopes are now (`docs/pivot/kinked-elasticity-result.md`, "Reliability within regimes"): inside 2018-19 the
+> slopes of the structural rows are 0.18 to 0.47 against a pooled 0.39 to 0.74, so a pooled slope is not a reading of this page's calibration either.
+> Computing this page's rows needs, per horizon, the references of `spread_distribution_632.py refs` (`both`, `dist` of #598, `iorb` of #579 and the cap of #601, all behind
+> the AUG2D panel of `satiation_distance_598.py`) and `spread_distribution_632.py run` rebuilt, then a `scripts/reliability_regimes_683.py` command that reads the `sd_h?` files and
+> the references it pairs with. That chain is five to seven scripts per horizon and was not timed here.
 
 ## Calibration of (b) (predicted against realised, +5 bp, pooled over h = 1 to 5)
 
