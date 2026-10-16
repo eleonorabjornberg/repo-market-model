@@ -918,3 +918,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: provenance relabelled, no value changed, nothing scored.
 - Against kill: not applicable.
 - Next: Eleonora's rulings on Q1 and Q2 above; then H7m G6 resumes.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#847
+- Directive: #845
+- Step: 3 (calibration in the regime where the confirmation days fall: H5's laws on ordinary target days after reserve-management purchases began)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `0065b4e3`; declaration `metadata/exploration_845.json`; seed 845; target days to 2026-09-03 (`EXPLORATORY_END`), no locked day read
+- Tried: mean reversion (#686), #761's variant (i), #634's (c) and `gbm_funding` (their 10 walks re-run to 2026-09-03) and `persistence_logistic`, by lead, mean P(spread > +5 bp) against the realised share for 2025-12-12 to 2026-09-03 and 2019-10-15 to 2020-02-28, with the error split into a level part and a residual-pool part. No model changed; variants: 0 new.
+- Result: on ordinary target days from 2025-12-12 (6 pressure days of 152 to 155 cells per lead) every law over-forecasts: lead 1 mean P 0.086 mean reversion, 0.070 (i), 0.077 (c), 0.057 gbm_funding, 0.085 persistence-logistic against 0.039 realised; lead 5 0.117, 0.090, 0.123, 0.067, 0.095. In 2019-10-15 to 2020-02-28 (9 pressure days of 80) lead 1 is 0.232, 0.201, 0.159, 0.160, 0.224 against 0.113. The level part is 0.001 to 0.025 of an error of 0.02 to 0.09: the over-forecast sits in the residual pool, not the centre. Detail in `docs/pivot/calibration-reserve-mgmt-845-result.md`.
+- Against kill: not applicable (calibration in the large of existing laws; development data, not a verdict).
+- Next: a residual pool conditioned on the as-of policy register would be a later declared variant; whether calibration in the large may be reported under the 3-pressure-day minimum is Eleonora's (question in the pull request).
