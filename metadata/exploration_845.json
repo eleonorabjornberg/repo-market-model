@@ -42,7 +42,7 @@
   "cells": {
     "unit": "a cell is a (target day, lead h) pair: the lead-h law made h business days before the target day, from the information public then",
     "leads": [1, 2, 3, 4, 5],
-    "target_days": "ordinary target days only: SplitDeclaration.reporting_day_type(target) == 'ordinary' (metadata/evaluation_splits.json), the type the pressure-day split of #686 and #634 calls ordinary",
+    "target_days": "two sets of ordinary target days, both reported in full. 'ordinary' (the headline): SplitDeclaration.reporting_day_type(target) == 'ordinary' (metadata/evaluation_splits.json), the type the pressure-day split of #686 and #634 calls ordinary. 'calm_ordinary' (a sensitivity): an ordinary day that also settles no coupon (treasury_settlement_coupons == 0), the 'not a risk day' reading of repo_model.spread_mr_variants.is_risk_day and of #761's contexts, which is the reading the audit of #835 quoted its cell counts under. Added to this declaration after a check of the mean-reversion law on both sets, before any other number; each set has its own cells and its own minimum of pressure days",
     "stretch_membership": "by the target day, not the decision day",
     "common_cells": "a cell is read only if every law has a forecast for it, so every law is compared on the same cells; a missing law is counted, not filled",
     "decision_days": "as in #686 and #634, a decision day is forecast only if its fifth target day is on or before the last day; so the last days before the end are read at the leads that reach them from earlier decision days only",

@@ -69,6 +69,9 @@ MR, CTX, PERSISTENCE = var.REFERENCE, "spread_mr_ctx", "persistence_logistic"
 LAWS = (MR, CTX, "c_two_part_new", "gbm_funding", PERSISTENCE)
 LABELS = {MR: "mean reversion (#686)", CTX: "variant (i) (#761)", "c_two_part_new": "(c) two-part (#634)",
           "gbm_funding": "gbm_funding (#634)", PERSISTENCE: "persistence-logistic"}
+#: the two sets of ordinary target days: the headline, and the sensitivity that also drops coupon-settlement days.
+DAY_SETS = ("ordinary", "calm_ordinary")
+SET_LABELS = {"ordinary": "ordinary target days", "calm_ordinary": "calm ordinary target days (no coupon settlement either)"}
 #: the laws with a 23-quantile distribution, which can be decomposed.
 DISTRIBUTIONS = (MR, CTX, "c_two_part_new", "gbm_funding")
 
@@ -132,6 +135,13 @@ def in_stretch(day: date, first: date, last: date) -> bool:
     """Whether the target day `day` belongs to the stretch (inclusive at both ends)."""
 
     return first <= day <= last
+
+
+def day_set_members(row, splits) -> Dict[str, bool]:
+    """Which of `DAY_SETS` the target day of `row` belongs to (the second is inside the first)."""
+
+    ordinary = splits.reporting_day_type(row.date, row.values) == "ordinary"
+    return {"ordinary": ordinary, "calm_ordinary": ordinary and not var.is_risk_day(row, splits)}
 
 
 def under_minimum(pressure_days: int, minimum: int = MINIMUM_PRESSURE_DAYS) -> bool:
@@ -340,7 +350,7 @@ def score_command(args) -> int:
     splits = load_split_declaration(SPLITS)
     registry = json.loads(SOURCES.read_text(encoding="utf-8"))
     outcome = {row.date: row.spread_bps for row in panel}
-    ordinary = {row.date: splits.reporting_day_type(row.date, row.values) == "ordinary" for row in panel}
+    member = {row.date: day_set_members(row, splits) for row in panel}
 
     laws = mean_reversion_laws(panel, splits, registry)
     laws.update(read_walk_laws(args.walks, args.published, end))
@@ -350,32 +360,37 @@ def score_command(args) -> int:
     tracked: dict = {}
     full: dict = {}
     for part, first, last in stretch_parts():
-        tracked[part] = {"first_target_day": first.isoformat(), "last_target_day": last.isoformat(), "leads": {}}
-        full[part] = {"leads": {}}
-        for h in HORIZONS:
-            rows = []
-            for day in sorted(d for d in outcome if in_stretch(d, first, last) and ordinary[d]):
-                have = {name: laws[name][h].get(day) for name in DISTRIBUTIONS}
-                have_p = persistence[h].get(day)
-                if any(q is None for q in have.values()) or have_p is None:
-                    for name in DISTRIBUTIONS:
-                        missing[name] += have[name] is None
-                    missing[PERSISTENCE] += have_p is None
-                    continue
-                p = {name: smr.exceedance(q, TAU) for name, q in have.items()}
-                p[PERSISTENCE] = have_p
-                rows.append({"day": day, "outcome": outcome[day], "event": exceeds_bp(outcome[day], TAU), "p": p, "q": have})
-            cell = build_cell(rows, draws=args.draws)
-            withheld = under_minimum(cell["pressure_days"])
-            tracked[part]["leads"][str(h)] = tracked_cell(cell, withheld=withheld)
-            if withheld:
-                full[part]["leads"][str(h)] = cell
+        tracked[part] = {"first_target_day": first.isoformat(), "last_target_day": last.isoformat(), "day_sets": {}}
+        full[part] = {"day_sets": {}}
+        for day_set in DAY_SETS:
+            tracked[part]["day_sets"][day_set] = {"leads": {}}
+            full[part]["day_sets"][day_set] = {"leads": {}}
+            for h in HORIZONS:
+                rows = []
+                for day in sorted(d for d in outcome if in_stretch(d, first, last) and member[d][day_set]):
+                    have = {name: laws[name][h].get(day) for name in DISTRIBUTIONS}
+                    have_p = persistence[h].get(day)
+                    if any(q is None for q in have.values()) or have_p is None:
+                        if day_set == DAY_SETS[0]:
+                            for name in DISTRIBUTIONS:
+                                missing[name] += have[name] is None
+                            missing[PERSISTENCE] += have_p is None
+                        continue
+                    p = {name: smr.exceedance(q, TAU) for name, q in have.items()}
+                    p[PERSISTENCE] = have_p
+                    rows.append({"day": day, "outcome": outcome[day], "event": exceeds_bp(outcome[day], TAU), "p": p, "q": have})
+                cell = build_cell(rows, draws=args.draws)
+                withheld = under_minimum(cell["pressure_days"])
+                tracked[part]["day_sets"][day_set]["leads"][str(h)] = tracked_cell(cell, withheld=withheld)
+                if withheld:
+                    full[part]["day_sets"][day_set]["leads"][str(h)] = cell
     result = {
         "issue": 845, "declaration": str(DECLARATION.relative_to(REPO)),
         "declaration_sha256": hashlib.sha256(DECLARATION.read_bytes()).hexdigest(),
         "label": "development, not a verdict", "panel_sha256": panel_sha256(args.published),
         "last_day": end.isoformat(), "tau_bp": TAU, "seed": SEED, "draws": args.draws, "block": BLOCK,
         "minimum_pressure_days": MINIMUM_PRESSURE_DAYS, "laws": list(LAWS), "labels": LABELS,
+        "day_sets": list(DAY_SETS), "day_set_labels": SET_LABELS,
         "cells_missing_a_law": missing, "stretches": tracked,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -383,7 +398,7 @@ def score_command(args) -> int:
     if args.withheld is not None:
         args.withheld.write_text(json.dumps({"issue": 845, "withheld_cells": full, "note": "not tracked; for the pull request body (#710)"},
                                             indent=1) + "\n", encoding="utf-8")
-    print(json.dumps({"stretches": {p: {h: (c["cells"], c["pressure_days"]) for h, c in v["leads"].items()} for p, v in tracked.items()},
+    print(json.dumps({"stretches": {p: {d: {h: (c["cells"], c["pressure_days"]) for h, c in s_["leads"].items()} for d, s_ in v["day_sets"].items()} for p, v in tracked.items()},
                       "missing": missing}))
     return 0
 
@@ -430,30 +445,32 @@ def page_command(args) -> int:
     ]
     for part, body in score["stretches"].items():
         lines += [f"## {part}", "", f"Target days {body['first_target_day']} to {body['last_target_day']}.", ""]
-        lines += ["**Mean P against the realised share** (mean P [interval])", "",
-                  "| lead | cells | pressure days | realised share | " + " | ".join(labels[n] for n in names) + " |",
-                  "|---|---|---|---|" + "|".join("---" for _ in names) + "|"]
-        for h, cell in body["leads"].items():
-            if cell.get("withheld"):
-                lines.append(f"| {h} | {cell['cells']} | {cell['pressure_days']} | under the minimum: counts only |" + " |" * len(names))
-            elif not cell["cells"]:
-                lines.append(f"| {h} | 0 | 0 | no cells |" + " |" * len(names))
-            else:
-                lines.append(f"| {h} | {cell['cells']} | {cell['pressure_days']} | {with_interval(cell['realised'], cell['realised_interval'])} | "
-                             + " | ".join(with_interval(cell["laws"][n]["mean_p"], cell["laws"][n]["mean_p_interval"]) for n in names) + " |")
-        shown = {h: c for h, c in body["leads"].items() if not c.get("withheld") and c["cells"]}
-        if shown:
-            lines += ["", "**Error (mean P - realised share), and its level and residual-pool parts**", "",
-                      "| lead | law | error [interval] | level part | residual-pool part | centre shift (bp) |", "|---|---|---|---|---|---|"]
-            for h, cell in shown.items():
-                for n in names:
-                    entry = cell["laws"][n]
-                    if "level" in entry:
-                        lines.append(f"| {h} | {labels[n]} | {signed(entry['error'], entry['error_interval'])} | {entry['level']:+.3f} | "
-                                     f"{entry['pool']:+.3f} | {entry['delta_bp']:+.2f} |")
-                    else:
-                        lines.append(f"| {h} | {labels[n]} | {signed(entry['error'], entry['error_interval'])} | n/a | n/a | n/a |")
-        lines.append("")
+        for day_set, set_body in body["day_sets"].items():
+            lines += [f"### {score['day_set_labels'][day_set]}", "",
+                      "**Mean P against the realised share** (mean P [interval])", "",
+                      "| lead | cells | pressure days | realised share | " + " | ".join(labels[n] for n in names) + " |",
+                      "|---|---|---|---|" + "|".join("---" for _ in names) + "|"]
+            for h, cell in set_body["leads"].items():
+                if cell.get("withheld"):
+                    lines.append(f"| {h} | {cell['cells']} | {cell['pressure_days']} | under the minimum: counts only |" + " |" * len(names))
+                elif not cell["cells"]:
+                    lines.append(f"| {h} | 0 | 0 | no cells |" + " |" * len(names))
+                else:
+                    lines.append(f"| {h} | {cell['cells']} | {cell['pressure_days']} | {with_interval(cell['realised'], cell['realised_interval'])} | "
+                                 + " | ".join(with_interval(cell["laws"][n]["mean_p"], cell["laws"][n]["mean_p_interval"]) for n in names) + " |")
+            shown = {h: c for h, c in set_body["leads"].items() if not c.get("withheld") and c["cells"]}
+            if shown:
+                lines += ["", "**Error (mean P - realised share), and its level and residual-pool parts**", "",
+                          "| lead | law | error [interval] | level part | residual-pool part | centre shift (bp) |", "|---|---|---|---|---|---|"]
+                for h, cell in shown.items():
+                    for n in names:
+                        entry = cell["laws"][n]
+                        if "level" in entry:
+                            lines.append(f"| {h} | {labels[n]} | {signed(entry['error'], entry['error_interval'])} | {entry['level']:+.3f} | "
+                                         f"{entry['pool']:+.3f} | {entry['delta_bp']:+.2f} |")
+                        else:
+                            lines.append(f"| {h} | {labels[n]} | {signed(entry['error'], entry['error_interval'])} | n/a | n/a | n/a |")
+            lines.append("")
     lines += ["Cells missing a law (not filled): " + ", ".join(f"{labels[n]} {c}" for n, c in score["cells_missing_a_law"].items()) + ".",
               "", "Development, not a verdict.", ""]
     args.output.parent.mkdir(parents=True, exist_ok=True)
