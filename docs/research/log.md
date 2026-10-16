@@ -848,3 +848,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the page's editor's note dates a correction of the linked historical-rates file to May 17, 2018 and gives no time of day; it does not state a first posting.
 - Against kill: not applicable (evidence for the posting-instant ruling; no figure moves).
 - Next: Eleonora's read of whether the correction note supports the 17 May 2018 ruling; whether the linked data file is fetched too.
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#779
+- Directive: #738
+- Step: 2 (the settlement family of inputs: a cash management bill is unknown until its own announcement)
+- Tier: development
+- Pins: no panel; tracked Treasury auctions fixture `20261008T205048Z_568c69347867`, decision days 2018-01-01 to 2026-09-03; base `68574916`
+- Tried: 1 rule change (a CMB counts toward a bill class's partial status only from its own announcement), compared with the rule of #679 on the (day, lead 1-5) cases, split by declared regime; the ahead columns rebuilt both ways. Variants: 1.
+- Result: 38 of 4,972 cases change. On them the mean absolute error against the completed net falls from 71.6 to 42.2 bn (2020: 96.9 to 47.3 on 22 cases; 2025-26: 36.0 to 50.0 on 2); over all cases 1.9 to 1.6. 68 `ahead_columns` cells move, 43 of them in 2020. No published figure moves. Detail in `docs/pivot/evidence/cmb-point-in-time-738/result.md`.
+- Against kill: not applicable (an input-timing correction; development data gives no verdict).
+- Next: H5 step 2 and H6 read the corrected settlement columns.
