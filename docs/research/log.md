@@ -808,12 +808,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not killed on the workbook-only variant (a posting time is established; the 2018-19 calibration move's interval excludes zero).
 - Next: the Liberty Street copy as tracked evidence (fetch blocked here); whether IORB needs its own admitted instant (Eleonora); #726 against H5's candidate uses the workbook-only variant.
 
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
-- Directive: #785
-- Step: 3
+### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#824
+- Directive: #803
+- Step: 5 (variant count by content; groundwork for the registration's record of what was tried, #567)
 - Tier: development
-- Pins: published panel `4ddc3882…`; base `dfbbc03`
-- Tried: #631's two every-day rows (`+every_day` and `+every_day+lagpress`) rebuilt at h = 1 to 5 and tabulated for the reliability slope on the ordinary days inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals (2,000 replications). Variants: 0 new models.
-- Result: inside 2018-19 (62 of 82 pressure days) the parent reads 0.32 to 0.61 at h = 1 to 5 and lagged pressure 0.21 to 0.51, intervals below 1 from h = 2; the pooled 0.85 to 1.00 is not calibration by regime. In 2025-26 the rows read 0.62 to 0.94 with intervals including 1. Two pooled cells differ from Table M2 (parent h = 3: 0.91 against 0.98; lagpress h = 4: 0.71 against 0.73), the fit definition being #725's.
-- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
-- Next: any reliability-shape test (#628) is read within regimes; the two moved cells are not traced to the fit or to `ml.py`.
+- Pins: no panel and no scoring; tracked fixtures only; base `06801bb`
+- Tried: `scripts/emit_progress.py` reads every `metadata/*.json` for arms named `candidates` or `arms` (top level or under `model`), counts them apart from the `variants` figure, and lists declarations whose arms it cannot read; `tests/test_model_declarations.py` now checks every such file (`PRE_803` freezes the 44 that predate the rule). Variants: n/a (a count, no model).
+- Result: the page still reads 22 declarations with a `variants` block, 65 variants. Beside it, 18 more files name 72 arms as `candidates` or `arms`, and 33 declarations carry no block the count can read. These are not added to the 65: what counts as a variant is Eleonora's question in the PR.
+- Against kill: not applicable (no hypothesis test).
+- Next: Eleonora's reading of what counts as a variant under protocol section 2.
+- Next: Eleonora's two marked questions on the page (which ceiling stands for H5 step 4; the ceiling interval that now excludes 0); a fit on today's main panel is not made
+
+### 2026-10-14 [H9] step 2 · eleonorabjornberg/repo-market-model#774
+- Directive: #706
+- Step: 2
+- Tier: development
+- Pins: scratch panel `26c51093…`; base `c0c45259`; declaration `metadata/richer_targets_706.json`; stacked on #711 (#634)
+- Tried: the three targets chosen by Eleonora's rule of 13 October on step 1's tables (BGCR 99th − 1st percentile, ON RRP daily change, SOFR 99th − 1st percentile) modelled with #634's candidate (b) (gradient-boosted 23-level quantiles, same inputs, the target's own lag), leads 1 to 5, scored by the protocol's grid CRPS against each target's own B1 and B2. Variants: 1 model, 3 targets.
+- Result: skill over B1 +0.329 [lower +0.271], +0.310 [+0.286], +0.330 [+0.241]; over B2 +0.156 [+0.080], −0.103 [−0.142], +0.155 [+0.054]; the spread (#634 b) +0.201 over B1 and +0.268 over B2. Negative on quarter-end target days for all three. No lead on the +5 bp episodes in the scarce state (pre-onset AUC of the modelled median 0.38, 0.53, 0.39, intervals not above one half). Detail in `docs/pivot/richer-targets-706-result.md`.
+- Against kill: `H9.md`'s wording ("no skill over the target's own persistence, and no nested gain for H5", Eleonora's ruling of 15 October 2026) cannot be assessed until step 3's nested test; on development data skill over persistence is shown for all three targets and a lead on the +5 bp episodes for none. Not a verdict.
+- Next: the nested test with H5's best candidate (H9 step 3), after #634 merges.
