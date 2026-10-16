@@ -8,7 +8,7 @@ A scratch measurement, not a record: it writes JSON and Markdown to the paths it
         --bench 'OUT/bench_h{h}.json' --parents 'OUT/both_h{h}.json' --rows 'OUT/kinked_h{h}.json' \\
         --output OUT/kinked.json --markdown OUT/kinked.md
     PYTHONPATH=src python3 scripts/reliability_regimes_683.py spread632 --published PUBLISHED.csv \\
-        --bench 'OUT/bench_h{h}.json' --reference 'OUT/ql_h{h}.json' --parents 'OUT/refs_h{h}.json' --rows 'OUT/sd_h{h}.json' \\
+        --bench 'OUT/bench_h{h}.json' --risk 'OUT/risk_h{h}.json' --reference 'OUT/ql_h{h}.json' --parents 'OUT/refs_h{h}.json' --rows 'OUT/sd_h{h}.json' \\
         --output OUT/spread632.json --markdown OUT/spread632.md
 
 `kinked` needs only `bench_h?`, `both_h?` and `kinked_h?` (the benchmarks, the parent and #626's rows), not the risk-date, `pressure_track_q` or `satiation_587` files that
@@ -261,7 +261,7 @@ def spread632_command(args) -> int:
     jobs = []
     for h in declared["horizons"]:
         states = judge_script._scarcity_states(h, base.last_day)
-        documents = [json.loads(Path(t.format(h=h)).read_text()) for t in (args.bench, args.reference, args.parents, args.rows)]
+        documents = [json.loads(Path(t.format(h=h)).read_text()) for t in (args.bench, args.risk, args.reference, args.parents, args.rows)]
         columns = merged_columns(documents, names, base.primary)
         days = sorted(date.fromisoformat(d) for d in columns[base.climatology])
         for n in names:
@@ -335,7 +335,7 @@ def main(argv=None) -> int:
     p.add_argument("--replications", type=int, help="override the declaration's bootstrap replications (a smoke run; a record uses the declared number)")
     p = sub.add_parser("spread632")
     p.add_argument("--published", type=Path, required=True)
-    for name in ("bench", "reference", "parents", "rows"):
+    for name in ("bench", "risk", "reference", "parents", "rows"):
         p.add_argument(f"--{name}", required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--markdown", type=Path)
