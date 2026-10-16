@@ -717,6 +717,35 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `ngboost_laplace` 17 to 13 of 26 onsets warned, 2.34 false alarms per onset in both readings, tier 1 fails (the #588 draft passed it at 1.81 only because the dropped flags also left the false alarms). The benchmarks lose most of their 2019 warnings (calendar climatology 12 to 2, persistence-logistic 12 to 4, `published_v1` 14 to 8) and fail either way.
 - Against kill: not applicable (no verdict; the +5 bp judge is retired as a decision rule, #640).
 - Next: Eleonora decides whether the amended draft record `docs/decisions/always-flag-blocks.md` merges.
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#815
+- Directive: #799
+- Step: 2 (the re-score of #761's variants after the as-of fix; finding #799)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmarks B1, B2; seed 761; declaration `metadata/spread_distribution_761.json` unchanged
+- Tried: `spread_mr_ctx` and `spread_mr_ctx_b2` re-scored with the target's and the previous row's coupon settlement counted only where the registry makes it public at the decision instant (`asof.declared_availability`: the panel day before, 15:00), in the pools and in the forecast. Variants: 3 (the same as #767; no new variant).
+- Result: grid CRPS 1.750 / 1.780 / 1.759 bp against mean reversion's 1.778; gain over mean reversion, studentized 90%: (i) +1.6% [+0.2%, +2.9%] (was +2.3% [+1.0%, +3.6%]), (ii) -0.1% [-4.5%, +3.1%] (unchanged), (iii) +1.1% [-3.4%, +4.5%] (was +1.9% [-2.7%, +5.2%]). Upper-tail twCRPS (i) +2.4% [+0.2%, +4.3%] (was +4.1% [+2.4%, +5.8%]). (i) in 2020: -6.7% [-9.8%, -3.7%] (was -5.9% [-10.7%, +0.8%]). Detail in `docs/pivot/spread-mr-variants-result.md`.
+- Against kill: not applicable (no verdict; development data). (i) keeps an interval above zero against mean reversion; part of the earlier gain came from the read that bypassed the as-of rule.
+- Next: whether (i) joins #634's candidates is Eleonora's, on these figures.
+
+### 2026-10-15 [H2] step 3 · eleonorabjornberg/repo-market-model#828
+- Directive: #811
+- Step: 3 (a record trace: why H5 step 4's rerun of H2's ceiling did not rebuild H2's declared panel)
+- Tier: development
+- Pins: published panel `4ddc3882…`; H2 tree `ec534758`; base `09f2409c`; scratch panels `08df8d19…` (H2's declaration), `92bf10a4…` (H5 step 4), `69be91b6…` (main today)
+- Tried: 0 new model variants; rebuilt the scratch panel at H2's tree and at main with #679 and #743 each left out, and re-fitted H2's ceiling and reachable fits on H2's two panel orderings with current main code
+- Result: the difference is in the build, not the inputs. `08df8d19…` rebuilds exactly (two satiation columns placed as declared); `92bf10a4…` is main without #743; its only value difference from H2's is `net_settlement_due_5d` (#679). Both controls reproduce H2's recorded skill against B1 (reachable +0.192 [+0.007, +0.352], ceiling +0.162 [-0.009, +0.310]) to every digit; H5 step 4's panel gives +0.196 [+0.019, +0.354] and +0.168 [+0.003, +0.316]. No published figure moves
+- Against kill: not applicable (a reproducibility trace; no hypothesis is tested)
+- Next: Eleonora's two marked questions on the page (which ceiling stands for H5 step 4; the ceiling interval that now excludes 0); a fit on today's main panel is not made
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#827
+- Directive: #725 (the three reliability-slope helpers call the shared fit)
+- Step: 2 (groundwork; no forecast scored)
+- Tier: development
+- Pins: base `028ab0a`; no panel read
+- Tried: no new variant. `off_risk_day_624.py`, `kinked_626.py` and `spread_distribution_632.py` call `reliability_regimes.fit` instead of their own Newton loops. Variants: 0.
+- Result: the helpers agree with the old ones to 4e-13 (624), exactly (632) and within 5e-3 in small samples (626) on 1,840 synthetic cells; a cell on which the shared fit does not converge now reads undefined, which happened in 137 cells with forecasts far below the event rate. The published panels are not tracked, so no page was re-run.
+- Against kill: not applicable (groundwork; development data gives no verdict).
+- Next: Eleonora decides whether the shared fit gets a line search (question in the PR).
 
 ### 2026-10-15 [H5] groundwork G1 · eleonorabjornberg/repo-market-model#821
 - Directive: #800 (the shared "not a risk date" function, asked by the code merged after #709)
