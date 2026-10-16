@@ -265,7 +265,8 @@ def mean_reversion_laws(panel, splits, registry) -> Dict[str, Dict[int, Dict[dat
 
     days = [row.date for row in panel]
     position = {day: i for i, day in enumerate(days)}
-    walk = var.walk(panel, days, registry=registry, decision_time=DECISION_TIME, splits=splits, b2={})
+    decision_days = [day for i, day in enumerate(days) if i + max(HORIZONS) < len(days)]
+    walk = var.walk(panel, decision_days, registry=registry, decision_time=DECISION_TIME, splits=splits, b2={})
     out: Dict[str, Dict[int, Dict[date, List[float]]]] = {MR: {h: {} for h in HORIZONS}, CTX: {h: {} for h in HORIZONS}}
     for name in (MR, CTX):
         for day, by_lead in walk.forecasts[name].items():

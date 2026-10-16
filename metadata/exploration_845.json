@@ -45,6 +45,7 @@
     "target_days": "ordinary target days only: SplitDeclaration.reporting_day_type(target) == 'ordinary' (metadata/evaluation_splits.json), the type the pressure-day split of #686 and #634 calls ordinary",
     "stretch_membership": "by the target day, not the decision day",
     "common_cells": "a cell is read only if every law has a forecast for it, so every law is compared on the same cells; a missing law is counted, not filled",
+    "decision_days": "as in #686 and #634, a decision day is forecast only if its fifth target day is on or before the last day; so the last days before the end are read at the leads that reach them from earlier decision days only",
     "event": "the realised spread is above +5 bp as data.exceeds_bp reads it (the whole-basis-point event); a cell with the event is a pressure-day cell, and its target day a pressure day"
   },
   "report": {
