@@ -768,6 +768,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
 - Next: #631's and #632's per-regime slopes need their own forecast chains rebuilt (not done here); any reliability-shape test (#628) is read within regimes.
 
+<<<<<<< HEAD
 ### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#824
 - Directive: #803
 - Step: 5 (variant count by content; groundwork for the registration's record of what was tried, #567)
@@ -777,3 +778,14 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the page still reads 22 declarations with a `variants` block, 65 variants. Beside it, 18 more files name 72 arms as `candidates` or `arms`, and 33 declarations carry no block the count can read. These are not added to the 65: what counts as a variant is Eleonora's question in the PR.
 - Against kill: not applicable (no hypothesis test).
 - Next: Eleonora's reading of what counts as a variant under protocol section 2.
+=======
+### 2026-10-15 [H8] step 1 · eleonorabjornberg/repo-market-model#819
+- Directive: #770
+- Step: 1 (correction to the development score of #694: the calendar benchmark read a coupon settlement before it was announced)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9eaecfb5`; seed 694; declaration `metadata/ranking_694.json` unchanged
+- Tried: the calendar ranker counts a coupon settlement only at leads where its column is declared observable at the decision instant (ruling on #720, point 2), so at lead 1 under the published declaration; the model and the other benchmarks are untouched. Variants: 0 (a correction, no new candidate).
+- Result: the calendar's top-5 precision falls from 13.0% to 9.4% (recall@5 from 56.8% to 37.7%); the probability ranker's top-5 precision gain over it moves from -5.2 pp [-7.7 pp, -3.0 pp] to -1.6 pp [-2.9 pp, -0.3 pp] over 1,825 decision days to 2025-12-31. Gains over persistence and climatology do not move. Detail in `docs/pivot/ranking-770-result.md`.
+- Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is still met on development data, as exploration and not a verdict: the interval still lies wholly below zero, by a third of the earlier gap.
+- Next: step 2 (#765) reads the corrected calendar.
+>>>>>>> origin/main

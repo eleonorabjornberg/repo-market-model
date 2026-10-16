@@ -193,12 +193,43 @@ class WindowScoreTests(unittest.TestCase):
             self.assertTrue(all(0.0 <= value <= 1.0 for value in self.scores[name]))
 
     def test_the_calendar_is_one_on_a_scheduled_risk_date_and_zero_elsewhere(self):
-        from repo_model.pressure_judge import _scheduled_risk_date
-
         for lead, value in enumerate(self.scores["calendar"], start=1):
-            self.assertEqual(value, 1.0 if _scheduled_risk_date(self.panel[self.t + lead].values) else 0.0)
+            values = self.panel[self.t + lead].values
+            fixed = float(values["quarter_end"] or 0.0) == 1.0 or float(values["tax_date"] or 0.0) == 1.0
+            settles = float(values["treasury_settlement_coupons"] or 0.0) > 0.0 and lead == 1
+            self.assertEqual(value, 1.0 if fixed or settles else 0.0)
         self.assertIn(1.0, self.scores["calendar"])
         self.assertIn(0.0, self.scores["calendar"])
+
+    def test_a_coupon_settlement_counts_only_where_it_was_public_at_the_decision(self):
+        """A settlement is public one panel day ahead (`metadata/sources.json`), so at lead 1 only (#770).
+
+        Mutation record: in `ranking.calendar`, `risk = available <= rule.decision_instant(dates, scored)` replaced with
+        `risk = True`; this test failed with `AssertionError` (1.0 != 0.0 at lead 5, a settlement not yet announced read
+        as a risk date); restored, it passes.
+        """
+
+        rows = list(self.panel)
+        for lead in (1, 5, 9):
+            row = rows[self.t + lead]
+            values = dict(row.values)
+            values.update(quarter_end=0.0, tax_date=0.0, treasury_settlement_coupons=10.0)
+            rows[self.t + lead] = dataclasses.replace(row, values=values)
+        # lead 9 is a quarter-end, whatever settles: a calendar fact, known ahead
+        values = dict(rows[self.t + 9].values)
+        values["quarter_end"] = 1.0
+        rows[self.t + 9] = dataclasses.replace(rows[self.t + 9], values=values)
+        for lead in (2, 3, 4, 6, 7, 8):
+            row = rows[self.t + lead]
+            values = dict(row.values)
+            values.update(quarter_end=0.0, tax_date=0.0, treasury_settlement_coupons=0.0)
+            rows[self.t + lead] = dataclasses.replace(row, values=values)
+        got = ranking.calendar(rows, self.t, registry=self.settings["registry"], decision_time=self.settings["decision_time"])
+        self.assertEqual(got[0], 1.0, "lead 1: the settlement is public")
+        self.assertEqual(got[4], 0.0, "lead 5: the settlement was not yet announced, so not a risk date")
+        self.assertEqual(got[8], 1.0, "lead 9: a quarter-end is a calendar fact")
+        self.assertEqual(got[1], 0.0)
+
 
     def test_climatology_is_the_share_of_pressure_days_of_the_targets_type_in_the_trailing_year(self):
         anchor = pb._anchor(self.panel, self.t, self.settings["registry"], self.settings["decision_time"])
