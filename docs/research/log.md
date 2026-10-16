@@ -777,3 +777,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision falls from 13.0% to 9.4% (recall@5 from 56.8% to 37.7%); the probability ranker's top-5 precision gain over it moves from -5.2 pp [-7.7 pp, -3.0 pp] to -1.6 pp [-2.9 pp, -0.3 pp] over 1,825 decision days to 2025-12-31. Gains over persistence and climatology do not move. Detail in `docs/pivot/ranking-770-result.md`.
 - Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is still met on development data, as exploration and not a verdict: the interval still lies wholly below zero, by a third of the earlier gap.
 - Next: step 2 (#765) reads the corrected calendar.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#829
+- Directive: #786
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `62009b23`
+- Tried: #632's rows (the passer, the two #598 and #601 controls, variants (a) and (b)) and the references (`risk_gbm`, `ngboost_laplace`, `calendar_climatology`, `persistence_logistic`), rebuilt at h = 1 to 5 and tabulated for the reliability slope on the ordinary days inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals (2,000 replications). Variants: 0 new models.
+- Result: inside 2018-19 (73 or 74 of 100 or 101 pressure days) (b) reads 0.07 to 0.60 at h = 1 to 5, intervals below 1; `persistence_logistic` reads 0.32 to 0.58, so its pooled 0.89 to 1.08 ("the better calibrated of the two") holds only in 2025-26 (0.82 to 1.07). In 2025-26 (b) reads 0.30 to 0.90 with intervals including 1. The rebuilt rows (a) and (b) differ slightly from the page's first run (AUROC 0.9072 against 0.9029 at h = 1 for (b)); references reproduce.
+- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
+- Next: #785 does the same for #631's page; any reliability-shape test (#628) is read within regimes; the drift of (a) and (b) is not traced to a change in `ml.py`.
