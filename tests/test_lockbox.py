@@ -347,6 +347,11 @@ NOT_ENTRY_POINTS = {
         "target on or before 2025-12-31 (`decision_indices`) and no training label after it is read; "
         "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
     ),
+    "scripts/backfill_h5_726.forecasts_command": (
+        "makes the H4 nested test's forecasts and scores nothing (#726): it calls require_unlocked, then "
+        "spread_distribution_634.walk, which refuses a locked scored day (refuse_locked) before any fit; "
+        "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
+    ),
     "protocol_benchmarks._anchor": (
         "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a forecast, "
         "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls "
@@ -504,6 +509,11 @@ NOT_ENTRY_POINTS = {
     "scripts/richer_targets_639.run_command": (
         "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls lockbox.require_unlocked on every "
         "scored day before it reads one, refuses a panel past 2025-12-31 and fits and selects nothing"
+    ),
+    "scripts/richer_targets_706.lead_on_onsets": (
+        "the pre-onset AUC of a modelled target's lead-1 median and of its as-of value (H9 step 2, #706); walks the lead-1 "
+        "fold grid, calls refuse_locked on every scored day before it reads one, and fits and selects nothing "
+        "(tests/test_richer_targets_706_script.py, LockedDayTests)"
     ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "

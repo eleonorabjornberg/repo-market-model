@@ -32,7 +32,8 @@ records the ruling (drafted by the pull request that closes #430, for her to mer
   scored day are the ones the script scores without the history, and each fit's training frame also
   holds the back-filled rows. After each backtest the report's folds go through
   `backfill.require_training_only` and `backfill.require_posting_established` (#572: refused while
-  `metadata/backfill_posting.json` declares no posting instant).
+  `metadata/backfill_posting.json` declares no posting instant) and `backfill.require_series_admitted` (#742:
+  `--reads` names the back-fill series the script's model reads, and only the admitted ones pass).
 """
 
 from __future__ import annotations
@@ -254,6 +255,10 @@ def run_command(args) -> int:
     if script.parent != REPO / "scripts":
         raise SystemExit("the script must be one of scripts/*.py")
     posting = backfill.load_posting_instant(REPO / "metadata" / "backfill_posting.json")
+    admitted = backfill.load_admitted_series(REPO / "metadata" / "backfill_posting.json")
+    reads = tuple(name for name in (args.reads or "").split(",") if name)
+    if not reads and not args.control:
+        raise SystemExit("--reads names the back-fill series the script's model reads (#742); e.g. --reads tgcr,bgcr,sofr")
     original = baseline.rolling_exceedance_backtest
     original_pairs = ml._pressure_pairs
 
@@ -267,6 +272,7 @@ def run_command(args) -> int:
         report = original(observations, minimum_history=minimum_history + shift, **kwargs)
         backfill.require_training_only(report.folds, where=script.name)
         backfill.require_posting_established(report.folds, posting, where=script.name)
+        backfill.require_series_admitted(report.folds, reads, admitted, where=script.name)
         calls.append((shift, len(report.folds)))
         for fold in report.folds:
             key = (fold.train_start.isoformat(), fold.train_end.isoformat(), fold.train_rows)
@@ -532,6 +538,7 @@ def main(argv=None) -> int:
     run.add_argument("--extended", type=Path, required=True)
     run.add_argument("--script", type=Path, required=True)
     run.add_argument("--control", action="store_true", help="accept a panel with no back-filled row (the arm without history)")
+    run.add_argument("--reads", help="comma-separated back-fill series the script's model reads (#742); required unless --control")
     run.add_argument("--folds-output", type=Path)
     run.add_argument("--pairs-output", type=Path)
     run.add_argument("rest", nargs=argparse.REMAINDER)
