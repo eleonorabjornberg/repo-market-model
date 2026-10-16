@@ -99,5 +99,35 @@ class TrackedTextTests(unittest.TestCase):
         self.assertIn("development, not a verdict".lower(), text.lower())
 
 
+class RowCellsTests(unittest.TestCase):
+    """`_run_rows` is the bootstrap of the `kinked` command, spread over processes (#753): the same cells, whatever the worker count."""
+
+    def _jobs(self):
+        import random
+
+        rng = random.Random(7)
+        days = 240
+        jobs = []
+        for key in ("a", "b", "c"):
+            p = [min(0.95, max(0.02, rng.random() * 0.4)) for _ in range(days)]
+            y = [1 if rng.random() < q * 1.2 else 0 for q in p]
+            regime = ["regime 2018-19"] * 80 + ["regime 2020-24"] * 80 + ["regime 2025-26"] * 80
+            state = ["scarcity state 0"] * 120 + ["scarcity state 1"] * 120
+            jobs.append((key, p, y, regime, state, dict(block_length=2.0, seed=11, replications=40, level=0.9)))
+        return jobs
+
+    def test_the_cells_do_not_depend_on_the_number_of_workers(self):
+        jobs = self._jobs()
+        serial = S._run_rows(jobs, workers=1)
+        self.assertEqual(list(serial), ["a", "b", "c"])
+        self.assertEqual(serial, S._run_rows(jobs, workers=2))
+
+    def test_each_row_has_a_pooled_cell_in_both_splits(self):
+        rows = S._run_rows(self._jobs()[:1], workers=1)
+        self.assertIn("pooled", rows["a"]["regime"])
+        self.assertIn("pooled", rows["a"]["scarcity_state"])
+        self.assertEqual(rows["a"]["regime"]["pooled"], rows["a"]["scarcity_state"]["pooled"])
+
+
 if __name__ == "__main__":
     unittest.main()
