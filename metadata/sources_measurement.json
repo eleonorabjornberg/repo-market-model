@@ -265,13 +265,13 @@
   "nyfed_repo_ops": {
     "access": "public",
     "availability_provenance": {
-      "note": "Recorded 8 October 2026 for #425. The same operation-results endpoint as nyfed_srf and nyfed_on_rrp (markets.newyorkfed.org/api/rp/results/search.json), saved here a calendar year at a time for 2018-01-01 to 2025-12-31 and read for every repo operation, not only the facility's overnight ones. The Desk states no clock time at which results are published; the one timestamp in each record is lastUpdated, a write time. The adapter records it per operation date (the latest lastUpdated of the date's kept operations, New York time) and reads a date's values at the later of that and the declaration below, so a rewritten record can only make a value later. On the snapshots, lastUpdated is on the operation date for all but 2023-05-11 (09:29 the next day, before the declaration), and is later than the declaration for two dates, 2021-09-03 and 2021-09-10, both rewritten on 2021-09-16. The declaration is #45's and #127's conservative reading for the same endpoint: 16:00 ET on the next business day.",
+      "note": "Recorded 8 October 2026 for #425. The same operation-results endpoint as nyfed_srf and nyfed_on_rrp (markets.newyorkfed.org/api/rp/results/search.json), saved here a calendar year at a time for 2018-01-01 to 2025-12-31 and read for every repo operation, not only the facility's overnight ones. The Desk states no clock time at which results are published; the one timestamp in each record is lastUpdated, a write time. The adapter records it per operation date (the latest lastUpdated of the date's kept operations, New York time) and reads a date's values at the later of that and the declaration below, so a rewritten record can only make a value later. On the snapshots, lastUpdated is on the operation date for all but 2023-05-11 (09:29 the next day, before the declaration), and is later than the declaration for two dates, 2021-09-03 and 2021-09-10, both rewritten on 2021-09-16. The declaration is #45's and #127's conservative reading for the same endpoint: 16:00 ET on the next business day. Extended on 14 October 2026 for #766: one more snapshot, 2026-01-01 to 2026-09-03 (a partial year, fetched on 2026-10-14), beside the eight yearly ones, which are unchanged; coverage_end is 2026-09-03. Ingestion only: no 2026 day is scored (docs/decisions/lockbox.md) and the published panel still stops at 2025-12-31.",
       "publication": "New York Fed repo operation results: the temporary open market operations of 2019 and 2020 and the Standing Repo Facility from 2021-07-29. Operations close between 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the next business day is the conservative availability instant declared here."
     },
     "coverage": [
-      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2019-09-17 to 2025-12-31 in the tracked snapshots (the six test operations of 2018-05-09 to 2019-05-13 are left out), and the term repos outstanding per business day over the same dates"
+      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2019-09-17 to 2026-09-03 in the tracked snapshots (the six test operations of 2018-05-09 to 2019-05-13 are left out), and the term repos outstanding per business day over the same dates"
     ],
-    "coverage_end": "2025-12-31",
+    "coverage_end": "2026-09-03",
     "facility_start": "2019-09-17",
     "field_frequencies": {
       "repo_accepted": "business_daily",
@@ -319,9 +319,9 @@
       "publication": "New York Fed repo operation results: the temporary open market operations of 2019 and 2020 and the Standing Repo Facility from 2021-07-29. Operations close between 08:30 and 13:45 ET and the Desk publishes a summary of results after each, at no stated clock time. 16:00 ET on the operation date is the less conservative availability instant tested here."
     },
     "coverage": [
-      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2019-09-17 to 2025-12-31 in the tracked snapshots (the six test operations of 2018-05-09 to 2019-05-13 are left out)"
+      "Repo operations (overnight and term) amounts accepted and submitted, the amount-weighted rate accepted and the number of operations that accepted anything, per operation date, 2019-09-17 to 2026-09-03 in the tracked snapshots (the six test operations of 2018-05-09 to 2019-05-13 are left out)"
     ],
-    "coverage_end": "2025-12-31",
+    "coverage_end": "2026-09-03",
     "facility_start": "2019-09-17",
     "field_frequencies": {
       "repo_accepted": "business_daily",
