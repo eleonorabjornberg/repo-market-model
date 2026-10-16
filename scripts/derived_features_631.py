@@ -1,6 +1,6 @@
 """Derived features, interactions and lagged pressure from data we hold, screened on ordinary days; one model test (#631).
 
-An exploratory measurement, not a record: nothing is selected, nothing is published, no day after 2025-12-31 and no day of a locked tier
+An exploratory measurement, not a record: nothing is selected, nothing is published, no day after 2026-09-03 (`repo_model.exploration.EXPLORATORY_END`, #684) and no day of a locked tier
 is read (`docs/decisions/lockbox.md`; `require_unlocked`). Everything is declared in `metadata/derived_features_631.json`, which this
 script refuses to read unless it is committed and unchanged (`risk_date_severity.committed_declaration`); `declare` writes it from the
 constants below and was run, and its output committed, before any number was computed.
@@ -20,11 +20,15 @@ from typing import Dict, List
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model.exploration import EXPLORATORY_END, NEAR_BLIND_START, panel_end  # noqa: E402
+
 DECLARATION = REPO / "metadata" / "derived_features_631.json"
 CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
 
 FIRST_DAY = "2018-06-29"
-LAST_DAY = "2025-12-31"
+LAST_DAY = EXPLORATORY_END.isoformat()
+#: The model test (`model`, `compare`, `ordinary`) scores through the pressure judge, whose declaration ends 2025-12-31 (#684: not extended here).
+MODEL_TEST_LAST_DAY = "2025-12-31"
 LEADS = (1, 2, 3, 5, 10)
 THRESHOLD_BP = 5.0
 #: rates whose own trailing range is read (panel column -> what it is)
@@ -73,7 +77,7 @@ def declaration_document() -> dict:
         "status": (
             "declared by the pull request that closes #631 before any number was computed; an exploratory screen and one model test, "
             "not a result. Nothing is selected into a model or published: no rule, threshold, onset definition or availability time changes, "
-            "the published declaration, the live record and the pin do not move. The screen reads 2018-2025 and the model test is one "
+            "the published declaration, the live record and the pin do not move. The screen reads 2018 to " + LAST_DAY + " (the 2026 days are development days, #684) and the model test is one "
             "declared comparison under the judge in force, so a pass is not a confirmation (ruling on #567)"
         ),
         "issue": 631,
@@ -88,7 +92,7 @@ def declaration_document() -> dict:
                 "the auction schedule, known in advance, not of any outcome"
             ),
             "no_hindsight_regime_labels": "regimes are metadata/evaluation_splits.json's date ranges; the scarcity state is read as of each decision instant (ruling on #515)",
-            "locked_days": "none read: require_unlocked on the last scored day; the panel is cut at 2025-12-31",
+            "locked_days": "none read: require_unlocked on the last scored day; the panel is cut at " + LAST_DAY,
         },
         "reading": {
             "rule": "every series is read through asof.InformationRule at the decision instant 16:00, at a lead of L panel days (horizon L), L in LEADS, per field, with both guards",
@@ -160,7 +164,7 @@ def declaration_document() -> dict:
                 "(3) its pre-onset AUC interval excludes 0.5 in the same direction at lead 1; (4) it is not in a cluster with a member that passes more checks (a cluster is listed once, by its representative-or-best). "
                 "The noise risk is 'low' if 4 checks pass, 'medium' if 3 or 2, 'high' otherwise; the reason column says which checks pass and fail"
             ),
-            "note": "a list for the next declared model test, selected on 2018-2025: nothing in it is selected into a model",
+            "note": "a list for the next declared model test, selected on 2018 to " + LAST_DAY + ": nothing in it is selected into a model",
         },
         "model_test": {
             "question": "does lagged pressure added to the every-day part of risk_gbm+settle+h41+dist_roll improve its forecast of pressure days that are not risk dates?",
@@ -171,7 +175,7 @@ def declaration_document() -> dict:
             },
             "single_test": f"{TEST} against {PARENT}, the only declared model test; the control is reported beside them for reference and is not a second test",
             "added_inputs": list(MODEL_INPUTS),
-            "scoring": {"first_day": FIRST_DAY, "last_day": LAST_DAY, "minimum_history": 61, "refit_every": 21, "decision_time": "16:00", "horizons": [1, 2, 3, 4, 5], "thresholds_bp": [5, 10]},
+            "scoring": {"first_day": FIRST_DAY, "last_day": MODEL_TEST_LAST_DAY, "minimum_history": 61, "refit_every": 21, "decision_time": "16:00", "horizons": [1, 2, 3, 4, 5], "thresholds_bp": [5, 10]},
             "judge": "the judge as in force on main (metadata/pressure_judge.json, unchanged), tiers 1, 3 and 5, under the weighted rule in force and, reported beside it, the flat rule; the cut-off rule unchanged",
             "pairing": "test against parent with 90% stationary-bootstrap intervals (the judge's bootstrap): the paired Brier difference at +5 bp (h = 1 to 5) pooled, by regime and by year; onset recall at some lead 1 to 5 (the judge's comparison); flags and false alarms per onset",
             "ordinary_days": "on the ordinary days of the screen, for each row at h = 1 to 5 and +5 bp: AUROC of the forecast for pressure days (ties half), with a 90% interval; and the reliability slope and intercept, from a logistic regression of the outcome on logit(forecast) (forecasts clipped to [1e-4, 1 - 1e-4]; Newton, 50 iterations), reported where the forecast varies and the days hold 5 pressure days (#616)",
@@ -593,6 +597,9 @@ def run_command(args) -> int:
             idx = [i for i in ordinary if regime_of[i] == label]
             if idx:
                 sp[f"regime:{label}"] = idx
+        # The 2026 column (#684): the days the opened near-blind tier added, beside the days the earlier page read.
+        sp["period:2018-2025"] = [i for i in ordinary if scored[i] < NEAR_BLIND_START]
+        sp["period:2026"] = [i for i in ordinary if scored[i] >= NEAR_BLIND_START]
         for b in _ss.BANDS:
             idx = [i for i in ordinary if band[i] == b]
             if idx:
@@ -764,7 +771,7 @@ def model_command(args) -> int:
     h = args.horizon
     if h not in scoring["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
-    last = date.fromisoformat(scoring["last_day"])
+    last = panel_end(args.end, date.fromisoformat(scoring["last_day"]), where="derived_features_631.model")
     require_unlocked([last], where="derived_features_631")
     _ss, _ann = _modules()
     s598 = _load("satiation_distance_598")
@@ -863,13 +870,13 @@ def ordinary_command(args) -> int:
     from repo_model.evaluation_splits import load_split_declaration
     from repo_model.metrics import stationary_bootstrap_indices
 
+    last = panel_end(args.end, date.fromisoformat(MODEL_TEST_LAST_DAY), where="derived_features_631.ordinary")
     declared = _committed()
     _ss, _ann = _modules()
     rows = load_daily_panel(args.panel)
     splits = load_split_declaration(REPO / "metadata" / "evaluation_splits.json")
     by_date = {r.date: r for r in rows}
-    last = date.fromisoformat(LAST_DAY)
-    out = {"rows": {}, "paired": {}, "scope": {"threshold_bp": 5, "last_day": LAST_DAY}}
+    out = {"rows": {}, "paired": {}, "scope": {"threshold_bp": 5, "last_day": last.isoformat()}}
     for h in declared["model_test"]["scoring"]["horizons"]:
         docs = [json.loads(Path(str(p).format(h=h)).read_text(encoding="utf-8")) for p in args.inputs]
         forecasts = {}
@@ -1044,10 +1051,10 @@ def report_command(args) -> int:
         extra = f"; also in its cluster: {', '.join(item['also_in_cluster'])}" if item.get("also_in_cluster") else ""
         lines.append(f"| {k} | `{item['name']}` | {'higher series, more pressure' if item['direction'] == 1 else 'lower series, more pressure'} | {item['best_lead']} | {item['auroc']:.3f} | {item['leads_excluding']} | {item['passed']} of 4 | {item['noise_risk']} | passes {', '.join(passed) or 'none'}; fails {', '.join(failed) or 'none'}{extra} |")
     lines += ["", "## Splits of the ranked leads, and the persistence reference, at lead 1 (AUROC; 90% interval where the declared trigger fired)", "",
-              "| series | pooled | 2018-19 | 2025-26 | scarce state | ample state |", "|---|---|---|---|---|---|"]
+              "| series | pooled | 2018-19 | 2025-26 | 2018-2025 | 2026 | scarce state | ample state |", "|---|---|---|---|---|---|---|---|"]
     for name in [item["name"] for item in leads] + [SPREAD, "spread_lag1"]:
         cells = doc["series"][name]["leads"]["1"]
-        lines.append(f"| `{name}` | " + " | ".join(_auc(cells.get(k)) for k in ("pooled", "regime:2018-19", "regime:2025-26", "state:scarce", "state:ample")) + " |")
+        lines.append(f"| `{name}` | " + " | ".join(_auc(cells.get(k)) for k in ("pooled", "regime:2018-19", "regime:2025-26", "period:2018-2025", "period:2026", "state:scarce", "state:ample")) + " |")
     lines += ["", "Pressure days on ordinary days by split: " + ", ".join(
         f"{k} {v['pressure_days']} of {v['n']}" for k, v in doc["series"][SPREAD]["leads"]["1"].items()) + ".", ""]
     lines += ["", "## Every series: AUROC for pressure days on ordinary days (pooled, 90% interval), by lead", "",
@@ -1069,21 +1076,24 @@ def report_command(args) -> int:
 def model_report_command(args) -> int:
     """The model test's tables: the judge's tiers, then the ordinary-day AUROC and calibration, paired."""
 
-    judged = {rule: json.loads(Path(path).read_text(encoding="utf-8"))["candidates"] for rule, path in (("flat", args.unweighted), ("weighted", args.weighted))}
+    judged = (
+        {rule: json.loads(Path(path).read_text(encoding="utf-8"))["candidates"] for rule, path in (("flat", args.unweighted), ("weighted", args.weighted))}
+        if args.weighted and args.unweighted else None
+    )
     ordinary = json.loads(args.ordinary.read_text(encoding="utf-8"))
     names = [CONTROL.rsplit("+dist_roll", 1)[0], CONTROL, PARENT, TEST]
     yes = lambda x: "yes" if x else "no"
     ci = lambda r: f"{r['mean']:.3f} [{r['interval']['lower']:.3f}, {r['interval']['upper']:.3f}]"
-    lines = ["Table M1. The judge in force (tiers 1, 3 and 5; the weighted rule is the one in force, the flat rule is reported beside it). Tier 1: onsets flagged at some lead 1 to 5, recall [90%], the pooled false alarms per onset (a false alarm counted once however many leads flag it; limit 2, #550); tier 1 also needs the recall conditions at each lead.", "",
+    lines = [] if judged is None else ["Table M1. The judge in force (tiers 1, 3 and 5; the weighted rule is the one in force, the flat rule is reported beside it). Tier 1: onsets flagged at some lead 1 to 5, recall [90%], the pooled false alarms per onset (a false alarm counted once however many leads flag it; limit 2, #550); tier 1 also needs the recall conditions at each lead.", "",
              "| row | rule | onsets flagged | recall [90%] | pooled false alarms per onset | tier 1 | tier 3 | tier 5 | passes |", "|---|---|---|---|---|---|---|---|---|"]
-    for name in names:
+    for name in names if judged else ():
         for rule in ("weighted", "flat"):
             e = judged[rule][name]
             t = e["tiers"]["onset_warning"]["lead_at_least_1"]
             v = e["verdict"]
             worst = t["pooled_weighted_false_alarms_per_onset"] if rule == "weighted" else t["pooled_false_alarms_per_onset"]
             lines.append(f"| `{name}` | {rule} | {t['onsets_flagged']:g} of {t['onsets']} | {ci(t['recall'])} | {worst:.2f} | {yes(v['tier_1_onset_warning'])} | {yes(v['tier_3_no_crying_wolf'])} | {yes(v['tier_5_week_ahead'])} | {yes(v['passes'])} |")
-    lines += ["", "Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%], and the reliability intercept and slope (logistic of the outcome on logit(forecast); `-` where the forecast is constant or the fit is not formed). The control forecasts exactly 0 there.", "",
+    lines += ["" if lines else "Table M1 is not made: the judge is not run on days past 2025-12-31 (#684, ruling of 13 October 2026).", "", "Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%], and the reliability intercept and slope (logistic of the outcome on logit(forecast); `-` where the forecast is constant or the fit is not formed). The control forecasts exactly 0 there.", "",
               "| row | h | days | pressure days | mean forecast | realised | AUROC [90%] | intercept | slope |", "|---|---|---|---|---|---|---|---|---|"]
     for name in names[1:]:
         for h, c in ordinary["rows"][name].items():
@@ -1117,6 +1127,7 @@ def main(argv=None) -> int:
     model.add_argument("--published", type=Path, required=True)
     model.add_argument("--horizon", type=int, required=True)
     model.add_argument("--output", type=Path, required=True)
+    model.add_argument("--end", help="last scored day, ISO; default the declaration's own (at most 2026-09-03, #684: a scratch scored span)")
     model.set_defaults(func=model_command)
     compare = sub.add_parser("compare")
     compare.add_argument("--rule", choices=("unweighted", "weighted"), default="weighted")
@@ -1128,6 +1139,7 @@ def main(argv=None) -> int:
     ordinary = sub.add_parser("ordinary")
     ordinary.add_argument("--panel", type=Path, required=True)
     ordinary.add_argument("--output", type=Path, required=True)
+    ordinary.add_argument("--end", help="last scored day, ISO; default the declaration's own (at most 2026-09-03, #684: a scratch scored span)")
     ordinary.add_argument("inputs", nargs="+", help="forecast files with {h} for the horizon")
     ordinary.set_defaults(func=ordinary_command)
     report = sub.add_parser("report")
@@ -1135,8 +1147,8 @@ def main(argv=None) -> int:
     report.add_argument("--output-dir", type=Path, required=True)
     report.set_defaults(func=report_command)
     modelreport = sub.add_parser("model-report")
-    modelreport.add_argument("--weighted", type=Path, required=True)
-    modelreport.add_argument("--unweighted", type=Path, required=True)
+    modelreport.add_argument("--weighted", type=Path, help="the judge's output under the weighted rule; with --unweighted, Table M1 is made")
+    modelreport.add_argument("--unweighted", type=Path)
     modelreport.add_argument("--ordinary", type=Path, required=True)
     modelreport.add_argument("--output", type=Path, required=True)
     modelreport.set_defaults(func=model_report_command)

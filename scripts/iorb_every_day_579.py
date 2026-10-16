@@ -47,6 +47,7 @@ from repo_model import h41_release, measurement_fields, ml  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "iorb_every_day_579.json"
@@ -150,7 +151,7 @@ def run_command(args) -> int:
     h = args.horizon
     if h not in declared["horizons"]:
         raise SystemExit(f"horizon {h} is not declared")
-    last = date.fromisoformat(declared["scoring"]["last_day"])
+    last = panel_end(args.end, date.fromisoformat(declared["scoring"]["last_day"]), where="iorb_every_day_579.run")
     require_unlocked([last], where="iorb_every_day_579")
     parent_document = json.loads(args.parent.read_text(encoding="utf-8"))
     if parent_document["horizon"] != h or parent_document["panel_sha256"] != panel_sha256(args.published):
@@ -366,6 +367,7 @@ def main(argv=None) -> int:
     run.add_argument("--panel", type=Path, required=True)
     run.add_argument("--published", type=Path, required=True)
     run.add_argument("--horizon", type=int, required=True)
+    run.add_argument("--end", help="last scored day, ISO; default the committed declaration's own (at most 2026-09-03, #684: a scratch scored span, no published declaration moves)")
     run.add_argument("--parent", type=Path, required=True, help="announcement_dating_rescore.py run --arm both output at this horizon")
     run.add_argument("--output", type=Path, required=True)
     run.set_defaults(func=run_command)
