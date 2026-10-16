@@ -788,6 +788,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data). H5's kill, no CRPS gain over phase 2 and no ordinary-day ranking gain, is not assessed here; the ordinary-anchor gain is resolved and about +9%.
 - Next: #741 (does avoiding calendar spikes alone reach the pooled figure); the critical value and the MME are Eleonora's.
 
+### 2026-10-15 [H5] groundwork G1 · eleonorabjornberg/repo-market-model#821
+- Directive: #800 (the shared "not a risk date" function, asked by the code merged after #709)
+- Step: groundwork G1 (the ordinary-day population across H2, H5, H6 and H8; no step of H5 itself)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `06801bbd`
+- Tried: H5's `spread_mr_variants.is_risk_day` and H6's `risk_date_spread.risk_day_type` now decide through `risk_dates.is_risk_date` (`reporting_on=` reads the reporting day type); compared with the old answers on all 1873 scored days. Variants: none (no model).
+- Result: no figure moves. H5's 386 risk days and H6's 386 (every type) are identical before and after. The shared definition read the calendar-day month-end window has 404; the two readings disagree on 58 days (20 only in the business-day reading, 38 only in the calendar-day one).
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's question: which month-end window is the shared definition. The by-type groupings (H8 climatology, #707, #688, #639) stay as they are.
+
 ### 2026-10-14 [H4] step 2 · eleonorabjornberg/repo-market-model#777
 - Directive: #742
 - Step: 2 (milestone M2, guard updated: a per-series admitted list)
