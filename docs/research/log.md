@@ -807,3 +807,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the declared model of #633 reads the bill rate, reserves and the TGA from the back-filled rows and is now refused (`LookAheadError`); its pooled (+0.081 [+0.035, +0.133]) and 2021-23 (+0.149 [+0.061, +0.257]) CRPS gains rest on series that are not admitted. The workbook-only variant passes: pooled +0.032 [−0.002, +0.072], 2021-23 +0.033 [−0.041, +0.125], 2018-19 central-90% coverage +0.035 [+0.017, +0.054]. Detail in `docs/pivot/posting-dates-h4-result.md`.
 - Against kill: not killed on the workbook-only variant (a posting time is established; the 2018-19 calibration move's interval excludes zero).
 - Next: the Liberty Street copy as tracked evidence (fetch blocked here); whether IORB needs its own admitted instant (Eleonora); #726 against H5's candidate uses the workbook-only variant.
+
+### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#824
+- Directive: #803
+- Step: 5 (variant count by content; groundwork for the registration's record of what was tried, #567)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `06801bb`
+- Tried: `scripts/emit_progress.py` reads every `metadata/*.json` for arms named `candidates` or `arms` (top level or under `model`), counts them apart from the `variants` figure, and lists declarations whose arms it cannot read; `tests/test_model_declarations.py` now checks every such file (`PRE_803` freezes the 44 that predate the rule). Variants: n/a (a count, no model).
+- Result: the page still reads 22 declarations with a `variants` block, 65 variants. Beside it, 18 more files name 72 arms as `candidates` or `arms`, and 33 declarations carry no block the count can read. These are not added to the 65: what counts as a variant is Eleonora's question in the PR.
+- Against kill: not applicable (no hypothesis test).
+- Next: Eleonora's reading of what counts as a variant under protocol section 2.
