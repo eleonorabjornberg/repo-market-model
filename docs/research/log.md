@@ -858,3 +858,43 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: 38 of 4,972 cases change. On them the mean absolute error against the completed net falls from 71.6 to 42.2 bn (2020: 96.9 to 47.3 on 22 cases; 2025-26: 36.0 to 50.0 on 2); over all cases 1.9 to 1.6. 68 `ahead_columns` cells move, 43 of them in 2020. No published figure moves. Detail in `docs/pivot/evidence/cmb-point-in-time-738/result.md`.
 - Against kill: not applicable (an input-timing correction; development data gives no verdict).
 - Next: H5 step 2 and H6 read the corrected settlement columns.
+
+### 2026-10-14 [H7] groundwork G6 · eleonorabjornberg/repo-market-liquidity#76
+- Directive: eleonorabjornberg/repo-market-liquidity#74
+- Step: H7m groundwork G6 (goalpost module and power study)
+- Tier: development
+- Pins: model 53e61af9b4175e854c196908d3c76b228c039667, panel digest acb77874e0ca2c9eeee1c33a229f5e12745e65bb1224088d52c391dbf54be2ab, snapshot none
+- Tried: R plus a planted signal on 9 target gains, replayed over 60-, 125- and 250-day windows; variant count 0 (no candidate)
+- Result: MME 0.05 detectable in 10 of 13 250-day windows that reach 10 events (power 15% over all 67 windows; 41% to 2020, 6% 2021-24); events are the constraint (221 in 1,570 days)
+- Against kill: not applicable (no candidate scored); docs/decisions/measurement-protocol.md §5 and §9 unchanged
+- Next: Eleonora sets the MME and the event floor (Q2); step 2 (candidate C) continues in plan order
+
+### 2026-10-15 [H7] groundwork G1 · eleonorabjornberg/repo-market-liquidity#84
+- Directive: eleonorabjornberg/repo-market-liquidity#83 (L18, finding #80)
+- Step: groundwork G1 for H7m: align the research-log check with the model repo's format
+- Tier: development
+- Pins: parent 53e61af9b4175e854c196908d3c76b228c039667; panel digest unchanged; snapshot none
+- Tried: copied the model repo's heading and field rules into scripts/check_log_entry.py, test first; converted the six merged entries
+- Result: log check aligned, nothing scored
+- Against kill: not applicable
+- Next: the model repo copies the six converted entries in its next log PR
+
+### 2026-10-15 [H10] step 3 · eleonorabjornberg/repo-market-liquidity#90
+- Directive: eleonorabjornberg/repo-market-liquidity#86 (L20, finding #79)
+- Step: step 3 sensitivity: ON RRP as two regime-specific terms, regime fixed by the baseline mean, replacing the superseded interaction sensitivity
+- Tier: development
+- Pins: parent 53e61af9b4175e854c196908d3c76b228c039667; panel version 1, digest unchanged; snapshot none; seed 20261013
+- Tried: re-ran the step 2 application with depleted and abundant ON RRP terms, each with its own coefficient; 31 onsets, 10,000 draws, null of 1,000 draws
+- Result: sensitivity only: 3 of 31 under the residual bar (4% to 22%), 13 of 31 beat the null (29% to 57%), 3 counted, against 4, 14, 4 published; outcome still residual dominates; the abundant regime has 2 onsets
+- Against kill: not applicable; development evidence, no verdict
+- Next: Eleonora decides the day-level definition for the selection null and whether the page stands; the placebo-floor amendment (#85) may move these counts
+
+### 2026-10-15 [H7] groundwork G4 · eleonorabjornberg/repo-market-liquidity#91
+- Directive: eleonorabjornberg/repo-market-liquidity#89, relabel the saved-page SHA-256 as a fetch hash and add a re-derivable content hash (finding #40).
+- Step: groundwork G4 and G5 (H.4.1 and H.8 provenance for the H7m inputs).
+- Tier: development
+- Pins: parent 53e61af9b4175e854c196908d3c76b228c039667; panel version 1 acb77874e0ca2c9eeee1c33a229f5e12745e65bb1224088d52c391dbf54be2ab; snapshot agency_securities 9a5c4eafb04e85d4676c97bfc94a047ee6a7ad384345f977fff30d3f01681e58.
+- Tried: relabelled page_sha256 as fetch_sha256 in the three H.4.1 extracts, the agency-securities snapshot and the H.8 releases record; added content_sha256 per release; variant count 1.
+- Result: provenance relabelled, no value changed, nothing scored.
+- Against kill: not applicable.
+- Next: Eleonora's rulings on Q1 and Q2 above; then H7m G6 resumes.
