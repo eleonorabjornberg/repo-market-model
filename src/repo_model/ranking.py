@@ -10,7 +10,8 @@ Five rankers, each a risk score per lead h = 1..20:
   and as the predicted median;
 - `persistence`: P(spread > +5 bp) from B1 (the anchor plus the trailing two years' h-row changes), on 20 leads;
 - `climatology`: the share of pressure days among the trailing year's days of the target's type (B2's window and type);
-- `calendar`: 1 on a scheduled risk date (`pressure_judge._scheduled_risk_date`), else 0, the earliest date first on a tie.
+- `calendar`: 1 on a scheduled risk date (a quarter-end, a tax date, or a coupon settlement where it was public at the
+  decision instant, #770), else 0, the earliest date first on a tie.
 
 Everything a ranker reads is as-of: the anchor is the last row public at the decision instant
 (`protocol_benchmarks._anchor`), no spread after it is read (`protocol_benchmarks._require_public` raises
@@ -27,6 +28,8 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 from . import protocol_benchmarks as pb
 from . import spread_mean_reversion as smr
 from . import lockbox
+from .asof import InformationRule
+from .contract import field_sources_for_features
 from .data import DailyObservation, exceeds_bp
 from .evaluation_splits import SplitDeclaration
 from .scoring_protocol import GRID, ProtocolError
@@ -36,6 +39,8 @@ from .splits import LookAheadError, SplitError
 LEADS: Tuple[int, ...] = tuple(range(1, 21))
 #: Top-k cutoffs.
 TOP_K: Tuple[int, ...] = (3, 5)
+#: The coupon-settlement column the calendar ranker reads, where it was public (`risk_dates.COUPONS`).
+SETTLEMENT_COLUMN = "treasury_settlement_coupons"
 #: The pressure threshold, in bp.
 TAU = smr.TAIL_TAU
 #: The declared last scored day (`metadata/ranking_694.json`).
@@ -314,12 +319,36 @@ def climatology(
     return out
 
 
-def calendar(panel: Sequence[DailyObservation], decision_index: int, leads: Sequence[int] = LEADS) -> List[float]:
-    """1.0 on a scheduled risk date, else 0.0, per lead: a calendar fact, known ahead of the day."""
+def calendar(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    leads: Sequence[int] = LEADS,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> List[float]:
+    """1.0 on a scheduled risk date, else 0.0, per lead, as far as the decision instant knew it (#770).
 
-    from .pressure_judge import _scheduled_risk_date
+    A quarter-end and a tax date are calendar facts, known ahead. A coupon settlement counts at a lead only where its
+    column is declared observable at or before the decision instant (the information-set rule; Eleonora's ruling on
+    #720, 13 October 2026, point 2): where the settlement was not yet announced, the target day is not a settlement
+    risk date and the flag is not read. Under the published declaration a settlement is public one panel day ahead, so
+    the coupon clause counts at lead 1 only.
+    """
 
-    return [1.0 if _scheduled_risk_date(panel[decision_index + h].values) else 0.0 for h in leads]
+    dates = [row.date for row in panel]
+    scores: List[float] = []
+    for h in leads:
+        scored = decision_index + h
+        values = panel[scored].values
+        risk = float(values["quarter_end"] or 0.0) == 1.0 or float(values["tax_date"] or 0.0) == 1.0
+        coupons = values.get(SETTLEMENT_COLUMN)
+        if not risk and coupons is not None and float(coupons) > 0.0:
+            rule = InformationRule(registry, (), decision_time=decision_time, horizon=h)
+            available = rule.availability(dates, field_sources_for_features((SETTLEMENT_COLUMN,)), scored)
+            risk = available <= rule.decision_instant(dates, scored)
+        scores.append(1.0 if risk else 0.0)
+    return scores
 
 
 def window_scores(
@@ -345,7 +374,7 @@ def window_scores(
         "model_median": [quantiles[h][middle] for h in leads],
         "persistence": [smr.exceedance(one[h]) for h in leads],
         "climatology": climatology(panel, decision_index, anchor, splits=splits, leads=leads),
-        "calendar": calendar(panel, decision_index, leads),
+        "calendar": calendar(panel, decision_index, leads, **settings),
     }
 
 
