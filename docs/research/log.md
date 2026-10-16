@@ -828,3 +828,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: skill over B1 +0.329 [lower +0.271], +0.310 [+0.286], +0.330 [+0.241]; over B2 +0.156 [+0.080], −0.103 [−0.142], +0.155 [+0.054]; the spread (#634 b) +0.201 over B1 and +0.268 over B2. Negative on quarter-end target days for all three. No lead on the +5 bp episodes in the scarce state (pre-onset AUC of the modelled median 0.38, 0.53, 0.39, intervals not above one half). Detail in `docs/pivot/richer-targets-706-result.md`.
 - Against kill: `H9.md`'s wording ("no skill over the target's own persistence, and no nested gain for H5", Eleonora's ruling of 15 October 2026) cannot be assessed until step 3's nested test; on development data skill over persistence is shown for all three targets and a lead on the +5 bp episodes for none. Not a verdict.
 - Next: the nested test with H5's best candidate (H9 step 3), after #634 merges.
+
+### 2026-10-15 [H4] step 2 · eleonorabjornberg/repo-market-model#790
+- Directive: #781
+- Step: 2 (milestone M2, evidence for the posting instant: the Liberty Street copy)
+- Tier: development
+- Pins: none (no panel read, no score); base `236d175`
+- Tried: no forecast variant and no new score. The Liberty Street post on the revised broad Treasuries financing rate fetched, tracked with its sha256 and cited on the posting-dates page. Variants: 0.
+- Result: the page's editor's note dates a correction of the linked historical-rates file to May 17, 2018 and gives no time of day; it does not state a first posting.
+- Against kill: not applicable (evidence for the posting-instant ruling; no figure moves).
+- Next: Eleonora's read of whether the correction note supports the 17 May 2018 ruling; whether the linked data file is fetched too.
