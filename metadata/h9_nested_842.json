@@ -1,0 +1,78 @@
+{
+  "status": "declared by the pull request that closes #842 before any nested score was computed; a measurement, not a record. Nothing is published: no target joins any published declaration, no day after 2025-12-31 is read or scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #640): every figure here is exploration.",
+  "issue": 842,
+  "hypothesis": "H9 (richer targets carry more learnable signal), step 3: the development nested test against H5's candidate. Milestone M4. It assesses the second part of H9's kill, \"no nested gain for H5\".",
+  "rulings": [
+    "Orchestrating directive #842 (16 October 2026): add each of the three targets chosen in #774 to the candidate as an input, one at a time, and score the candidate with the target against the candidate alone under scoring protocol v1",
+    "Eleonora, 15 October 2026 (relayed by the orchestrating session on #763, restated on #775): H5's candidate, for nested tests, is gbm_funding",
+    "Eleonora, 15 October 2026 (ruling on #706, Q1 and Q2): the three targets are bgcr_dispersion_bps, on_rrp_change_bn and sofr_dispersion_bps",
+    "Eleonora, 12 October 2026 (scoring protocol v1, #640): development data gives a score and an interval, never a verdict; the +5 bp judge is retired",
+    "Eleonora, #798: every headline is reported with and without decision day 2019-09-18"
+  ],
+  "candidate": {
+    "name": "gbm_funding",
+    "is": "ml.fit_gradient_boosted_quantiles at the protocol's 23 levels on the published funding features only (live_record.published_features(h)), uncalibrated, every day, directly at each lead; the phase 2 gbm re-scored under the protocol (#634's control of the same name)",
+    "source": "metadata/spread_distribution_634.json, control gbm_funding; scripts/spread_distribution_634.py walk, on the published panel",
+    "reproduction": "the base is re-walked here by the same call; its grid CRPS on the common days is compared with #634's recorded figure (docs/pivot/evidence/spread-distribution-protocol/score.json, mean_primary.gbm_funding) and the difference is reported"
+  },
+  "targets": {
+    "chosen": [
+      "bgcr_dispersion_bps",
+      "on_rrp_change_bn",
+      "sofr_dispersion_bps"
+    ],
+    "source": "metadata/richer_targets_706.json, choice.chosen",
+    "forecasts": "the walks of scripts/richer_targets_706.py (#706), re-run unchanged on the scratch panel with the digest the 706 declaration records; each law is the 23-level law of the target at lead h, fitted walk-forward on the shared fold grid (minimum history 61, refit every 21 days)",
+    "scratch_panel_sha256": "26c51093de80bc1c5f6cc4e9e3742fd6606160e4c6ba0db2fa19d6fcbf3e1313",
+    "declaration_706_sha256": "dae63cf22f61485a829ab720fa505f3743d23c511b4cf483371d4f93c53d4c71"
+  },
+  "input": {
+    "form": "one value per target and lead: the median (level 0.5 of the 23-level grid) of the target's lead-h law for the target day h business days after the decision day, in the target's own unit. The lead-h candidate reads its own lead's column only (repo_model.target_forecasts.column). No other function of the law (width, tail level, mean) is declared or tried",
+    "availability": "public at 16:00 ET on the decision day, the decision instant (metadata/sources_measurement.json, h9_target_forecasts, zero lag). Each forecast comes from a fit made at or before that instant: a walk fits once per block of 21 rows at the decision instant of the block's first row, and repo_model.target_forecasts.attach refuses, with LookAheadError, a forecast whose recorded fit is later than its own decision day",
+    "holes": "a decision day on which the target's walk made no forecast (the first 61 labels of the walk; a lead with no law) holds no value; the fitter treats a hole as missing, as it does for every other held input",
+    "off": "the columns are switched on for this run only (target_forecasts.switched_on); they are in no published declaration"
+  },
+  "variants": {
+    "base": "gbm_funding, unchanged",
+    "plus_bgcr_dispersion_bps": "the candidate and the lead's column of bgcr_dispersion_bps",
+    "plus_on_rrp_change_bn": "the candidate and the lead's column of on_rrp_change_bn",
+    "plus_sofr_dispersion_bps": "the candidate and the lead's column of sofr_dispersion_bps",
+    "count": "three variants added one at a time on the one candidate. No target is combined with another, no hyperparameter differs from the candidate's, no form of the input is tried besides the one declared"
+  },
+  "protocol": {
+    "record": "docs/decisions/scoring-protocol.md (version 1)",
+    "scorer": "repo_model.scoring_protocol and repo_model.protocol_benchmarks, through scripts/spread_distribution_634.py",
+    "primary_score": "grid CRPS over the protocol's 23 levels, equal weight over h = 1 to 5, one number per decision day",
+    "key_secondary": "upper-tail twCRPS with weight 1{y > 0 bp}",
+    "nested_difference": "d = S(base) - S(base + target); positive favours the target's forecast; skill = mean(d) / mean(S(base))",
+    "versus_benchmarks": "base and each variant against B1 (as-of persistence) and B2 (calendar climatology), d = S(benchmark) - S(model)",
+    "interval": "studentized stationary bootstrap (Newey-West lag 10), mean block 10, 10,000 draws, seed 842, one-sided 95%",
+    "critical_value": "#695's calibrated critical values are for the confirmation checkpoints; this is a development window of about 1,900 days, so the scorer's own studentized bound is used, as in #634",
+    "multiplicity": "three targets are tested on the pooled primary score; the table reports Holm-adjusted bootstrap p-values beside the unadjusted bounds. Nothing here is a claim",
+    "splits": "pooled; without decision day 2019-09-18 (#798); by the regime of the decision day (metadata/evaluation_splits.json, reported only, drawn after the fact); by the as-of scarcity state of the decision day (ample = reserve_scarcity_state below 2, scarce = 2 and above, unknown, read as of the decision instant; ruling on #515); by the pressure-day type of the target day (SplitDeclaration.reporting_day_type); by lead. Every split is also read without 2019-09-18 where that day falls in it. No split is a pass requirement; a group of 10 or fewer decision days is not tested"
+  },
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_decision_day_rule": "a decision day is scored when every one of its five target days is on or before 2025-12-31 and has a published outcome",
+    "last_target_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "outcome": "the panel's spread_bps on the target day (the published panel, digest 4ddc3882...), not re-derived from first-published vintages",
+    "calendar": "the published panel's business days"
+  },
+  "reading_rule": {
+    "per_target": "a target's forecast IMPROVES the candidate when the one-sided 95% lower bound of mean(d) on the pooled primary score is above zero; otherwise it does not ('no improvement beyond its interval', with the point skill beside it). Read both with and without 2019-09-18; if the two readings differ, both are stated. A split cell that shows a gain is reported with the number of cells read, never alone",
+    "h9_nested_part": "H9's kill, second part: 'no nested gain for H5' holds on development data when no target improves the candidate beyond its interval. One line per target and one for H9, each labelled development, not a verdict. The first part of the kill (skill over the target's own persistence) was read in #706 and is not re-read here",
+    "variant_count": "recorded in the result: variants scored in development before this directive (see the research log) plus the three nested variants; the re-walked base and the three re-walked target models of #706 add none"
+  },
+  "not_included": "any 2026 day; the ON RRP offering rate, the SRF rate and the H.8 bank groups (liquidity repository); combinations of targets; any other form of the input; the two-part form and the published declaration as the base; the direct twin of #825 (if the candidate moves to the twin there, this step is re-scored)",
+  "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+}
