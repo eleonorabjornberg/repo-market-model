@@ -418,7 +418,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (H2's kill is not tested here; development data never gives a verdict).
 - Next: a 2026 repo-operations snapshot would restore the 14 series; nothing here is a verdict.
 
-
 ### 2026-10-13 [H1] step 1 · eleonorabjornberg/repo-market-model#737
 - Directive: #655 (follow-up: Eleonora's answers to Q-E, Q-B and Q-C on PR #695, comment 6159852603)
 - Step: 1
@@ -698,6 +697,46 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: no development skill. The H5 mean-reverting row's pooled CRPS skill against B1 is +3.18% [−0.90%, +6.03%] (the percentile lower bound was +0.03%); its MAE skill against B1 is +0.70% [−3.00%, +3.12%]. Against the calendar benchmark CRPS skill is +26.80% [−2.58%, +46.79%]. By regime, CRPS skill against B1 is +4.45% in 2018-19, −1.82% in 2020-24 and +5.70% in 2025-26, every interval covering zero. Detail in `docs/research/risk-date-reread-739.md`. The entry of #719 is not edited.
 - Against kill: killed on the declared development rule (skill against both benchmarks on CRPS or MAE: none). H6 stays open: its kill is by futility on prospective days.
 - Next: #724 (H6 step 2) is out of the queue until H5 step 5 (ruling on #739).
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#822
+- Directive: #804 (re-score of #688/#731 on the studentized interval of ruling 1)
+- Step: 2 (the same two inputs and control; no new variant)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `8474e69`; walks refitted from the declared `metadata/near_threshold_688.json`, screen byte-identical to the earlier record
+- Tried: no new forecast variant. #731's score used the percentile bootstrap that ruling 1 replaced; the 15 walks were refitted and scored with the scorer's studentized bounds at both ends, and a pair the scorer cannot studentize now carries no interval instead of stopping the run. Variants: 0 new (2 re-scored).
+- Result: grid CRPS against the control, the window flag +1.03% [+0.44%, +1.64%] (was [+0.50%, +1.61%]), still above zero at h = 3 to 5 (+1.30% [+0.39%, +2.18%], +1.74% [+0.80%, +2.65%], +1.69% [+0.88%, +2.53%]); bill settlement −0.10% [−0.54%, +0.28%] (was [−0.49%, +0.28%]). One cell crosses zero: the window's pinball loss at 0.05, +1.09% [−0.03%, +2.23%]. Against B1 the control is +19.26% [+10.55%, +39.09%] (was [+8.36%, +28.35%]). Quarter-end days: identical forecasts; tax-date days: no interval. Point values unchanged. Detail in `docs/pivot/near-threshold-688-result.md`, section "Re-score on the ruled interval (#804)".
+- Against kill: not applicable (development days give no verdict).
+- Next: none for this item; the window flag's place in #634's model stays an H5 step 2 question for Eleonora.
+
+### 2026-10-13 [H2] step 3 · eleonorabjornberg/repo-market-model#728
+- Directive: #685
+- Step: 3 (judge hygiene for an exploratory tier report; no model is scored)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `fa333ae7`; the judge in force, unchanged
+- Tried: 0 model variants; the always-flag reading of tier 1 amended to option B (a flag from an always-flag block is not a warning but still a false alarm, Eleonora's ruling of 13 October 2026 on #666), and `ngboost_laplace` and the three benchmarks re-scored with it off and on.
+- Result: `ngboost_laplace` 17 to 13 of 26 onsets warned, 2.34 false alarms per onset in both readings, tier 1 fails (the #588 draft passed it at 1.81 only because the dropped flags also left the false alarms). The benchmarks lose most of their 2019 warnings (calendar climatology 12 to 2, persistence-logistic 12 to 4, `published_v1` 14 to 8) and fail either way.
+- Against kill: not applicable (no verdict; the +5 bp judge is retired as a decision rule, #640).
+- Next: Eleonora decides whether the amended draft record `docs/decisions/always-flag-blocks.md` merges.
+
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#815
+- Directive: #799
+- Step: 2 (the re-score of #761's variants after the as-of fix; finding #799)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer and benchmarks B1, B2; seed 761; declaration `metadata/spread_distribution_761.json` unchanged
+- Tried: `spread_mr_ctx` and `spread_mr_ctx_b2` re-scored with the target's and the previous row's coupon settlement counted only where the registry makes it public at the decision instant (`asof.declared_availability`: the panel day before, 15:00), in the pools and in the forecast. Variants: 3 (the same as #767; no new variant).
+- Result: grid CRPS 1.750 / 1.780 / 1.759 bp against mean reversion's 1.778; gain over mean reversion, studentized 90%: (i) +1.6% [+0.2%, +2.9%] (was +2.3% [+1.0%, +3.6%]), (ii) -0.1% [-4.5%, +3.1%] (unchanged), (iii) +1.1% [-3.4%, +4.5%] (was +1.9% [-2.7%, +5.2%]). Upper-tail twCRPS (i) +2.4% [+0.2%, +4.3%] (was +4.1% [+2.4%, +5.8%]). (i) in 2020: -6.7% [-9.8%, -3.7%] (was -5.9% [-10.7%, +0.8%]). Detail in `docs/pivot/spread-mr-variants-result.md`.
+- Against kill: not applicable (no verdict; development data). (i) keeps an interval above zero against mean reversion; part of the earlier gain came from the read that bypassed the as-of rule.
+- Next: whether (i) joins #634's candidates is Eleonora's, on these figures.
+
+### 2026-10-15 [H2] step 3 · eleonorabjornberg/repo-market-model#828
+- Directive: #811
+- Step: 3 (a record trace: why H5 step 4's rerun of H2's ceiling did not rebuild H2's declared panel)
+- Tier: development
+- Pins: published panel `4ddc3882…`; H2 tree `ec534758`; base `09f2409c`; scratch panels `08df8d19…` (H2's declaration), `92bf10a4…` (H5 step 4), `69be91b6…` (main today)
+- Tried: 0 new model variants; rebuilt the scratch panel at H2's tree and at main with #679 and #743 each left out, and re-fitted H2's ceiling and reachable fits on H2's two panel orderings with current main code
+- Result: the difference is in the build, not the inputs. `08df8d19…` rebuilds exactly (two satiation columns placed as declared); `92bf10a4…` is main without #743; its only value difference from H2's is `net_settlement_due_5d` (#679). Both controls reproduce H2's recorded skill against B1 (reachable +0.192 [+0.007, +0.352], ceiling +0.162 [-0.009, +0.310]) to every digit; H5 step 4's panel gives +0.196 [+0.019, +0.354] and +0.168 [+0.003, +0.316]. No published figure moves
+- Against kill: not applicable (a reproducibility trace; no hypothesis is tested)
+- Next: Eleonora's two marked questions on the page (which ceiling stands for H5 step 4; the ceiling interval that now excludes 0); a fit on today's main panel is not made
 
 ### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#817
 - Directive: #801

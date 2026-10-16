@@ -52,34 +52,49 @@ Differences are percentage points; intervals are 90%.
 
 Decision days 2018-06-29 to 2025-12-23 (their fifth target on or before 2025-12-31); every row has no law on the same two decision days (their every-day inputs were not public) and takes B1's there.
 Grid CRPS in bp, averaged over h = 1 to 5. A pair is the reference's score minus the candidate's (positive favours the candidate); skill is that difference over the reference's mean;
-bounds are the protocol's one-sided 95% (stationary bootstrap, mean block 10, 10,000 draws).
+bounds are the protocol's one-sided 95% (studentized stationary bootstrap, ruling 1; mean block 10, 10,000 draws).
 
 | row | mean grid CRPS | against B1 (skill [95% bounds]) | against B2 | mean twCRPS above 0 bp |
 |---|---|---|---|---|
 | B1 as-of persistence | 2.3024 | | | 1.3789 |
 | B2 calendar climatology | 2.5143 | | | 1.1261 |
-| control (two-part, #632) | 1.8589 | +19.26% [+8.36%, +28.35%] | +26.07% [+18.95%, +33.46%] | 0.9134 |
-| + bill settlement (#676) | 1.8609 | +19.18% [+8.25%, +28.21%] | +25.99% [+18.94%, +33.35%] | 0.9109 |
-| + post-month-end window (#677) | 1.8397 | +20.10% [+9.40%, +28.99%] | +26.83% [+19.75%, +34.22%] | 0.9094 |
+| control (two-part, #632) | 1.8589 | +19.26% [+10.55%, +39.09%] | +26.07% [+16.98%, +34.86%] | 0.9134 |
+| + bill settlement (#676) | 1.8609 | +19.18% [+10.47%, +38.81%] | +25.99% [+16.92%, +34.72%] | 0.9109 |
+| + post-month-end window (#677) | 1.8397 | +20.10% [+11.59%, +39.30%] | +26.83% [+17.69%, +35.60%] | 0.9094 |
 
 **Each input against the row without it** (the control; paired, grid CRPS):
 
 | input | pooled | h = 1 | h = 2 | h = 3 | h = 4 | h = 5 |
 |---|---|---|---|---|---|---|
-| bill settlement | −0.10% [−0.49%, +0.28%] | −0.03% | +0.48% | −0.12% | −0.43% | −0.36% [−0.76%, −0.00%] |
-| post-month-end window | **+1.03% [+0.50%, +1.61%]** | −0.08% | +0.31% | **+1.30% [+0.44%, +2.20%]** | **+1.74% [+0.88%, +2.64%]** | **+1.69% [+0.96%, +2.54%]** |
+| bill settlement | −0.10% [−0.54%, +0.28%] | −0.03% | +0.48% | −0.12% | −0.43% | −0.36% [−0.76%, −0.01%] |
+| post-month-end window | **+1.03% [+0.44%, +1.64%]** | −0.08% | +0.31% | **+1.30% [+0.39%, +2.18%]** | **+1.74% [+0.80%, +2.65%]** | **+1.69% [+0.88%, +2.53%]** |
 
-On the upper-tail twCRPS (the key secondary) neither input moves the score beyond its interval: bill settlement +0.27% [−0.29%, +1.00%], window +0.44% [−0.38%, +1.23%].
+On the upper-tail twCRPS (the key secondary) neither input moves the score beyond its interval: bill settlement +0.27% [−0.40%, +0.94%], window +0.44% [−0.35%, +1.23%].
 
-- **Bill settlement adds nothing.** Pooled it is level with the control (−0.10%), at no lead is its interval above zero, and by regime the only interval above zero is 2024 (+1.21% [+0.38%, +1.71%]), in a regime with 2 pressure days. The
+- **Bill settlement adds nothing.** Pooled it is level with the control (−0.10%), at no lead is its interval above zero, and by regime the only interval above zero is 2024 (+1.21% [+0.61%, +1.85%]), in a regime with 2 pressure days. The
   screen's near-threshold contrast is real on the ordinary days of 2018-19 but the trees do not turn it into a better distribution: the contrast rests on 13 pressure days with a bill settlement
   and 5 without, in a band the model already forecasts as uncertain.
-- **The window flag helps, at h = 3 to 5, and not on the pressure days.** It gains +1.0% on the grid CRPS pooled (interval above zero), the gain growing with the lead, with an interval above zero at every pinball level but 0.95
-  and on the median's absolute error (+0.95% [+0.31%, +1.63%]). By regime the interval is above zero only in 2021-23 (+2.45% [+1.63%, +3.46%]), a regime with no ordinary pressure day, and by pressure-day type only for the ordinary days
-  (+1.55% [+0.72%, +2.34%]); it is zero on quarter-ends and negative (not beyond its interval) on tax dates. So what the flag
+- **The window flag helps, at h = 3 to 5, and not on the pressure days.** It gains +1.0% on the grid CRPS pooled (interval above zero), the gain growing with the lead, with an interval above zero at every pinball level but 0.05 and 0.95
+  and on the median's absolute error (+0.95% [+0.27%, +1.64%]). By regime the interval is above zero only in 2021-23 (+2.45% [+1.42%, +3.66%]), a regime with no ordinary pressure day, and by pressure-day type only for the ordinary days
+  (+1.55% [+0.66%, +2.38%]); it is exactly zero on quarter-ends (identical forecasts) and has no interval on tax dates (the difference cannot be studentized). So what the flag
   improves is the level of the spread in the first days of a month, which a calm regime has, and not the upper tail the screen asked about.
 - **Both rows keep their lead over the benchmarks** (control against B1 +19.26%, with the window +20.10%): the inputs are measured against the control, and neither changes the standing against B1 or B2.
 - Coverage is below nominal in every row (central 50%: 0.38 to 0.39; central 90%: 0.77 to 0.78), as it was for #632's two-part row. The inputs do not repair it.
+
+## Re-score on the ruled interval (#804)
+
+The intervals above were first computed with the percentile bootstrap that ruling 1 (Eleonora, 13 October 2026; PR #660, #739) replaced: #731 merged without
+re-scoring after #695 brought in the studentized interval. They are now the scorer's own studentized stationary-bootstrap bounds, from the same walks refitted
+on the same published panel (`4ddc3882…`), with the same 1,868 decision days, seed (688), 10,000 draws and block length. Every point value and the whole screen reproduce
+byte for byte (`screen.json` is identical); only the interval ends moved. `score.json` and `report.md` in the evidence folder are the re-scored ones; the earlier bytes are in git history.
+
+- **The headline survives, slightly wider.** Window flag, grid CRPS against the control: +1.03% [+0.44%, +1.64%] (was [+0.50%, +1.61%]); h = 3, 4, 5 still each above zero
+  (+1.30% [+0.39%, +2.18%], +1.74% [+0.80%, +2.65%], +1.69% [+0.88%, +2.53%]). The bill input is still level with the control (−0.10% [−0.54%, +0.28%]).
+- **One interval crossed zero:** the window flag's pinball loss at the 0.05 level, +1.09% [−0.03%, +2.23%] (was [+0.12%, +2.14%]). No other pooled, lead, regime or measure cell changed sign.
+- **Against B1 and B2 the intervals are the asymmetric ones** (control against B1 +19.26% [+10.55%, +39.09%]; the percentile pair was nearly symmetric, [+8.36%, +28.35%]); the lower bounds rose, the upper bounds rose more.
+- **Two pressure-day types lost their interval.** Quarter-end days: both inputs leave the forecast unchanged (difference exactly zero). Tax-date days: the difference is nearly constant and the scorer refuses to studentize it; the
+  report says "no interval" there. No percentile figure stands in for it.
+- The screen's own intervals (stationary bootstrap on rate differences) are not the scorer's paired test and are unchanged; ruling 1 does not cover them.
 
 ## Acceptance criteria
 
