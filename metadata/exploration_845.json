@@ -1,7 +1,7 @@
 {
   "title": "Scratch declaration for H5's calibration after reserve-management purchases began (#845; avenue #835)",
   "status": "exploration on development data; nothing here is a verdict under scoring protocol v1 (#640). Declared by the pull request that closes #845 before any number was computed. No model is fitted or changed, no remedy is added, nothing is published, and no published declaration, record or pin moves",
-  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (evaluation: calibration in the regime where the confirmation days fall)",
+  "serves_hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (evaluation: calibration in the regime where the confirmation days fall)",
   "issue": 845,
   "avenue": 835,
   "rulings": {

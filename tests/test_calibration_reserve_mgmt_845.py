@@ -19,6 +19,7 @@ import importlib.util
 import random
 import sys
 import unittest
+from unittest import mock
 from datetime import date
 from pathlib import Path
 
@@ -115,11 +116,13 @@ class DaySetTests(unittest.TestCase):
 
     def test_a_coupon_day_is_ordinary_but_not_calm_and_a_risk_type_is_neither(self):
         module = _module()
-        module.var.is_risk_day = lambda row, splits: row.values["type"] != "ordinary" or row.values["coupon"]
         day = date(2026, 3, 3)
-        calm = module.day_set_members(self._Row(day, type="ordinary", coupon=False), self._Splits())
-        coupon = module.day_set_members(self._Row(day, type="ordinary", coupon=True), self._Splits())
-        risk = module.day_set_members(self._Row(day, type="quarter_end", coupon=False), self._Splits())
+        with mock.patch.object(
+            module.var, "is_risk_day", lambda row, splits: row.values["type"] != "ordinary" or row.values["coupon"]
+        ):
+            calm = module.day_set_members(self._Row(day, type="ordinary", coupon=False), self._Splits())
+            coupon = module.day_set_members(self._Row(day, type="ordinary", coupon=True), self._Splits())
+            risk = module.day_set_members(self._Row(day, type="quarter_end", coupon=False), self._Splits())
         self.assertEqual(calm, {"ordinary": True, "calm_ordinary": True})
         self.assertEqual(coupon, {"ordinary": True, "calm_ordinary": False})
         self.assertEqual(risk, {"ordinary": False, "calm_ordinary": False})
