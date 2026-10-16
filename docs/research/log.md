@@ -746,3 +746,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the helpers agree with the old ones to 4e-13 (624), exactly (632) and within 5e-3 in small samples (626) on 1,840 synthetic cells; a cell on which the shared fit does not converge now reads undefined, which happened in 137 cells with forecasts far below the event rate. The published panels are not tracked, so no page was re-run.
 - Against kill: not applicable (groundwork; development data gives no verdict).
 - Next: Eleonora decides whether the shared fit gets a line search (question in the PR).
+
+### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#817
+- Directive: #801
+- Step: 3 (calibration diagnosis of the kinked and #624 rows; per-regime reliability slopes, #683)
+- Tier: development
+- Pins: no panel and no scoring; tracked evidence of #624 only; base `8474e69f`
+- Tried: the per-regime slope tables now mark `†` by the pressure days in the fit (those on forecasts above 1e-4) and read a regime that forecasts zero on every pressure day as `uncalibrated: zero on all N`; no fit re-run; variants: n/a (reporting).
+- Result: no slope or other figure moves; 66 table cells change their mark only (24 in step 1, 42 in step 2) (for example `+tailcap75` at h = 1 in 2018-19: 1.39 now carries `†`, 2 events in the fit of 62 pressure days). The regime convention (three or five regimes) is left to Eleonora.
+- Against kill: not applicable (no hypothesis test).
+- Next: Eleonora's answer on the regime convention; the #624 slopes are not re-fitted on all days unless she asks.
