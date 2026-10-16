@@ -717,6 +717,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `ngboost_laplace` 17 to 13 of 26 onsets warned, 2.34 false alarms per onset in both readings, tier 1 fails (the #588 draft passed it at 1.81 only because the dropped flags also left the false alarms). The benchmarks lose most of their 2019 warnings (calendar climatology 12 to 2, persistence-logistic 12 to 4, `published_v1` 14 to 8) and fail either way.
 - Against kill: not applicable (no verdict; the +5 bp judge is retired as a decision rule, #640).
 - Next: Eleonora decides whether the amended draft record `docs/decisions/always-flag-blocks.md` merges.
+
 ### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#815
 - Directive: #799
 - Step: 2 (the re-score of #761's variants after the as-of fix; finding #799)
@@ -756,3 +757,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: no slope or other figure moves; 66 table cells change their mark only (24 in step 1, 42 in step 2) (for example `+tailcap75` at h = 1 in 2018-19: 1.39 now carries `†`, 2 events in the fit of 62 pressure days). The regime convention (three or five regimes) is left to Eleonora.
 - Against kill: not applicable (no hypothesis test).
 - Next: Eleonora's answer on the regime convention; the #624 slopes are not re-fitted on all days unless she asks.
+
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#760
+- Directive: #753
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; stacked on #723 (the shared reliability helper), with origin/main merged at `53e61af`
+- Tried: #626's rows (the fixed and fitted-kink structural forms, the rolling form, the best tier-1 row) and the two references, rebuilt and tabulated for the reliability slope inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals. Variants: 0 new models.
+- Result: inside 2018-19 (63 of 87 pressure days) the structural rows read 0.18 to 0.27 (fixed and fitted kink) and 0.30 to 0.47 (rolling) at h = 1 to 5, intervals below 1; inside 2025-26, 0.98 to 1.51, intervals including 1; the pooled 0.39 to 0.74 is a mean of the two. The rolling form is nearer 1 than the other two only in 2018-19, and `persistence_logistic` is nearer than it at h = 1 to 4. Slow step found: the five-horizon rebuild of what the table reads is 16 minutes; the slow steps are `risk_date_severity.py` (a skew-t fit, about 0.6 s a day, not needed for this table) and the single-process bootstrap (about 26 minutes on four processes).
+- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
+- Next: #631's and #632's per-regime slopes need their own forecast chains rebuilt (not done here); any reliability-shape test (#628) is read within regimes.
