@@ -29,6 +29,7 @@ from datetime import date, time
 from typing import Dict, List, Mapping, Optional, Sequence
 
 from . import protocol_benchmarks as pb
+from . import risk_dates
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
@@ -48,13 +49,10 @@ MEDIAN_AT = GRID.index(0.5)
 def risk_day_type(when: date, values: Mapping[str, Optional[float]], splits: SplitDeclaration) -> Optional[str]:
     """The risk type of a day, or `None` when it is not a risk date."""
 
+    if not risk_dates.is_risk_date(values, risk_dates.NON_ORDINARY, splits=splits, reporting_on=when):
+        return None
     kind = splits.reporting_day_type(when, values)
-    if kind in ("quarter_end", "month_end", "tax_date"):
-        return kind
-    coupons = values.get("treasury_settlement_coupons")
-    if coupons is not None and float(coupons) > 0.0:
-        return "settlement"
-    return None
+    return kind if kind in ("quarter_end", "month_end", "tax_date") else "settlement"
 
 
 def state_group(state: Optional[float]) -> str:

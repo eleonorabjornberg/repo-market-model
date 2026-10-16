@@ -130,6 +130,77 @@ class ContextTests(unittest.TestCase):
         )
 
 
+class CouponAsOfTests(unittest.TestCase):
+    """#799: a row's coupon settlement is public the panel day before at 15:00, so a forecast at lead 2 to 5 cannot
+    read the target's, and at lead 3 to 5 not the row before's.
+
+    Mutation record (run on these tests, then restored):
+
+    * `target_context`: `row: coupon_public(panel, row, index - h, ...)` replaced with `row: True`, so the target's coupon
+      settlement is read at every lead, as before the fix. `test_the_target_coupon_is_read_at_lead_1_only` failed with
+      `AssertionError` ("'risk_day' != 'ordinary_after_ordinary'" at lead 2),
+      `test_the_coupon_of_the_row_before_is_read_at_leads_1_and_2_only` failed with `AssertionError` and
+      `test_a_coupon_beyond_the_readable_rows_moves_no_forecast` failed with `AssertionError` (the forecast moved);
+      restored, all pass.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.panel, cls.settings = panel_and_settings()
+        cls.splits = cls.settings["splits"]
+        cls.reg, cls.time = cls.settings["registry"], cls.settings["decision_time"]
+
+    def context(self, panel, index, h):
+        return var.target_context(panel, index, self.splits, h=h, registry=self.reg, decision_time=self.time)
+
+    def coupon_only_day(self):
+        """A coupon-only risk day whose two days before and the day after are ordinary and coupon-free."""
+        for i in range(150, len(self.panel) - 3):
+            ordinary = [
+                self.splits.reporting_day_type(self.panel[j].date, self.panel[j].values) == "ordinary"
+                and float(self.panel[j].values["treasury_settlement_coupons"] or 0.0) == 0.0
+                for j in (i - 2, i - 1, i + 1)
+            ]
+            if all(ordinary) and self.splits.reporting_day_type(self.panel[i].date, self.panel[i].values) == "ordinary" \
+                    and float(self.panel[i].values["treasury_settlement_coupons"] or 0.0) > 0.0:
+                return i
+        self.fail("no coupon-only risk day")
+
+    def test_the_target_coupon_is_read_at_lead_1_only(self):
+        i = self.coupon_only_day()
+        self.assertEqual(self.context(self.panel, i, 1), "risk_day")
+        for h in (2, 3, 4, 5):
+            self.assertEqual(self.context(self.panel, i, h), "ordinary_after_ordinary", h)
+
+    def test_the_coupon_of_the_row_before_is_read_at_leads_1_and_2_only(self):
+        i = self.coupon_only_day() + 1
+        self.assertEqual(self.context(self.panel, i, 1), "ordinary_after_risk")
+        self.assertEqual(self.context(self.panel, i, 2), "ordinary_after_risk")
+        for h in (3, 4, 5):
+            self.assertEqual(self.context(self.panel, i, h), "ordinary_after_ordinary", h)
+
+    def test_without_a_lead_the_context_is_the_hindsight_label(self):
+        i = self.coupon_only_day()
+        self.assertEqual(var.target_context(self.panel, i, self.splits), "risk_day")
+
+    def test_a_lead_needs_the_registry_and_the_decision_time(self):
+        with self.assertRaises(ValueError):
+            var.target_context(self.panel, 50, self.splits, h=2)
+
+    def test_a_coupon_beyond_the_readable_rows_moves_no_forecast(self):
+        i = self.coupon_only_day()
+        t = i - 3  # decision on row t: rows up to t + 1 are public, the coupon day is t + 3
+        fit = var.context_fit(self.panel, t, **self.settings)
+        before = var.context_forecast(self.panel, t, fit, **self.settings)
+        changed = [
+            with_values(row, treasury_settlement_coupons=0.0) if k > t + 1 else row
+            for k, row in enumerate(self.panel)
+        ]
+        fit2 = var.context_fit(changed, t, **self.settings)
+        after = var.context_forecast(changed, t, fit2, **self.settings)
+        self.assertEqual(before, after)
+
+
 class PoolTests(unittest.TestCase):
 
     def test_a_pool_of_enough_values_is_used(self):
