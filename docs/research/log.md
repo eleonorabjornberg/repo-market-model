@@ -738,6 +738,46 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a reproducibility trace; no hypothesis is tested)
 - Next: Eleonora's two marked questions on the page (which ceiling stands for H5 step 4; the ceiling interval that now excludes 0); a fit on today's main panel is not made
 
+### 2026-10-15 [H5] step 2 · eleonorabjornberg/repo-market-model#827
+- Directive: #725 (the three reliability-slope helpers call the shared fit)
+- Step: 2 (groundwork; no forecast scored)
+- Tier: development
+- Pins: base `028ab0a`; no panel read
+- Tried: no new variant. `off_risk_day_624.py`, `kinked_626.py` and `spread_distribution_632.py` call `reliability_regimes.fit` instead of their own Newton loops. Variants: 0.
+- Result: the helpers agree with the old ones to 4e-13 (624), exactly (632) and within 5e-3 in small samples (626) on 1,840 synthetic cells; a cell on which the shared fit does not converge now reads undefined, which happened in 137 cells with forecasts far below the event rate. The published panels are not tracked, so no page was re-run.
+- Against kill: not applicable (groundwork; development data gives no verdict).
+- Next: Eleonora decides whether the shared fit gets a line search (question in the PR).
+
+### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#817
+- Directive: #801
+- Step: 3 (calibration diagnosis of the kinked and #624 rows; per-regime reliability slopes, #683)
+- Tier: development
+- Pins: no panel and no scoring; tracked evidence of #624 only; base `8474e69f`
+- Tried: the per-regime slope tables now mark `†` by the pressure days in the fit (those on forecasts above 1e-4) and read a regime that forecasts zero on every pressure day as `uncalibrated: zero on all N`; no fit re-run; variants: n/a (reporting).
+- Result: no slope or other figure moves; 66 table cells change their mark only (24 in step 1, 42 in step 2) (for example `+tailcap75` at h = 1 in 2018-19: 1.39 now carries `†`, 2 events in the fit of 62 pressure days). The regime convention (three or five regimes) is left to Eleonora.
+- Against kill: not applicable (no hypothesis test).
+- Next: Eleonora's answer on the regime convention; the #624 slopes are not re-fitted on all days unless she asks.
+
+### 2026-10-14 [H5] step 3 · eleonorabjornberg/repo-market-model#760
+- Directive: #753
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; stacked on #723 (the shared reliability helper), with origin/main merged at `53e61af`
+- Tried: #626's rows (the fixed and fitted-kink structural forms, the rolling form, the best tier-1 row) and the two references, rebuilt and tabulated for the reliability slope inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals. Variants: 0 new models.
+- Result: inside 2018-19 (63 of 87 pressure days) the structural rows read 0.18 to 0.27 (fixed and fitted kink) and 0.30 to 0.47 (rolling) at h = 1 to 5, intervals below 1; inside 2025-26, 0.98 to 1.51, intervals including 1; the pooled 0.39 to 0.74 is a mean of the two. The rolling form is nearer 1 than the other two only in 2018-19, and `persistence_logistic` is nearer than it at h = 1 to 4. Slow step found: the five-horizon rebuild of what the table reads is 16 minutes; the slow steps are `risk_date_severity.py` (a skew-t fit, about 0.6 s a day, not needed for this table) and the single-process bootstrap (about 26 minutes on four processes).
+- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
+- Next: #631's and #632's per-regime slopes need their own forecast chains rebuilt (not done here); any reliability-shape test (#628) is read within regimes.
+
+### 2026-10-15 [H8] step 1 · eleonorabjornberg/repo-market-model#819
+- Directive: #770
+- Step: 1 (correction to the development score of #694: the calendar benchmark read a coupon settlement before it was announced)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `9eaecfb5`; seed 694; declaration `metadata/ranking_694.json` unchanged
+- Tried: the calendar ranker counts a coupon settlement only at leads where its column is declared observable at the decision instant (ruling on #720, point 2), so at lead 1 under the published declaration; the model and the other benchmarks are untouched. Variants: 0 (a correction, no new candidate).
+- Result: the calendar's top-5 precision falls from 13.0% to 9.4% (recall@5 from 56.8% to 37.7%); the probability ranker's top-5 precision gain over it moves from -5.2 pp [-7.7 pp, -3.0 pp] to -1.6 pp [-2.9 pp, -0.3 pp] over 1,825 decision days to 2025-12-31. Gains over persistence and climatology do not move. Detail in `docs/pivot/ranking-770-result.md`.
+- Against kill: the kill condition (no ranking skill beyond the calendar of known risk dates) is still met on development data, as exploration and not a verdict: the interval still lies wholly below zero, by a third of the earlier gap.
+- Next: step 2 (#765) reads the corrected calendar.
+
 ### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#820
 - Directive: #805
 - Step: 3 (the splits the headline pages of #634 and #707 lacked: by the anchor's day type, without decision day 2019-09-18, and the upper-tail Brier claims by regime and pressure-day type; no new model)
