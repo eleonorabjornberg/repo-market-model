@@ -87,7 +87,7 @@ class AttachTests(unittest.TestCase):
         out = tf.attach(self.rows, self.forecasts(days), fits, target="on_rrp_change_bn", horizon=2)
         column = tf.column("on_rrp_change_bn", 2)
         self.assertEqual([row.values.get(column) for row in out[10:14]], [0.0, 1.0, 2.0, 3.0])
-        self.assertTrue(all(row.values.get(column) is None for row in out[:10] + out[14:]))
+        self.assertTrue(all(column in row.values and row.values[column] is None for row in out[:10] + out[14:]))
         self.assertTrue(all(row.values["x"] == float(i) for i, row in enumerate(out)))
         self.assertNotIn(column, self.rows[10].values)
 

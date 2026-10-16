@@ -160,8 +160,5 @@ def attach(
         days = [decision] + ([rows[reached].date] if reached < len(rows) else [])
         require_unlocked(days, where="target_forecasts")
         values[index] = median_of(law)
-    return [
-        DailyObservation(row.date, {**row.values, name: values[i]}) if i in values else DailyObservation(row.date, dict(row.values))
-        for i, row in enumerate(rows)
-    ]
-
+    # every row carries the column: an absent column is an error to the fitter, a `None` is an unobserved value
+    return [DailyObservation(row.date, {**row.values, name: values.get(i)}) for i, row in enumerate(rows)]
