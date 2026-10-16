@@ -61,7 +61,7 @@ sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import (  # noqa: E402
     contract, h41_release, measurement_fields, ml, net_settlement as ns, pressure_judge as pj, projected_reserves as pr,
-    satiation as sat, scarcity, structural_liquidity as sl,
+    reliability_regimes, satiation as sat, scarcity, structural_liquidity as sl,
 )
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
@@ -282,44 +282,14 @@ def _markdown(result: dict, document: dict, names: List[str], rows_names: List[s
 # -- extras --------------------------------------------------------------------------------------------------------
 
 
-def _logit(p: float) -> float:
-    p = min(1.0 - 1e-6, max(1e-6, float(p)))
-    return math.log(p / (1.0 - p))
-
-
 def reliability(p: Sequence[float], y: Sequence[int]) -> Optional[tuple]:
-    """`(intercept, slope)` of the logistic regression of the outcome on the logit of the forecast; `None` if it is not identified."""
+    """`(intercept, slope)` of the logistic regression of the outcome on the logit of the forecast; `None` if it is not identified.
 
-    x = [_logit(v) for v in p]
-    events = sum(y)
-    if events == 0 or events == len(y) or max(x) - min(x) < 1e-9:
-        return None
-    a = b = 0.0
-    for _ in range(50):
-        g0 = g1 = h00 = h01 = h11 = 0.0
-        for xi, yi in zip(x, y):
-            mu = 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, a + b * xi))))
-            w = mu * (1.0 - mu) + 1e-9
-            g0 += yi - mu
-            g1 += (yi - mu) * xi
-            h00 += w
-            h01 += w * xi
-            h11 += w * xi * xi
-        g0 -= 1e-6 * a
-        g1 -= 1e-6 * b
-        h00 += 1e-6
-        h11 += 1e-6
-        det = h00 * h11 - h01 * h01
-        if det <= 0.0:
-            return None
-        step0 = (h11 * g0 - h01 * g1) / det
-        step1 = (h00 * g1 - h01 * g0) / det
-        a, b = a + step0, b + step1
-        if max(abs(step0), abs(step1)) < 1e-8:
-            break
-    if max(abs(a), abs(b)) > 25.0:
-        return None
-    return a, b
+    The fit is `repo_model.reliability_regimes.fit`, the one definition (#725).
+    """
+
+    line = reliability_regimes.fit(p, y)
+    return None if line is None else (line.intercept, line.slope)
 
 
 def _interval(values: Sequence[Optional[float]], level: float) -> Optional[List[float]]:

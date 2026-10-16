@@ -87,6 +87,10 @@ variant floors the forecasts of `+tailcap75` (no refit), walk-forward on the jud
   > `docs/pivot/off-risk-day-result.md` ("Reliability within regimes") and `evidence/reliability-regimes/tracked-step1.md`; at h = 1 on the days
   > that are not risk dates, 2018-19 slopes are 0.12 to 0.13 for (a), (b) and (c) against 1.39 for `+tailcap75` (pooled: 0.46, 0.73, 0.57 and 2.03). A
   > row that is calibrated on the mean is still over-spread inside 2018-19; no pooled slope here says otherwise (`diagnostics-reconciliation.md`, point 11).
+  >
+  > *Correction, 15 October 2026 (#801).* The 1.39 for `+tailcap75` in 2018-19 is fitted on 2 of that regime's 62 pressure days: the other 60 fall on
+  > forecasts of 1e-4 or below, so the row misses almost every 2018-19 event. It is not better calibrated than (a), (b) and (c); read the 0.12 to
+  > 0.13 and the 1.39 as slopes of fits on different, very small sets of events (`evidence/reliability-regimes/tracked-step1.md`, regenerated).
 - **Tier 5.** Realised minus predicted: `+tailcap75` +0.0537 [+0.0225, +0.0854]; (a) -0.0144 [-0.0480, +0.0190]; (b) -0.0157 [-0.0459, +0.0190]; (c) +0.0347
   [+0.0062, +0.0665]. Every row beats climatology on Brier. Full tables: [`evidence/tailcap-floor/calibration.md`](evidence/tailcap-floor/calibration.md).
 - **Paired Brier difference** (the reference's squared error less the row's, so positive favours the row, #604), h = 1, +5 bp, 90% interval, all days, against
