@@ -747,6 +747,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork; development data gives no verdict).
 - Next: Eleonora decides whether the shared fit gets a line search (question in the PR).
 
+### 2026-10-15 [H5] step 3 · eleonorabjornberg/repo-market-model#817
+- Directive: #801
+- Step: 3 (calibration diagnosis of the kinked and #624 rows; per-regime reliability slopes, #683)
+- Tier: development
+- Pins: no panel and no scoring; tracked evidence of #624 only; base `8474e69f`
+- Tried: the per-regime slope tables now mark `†` by the pressure days in the fit (those on forecasts above 1e-4) and read a regime that forecasts zero on every pressure day as `uncalibrated: zero on all N`; no fit re-run; variants: n/a (reporting).
+- Result: no slope or other figure moves; 66 table cells change their mark only (24 in step 1, 42 in step 2) (for example `+tailcap75` at h = 1 in 2018-19: 1.39 now carries `†`, 2 events in the fit of 62 pressure days). The regime convention (three or five regimes) is left to Eleonora.
+- Against kill: not applicable (no hypothesis test).
+- Next: Eleonora's answer on the regime convention; the #624 slopes are not re-fitted on all days unless she asks.
+
 ### 2026-10-15 [H5] groundwork G1 · eleonorabjornberg/repo-market-model#821
 - Directive: #800 (the shared "not a risk date" function, asked by the code merged after #709)
 - Step: groundwork G1 (the ordinary-day population across H2, H5, H6 and H8; no step of H5 itself)
