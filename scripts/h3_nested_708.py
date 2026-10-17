@@ -2,10 +2,13 @@
 """H3 step 3 (#708): each new source family added to H5's candidate, one at a time. Walks, scoring and report.
 
 A scratch measurement, not a record: it writes JSON and Markdown to the paths it is given and nothing into `docs/runs/`.
-Every choice is in `metadata/h3_nested_708.json`, which this script refuses to read unless it is committed and unchanged.
+Every choice is in `metadata/h3_nested_708_gbm.json` (the nested test against `gbm_funding`; Eleonora's rulings of 15 and 17
+October 2026), which this script refuses to read unless it is committed and unchanged. `metadata/h3_nested_708.json` is the
+earlier variant (b) plan, left as it was and not read.
 Scored decision days end where their fifth target day is on or before 2025-12-31 (`docs/decisions/lockbox.md`). Development
 days give a score and an interval, never a verdict (scoring protocol v1, #640). The walk, the benchmarks and the scorer are
 #634's (`scripts/spread_distribution_634.py`); this script adds the family columns and the nested pairs.
+The candidate is `gbm_funding`: gradient-boosted quantiles at the 23 levels on the published funding features alone.
 
     # panels: #634's chain (see its docstring), then the four families' columns on top
     PYTHONPATH=src python3 scripts/new_sources.py panel --panel AUG2D.csv --output NEW.csv
@@ -16,7 +19,7 @@ days give a score and an interval, never a verdict (scoring protocol v1, #640). 
     PYTHONPATH=src python3 scripts/h3_nested_708.py score --published PUBLISHED.csv --walks OUT --output OUT/score.json
     PYTHONPATH=src python3 scripts/h3_nested_708.py report --score OUT/score.json --output OUT/report.md
 
-`walk` is #634's variant (b) walk with the family's columns added to the features, under a declaration that switches the
+`walk` is #634's `gbm_funding` walk with the family's columns added to the features, under a declaration that switches the
 columns on for this run only (they stay off in every published declaration), so the as-of rule governs each column at its
 registered availability. A walk whose output already holds the same variant and lead, from the same panel bytes, is skipped.
 """
@@ -55,7 +58,7 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
-DECLARATION = REPO / "metadata" / "h3_nested_708.json"
+DECLARATION = REPO / "metadata" / "h3_nested_708_gbm.json"
 SEED = 708
 HORIZONS = sp.HORIZONS
 GRID = sp.GRID
@@ -101,27 +104,25 @@ def family_of(variant: str) -> Optional[str]:
 
 
 def family_features(horizon: int, family: Optional[str]) -> Tuple[str, ...]:
-    """The candidate's features at `horizon` and, if `family` is given, its declared columns."""
+    """The candidate's features at `horizon` (`gbm_funding`: the published ones) and, if `family` is given, its declared columns."""
 
     columns = family_columns(DECLARATION_DATA)[family] if family else ()
-    return tuple(sorted(set(s634.new_features(horizon)) | set(columns)))
+    return tuple(sorted(set(s634._load("live_record").published_features(horizon)) | set(columns)))
 
 
 @contextlib.contextmanager
 def switched_on():
-    """#634's new inputs and the families' columns in the feature map, for this run only."""
+    """The families' columns in the feature map, for this run only. #634's new inputs stay off: the candidate is `gbm_funding`."""
 
-    sdist = s634._load("satiation_distance_598")
-    with sdist.switched_on():
-        fields = dict(new_sources.COLUMN_FIELDS)
-        with mock.patch.multiple(
-            contract,
-            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
-            FEATURE_SOURCES=MappingProxyType(
-                {**contract.FEATURE_SOURCES, **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()}}
-            ),
-        ):
-            yield
+    fields = dict(new_sources.COLUMN_FIELDS)
+    with mock.patch.multiple(
+        contract,
+        FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+        FEATURE_SOURCES=MappingProxyType(
+            {**contract.FEATURE_SOURCES, **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()}}
+        ),
+    ):
+        yield
 
 
 def holm(p_values: Sequence[float]) -> List[float]:
@@ -168,14 +169,11 @@ def walk_command(args) -> int:
     minimum, refit = declared["scoring"]["minimum_history"], declared["scoring"]["refit_every"]
     audit_panel(load_daily_panel(args.published))
     sdist = s634._load("satiation_distance_598")
-    from repo_model import scarcity
-
     panel = [row for row in load_daily_panel(args.panel) if row.date <= LAST_TARGET]
     audit_panel(panel)
-    registry = sdist.measurement_fields.load_registry()
-    timed_rows, timed_registry = sdist.ann.arm_inputs("both", panel, registry, h)
+    timed_rows, timed_registry = panel, sdist.measurement_fields.load_registry()
     features = family_features(h, family_of(variant))
-    with switched_on(), sdist.h41_release.release_dating(), scarcity.own_leg_composition():
+    with switched_on():
         fit = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=tuple(f for f in features if f != "spread_bps"), levels=GRID)
         result, levels, settings = s634.walk(
             timed_rows, fit=fit, features=features, online_calibration=None, registry=timed_registry, horizon=h,
@@ -245,7 +243,7 @@ def score_command(args) -> int:
     versus = [(b, c) for c in VARIANTS for b in ("B1", "B2")]
     pairs = nested + versus
     document: dict = {
-        "declaration": "metadata/h3_nested_708.json",
+        "declaration": "metadata/h3_nested_708_gbm.json",
         "panel_sha256": panel_sha256(args.published),
         "decision_days": {"n": len(days), "first": days[0].isoformat(), "last": days[-1].isoformat()},
         "draws": draws, "seed": SEED, "decision_days_without_a_benchmark": unbuilt, "missing": missing, "names": names,
@@ -341,7 +339,7 @@ def _scarcity_states() -> Dict[date, Optional[float]]:
 LABELS = {
     "B1": "B1 as-of persistence",
     "B2": "B2 calendar climatology",
-    "base": "candidate (#634 variant b)",
+    "base": "candidate (`gbm_funding`)",
     "plus_nyfed_pd_financing": "+ nyfed_pd_financing",
     "plus_treasury_auction_results": "+ treasury_auction_results",
     "plus_nyfed_on_rrp_counterparties": "+ nyfed_on_rrp_counterparties",

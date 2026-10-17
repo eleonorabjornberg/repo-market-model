@@ -37,12 +37,20 @@ class DeclarationTests(unittest.TestCase):
                 self.assertEqual({source for source, _f in new_sources.COLUMN_FIELDS[column]}, {family})
 
     def test_a_family_run_reads_the_candidates_features_and_the_family_columns_only(self):
-        s634 = script.s634
+        live = script.s634._load("live_record")
         for h in (1, 2):
-            base = set(s634.new_features(h))
+            base = set(live.published_features(h))
             for family, columns in script.family_columns(script.DECLARATION_DATA).items():
                 self.assertEqual(set(script.family_features(h, family)), base | set(columns))
-        self.assertEqual(script.family_features(3, None), tuple(sorted(script.s634.new_features(3))))
+        self.assertEqual(script.family_features(3, None), tuple(sorted(live.published_features(3))))
+
+    def test_the_candidate_is_gbm_funding_and_reads_none_of_634s_new_inputs(self):
+        """Eleonora's rulings of 15 and 17 October 2026: the base is the published features, in the new declaration file."""
+        self.assertEqual(script.DECLARATION.name, "h3_nested_708_gbm.json")
+        self.assertIn("gbm_funding", script.DECLARATION_DATA["candidate"]["is"])
+        extra = set(script.s634.new_features(1)) - set(script.s634._load("live_record").published_features(1))
+        self.assertTrue(extra)
+        self.assertFalse(extra & set(script.family_features(1, None)))
 
     def test_the_variants_are_the_base_and_one_per_family(self):
         self.assertEqual(script.VARIANTS[0], "base")
