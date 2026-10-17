@@ -61,7 +61,8 @@ PUBLISHED_693 = REPO / "docs" / "pivot" / "evidence" / "risk-date-spread" / "sco
 PUBLISHED_739 = REPO / "docs" / "research" / "evidence" / "risk-date-reread-739.json"
 A, C = s693.A, s693.C
 LABEL = {A: "H5 mean reversion (#686)", C: "type x state", "B1": "B1 persistence", "calendar": "risk-date calendar"}
-READINGS = ("studentized", "percentile")
+#: The control reproduces the published figures to this absolute difference: the floating-point noise of a rebuilt run.
+TOLERANCE = 1e-9
 
 
 def committed_declaration(path: Path = DECLARATION) -> dict:
@@ -132,7 +133,8 @@ def max_difference(left, right) -> Optional[float]:
     """The largest absolute difference between two JSON trees of the same shape, or `None` if the shapes differ.
 
     Strings and lists of strings must be equal; a number is compared by value. Keys the trees do not share are ignored
-    (`notes`, `declaration`, `issue` and the like are compared by the caller where it matters).
+    (`notes`, `declaration`, `issue` and the like are compared by the caller where it matters). Two rows that are both
+    `undefined` agree whatever their reasons say: the protocol's wording of the refusal has changed since #693.
     """
 
     if isinstance(left, bool) or isinstance(right, bool):
@@ -140,6 +142,10 @@ def max_difference(left, right) -> Optional[float]:
     if isinstance(left, (int, float)) and isinstance(right, (int, float)):
         return abs(float(left) - float(right))
     if isinstance(left, Mapping) and isinstance(right, Mapping):
+        if ("undefined" in left) != ("undefined" in right):
+            return None
+        if "undefined" in left:
+            return 0.0
         worst = 0.0
         for key in left.keys() & right.keys():
             part = max_difference(left[key], right[key])
@@ -169,7 +175,7 @@ def control(rerun: dict) -> dict:
         figures = {k: tree[k] for k in ("primary", "kill_rule") if k in tree}
         figures.update({k: tree[k] for k in ("splits", "regime_three", "target_days") if k in tree})
         diff = max_difference(figures, {k: rerun[key][k] for k in figures})
-        out[key] = {"reproduces": diff is not None and diff == 0.0, "max_abs_difference": diff}
+        out[key] = {"reproduces": diff is not None and diff <= TOLERANCE, "max_abs_difference": diff}
     return out
 
 
@@ -247,6 +253,11 @@ def kill_words(rule: dict) -> str:
     return "killed on both readings"
 
 
+def diff(control_row: dict) -> str:
+    value = control_row["max_abs_difference"]
+    return "the shapes differ" if value is None else f"{value:.1e}"
+
+
 def page_text(r: dict) -> str:
     c693, c739 = r["corrected"]["693"], r["corrected"]["739"]
     p693, p739 = r["published"]["693"], r["published"]["739"]
@@ -266,8 +277,9 @@ def page_text(r: dict) -> str:
         "**Control.** With the old reading restored, the same two scripts "
         + ("reproduce" if all(v["reproduces"] for v in r["control"].values()) else "DO NOT reproduce")
         + " the published evidence: #693's `score.json` "
-        + f"(largest absolute difference {r['control']['693']['max_abs_difference']}) and #739's `risk-date-reread-739.json` "
-        + f"({r['control']['739']['max_abs_difference']}).", "",
+        + f"(largest absolute difference {diff(r['control']['693'])}) and #739's `risk-date-reread-739.json` "
+        + f"({diff(r['control']['739'])}); the tolerance is {TOLERANCE:g}, the floating-point noise of a rebuilt run. "
+        "Cells that the published page lists as undefined stay undefined.", "",
         "## The day set", "",
         f"Scored (decision day, lead) cells: {day_set['scored_cells']['old']} before, {day_set['scored_cells']['new']} after. "
         f"Scored target days: {day_set['scored_target_days']['old']['total']} before, {day_set['scored_target_days']['new']['total']} after.", "",
@@ -298,7 +310,11 @@ def page_text(r: dict) -> str:
     lines += ["", "## The declared kill rule", "",
               f"* #693's reading (percentile interval): published {kill_words(p693['kill_rule'])}; corrected {kill_words(c693['kill_rule'])}.",
               f"* #739's reading (studentized interval): published {kill_words(p739['kill_rule'])}; corrected {kill_words(c739['kill_rule'])}.", ""]
-    flipped = (p693["kill_rule"]["killed"] != c693["kill_rule"]["killed"]) or (p739["kill_rule"]["killed"] != c739["kill_rule"]["killed"])
+    flips = {
+        "#693's reading": p693["kill_rule"]["killed"] != c693["kill_rule"]["killed"],
+        "#739's reading": p739["kill_rule"]["killed"] != c739["kill_rule"]["killed"],
+    }
+    flipped = any(flips.values())
     signs = [
         (metric, cand, b)
         for metric in ("grid_crps", "mae") for cand in s693.CANDIDATES for b in s693.BENCHMARKS
@@ -319,9 +335,10 @@ def page_text(r: dict) -> str:
     lines += [
         "", "## For Eleonora", "",
         ("**The corrected rows change step 1's reading.** " if flipped or signs else "**The corrected rows leave step 1's reading unchanged:** ")
-        + (f"the kill rule's outcome {'flips' if flipped else 'is the same'} and {len(signs)} pooled skill sign(s) change. " if flipped or signs
-           else "the kill rule's outcome is the same on both intervals and no pooled skill changes sign. ")
-        + "Marked question: " + ("this changes what step 1 says, so whether the #693 and #739 pages carry a note pointing here is hers."
+        + "the kill rule's outcome changes on " + (", ".join(k for k, v in flips.items() if v) or "neither reading")
+        + f" and {len(signs)} pooled skill sign(s) change"
+        + ("" if not signs else " (" + "; ".join(f"{m} {LABEL[c]} vs {LABEL[b]}" for m, c, b in signs) + ")") + ". "
+        + "Marked question: " + ("this changes what the #693 page says, so whether it and the #739 page carry a note pointing here is hers."
                                  if flipped or signs else "none from this re-read; whether the #693 and #739 pages carry a note pointing here is hers."), "",
         "Nothing is corrected for multiplicity, no model is refitted beyond what #693 does, and the published pages and records are not edited.", "",
     ]

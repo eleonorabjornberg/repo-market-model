@@ -79,6 +79,10 @@ class DifferenceTests(unittest.TestCase):
         self.assertIsNone(script.max_difference({"a": "x"}, {"a": "y"}))
         self.assertIsNone(script.max_difference({"a": [1, 2]}, {"a": [1]}))
 
+    def test_two_undefined_rows_agree_whatever_their_reasons_say(self):
+        self.assertEqual(script.max_difference({"r": {"undefined": "a"}}, {"r": {"undefined": "b"}}), 0.0)
+        self.assertIsNone(script.max_difference({"r": {"undefined": "a"}}, {"r": {"skill": 1.0}}))
+
     def test_a_changed_flag_is_not_a_zero_difference(self):
         self.assertIsNone(script.max_difference({"killed": True}, {"killed": False}))
 
