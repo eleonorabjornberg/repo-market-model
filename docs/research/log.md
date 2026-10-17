@@ -938,3 +938,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `ml.py` is not the cause: all five trees give the same rows ((a) AUROC 0.5673, (b) 0.9072, slope 0.497). The cause is the two distance columns, rebuilt per H.4.1 release since #622: with the older columns the page's 0.5629, 0.9029 and slope 0.463 return to the digit. Development data, no verdict.
 - Against kill: not applicable.
 - Next: whether #632's tracked tables are re-scored and published anew is Eleonora's (marked question in the PR); the other pages on `satiation_dist_roll` may have the same history.
+
+### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#PR
+- Directive: #842
+- Step: 3 (milestone M4, the nested development test against H5's candidate `gbm_funding`)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `26c51093…`; declarations `metadata/h9_nested_842.json`, `metadata/richer_targets_706.json`; base `0065b4e3`
+- Tried: `gbm_funding` with and without one target's forecast (the median of #706's walk-forward law for the same target day) as an input, for BGCR dispersion, ON RRP daily change and SOFR dispersion, leads 1 to 5, scored by the protocol's grid CRPS on 1,848 decision days and split by regime, as-of scarcity state, day type and lead, with and without 2019-09-18. Variants: 3 new (nested), plus the re-walked candidate.
+- Result: nested d (lower 95%) −0.004 (−0.015), −0.000 (−0.009) and +0.006 (−0.005) for BGCR dispersion, ON RRP change and SOFR dispersion; skill −0.002, −0.000, +0.003; Holm p 1.000, 1.000, 0.517; the same without 2019-09-18. Two of about 40 cells per target show a lower bound above zero, both for SOFR dispersion (2025-26: +0.039 [+0.014]; lead 5: +0.017 [+0.002]). Detail in `docs/pivot/h9-nested-842-result.md`.
+- Against kill: the nested part of `H9.md`'s kill ("no nested gain for H5") holds on development data: no target improves the candidate beyond its interval. Not a verdict.
+- Next: no H9 registration on this evidence; whether H9 continues with other forms of the input (width, tail) or stops is Eleonora's; re-score if the candidate moves to the twin of #825.
