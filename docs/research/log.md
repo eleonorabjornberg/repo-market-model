@@ -1009,6 +1009,26 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a correction to how step 1's day set is read).
 - Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
 
+### 2026-10-15 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#816
+- Directive: #789
+- Step: groundwork G1 (publishing infrastructure for the results page; the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `8474e69f`
+- Tried: the committed results page and data carry no commit stamp; `emit_visual.py --stamp`, run by the pages job on main, writes it. `--check` and the tests no longer read git history. Variants: n/a (infrastructure, no model).
+- Result: a merge to main no longer makes the page stale or conflicting in an open PR; the page's content is still checked byte for byte. No published figure moves.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's call on where the stamp is written (the deployed copy, or a bot-committed stamp file).
+
+### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
+- Directive: #841
+- Step: 6 (the model-risk validation report rewritten for `gbm_funding`; milestone M5a)
+- Tier: development
+- Pins: base `0065b4e3`; published panel `4ddc3882…`; subject `docs/model/candidate.json`; declaration `metadata/spread_distribution_634.json`
+- Tried: no model and no scoring. `docs/model/validation.md` and `scripts/validation_report.py` rewritten for the candidate, keeping the structure ruled on #119; every development result cited by issue and page, with no figure stated, because none has a record in `docs/runs/`. Variants: 0.
+- Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
 ### 2026-10-17 [H3] groundwork G1 · eleonorabjornberg/repo-market-model#884
 - Directive: #872 (finding #860)
 - Step: groundwork G1 (data quality of the Fed repo take-up recency input)

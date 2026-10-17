@@ -64,17 +64,20 @@ half); and how the project was built. Nothing on the page is typed:
   generation reads the file and stays byte-reproducible.
 
 Every data file carries a provenance block: the commit, the panel's SHA-256 and
-the SHA-256 of each input file read. The commit is the latest one that changed
-one of `INPUTS`, never the commit that records the output: a file cannot name
-the commit that contains it, so a pull request that changes an input commits
-that change first, then runs this script and commits the output on top, as
-`scripts/emit_status.py` does. It reads git history, so it refuses a shallow
-clone unless the commit is passed with `--commit`.
+the SHA-256 of each input file read. The committed files carry no commit (#789):
+a stamp that changed with every merge to main made every open pull request
+conflict with main on those files. The commit is written on main, when the
+pages job publishes the page (`--stamp`): the latest commit that changed one of
+`INPUTS`, never the commit that records the output. `--check` and the tests
+regenerate without a stamp, so they do not depend on where main is. `--stamp`
+reads git history, so it refuses a shallow clone unless the commit is passed
+with `--commit`.
 
 Standard library only, plus this repository's own `src/`.
 
     python3 scripts/emit_visual.py            # writes docs/visual/data/ and site/index.html
     python3 scripts/emit_visual.py --check    # writes nothing; fails if either is stale
+    python3 scripts/emit_visual.py --stamp    # as above, stamped with the latest input commit (the pages job)
     python3 scripts/emit_visual.py --refresh-issues   # rewrites docs/visual/issues.json from GitHub
 """
 import argparse
@@ -3300,7 +3303,7 @@ def generate(repo, commit=None):
     coverage_fills = band_coverage_block(repo)
     daily, daily_fills = forecast_daily(records, locked)
     pending = pending_figures(records)
-    commit = commit or input_commit(repo)
+    unstamped = "stamped when main publishes the page"
 
     with tempfile.TemporaryDirectory() as tmp:
         raw, digest = build_panel(repo, manifest, tmp)
@@ -3377,7 +3380,7 @@ def generate(repo, commit=None):
         "shown_day_is": "the panel's last day" if shown is last else "the last day not held out",
         "latest_volume": f"${float(shown['sofr_volume']) / 1000:.1f} trillion",
         "n_rows": f"{len(rows):,}", "sha": digest, "sha12": digest[:12],
-        "commit": commit, "commit12": commit[:12],
+        "commit": commit or unstamped, "commit12": (commit or unstamped)[:12],
         "decision": clock(decision), "decision_24": decision.strftime("%H:%M"),
         "note_issued": day(note["issued"]), "note_effective": day(note["effective"]),
         "note_src": note["src"], "note_sha": note["sha256"], "note_retrieved": note["retrieved_at"],
@@ -3478,6 +3481,8 @@ def generate(repo, commit=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument("--check", action="store_true", help="write nothing; fail if an output is stale")
+    parser.add_argument("--stamp", action="store_true",
+                        help="stamp the latest commit that changed an input (run on main by the pages job)")
     parser.add_argument("--commit", help="stamp this commit instead of reading git history")
     parser.add_argument("--refresh-issues", action="store_true",
                         help=f"rewrite {ISSUES} from GitHub (network); nothing else is written")
@@ -3494,7 +3499,8 @@ def main(argv=None):
         print(f"emit_visual: wrote {ISSUES}; regenerate the page with `python3 scripts/emit_visual.py`")
         return
     try:
-        outputs = generate(repo, args.commit)
+        commit = args.commit or (input_commit(repo) if args.stamp else None)
+        outputs = generate(repo, commit)
     except (VisualError, LookAheadError) as exc:
         sys.exit(f"emit_visual: {exc}")
     stale = [rel for rel, data in outputs.items()
