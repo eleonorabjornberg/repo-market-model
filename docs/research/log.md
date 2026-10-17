@@ -1014,7 +1014,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Step: groundwork G1 (data quality of the Fed repo take-up recency input)
 - Tier: development
 - Pins: tracked repo-operation snapshots to 2026-09-03; published panel `4ddc3882…`; base `80b5ef0a`; Fed statement pages saved with checksums
-- Tried: listed the 40 Repo operations with $0.09 to $0.13 bn accepted and matched them to the eleven small value exercises the Desk announced from 2024 to October 2026; recomputed `fed_repo_days_since_positive` under the floor in force, #826's rule and an announcement-keyed rule. Variants: 0 new models; nothing scored.
+- Tried: listed the 40 Repo operations with $0.09 to $0.13 bn accepted and matched them to the ten small value exercises the Desk announced from 2024 to May 2026; recomputed `fed_repo_days_since_positive` under the floor in force, #826's rule and an announcement-keyed rule. Variants: 0 new models; nothing scored.
 - Result: no announcement exists for the recurring afternoon trade of $100 to $113 mn (35 of 40 operations, 34 at or above the floor); the 5 announced exercises are morning operations already dropped by their note. The announcement-keyed rule changes no panel column (longest gap 52, 41, 22 operation days in 2024 to 2026; 13, 44, 16 take-up days). No H5 declaration reads a `fed_repo` column. Development data, not a verdict.
 - Against kill: not applicable (data quality of an input; no kill criterion assessed).
 - Next: whether the recurring trade is take-up is Eleonora's (data meaning), with the evidence table in `docs/pivot/repo-test-trades-872-result.md`.

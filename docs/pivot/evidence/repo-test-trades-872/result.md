@@ -18,7 +18,6 @@ Pages fetched 2026-10-17T15:52Z to 15:54Z, 17 October 2026; checksums in `source
 | 2025-10-31 | 2025-11-05 | 10:00-10:15 | overnight repo | `sources/statement_251031.html` |
 | 2026-02-11 | 2026-02-18 | 10:30-10:45 | forward start overnight repo | `sources/statement_260211.html` |
 | 2026-05-06 | 2026-05-27 | 10:15-10:30 | overnight repo | `sources/statement_260506.html` |
-| 2026-10-13 | 2026-10-20 | 10:30-10:45 | forward start term repo | `sources/statement_261013.html` |
 
 ## Operations with $0.09 to $0.13 bn accepted in the tracked snapshots
 

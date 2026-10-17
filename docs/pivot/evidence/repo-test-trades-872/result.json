@@ -80,14 +80,6 @@
    "operation_date": "2026-05-27",
    "window": "10:15-10:30",
    "kind": "overnight repo"
-  },
-  {
-   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_261013",
-   "page": "statement_261013.html",
-   "public": "2026-10-13",
-   "operation_date": "2026-10-20",
-   "window": "10:30-10:45",
-   "kind": "forward start term repo"
   }
  ],
  "listed": [

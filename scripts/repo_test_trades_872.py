@@ -60,7 +60,6 @@ ANNOUNCED = (
     ("statement_251031.html", date(2025, 10, 31), date(2025, 11, 5), time(10, 0), time(10, 15), "overnight repo"),
     ("statement_260211.html", date(2026, 2, 11), date(2026, 2, 18), time(10, 30), time(10, 45), "forward start overnight repo"),
     ("statement_260506.html", date(2026, 5, 6), date(2026, 5, 27), time(10, 15), time(10, 30), "overnight repo"),
-    ("statement_261013.html", date(2026, 10, 13), date(2026, 10, 20), time(10, 30), time(10, 45), "forward start term repo"),
 )
 #: A phrase each page must contain for its operation date, so a mis-typed row above fails `check_sources`.
 DATE_PHRASES = {
@@ -68,8 +67,7 @@ DATE_PHRASES = {
     "statement_250117.html": "January 24, 2025", "statement_250212.html": "February 26, 2025",
     "statement_250220.html": "March 5, 2025", "statement_250814.html": "August 21, 2025",
     "statement_251002.html": "October 8th, 2025", "statement_251031.html": "November 5, 2025",
-    "statement_260211.html": "February 18, 2026", "statement_260506.html": "May 27th, 2026",
-    "statement_261013.html": "October 20, 2026",
+    "statement_260211.html": "February 18, 2026", "statement_260506.html": "May 27th, 2026"
 }
 
 

@@ -22,8 +22,8 @@ note and no statement before it. The question whether it is take-up is left to E
    Of those, 34 are at or above the $0.1 bn floor and count as take-up today (one, 2024-07-09 at $97 mn, is below it).
 2. **The Fed's public record**, saved with checksums in `evidence/repo-test-trades-872/sources/` (17 October 2026, one request per page
    from www.newyorkfed.org): the Statements and Operating Policies index, the Desk's repo page and the repo FAQ (neither mentions an
-   advance schedule of test trades), and the eleven statements from 2024 to October 2026 that announce a Repo small value exercise
-   (11 pages; each gives its operation date and window). Two points from them:
+   advance schedule of test trades), and the ten statements from 2024 to May 2026 whose exercise date has passed and that announce a Repo small value exercise
+   (each gives its operation date and window; the statement of 13 October 2026 announces a later exercise and is saved, not matched). Two points from them:
    * every announced exercise is a morning operation (08:15 to 10:45), limited to "one $1 million proposition per eligible security type" or
      tranche. None announces an afternoon operation of $0.1 bn;
    * the statement of 10 December 2025 makes the standing overnight repo operations twice daily from 11 December 2025, which is why a
@@ -52,7 +52,7 @@ The panel is the scratch panel to 2026-09-03 (`pressure_v1_1.py panel --end 2026
 
 The in-force column reproduces #860's figures for 2024 to 2026 (longest 52, 41, 22; 13, 44, 16 take-up days). The announcement-keyed
 column is identical to it in every cell, and every `fed_repo_*` panel column is identical under the two. #826's rule (not yet merged) is
-shown as the other candidate: it removes the $1 mn to $7 mn test trades but keeps the ~$0.1 bn trade as take-up.
+shown as the other candidate: it removes the whole-million trades of $1 mn to $7 mn but keeps the ~$0.1 bn trade as take-up.
 
 **Effect on H5's candidate inputs:** none. No H5 declaration (the eight listed in the evidence file) names a `fed_repo` column, and no
 `fed_repo_*` column changes under the announcement-keyed rule. The recency input is read by H2's upper bound (#635) and the unused-inputs
