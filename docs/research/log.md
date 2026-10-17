@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
+- Directive: #882
+- Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
+- Tier: development
+- Pins: base `f70bf93d`; published panel `4ddc3882…`; scripts and seeds of the three results unchanged (one option `--without-day` added)
+- Tried: each result re-run with its original script, once as published and once without the day. Variants: 0 new (25 walks of #634 and #688 and the H2 fits rerun).
+- Result: #761 and #688 reproduce the tracked figures (differences 5e-15 and 0); in #758 the candidates reproduce and the H2 ceiling does not (scratch panel digest differs). Without the day the candidates' pooled ordinary skill against B1 falls by about 9 points and stays above zero (gbm_funding +0.257 to +0.169); headroom changes sign nowhere; the reachable line's skill against B1 loses its resolved lower bound (+0.193 [+0.015, +0.352] to +0.097 [-0.008, +0.186]). Against B2 nothing moves. Development data, not a verdict.
+- Against kill: not applicable (a sensitivity table; nothing re-ruled).
+- Next: Eleonora's call on the H2 ceiling's reproducibility (three digests of DERIV.csv) and on whether the reachable-line sign change bears on H2 (marked questions in the PR).
