@@ -1062,3 +1062,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
+### 2026-10-17 [H5] groundwork G2 · eleonorabjornberg/repo-market-model#907
+- Directive: #883
+- Step: groundwork G2 and step 3 (the two month-end readings of `risk_dates`, measured side by side; the choice stays Eleonora's, #800)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `161fd5b6`; walks and exceedance files as in `scripts/spread_distribution_634.py`; H2's fits rerun on a worktree at the merge of #775
+- Tried: listed the days on which the window reading and the business-day reading disagree (70 panel days to 2025-12-31, 5 of them pressure days), then re-ran #805, #761, #849, #694 and #758 under each reading, with the reading switched by a process-level shim and nothing in `src/` changed. Variants: 0.
+- Result: the controls reproduce the tracked evidence to 1e-9 for #805, #761, #849 and #694; #775's does not byte for byte (scratch panel digest drift, #811) but is within the declared tolerance. Pooled skills move by about 0.1 points at most, ordinary-day groups by at most 0.8 points with no sign change, month-end groups by up to 5.5 points; the kill outcomes shown do not change. Development data, not a verdict.
+- Against kill: not applicable (a measurement of a definition, no kill criterion assessed).
+- Next: which reading is shared is Eleonora's (marked question in the PR, #800).
