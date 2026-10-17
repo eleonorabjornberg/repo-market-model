@@ -1049,7 +1049,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
 
-### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#893
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#897
 - Directive: #893
 - Step: groundwork G1 (the layout of the results page for H1 to H10; as in #816, the hypothesis tag is the nearest fit and is a question in the PR)
 - Tier: development
