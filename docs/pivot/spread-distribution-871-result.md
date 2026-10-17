@@ -103,5 +103,5 @@ None of these pages is re-published here. The drifting ones (#598, #610, #631) a
 
 - Whether the old page and its evidence get a superseding note, and by what mechanism (`publish-rule.md` has none).
 - Whether #598's hinge rows and #631's model rows are re-scored on the current columns: not done here.
-- The per-regime reliability table added by #786 was built on the current columns; its bootstrap is rebuilt in the pull request's check, not edited on the old page.
+- The per-regime reliability table added by #786 was built on the current columns. It was rebuilt here (`reliability_regimes_683.py spread632`, 2,000 replications) on this page's forecasts and its JSON is byte-identical to `evidence/reliability-regimes/spread-632.json`, so it reproduces; it is not copied into this folder.
 - A development-data re-score: it gives no verdict under protocol v1, and the variants were built on these days, so a pass is not a confirmation (ruling on #567).
