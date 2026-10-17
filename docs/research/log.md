@@ -1008,3 +1008,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the control reproduces both published evidence files (largest difference 6e-14). Settlement cells at leads 2 to 5 drop (1907 to 1451 scored cells; 4 of 20 lead-by-type pairs move; target days 383 to 382). The first candidate's CRPS skill against B1 goes from +3.2% [+0.0%, +6.6%] to +2.2% [-1.4%, +5.7%] and its MAE skill against B1 from +0.7% to -0.9%, so #693's percentile reading flips from not killed to killed on the declared reading; #739's studentized reading is killed before and after. Development data, not a verdict.
 - Against kill: not applicable (a correction to how step 1's day set is read).
 - Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
+
+### 2026-10-15 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#816
+- Directive: #789
+- Step: groundwork G1 (publishing infrastructure for the results page; the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `8474e69f`
+- Tried: the committed results page and data carry no commit stamp; `emit_visual.py --stamp`, run by the pages job on main, writes it. `--check` and the tests no longer read git history. Variants: n/a (infrastructure, no model).
+- Result: a merge to main no longer makes the page stale or conflicting in an open PR; the page's content is still checked byte for byte. No published figure moves.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's call on where the stamp is written (the deployed copy, or a bot-committed stamp file).
+
+### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
+- Directive: #841
+- Step: 6 (the model-risk validation report rewritten for `gbm_funding`; milestone M5a)
+- Tier: development
+- Pins: base `0065b4e3`; published panel `4ddc3882…`; subject `docs/model/candidate.json`; declaration `metadata/spread_distribution_634.json`
+- Tried: no model and no scoring. `docs/model/validation.md` and `scripts/validation_report.py` rewritten for the candidate, keeping the structure ruled on #119; every development result cited by issue and page, with no figure stated, because none has a record in `docs/runs/`. Variants: 0.
+- Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
