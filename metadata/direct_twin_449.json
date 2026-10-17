@@ -1,0 +1,35 @@
+{
+  "status": "declared before any score was computed (#449, H5 measurement ahead of step 5): a measurement, not a record. Nothing is published, nothing is registered, no rule changes, the declared candidate, the published model and every published figure stay as they are, no day after 2025-12-31 is read, and no day of a locked tier is scored (docs/decisions/lockbox.md). Development days give a score and an interval, never a verdict (scoring protocol v1, #46).",
+  "issue": 449,
+  "hypothesis": "H5 (primary goal), a measurement ahead of step 5 (the validation report for gbm_funding): does training the gradient-boosted model on direct pairs, the pairing it is read at, change its score?",
+  "rulings": [
+    "Eleonora, 15 October 2026 (comment on #449, relayed by the orchestrating session): measurement only; score gbm_funding against its twin with training_pairs=\"direct\" and nothing else changed, on the same walks under scoring protocol v1; report with and without decision day 2019-09-18 (#798); change nothing; whether the candidate switches to the twin is hers, asked as a marked question in the pull request"
+  ],
+  "control": "gbm_funding of metadata/spread_distribution_634.json: ml.fit_gradient_boosted_quantiles at the 23 levels of protocol v1 on the published funding features (live_record.published_features at the lead), training_pairs unset (one-step pairs: every regressor of a training row is the row before its target)",
+  "twin": "gbm_funding_direct: the same call with training_pairs=\"direct\" and nothing else changed (each training target is paired with its as-of read at its own decision instant, at the lead of the walk)",
+  "arms": {
+    "gbm_funding": "gbm_funding of metadata/spread_distribution_634.json: ml.fit_gradient_boosted_quantiles at the 23 levels of protocol v1 on the published funding features (live_record.published_features at the lead), training_pairs unset (one-step pairs: every regressor of a training row is the row before its target)",
+    "gbm_funding_direct": "gbm_funding_direct: the same call with training_pairs=\"direct\" and nothing else changed (each training target is paired with its as-of read at its own decision instant, at the lead of the walk)"
+  },
+  "walks": "the walks of scripts/spread_distribution_634.py (control) and scripts/direct_twin_449.py walk (twin) on the published panel (digest 4ddc3882...), refit every 21 scored days, minimum history 61, decision time 16:00, leads 1 to 5; the same fold grid and the same as-of rule at each lead",
+  "confirm_in_code": "the control's walk settings carry no training_pairs and the twin's carry training_pairs 'direct' (ml._model_settings names it only when set); both are written into score.json (key pairing) and the score refuses to run unless the control's are absent and the twin's say 'direct'",
+  "scale": {
+    "metric": "grid CRPS in bp (twice the mean pinball loss over the 23 levels of protocol v1), one number per decision day and lead; the primary figure averages leads 1 to 5 (repo_model.scoring_protocol.day_scores)",
+    "benchmarks": "B1 as-of persistence and B2 calendar climatology (repo_model.protocol_benchmarks)",
+    "difference": "d = S(benchmark) - S(forecast); skill = mean(d) / mean(S(benchmark)); positive favours the forecast. The twin is also paired against the control (d = S(control) - S(twin))",
+    "interval": "the protocol's studentized stationary bootstrap (scoring_protocol.paired_tests): mean block 10, seed 449, one-sided 95%, 10,000 draws on the pooled figure and on each lead alone and 2,000 on the regime and day-type splits (a paired test on 1,868 days takes minutes at 10,000 draws; #758 reads its splits at 2,000 too); Diebold-Mariano with Newey-West lag 10 beside it",
+    "missing": "a missing lead takes B1's law (scoring_protocol.fill_missing), the share reported"
+  },
+  "tables": [
+    "pooled over leads 1 to 5, and each lead alone",
+    "split by regime of the decision day (evaluation_splits.json) and by pressure-day type of the target day (splits.reporting_day_type), each pooled over leads and at each lead",
+    "every table twice: all decision days, and without decision day 2019-09-18 (#798), the same days left out of every forecast and benchmark"
+  ],
+  "minimum_days": 30,
+  "thin_splits": "a split with fewer than 30 decision days is reported as too thin and carries no interval",
+  "reading_rule": "none: nothing here is a verdict and nothing registers. The page states the figures and ends with the marked question whether the declared candidate switches to the twin. A skill of the twin against the control whose lower bound is above 0 is described as 'ahead on these development days', never as a pass",
+  "checks": {
+    "lookahead": "a day after 2025-12-31 raises LookAheadError (direct_twin_449.require_study_window) and the scorer's lockbox guard (require_unlocked) refuses a locked day",
+    "variant_count": "one twin; no tuning, no other setting changed"
+  }
+}
