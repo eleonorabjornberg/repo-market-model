@@ -143,7 +143,7 @@ jobs:
           fi
 
   research-log:
-    # The research log (#638): `docs/research/log.md` keeps to its format and to the hypotheses of
+    # The research log (#638): `docs/research/log/` (one file per entry, #866) keeps to its format and to the hypotheses of
     # `docs/research/plan.md`, and a pull request that changes a result page or a declaration adds an entry that
     # names its directive (the `Closes #N` line of its body).
     name: research log
@@ -157,6 +157,12 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
+
+      # `log.md` is generated from the entry files under `docs/research/log/` (#866); this refuses a stale one.
+      - name: Check the log page is current
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -B scripts/check_research_log.py assemble --check
 
       - name: The log is well formed
         if: github.event_name != 'pull_request'
