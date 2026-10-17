@@ -226,6 +226,9 @@ def stability(args):
 
 
 CALIBRATION = ROOT / "docs" / "research" / "protocol-calibration" / "result.json"
+#: The recalibration in the orientation the protocol applies (#873): a scratch result beside the record in force.
+CALIBRATION_873 = ROOT / "docs" / "research" / "protocol-calibration-873" / "result.json"
+ORIENTATION = "d = S(benchmark) - S(candidate), benchmark B1"
 #: Windows per (pair, checkpoint); look 1's diagnostic needs many more to reach its level.
 CALIBRATION_WINDOWS = {60: 200_000, 125: 20_000, 250: 20_000}
 CALIBRATION_SEED = 1
@@ -233,15 +236,39 @@ FUTILITY_WINDOWS = 20_000
 NULL_PATHS = 2_000
 
 
-def calibration(seed=CALIBRATION_SEED, windows=None):
-    windows = dict(CALIBRATION_WINDOWS if windows is None else windows)
-    d21 = real_differences()
-    d31 = b3_differences()
-    pairs = {
-        "B2-B1": d21, "B3-B1 (five levels)": d31,
-        "B1-B2 (reversed, diagnostic)": [-v for v in d21],
-        "B1-B3 (reversed, diagnostic)": [-v for v in d31],
+def candidate_differences(bench, candidate):
+    """d_t = S(benchmark) - S(candidate): the orientation `scoring_protocol.paired_tests` applies (§5).
+
+    The calibration must draw its windows from this series, with B1 as the benchmark, because the daily
+    differences are skewed and so the quantiles of the studentized mean depend on the sign (#830).
+    """
+
+    return [b - c for b, c in zip(bench, candidate)]
+
+
+def calibration_series(grid, five):
+    """The two comparisons' calibration series, each B1's day scores less the other forecaster's.
+
+    `grid` is `(B1's, B2's)` grid-CRPS day scores and `five` is `(B1's, B3's)` five-level day scores.
+    """
+
+    return {
+        sp.GRID_COMPARISON: candidate_differences(*grid),
+        sp.FIVE_LEVEL_COMPARISON: candidate_differences(*five),
     }
+
+
+def futility_inputs(bench, candidate):
+    """What the futility value is calibrated on: B1's day scores and `candidate_differences` against them."""
+
+    return list(bench), candidate_differences(bench, candidate)
+
+
+def calibration(seed=CALIBRATION_SEED, windows=None):
+    """The recalibration of #873: every value in the orientation the protocol applies, same windows and seed."""
+
+    windows = dict(CALIBRATION_WINDOWS if windows is None else windows)
+    pairs = calibration_series(grid_scores(), five_level_scores())
     levels = dict(zip(sp.CHECKPOINTS, sp.nominal_levels()))
     values = {}
     for name, series_ in pairs.items():
@@ -249,17 +276,12 @@ def calibration(seed=CALIBRATION_SEED, windows=None):
             str(n): sp.calibrate_critical_value(series_, days=n, level=levels[n], windows=windows[n], seed=seed)
             for n in sp.CHECKPOINTS
         }
-    largest = {
-        str(n): None if n == sp.CHECKPOINTS[0] else max(values[name][str(n)] for name in pairs)
-        for n in sp.CHECKPOINTS
-    }
     # Futility (Q-C): the upper bound of skill, one-sided at FUTILITY_LEVEL, on the grid comparison.
-    s1, s2 = grid_scores()
+    bench, differences = futility_inputs(*grid_scores())
     futility = {
         sp.GRID_COMPARISON: {
             str(n): sp.calibrate_futility_value(
-                s2, [b - a for a, b in zip(s1, s2)], days=n, level=sp.FUTILITY_LEVEL,
-                windows=FUTILITY_WINDOWS, seed=seed,
+                bench, differences, days=n, level=sp.FUTILITY_LEVEL, windows=FUTILITY_WINDOWS, seed=seed,
             )
             for n in sp.CHECKPOINTS
         }
@@ -275,14 +297,13 @@ def calibration(seed=CALIBRATION_SEED, windows=None):
         critical = {n: own[comparison][str(n)] for n in sp.CHECKPOINTS}
         rates = detections(bench, other, delta=0.0, noise=1.0, critical=critical, paths=NULL_PATHS)
         nulls[comparison] = dict(rates["ungated"], paths=NULL_PATHS, series_days=len(bench))
+    previous = json.loads(CALIBRATION.read_text(encoding="utf-8"))
     return {
+        "orientation": ORIENTATION,
         "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6159852603",
-        "earlier_rulings": [
-            "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6149326627",
-        ],
+        "directive": "https://github.com/eleonorabjornberg/repo-market-model/issues/873",
         "series_days": {name: len(series_) for name, series_ in pairs.items()},
         "nominal_levels": {str(n): levels[n] for n in sp.CHECKPOINTS},
-        "studentized_normal_values": {str(n): sp._NORMAL.inv_cdf(1 - levels[n]) for n in sp.CHECKPOINTS},
         "windows": {str(n): windows[n] for n in sp.CHECKPOINTS},
         "futility_windows": FUTILITY_WINDOWS,
         "window_block": sp.WINDOW_BLOCK,
@@ -292,13 +313,16 @@ def calibration(seed=CALIBRATION_SEED, windows=None):
         "futility_level": sp.FUTILITY_LEVEL,
         "futility_critical_values": futility,
         "null_false_detection_full_history": nulls,
-        "largest_across_pairs_superseded": largest,
+        "in_force_before_this_amendment": {
+            "comparison_critical_values": previous["comparison_critical_values"],
+            "futility_critical_values": previous["futility_critical_values"],
+            "orientation": "d = S(B2) - S(B1) and S(B3) - S(B1), futility on benchmark B2 (the reversed one)",
+        },
         "note": (
             "each comparison is read at its own value (Q-E (b)); look 1 checks futility only (Q-B); futility is "
-            "one-sided at 0.05 at every look, non-binding (Q-C). The largest value across pairs, which PR #695 "
-            "used, is kept for the record and superseded. Null rates: #699's rule (bench B1, candidate whose "
-            "difference is the centred B1 - other difference) on the comparison's full development history, "
-            "detections at looks 2 and 3, by checkpoint."
+            "one-sided at 0.05 at every look, non-binding (Q-C). Every value is calibrated on the series the test "
+            "applies, d = S(B1) - S(candidate) (#830), with the windows, block and seed of the record in force. "
+            "Null rates: #699's rule on the comparison's full development history, detections at looks 2 and 3."
         ),
     }
 
@@ -306,8 +330,8 @@ def calibration(seed=CALIBRATION_SEED, windows=None):
 def calibrate(args):
     result = calibration(seed=args.seed)
     if args.write:
-        CALIBRATION.parent.mkdir(parents=True, exist_ok=True)
-        CALIBRATION.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        CALIBRATION_873.parent.mkdir(parents=True, exist_ok=True)
+        CALIBRATION_873.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(result, sort_keys=True))
 
 
