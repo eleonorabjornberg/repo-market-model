@@ -1019,6 +1019,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's call on where the stamp is written (the deployed copy, or a bot-committed stamp file).
 
+### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
+- Directive: #841
+- Step: 6 (the model-risk validation report rewritten for `gbm_funding`; milestone M5a)
+- Tier: development
+- Pins: base `0065b4e3`; published panel `4ddc3882…`; subject `docs/model/candidate.json`; declaration `metadata/spread_distribution_634.json`
+- Tried: no model and no scoring. `docs/model/validation.md` and `scripts/validation_report.py` rewritten for the candidate, keeping the structure ruled on #119; every development result cited by issue and page, with no figure stated, because none has a record in `docs/runs/`. Variants: 0.
+- Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
 ### 2026-10-14 [H8] step 2 · eleonorabjornberg/repo-market-model#771
 - Directive: #765
 - Step: 2 (development: rank by tail probability combined with the day type)
