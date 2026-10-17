@@ -54,6 +54,7 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "backfill_h5_726.json"
+REREAD = REPO / "metadata" / "backfill_h5_726_reread.json"
 POSTING = REPO / "metadata" / "backfill_posting.json"
 SEED = 726
 LAST_TARGET = date(2025, 12, 31)
@@ -71,16 +72,16 @@ def _load(name: str):
     return module
 
 
-def committed_declaration() -> dict:
-    """The declaration, refused unless it is committed and unchanged since `HEAD`."""
+def committed_declaration(path: Path = DECLARATION) -> dict:
+    """A declaration (default: #759's), refused unless it is committed and unchanged since `HEAD`."""
 
-    relative = str(DECLARATION.resolve().relative_to(REPO))
+    relative = str(Path(path).resolve().relative_to(REPO))
     dirty = subprocess.run(
         ["git", "status", "--porcelain", "--", relative], cwd=REPO, capture_output=True, text=True, check=True
     ).stdout.strip()
     if dirty:
         raise SystemExit(f"{relative} is not committed ({dirty}); a declaration is made before any score")
-    return json.loads(DECLARATION.read_text(encoding="utf-8"))
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 # -- the pure parts ------------------------------------------------------------------------------------------------
@@ -408,6 +409,189 @@ def score_command(args) -> int:
     return 0
 
 
+# -- the re-read (#870) --------------------------------------------------------------------------------------------
+
+
+def period_label(day: date) -> Optional[str]:
+    """The half-year of a decision day inside 2018-19, else `None`."""
+
+    if day.year not in (2018, 2019):
+        return None
+    return f"{day.year} H{1 if day.month <= 6 else 2}"
+
+
+def ruled_interval(test, level: float = 0.90) -> Tuple[float, float]:
+    """The two-sided studentized interval of mean(d) (ruling 1): `mean - Q_hi(t) * se` to `mean - Q_lo(t) * se`."""
+
+    tail = (1.0 - level) / 2.0
+    lower = test.mean_difference - sp._bound(test.t_draws, 1.0 - tail, test.draws) * test.standard_error
+    upper = test.mean_difference - sp._bound(test.t_draws, tail, test.draws) * test.standard_error
+    return lower, upper
+
+
+def group_entry(test, shares: Mapping[str, float]) -> dict:
+    """One group's figures: the ruled interval, the superseded percentile interval, the reference bounds, the refit shares."""
+
+    draws = test.mean_difference_draws
+    lower, upper = ruled_interval(test)
+    mean, se = test.mean_difference, test.standard_error
+    return {
+        "days": test.n, "mean_d": mean, "se": se, "lower_95_one_sided": lower, "interval_90": [lower, upper],
+        "percentile_interval_90": [draws[int(0.05 * test.draws)], draws[int(0.95 * test.draws) - 1]],
+        "reference_c": CRITICAL_250, "mean_minus_c_se": mean - CRITICAL_250 * se, "mean_plus_c_se": mean + CRITICAL_250 * se,
+        "gain": lower > 0.0, "cost": upper < 0.0, "cost_at_c": mean + CRITICAL_250 * se < 0.0,
+        "mean_backfilled_share": shares["backfilled"], "mean_imputed_share": shares["imputed"],
+    }
+
+
+def reading(entry: Optional[dict]) -> str:
+    """Whether a group shows a gain, a cost or neither on the ruled interval, in words."""
+
+    if entry is None:
+        return "not tested (too few decision days)"
+    if entry["gain"]:
+        return "gain shown"
+    if entry["cost"]:
+        return "cost shown"
+    return "neither shown (the interval covers zero)"
+
+
+def reread_command(args) -> int:
+    declared = committed_declaration(REREAD)
+    sd = _load("spread_distribution_634")
+    require_unlocked([LAST_TARGET], where="backfill_h5_726")
+    rows = [row for row in load_daily_panel(args.published) if row.date <= LAST_TARGET]
+    audit_panel(rows)
+    calendar = [row.date for row in rows]
+    position = {day: k for k, day in enumerate(calendar)}
+    outcomes = {row.date: row.spread_bps for row in rows}
+    splits = load_split_declaration(sd.SPLITS)
+    registry = json.loads(sd.SOURCES.read_text(encoding="utf-8"))
+    decisions, day_sets = {}, {}
+    for arm in ARMS:
+        decisions[arm], day_sets[arm] = sd.lead_forecasts(_load_arm(args.runs, arm), calendar)
+    if day_sets["without"] != day_sets["with"]:
+        raise ValueError("the arms score different decision days")
+    days = [
+        day for day in day_sets["without"]
+        if all(decisions[a][day][h] is not None for a in ARMS for h in sp.HORIZONS) and calendar[position[day] + 5] <= LAST_TARGET
+    ]
+    sd.refuse_locked(days + [calendar[position[d] + h] for d in days for h in sp.HORIZONS])
+    crps = {arm: sp.day_scores({d: decisions[arm][d] for d in days}, outcomes, calendar) for arm in ARMS}
+    documents = {h: json.loads((args.runs / f"with_h{h}.json").read_text(encoding="utf-8")) for h in sp.HORIZONS}
+    refit_shares: Dict[date, Dict[str, float]] = {}
+    for day in days:
+        cells = []
+        for h in sp.HORIZONS:
+            record = documents[h]["refits"][documents[h]["refit_of_day"][calendar[position[day] + h].isoformat()]]
+            cells.append(record)
+        refit_shares[day] = {
+            "backfilled": max(c["backfilled_share"] for c in cells), "imputed": sum(c["imputed_share"] for c in cells) / len(cells),
+        }
+    primary = float(declared["mostly_imputed_fits"]["primary_share"])
+    ladder = [primary] + [float(x) for x in declared["mostly_imputed_fits"]["sensitivity_shares"]]
+
+    groups: Dict[str, List[date]] = {"pooled": list(days)}
+    for day in days:
+        groups.setdefault(f"regime {splits.regime(day)}", []).append(day)
+        label = period_label(day)
+        if label is not None:
+            groups.setdefault(f"period {label}", []).append(day)
+            groups.setdefault(f"period {day.year}", []).append(day)
+    for day in days:
+        target = rows[position[day] + 1]
+        groups.setdefault(f"type {splits.reporting_day_type(target.date, target.values)}", []).append(day)
+    for share in ladder:
+        inside = [d for d in days if refit_shares[d]["backfilled"] <= share]
+        outside = [d for d in days if refit_shares[d]["backfilled"] > share]
+        groups[f"share <= {share:.0%}: pooled"] = inside
+        groups[f"share > {share:.0%}: pooled"] = outside
+        for day in inside:
+            groups.setdefault(f"share <= {share:.0%}: regime {splits.regime(day)}", []).append(day)
+    for name in ("period 2018 H1", "period 2018 H2", "period 2019 H1", "period 2019 H2", "period 2018", "period 2019"):
+        groups.setdefault(name, [])
+
+    def mean_share(group: List[date], key: str) -> float:
+        return sum(refit_shares[d][key] for d in group) / len(group) if group else float("nan")
+
+    table: Dict[str, Optional[dict]] = {}
+    sizes: Dict[str, int] = {}
+    for name, group in groups.items():
+        sizes[name] = len(group)
+        if len(group) <= sp.HAC_LAG:
+            table[name] = None
+            continue
+        (test,) = sp.paired_tests(
+            [({d: crps["without"][d] for d in group}, {d: crps["with"][d] for d in group})], seed=SEED, with_skill=False
+        )
+        entry = group_entry(test, {"backfilled": mean_share(group, "backfilled"), "imputed": mean_share(group, "imputed")})
+        entry["crps"] = {arm: sum(crps[arm][d] for d in group) / len(group) for arm in ARMS}
+        table[name] = entry
+
+    refit_table = [
+        dict(record, lead=1) for record in documents[1]["refits"]
+    ]
+    lines = []
+    for label, names in (
+        ("2018-19, all days", ["regime 2018-19"]),
+        ("2018-19 by half-year", ["period 2018 H1", "period 2018 H2", "period 2019 H1", "period 2019 H2"]),
+        ("2019 alone", ["period 2019"]),
+        ("2018-19 on days at or under each declared share", [f"share <= {s:.0%}: regime 2018-19" for s in ladder]),
+        ("every other regime and the pooled sample, for a cost", [n for n in table if n.startswith("regime ") and n != "regime 2018-19"] + ["pooled"]),
+    ):
+        lines.append({"reading": label, "groups": {n: reading(table.get(n)) for n in names}})
+    document = {
+        "issue": 870, "declaration": str(REREAD.relative_to(REPO)), "published_panel_sha256": panel_sha256(args.published),
+        "extended_panel_sha256": documents[1]["panel_sha256"], "backfilled_rows": documents[1]["backfilled_rows"],
+        "decision_days": [days[0].isoformat(), days[-1].isoformat(), len(days)], "shares_ladder": ladder,
+        "group_sizes": sizes, "groups": table, "kill_lines": lines, "refits_lead_1": refit_table,
+    }
+    args.output.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8")
+    args.markdown.write_text(reread_markdown(document), encoding="utf-8")
+    print(json.dumps({"days": len(days), "kill_lines": lines}))
+    return 0
+
+
+def reread_markdown(document: dict) -> str:
+    c = CRITICAL_250
+    lines = [
+        "# H4 step 3 re-read: the back-fill against H5's candidate on the ruled interval (#870), development days, not a verdict\n",
+        f"Decision days {document['decision_days'][0]} to {document['decision_days'][1]} ({document['decision_days'][2]}). "
+        "d = CRPS(without) - CRPS(with), positive when the back-fill helps. Interval: the studentized stationary bootstrap "
+        f"(ruling 1), two-sided 90%. Reference value c = {c:.3f} (the 250-day value of the grid comparison): `mean - c se` and "
+        "`mean + c se` carry both orientations of #830 (d = without - with, or the reverse).\n",
+        "| group | days | CRPS without | CRPS with | mean d | se | studentized 90% interval | percentile 90% (superseded) | mean - c se | mean + c se | back-filled share | imputed cells | reading |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for name, entry in document["groups"].items():
+        n = document["group_sizes"][name]
+        if entry is None:
+            lines.append(f"| {name} | {n} | | | | | | | | | | | {reading(None)} |")
+            continue
+        lo, hi = entry["interval_90"]
+        plo, phi = entry["percentile_interval_90"]
+        lines.append(
+            f"| {name} | {n} | {entry['crps']['without']:.3f} | {entry['crps']['with']:.3f} | {_f(entry['mean_d'])} | {entry['se']:.4f} | "
+            f"[{_f(lo)}, {_f(hi)}] | [{_f(plo)}, {_f(phi)}] | {_f(entry['mean_minus_c_se'])} | {_f(entry['mean_plus_c_se'])} | "
+            f"{entry['mean_backfilled_share']:.0%} | {entry['mean_imputed_share']:.0%} | {reading(entry)} |"
+        )
+    lines += ["", "## Training frames of the with arm (lead 1), by half-year of the refit", "",
+              "| half-year | refits | back-filled share of rows (min to max) | imputed share of input cells (min to max) |", "|---|---|---|---|"]
+    byhalf: Dict[str, List[dict]] = {}
+    for r in document["refits_lead_1"]:
+        year, month = r["train_end"][:4], int(r["train_end"][5:7])
+        byhalf.setdefault(f"{year} H{1 if month <= 6 else 2}", []).append(r)
+    for label, rs in sorted(byhalf.items()):
+        b = [r["backfilled_share"] for r in rs]
+        i = [r["imputed_share"] for r in rs]
+        lines.append(f"| {label} | {len(rs)} | {min(b):.0%} to {max(b):.0%} | {min(i):.0%} to {max(i):.0%} |")
+    lines += ["", "## Readings against H4's kill clause (development, not a verdict; whether the kill is read is Eleonora's)", ""]
+    for line in document["kill_lines"]:
+        lines.append(f"- **{line['reading']}.** " + "; ".join(f"{n}: {r}" for n, r in line["groups"].items()))
+    lines.append("")
+    return "\n".join(lines)
+
+
 def _f(value: float, digits: int = 3) -> str:
     return f"{value:+.{digits}f}"
 
@@ -461,6 +645,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--markdown", type=Path, required=True)
     p.set_defaults(func=score_command)
+    p = sub.add_parser("reread", help="the re-read of #870: the ruled interval, 2018-19 by half-year, the share of back-filled rows")
+    p.add_argument("--published", type=Path, required=True)
+    p.add_argument("--runs", type=Path, required=True)
+    p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--markdown", type=Path, required=True)
+    p.set_defaults(func=reread_command)
     args = parser.parse_args(argv)
     return args.func(args)
 

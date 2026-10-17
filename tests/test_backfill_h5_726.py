@@ -152,6 +152,47 @@ class TheAdmittedGuard(unittest.TestCase):
         self.assertEqual(module.series_carried(["spread_bps", "sofr_volume", "tga"], rows), ("sofr",))
 
 
+class TheReread(unittest.TestCase):
+    def test_a_decision_day_belongs_to_a_half_year_of_2018_19(self):
+        module = _module()
+        self.assertEqual(module.period_label(date(2018, 6, 29)), "2018 H1")
+        self.assertEqual(module.period_label(date(2018, 7, 2)), "2018 H2")
+        self.assertEqual(module.period_label(date(2019, 12, 31)), "2019 H2")
+        self.assertIsNone(module.period_label(date(2020, 1, 2)))
+
+    def test_a_refit_record_counts_back_filled_rows_and_blank_input_cells(self):
+        module = _module()
+        frame = [_Row(date(2018, 3, 28), {"a": None, "b": None}), _Row(date(2018, 4, 3), {"a": 1.0, "b": None}),
+                 _Row(date(2018, 4, 4), {"a": 1.0, "b": 2.0}), _Row(date(2018, 4, 5), {"a": 1.0, "b": 2.0})]
+        record = module.refit_record(frame, ("a", "b"))
+        self.assertEqual((record["train_rows"], record["backfilled_rows"], record["imputed_cells"]), (4, 1, 3))
+        self.assertAlmostEqual(record["backfilled_share"], 0.25)
+        self.assertAlmostEqual(record["imputed_share"], 3 / 8)
+        log = []
+        module.guarded_fit(lambda f, **k: None, datetime(2018, 5, 17), where="t", log=log, inputs=("a",))(
+            [_Row(date(2018, 6, 27), {"a": 1.0})], minimum_history=1
+        )
+        self.assertEqual(len(log), 1)
+
+    def test_the_ruled_interval_and_the_reading(self):
+        module = _module()
+
+        class Test:
+            mean_difference, standard_error, draws = 0.1, 0.05, 100
+            t_draws = tuple(range(-50, 50))
+
+        lower, upper = module.ruled_interval(Test)
+        from repo_model import scoring_protocol as sp
+
+        self.assertAlmostEqual(lower, 0.1 - 0.05 * sp._quantile(Test.t_draws, 0.95), places=9)
+        self.assertAlmostEqual(upper, 0.1 - 0.05 * sp._quantile(Test.t_draws, 0.05), places=9)
+        self.assertLess(lower, upper)
+        self.assertEqual(module.reading(None), "not tested (too few decision days)")
+        self.assertEqual(module.reading({"gain": True, "cost": False}), "gain shown")
+        self.assertEqual(module.reading({"gain": False, "cost": True}), "cost shown")
+        self.assertIn("neither", module.reading({"gain": False, "cost": False}))
+
+
 class TheDeclaration(unittest.TestCase):
     def test_it_names_the_arms_the_candidate_and_the_reading_rule(self):
         declared = json.loads((ROOT / "metadata" / "backfill_h5_726.json").read_text(encoding="utf-8"))
@@ -172,6 +213,14 @@ class TheDeclaration(unittest.TestCase):
         self.assertIn("backfill.require_series_admitted(", text)
         self.assertIn("require_backfilled_admitted(", text.split("def forecasts_command")[1])
         self.assertNotIn("ESTABLISHED", text)
+
+    def test_the_reread_declaration_names_the_arms_the_interval_the_orientation_and_the_share(self):
+        declared = json.loads((ROOT / "metadata" / "backfill_h5_726_reread.json").read_text(encoding="utf-8"))
+        self.assertIn("studentized", declared["interval"]["rule"])
+        self.assertIn("CRPS(without) - CRPS(with)", declared["difference"])
+        self.assertIn("(B)", declared["critical_value"]["orientation"])
+        self.assertEqual(declared["mostly_imputed_fits"]["primary_share"], 0.5)
+        self.assertIn("development", declared["reading_rule"]["kill_lines"])
 
 
 if __name__ == "__main__":
