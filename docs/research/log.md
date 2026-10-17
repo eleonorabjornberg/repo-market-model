@@ -1028,3 +1028,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#826
+- Directive: #802
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, narrowing #743's floor)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `7cebb08f`
+- Tried: an operation is no take-up only if it is a test trade (a whole-million trade of at most $7 mn; a small value exercise note still drops it), replacing the $0.1 bn floor; #743's evidence re-run, with an arm that zeroes all fourteen `fed_repo_*` columns. Variants: 1 rule, 3 arms.
+- Result: the six dates of the finding keep their take-up; the ordinary-day pressure AUROC of `fed_repo_days_since_positive` at lead 1 is 0.60 [0.42, 0.76] (counted 0.64, floor 0.50), and the 2018 warnings are 3 of 5 in every arm, including with all `fed_repo_*` columns zeroed.
+- Against kill: not applicable (no verdict; development data).
+- Next: #787 applies the rule to `srf_total_accepted` and publishes; H5 step 2 inputs.
+
+### 2026-10-15 [H5] step 1 · eleonorabjornberg/repo-market-model#825
+- Directive: #449 (gbm_funding against its twin trained on direct pairs; measurement only, ahead of step 5)
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `09f2409c`; declaration `metadata/direct_twin_449.json`, committed before any score
+- Tried: `gbm_funding` of #634 (one-step training pairs, `training_pairs` unset) against the same call with `training_pairs="direct"` and nothing else changed, on the same walks (refit every 21 days, leads 1 to 5, 1,868 decision days, 2018-06-29 to 2025-12-23); grid CRPS against B1 and B2 and against each other, studentized stationary bootstrap, pooled, per lead, by regime and by target-day type, with and without decision day 2019-09-18 (#798). One variant.
+- Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
+- Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
+- Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
