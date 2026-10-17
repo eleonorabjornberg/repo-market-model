@@ -167,60 +167,82 @@ class ParserTests(unittest.TestCase):
             rows_for(broken)
 
 
-class TakeUpFloorTests(unittest.TestCase):
-    """#743: in every era a repo operation with less than $0.1 bn accepted is no take-up (Eleonora, 14 October 2026).
+class TestTradeTests(unittest.TestCase):
+    """#802: a Fed repo operation is no take-up only if it is a test trade (Eleonora, 15 October 2026, ruling on #802).
 
-    A rule that differs by era builds a regime dummy (#672), so the floor is one amount and has no date.
-    The operation still happened (the facility operated that day), so the date keeps a row at zero.
+    This replaces #743's floor ("under $0.1 bn is no take-up"), which also zeroed about 40 days of $8-97 mn
+    take-up that carry no test note. The rule: an operation whose note names a small value exercise is
+    dropped (`ingest._is_small_value_exercise`, unchanged); otherwise an operation counts as a test trade
+    only if it accepted at most `ingest.TEST_TRADE_MAX` (USD 7 million) and a whole number of millions
+    (the Desk's $1 mn test trades are round). Every other operation counts in full. The operation still
+    happened, so its date keeps a row at zero. One amount, no date, so the rule builds no regime dummy (#672).
 
     Recorded mutation (CLAUDE.md), 15 October 2026, in a disposable copy:
-    `src/repo_model/ingest.py`, `_effective_accepted`,
-    `return accepted if accepted >= REPO_TAKE_UP_FLOOR else 0` mutated to `return accepted`
-    (the $1 mn trade counted as take-up). `test_a_trade_below_the_floor_is_no_take_up_in_either_era` then
-    fails with `AssertionError` (`0.005 != 0.0 : 2019-12-18`: the $5 mn trade reads as take-up).
+    `src/repo_model/ingest.py`, `_is_test_trade`, `accepted <= TEST_TRADE_MAX` mutated to `accepted <= 100_000_000`
+    (the old floor back). `test_the_dates_the_finding_lists_keep_their_take_up` then fails with
+    `AssertionError` (`0.0 != 0.015`: 2024-09-23 reads as no take-up).
 
-    The Standing Repo Facility total `srf_total_accepted` (`ingest._nyfed_srf_rows`) feeds the results
-    page and is not changed here; whether the floor applies to it is a question for Eleonora on the PR.
+    The Standing Repo Facility total `srf_total_accepted` (`ingest._nyfed_srf_rows`) feeds the results page
+    and is not changed here (#787 applies whichever rule lands).
     """
 
-    def test_the_floor_is_a_tenth_of_a_billion_dollars(self):
-        self.assertEqual(ingest.REPO_TAKE_UP_FLOOR, BN // 10)
+    def test_a_test_trade_is_at_most_seven_million_dollars(self):
+        self.assertEqual(ingest.TEST_TRADE_MAX, 7_000_000)
 
-    def test_a_trade_below_the_floor_is_no_take_up_in_either_era(self):
+    def test_a_round_trade_up_to_the_ceiling_is_no_take_up_in_either_era(self):
         rows = by_series(
             rows_for(
                 operation("2019-12-18", 5_000_000, rate=1.60),
                 operation("2023-12-18", 1_000_000, rate=5.40),
+                operation("2023-12-19", 7_000_000, rate=5.40),
                 operation("2023-12-18", 1_000_000, term="Term", rate=5.40, maturity="2023-12-20"),
             )
         )
-        for day in (date(2019, 12, 18), date(2023, 12, 18)):
+        for day in (date(2019, 12, 18), date(2023, 12, 18), date(2023, 12, 19)):
             self.assertEqual(rows["repo_accepted"][day].value, 0.0, day)
             self.assertEqual(rows["repo_ops_accepting"][day].value, 0.0, day)
             self.assertNotIn(day, rows.get("repo_rate", {}), day)
 
-    def test_the_floor_itself_counts_and_a_larger_trade_is_untouched(self):
+    def test_a_trade_above_the_ceiling_or_not_round_is_take_up(self):
         rows = by_series(
             rows_for(
-                operation("2022-03-16", BN // 10, rate=0.50),
-                operation("2022-03-17", BN // 10 - 1, rate=0.50),
-                operation("2022-03-18", 3 * BN, rate=0.60),
+                operation("2022-03-16", 8_000_000, rate=0.50),
+                operation("2022-03-17", 7_500_000, rate=0.50),
+                operation("2022-03-18", 97_000_000, rate=0.60),
+                operation("2022-03-21", 3 * BN, rate=0.60),
             )
         )
-        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 16)].value, 0.1)
-        self.assertEqual(rows["repo_accepted"][date(2022, 3, 17)].value, 0.0)
-        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 18)].value, 3.0)
+        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 16)].value, 0.008)
+        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 17)].value, 0.0075)
+        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 18)].value, 0.097)
+        self.assertAlmostEqual(rows["repo_accepted"][date(2022, 3, 21)].value, 3.0)
+        self.assertEqual(rows["repo_ops_accepting"][date(2022, 3, 18)].value, 1.0)
 
-    def test_a_small_trade_does_not_pull_the_days_rate(self):
+    def test_a_test_trade_beside_real_take_up_is_dropped_alone(self):
         rows = by_series(
             rows_for(
-                operation("2024-06-28", 2 * BN, rate=5.40),
-                operation("2024-06-28", 1_000_000, term="Term", rate=9.00, maturity="2024-07-01"),
+                operation("2025-09-10", 9_000_000, rate=4.20),
+                operation("2025-09-10", 3_000_000, rate=4.00, term="Term", maturity="2025-09-12"),
             )
         )
-        self.assertAlmostEqual(rows["repo_rate"][date(2024, 6, 28)].value, 5.40)
+        self.assertAlmostEqual(rows["repo_accepted"][date(2025, 9, 10)].value, 0.009)
+        self.assertEqual(rows["repo_ops_accepting"][date(2025, 9, 10)].value, 1.0)
+        self.assertAlmostEqual(rows["repo_rate"][date(2025, 9, 10)].value, 4.20)
 
-    def test_a_day_of_small_trades_resets_nothing_in_days_since_positive(self):
+    def test_the_dates_the_finding_lists_keep_their_take_up(self):
+        series = fed_liquidity.series_from_snapshots(SNAPSHOTS, datetime(2026, 9, 8, 21, 31, 42, tzinfo=ZoneInfo("UTC")))
+        accepted = series["repo_accepted"]
+        for day, expected in (
+            (date(2024, 9, 23), 0.015),
+            (date(2024, 9, 24), 0.057),
+            (date(2024, 12, 23), 0.050),
+            (date(2025, 9, 10), 0.009),
+            (date(2025, 9, 22), 0.030),
+            (date(2025, 10, 6), 0.020),
+        ):
+            self.assertAlmostEqual(accepted[day], expected, msg=str(day))
+
+    def test_a_day_of_test_trades_resets_nothing_in_days_since_positive(self):
         panel = [DailyObservation(date(2023, 12, d), {"iorb": 5.4}) for d in (14, 15, 18, 19)]
         ops = [
             operation("2023-12-14", 2 * BN, rate=5.5),

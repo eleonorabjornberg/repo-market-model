@@ -1,0 +1,73 @@
+{
+  "about": "The subject of the model documentation and validation report (docs/model/validation.md, #119; rewritten for H5's candidate by step 6 of docs/research/hypotheses/H5.md, #841). scripts/validation_report.py renders the report's candidate, performance, limitations and monitoring blocks from this file and from metadata/spread_distribution_634.json. Nothing here is a result: every development result is cited by its issue and its page, and no figure is typed. A figure enters the report only through a record in docs/runs/, and publishing one is Eleonora's decision (docs/decisions/publish-rule.md).",
+  "status": "Drafted by the pull request that closes #841 for Eleonora's review. The use-limitation statement below is a proposal: she decides what the project claims. docs/use-limitation.md, which the phase 2 report read, is not changed.",
+  "candidate": "gbm_funding",
+  "declaration": "metadata/spread_distribution_634.json",
+  "declaration_control": "gbm_funding",
+  "use_limitation": "A development-stage research forecast of the SOFR − IORB spread distribution in bp. It is not registered, it has no prospective day, and nothing it has scored is a verdict. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its quantiles are not recalibrated; its behaviour on quarter-ends, tax dates, in 2021-23 and in the upper tail is reported in the development pages and is not settled; and it has little history in the current scarce-reserve regime. It needs revalidation at each confirmation checkpoint and after a material policy or regime change.",
+  "evidence_label": "development data, not a verdict",
+  "evidence": [
+    {
+      "what": "The phase 2 gbm re-scored under scoring protocol v1, with the inputs built since phase 2, against as-of persistence (B1) and the second benchmark (B2)",
+      "issue": "#634",
+      "page": "docs/pivot/spread-distribution-protocol-result.md",
+      "script": "scripts/spread_distribution_634.py",
+      "split": "pooled, by regime, by pressure-day type of the target day, and the upper tail"
+    },
+    {
+      "what": "The candidate against H2's ceiling: is more model work worthwhile, and the ruling to stop model work and go to the validation report",
+      "issue": "#758",
+      "page": "docs/pivot/h5-step4-result.md",
+      "script": "scripts/h5_step4_758.py",
+      "split": "pooled, by regime, by pressure-day type, and the upper tail"
+    },
+    {
+      "what": "Why the models lose in 2021-23, and what the upper tail does",
+      "issue": "#707",
+      "page": "docs/pivot/h5-step3-diagnoses-result.md",
+      "script": "scripts/h5_step3_707.py",
+      "split": "the 2021-23 regime and the upper tail"
+    },
+    {
+      "what": "The splits the headline pages lacked, and the decision day 2019-09-18 reported with and without",
+      "issue": "#805",
+      "page": "docs/pivot/h5-splits-805-result.md",
+      "script": "scripts/h5_splits_805.py",
+      "split": "by regime and by pressure-day type, each with and without the day"
+    },
+    {
+      "what": "The back-fill of 2014-18 history tested against the candidate (H4 step 3)",
+      "issue": "#726",
+      "page": "docs/pivot/backfill-h5-726-result.md",
+      "script": "scripts/backfill_h5_726.py",
+      "split": "2018-19 and overall"
+    }
+  ],
+  "assumptions": [
+    "The outcome is the published panel's spread in bp on the target day. It is not re-derived from first-published vintages (scoring protocol v1, section 11; the question is open on #634).",
+    "The model is fitted on one-step pairs and read, by the as-of rule, at each lead. Whether a model trained on the pairing it is read at does better is the measurement of #449; it is open (see the open questions).",
+    "A forecast reads exactly what was public at its decision instant, per field (docs/decisions/information-set.md). The decision instant is 16:00 on the decision day.",
+    "The candidate was chosen among the variants scored in development by the protocol score alone, and the variant count is recorded in docs/research/progress.json. A candidate chosen on the days that scored it carries a selection effect that no development interval removes.",
+    "The regimes were drawn after the fact (metadata/evaluation_splits.json). No split is a pass requirement of the protocol."
+  ],
+  "limitations": [
+    "Development data only. Scoring protocol v1 (#640) takes a verdict from prospective confirmation days alone, so nothing in this report supports, kills or registers the candidate.",
+    "Nothing is registered and the candidate is not in the live record. The confirmation design is decided on #733; no registration happens before it.",
+    "The quantiles come from an uncalibrated gradient-boosted fit at the protocol's grid of levels. Interval coverage and per-regime reliability are measured on the pages cited, and the model has no calibration layer to correct what they find (#753, #785, #786).",
+    "The regimes after 2020 carry the evidence that matters and the history there is short. The 2021-23 regime, where every phase 2 gbm lost to persistence, and the quarter-end and tax-date types are the splits to read first (#707, #805).",
+    "One decision day, 2019-09-18, moves the pooled comparison with the benchmark; the pages report it with and without that day (#798, #805).",
+    "The ceiling it was compared with (H2's cross-fitted fit) is not an upper bound, so \"no headroom\" means that this ceiling shows no better forecast, not that none exists (#758).",
+    "The Treasury clearing mandate will change the composition of SOFR after the panel ends; the drift is not in any development day (the clearing block below).",
+    "The scarcity state is not a model input (Eleonora's ruling on #157). The as-of scarcity-state split of protocol section 7 was not run (#758)."
+  ],
+  "open_questions": [
+    "Whether the declared candidate stays the one-step gbm_funding or becomes the direct-pairs twin: #449, measured on the pull request that closes it. The report follows the candidate that is in force when it is read.",
+    "Whether any development figure should be published as a record in docs/runs/ so that this report can state it. Publishing is Eleonora's (docs/decisions/publish-rule.md). Until she does, the report cites each result by its issue and states none.",
+    "The wording of the use-limitation statement above, which this pull request proposes."
+  ],
+  "monitoring": {
+    "live_record": "The live record (#215) logs the published model at the pinned commit (metadata/live_pin.json), not the candidate. The candidate has no logged day. A registered candidate joins the live record only by Eleonora's attested approval and a change of the live pin, which are hers alone (docs/decisions/drafts/owner-attestation.md).",
+    "checkpoints": "After registration, confirmation days accumulate under scoring protocol v1. At each checkpoint named in docs/research/hypotheses/H5.md the outcomes analysis and this monitoring section are updated with that checkpoint's verdict or \"continue\".",
+    "revalidation": "The revalidation triggers are proposed, not decided, in docs/use-limitation.md. They apply to the candidate as they did to the phase 2 model, and they are Eleonora's to decide."
+  }
+}
