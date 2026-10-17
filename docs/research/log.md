@@ -929,7 +929,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
 - Next: any reliability-shape test (#628) is read within regimes; the two moved cells are not traced to the fit or to `ml.py`.
 
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#852
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#847
 - Directive: #843 (finding #840)
 - Step: 3
 - Tier: development
