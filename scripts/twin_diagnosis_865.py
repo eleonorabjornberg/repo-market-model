@@ -149,10 +149,12 @@ def trimmed(frame: Sequence, lead: int) -> list:
 
 
 def trim_fit(features: Sequence[str], lead: int):
+    """The control on the trimmed frame. Its minimum history counts the trimmed frame, so the walk's first fit (61 rows) fits."""
+
     names = regressors(features)
 
     def fit(train_frame, minimum_history):
-        return ml.fit_gradient_boosted_quantiles(trimmed(train_frame, lead), regressors=names, levels=GRID, minimum_history=minimum_history)
+        return ml.fit_gradient_boosted_quantiles(trimmed(train_frame, lead), regressors=names, levels=GRID, minimum_history=minimum_history - (lead + 3))
 
     return fit
 
