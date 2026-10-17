@@ -1019,6 +1019,26 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's call on where the stamp is written (the deployed copy, or a bot-committed stamp file).
 
+### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
+- Directive: #841
+- Step: 6 (the model-risk validation report rewritten for `gbm_funding`; milestone M5a)
+- Tier: development
+- Pins: base `0065b4e3`; published panel `4ddc3882…`; subject `docs/model/candidate.json`; declaration `metadata/spread_distribution_634.json`
+- Tried: no model and no scoring. `docs/model/validation.md` and `scripts/validation_report.py` rewritten for the candidate, keeping the structure ruled on #119; every development result cited by issue and page, with no figure stated, because none has a record in `docs/runs/`. Variants: 0.
+- Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
+### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#826
+- Directive: #802
+- Step: 1 (screening; data meaning of the Fed repo take-up columns, narrowing #743's floor)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `7cebb08f`
+- Tried: an operation is no take-up only if it is a test trade (a whole-million trade of at most $7 mn; a small value exercise note still drops it), replacing the $0.1 bn floor; #743's evidence re-run, with an arm that zeroes all fourteen `fed_repo_*` columns. Variants: 1 rule, 3 arms.
+- Result: the six dates of the finding keep their take-up; the ordinary-day pressure AUROC of `fed_repo_days_since_positive` at lead 1 is 0.60 [0.42, 0.76] (counted 0.64, floor 0.50), and the 2018 warnings are 3 of 5 in every arm, including with all `fed_repo_*` columns zeroed.
+- Against kill: not applicable (no verdict; development data).
+- Next: #787 applies the rule to `srf_total_accepted` and publishes; H5 step 2 inputs.
+
 ### 2026-10-17 [H3] step 3 · eleonorabjornberg/repo-market-model#763
 - Directive: #708
 - Step: 3
