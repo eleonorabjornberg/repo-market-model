@@ -27,33 +27,51 @@
   --th1:#E0A040; --th2:#F28C4B; --th3:#F2675B; --th4:#C98AE0; }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 1.0625rem/1.68 var(--serif);-webkit-font-smoothing:antialiased}
-.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 1.125rem/1.65 var(--serif);-webkit-font-smoothing:antialiased;font-kerning:normal;text-rendering:optimizeLegibility;counter-reset:fig}
+.wrap{max-width:44rem;margin:0 auto;padding:0 20px}
 .prose{max-width:66ch}
-h1,h2,h3,.ui,button,summary,table,figcaption,.tip,nav{font-family:var(--sans)}
-h1{font-weight:800;font-size:clamp(2.3rem,6vw,4.2rem);line-height:1.0;letter-spacing:-.03em;margin:64px 0 22px;max-width:13ch}
-.intro{font-size:1.2rem;line-height:1.6;color:var(--ink-2)}
-.intro strong{color:var(--ink);font-weight:600}
-nav{margin:34px 0 8px;border-top:1px solid var(--rule)}
-nav ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-nav li{padding:10px 14px 10px 0;font-size:.86rem;color:var(--ink-3);display:flex;gap:10px;align-items:baseline}
-nav li b{font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:1ch}
-nav li.live{color:var(--ink)} nav li.live b{color:var(--sofr)}
-nav li a{color:inherit;text-decoration-color:var(--rule);text-underline-offset:3px}
-nav li small{display:block;font-size:.76rem;color:var(--ink-3)}
-section{margin:72px 0 0}
-h2{font-size:clamp(1.6rem,3.4vw,2.3rem);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 14px;display:flex;gap:.45em;align-items:baseline}
-h2 .n{color:var(--sofr);font-weight:600}
+p{hyphens:auto;-webkit-hyphens:auto}
+h1,h2,h3{font-family:var(--serif)}
+.ui,button,summary,table,figcaption,.tip,nav{font-family:var(--sans)}
+.masthead{margin:72px 0 0;text-align:left}
+.kicker{font-family:var(--sans);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin:0 0 18px}
+h1{font-weight:600;font-size:clamp(2.4rem,7vw,3.6rem);line-height:1.04;letter-spacing:-.015em;margin:0 0 18px;max-width:16ch}
+.dek{font-size:1.32rem;line-height:1.45;font-style:italic;color:var(--ink-2);margin:0 0 22px;max-width:36em}
+.byline{font-family:var(--sans);font-size:.8rem;color:var(--ink-3);letter-spacing:.02em;margin:0;padding:12px 0 0;border-top:1px solid var(--rule)}
+.intro{margin-top:44px}
+.intro p:first-child::first-letter{float:left;font-size:3.4em;line-height:.86;padding:.06em .08em 0 0;font-weight:600;color:var(--ink)}
+.intro strong{font-weight:600}
+nav{margin:34px 0 8px}
+nav ol{list-style:none;margin:0;padding:0}
+nav li{font-size:.92rem;color:var(--ink);display:flex;gap:12px;align-items:baseline;padding:3px 0}
+nav li b{font-weight:600;color:var(--sofr);font-variant-numeric:tabular-nums;min-width:1.6em;text-align:right;flex:none}
+nav li a{color:inherit;text-decoration:none;font-weight:500}
+nav li a:hover{text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:3px}
+nav li small{font-size:.8rem;color:var(--ink-3);margin-left:.5em}
+nav li small::before{content:"\2014\00a0"}
+.toc{margin:64px 0 0;padding:20px 0 4px;border-top:1px solid var(--rule)}
+.toc .toc-h{font-family:var(--sans);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin:0 0 12px;display:block}
+.toc li{flex-wrap:wrap}
+.toc li>span{flex:1 1 0;min-width:0}
+.toc li.part{margin:14px 0 4px;padding-left:calc(1.6em + 12px);font-size:.74rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.toc li>ol{flex-basis:100%;padding-left:calc(1.6em + 12px);margin:2px 0 4px}
+.toc li>ol li{font-size:.86rem;padding:1px 0}
+.toc li>ol li b{color:var(--ink-3);min-width:1.6em;text-align:left}
+section{margin:96px 0 0}
+h2{font-size:clamp(1.6rem,4vw,2.1rem);font-weight:600;letter-spacing:-.01em;line-height:1.15;margin:0 0 18px;display:flex;gap:.55em;align-items:baseline}
+h2 .n{font-family:var(--sans);font-size:.62em;color:var(--sofr);font-weight:600;font-variant-numeric:tabular-nums;flex:none}
 .lede{font-size:1.18rem;line-height:1.55;margin:0 0 8px}
-figure{margin:30px 0 8px}
-figcaption .t{font-weight:600;font-size:1.02rem;letter-spacing:-.005em}
-figcaption .s{font-size:.86rem;color:var(--ink-2);margin-top:2px}
+figure{margin:36px 0 12px;counter-increment:fig}
+figcaption .t{font-weight:600;font-size:.98rem;letter-spacing:-.005em}
+figcaption .t::before{content:"Figure " counter(fig) ". ";color:var(--ink-2);font-weight:600}
+figcaption .s{font-size:.84rem;color:var(--ink-2);margin-top:2px}
 .controls{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:14px 0 6px}
 .seg{display:inline-flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden}
 .seg button{all:unset;cursor:pointer;font-size:.83rem;padding:6px 11px;color:var(--ink-2);border-right:1px solid var(--rule)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 button:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible,.seg button:focus-visible,.years button:focus-visible,.ev:focus-visible{outline:2px solid var(--sofr);outline-offset:2px}
+.seg button,.years button,.chip,.n5step{font-family:var(--sans)}
 label.tog{font-size:.83rem;color:var(--ink-2);display:inline-flex;gap:7px;align-items:center;cursor:pointer}
 label.tog input{accent-color:var(--sofr)}
 .chart{position:relative;width:100%}
@@ -80,7 +98,7 @@ ol.events a{color:var(--ink-3)}
 .heat td b{font-weight:600} .heat td span{color:var(--ink-3)}
 .heat td.hot{color:var(--on-hot)} .heat td.hot span{color:var(--on-hot);opacity:.8}
 .heat th.held{color:var(--ink-3)} .heat td.held{background:none;border:1px dashed var(--rule);color:var(--ink-3);font-size:.76rem}
-details{margin:26px 0 0;border-top:1px solid var(--rule);padding-top:12px;max-width:74ch}
+details{margin:26px 0 0;padding-top:4px;max-width:74ch}
 summary{cursor:pointer;font-size:.92rem;font-weight:600;color:var(--ink-2);list-style-position:outside}
 details[open] summary{color:var(--ink)}
 table.tags{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.82rem;line-height:1.4;margin-top:12px}
@@ -102,10 +120,10 @@ details ul{padding-left:1.2em}
 dl.gloss{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;font-size:.96rem}
 dl.gloss dt{font-family:var(--sans);font-weight:600;font-size:.88rem}
 dl.gloss dd{margin:0}
-footer{margin:90px 0 60px;border-top:1px solid var(--rule);padding-top:18px;font-family:var(--sans);font-size:.8rem;color:var(--ink-3);max-width:74ch;line-height:1.6}
+footer{margin:110px 0 60px;border-top:1px solid var(--rule);padding-top:18px;font-family:var(--sans);font-size:.8rem;color:var(--ink-3);max-width:74ch;line-height:1.6}
 footer code{font-size:.78rem;word-break:break-all}
 a{color:var(--sofr)}
-@media (max-width:560px){ body{font-size:1rem} .intro{font-size:1.08rem} section{margin-top:56px} dl.gloss{grid-template-columns:1fr} }
+@media (max-width:560px){ body{font-size:1.04rem} .wrap{padding:0 16px} .masthead{margin-top:44px} .dek{font-size:1.14rem} section{margin-top:72px} dl.gloss{grid-template-columns:1fr} nav li small{display:block;margin-left:0} nav li small::before{content:none} }
 .nest{border:1.5px solid var(--sofr);border-radius:10px;padding:8px 10px;font-size:.84rem}
 .nest .nest{margin-top:8px;border-style:dashed}
 .nest .tag{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -167,12 +185,15 @@ table.segtab{min-width:560px}
 table.segtab td{background:none;padding:4px 8px;text-align:right;min-width:0}
 table.segtab th[scope="row"]{white-space:nowrap}
 @media (max-width:720px){ .n4map,ul.kinds{display:none} .n4d dl{grid-template-columns:1fr} }
-#start{margin:56px 0 0;border-top:3px solid var(--ink);padding-top:18px}
-#start .kicker{font-family:var(--sans);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0}
+#start{margin:72px 0 0}
 #start > .prose{margin-top:6px}
-#start nav{margin-top:16px}
-#start section{margin-top:44px}
-#start h2 .n{font-size:.8em}
+#start > nav{margin-top:10px}
+#start > nav ol{display:flex;flex-wrap:wrap;gap:2px 22px}
+#start > nav li{font-size:.86rem}
+#start > nav li b{min-width:0;text-align:left}
+#start > nav li small{display:none}
+#start section{margin-top:64px}
+#start section h2{font-size:clamp(1.35rem,3.4vw,1.7rem)}
 dfn{font-style:normal}
 dfn .term{cursor:pointer;font-weight:600;border-bottom:1px dotted var(--ink-2)}
 dfn .term[aria-expanded="true"]{border-bottom-style:solid}
@@ -231,8 +252,7 @@ ol.n5list li{counter-increment:n5}
 .tagchip small{color:var(--ink-2);font-size:.72rem;margin-left:2px}
 #n5 .controls{margin-top:12px}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
-#final-test{border-top:3px solid var(--ink);padding-top:18px;margin-top:64px}
-#final-test .kicker{font-family:var(--sans);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0 0 6px}
+
 .ftclaim{font-family:var(--sans);font-size:.9rem;color:var(--ink-2);border-left:3px solid var(--sofr);padding:2px 0 2px 12px;margin:14px 0 0;max-width:74ch}
 ul.ftlist{font-family:var(--sans);font-size:.9rem;line-height:1.55;color:var(--ink-2);padding-left:1.2em;margin:8px 0 0;max-width:80ch}
 ul.ftlist li{margin:0 0 8px} ul.ftlist b{color:var(--ink);font-weight:600}
@@ -251,73 +271,107 @@ table.fttab thead th{font-size:.74rem;text-transform:uppercase;letter-spacing:.0
 .fdhidden{font-size:.9rem}
 table.fttab.fdtab th[scope=row]{white-space:normal;min-width:11em}
 table.fttab.fdtab td{white-space:nowrap}
-.rs{margin-top:56px}
-.rs-box{border-top:1px solid var(--rule);padding:12px 0 4px;font-family:var(--sans);max-width:80ch}
-.rs-box h3{font-size:1rem;margin:0 0 6px}
-.rs-box ul,.rs-h ul{margin:4px 0;padding-left:1.2em}
-.rs-table{border-collapse:collapse;width:100%;font-size:.88rem}
-.rs-table th,.rs-table td{text-align:left;padding:4px 8px 4px 0;border-bottom:1px solid var(--rule);vertical-align:top}
-.rs-tag{font-size:.74rem;font-weight:600;border:1px solid var(--ink-3);border-radius:4px;padding:0 5px;color:var(--ink-2);white-space:normal}
-.rs-note{font-size:.84rem;color:var(--ink-2)}
-.rs-q{border-left:3px solid var(--th1);padding-left:10px}
+.rs{margin-top:96px}
+#research-summary{margin-top:56px}
+.abstract-h{font-family:var(--sans);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin:0 0 10px;display:block}
+.abstract{border-left:2px solid var(--sofr);padding:2px 0 2px 20px}
+.abstract p{margin:0 0 12px;font-size:1.06rem;line-height:1.6}
+.abstract p:last-child{margin-bottom:0}
+.abstract .rs-note{font-size:.8rem}
+.runin{font-variant:small-caps;font-weight:600;letter-spacing:.03em}
+.rs-tag{font-family:var(--sans);font-size:.72rem;font-weight:600;border:1px solid var(--ink-3);border-radius:3px;padding:0 5px;color:var(--ink-2);white-space:nowrap}
+.rs-note{font-family:var(--sans);font-size:.8rem;line-height:1.5;color:var(--ink-2)}
+.rs-q{font-family:var(--sans);font-size:.86rem;line-height:1.55;color:var(--ink-2);border-left:2px solid var(--th1);padding:2px 0 2px 14px;margin:20px 0 0}
+.rs-q b{color:var(--ink)}
 .rs-nm{color:var(--ink-3);font-style:italic}
-.rs-h{border-top:1px solid var(--rule);padding:14px 0;font-family:var(--sans);max-width:80ch;overflow-wrap:anywhere}
-.rs-h h3{font-size:1.1rem;margin:0 0 8px}
-.rs-h dl{margin:0;display:grid;grid-template-columns:9em 1fr;gap:4px 12px;font-size:.9rem}
-.rs-h dt{font-weight:600;color:var(--ink-2)} .rs-h dd{margin:0}
+.rs-list{margin-top:26px;border-top:1px solid var(--rule)}
+.rs-h{border-bottom:1px solid var(--rule);overflow-wrap:anywhere}
+.rs-h > details{margin:0;padding:0;max-width:none}
+.rs-h > details > summary{list-style:none;display:flex;gap:16px;align-items:baseline;padding:13px 28px 13px 0;position:relative;font-family:var(--serif);font-weight:400;font-size:1.06rem;line-height:1.45;color:var(--ink)}
+.rs-h > details > summary::-webkit-details-marker{display:none}
+.rs-h > details > summary::after{content:"+";position:absolute;right:2px;top:11px;font-family:var(--sans);font-size:1.15rem;color:var(--ink-3)}
+.rs-h > details[open] > summary::after{content:"\2212"}
+.rs-h > details > summary:hover .rs-line{text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:4px}
+.rs-id{font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--sofr);min-width:2.4em;flex:none;font-variant-numeric:tabular-nums}
+.rs-body{padding:0 0 20px calc(2.4em + 16px);font-family:var(--sans);font-size:.88rem;line-height:1.55;color:var(--ink)}
+.rs-body li,.rs-body p{font-size:inherit}
+.rs-body p.rs-title{font-family:var(--serif);font-size:1rem;margin:0 0 10px}
+.rs-h dl{margin:0;display:grid;grid-template-columns:9.5em 1fr;gap:6px 14px}
+.rs-h dt{font-weight:600;color:var(--ink-2);font-size:.8rem;padding-top:.1em}
+.rs-h dd{margin:0}
+.rs-h ul{margin:0;padding-left:1.1em}
 .rs-miles{list-style:none;padding-left:0!important} .rs-miles li{margin:2px 0}
-.rs-state{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
+.rs-state{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3)}
 .rs-miles li.done .rs-state{color:var(--sofr);font-weight:600}
-.rs-log{font-size:.84rem}
-#background{margin-top:72px;border-top:3px solid var(--ink);padding-top:18px}
-@media (max-width:560px){ .rs-h dl{grid-template-columns:1fr} .rs-h dt{margin-top:6px} .rs-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)} .rs-table tr{display:block;border-bottom:1px solid var(--rule);padding:4px 0} .rs-table th,.rs-table td{display:block;border:0;padding:1px 0} .rs-table td::before{content:attr(data-label) ": ";color:var(--ink-3)} }
+.rs-logfold{margin:14px 0 0;max-width:none}
+.rs-logfold > summary{font-size:.84rem}
+.rs-log{font-size:.82rem}
+#best-performer p{max-width:66ch}
+#background{margin-top:120px}
+.part-h{font-family:var(--sans);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);text-align:center;margin:0;padding-top:28px;position:relative}
+.part-h::before{content:"";position:absolute;top:0;left:50%;width:64px;margin-left:-32px;border-top:1px solid var(--ink-3)}
+details > summary{font-family:var(--sans)}
+details.terms{margin-top:72px}
+@media (max-width:560px){ .abstract{padding-left:14px} .rs-body{padding-left:0} .rs-h dl{grid-template-columns:1fr;gap:2px} .rs-h dt{margin-top:8px} .rs-h > details > summary{gap:10px} }
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
+<header class="masthead">
+  <p class="kicker">Working paper &middot; overnight funding markets</p>
   <h1>When overnight cash runs short</h1>
-  <div class="prose intro">
-    <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
-  </div>
-  <p class="uselimit"><b>Limits.</b> {{use_limitation}} The final test was near-blind, and the central range is not yet fully calibrated. <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/use-limitation.md">Method and limits</a></p>
+  <p class="dek">Forecasting when the cost of overnight borrowing against Treasuries climbs above the Fed&rsquo;s rate on reserves, using only what was public at the time.</p>
+  <p class="byline">repo-market-model &middot; every figure generated from the project&rsquo;s tracked records</p>
 </header>
 
+<div class="prose intro">
+  <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
+</div>
+
 <section id="research-summary" class="rs" aria-labelledby="research-summary-title">
-  <h2 id="research-summary-title">Executive summary</h2>
+  <h2 id="research-summary-title" class="abstract-h">Executive summary</h2>
   {{research_summary}}
+  <p class="uselimit"><b>Limits.</b> {{use_limitation}} The final test was near-blind, and the central range is not yet fully calibrated. <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/use-limitation.md">Method and limits</a></p>
 </section>
 
+<nav aria-label="Contents" class="toc">
+  <h2 class="toc-h">Contents</h2>
+  <ol>
+    <li><b>1</b><span><a href="#best-performer">Current best performer</a><small>The incumbent forecast and the development leader</small></span></li>
+    <li><b>2</b><span><a href="#hypotheses">The hypotheses, H1 to H10</a><small>One line each; details fold open</small></span></li>
+    <li class="part"><span>Background and detailed records</span></li>
+    <li><b>3</b><span><a href="#start">Start here</a><small>Five short views for a reader new to this market</small></span>{{newcomer_nav}}</li>
+    <li><b>4</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
+    <li><b>5</b><span><a href="#forecast-actual">Forecast against what happened</a><small>Each day, in basis points</small></span></li>
+    <li><b>6</b><span><a href="#plumbing">The plumbing</a><small>The market and the Fed&rsquo;s rates</small></span></li>
+    <li><b>7</b><span><a href="#history">{{n_years_word}} years in one line</a><small>The spread, day by day</small></span></li>
+    <li><b>8</b><span><a href="#why">Why it happens</a><small>Reserves and the calendar</small></span></li>
+    <li><b>9</b><span><a href="#clock">What&rsquo;s known at {{decision}}</a><small>Each input&rsquo;s publication clock</small></span></li>
+    <li><b>10</b><span><a href="#forecast">Making a forecast</a><small>Against two benchmarks</small></span></li>
+    <li><b>11</b><span><a href="#grading">Grading it honestly</a><small>Reliability and lead time</small></span></li>
+    <li><b>12</b><span><a href="#built">How it was built</a><small>Process and guards</small></span></li>
+    <li><b>13</b><span><a href="#next">Next steps</a></span></li>
+    <li><b>&middot;</b><span><a href="#terms">Terms used on this page</a></span></li>
+  </ol>
+</nav>
+
 <section id="best-performer" class="rs" aria-labelledby="best-performer-title">
-  <h2 id="best-performer-title">Current best performer</h2>
+  <h2 id="best-performer-title"><span class="n">1</span>Current best performer</h2>
   {{research_best}}
 </section>
 
 <section id="hypotheses" class="rs" aria-labelledby="hypotheses-title">
-  <h2 id="hypotheses-title">The hypotheses, H1 to H10</h2>
-  <p class="prose lede">Each follows the same six steps: question, groundwork, development, registration, confirmation, verdict. Development figures are labelled &ldquo;development, not a verdict&rdquo;; a figure nobody has measured says so.</p>
-  {{research_hypotheses}}
+  <h2 id="hypotheses-title"><span class="n">2</span>The hypotheses, H1 to H10</h2>
+  <p class="prose">Each follows the same six steps: question, groundwork, development, registration, confirmation, verdict. Open a line for its step, status, tests, kill criterion, milestones and research log. Development figures are labelled &ldquo;development, not a verdict&rdquo;; a figure nobody has measured says so.</p>
+  <div class="rs-list">{{research_hypotheses}}</div>
 </section>
 
 <div id="background">
-<h2 id="background-title">Background and detailed records</h2>
-  <nav aria-label="Chapters">
-    <ol>
-      <li class="live"><b>&#9670;</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
-      <li class="live"><b>&#9670;</b><span><a href="#forecast-actual">Forecast against what happened</a><small>Each day, in basis points</small></span></li>
-      <li class="live"><b>1</b><span><a href="#plumbing">The plumbing</a><small>The market and the Fed's rates</small></span></li>
-      <li class="live"><b>2</b><span><a href="#history">{{n_years_word}} years in one line</a><small>The spread, day by day</small></span></li>
-      <li class="live"><b>3</b><span><a href="#why">Why it happens</a><small>Reserves and the calendar</small></span></li>
-      <li class="live"><b>4</b><span><a href="#clock">What's known at {{decision}}</a><small>Each input's publication clock</small></span></li>
-      <li class="live"><b>5</b><span><a href="#forecast">Making a forecast</a><small>Against two benchmarks</small></span></li>
-      <li class="live"><b>6</b><span><a href="#grading">Grading it honestly</a><small>Reliability and lead time</small></span></li>
-      <li class="live"><b>7</b><span><a href="#built">How it was built</a><small>Process and guards</small></span></li>
-    </ol>
-  </nav>
+<p class="part-h" id="background-title">Background and detailed records</p>
 
 <!-- start-here -->
 <div id="start">
-  <p class="kicker">Start here</p>
+  <h2><span class="n">3</span>Start here</h2>
   <div class="prose"><p>New to this market? Five short views, in order.</p></div>
   <nav aria-label="Start here">{{newcomer_nav}}</nav>
 
@@ -347,7 +401,7 @@ table.fttab.fdtab td{white-space:nowrap}
       <li>The +{{pressure_bp}} bp line is the project's headline pressure threshold, and a day counts only when it is strictly above it (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). {{c_sofr_publication}} The chart shows what happened, not what could have been predicted.</li>
       <li>With the scale clipped at +{{clip_bp}} bp, {{n1_off_scale}} counted here rise above it and are drawn as triangles on the top edge; the largest was {{n1_spike}}.</li>
     </ul>
-    <p>The same line, with the Fed's balance-sheet runoff, the stress windows and the middle half of each day's trades, is <a href="#history">chapter 2</a>.</p>
+    <p>The same line, with the Fed's balance-sheet runoff, the stress windows and the middle half of each day's trades, is <a href="#history">section 7</a>.</p>
   </details>
 </section>
 
@@ -378,7 +432,7 @@ table.fttab.fdtab td{white-space:nowrap}
     <ul>
       <li>The marks start on {{n2_first}}, not on {{n2_panel_first}} as in N1. A forecast needs {{n2_min_history}} days of history before it is first scored, so the first scored day is the first with that much behind it. Every day after it, to the panel's end, is scored.</li>
       <li>A day counts above a threshold only when its spread, in whole basis points, is strictly above it (<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/pressure-probability.md">the decision</a>). The thresholds are the project's declared ones; +{{n2_tau1}} and +{{n2_tau2}} bp are the headline.</li>
-      <li>How the spread is drawn over time, with the events behind the bunches, is <a href="#history">chapter 2</a>; when in the calendar the pressure days fall is <a href="#why">chapter 3</a>.</li>
+      <li>How the spread is drawn over time, with the events behind the bunches, is <a href="#history">section 7</a>; when in the calendar the pressure days fall is <a href="#why">section 8</a>.</li>
     </ul>
   </details>
 </section>
@@ -426,7 +480,7 @@ table.fttab.fdtab td{white-space:nowrap}
     <div class="bandtable" role="region" aria-label="Table: share of days above each headline line, by reserve-scarcity state" tabindex="0">{{band_table}}</div>
     <p>The same cells at +{{second_bp}} bp:</p>
     <div class="grid2" role="region" aria-label="Table: share of days more than +{{second_bp}} bp above IORB, by quarter-end and cash" tabindex="0">{{n3_table_second}}</div>
-    <p>Pressure by day type and year, with the reserves behind it, is <a href="#why">chapter 3</a>.</p>
+    <p>Pressure by day type and year, with the reserves behind it, is <a href="#why">section 8</a>.</p>
   </details>
 </section>
 
@@ -462,7 +516,7 @@ table.fttab.fdtab td{white-space:nowrap}
       <li>The segment chart's days come from the panel's <code>quarter_end</code> flag (the last business day of the quarter), the statutory corporate tax deadlines, the scheduled coupon settlements, and the New York Fed's ON RRP results read as they stood at each day's decision. The values are below.</li>
     </ul>
     {{n4_seg_table}}
-    <p>The segments nested inside each other, with their rates on one day, and the Fed's administered rates are in <a href="#plumbing">chapter 1</a>.</p>
+    <p>The segments nested inside each other, with their rates on one day, and the Fed's administered rates are in <a href="#plumbing">section 6</a>.</p>
   </details>
 </section>
 
@@ -489,15 +543,14 @@ table.fttab.fdtab td{white-space:nowrap}
       <li>Each step's publication times come from the project's source declarations, the same ones the forecasts are read under.</li>
     </ul>
     {{n5_table}}
-    <p>When each input is public relative to the decision is <a href="#clock">chapter 4</a>; pressure by day type and year is <a href="#why">chapter 3</a>.</p>
+    <p>When each input is public relative to the decision is <a href="#clock">section 9</a>; pressure by day type and year is <a href="#why">section 8</a>.</p>
   </details>
 </section>
 </div>
 <!-- /start-here -->
 
 <section id="final-test" aria-labelledby="final-test-title">
-  <p class="kicker">The result</p>
-  <h2 id="final-test-title">The final test</h2>
+  <h2 id="final-test-title"><span class="n">4</span>The final test</h2>
   <p class="prose lede">{{ft_verdict}}</p>
   <figure>
     <figcaption><div class="t">The model against carrying the latest spread forward, {{ft_window}}</div>
@@ -526,8 +579,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="forecast-actual" aria-labelledby="forecast-actual-title">
-  <p class="kicker">Day by day</p>
-  <h2 id="forecast-actual-title">Forecast against what happened</h2>
+  <h2 id="forecast-actual-title"><span class="n">5</span>Forecast against what happened</h2>
   <figure>
     <figcaption><div class="t">The forecast one day ahead and the spread that came, <span id="fdyearlabel"></span></div>
       <div class="s">SOFR − IORB in basis points. Points: the actual spread. Line: the model's median forecast. Shaded: its 90% band. Circled: the biggest misses</div></figcaption>
@@ -544,7 +596,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="plumbing">
-  <h2><span class="n">1</span>The plumbing</h2>
+  <h2><span class="n">6</span>The plumbing</h2>
   <p class="prose lede">The Fed brackets the market with a firm floor, its overnight reverse repo rate, and a soft ceiling, its standing repo rate. Under the implementation note of {{note_issued}}, the standing repo rate is {{srp_vs_iorb}} bp from IORB and the overnight reverse repo rate {{rrp_vs_iorb}} bp.</p>
   <div class="prose">
     <p><b>SOFR</b> is the cost of borrowing cash overnight against Treasuries. {{c_sofr_median}} On {{shown_day}} it was set from about {{latest_volume}} of trades.</p>
@@ -584,7 +636,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="history">
-  <h2><span class="n">2</span>{{n_years_word}} years in one line</h2>
+  <h2><span class="n">7</span>{{n_years_word}} years in one line</h2>
   <p class="prose lede">SOFR closed above the Fed's rate on reserves on {{above_ample}} in {{ample}}, and on {{above_late}} in {{late}}. It was more than {{tail_bp}} bp above on {{n_tail}}, {{tail_where}}.</p>
   <div class="prose">
     <p><b>How big is pressure?</b> A day more than +{{pressure_bp}} bp above is mild. The largest, on {{spike_day}}, was {{spike_bp}} bp, and the New York Fed answered with repo operations that week.</p>
@@ -619,7 +671,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="why">
-  <h2><span class="n">3</span>Why it happens</h2>
+  <h2><span class="n">8</span>Why it happens</h2>
   <p class="prose lede">On pressure days in {{early}}, reserves had a median of {{med_early}}. In {{late}} the median was {{med_late}}.</p>
   <figure>
     <figcaption><div class="t">Pressure appears as reserves fall, but not at a fixed dollar amount</div>
@@ -660,7 +712,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="clock">
-  <h2><span class="n">4</span>What's known at {{decision}}</h2>
+  <h2><span class="n">9</span>What's known at {{decision}}</h2>
   <p class="prose lede">Each forecast is made at {{decision}} the business day before. By then the {{sched_names}} for the next day are already announced; of the observed inputs, the freshest is {{lag_min}} and the stalest is {{lag_max}}.</p>
   <figure>
     <figcaption><div class="t">Every input has its own publication clock</div>
@@ -680,7 +732,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="forecast">
-  <h2><span class="n">5</span>Making a forecast</h2>
+  <h2><span class="n">10</span>Making a forecast</h2>
   <p class="prose lede">{{forecast_lede}}</p>
   <figure>
     <figcaption><div class="t">Each model against the two benchmarks, on the same days</div>
@@ -712,7 +764,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="grading">
-  <h2><span class="n">6</span>Grading it honestly</h2>
+  <h2><span class="n">11</span>Grading it honestly</h2>
   <p class="prose lede">At +{{tau_first}} bp, pressure came on {{base_first}} of the scored days. The share of a model's Brier score that is miscalibration runs from {{miscal_low}} ({{miscal_low_model}}) to {{miscal_high}} ({{miscal_high_model}}).</p>
   <figure>
     <figcaption><div class="t">Does a stated probability come true as often as it says?</div>
@@ -745,7 +797,7 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="built">
-  <h2><span class="n">7</span>How it was built</h2>
+  <h2><span class="n">12</span>How it was built</h2>
   <p class="prose lede">Every figure on this page is computed from a verified data panel by a script in the repository, and every change to that script went through a written directive and a pull request that a separate Claude review routine checked against its criteria. Eleonora wrote the directives and decided the judgement calls; she did not review all of the code (<a href="https://github.com/eleonorabjornberg/repo-market-model#who-decides-and-who-reviews">who decides and who reviews</a>).</p>
   <details>
     <summary>The process, the guards and a validation result</summary>
@@ -757,14 +809,14 @@ table.fttab.fdtab td{white-space:nowrap}
 </section>
 
 <section id="next">
-  <h2>Next steps</h2>
+  <h2><span class="n">13</span>Next steps</h2>
   <ul>
     <li>A live daily forecast, once a calibrated model is ready.</li>
     <li>{{lead_time_placeholder}}</li>
   </ul>
 </section>
 
-<details>
+<details id="terms" class="terms">
   <summary>Terms used on this page</summary>
   <dl class="gloss">
     <dt>Repo</dt><dd>A loan of cash against securities, here overnight and against Treasuries. The borrower sells the securities and agrees to buy them back the next day at a slightly higher price.</dd>

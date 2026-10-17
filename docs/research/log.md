@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#893
+- Directive: #893
+- Step: groundwork G1 (the layout of the results page for H1 to H10; as in #816, the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: `site/index.html` re-set as a paper: title, dek, an executive summary in prose (no table), one contents list in place of the tile grids, numbered sections, numbered figure captions, a serif column of about 66 characters. Each hypothesis is one line, its id and a tagline from the new `docs/research/taglines.json`, over a native `<details>` fold holding its step, status, tests, kill criterion, milestones and log. Variants: n/a (presentation, no model).
+- Result: every chapter, view, figure and record of the page is still on it, folded or in the contents list; no figure, record or rule moves. The taglines are drafted from the plan's headings for Eleonora's review.
+- Against kill: not applicable (groundwork).
+- Next: #891 refreshes the milestones and status data the folds show; whichever merges second merges main and regenerates.
