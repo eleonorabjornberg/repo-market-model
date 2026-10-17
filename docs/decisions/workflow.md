@@ -140,6 +140,34 @@ text. The directive cites the ruling by link. Recording that ruling in `docs/dec
 decision she has made. The reviewer escalates such a pull request if it changes code, a record in `docs/runs/`, or
 what the project claims beyond what the cited ruling says.
 
+## Merging, conflicts and long runs
+
+**Status: draft, in force once Eleonora merges it.** Asked for by her on 17 October 2026, after a day in which most
+merges were lost to conflicts and to work that ran out of time in the cloud.
+
+**A fix for what blocks every pull request merges first.** When a pull request removes a cause that holds back every
+other one (a conflict that every merge creates, or a CI run that every push waits for), Eleonora may name it first in
+the top block of the "Directive queue" issue. Until it merges, no other pull request is merged by anyone. Reviews,
+fixes and implementation go on, and a review that would merge ends "MERGE (held: merge after #N)" instead. The rule
+lapses when the named pull requests have merged; the orchestrating session then removes the line.
+
+**Ready means ready now.** The orchestrating session tells Eleonora that a pull request is ready for her own merge
+(a decision record, or anything else only she may merge) only when CI is green on its current head and it merges
+cleanly into `main` at that moment. From then until she has merged it, no other pull request is merged, so it stays
+clean for her.
+
+**Long runs go to her Mac.** A step expected to take more than about two hours (walk-forward refits, power studies,
+long simulations) is not run in a cloud session, where it can run out of time and lose its work. The session commits
+the script and the exact commands, pushes its branch, and comments `needs-mac:` with the commands on its pull request.
+The orchestrating session hands Eleonora one paste for her Mac: a fresh clone of that branch, the project's virtual
+environment at the declared Python, output to a log file, and a push of the results to the same branch. The pull
+request records the Python, numpy and scikit-learn versions of that environment. Her pushed results are then finished
+by a cloud session like any other branch.
+
+**Mechanical commits carry a neutral author.** When the orchestrating session commits to someone else's branch (a
+merge of `main`, regenerated files), the commit's author and committer are "repo-market-model orchestrator", never
+Eleonora's name and never an AI's name, in line with her rule on attribution (#489).
+
 ## Forensic audit
 
 Decided by Eleonora, 9 October 2026 (#483). A "Forensic auditor" routine runs once a day at 7:45 am ET, in its own
