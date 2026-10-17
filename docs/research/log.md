@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#823
+- Directive: #806
+- Step: 5 (goal G3, prospective logging; the follow-up to #740's cut-off)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `06801bb`
+- Tried: reading a record back now checks its stored `written_at` against the record's own decision day (`validate_record` passes `decision_day`); `live_integrity.committed_times` derives each logged day's commit time from the live-log branch's git history, the `committed_at` that `filled_candidate` needs; `run_command` refuses to start from 23:59 ET, the minute the block already refuses. Variants: n/a (guards, no model).
+- Result: a block regenerated or committed after its decision day now fails on read-back; commit times exist for the fill step. Two recorded mutations kill the two guards. No rule changes, nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); the fill step reads `committed_times` when a candidate is registered.
