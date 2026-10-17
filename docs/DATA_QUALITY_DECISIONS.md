@@ -756,6 +756,8 @@ the `HH:MM` the declaration states.
 
 ## A Fed repo operation under $0.1 bn accepted is no take-up, in every era
 
+**Superseded on 15 October 2026 by the section "A Fed repo operation is no take-up only if it is a test trade" below (ruling on #802).** The text that follows is kept as the record of #743.
+
 Decided by Eleonora on 14 October 2026 (ruling on #743; data meaning is hers, #735). In every era,
 a Fed repo operation with less than $0.1 bn accepted counts as no take-up. One amount, no date:
 `ingest.REPO_TAKE_UP_FLOOR` (USD 100 million), applied by `ingest._effective_accepted`.
@@ -787,3 +789,26 @@ era builds a regime dummy (#672); one floor covers both the tests and the trades
 **Consequence for earlier evidence.** Any record that read the Fed repo take-up columns before this
 change read the $1-7 mn trades as take-up. #727's gains attributed to #662 are re-run in
 `docs/pivot/fed-repo-floor-743-result.md`; no 2018 warning gain is claimed before that re-run.
+
+## A Fed repo operation is no take-up only if it is a test trade
+
+*Draft for Eleonora's review (PR for #802); in force once she has merged it.* Decided by Eleonora on 15 October 2026 (ruling on #802, option (b); data meaning is hers, #735). It narrows the
+$0.1 bn floor above, which also zeroed about 40 days of $8-97 mn take-up that carry no test note, several in the days before onsets.
+
+**The rule.** A Fed repo operation counts as no take-up only if it is a test trade:
+
+* an operation whose `note` names a small value exercise is dropped, as before (`ingest._is_small_value_exercise`); and
+* otherwise an operation is a test trade if it accepted more than zero and at most USD 7 million (`ingest.TEST_TRADE_MAX`) and a whole number of millions
+  (`ingest._is_test_trade`, applied by `ingest._effective_accepted`). Every other operation counts in full.
+
+It is judged per operation, in every era, with no date: a rule that differs by era builds a regime dummy (#672). A day with a $3 mn trade and a $9 mn trade has $9 mn of take-up.
+
+**What does not change.** The operation still happened, so its date keeps a row at zero (the facility operated that day). `REPO_FACILITY_START` still decides which dates before the facility are
+structural zeros and which are missing. `fed_repo_submitted` is not changed. `srf_total_accepted` (`nyfed_srf`, read by the results page) is **not** changed here: applying the rule to it moves a
+published figure, and #787 does that. The columns stay off `FEATURE_FIELDS` and out of every published declaration; no published figure moves.
+
+**Limit.** The Desk's data mark no operation under $44 mn as a test (the small value exercises it labels are $44-116 mn), so the $7 mn ceiling is a size rule: it cannot tell a test from a real $1-7 mn
+borrow. If the Desk publishes a test note, the note should be read first.
+
+**Consequence for earlier evidence.** #743's figures read the $0.1 bn floor. The Fed repo columns are re-read under this rule, with an arm that removes the whole group, in
+`docs/pivot/test-trade-802-result.md`: the ordinary-day AUROC gain of `fed_repo_days_since_positive` is 0.60 [0.42, 0.76] at lead 1 (interval contains 0.5), and the 2018 warnings survive with every `fed_repo_*` column zeroed.
