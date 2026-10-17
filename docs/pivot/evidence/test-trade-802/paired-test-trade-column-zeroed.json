@@ -1,0 +1,828 @@
+{
+ "declaration": {
+  "candidates": {
+   "risk_gbm_base_dealer": {
+    "group": "dealer",
+    "passer": "risk_gbm_base"
+   },
+   "risk_gbm_base_policy": {
+    "group": "policy",
+    "passer": "risk_gbm_base"
+   },
+   "risk_gbm_base_settle": {
+    "group": "settle",
+    "passer": "risk_gbm_base"
+   },
+   "risk_gbm_dealer": {
+    "group": "dealer",
+    "passer": "risk_gbm"
+   },
+   "risk_gbm_policy": {
+    "group": "policy",
+    "passer": "risk_gbm"
+   },
+   "risk_gbm_settle": {
+    "group": "settle",
+    "passer": "risk_gbm"
+   },
+   "risk_logistic_base_dealer": {
+    "group": "dealer",
+    "passer": "risk_logistic_base"
+   },
+   "risk_logistic_base_policy": {
+    "group": "policy",
+    "passer": "risk_logistic_base"
+   },
+   "risk_logistic_base_settle": {
+    "group": "settle",
+    "passer": "risk_logistic_base"
+   },
+   "risk_logistic_dealer": {
+    "group": "dealer",
+    "passer": "risk_logistic"
+   },
+   "risk_logistic_policy": {
+    "group": "policy",
+    "passer": "risk_logistic"
+   },
+   "risk_logistic_settle": {
+    "group": "settle",
+    "passer": "risk_logistic"
+   },
+   "risk_quantile_skewt_base_dealer": {
+    "group": "dealer",
+    "passer": "risk_quantile_skewt_base"
+   },
+   "risk_quantile_skewt_base_policy": {
+    "group": "policy",
+    "passer": "risk_quantile_skewt_base"
+   },
+   "risk_quantile_skewt_base_settle": {
+    "group": "settle",
+    "passer": "risk_quantile_skewt_base"
+   }
+  },
+  "columns_at_horizon": "every group column is read at every horizon; the passers' own rule that treasury_settlement and treasury_settlement_coupons leave the inputs at h >= 2 is unchanged",
+  "control": "each candidate's control is its own passer, scored by this script on the same scratch panel and fold grid, so a difference is the group's and nothing else",
+  "directive": "#477",
+  "groups": {
+   "dealer": {
+    "columns": [
+     "dealer_treasury_position",
+     "fed_repo_days_since_positive",
+     "fed_repo_log_accepted",
+     "fed_repo_log_accepted_change",
+     "fed_repo_ops",
+     "fed_repo_rate_iorb_bps",
+     "fed_repo_submitted"
+    ],
+    "label": "dealer and segment",
+    "left_out": {
+     "ofr_gcf_rate": "observed on 144 of 1935 rows, none before 2020-10-23",
+     "ofr_tri_rate": "observed on 1324 of 1935 scratch-panel rows, none before 2020-09-09 (OFR real-time start; earlier values were filled in after the fact and are not read)",
+     "why": "the direct pressure design refuses an unobserved input (ml._PressureDesign._value) and a missing-value indicator or zero-fill would be a new design choice. Leaving them in would drop every scored day before September 2020, which includes 2018 and 2020, the years this test is about. They stay unused, and the pull request flags the choice for Eleonora."
+    },
+    "source": "dealer_treasury_position: nyfed_fr2004, six business days after the as-of date (published panel column, weekly, staleness-guarded); fed_repo_*: nyfed_repo_ops, 16:00 ET on the next business day (#425), the conservative reading, not the same-day one"
+   },
+   "policy": {
+    "columns": [
+     "policy_days_since_known",
+     "policy_days_until_effective",
+     "policy_pending_count",
+     "policy_iorb_offset_bp",
+     "policy_qt_in_force",
+     "policy_standing_repo_in_force",
+     "policy_slr_exclusion_in_force",
+     "policy_reserve_management_in_force",
+     "policy_debt_limit_reinstated"
+    ],
+    "label": "policy",
+    "source": "policy_register (metadata/policy_features.json, #412): computed from entries announced at or before 16:00 ET on the row's own date, so read at every horizon"
+   },
+   "settle": {
+    "columns": [
+     "net_settlement",
+     "net_settlement_bills",
+     "net_settlement_due_5d"
+    ],
+    "label": "settlements-forward",
+    "source": "treasury_auction_net_settlement (metadata/net_settlement.json, #426): public at 12:00 ET on the row's own day (release_lag days 0), so read at every horizon"
+   }
+  },
+  "horizons": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "judge": "scripts/pressure_judge.py judge, tiers 1, 3 and 5 under the rule in force; flag cut-offs chosen by metadata/pressure_judge.json's cutoff_rule from each refit's training window alone; none is declared here",
+  "new_availability_guard": "none. No column is added to the panel or to the registries; each is read through the existing as-of rule at the lag its source declares, and the guards that govern those reads are already tested (tests/test_net_settlement.py, tests/test_policy_features.py, tests/test_fed_liquidity.py, tests/test_asof.py)",
+  "passers": "the five tier-1 passers of #428 (docs/pivot/risk-date-severity-result.md), as metadata/risk_date_severity.json declares them: risk_gbm, risk_gbm_base, risk_logistic, risk_logistic_base, risk_quantile_skewt_base. Their estimators, risk-date rule, inputs and the exact-zero forecast on other days are unchanged; only the declared group is added to the inputs.",
+  "published_declaration": "off. No candidate is named in confirmation.candidates; no figure on any published page moves.",
+  "scoring": {
+   "decision_time": "16:00",
+   "last_day": "2025-12-31",
+   "minimum_history": 61,
+   "refit_every": 21
+  },
+  "status": "declared by the pull request that closes #477 before any score was computed; nothing here is tuned on a scored day. Every input is already collected and already readable as-of; none is added to the panel, to metadata/sources.json or to contract.py, and none is on in any published declaration.",
+  "thresholds_bp": [
+   5,
+   10
+  ]
+ },
+ "not_scored": [
+  "risk_gbm_settle",
+  "risk_gbm_dealer",
+  "risk_gbm_policy",
+  "risk_gbm_base_settle",
+  "risk_gbm_base_dealer",
+  "risk_gbm_base_policy",
+  "risk_logistic_settle",
+  "risk_logistic_dealer",
+  "risk_logistic_policy",
+  "risk_logistic_base_settle",
+  "risk_logistic_base_policy",
+  "risk_quantile_skewt_base_settle",
+  "risk_quantile_skewt_base_dealer",
+  "risk_quantile_skewt_base_policy"
+ ],
+ "onsets": {
+  "risk_logistic_base": {
+   "1": {
+    "false_alarms": 46,
+    "false_alarms_per_onset": 1.7037037037037037,
+    "flagged": 13,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 6,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 26,
+    "false_alarms_per_onset": 1.0,
+    "flagged": 6,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 29,
+    "false_alarms_per_onset": 1.1153846153846154,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 30,
+    "false_alarms_per_onset": 1.1538461538461537,
+    "flagged": 8,
+    "onsets": 26
+   }
+  },
+  "risk_logistic_base_dealer": {
+   "1": {
+    "false_alarms": 49,
+    "false_alarms_per_onset": 1.8148148148148149,
+    "flagged": 16,
+    "onsets": 27
+   },
+   "2": {
+    "false_alarms": 39,
+    "false_alarms_per_onset": 1.5,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "3": {
+    "false_alarms": 31,
+    "false_alarms_per_onset": 1.1923076923076923,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "4": {
+    "false_alarms": 43,
+    "false_alarms_per_onset": 1.6538461538461537,
+    "flagged": 7,
+    "onsets": 26
+   },
+   "5": {
+    "false_alarms": 35,
+    "false_alarms_per_onset": 1.3461538461538463,
+    "flagged": 8,
+    "onsets": 26
+   }
+  }
+ },
+ "paired": {
+  "risk_logistic_base_dealer": {
+   "control": "risk_logistic_base",
+   "horizons": {
+    "1": {
+     "all": {
+      "days": 1873,
+      "difference": 0.0028155241345584887,
+      "high": 0.0056684407800905254,
+      "low": 0.00016036532030915316
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.015739997678119393,
+       "high": 0.035286143193948495,
+       "low": -0.0009668324838673885
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": 0.0006899709058428357,
+       "high": 0.0025797789455167482,
+       "low": -0.0011361929696670848
+      },
+      "quarter_end": {
+       "days": 31,
+       "difference": -0.007269870007415405,
+       "high": 0.014411219373366849,
+       "low": -0.032283948338667795
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.022829434387347837,
+       "high": 0.05686241149623467,
+       "low": -0.002269535509263493
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 375,
+       "difference": 0.004240983048813701,
+       "high": 0.013963027215858435,
+       "low": -0.004439415876148389
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.012827267691075745,
+       "high": 0.02468619628630205,
+       "low": 0.0029554389929110202
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": -2.0385823879017304e-07,
+       "high": 1.680617625207888e-07,
+       "low": -6.16510211426675e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0008567533009533831,
+       "high": 2.0485694115805173e-06,
+       "low": -0.00238747272227166
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.002722107154473349,
+       "high": 0.012217899401076388,
+       "low": -0.005652929185900928
+      }
+     }
+    },
+    "2": {
+     "all": {
+      "days": 1872,
+      "difference": 0.002381959829702858,
+      "high": 0.00445051959724998,
+      "low": 0.0006328918057950897
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.017294214211276304,
+       "high": 0.033936529541245,
+       "low": 0.003812357750035082
+      },
+      "ordinary": {
+       "days": 1603,
+       "difference": -5.129385330587658e-06,
+       "high": 0.000692243807786131,
+       "low": -0.0007447897316718335
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.06254599345611897,
+       "high": 0.1088519546092023,
+       "low": 0.016810135227516208
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": -3.663740995880577e-05,
+       "high": 0.005578898928629465,
+       "low": -0.006144472571783706
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 374,
+       "difference": 0.0033553958196634705,
+       "high": 0.007335149823672508,
+       "low": 8.108730624918e-05
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.010756978434755786,
+       "high": 0.022811805875515866,
+       "low": -0.00017444835615265365
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 7.239512859476456e-05,
+       "high": 0.00015891290271112827,
+       "low": 7.1453479859021e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -5.7666943867845685e-05,
+       "high": 5.0110614431581046e-05,
+       "low": -0.00022136588864748246
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0018649572582489509,
+       "high": 0.006981126031560111,
+       "low": -0.002807705663608422
+      }
+     }
+    },
+    "3": {
+     "all": {
+      "days": 1871,
+      "difference": 0.0007001686712233188,
+      "high": 0.0017401799862099537,
+      "low": -0.00023009154020135427
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.003143962494962005,
+       "high": 0.009267673600194423,
+       "low": -0.0020893382672200938
+      },
+      "ordinary": {
+       "days": 1602,
+       "difference": 0.00029616142855543466,
+       "high": 0.0008358151336823868,
+       "low": -0.00010242698311872836
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.005676526398502521,
+       "high": 0.02084114946183789,
+       "low": -0.009355278763402008
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.002176121450715143,
+       "high": 0.00953112485833704,
+       "low": -0.004504117002554128
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 373,
+       "difference": 0.003071059375423001,
+       "high": 0.0066618234056045,
+       "low": 8.725221255886534e-05
+      },
+      "2020": {
+       "days": 251,
+       "difference": 0.0012463598211386686,
+       "high": 0.00401560239927292,
+       "low": -0.0008571860927287919
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 1.4655143129773543e-06,
+       "high": 3.27082273191779e-06,
+       "low": 2.394442778892202e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": 0.0014790488666987134,
+       "high": 0.003783909845076357,
+       "low": 1.8320625971254053e-05
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": -0.0020850775086768683,
+       "high": 0.0006762872546663859,
+       "low": -0.005324817236026855
+      }
+     }
+    },
+    "4": {
+     "all": {
+      "days": 1870,
+      "difference": 0.0011627464658286008,
+      "high": 0.0026477735495510735,
+      "low": -0.0002410021530117171
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.00977520716976649,
+       "high": 0.018407871383989784,
+       "low": 0.0019921453610156634
+      },
+      "ordinary": {
+       "days": 1601,
+       "difference": 0.0003707749314682773,
+       "high": 0.0010630116580087866,
+       "low": -0.00011569246330207534
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": -0.022644498339113785,
+       "high": 0.008689181421153753,
+       "low": -0.055932883739127255
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.008918866298058556,
+       "high": 0.03610440563797689,
+       "low": -0.016861803908452325
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 372,
+       "difference": 0.00341629444660656,
+       "high": 0.009158028653968696,
+       "low": -0.001538300812385315
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0014602560338872585,
+       "high": -0.0001425666293851006,
+       "low": -0.003273169554205193
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 0.00021670723273317592,
+       "high": 0.000649377669694833,
+       "low": 1.1685535229109951e-07
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0003230882787759757,
+       "high": 0.004048709118889021,
+       "low": -0.004654904661782971
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.004773789883843866,
+       "high": 0.010190142486316583,
+       "low": 0.0005034596855588133
+      }
+     }
+    },
+    "5": {
+     "all": {
+      "days": 1869,
+      "difference": 0.0007799166765400267,
+      "high": 0.002051354966367751,
+      "low": -0.00026411373451791384
+     },
+     "day_type": {
+      "month_end": {
+       "days": 150,
+       "difference": 0.0006540160920295893,
+       "high": 0.007591027413436326,
+       "low": -0.005840275523458607
+      },
+      "ordinary": {
+       "days": 1600,
+       "difference": 0.0004091090458063614,
+       "high": 0.001138562943940683,
+       "low": -0.00010411390693655823
+      },
+      "quarter_end": {
+       "days": 30,
+       "difference": 0.014535929650607432,
+       "high": 0.02954543087847779,
+       "low": -3.842068770038432e-05
+      },
+      "tax_date": {
+       "days": 89,
+       "difference": 0.003021454964499673,
+       "high": 0.02004049588562849,
+       "low": -0.012026102268612487
+      }
+     },
+     "regime": {
+      "2018-19": {
+       "days": 371,
+       "difference": 0.003941468488145279,
+       "high": 0.009297619547261923,
+       "low": -7.23197466825877e-05
+      },
+      "2020": {
+       "days": 251,
+       "difference": -0.0013197013365968335,
+       "high": -0.0001348146415424634,
+       "low": -0.002596333390791001
+      },
+      "2021-23": {
+       "days": 748,
+       "difference": 7.957306722054262e-07,
+       "high": 1.6726730892373526e-06,
+       "low": 6.424701209253992e-08
+      },
+      "2024": {
+       "days": 250,
+       "difference": -0.0002922300119172769,
+       "high": -6.815452822498317e-08,
+       "low": -0.0008129071377947974
+      },
+      "2025-26": {
+       "days": 249,
+       "difference": 0.0016027581978864587,
+       "high": 0.0067722310773268585,
+       "low": -0.0023425619830728214
+      }
+     }
+    }
+   }
+  }
+ },
+ "recall_by_year": {
+  "risk_logistic_base": {
+   "any_lead": {
+    "2018": [
+     0,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     3,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      0,
+      5
+     ],
+     "2019": [
+      10,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      3,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      1,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  },
+  "risk_logistic_base_dealer": {
+   "any_lead": {
+    "2018": [
+     3,
+     5
+    ],
+    "2019": [
+     10,
+     13
+    ],
+    "2020": [
+     0,
+     2
+    ],
+    "2024": [
+     0,
+     2
+    ],
+    "2025": [
+     4,
+     5
+    ]
+   },
+   "per_lead": {
+    "1": {
+     "2018": [
+      3,
+      5
+     ],
+     "2019": [
+      9,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      4,
+      5
+     ]
+    },
+    "2": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "3": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "4": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      5,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    },
+    "5": {
+     "2018": [
+      0,
+      4
+     ],
+     "2019": [
+      6,
+      13
+     ],
+     "2020": [
+      0,
+      2
+     ],
+     "2024": [
+      0,
+      2
+     ],
+     "2025": [
+      2,
+      5
+     ]
+    }
+   }
+  }
+ }
+}
