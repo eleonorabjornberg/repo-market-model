@@ -7,7 +7,10 @@ in bp on a day that is known in advance to be a risk date, h business days after
 * A **risk date** has one of four types, in this precedence (`risk_day_type`): `quarter_end`, `month_end` (one of the month's last
   two business days) and `tax_date`, which are `SplitDeclaration.reporting_day_type`, then `settlement`, a day with a coupon
   settlement (`treasury_settlement_coupons > 0`, the reading of `pressure_judge._scheduled_risk_date`). Every other day is not a
-  risk date and is not scored here. The type is read from the target row's own calendar columns, as protocol B2 reads them.
+  risk date and is not scored here. The type is read from the target row's own calendar columns, as protocol B2 reads them,
+  except the coupon settlement, which counts at a lead only where the registry makes it public by the decision instant
+  (`target_risk_type`; Eleonora's ruling on #720, 13 October 2026, point 2; #849). A day already public (a sample day) is typed
+  in hindsight.
 * The **risk-date calendar benchmark** (`calendar_forecast`) is the empirical distribution of the spreads on days of the target's
   risk type in the trailing year, rows at or before the anchor; its median is its point forecast.
 * The **type x state model** (`type_state_forecast`) is the empirical distribution of the spreads on days of the target's risk type
@@ -30,9 +33,11 @@ from typing import Dict, List, Mapping, Optional, Sequence
 
 from . import protocol_benchmarks as pb
 from . import risk_dates
+from . import spread_mr_variants as smv
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
+from .splits import LookAheadError
 
 #: The risk types, in the order of their precedence after the three of `reporting_day_type`.
 RISK_TYPES = ("quarter_end", "month_end", "tax_date", "settlement")
@@ -46,13 +51,70 @@ MIN_CELL = 10
 MEDIAN_AT = GRID.index(0.5)
 
 
-def risk_day_type(when: date, values: Mapping[str, Optional[float]], splits: SplitDeclaration) -> Optional[str]:
-    """The risk type of a day, or `None` when it is not a risk date."""
+def risk_day_type(
+    when: date, values: Mapping[str, Optional[float]], splits: SplitDeclaration, *, coupon_clause: bool = True
+) -> Optional[str]:
+    """The risk type of a day, or `None` when it is not a risk date.
 
-    if not risk_dates.is_risk_date(values, risk_dates.NON_ORDINARY, splits=splits, reporting_on=when):
+    `coupon_clause=False` drops the coupon settlement. The default reads it, which is right for a day already public (a sample
+    day, a report); a target at a lead goes through `target_risk_type`.
+    """
+
+    if not risk_dates.is_risk_date(
+        values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=coupon_clause, reporting_on=when
+    ):
         return None
     kind = splits.reporting_day_type(when, values)
     return kind if kind in ("quarter_end", "month_end", "tax_date") else "settlement"
+
+
+def require_settlement_public(
+    panel: Sequence[DailyObservation],
+    row: int,
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> None:
+    """Refuse to read row `row`'s coupon settlement at the decision on row `decision_index` unless it was public then.
+
+    Mutation record: see `tests/test_risk_date_spread.py` (`target_risk_type` reads the coupon clause as always true).
+
+    Raises:
+        LookAheadError: the settlement flag was not public at the decision instant.
+    """
+
+    if not smv.coupon_public(panel, row, decision_index, registry=registry, decision_time=decision_time):
+        raise LookAheadError(
+            f"the coupon settlement of {panel[row].date} was not public at the decision instant of {panel[decision_index].date}"
+        )
+
+
+def target_risk_type(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    h: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+) -> Optional[str]:
+    """The risk type of the target `h` rows after the decision, as that decision could read it (#849).
+
+    A quarter-end, month-end or tax date is a calendar fact. A coupon settlement makes the day a risk date only where its
+    flag was public at the decision instant (`spread_mr_variants.coupon_public`); otherwise the day is not a risk date at
+    this lead.
+
+    Raises:
+        LookAheadError: a settlement is read that was not public (`require_settlement_public`).
+    """
+
+    scored = decision_index + h
+    public = smv.coupon_public(panel, scored, decision_index, registry=registry, decision_time=decision_time)
+    kind = risk_day_type(panel[scored].date, panel[scored].values, splits, coupon_clause=public)
+    if kind == "settlement":
+        require_settlement_public(panel, scored, decision_index, registry=registry, decision_time=decision_time)
+    return kind
 
 
 def state_group(state: Optional[float]) -> str:
@@ -101,19 +163,26 @@ def require_sample(rows: Sequence[object], kind: str, decision_day: date) -> Non
         raise ProtocolError(f"no {kind} day in the window before {decision_day} to forecast from")
 
 
-def _target_types(panel: Sequence[DailyObservation], decision_index: int, splits: SplitDeclaration) -> Dict[int, str]:
-    """Lead -> risk type of its target, for the leads whose target is a risk date.
+def _target_types(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    splits: SplitDeclaration,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> Dict[int, str]:
+    """Lead -> risk type of its target, for the leads whose target is a risk date as the decision could read it.
 
     Raises:
         ProtocolError: a lead has no row in the panel.
+        LookAheadError: a settlement is read that was not public.
     """
 
     out = {}
     for h in HORIZONS:
         if decision_index + h >= len(panel):
             raise ProtocolError(f"lead {h} from {panel[decision_index].date} has no row in the panel")
-        target = panel[decision_index + h]
-        kind = risk_day_type(target.date, target.values, splits)
+        kind = target_risk_type(panel, decision_index, h, registry=registry, decision_time=decision_time, splits=splits)
         if kind is not None:
             out[h] = kind
     return out
@@ -134,7 +203,7 @@ def calendar_forecast(
         LookAheadError, StaleReadError: the information-set guards of the decision.
     """
 
-    targets = _target_types(panel, decision_index, splits)
+    targets = _target_types(panel, decision_index, splits, registry=registry, decision_time=decision_time)
     anchor = pb._anchor(panel, decision_index, registry, decision_time)
     rows = sample_rows(panel, decision_index, anchor, years=CALENDAR_YEARS)
     out = {}
@@ -174,7 +243,7 @@ def type_state_forecast(
         ValueError: a state outside 0 to 3.
     """
 
-    targets = _target_types(panel, decision_index, splits)
+    targets = _target_types(panel, decision_index, splits, registry=registry, decision_time=decision_time)
     anchor = pb._anchor(panel, decision_index, registry, decision_time)
     rows = sample_rows(panel, decision_index, anchor, years=CELL_YEARS)
     quantiles, basis, sizes = {}, {}, {}

@@ -8300,10 +8300,10 @@
   "tiers": "docs/pivot/evidence/weighted-miss/tier1.json"
  },
  "variant_count": {
-  "arm_declarations": 19,
-  "arms": 74,
+  "arm_declarations": 20,
+  "arms": 77,
   "candidate_files": 358,
-  "declarations": 22,
+  "declarations": 23,
   "unread": [
    "alarm_cooldown.json",
    "always_flag_588.json",
@@ -8311,6 +8311,7 @@
    "direct_pairs_twin.json",
    "every_day_separation_601.json",
    "every_day_steps_687.json",
+   "exploration_844.json",
    "iorb_every_day_579.json",
    "judge_readings.json",
    "judge_rulings_rescore.json",
