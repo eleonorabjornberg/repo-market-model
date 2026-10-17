@@ -3,6 +3,8 @@
   "issue": 849,
   "hypothesis": "H6 (the spread on known risk dates is forecastable), step 1, re-read after a leak fix",
   "ruling": "Eleonora, ruling on #720 (13 October 2026), point 2: a settlement flag counts only at leads where it was already announced. #815 (H5) and #819 (H8) fixed the same pattern; this directive does it for H6",
+  "variants": {},
+  "variants_note": "no model and no variant is added: the arithmetic of the day set is corrected and two existing scripts are re-run",
   "what_changes": "repo_model.risk_date_spread.risk_day_type used the coupon clause at every lead, so a target day that settles a coupon was a settlement risk date at leads 2 to 5 although the flag was not public at the decision. The calendar benchmark and the type x state model now type a target through risk_date_spread.target_risk_type, which counts the coupon settlement only where spread_mr_variants.coupon_public holds (the registry's declared availability, as #815 and #819 read it) and raises LookAheadError if a settlement is read that was not public. A quarter-end, month-end or tax date is a calendar fact and counts at every lead. A sample day (at or before the anchor) is typed in hindsight: its flag was public long before the decision",
   "reads": [
     "scripts/risk_date_spread_693.py score: #693's rows (percentile interval of the draws), unchanged except that the day set is the corrected one",
