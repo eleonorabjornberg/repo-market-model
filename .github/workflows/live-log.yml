@@ -21,7 +21,8 @@ name: live-log
 # append-only `live-raw` branch, in one add-only commit checked before the push. The
 # record keeps only each input's URL, retrieval time and digest, and a later download
 # may differ, so without the bytes the outcome panel cannot be rebuilt. A failed archive
-# never blocks the record.
+# never blocks the record or the anchor, but it ends the run red (#892). The step runs only
+# on a day the record step wrote: a weekend or a holiday has no raw root to archive.
 #
 # Each day's digest is also anchored outside the repository's reach, in the
 # public Sigstore Rekor log (Eleonora's ruling of 6 October 2026, #254):
@@ -239,7 +240,7 @@ jobs:
 
       - name: Archive the raw inputs on live-raw
         id: raw
-        if: steps.push.outcome == 'success'
+        if: steps.push.outcome == 'success' && env.WROTE == '1'
         continue-on-error: true
         run: |
           # The record keeps each input's URL, retrieval time and digest, not its bytes (#257).
@@ -408,6 +409,7 @@ jobs:
             branch=${{ steps.branch.outcome }}
             record=${{ steps.record.outcome }}
             push=${{ steps.push.outcome }}
+            raw=${{ steps.raw.outcome }}
             digest=${{ steps.digest.outcome }}
             reconcile=${{ steps.reconcile.outcome }}
             integrity=${{ steps.integrity.outcome }}
@@ -421,7 +423,7 @@ jobs:
           gh api "repos/$REPO/issues/$n/comments" -F body=@failed.md >/dev/null
 
       - name: Say a run succeeded after a failure
-        if: success() && env.WROTE == '1'
+        if: success() && env.WROTE == '1' && steps.raw.outcome != 'failure'
         run: |
           n=$FAILED_RUNS_ISSUE
           last=$(gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" -q '.[-1].body' | tail -1)
@@ -430,3 +432,11 @@ jobs:
               echo "Succeeded: $DAY was logged after the failure above (commit $COMMIT on live-log). Run: $RUN_URL" > ok.md
               gh api "repos/$REPO/issues/$n/comments" -F body=@ok.md >/dev/null ;;
           esac
+
+      # The archive step carries continue-on-error so that the anchor and the checks above
+      # still run after it; this last step turns its failure into a red run (#892).
+      - name: Fail the run when the raw archive failed
+        if: always() && steps.raw.outcome == 'failure'
+        run: |
+          echo "The raw inputs of $DAY were not archived on live-raw (#257): see the step above." >&2
+          exit 1

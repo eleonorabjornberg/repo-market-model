@@ -463,6 +463,42 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("steps.raw.outcome == 'failure'", step)
         self.assertIn("$FAILED_RUNS_ISSUE", step)
 
+    def test_a_day_with_no_record_is_not_archived(self):
+        """#892: the archive step ran on days the job wrote nothing (a weekend or a holiday).
+
+        `work/raw` was empty, `live_raw.py archive` raised "no raw snapshot manifests", and
+        "Raw archive failed" went to #237 for 2026-10-10, 2026-10-12 and 2026-10-17, none of
+        which is a decision day. The step must run only when the record step wrote the day's
+        record (`env.WROTE`).
+
+        Recorded mutation: `&& env.WROTE == '1'` removed from the step's `if`; this test
+        failed with AssertionError ("env.WROTE == '1'" not found in the step).
+        """
+        step = self.step(self.log, "Archive the raw inputs on live-raw")
+        condition = self.re.search(r"\n        if: (.*)", step).group(1)
+        self.assertIn("steps.push.outcome == 'success'", condition)
+        self.assertIn("env.WROTE == '1'", condition)
+
+    def test_a_failed_archive_fails_the_run_after_the_later_steps_have_run(self):
+        """#892: `continue-on-error` let a failed archive finish the run green.
+
+        The failure still never blocks the record or the anchor (they run first), but the
+        run ends red, so the failed-runs issue is opened and the run page shows it.
+
+        Recorded mutation: the final step deleted; this test failed with AssertionError
+        (step "Fail the run when the raw archive failed" not found).
+        """
+        names = self.names(self.log)
+        final = "Fail the run when the raw archive failed"
+        step = self.step(self.log, final)
+        self.assertIn("always() && steps.raw.outcome == 'failure'", step)
+        self.assertIn("exit 1", step)
+        for later in ("Anchor the digests in Sigstore Rekor", "Report a raw archive that failed",
+                      "Verify every logged file"):
+            self.assertLess(names.index(later), names.index(final))
+        opener = self.step(self.log, "Open or update the failed-runs issue")
+        self.assertIn("raw=${{ steps.raw.outcome }}", opener)
+
     def test_the_scoring_workflow_is_started_by_hand_and_never_overrides_the_clock(self):
         head = self.score.split("\njobs:")[0]
         self.assertIn("workflow_dispatch:", head)

@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#899
+- Directive: #892
+- Step: groundwork G1 (the prospective log's raw-input archive; the hypothesis tag is the nearest fit)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: the three "Raw archive failed" days on #237 (2026-10-10, 2026-10-12, 2026-10-17) are non-decision days with no record, so the archive step ran on an empty raw root; it now runs only when the record step wrote the day, and a real archive failure ends the run red. Variants: n/a (infrastructure, no model).
+- Result: no false archive alarm on a weekend or holiday; a failed archive on a decision day can no longer finish green. No record, archive or published figure moves.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's call on decision days without an archive (2026-10-05 and 2026-10-06).
