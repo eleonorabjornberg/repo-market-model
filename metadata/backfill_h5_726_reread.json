@@ -1,0 +1,52 @@
+{
+  "status": "declared by the pull request that closes #870 before any score of it was computed. A scratch declaration for a re-read of #759's measurement (H4 step 3): it does not edit metadata/backfill_h5_726.json, which stays as #759 committed it, and it publishes nothing. Development data: nothing in docs/runs/, no day after 2025-12-31 is read, and under scoring protocol v1 (#640) such data never gives a verdict.",
+  "issue": 870,
+  "hypothesis": "H4, step 3 (docs/research/hypotheses/H4.md): the development nested test of the back-fill against H5's candidate, re-read on the ruled interval (findings #859, #861 and #862).",
+  "rulings": [
+    "Eleonora, 13 October 2026 (PR #660, comment 6145669436; docs/decisions/scoring-protocol.md, ruling 1): the interval is the studentized stationary bootstrap, each resample's mean(d) studentized by its own Newey-West standard error at lag 10, mean block 10, 10,000 draws",
+    "Eleonora, 13 October 2026 (PR #695, comment 6149326627; ruling 5): a bound at a checkpoint is mean(d) - c * se with the calibrated critical value of the comparison",
+    "Eleonora, 14 October 2026 (#742, relayed): the back-fill guard admits only the series listed in metadata/backfill_posting.json"
+  ],
+  "walks": "the ten walks of #759 (both arms, leads 1 to 5), unchanged in candidate, features, settings, folds and days, re-run by scripts/backfill_h5_726.py forecasts under the guard of #870 (which also records, per refit, the share of back-filled rows and of imputed cells in the training frame). The without arm is #634's control; the with arm reads the extended panel built by scripts/backfill_history.py panel and blanked by scripts/backfill_h5_726.py panel to the series metadata/backfill_posting.json admits today.",
+  "difference": "d = CRPS(without) - CRPS(with) per decision day, scoring_protocol.day_scores with grid_crps (mean over h = 1 to 5), positive when the back-fill helps. This is the orientation of the calibrated B2 - B1 values (benchmark minus candidate, the without arm standing for the benchmark).",
+  "interval": {
+    "rule": "ruling 1: scoring_protocol.paired_tests, the studentized stationary bootstrap, mean block 10, 10,000 draws, seed 726, Newey-West lag 10. Two-sided 90% interval of mean(d): [mean - Q95(t) * se, mean - Q05(t) * se] with Q the quantiles of the sorted t-draws. One-sided 95% lower bound: mean - Q95(t) * se. The plain percentile interval of #759 is reported only in the reconciliation table, as the superseded reading.",
+    "applies_to": "the headline and every regime, half-year, type and share-restricted group"
+  },
+  "critical_value": {
+    "value_source": "scoring_protocol.CRITICAL_VALUES['B2-B1'][250]",
+    "why_it_is_a_reference": "ruling 5 calibrates c for confirmation windows of 60, 125 and 250 days, not for a development sample of about 1,900 days; it is shown beside the bootstrap bound as a reference and decides nothing",
+    "orientation": "reported under both, because which one is in force is Eleonora's (#830): (A) d = without - with, as above, lower bound mean - c * se, cost when mean + c * se is below zero; (B) the reverse difference with - without, whose lower bound is -(mean + c * se) and whose upper bound is -(mean - c * se). The page prints mean - c * se and mean + c * se, which carry both."
+  },
+  "groups": {
+    "pooled": "every scored decision day",
+    "regimes": "the regimes of metadata/evaluation_splits.json, as in #759",
+    "types": "the pressure-day type of the lead-1 target, as in #759",
+    "periods_2018_19": ["2018 H1", "2018 H2", "2019 H1", "2019 H2", "2018", "2019"],
+    "period_rule": "the decision day's calendar date (2018 H1 is 2018-06-29, the first decision day, to 2018-06-30)",
+    "minimum_days": "a group with no more than 10 decision days (the Newey-West lag) is not tested; it is listed with its day count"
+  },
+  "mostly_imputed_fits": {
+    "measure": "for each refit of the with arm, the share of back-filled rows (date before 2018-04-03) among the rows of the training frame, and the share of imputed cells (a cell of a candidate input that is blank in the frame) among all candidate-input cells of the frame. A decision day takes the shares of the refit that forecasts it.",
+    "primary_share": 0.5,
+    "primary_rule": "(b) is the comparison on the decision days whose with-arm training frame holds at most 50% back-filled rows",
+    "sensitivity_shares": [0.75, 0.9],
+    "sensitivity_rule": "the same comparison at 75% and 90%, declared with the primary one because the primary one may leave no 2018-19 day: with 899 back-filled rows the share is at most 50% only once the published rows number 899 or more",
+    "reported_for_each_share": ["the share-restricted days, pooled", "the same by regime", "the days above the share, pooled"],
+    "question_for_eleonora": "the share is a threshold, and a threshold is hers. 50% is the example of the directive; 75% and 90% are added so that a 2018-19 reading exists; she may name another."
+  },
+  "reading_rule": {
+    "gain": "the back-fill helps beyond the interval in a group when the one-sided 95% studentized lower bound of mean(d) is above zero",
+    "cost": "the back-fill costs in a group when the upper end of the two-sided 90% studentized interval of mean(d) is below zero; the reference value is reported beside it (mean + c * se below zero)",
+    "kill_lines": "one line per reading, labelled development: (1) 2018-19 as a whole, all days; (2) 2018-19 split into 2018 H1, 2018 H2, 2019 H1 and 2019 H2; (3) 2019 alone; (4) 2018-19 on the days at or under each declared share; (5) each regime and the pooled sample for a cost. Each line states whether a gain is shown (lower bound above zero), whether a cost is shown (upper end below zero) or neither. Whether H4's kill is read, and on which line, is Eleonora's.",
+    "not_re_read": "H4's calibration clause (coverage moves by less than their interval) is not re-read: the coverage tables of #759 stand as published on the percentile interval and are not re-scored here"
+  },
+  "published_declaration": "the back-filled rows stay off in every published declaration; nothing is published and no figure moves",
+  "variants": {},
+  "variant_count": "none new: the same two arms at the same five leads as #759, re-run",
+  "not_checked": [
+    "any 2026 day (locked), the 2014-18 days as scored days, and any verdict under protocol v1",
+    "whether IORB and SOFR volume are admitted on back-filled rows (Eleonora's open question on #742); the walks read the admitted list as metadata/backfill_posting.json has it today",
+    "the choice of critical-value orientation (#830)"
+  ]
+}
