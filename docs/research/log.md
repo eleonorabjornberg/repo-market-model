@@ -1028,3 +1028,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#880
+- Directive: #871 (#847's marked question)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `80b5ef0a`; declaration `metadata/spread_distribution_632.json`; no locked day read
+- Tried: re-ran #632's scoring as its page describes, on the distance columns built per H.4.1 release (h = 1 to 5, both variants, both judge rules), and set every headline cell beside its tracked value; checked the other pages that read `satiation_dist_roll`. Variants: 0 new models.
+- Result: no verdict or tier changes. (b) warns 19 of 26 onsets (0.731 [0.560, 0.889]), tracked 20 (0.769 [0.600, 0.923]), and fails tier 1 at 5.09 weighted false alarms per onset (5.35); its onset-recall gain over the `+tailcap75` row is +0.038 [-0.048, +0.133] (tracked +0.077 [0.000, +0.172]) and its h = 5 Brier gain over the comparator now includes zero. Ordinary-day AUROC of (b) 0.907 (0.903). CRPS moves by at most 0.03 bp. #598, #610 and #631 drift slightly on their pre-#622 columns; #629, #624 and #626 read the new ones.
+- Against kill: not applicable (a re-score of an exploratory page; development data, not a verdict).
+- Next: whether the old page and evidence get a superseding note, and whether #598's hinge rows and #631's model rows are re-scored, is Eleonora's (marked questions in the pull request).
