@@ -16,7 +16,7 @@ lead comes from each of three things, from forecasts the repository already scor
     # the later window: LATER.csv (scratch) and LATER_PUBLISHED.csv are the panels cut by `slice` at the start `diagnose` names
     PYTHONPATH=src python3 scripts/tailcap_floor_610.py slice --scratch AUG2.csv --published PUBLISHED.csv --output-dir LATER
     PYTHONPATH=src python3 scripts/tailcap_floor_610.py diagnose --panel PUBLISHED.csv --scratch AUG2.csv --cap 'OUT/cap_h{h}.json' \\
-        --bench 'OUT/bench_h{h}.json' --later-cap LATER/cap_h1.json --later-scratch LATER/scratch.csv \\
+        --later-cap LATER/cap_h1.json --later-scratch LATER/scratch.csv \\
         --output OUT/diagnosis.json --markdown OUT/diagnosis.md
 
 Step 2 (`declare`, `run`, `compare`, `calibration`, and `pg onsets|summary`) scores three floors on `+tailcap75`, declared in
@@ -27,7 +27,7 @@ Step 2 (`declare`, `run`, `compare`, `calibration`, and `pg onsets|summary`) sco
         --cap OUT/cap_h$h.json --output OUT/v610_h$h.json
     IN="OUT/bench_h?.json OUT/both_h?.json OUT/dist_h?.json OUT/iorb_h?.json OUT/cap_h?.json OUT/v610_h?.json"
     for r in weighted unweighted: PYTHONPATH=src python3 scripts/pressure_judge.py judge --panel PUBLISHED.csv --rule $r \\
-        --output OUT/judge_$r.json --markdown OUT/judge_$r.md OUT/bench_h?.json OUT/risk_h?.json OUT/ql_h?.json $IN
+        --output OUT/judge_$r.json --markdown OUT/judge_$r.md OUT/risk_h?.json OUT/ql_h?.json $IN
     for ref in tailcap distroll: for r in weighted unweighted: PYTHONPATH=src python3 scripts/tailcap_floor_610.py compare --rule $r \\
         --reference $ref --panel PUBLISHED.csv --output OUT/compare-$ref-$r.json --markdown OUT/compare-$ref-$r.md $IN
     PYTHONPATH=src python3 scripts/tailcap_floor_610.py pg onsets --rule weighted --panel PUBLISHED.csv --output OUT/onsets-weighted.json $IN

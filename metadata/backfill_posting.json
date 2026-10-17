@@ -8,6 +8,12 @@
     "sofr"
   ],
   "posting_instant": "2018-05-17T00:00:00",
+  "admitted": {
+    "tgcr": "2018-05-17T00:00:00",
+    "bgcr": "2018-05-17T00:00:00",
+    "sofr": "2018-05-17T00:00:00"
+  },
+  "admitted_note": "Eleonora's ruling on #742 (14 October 2026, relayed by the orchestrating session): the back-fill guard admits only listed series, each with its own posting instant; for now TGCR, BGCR and SOFR from 2018-05-17. It raises LookAheadError on any other series (the 2014-17 bill rates, reserves, TGA, ON RRP results and auctions that the extended panel also carries).",
   "format": "null, or an ISO date-time without a zone, in New York time, e.g. 2018-05-01T12:00:00. A fit is allowed only when its training-end day starts at or after the instant.",
-  "guard": "repo_model.backfill.require_posting_established, called by scripts/backfill_history.py run after every backtest (#572)"
+  "guard": "repo_model.backfill.require_posting_established and repo_model.backfill.require_series_admitted, called by scripts/backfill_history.py run after every backtest (#572, #742)"
 }

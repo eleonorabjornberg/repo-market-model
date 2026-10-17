@@ -11,6 +11,7 @@ import importlib.util
 import re
 import sys
 import unittest
+from datetime import date
 from pathlib import Path
 
 from repo_model import risk_dates
@@ -96,6 +97,52 @@ class CallersTests(unittest.TestCase):
                     risk_dates.is_risk_date(row(**kwargs), "non_ordinary", splits=SPLITS, coupon_clause=clause),
                     (kwargs, clause),
                 )
+
+    def test_the_reporting_reading_asks_the_reporting_day_type_of_the_date(self):
+        """`reporting_on=` reads the day type as `reporting_day_type` does (the month's last two business days), #800.
+
+        2024-03-27 is a reporting month-end (Good Friday, 29 March, is a holiday) that is four calendar days from the month's
+        end, so the calendar-day window of `day_type` calls it ordinary.
+        """
+
+        day = date(2024, 3, 27)
+        values = row(days_to_month_end=4.0)
+        self.assertFalse(risk_dates.is_risk_date(values, "non_ordinary", splits=SPLITS))
+        self.assertTrue(risk_dates.is_risk_date(values, "non_ordinary", splits=SPLITS, reporting_on=day))
+        coupon = row(days_to_month_end=10.0, coupons=3.0)
+        self.assertTrue(risk_dates.is_risk_date(coupon, "non_ordinary", splits=SPLITS, reporting_on=date(2024, 3, 12)))
+        self.assertFalse(
+            risk_dates.is_risk_date(coupon, "non_ordinary", splits=SPLITS, coupon_clause=False, reporting_on=date(2024, 3, 12))
+        )
+
+    def test_the_reporting_reading_is_for_the_reconciled_definition_only(self):
+        with self.assertRaises(ValueError):
+            risk_dates.is_risk_date(row(), "scheduled", reporting_on=date(2024, 3, 27))
+
+    def test_h5_and_h6_ask_risk_dates_for_their_risk_day(self):
+        """`spread_mr_variants.is_risk_day` and `risk_date_spread.risk_day_type` decide through `risk_dates` (#800)."""
+
+        import inspect
+
+        from repo_model import risk_date_spread, spread_mr_variants
+        from repo_model.data import DailyObservation
+
+        for function in (spread_mr_variants.is_risk_day, risk_date_spread.risk_day_type):
+            self.assertIn("risk_dates.is_risk_date(", inspect.getsource(function), function.__qualname__)
+
+        for when, kwargs in (
+            (date(2024, 3, 12), {}),
+            (date(2024, 3, 12), {"coupons": 3.0}),
+            (date(2024, 3, 27), {"days_to_month_end": 4.0}),
+            (date(2024, 3, 28), {"days_to_month_end": 3.0}),
+            (date(2024, 3, 31), {"quarter_end": 1.0, "days_to_month_end": 0.0}),
+            (date(2024, 4, 15), {"tax_date": 1.0}),
+        ):
+            values = row(**kwargs)
+            expected = risk_dates.is_risk_date(values, "non_ordinary", splits=SPLITS, reporting_on=when)
+            observation = DailyObservation(when, values)
+            self.assertEqual(spread_mr_variants.is_risk_day(observation, SPLITS), expected, (when, kwargs))
+            self.assertEqual(risk_date_spread.risk_day_type(when, values, SPLITS) is not None, expected, (when, kwargs))
 
     def test_no_script_writes_its_own_risk_date_rule(self):
         """A script that tests `day_type(...) != "ordinary"` has its own copy of the rule; ask `risk_dates` instead."""
