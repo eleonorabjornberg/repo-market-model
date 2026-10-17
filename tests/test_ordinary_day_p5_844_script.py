@@ -42,7 +42,7 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(declaration["interval"]["replications"], script.REPLICATIONS)
         self.assertEqual(declaration["interval"]["block_length"], script.BLOCK)
         self.assertEqual(declaration["minimum_pressure_days"]["value"], script.MINIMUM_PRESSURE_DAYS)
-        self.assertEqual(set(declaration["rows"]), set(script.MODEL_ROWS))
+        self.assertEqual(set(declaration["variants"]), set(script.MODEL_ROWS))
 
 
 class AurocTests(unittest.TestCase):

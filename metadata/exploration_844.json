@@ -10,7 +10,7 @@
   },
   "event": "the target day's spread_bps exceeds +5 bp as repo_model.data.exceeds_bp reads it (the whole-basis-point event)",
   "unit": "one cell is a target day at one lead h = 1..5. Each row's forecast of target day s at lead h is the probability made h business days earlier (the decision day), exactly as the walk of its own script made it.",
-  "rows": {
+  "variants": {
     "spread_mr_level10": {
       "label": "mean reversion (#686)",
       "source": "repo_model.spread_mean_reversion.walk on the published panel, via scripts/spread_mean_reversion_686.py build_frame; P(> 5 bp) is repo_model.spread_mean_reversion.exceedance of the lead's 23 quantiles"
