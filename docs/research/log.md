@@ -919,7 +919,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable.
 - Next: Eleonora's rulings on Q1 and Q2 above; then H7m G6 resumes.
 
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#847
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#852
 - Directive: #845
 - Step: 3 (calibration in the regime where the confirmation days fall: H5's laws on ordinary target days after reserve-management purchases began)
 - Tier: development
