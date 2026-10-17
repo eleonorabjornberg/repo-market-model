@@ -7,7 +7,7 @@ here is a verdict.
     PYTHONPATH=src python3 scripts/power_study_769.py run --out docs/research/power-study-769 [--paths N]
     PYTHONPATH=src python3 scripts/power_study_769.py check --out docs/research/power-study-769
 
-`run` scores B1 and B2 on the development decision days (the helpers of `scripts/protocol_coverage.py`), simulates
+`run` (`--values draft-873` reads #873's recalibrated values instead of `scoring_protocol`'s) scores B1 and B2 on the development decision days (the helpers of `scripts/protocol_coverage.py`), simulates
 confirmation paths under four readings (history x path generator) at the critical values of `scoring_protocol`, and
 writes `result.json`. `check` refuses a result made under another text of the rule or other critical values.
 Standard library only.
@@ -32,6 +32,9 @@ from repo_model.metrics import stationary_bootstrap_indices  # noqa: E402
 
 RULE = REPO / "docs" / "research" / "power-study-769.md"
 CALIBRATION = REPO / "docs" / "research" / "protocol-calibration" / "result.json"
+#: The values recalibrated in the orientation the protocol applies (#873), a draft until the amendment is merged.
+CALIBRATION_873 = REPO / "docs" / "research" / "protocol-calibration-873" / "result.json"
+VALUES = ("in-force", "draft-873")
 LOOKS = (125, 250)
 PATH_DAYS = 250
 DELTA = 0.03
@@ -53,9 +56,18 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def critical_values():
-    """The grid comparison's values at looks 2 and 3, from `scoring_protocol`; refused if the record disagrees."""
+def critical_values(source="in-force"):
+    """The grid comparison's values at looks 2 and 3.
 
+    `in-force`: from `scoring_protocol`, refused if the calibration record disagrees. `draft-873`: the record of
+    #873's recalibration, read as it stands.
+    """
+
+    if source == "draft-873":
+        draft = json.loads(CALIBRATION_873.read_text(encoding="utf-8"))["comparison_critical_values"][sp.GRID_COMPARISON]
+        return {n: draft[str(n)] for n in LOOKS}
+    if source != "in-force":
+        raise ValueError(f"unknown source of critical values {source!r}")
     record = json.loads(CALIBRATION.read_text(encoding="utf-8"))["comparison_critical_values"][sp.GRID_COMPARISON]
     values = {n: sp.CRITICAL_VALUES[sp.GRID_COMPARISON][n] for n in LOOKS}
     for n in LOOKS:
@@ -85,8 +97,8 @@ def days_needed(power):
     return None
 
 
-def detections(s1, s2, *, delta, noise, generator, paths, seed):
-    critical = critical_values()
+def detections(s1, s2, *, delta, noise, generator, paths, seed, critical=None):
+    critical = critical_values() if critical is None else critical
     diff = candidate(s1, s2, delta, noise)
     counts = {"ungated": {n: 0 for n in LOOKS}, "gated": {n: 0 for n in LOOKS}}
     for i in range(paths):
@@ -123,15 +135,20 @@ def load_protocol_coverage():
     return module
 
 
+def source_record(source):
+    return CALIBRATION_873 if source == "draft-873" else CALIBRATION
+
+
 def run_command(args) -> int:
     coverage = load_protocol_coverage()
     out = Path(args.out)
+    critical = critical_values(args.values)
     result = {
         "rule": str(RULE.relative_to(REPO)), "rule_sha256": sha256(RULE),
-        "calibration_sha256": sha256(CALIBRATION),
+        "values": args.values, "calibration_sha256": sha256(source_record(args.values)),
         "constants": {"paths": args.paths, "seed": SEED, "target_power": TARGET_POWER, "mme": sp.MME,
                       "looks": list(LOOKS), "block_length": sp.BLOCK_LENGTH, "hac_lag": sp.HAC_LAG,
-                      "critical_values": {str(n): v for n, v in critical_values().items()}},
+                      "critical_values": {str(n): v for n, v in critical.items()}},
         "readings": {},
     }
     for name, (history, generator) in READINGS.items():
@@ -140,7 +157,8 @@ def run_command(args) -> int:
         cells = {}
         for noise, delta in plan:
             diff = candidate(s1, s2, delta, noise)
-            cell = detections(s1, s2, delta=delta, noise=noise, generator=generator, paths=args.paths, seed=SEED)
+            cell = detections(s1, s2, delta=delta, noise=noise, generator=generator, paths=args.paths, seed=SEED,
+                              critical=critical)
             cell.update(series_skill_against_b1=sum(diff) / sum(s1), series_mean_d=sum(diff) / len(diff),
                         days_needed=days_needed(cell["gated"]))
             cells[f"noise={noise}, delta={delta}"] = cell
@@ -162,10 +180,11 @@ def check_command(args) -> int:
     result = json.loads((Path(args.out) / "result.json").read_text(encoding="utf-8"))
     if result["rule_sha256"] != sha256(RULE):
         raise ValueError("result.json was made under another text of the rule")
-    if result["calibration_sha256"] != sha256(CALIBRATION):
+    source = result.get("values", "in-force")
+    if result["calibration_sha256"] != sha256(source_record(source)):
         raise ValueError("result.json was made under another calibration record")
-    if result["constants"]["critical_values"] != {str(n): v for n, v in critical_values().items()}:
-        raise ValueError("result.json was made at other critical values than scoring_protocol's")
+    if result["constants"]["critical_values"] != {str(n): v for n, v in critical_values(source).items()}:
+        raise ValueError(f"result.json was made at other critical values than the {source} ones")
     print("ok")
     return 0
 
@@ -176,6 +195,7 @@ def main(argv=None) -> int:
     run = sub.add_parser("run")
     run.add_argument("--out", required=True)
     run.add_argument("--paths", type=int, default=PATHS)
+    run.add_argument("--values", choices=VALUES, default="in-force")
     run.set_defaults(func=run_command)
     check = sub.add_parser("check")
     check.add_argument("--out", required=True)
