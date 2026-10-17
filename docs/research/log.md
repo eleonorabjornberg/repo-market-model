@@ -1072,3 +1072,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: no verdict or tier changes. (b) warns 19 of 26 onsets (0.731 [0.560, 0.889]), tracked 20 (0.769 [0.600, 0.923]), and fails tier 1 at 5.09 weighted false alarms per onset (5.35); its onset-recall gain over the `+tailcap75` row is +0.038 [-0.048, +0.133] (tracked +0.077 [0.000, +0.172]) and its h = 5 Brier gain over the comparator now includes zero. Ordinary-day AUROC of (b) 0.907 (0.903). CRPS moves by at most 0.03 bp. #598, #610 and #631 drift slightly on their pre-#622 columns; #629, #624 and #626 read the new ones.
 - Against kill: not applicable (a re-score of an exploratory page; development data, not a verdict).
 - Next: whether the old page and evidence get a superseding note, and whether #598's hinge rows and #631's model rows are re-scored, is Eleonora's (marked questions in the pull request).
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#895
+- Directive: #870 (findings #859, #861, #862)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; extended panel `1e09ae43…`; base `f70bf93d`; declaration `metadata/backfill_h5_726_reread.json`; seed 726
+- Tried: #759's ten walks re-run under the per-series admitted guard, re-scored on the studentized 90% interval with 2018-19 split into half-years and the days split by the back-filled share of the training frame (50%, with 75% and 90% as declared sensitivities). Variants: 0 new models.
+- Result: the 2018-19 figures reproduce (mean d −0.114). 2018-19 stays a cost on the ruled interval [−0.180, −0.058], carried by 2018 H2 (−0.229); 2019 H1, 2019 H2 and 2019 alone cover zero. 2024 and 2025-26 are costs on the ruled interval but cover zero at the 250-day reference c; the pooled sample covers zero. At most 50% back-filled leaves no 2018-19 day; at 75% 2018-19 covers zero (124 days), at 90% it stays a cost. Development data, not a verdict.
+- Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
+- Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
