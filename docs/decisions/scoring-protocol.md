@@ -88,6 +88,43 @@ merges it.
    - the trailing windows are counted in calendar years back from the decision day and clipped at the panel's first
      day.
 
+## Draft amendment: the values are calibrated in the orientation the test applies (#873)
+
+**Status: a draft by the pull request that closes #873, for Eleonora to review. Nothing here is in force until she
+merges it** (§13: this record is merged by her, not under delegated review; the change is of kind (a), a demonstration,
+and kind (b), a reproduced error in code). Until then item 5 and Q-C stand as written, and `scoring_protocol.py` is
+unchanged. Once she has merged it, a follow-up directive sets `CRITICAL_VALUES` and `FUTILITY_CRITICAL_VALUES` to the
+values below; the code reads them only through this record.
+
+**The error (#830).** Item 5 calibrated each critical value on the daily difference S(B2) − S(B1), and Q-C calibrated
+the futility value with B2 as the benchmark. The test applies d = S(benchmark) − S(candidate), B1 the benchmark in every
+comparison the verdict reads (§5, `PairedTest`). The daily differences are skewed, so the quantile of the studentized mean
+depends on the sign. The values in force therefore have the wrong orientation for the statistic they are applied to.
+
+**The amendment.** Item 5's values and Q-C's futility values are the following, calibrated by `scripts/protocol_coverage.py
+calibrate` on d = S(B1) − S(candidate) with the windows (20,000 at 125 and 250 days, 200,000 at 60), block
+10 and seed 1 of the original calibration, so the orientation is the only change:
+
+| value | days | in force | amended |
+|---|---|---|---|
+| efficacy, grid comparison (B2 against B1) | 125 | 3.419 | 2.548 |
+| efficacy, grid comparison | 250 | 2.426 | 1.347 |
+| efficacy, B3 against B1 (five levels) | 125 | 9.501 | 1.434 |
+| efficacy, B3 against B1 (five levels) | 250 | 5.455 | 1.006 |
+| futility, grid comparison | 60 | 1.930 | 2.438 |
+| futility, grid comparison | 125 | 1.565 | 2.289 |
+| futility, grid comparison | 250 | 1.446 | 2.298 |
+
+Look 1 still has no efficacy value (Q-B). The values, their windows and each value's null false-detection rate on the full
+development history (8.0% by 250 days on the grid comparison and 6.3% for B3) are in
+`docs/research/protocol-calibration-873/result.json`; the record in force, `protocol-calibration/result.json`, is not edited.
+The power studies re-run on the amended values, and the published figures that used the values in force, are in
+`docs/research/orientation-873-result.md` and `orientation-873-figures.md`.
+
+**What she decides.** Whether to merge this amendment as drafted. The same pages report, as questions and not as part of the
+amendment, that the amended test's size is near 5% on the generator it was calibrated on and above it elsewhere (post-2020
+history, stationary bootstrap, sign-flipped windows).
+
 ---
 
 **Draft scoring protocol, v1 (orchestrating session, 12 Oct 2026, for Eleonora's decision). Designed from first principles; current rules are kept only where they survive scrutiny.**
