@@ -229,6 +229,7 @@ from fractions import Fraction
 from pathlib import Path
 from unittest import mock
 
+from nightly import nightly
 from repo_model import baseline, cli, cli_eval, ml, recalibration
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
@@ -300,7 +301,7 @@ REQUIRE_ML = "REPO_MODEL_REQUIRE_ML"
 
 #: Set by CI's ml job on pull requests. A subtest marked with `skip_if_fast`
 #: is skipped then, and runs everywhere else: locally, on every push to `main`
-#: and on the weekly schedule, where the ml job runs the whole suite
+#: and on the nightly schedule, where the ml job runs the whole suite
 #: (directive 05, "Do 4": a test that must stay slow runs only there).
 SKIP_SLOW = "REPO_MODEL_SKIP_SLOW"
 
@@ -313,7 +314,7 @@ def skip_if_fast(case: unittest.TestCase, why: str) -> None:
     """
 
     if os.environ.get(SKIP_SLOW):
-        case.skipTest(f"slow ({why}); runs on pushes to main and the weekly schedule")
+        case.skipTest(f"slow ({why}); runs on pushes to main and the nightly schedule")
 
 
 def _extra_installed() -> bool:
@@ -3048,6 +3049,7 @@ class ConstantQuantile:
         return [self.value] * len(design)
 
 
+@nightly
 class ScaledCrossConformalTests(unittest.TestCase):
     """`calibration="cross_conformal_scaled"`: B-SCALED's acceptance criterion and its mutation target.
 
@@ -3533,6 +3535,7 @@ def skewed_frame(count, seed=20260916):
     return rows
 
 
+@nightly
 class PartialCrossConformalTests(unittest.TestCase):
     """`calibration="cross_conformal_partial"`: B-PARTIAL's acceptance criterion and its mutation target.
 
