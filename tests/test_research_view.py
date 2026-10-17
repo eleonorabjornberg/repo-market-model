@@ -117,6 +117,13 @@ class Labels(unittest.TestCase):
         self.assertIn("Primary goal", summary)
         self.assertIn("Secondary goal", summary)
 
+    def test_every_key_figure_carries_the_label(self):
+        """#893: a pulled-out key number keeps the development marking."""
+        callouts = re.findall(r'<aside class="callout"[^>]*>(.*?)</aside>', PAGE, re.S)
+        self.assertTrue(callouts)
+        for callout in callouts:
+            self.assertIn(research_view.DEV_LABEL, callout)
+
     def test_unmeasured_figures_say_so(self):
         self.assertIn("not measured", PAGE[at('id="h5"'):at('id="h6"')])
         self.assertIn("Verdicts reached", PAGE)

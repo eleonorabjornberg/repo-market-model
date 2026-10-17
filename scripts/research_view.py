@@ -316,9 +316,20 @@ def best_html(final):
             f'grid CRPS), against {final["persistence"]:.2f} bp for as-of persistence '
             f'(edge {final["mean"]:+.2f} bp, {final["level"]}% interval {final["lower"]:+.2f} to '
             f'{final["upper"]:+.2f}).')
+    callouts = (
+        f'<div class="callouts side"><aside class="callout" aria-label="Key figure: the incumbent&rsquo;s edge">'
+        f'<span class="big">{final["mean"]:+.2f}<small>bp</small></span>'
+        f'<span class="cap">The published declaration&rsquo;s edge in mean CRPS over as-of persistence at h = 1, on '
+        f'{final["days"]} days; {final["level"]}% interval {final["lower"]:+.2f} to {final["upper"]:+.2f}.</span>'
+        f'<span class="rs-tag">{esc(DEV_LABEL)}</span></aside>'
+        f'<aside class="callout" aria-label="Key figure: the incumbent&rsquo;s score">'
+        f'<span class="big">{final["published"]:.2f}<small>bp against {final["persistence"]:.2f}</small></span>'
+        f'<span class="cap">Mean CRPS at h = 1 of the published declaration and of as-of persistence, as that record '
+        f'scores it; lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span></aside></div>')
     return (
         '<p class="lede">No candidate is registered under the scoring protocol yet, so the incumbent stands: '
         'the published v1 funding declaration, which the protocol uses as its benchmark B3.</p>'
+        + callouts +
         '<p><span class="runin">The incumbent.</span> '
         f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span></p>'
         '<p><span class="runin">The development leader.</span> '
@@ -388,6 +399,14 @@ def hypothesis_html(h):
 BLOB = f"https://github.com/{REPOSITORY}/blob/main/"
 
 
+def steps_html():
+    """The plan's six steps, for the margin beside the hypotheses (#893)."""
+    return ('<aside class="side sidenote" aria-label="The six steps"><p class="label">The six steps</p><ol>'
+            + "".join(f"<li>{esc(step)}</li>" for step in STEPS)
+            + '</ol><p>Development is on past days and never gives a verdict; confirmation is on days still to come.</p>'
+            '</aside>')
+
+
 def hypotheses_html(hypotheses):
     return "".join(hypothesis_html(h) for h in hypotheses)
 
@@ -407,4 +426,5 @@ def fills(repo, final):
     hypotheses = load(repo)
     links = load_critical_path(repo, hypotheses)
     return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final),
+            "research_steps": steps_html(),
             "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)
