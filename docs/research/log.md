@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H9] step 2 · eleonorabjornberg/repo-market-model#906
+- Directive: #902 (Eleonora's ruling on #798, option (b))
+- Step: 2 (sensitivity of #706's page to decision day 2019-09-18; milestone M3)
+- Tier: development
+- Pins: base `71cf91d2`; declaration `metadata/richer_targets_706.json` (unchanged); tracked score `docs/pivot/evidence/richer-targets-706/score.json`
+- Tried: `richer_targets_706.py sensitivity`, which scores #706's walks with and without 2019-09-18 and refuses unless the "with" column reproduces the tracked score. Variants: 0. The 15 walks are not in the cloud, so the run is queued for the Mac (`scripts/richer_targets_902_mac.sh`).
+- Result: not yet run; no figure is stated. The tables arrive with the Mac commit on this branch.
+- Against kill: not applicable (a sensitivity table; development data gives no verdict).
+- Next: the Mac run; any reading against H9's kill criterion is a marked question for Eleonora.
