@@ -273,8 +273,10 @@ def run_command(args) -> int:
         report = original(observations, minimum_history=minimum_history + shift, **kwargs)
         backfill.require_training_only(report.folds, where=script.name)
         backfill.require_posting_established(report.folds, posting, where=script.name)
-        # The columns the model reads are its own `features`, not a list the caller types (#832).
-        reads = backfill.series_read(kwargs.get("features") or ())
+        # The columns the model reads are its own `features`, not a list the caller types (#832). `features` is a
+        # required keyword of the backtest, so a call without it has already raised in `original` above; an empty
+        # tuple reads no series.
+        reads = backfill.series_read(kwargs["features"])
         backfill.require_series_admitted(report.folds, reads, admitted, where=script.name)
         calls.append((shift, len(report.folds)))
         for fold in report.folds:
