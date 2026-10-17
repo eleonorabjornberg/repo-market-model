@@ -1,28 +1,31 @@
-"""The model documentation and validation report (`docs/model/validation.md`, #119).
+"""The model documentation and validation report (`docs/model/validation.md`, #119; rewritten for H5's candidate, #841).
 
-The page is written in the model-risk structure Eleonora ruled on 4 October 2026: purpose and use,
-conceptual soundness, data, implementation and controls, performance and outcomes analysis, limitations and
-assumptions, ongoing monitoring, governance. Its prose states no figure. Every figure sits inside a block
-`scripts/emit_results.py` writes from `docs/runs/`, the metadata files or the declared sources of
+The page keeps the model-risk structure Eleonora ruled on #119: purpose and use, data, methodology, assumptions and
+limitations, performance by regime, outcomes analysis, monitoring (and, last, governance). It documents one model,
+`gbm_funding`, H5's candidate, and replaces the phase 2 content. Its prose states no figure. Every figure sits inside a
+block `scripts/emit_results.py` writes from `docs/runs/`, the metadata files or the declared sources of
 `docs/model/external_sources.json`, and `tests/test_generated_results.py` refuses a stale block.
 
 What is held here, beyond that:
 
-* each section of the structure is present, and so is each deliverable the directive names (the pressure
-  probability, the next-day distribution, the reserve-scarcity indicator, the calibration method, the four desk
-  outputs, the lag finding, the lockbox);
-* **no digit stands outside a generated block**, apart from issue and pull-request references and the numbering of
-  the headings. This is the acceptance criterion "no public claim is stated that is not generated";
-* the use-limitation statement is the one in `docs/use-limitation.md`, read, not retyped;
+* each section of the structure is present, in order, and the page is about the candidate, not the phase 2 models;
+* **no digit stands outside a generated block**, apart from issue and pull-request references and the numbering of the
+  headings: "no public claim is stated that is not generated";
+* a development result that has no record in `docs/runs/` is cited by its issue and its page, labelled "development
+  data, not a verdict" (scoring protocol v1), and no performance figure is rendered for it;
+* nothing the report cites scores a day of a locked tier (`docs/decisions/lockbox.md`);
+* the phase 2 records in `docs/runs/` are not edited by this rewrite;
+* the use-limitation statement is the candidate's (`docs/model/candidate.json`) and says what the model must not be used for;
 * the ruled wording of 2 October 2026 (the claim sentence with its three links, the fork, the futures exclusion) and
   the clearing-mandate limitation are present, and a page that was not fetched is marked so;
-* the lockbox block names the tiers of `metadata/lockbox.json` and says headline results score only earlier days;
-* no date that has not happened is written (`tests/test_docs_freshness.py` refuses one), so the clearing dates and
-  the first scoring dates are stated by year and by the fetched wording;
-* a result that is only a scratch measurement is cited by its issue and carries no number.
+* no date that has not happened is written (`tests/test_docs_freshness.py` refuses one).
 
 Recorded mutation for the digit guard (`test_no_digit_stands_outside_a_generated_block`): a digit typed into the
 prose of `docs/model/validation.md` (a hand-typed "5 bp" in the purpose section) fails it with `AssertionError`.
+
+Recorded mutation for the lockbox guard (`test_the_development_evidence_scores_no_locked_day`): the candidate
+declaration's `last_target_day` set to the first locked day in `metadata/spread_distribution_634.json` fails it with
+`AssertionError`.
 """
 
 import importlib.util
@@ -37,11 +40,11 @@ PAGE = ROOT / "docs/model/validation.md"
 
 SECTIONS = (
     "Model purpose and use",
-    "Conceptual soundness",
     "Data",
-    "Implementation and controls",
-    "Performance and outcomes analysis",
-    "Limitations and assumptions",
+    "Methodology and controls",
+    "Assumptions and limitations",
+    "Performance by regime",
+    "Outcomes analysis",
     "Ongoing monitoring",
     "Governance",
 )
@@ -50,18 +53,16 @@ SECTIONS = (
 BLOCKS = (
     "validation-use-limitation",
     "validation-use",
-    "validation-literature",
     "validation-data",
     "validation-lockbox",
+    "validation-candidate",
+    "validation-literature",
     "validation-controls",
-    "validation-distribution",
-    "validation-pressure",
-    "validation-final-test",
-    "validation-calibration",
-    "validation-lag",
-    "validation-desk",
+    "validation-assumptions",
     "validation-limitations",
     "validation-clearing",
+    "validation-performance",
+    "validation-outcomes",
     "validation-monitoring",
     "validation-governance",
 )
@@ -109,24 +110,50 @@ class StructureTests(unittest.TestCase):
         for name in names:
             self.assertEqual(text.count("<!-- end generated: %s -->" % name), 1, name)
 
-    def test_the_deliverables_the_directive_names_are_each_covered(self):
+    def test_the_page_documents_the_candidate_and_not_the_phase_2_models(self):
         text = _text()
-        for needle in ("pressure probability", "next-day distribution", "reserve-scarcity indicator",
-                       "calibration method", "lag", "lockbox", "benchmark"):
-            self.assertIn(needle, text.lower(), needle)
-        for desk in ("scheduled pressure days", "turn", "scarcity regime state"):
-            self.assertIn(desk, text.lower(), desk)
+        self.assertIn("gbm_funding", text)
+        for gone in ("validation-distribution", "validation-pressure", "validation-final-test",
+                     "validation-calibration", "validation-lag", "validation-desk"):
+            self.assertNotIn("generated: %s " % gone, text, gone)
+        for gone in ("Challengers against persistence", "The primary cell", "conformal_pid_nested"):
+            self.assertNotIn(gone, text, gone)
 
-    def test_the_four_desk_outputs_are_part_of_intended_use_and_monitoring(self):
-        blocks = _blocks(_text())
-        for name in ("validation-use", "validation-monitoring"):
-            for output in ("pressure probability", "spread quantiles", "expected contribution", "regime state"):
-                self.assertIn(output, blocks[name].lower(), "%s lacks %s" % (name, output))
+    def test_the_deliverables_of_the_step_are_each_covered(self):
+        text = _text().lower()
+        for needle in ("benchmark", "regime", "pressure-day type", "outcomes", "lockbox", "monitoring",
+                       "use limitation", "assumptions", "limitations"):
+            self.assertIn(needle, text, needle)
+
+
+class CandidateTests(unittest.TestCase):
+    def setUp(self):
+        self.candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
+        self.declaration = json.loads((ROOT / self.candidate["declaration"]).read_text(encoding="utf-8"))
+        self.block = _blocks(_text())["validation-candidate"]
+
+    def test_the_candidate_is_the_declared_control_of_the_measurement_that_scored_it(self):
+        self.assertEqual(self.candidate["candidate"], "gbm_funding")
+        self.assertIn(self.candidate["declaration_control"], self.declaration["controls"])
+        self.assertIn(self.declaration["controls"]["gbm_funding"], self.block)
+
+    def test_the_block_states_the_declared_inputs_horizons_and_levels_it_reads(self):
+        for column in self.declaration["inputs"]["base"]["columns"]:
+            self.assertIn("`%s`" % column, self.block)
+        self.assertIn("%d" % len(self.declaration["protocol"]["grid"]), self.block)
+        self.assertIn("minimum history", self.block.lower())
+        self.assertIn(self.declaration["scoring"]["last_target_day"], self.block)
+
+    def test_the_block_says_the_quantiles_are_not_recalibrated_and_nothing_is_registered(self):
+        text = self.block.lower()
+        self.assertIn("uncalibrated", text)
+        self.assertIn("not registered", text)
 
 
 class NoFigureTypedTests(unittest.TestCase):
-    #: What prose may carry digits for: issue and pull-request references, the numbering of a heading.
-    ALLOWED = (r"(?:PR )?#\d+", r"^#{1,6} \d+\.", r"\(#\d+(?:, #\d+)*\)")
+    #: What prose may carry digits for: issue and pull-request references, the numbering of a heading, and the names
+    #: of the hypotheses (H5) and of the benchmarks (B1, B2), which are labels and not figures.
+    ALLOWED = (r"(?:PR )?#\d+", r"^#{1,6} \d+\.", r"\(#\d+(?:, #\d+)*\)", r"\bH\d{1,2}\b", r"\bB[123]\b")
 
     def test_no_digit_stands_outside_a_generated_block(self):
         prose = _prose(_text())
@@ -137,17 +164,87 @@ class NoFigureTypedTests(unittest.TestCase):
         offenders = [line.strip() for line in prose.splitlines() if re.search(r"\d", line)]
         self.assertEqual(offenders, [], "a digit is typed outside a generated block")
 
-    def test_a_scratch_measurement_is_cited_by_issue_not_by_number(self):
-        scratch = _blocks(_text())["validation-desk"]
-        for issue in ("#232", "#115", "#214"):
-            self.assertIn(issue, scratch)
+    def test_no_performance_figure_is_rendered_for_a_result_that_has_no_record(self):
+        """The development evidence is cited by issue and page; no score, skill, interval or percentage is stated.
+
+        The bullets that restate the declared method (the bootstrap's draws and level) are not results and are left out.
+        """
+
+        for name in ("validation-performance", "validation-outcomes"):
+            block = "\n".join(l for l in _blocks(_text())[name].splitlines() if not l.startswith("- "))
+            body = re.sub(r"#\d+|`[^`]*`|\d{4}-\d{2}(?:-\d{2})?", "", block)
+            self.assertNotRegex(body, r"\d+\.\d+|%|\[[+-]", name)
+
+
+class PerformanceTests(unittest.TestCase):
+    def setUp(self):
+        self.candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
+        self.block = _blocks(_text())["validation-performance"]
+
+    def test_every_result_is_cited_by_issue_and_page_and_labelled_development_data(self):
+        self.assertTrue(self.candidate["evidence"])
+        self.assertIn(self.candidate["evidence_label"], self.block)
+        for row in self.candidate["evidence"]:
+            self.assertIn(row["issue"], self.block)
+            self.assertIn("`%s`" % row["page"], self.block)
+            self.assertTrue((ROOT / row["page"]).exists(), row["page"])
+            self.assertTrue((ROOT / row["script"]).exists(), row["script"])
+
+    def test_the_regimes_and_pressure_day_types_are_those_of_the_evaluation_splits(self):
+        splits = json.loads((ROOT / "metadata/evaluation_splits.json").read_text(encoding="utf-8"))
+        for regime in splits["regimes"]:
+            if regime["label"] != "2027":
+                self.assertIn(regime["label"], self.block)
+        for day_type in splits["day_types"]["precedence"]:
+            self.assertIn(day_type.replace("_", "-"), self.block)
+
+    def test_a_cited_page_scores_no_locked_day_and_reads_none_after_the_last_target_day(self):
+        for row in self.candidate["evidence"]:
+            text = (ROOT / row["page"]).read_text(encoding="utf-8")
+            self.assertRegex(text, r"(?i)development|exploration", row["page"])
+
+    def test_the_development_evidence_scores_no_locked_day(self):
+        """Recorded mutation: the declaration's `last_target_day` set to the first locked day fails this with AssertionError."""
+
+        declaration = json.loads((ROOT / "metadata/spread_distribution_634.json").read_text(encoding="utf-8"))
+        locked = json.loads((ROOT / "metadata/lockbox.json").read_text(encoding="utf-8"))["tiers"][0]["start"]
+        self.assertLess(declaration["scoring"]["last_target_day"], locked)
+
+    def test_the_phase_2_records_are_still_in_docs_runs(self):
+        """The rewrite replaces the report's content, not the records: the phase 2 files stay where they are."""
+
+        for name in ("persistence_funding.json", "backtest_gbm_conformal_pid_nested_funding.json",
+                     "final_test_near_blind.json", "pressure_model_v1_h1.json"):
+            self.assertTrue((ROOT / "docs/runs" / name).exists(), name)
+
+
+class AssumptionsAndLimitationsTests(unittest.TestCase):
+    def test_the_block_lists_every_assumption_and_limitation_of_the_declaration(self):
+        candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
+        blocks = _blocks(_text())
+        for item in candidate["assumptions"]:
+            self.assertIn(item, blocks["validation-assumptions"])
+        for item in candidate["limitations"]:
+            self.assertIn(item, blocks["validation-limitations"])
+        for item in candidate["open_questions"]:
+            self.assertIn(item, blocks["validation-limitations"])
+
+    def test_development_data_is_said_to_give_no_verdict(self):
+        block = _blocks(_text())["validation-limitations"].lower()
+        self.assertIn("development data only", block)
+        self.assertIn("verdict", block)
 
 
 class UseLimitationTests(unittest.TestCase):
-    def test_the_statement_is_the_one_in_the_use_limitation_file(self):
-        emit = _emit_results()
+    def test_the_statement_is_the_candidates_declared_one(self):
+        candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
         block = _blocks(_text())["validation-use-limitation"]
-        self.assertIn(emit.use_limitation(), block)
+        self.assertIn(candidate["use_limitation"], block)
+
+    def test_the_statement_says_it_is_not_registered_and_not_a_stress_warning_system(self):
+        block = _blocks(_text())["validation-use-limitation"].lower()
+        self.assertIn("not registered", block)
+        self.assertIn("not a stress-warning system", block)
 
     def test_the_page_says_what_the_model_must_not_be_used_for(self):
         use = _blocks(_text())["validation-use"].lower()
@@ -209,22 +306,28 @@ class ClearingMandateTests(unittest.TestCase):
 
 
 class LockboxTests(unittest.TestCase):
-    def test_the_block_names_the_declared_tiers_and_states_which_records_scored_which_days(self):
+    def test_the_block_names_the_declared_tiers_and_states_which_days_the_evidence_scores(self):
         block = _blocks(_text())["validation-lockbox"]
         tiers = json.loads((ROOT / "metadata/lockbox.json").read_text(encoding="utf-8"))["tiers"]
         for tier in tiers:
             self.assertIn(tier["start"], block)
+        declaration = json.loads((ROOT / "metadata/spread_distribution_634.json").read_text(encoding="utf-8"))
         flat = block.replace("**", "")
-        self.assertNotIn("Headline results score only days before", flat)
-        self.assertIn("older pooled distribution tables scored days through", flat)
-        self.assertIn("records published since score only days before %s" % tiers[0]["start"], flat)
+        self.assertIn(declaration["scoring"]["last_target_day"], flat)
+        self.assertIn("scores only days before %s" % tiers[0]["start"], flat)
 
 
 class MonitoringTests(unittest.TestCase):
-    def test_monitoring_is_the_live_record_and_names_its_dates(self):
-        block = _blocks(_text())["validation-monitoring"]
-        for needle in ("live record", "digests", "interim", "first_scoring_dates", "leap verdict"):
-            self.assertIn(needle, block.lower())
+    def test_monitoring_says_the_candidate_is_not_in_the_live_record_and_names_the_checkpoints(self):
+        block = _blocks(_text())["validation-monitoring"].lower()
+        for needle in ("live record", "not the candidate", "no logged day", "checkpoint", "attested", "live pin",
+                       "revalidation"):
+            self.assertIn(needle, block)
+
+    def test_the_outcomes_analysis_says_no_prospective_day_has_been_scored(self):
+        block = _blocks(_text())["validation-outcomes"].lower()
+        for needle in ("no prospective", "registered", "checkpoint"):
+            self.assertIn(needle, block)
 
 
 class ControlsTests(unittest.TestCase):

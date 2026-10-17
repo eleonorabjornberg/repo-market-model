@@ -34,17 +34,12 @@ PRE_AS_OF = ROOT / "docs/runs/archive/pre-asof/backtest_gbm_arx_declared_conform
 AS_OF = ROOT / "docs/runs/persistence_funding.json"
 
 
-def committed_commit():
-    doc = json.loads((ROOT / emit_visual.DATA_DIR / "history.json").read_text(encoding="utf-8"))
-    return doc["provenance"]["commit"]
-
-
 class RegenerationTests(unittest.TestCase):
     """The committed page and data are exactly what the generator produces."""
 
     @classmethod
     def setUpClass(cls):
-        cls.outputs = emit_visual.generate(ROOT, committed_commit())
+        cls.outputs = emit_visual.generate(ROOT)
 
     def test_regeneration_reproduces_committed_files_byte_for_byte(self):
         for rel, data in self.outputs.items():
@@ -63,7 +58,7 @@ class RegenerationTests(unittest.TestCase):
                 continue
             with self.subTest(path=rel):
                 prov = json.loads(data)["provenance"]
-                self.assertRegex(prov["commit"], r"^[0-9a-f]{40}$")
+                self.assertIn("commit", prov)
                 manifest = json.loads((ROOT / emit_visual.MANIFEST).read_text(encoding="utf-8"))
                 self.assertEqual(prov["panel"]["sha256"], manifest["sha256"])
                 self.assertTrue(prov["inputs"])
@@ -99,14 +94,57 @@ class RegenerationTests(unittest.TestCase):
                 self.assertLessEqual(set(kept), {"declaration", "derived", "comparison"})
                 self.assertLessEqual(set(kept.get("comparison", {})), {"loss", "mean_difference_interval"})
 
-    def test_commit_stamp_is_the_latest_input_commit(self):
+    def test_committed_files_carry_no_commit_stamp(self):
+        """The committed page and data carry no commit, so a merge to main cannot make them stale (#789).
+
+        The stamp is written on main when the page is published (`--stamp`, run by the pages job), not
+        in a pull request.
+        """
+        for rel, data in self.outputs.items():
+            with self.subTest(path=rel):
+                if rel.endswith(".json"):
+                    self.assertIsNone(json.loads(data)["provenance"]["commit"])
+                self.assertNotRegex(data.decode("utf-8"), r"commit <code>[0-9a-f]{12,40}")
+                self.assertEqual((ROOT / rel).read_bytes(), data)
+
+    def test_generation_without_a_stamp_never_reads_git_history(self):
+        """Regeneration for `--check` and the tests does not depend on where main is.
+
+        Recorded mutation: in `generate`, `commit = commit or input_commit(repo)` restored. This test then
+        raised `AssertionError: git history was read`.
+        """
+        def refuse(repo):
+            raise AssertionError("git history was read")
+
+        original = emit_visual.input_commit
+        emit_visual.input_commit = refuse
+        try:
+            emit_visual.generate(ROOT)
+        finally:
+            emit_visual.input_commit = original
+
+    def test_a_stamp_changes_only_the_commit(self):
+        """`generate(ROOT, commit)` is the unstamped output with the commit filled in, and nothing else."""
+        commit = "a" * 40
+        stamped = emit_visual.generate(ROOT, commit)
+        self.assertEqual(set(stamped), set(self.outputs))
+        for rel, data in stamped.items():
+            with self.subTest(path=rel):
+                if rel.endswith(".json"):
+                    doc, base = json.loads(data), json.loads(self.outputs[rel])
+                    self.assertEqual(doc["provenance"]["commit"], commit)
+                    doc["provenance"]["commit"] = None
+                    self.assertEqual(doc, base)
+                else:
+                    self.assertIn(f"commit <code>{commit}</code>", data.decode("utf-8"))
+                    self.assertNotEqual(data, self.outputs[rel])
+
+    def test_the_stamp_is_the_latest_input_commit(self):
         shallow = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--is-shallow-repository"],
                                  capture_output=True, text=True).stdout.strip()
         if shallow != "false":
             self.skipTest("a shallow clone cannot read which commit last changed an input")
-        self.assertEqual(committed_commit(), emit_visual.input_commit(ROOT),
-                         "an input changed after the page was generated: run `python3 scripts/emit_visual.py` "
-                         "in a commit after the change")
+        self.assertRegex(emit_visual.input_commit(ROOT), r"^[0-9a-f]{40}$")
 
 
 def published_records():
@@ -1709,7 +1747,7 @@ class PublishedMapTests(unittest.TestCase):
         original = emit_visual.gh_fetch
         emit_visual.gh_fetch = refuse
         try:
-            emit_visual.generate(ROOT, committed_commit())
+            emit_visual.generate(ROOT)
         finally:
             emit_visual.gh_fetch = original
 
