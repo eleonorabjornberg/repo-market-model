@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H2] step 3 · eleonorabjornberg/repo-market-model#907
+- Directive: #903
+- Step: 3 (reproducibility of the scratch panel `DERIV.csv`; milestone M3; an input to H5 step 4)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `71cf91d2`; chain `scripts/deriv_chain_903.py`
+- Tried: the chain that builds `DERIV.csv` rebuilt twice at each of five commits, with a digest per step
+- Result: every commit rebuilds identically twice, so there is no nondeterminism and the digests differ by code drift: the first step that moves is `net_settlement` (#679, #738). `92bf10a4…` is the chain at `2c9bd283` and `400372d6…` the chain at `38a00d81`; H2's `08df8d19…` is not reproduced at its own commit, which gives `1e5b748a…`.
+- Against kill: not applicable (no verdict; development data).
+- Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
