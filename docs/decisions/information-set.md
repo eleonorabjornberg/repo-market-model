@@ -93,8 +93,14 @@ are in `docs/pivot/backfilled-history-result.md`.
 1. **A back-filled value is training history.** It may sit in a fold's training frame, for a day before
    2018-04-03, the first day the API serves. Rule 3 above is unchanged: a training target is admissible
    only if it was observable by the fold's decision instant. The workbook's own properties date it May
-   2018, before the first scored decision instant; the Bank's original posting date is not recorded in
-   the file (see the result page).
+   2018, before the first scored decision instant. The Bank's original posting date was established on
+   13 October 2026: 2018-05-17, by her ruling on PR #661, with its evidence in #781 and
+   `docs/pivot/posting-dates-due-diligence.md`. The series admitted, each from that date, are listed in
+   `metadata/backfill_posting.json` (`admitted`) and here:
+   <!-- backfill-admitted: bgcr@2018-05-17, sofr@2018-05-17, tgcr@2018-05-17 -->
+   That is TGCR, BGCR and SOFR from 2018-05-17, by her ruling of 14 October 2026 on #742, and no other series.
+   The workbook's volumes are not admitted by this record. Whether IORB and the SOFR volume are admitted is
+   still her open question on #742; both are left out of the list.
 2. **It is never an as-of input at a scored decision instant.** No scored day is a back-filled day, and
    no scored forecast is conditioned on a back-filled row (its feature date is a published day).
    `repo_model.backfill.require_training_only` raises `LookAheadError` for a backtest in which either
@@ -102,11 +108,13 @@ are in `docs/pivot/backfilled-history-result.md`.
 3. **Nothing published moves.** No declaration in `docs/runs/` reads the back-fill, and the published
    panel (digest in `metadata/funding_panel_manifest.json`) does not carry it. A model that trains on it
    is a scratch measurement until a later decision puts it in a declaration.
-4. **The other inputs of the earlier months** (bill rates, Treasury auctions, the Desk's ON RRP results,
-   the H.8 first prints; FRED's reserves, TGA and IOER and the FR 2004 extract already reach back) are
-   fetched from their own sources for the same dates and carry the same rule. The calendar columns of
-   those months use the workbook's own publication days as the business-day schedule, because the market
-   holiday table begins on 2018-01-01.
+4. **Every other input is blank on a back-filled row.** The bill rates, Treasury auctions, the Desk's ON RRP
+   results, the H.8 first prints, FRED's reserves, TGA and IOER, the FR 2004 extract and the derived
+   scarcity state are not in the admitted list of item 1, so each is blank on a back-filled row, and a fit
+   that reads one of them on those rows raises `LookAheadError`
+   (`repo_model.backfill.require_series_admitted`). Only the calendar columns, which are functions of the
+   date, are filled there (and IORB, which the code treats as no series: item 1's open question); they use the workbook's own publication days as the business-day schedule,
+   because the market holiday table begins on 2018-01-01.
 
 ## Amendment: the scarcity state reads each leg at its own latest public row (#571, #586)
 
