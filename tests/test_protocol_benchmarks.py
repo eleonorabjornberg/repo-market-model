@@ -11,54 +11,33 @@ is recorded in `RECORDED`, so neither side can move without this test noticing.
 
 from __future__ import annotations
 
-import contextlib
 import csv
-import io
 import json
 import random
-import tempfile
 import unittest
 from datetime import date, time
 from pathlib import Path
 
+import panel_cache
 from repo_model import protocol_benchmarks as pb
 from repo_model import scoring_protocol as sp
-from repo_model.cli import main as cli_main
-from repo_model.data import load_daily_panel, load_point_in_time_panel
+from repo_model.data import load_point_in_time_panel
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text(encoding="utf-8"))
 SPLITS = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")
-FIXTURES = ROOT / "tests" / "fixtures" / "snapshots" / "funding_inputs"
-#: The published panel's build (`metadata/funding_panel_manifest.json`).
-CUTOFF = "2026-09-08T21:31:42+00:00"
 DECISION = time(16, 0)
 DEVELOPMENT_FIRST = date(2018, 6, 29)
 DEVELOPMENT_LAST = date(2026, 9, 3)
 SAMPLE_SEED = 655
 
-_PANEL = {}
-
 
 def published_panel():
     """The published panel and its point-in-time rows, built once from the tracked fixtures."""
 
-    if not _PANEL:
-        tmp = tempfile.mkdtemp()
-        path = Path(tmp) / "funding_panel.csv"
-        with contextlib.redirect_stdout(io.StringIO()):
-            code = cli_main(
-                ["build", "--raw-root", str(FIXTURES), "--output", str(path),
-                 "--build-cutoff", CUTOFF, "--decision-time", "16:00:00"]
-            )
-        if code != 0:
-            raise RuntimeError("the fixture panel did not build")
-        _PANEL["path"] = path
-        _PANEL["rows"] = load_daily_panel(path)
-        _PANEL["pit"] = path.with_name(path.stem + "_point_in_time.csv")
-    return _PANEL
+    return panel_cache.published_build()
 
 
 class _Hand:

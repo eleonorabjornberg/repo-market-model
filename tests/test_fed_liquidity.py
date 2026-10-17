@@ -399,10 +399,10 @@ class SnapshotTests(unittest.TestCase):
     def manifests(self):
         return [load_snapshot_manifest(path) for path in sorted(SNAPSHOTS.rglob("*.manifest.json"))]
 
-    def test_every_year_from_2018_to_2025_is_saved_and_checksummed(self):
+    def test_every_year_from_2018_to_2026_is_saved_and_checksummed(self):
         manifests = self.manifests()
         self.assertEqual(
-            sorted(m.url.split("startDate=")[1][:4] for m in manifests), [str(y) for y in range(2018, 2026)]
+            sorted(m.url.split("startDate=")[1][:4] for m in manifests), [str(y) for y in range(2018, 2027)]
         )
         for m in manifests:
             self.assertEqual(m.source_id, ingest.NYFED_REPO_OPS_SOURCE_ID)
@@ -872,10 +872,10 @@ class MissingAndCoverageTests(unittest.TestCase):
         self.assertEqual([r.date for r in rows], [date(2025, 12, 31)])
 
     def test_the_default_coverage_end_is_the_declared_one(self):
-        panel = [DailyObservation(date(2026, 1, 5), {"iorb": 1.55})]
+        panel = [DailyObservation(date(2026, 9, 4), {"iorb": 1.55})]
         with self.assertRaises(StaleReadError):
-            fed_liquidity.assemble(panel, self.directory(operation("2025-12-31", BN)), cutoff=self.CUTOFF, end=date(2026, 12, 31))
-        self.assertEqual(fed_liquidity.declared_coverage_end(), date(2025, 12, 31))
+            fed_liquidity.assemble(panel, self.directory(operation("2026-09-03", BN)), cutoff=self.CUTOFF, end=date(2026, 12, 31))
+        self.assertEqual(fed_liquidity.declared_coverage_end(), date(2026, 9, 3))
 
     def test_the_declared_coverage_end_is_the_tracked_snapshots_last_date(self):
         manifests = [load_snapshot_manifest(p) for p in sorted(SNAPSHOTS.rglob("*.manifest.json"))]
@@ -926,6 +926,83 @@ class MissingAndCoverageTests(unittest.TestCase):
             hashlib.sha256(",".join(events).encode()).hexdigest(),
             "f0c02e01288311993608fd27f937a569f852ec9cde0da90a2b84a2c2ddb4dfaf",
         )
+
+
+class ExtensionTo2026Tests(unittest.TestCase):
+    """The repo-operation snapshots end on 2026-09-03; nothing before 2026 moved (#766, items 2 and 3).
+
+    The 2026 file is the Desk's response for 2026-01-01 to 2026-09-03, fetched on 2026-10-14. Each
+    of its dates is available as the earlier years' are (the Desk's write time and the declared
+    lag). The published panel stops at 2025-12-31 (`scripts/fed_liquidity.py`, `END`), so no
+    published figure moves.
+
+    Recorded mutation, `fed_liquidity.assemble`: `if row.date > coverage_end:` mutated to
+    `if row.date > date.fromordinal(coverage_end.toordinal() + 1):`. `test_the_day_after_the_new_last_date_is_refused`
+    then fails with `AssertionError: StaleReadError not raised`.
+    """
+
+    FETCHED = datetime(2026, 10, 15, 0, 0, tzinfo=ZoneInfo("UTC"))
+    LAST = date(2026, 9, 3)
+    NEW_SHA = "b9924c1ba41788d9c171ea0150b04fa47fbf5a981ce177601981c2b16bfcd082"
+
+    def manifests(self):
+        return [load_snapshot_manifest(p) for p in sorted(SNAPSHOTS.rglob("*.manifest.json"))]
+
+    def test_both_sources_declare_the_new_coverage_end(self):
+        for source in ("nyfed_repo_ops", fed_liquidity.SAME_DAY_SOURCE_ID):
+            self.assertEqual(REGISTRY[source]["coverage_end"], "2026-09-03", source)
+            self.assertEqual(fed_liquidity.declared_coverage_end(source), self.LAST, source)
+
+    def test_the_new_file_is_the_desks_response_with_its_own_manifest(self):
+        new = [m for m in self.manifests() if m.url.endswith("startDate=2026-01-01&endDate=2026-09-03")]
+        self.assertEqual(len(new), 1)
+        self.assertEqual(new[0].sha256, self.NEW_SHA)
+        self.assertEqual(hashlib.sha256(new[0].path.read_bytes()).hexdigest(), self.NEW_SHA)
+        self.assertEqual(new[0].source_id, "nyfed_repo_ops")
+        self.assertEqual(len(self.manifests()), 9)
+
+    def test_a_2026_day_is_read_only_from_its_declared_instant(self):
+        # Availability follows the Desk's recorded write time and the declared lag (16:00 ET on the
+        # next business day), as for every earlier year; the fetch instant does not set it.
+        accepted = fed_liquidity.NYFED_REPO_OPS_ACCEPTED
+        early = datetime(2026, 9, 4, 12, 0, tzinfo=NEW_YORK)
+        late = datetime(2026, 9, 4, 17, 0, tzinfo=NEW_YORK)
+        self.assertNotIn(self.LAST, fed_liquidity.series_from_snapshots(SNAPSHOTS, early)[accepted])
+        self.assertIn(self.LAST, fed_liquidity.series_from_snapshots(SNAPSHOTS, late)[accepted])
+
+    def test_2026_days_are_read_after_the_fetch_and_the_last_date_is_readable(self):
+        series = fed_liquidity.series_from_snapshots(SNAPSHOTS, self.FETCHED)
+        days = [d for d in series[fed_liquidity.NYFED_REPO_OPS_ACCEPTED] if d >= date(2026, 1, 1)]
+        self.assertTrue(days)
+        self.assertEqual(max(days), self.LAST)
+        panel = [DailyObservation(self.LAST, {"iorb": 1.55})]
+        rows, _ = fed_liquidity.assemble(panel, SNAPSHOTS, cutoff=self.FETCHED, end=self.LAST)
+        self.assertEqual([r.date for r in rows], [self.LAST])
+
+    def test_the_day_after_the_new_last_date_is_refused(self):
+        panel = [DailyObservation(date(2026, 9, 4), {"iorb": 1.55})]
+        with self.assertRaises(StaleReadError):
+            fed_liquidity.assemble(panel, SNAPSHOTS, cutoff=self.FETCHED, end=date(2026, 9, 4))
+        with self.assertRaises(StaleReadError):
+            fed_liquidity.assemble(
+                panel, SNAPSHOTS, cutoff=self.FETCHED, end=date(2026, 9, 4), reading=fed_liquidity.SAME_DAY
+            )
+
+    def test_rows_before_2026_read_the_same_without_the_new_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "nyfed_repo_ops"
+            root.mkdir()
+            for manifest in self.manifests():
+                if manifest.sha256 != self.NEW_SHA:
+                    (root / manifest.path.name).write_bytes(manifest.path.read_bytes())
+                    source = manifest.path.parent / (manifest.path.name + ".manifest.json")
+                    (root / source.name).write_bytes(source.read_bytes())
+            for reading in (fed_liquidity.CONSERVATIVE, fed_liquidity.SAME_DAY):
+                old = fed_liquidity.series_from_snapshots(Path(tmp), self.FETCHED, reading)
+                new = fed_liquidity.series_from_snapshots(SNAPSHOTS, self.FETCHED, reading)
+                for name, values in old.items():
+                    kept = {d: v for d, v in new[name].items() if d < date(2026, 1, 1)}
+                    self.assertEqual(kept, {d: v for d, v in values.items() if d < date(2026, 1, 1)}, (reading, name))
 
 
 class MeaningTests(unittest.TestCase):
