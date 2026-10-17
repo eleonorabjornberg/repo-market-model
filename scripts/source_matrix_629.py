@@ -17,7 +17,7 @@ formed from the panel's columns and the as-of rule's refusals, before any statis
     PYTHONPATH=src python3 scripts/source_matrix_629.py run --panel SCREEN.csv --output OUT/source_matrix.json --matrices OUT
     PYTHONPATH=src python3 scripts/source_matrix_629.py report OUT/source_matrix.json --output OUT
 
-* **Days.** The scored days of the lead-1 fold grid, 2018-06-29 to 2025-12-31 (`source_screen`), the same days at every lead. An
+* **Days.** The scored days of the lead-1 fold grid, 2018-06-29 to 2026-09-03 (`repo_model.exploration.EXPLORATORY_END`, #684; the opened near-blind tier is development data, never a verdict), the same days at every lead. An
   ordinary day is one the risk-date part does not serve: its day type is `ordinary` and no coupon settlement is known for it
   (`treasury_settlement_coupons`, dated from the auction announcement, read at lead 1).
 * **Reading.** Each series is read as of the decision instant through `repo_model.asof.InformationRule`, at leads of 1, 2, 3, 5 and
@@ -58,12 +58,13 @@ from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import backfill, contract, h41_release, pressure, scarcity, settlement_dating  # noqa: E402
+from repo_model import backfill, contract, h41_release, pressure, risk_dates, scarcity, settlement_dating  # noqa: E402
 from repo_model import satiation as sat  # noqa: E402
 from repo_model.asof import InformationRule, InformationSet, fold_grid  # noqa: E402
 from repo_model.baseline import _as_of_folds  # noqa: E402
 from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
+from repo_model.exploration import EXPLORATORY_END, NEAR_BLIND_START  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import _quantile, stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
@@ -85,7 +86,7 @@ ann = eds.ann
 DECLARATION = REPO / "metadata" / "source_matrix_629.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 FIRST_DAY = ss.FIRST_DAY
-LAST_DAY = ss.LAST_DAY
+LAST_DAY = EXPLORATORY_END
 LEADS = (1, 2, 3, 5, 10)
 TARGETS = ("pressure", "level", "change")
 THRESHOLD_BP = 5.0
@@ -114,7 +115,7 @@ def require_panel_window(rows) -> None:
     """Refuse a panel that runs past the last day a comparison may score.
 
     Raises:
-        LookAheadError: when the last row is after 2025-12-31 (the 2026 tiers are locked, `docs/decisions/lockbox.md`).
+        LookAheadError: when the last row is after 2026-09-03 (the blind tier is locked, `docs/decisions/lockbox.md`).
     """
 
     if rows[-1].date > LAST_DAY:
@@ -149,7 +150,7 @@ def committed_declaration(path: Path) -> dict:
 def is_ordinary(day_type: str, coupons: Optional[float]) -> bool:
     """A day the risk-date part does not serve: an `ordinary` day type and no coupon settlement known for it."""
 
-    return day_type == "ordinary" and not float(coupons or 0.0) > 0.0
+    return not risk_dates.non_ordinary_day(day_type, coupons)
 
 
 # -- statistics -----------------------------------------------------------------
@@ -475,7 +476,7 @@ def declaration_document(names: Sequence[str], readable, unreadable, affected, p
         "status": (
             "declared by the pull request that closes #629 before any statistic; an exploratory screen, not a record. Nothing is selected "
             "into a model and nothing is published: no rule, threshold, onset definition or availability time changes, no day after "
-            "2025-12-31 is read, the back-filled 2014-18 history is not read while its posting instant is null (#572), and no hindsight "
+            "2026-09-03 is read, the back-filled 2014-18 history is not read while its posting instant is null (#572), and no hindsight "
             "regime label is used (ruling on #515). None of the tests below is corrected for multiplicity"
         ),
         "issue": 629,
@@ -484,7 +485,7 @@ def declaration_document(names: Sequence[str], readable, unreadable, affected, p
             "columns": columns,
             "built_by": "docs/pivot/source-matrix-ordinary-days-result.md (Reproduce): source_screen.py panel over the published panel's scratch panels and satiation_distance_598.py's",
         },
-        "days": "the scored days of the lead-1 fold grid, 2018-06-29 to 2025-12-31 (source_screen), the same days at every lead",
+        "days": "the scored days of the lead-1 fold grid, 2018-06-29 to 2026-09-03 (source_screen, EXPLORATORY_END), the same days at every lead",
         "ordinary_days": (
             "a scored day whose day type (metadata/evaluation_splits.json) is ordinary and whose treasury_settlement_coupons, dated from the auction "
             "announcement (#541) and read at lead 1, is not positive: the risk-date rule of the every-day part (announcement_dating_rescore.risk_flag)"
@@ -739,6 +740,9 @@ def run_command(args) -> int:
         by = {"pooled": list(ordinary_idx)}
         for label in period_labels:
             by["regime:" + label] = [i for i in ordinary_idx if regime_of[i] == label]
+        # The 2026 column (#684): the days the opened near-blind tier added, beside the days the earlier page read.
+        by["period:2018-2025"] = [i for i in ordinary_idx if dates[i] < NEAR_BLIND_START]
+        by["period:2026"] = [i for i in ordinary_idx if dates[i] >= NEAR_BLIND_START]
         for b in BANDS:
             by["scarcity:" + b] = [i for i in ordinary_idx if bands[lead][i] == b]
         split_positions[lead] = by
@@ -1159,6 +1163,14 @@ def report_command(args) -> int:
             cells.append("-" if c["auc"] is None else f"{c['auc']:.2f} {_iv(c['interval'])}")
         out.append(f"| `{name}` | " + " | ".join(cells) + " |")
     out.append("\nPressure days and ordinary days per split, lead 1: " + "; ".join(f"{s} {result['bootstrap'][names[0]]['auroc']['1'][s]['pressure_days']} of {scope['regime_days_ordinary'][s]}" for s in splits) + ".\n")
+    if "period:2026" in splits:
+        n26 = result["bootstrap"][names[0]]["auroc"]["1"]["period:2026"]["pressure_days"]
+        out.append(
+            f"The `period:2026` column (#684) is the days of the opened near-blind tier, 2026-01-01 to {EXPLORATORY_END}, which this screen now reads; "
+            f"`period:2018-2025` is the days the earlier page read. The 2026 column holds {n26} pressure days on ordinary days, so its intervals are wide: "
+            "read it as a check on what changed after reserve-management purchases began, not as evidence. These are development days: nothing here is a verdict "
+            "and none of it is out-of-sample evidence for a registered candidate (scoring protocol v1, #640).\n"
+        )
     # Table 5: pre-onset
     def pre_of(name, split="pooled"):
         return result["bootstrap"][name]["pre_onset"][split]

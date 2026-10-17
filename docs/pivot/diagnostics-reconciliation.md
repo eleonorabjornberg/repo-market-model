@@ -162,6 +162,28 @@ Over all scored days, read through the as-of rule (`scripts/setup_reads.py`, `ev
 old at the decision (median 8; older than 7 on 1,110 of 1,873 scored days at h = 1), the dealer position 9 to 19 (older than 7 on every scored day). The
 convention for the next pages: state the unit, and state whether the age is of the row or of the observation's Wednesday.
 
+### 11. Reliability slopes are pooled across regimes (added 13 October 2026, #683, finding #670)
+
+The reliability slopes the pages report for the days that are not risk dates are fitted on all scored days at once, and they read as nearly
+calibrated while the forecasts inside the regime that holds most of the pressure are badly over-spread.
+
+| page | pooled reading | within 2018-19 (`evidence/off-risk-day/step2-off-risk-days.md`) |
+|---|---|---|
+| `off-risk-day-result.md`, `+offday` | slope 0.78 to 0.85, all days | 0.48 at h = 1 and 0.14 to 0.22 at h = 3 to 5 (scarcity state 3: 0.44 at h = 1) |
+| `kinked-elasticity-result.md`, rolling form | "nearest to calibrated", slope 0.74 at h = 1 | not computed for these rows yet (the page's note says how); `+offday` of #624 is the nearest tracked comparator |
+
+**Why pooling misleads.** The slope is the weight the forecast's log-odds earn in a logistic fit of the outcome. 2021-23 has no pressure day and
+forecasts near 0, so it adds a long, well-ordered stretch at the bottom of the curve: many days whose low forecast is followed by no event. That
+stretch raises the pooled slope without making any day inside 2018-19 or 2025-26 better calibrated. Pooling also mixes regimes whose base rates
+differ by orders of magnitude, so the pooled line fits none of them.
+
+**The convention from now on.** Report the slope and intercept with an interval inside each regime (2018-19, 2020-24, 2025-26) and, where the page
+splits by it, inside each as-of scarcity state, with the pooled cell beside them and never alone (`repo_model.reliability_regimes`). A regime with no
+pressure day has no slope: say "undefined" and do not read the pooled value in its place. Do not call a row "calibrated" on a pooled slope. Any future
+reliability-shape test, such as the one #616's line of work leads to (#628), must be read within regimes: a pooled test could certify as calibrated
+a forecast that is over-spread inside 2018-19, which is where the pressure is. How tiers 3 and 5 read reliability is Eleonora's decision; this
+point only records how the figures are to be read.
+
 ## Commands that show the supported values
 
 ```
@@ -189,3 +211,80 @@ spread column: `exceeds_bp(spread, 5.0)` on consecutive panel rows, split at the
   noted above, not a correction.
 * No forecast was rebuilt: every model figure is read from the tracked evidence of its page. The page-level numbers (for example the
   1.35 and the 1.30) were reproduced from those files, not re-scored.
+
+## Which days are "ordinary"? Two definitions, named (#682, finding #669)
+
+A reading of tracked evidence and the published panel; it moves no figure, edits no page, scores no day after 2025-12-31 and decides
+nothing. The two definitions are now `repo_model.risk_dates.SCHEDULED` and `repo_model.risk_dates.NON_ORDINARY`, one function
+(`is_risk_date`, `not_risk_date_mask`) that the judge's `risk_date` grouping and every script that tested a day for ordinariness now ask.
+Each page keeps the definition it used.
+
+| name | rule | read by |
+|---|---|---|
+| `scheduled` | a quarter-end, a tax date, or a day on which coupons settle | the judge's `risk_date` grouping (tier splits); #626 |
+| `non_ordinary` | any day type other than `ordinary` (the split declaration's month-end window, so month-ends too), or a coupon settlement | the model's risk-date rule (`ml._RiskDateDesign.member`); #624, #631, #610, #629, #630 |
+
+They differ by the month-ends that are not quarter-ends: 99 days at lead 1, 5 of them above +5 bp. Month-ends are prone to pressure, so
+calling them risk dates (`non_ordinary`) makes the days left easier to rank; calling them ordinary (`scheduled`) puts the pressure-prone
+days among the "ordinary" ones.
+
+### Counts per lead on the published panel (2018-06-29 to 2025-12-31)
+
+Days that are not risk dates, and those of them above +5 bp (strictly, on whole basis points), by the lead's scored grid. The coupon clause
+is on, as #624, #631 and #610 call it (`risk_flag(splits, values, True)`); the coupon column is the panel's own, not the dated arm's.
+
+| lead | scored days | pressure days | `scheduled`: days / pressure | `non_ordinary`: days / pressure |
+|---|---|---|---|---|
+| 1 | 1873 | 140 | 1568 / 87 | 1469 / 82 |
+| 2 | 1872 | 139 | 1568 / 87 | 1469 / 82 |
+| 3 | 1871 | 138 | 1568 / 87 | 1469 / 82 |
+| 4 | 1870 | 138 | 1567 / 87 | 1468 / 82 |
+| 5 | 1869 | 138 | 1566 / 87 | 1467 / 82 |
+
+The 1568 / 87 agrees with `evidence/kinked/extras.json` (`off_risk_dates`, lead 1: 1568 days, 87 events) and the 1469 / 82 with
+`derived-features-result.md`. In the 2018-19 regime at lead 1 the two leave 314 days with 63 pressure days (`scheduled`) and 294 with 62
+(`non_ordinary`).
+
+### The published ordinary-day headlines and the definition each was read under
+
+Every figure below is as its page publishes it, under that page's definition. **The figure under the other definition is not given:** it
+needs the page's forecasts re-scored on the other population, and the evidence keeps summaries, not the per-day forecasts. The counts
+above are what each would be scored on.
+
+| page | headline (lead 1 unless said) | definition | days / pressure at lead 1 | under the other definition |
+|---|---|---|---|---|
+| #626 `kinked-elasticity-result.md` | AUROC: persistence-logistic 0.898 [0.848, 0.935]; `structural_liquidity` 0.876; `+h41` 0.883; kinked fitted 0.876; kinked rolling 0.882 | `scheduled` | 1568 / 87 | not re-scored; population 1469 / 82 |
+| #624 `off-risk-day-result.md` | AUROC on the off-risk days: `ROW` 0.736 [0.668, 0.788]; `ROW+tailcap75+recent_floor` 0.870 [0.805, 0.916] (leads 1 to 5 in the page) | `non_ordinary` | 1469 / 82 | not re-scored; population 1568 / 87 |
+| #631 `derived-features-result.md` | AUROC on ordinary days: parent `risk_gbm+settle+h41+dist_roll+every_day` 0.903 [0.86, 0.94]; with lagged pressure 0.864 [0.79, 0.92]; the persistence reference `spread_bps` 0.94 | `non_ordinary` | 1469 / 82 | not re-scored; population 1568 / 87 |
+| #610 `tailcap-floor-result.md` | the share of the 2018-19 shortfall on days that are not risk dates: 94% (62 of 102 pressure days) | `non_ordinary` | 2018-19: 294 / 62 | population 314 / 63 |
+
+The two populations are not nested in the way a headline can be adjusted by hand: the 99 extra days are scored by the same forecasts, but
+an AUROC is not a sum over days, so none of the headlines above is moved by arithmetic from these counts.
+
+### Other "ordinary" sets that are neither of the two (not changed here)
+
+Four more scripts read a third population, by the *reporting* day type (`reporting_day_type`: the month's last two business days):
+`spread_distribution_632.py` (the `day_type` group equal to `ordinary`, with no coupon clause), `construction_gaps_485.py` and
+`model_defects_540.py` (`reporting_day_type` other than `ordinary`, or inside the quarter-end window), and `spread_mean_reversion_686.py` (the tail scope `ordinary`, the `day_type` equal to `ordinary`, which reached main after this section was first written). Re-pointing them would move
+their published figures, so they stay as they are; they are a finding for Eleonora's ruling with the one below.
+
+### Ruling (Eleonora, 14 October 2026, relayed by the orchestrating session on #709)
+
+- **Criterion 2 of #682 is accepted with the counts under both definitions.** Each headline stays under its own page's definition, and
+  pages scored under the retired judge are not re-scored. The re-run of the four headlines is not wanted.
+- **The definition from now on** is the shared `risk_dates` definition, under which announced coupon settlements count as risk dates,
+  consistent with her #720 ruling. H2, H5 and the progress page (#637) use it from their next step on. Past pages keep theirs.
+- **Open wording question (not settled in code):** both named definitions, `scheduled` and `non_ordinary`, count a coupon settlement
+  as a risk date, so the ruling does not say which of the two the "shared definition" is. They differ by the 99 month-ends that are not
+  quarter-ends (1568 / 87 against 1469 / 82 at lead 1). Until she names one, each script keeps its current definition, and an
+  ordinary-day figure is quoted with the name of the definition it was read under.
+
+### Addendum (#800, finding on #709): who asks `risk_dates`, and who still groups by day type
+
+The finding checked the code after #709 and found the shared function unused in two risk-date decisions that were merged after it. Both now ask it, and no figure moves.
+
+- **Routed through `risk_dates.is_risk_date`** (`NON_ORDINARY`, with `reporting_on=` the row's date, which reads the day type as `reporting_day_type` does): H5's context rule, `spread_mr_variants.is_risk_day` (#767, #761), and H6's risk dates, `risk_date_spread.risk_day_type` (#693, #739).
+- **Nothing moved.** On the published panel (2018-06-29 to 2025-12-31, 1873 days) each routed function returns the same answer as before on every day: H5's 386 risk days, and H6's 386 with every type unchanged. The shared `NON_ORDINARY` with the calendar-day month-end window has 404.
+- **Why they differ.** The two readings differ only in the month-end window: `day_type` counts the days within two *calendar* days of the month's end, and `reporting_day_type` the month's last two *business* days. They disagree on 58 days (20 only in the business-day reading, 38 only in the calendar-day one). This is the gap `evaluation_splits.reporting_day_type` documents ("a v2 candidate"), not a bug in either.
+- **Left as they are, by design.** These group days by the reporting day type (a population or a share by type, not a decision that a day is a risk date), and moving them to the shared function would move published figures: `ranking.py` climatology (H8: the pressure share among days of the target's type); `scripts/h5_step3_707.py` and `scripts/near_threshold_688.py` (a split of the scores by type); `scripts/richer_targets_639.py` (H9's "ordinary days" column, by day type alone, which leaves the coupon days in).
+- **Open, hers.** Which reading the "shared definition" is (calendar-day or business-day month-end window). The two routed callers keep the business-day one until she names it; a figure that is quoted with an ordinary-day population still names the definition it was read under.

@@ -3,7 +3,7 @@
 
 Read by `scripts/emit_visual.py`. Everything shown is parsed from tracked sources:
 
-- `docs/research/plan.md`: each hypothesis's goal, test, kill criterion, next step and status;
+- `docs/research/plan.md`: each hypothesis's goal, test, kill criterion, next step and status, and its "Critical path" section;
 - `docs/research/hypotheses/H<n>.md`: its owner, question, milestones and progress markers;
 - `docs/research/log.md`: its log view (every entry tagged `[H<n>]`);
 - `docs/research/milestones.json`: the two facts no other source holds, which milestones are done (each with the
@@ -151,9 +151,9 @@ def parse_log_entries(text):
     for number, match, heading, fields in check_research_log.parse_log(text):
         if not match:
             raise ResearchError(f"{LOG} line {number}: malformed heading {heading!r}")
-        date, hid, step, ref = match.groups()
-        by_h.setdefault(hid, []).append({"date": date, "step": int(step), "ref": ref, "line": number,
-                                         "fields": fields})
+        date, hid, step, groundwork, ref = match.group("date", "hyp", "step", "groundwork", "ref")
+        by_h.setdefault(hid, []).append({"date": date, "step": int(step) if step else None, "groundwork": groundwork,
+                                         "ref": ref, "line": number, "fields": fields})
     return by_h
 
 
@@ -176,7 +176,7 @@ def load(repo):
             raise ResearchError(f"{PROGRESS}: {stray} are not milestones of the {hid} manual")
         entries = log.get(hid, [])
         floor = progress.get("steps", {}).get(hid, 1)
-        step = max([floor] + [e["step"] for e in entries])
+        step = max([floor] + [e["step"] for e in entries if e["step"] is not None])
         status_text = (bullet(entry, "status") or "").split(".")[0].strip().lower()
         status = status_text.split(",")[0]
         hypotheses.append({
@@ -189,6 +189,47 @@ def load(repo):
     if unknown:
         raise ResearchError(f"{LOG} names {unknown}, which the plan does not")
     return hypotheses
+
+
+CRITICAL_PATH = "Critical path"
+LINK = re.compile(r"^- (CP\d+)\. (H\d+\.M\d+) \(gates ((?:H\d+)(?:, H\d+)*)\)\. Waits on: (.+)$")
+
+
+def load_critical_path(repo, hypotheses):
+    """The plan's "Critical path" section (#704): ordered links, each a milestone of a manual.
+
+    A link reads `- CP<n>. H<k>.M<j> (gates H5, H9). Waits on: CP<a>; free text.` It is refused when the section
+    is missing, a milestone is in no manual, or a link waits on a link that does not come before it. A link is
+    done only if `docs/research/milestones.json` says its milestone is.
+    """
+    text = read(repo, PLAN)
+    found = re.search(rf"(?ms)^## {CRITICAL_PATH}\s*$(.*?)(?=^## |\Z)", text)
+    if not found:
+        raise ResearchError(f"{PLAN} has no '## {CRITICAL_PATH}' section")
+    milestones = {f'{h["id"]}.{mid}': mtext for h in hypotheses for mid, mtext in h["manual"]["milestones"]}
+    done = {f'{h["id"]}.{mid}' for h in hypotheses for mid in h["done"]}
+    links = []
+    for line in found.group(1).splitlines():
+        if not line.startswith("- CP"):
+            continue
+        m = LINK.match(line)
+        if not m:
+            raise ResearchError(f"{PLAN} {CRITICAL_PATH}: malformed link {line!r}")
+        cid, milestone, gates, waits = m.groups()
+        if milestone not in milestones:
+            raise ResearchError(f"{PLAN} {CRITICAL_PATH}: {cid} names {milestone}, which no manual has")
+        for goal in gates.split(", "):
+            if goal not in {h["id"] for h in hypotheses}:
+                raise ResearchError(f"{PLAN} {CRITICAL_PATH}: {cid} gates {goal}, which the plan does not have")
+        earlier = {l["id"] for l in links}
+        for ref in re.findall(r"\bCP\d+\b", waits):
+            if ref not in earlier:
+                raise ResearchError(f"{PLAN} {CRITICAL_PATH}: {cid} waits on {ref}, which does not come before it")
+        links.append({"id": cid, "milestone": milestone, "text": milestones[milestone],
+                      "gates": gates.split(", "), "waits": waits, "done": milestone in done})
+    if not links:
+        raise ResearchError(f"{PLAN} {CRITICAL_PATH} has no link")
+    return links
 
 
 # ---------------------------------------------------------------- rendering
@@ -206,7 +247,7 @@ def first_open(h):
     return None
 
 
-def summary_html(hypotheses):
+def summary_html(hypotheses, links):
     goals = [h for h in hypotheses if h["role"]]
     goal_items = "".join(
         f'<li><b>{esc(h["role"].capitalize())} goal, {h["id"]}.</b> {inline(h["title"])}</li>'
@@ -219,11 +260,12 @@ def summary_html(hypotheses):
     reached = verdicts(hypotheses)
     verdict_text = ("none yet" if not reached else "; ".join(f'{h["id"]}: {esc(h["status"])}' for h in reached))
     next_items = []
-    for h in sorted([h for h in hypotheses if h["id"] == "H1" or h["role"]],
-                    key=lambda h: (h["role"] != "primary", h["role"] != "secondary", h["id"])):
-        opened = first_open(h)
+    for h in sorted(goals, key=lambda h: h["role"] != "primary"):
+        opened = next((l for l in links if h["id"] in l["gates"] and not l["done"]), None)
         if opened:
-            next_items.append(f'<li><b>{h["id"]}</b>, first open milestone {opened[0]}: {inline(opened[1])}</li>')
+            next_items.append(
+                f'<li><b>{h["id"]}</b>, {opened["id"]} ({opened["milestone"]}): {inline(opened["text"])} '
+                f'Waits on: {inline(opened["waits"])}</li>')
     return (
         '<div class="rs-box"><h3>The two goals</h3><ul>' + goal_items + '</ul></div>'
         '<div class="rs-box"><h3>Where each hypothesis stands</h3>'
@@ -234,9 +276,8 @@ def summary_html(hypotheses):
         '(<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/scoring-protocol.md">'
         'scoring protocol v1</a>).</p></div>'
         '<div class="rs-box"><h3>Next on the critical path</h3><ul>' + "".join(next_items) + '</ul>'
-        '<p class="rs-note">Each line is the first milestone not yet marked done in '
-        '<code>docs/research/milestones.json</code>, for the two goals and for H1, whose checks block every '
-        'registration.</p></div>')
+        '<p class="rs-note">Each line is the first link of the plan&rsquo;s &ldquo;Critical path&rdquo; section that '
+        'gates the goal and whose milestone is not marked done in <code>docs/research/milestones.json</code>.</p></div>')
 
 
 def best_html(final):
@@ -270,7 +311,7 @@ def log_html(h):
         link = f'<a href="{BLOB}{LOG}#L{e["line"]}">log entry</a>'
         f = e["fields"]
         items.append(
-            f'<li><b>{e["date"]}</b>, step {e["step"]}, {link}, tier {esc(f.get("Tier", ""))}'
+            f'<li><b>{e["date"]}</b>, {"groundwork " + e["groundwork"] if e["step"] is None else "step " + str(e["step"])}, {link}, tier {esc(f.get("Tier", ""))}'
             + (f' <span class="rs-tag">{esc(DEV_LABEL)}</span>' if f.get("Tier") == "development" else "")
             + f'<br>{inline(f.get("Result", ""))}<br><i>Against kill:</i> {inline(f.get("Against kill", ""))}</li>')
     return '<ul class="rs-log">' + "".join(items) + '</ul>'
@@ -324,11 +365,12 @@ def payload(hypotheses):
              "milestones": [{"id": mid, "text": text, "done": mid in h["done"],
                              "evidence": h["evidence"].get(mid)} for mid, text in h["manual"]["milestones"]],
              "markers": h["manual"]["markers"],
-             "log": [{"step": e["step"], "line": e["line"]} for e in h["log"]]}
+             "log": [{"step": e["step"], "groundwork": e["groundwork"], "line": e["line"]} for e in h["log"]]}
             for h in hypotheses]
 
 
 def fills(repo, final):
     hypotheses = load(repo)
-    return {"research_summary": summary_html(hypotheses), "research_best": best_html(final),
+    links = load_critical_path(repo, hypotheses)
+    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final),
             "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)

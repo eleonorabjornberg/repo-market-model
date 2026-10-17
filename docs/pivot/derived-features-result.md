@@ -1,6 +1,6 @@
 # Derived features, interactions and lagged pressure, screened on ordinary days, and one model test (#631)
 
-A scratch measurement. It writes nothing into `docs/runs/`, publishes nothing, moves no published figure, reads no day after 2025-12-31 and scores no day of a locked tier
+A scratch measurement. It writes nothing into `docs/runs/`, publishes nothing, moves no published figure, reads no day after 2025-12-31 (the 2026 extension of #684, at the end of the page, reads to 2026-09-03) and scores no day of a locked tier
 (`docs/decisions/lockbox.md`; `require_unlocked`). The declaration of the features, interactions, leads, tests, ranking rule and the single model test,
 `metadata/derived_features_631.json` (with the two candidate files in `metadata/pressure_judge/candidates/`), was committed before any number was computed; the script refuses an uncommitted
 declaration. The screen reads 2018-2025, so a result describes that history and is not a confirmation (ruling of 11 October 2026 on #567). **Nothing here is selected into a model or joins a published declaration.**
@@ -182,6 +182,16 @@ Table M1. The judge in force (tiers 1, 3 and 5; the weighted rule is the one in 
 
 Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%], and the reliability intercept and slope (logistic of the outcome on logit(forecast); `-` where the forecast is constant or the fit is not formed). The control forecasts exactly 0 there.
 
+> *Note, 13 October 2026 (#683).* The slopes in Table M2 are **pooled across regimes**: the parent's slope of 1.00 at h = 1 is not evidence that it is
+> calibrated inside 2018-19 or 2025-26, where the pressure is. A regime with no pressure day (2021-23) forecasts near 0 and raises the pooled slope
+> (`docs/pivot/diagnostics-reconciliation.md`, point 11). The per-regime slopes of these rows were **not computed** by #683, because they need this
+> page's forecasts rebuilt; until they are, do not read Table M2 as a statement of calibration.
+>
+> *Update, 14 October 2026 (#753).* Still not computed. #626's per-regime slopes are now (`docs/pivot/kinked-elasticity-result.md`, "Reliability within regimes"), and
+> they differ sharply from the pooled ones, so this table's slopes stay uncalibrated by regime.
+>
+> *Update, 16 October 2026 (#785).* The per-regime slopes of the two every-day rows are now computed (section "Reliability within regimes" below, after Table M2).
+
 | row | h | days | pressure days | mean forecast | realised | AUROC [90%] | intercept | slope |
 |---|---|---|---|---|---|---|---|---|
 | `risk_gbm+settle+h41+dist_roll` | 1 | 1469 | 82 | 0.0000 | 0.0558 | 0.500 (constant) | - | - |
@@ -199,6 +209,42 @@ Table M2. On ordinary days at +5 bp: the forecast's AUROC for pressure days [90%
 | `risk_gbm+settle+h41+dist_roll+every_day+lagpress` | 3 | 1469 | 82 | 0.0900 | 0.0558 | 0.779 [0.68, 0.87] | -1.09 | 0.75 |
 | `risk_gbm+settle+h41+dist_roll+every_day+lagpress` | 4 | 1468 | 82 | 0.0830 | 0.0559 | 0.786 [0.69, 0.87] | -1.03 | 0.73 |
 | `risk_gbm+settle+h41+dist_roll+every_day+lagpress` | 5 | 1467 | 82 | 0.0854 | 0.0559 | 0.818 [0.71, 0.89] | -0.97 | 0.79 |
+
+### Reliability within regimes (16 October 2026, #785)
+
+Development data only (days to 2025-12-31, the ordinary days of Table M2, +5 bp); not a verdict. Slope of the logistic reliability line of the two every-day rows, 90% stationary-bootstrap
+interval (2,000 replications, the judge's block length); 1 is reliable. Pressure days in the pooled cell: 82 (62 in 2018-19, 5 in 2020-24, 15 in 2025-26; 2021-23 holds none, so the 2020-24 cell is five days
+and every interval there covers 1 and zero). The full tables, with intercepts, every horizon and the split by as-of scarcity state, are in
+`docs/pivot/evidence/reliability-regimes/derived-631.md` (and `.json`), written by `scripts/reliability_regimes_683.py derived631`.
+
+| row | h | pooled | 2018-19 | 2020-24 | 2025-26 |
+|---|---|---|---|---|---|
+| `+every_day` | 1 | 1.00 [0.68, 1.40] | 0.61 [0.29, 1.24] | 0.62 [-0.24, 1.07] | 0.94 [0.71, 1.48] |
+| `+every_day` | 2 | 0.94 [0.69, 1.28] | 0.50 [0.23, 0.95] | 0.84 [-0.49, 1.55] | 0.68 [0.44, 1.30] |
+| `+every_day` | 3 | 0.91 [0.50, 1.40] | 0.32 [0.10, 0.87] | 1.05 [-0.77, 3.17] | 0.87 [0.48, 1.60] |
+| `+every_day` | 4 | 0.99 [0.72, 1.35] | 0.52 [0.23, 0.96] | 0.92 [-0.25, 1.72] | 0.73 [0.45, 1.42] |
+| `+every_day` | 5 | 0.85 [0.51, 1.26] | 0.32 [0.15, 0.65] | 1.18 [-0.10, 2.39] | 0.81 [0.52, 1.52] |
+| `+every_day+lagpress` | 1 | 0.96 [0.71, 1.21] | 0.51 [0.28, 0.86] | 0.76 [-0.82, 1.26] | 0.91 [0.67, 1.58] |
+| `+every_day+lagpress` | 2 | 0.79 [0.54, 1.05] | 0.30 [0.12, 0.57] | 1.24 [-2.07, 2.23] | 0.78 [0.53, 1.53] |
+| `+every_day+lagpress` | 3 | 0.75 [0.45, 1.04] | 0.23 [0.05, 0.51] | 1.67 [-1.48, 3.24] | 0.76 [0.49, 1.38] |
+| `+every_day+lagpress` | 4 | 0.71 [0.35, 1.03] | 0.21 [0.05, 0.54] | 1.19 [-0.43, 2.11] | 0.68 [0.44, 1.50] |
+| `+every_day+lagpress` | 5 | 0.79 [0.55, 1.04] | 0.34 [0.16, 0.55] | 1.35 [-0.37, 2.41] | 0.62 [0.39, 1.42] |
+
+**What the regimes show, and the restated claims.**
+
+- **The parent's pooled slope "0.85 to 1.00" is not a reading of calibration in 2018-19.** There its slope is 0.32 to 0.61 at h = 1 to 5, with the interval below 1 at h = 2 to 5 (and covering 1 at h = 1). It reads nearer 1 only in 2025-26 (0.68 to 0.94, every interval including 1). The pooled figure averages an over-spread regime with a regime near 1.
+- **The lagged-pressure row is further from 1 than the parent, pooled and in 2018-19** (0.21 to 0.51 against 0.32 to 0.61), as the page says of the pooled slope; in 2025-26 the two are alike (0.62 to 0.91 against 0.68 to 0.94) and their intervals overlap throughout, so that regime does not separate them.
+- **2020-24 says nothing**: five pressure days; every slope there is wide (for example -2.07 to 2.23 at h = 2) and covers 1.
+- By as-of scarcity state almost all pressure days are in state 3 (73 of 82 at h = 1 to 4, 72 at h = 5), where both rows read 0.20 to 0.49; states 0 to 2 hold at most 7 pressure days each (the evidence file).
+- Table M3 and the AUROC columns are rank statistics and are unchanged by this section.
+
+**Two pooled cells moved from Table M2.** The rebuilt forecasts reproduce the table's days, pressure days and pooled slopes to two decimals in every cell but two: the parent at h = 3
+(0.91 here against 0.98 in Table M2; intercept -0.85 against -0.72) and the lagged-pressure row at h = 4 (0.71 against 0.73; intercept -1.08 against -1.03). The slopes here are fitted by the one definition of #725 (`repo_model.reliability_regimes`), the table's by the Newton fit of
+`derived_features_631.py`; this run did not isolate whether the fit or a change to `ml.py` since the page was written moved the two cells. Table M2 was not edited.
+
+The chain was rebuilt in this order (`/opt/rmm-venv`, one thread each; about 90 seconds for the forecasts of all five horizons in parallel and 5 minutes for the bootstrap on four processes): `build` and `verify-panel` of `REPRODUCIBILITY.md` (published panel `4ddc3882…`),
+`pressure_v1_1.py panel`, `measurement_fields.py panel`, `satiation_distance_598.py panel`, then for each horizon `derived_features_631.py model --panel AUG2D.csv --published PUB.csv --horizon $h --output OUT/v631_h$h.json`, then
+`reliability_regimes_683.py derived631 --published PUB.csv --rows 'OUT/v631_h{h}.json' --output OUT/derived631.json --markdown OUT/derived631.md` (its docstring has the arguments).
 
 Table M3. Paired on ordinary days: the AUROC of the test less the parent's, 90% stationary-bootstrap interval.
 
@@ -228,7 +274,7 @@ Table 3. Paired Brier difference against the parent, +5 bp (the parent's squared
 | day_type tax_date | 89 | +0.0000 [+0.0000, +0.0000] |
 
 * **Judge.** Tier 1 fails for both (pooled false alarms per onset about 3.5 against a limit of 2; the parent flags 19 of 26 onsets and the test 17 of 26). Tiers 3 and 5 pass for both. Neither row passes the full rule. The control passes tier 1 and fails tiers 3 and 5, as before.
-* **Ordinary days.** The parent's AUROC for pressure days is 0.903 [0.86, 0.94] at h = 1, 0.80 to 0.84 at h = 2 to 5; with lagged pressure it is 0.864 [0.79, 0.92] at h = 1 and 0.78 to 0.82 after. The paired difference is -0.039 [-0.077, -0.014] at h = 1 and covers zero at h = 2 to 5. The reliability slope, 0.85 to 1.00 for the parent, is 0.73 to 0.96 with lagged pressure (further from 1), and the intercept is more negative (the forecast is on the high side where the realised rate is lower).
+* **Ordinary days.** The parent's AUROC for pressure days is 0.903 [0.86, 0.94] at h = 1, 0.80 to 0.84 at h = 2 to 5; with lagged pressure it is 0.864 [0.79, 0.92] at h = 1 and 0.78 to 0.82 after. The paired difference is -0.039 [-0.077, -0.014] at h = 1 and covers zero at h = 2 to 5. The reliability slope, 0.85 to 1.00 for the parent, is 0.73 to 0.96 with lagged pressure (further from 1), and the intercept is more negative (the forecast is on the high side where the realised rate is lower). These pooled slopes are not calibration by regime: inside 2018-19 the parent reads 0.32 to 0.61 and lagged pressure 0.21 to 0.51 ("Reliability within regimes", #785).
   The control has no variation on these days (AUROC 0.5, calibration not formed).
 * **Brier.** The paired Brier difference favours the test by +0.0015 [-0.0007, +0.0039] at h = 1, which does not exclude zero; the gain is concentrated in 2020 and 2024, the regimes with two onsets each, and 2021-23 is slightly worse.
 * **Why (a likely reason, not tested).** `spread_bps` is already an input of the component, and the ridge logistic standardises it; the indicator at lags 0, 1, 2 and 5 are thresholdings of the same recent spreads, so the component gains parameters, not information, and with 82 pressure days on ordinary days in two regimes that costs ranking at h = 1.
@@ -261,3 +307,17 @@ PYTHONPATH=src python3 scripts/derived_features_631.py compare --rule weighted -
 PYTHONPATH=src python3 scripts/derived_features_631.py ordinary --panel PUB.csv --output OUT/ordinary.json 'OUT/dist_h{h}.json' 'OUT/v631_h{h}.json'
 PYTHONPATH=src python3 scripts/derived_features_631.py model-report --weighted OUT/judge_weighted.json --unweighted OUT/judge_unweighted.json --ordinary OUT/ordinary.json --output OUT/model.md
 ```
+
+## The 2026 extension (#684)
+
+**Development data, exploration only.** The screen of this page (not the model test) was re-run, unchanged, on a panel that runs to 2026-09-03 (`LAST_DAY` is now
+`repo_model.exploration.EXPLORATORY_END`; the declaration was regenerated and committed before the run, `metadata/derived_features_631.json`). The opened near-blind tier is
+development data: nothing here is a verdict or out-of-sample evidence (scoring protocol v1, #640); the blind tier stays shut. Evidence: `docs/pivot/evidence/derived-features-684/`
+(`screen.json`, `screen-tables.md`, `ranked-leads.json`, `clusters.json`).
+
+* **Days.** 2,042 scored days, 1,602 ordinary, 84 pressure days on ordinary days of 145, 30 onsets (6 ordinary). 101 series screened, as before (derived features need no repo-operations column).
+* **The 2026 column is empty**, for the reason on #629's page: 133 ordinary days, 2 pressure days, under the declared minimum of 3. The `2018-2025` column is the earlier page's evidence (82 of 1,469).
+* **The ranked list moved a little.** Seventeen leads as before; `spread_rv5` (AUROC 0.847, 4 of 4 checks, low noise risk) enters the list at rank 3, and `days_since_pressure` leaves it: with the 2026 days it joins
+  `tail_x_scarcity`'s cluster, so it fails the `not_redundant` check and the list keeps `tail_x_scarcity` as its representative. The best AUROCs shift in the third decimal (for example `settle_x_scarcity` 0.693 to 0.671,
+  `ofr_tri_rate_min_dist_20` 0.717 to 0.685). It remains a list of leads for a declared model test, not a result.
+* **The model test, re-run to 2026-09-03** on the scratch scored span ruled on #710 (`metadata/exploration_684.json`; the judge's declaration, `metadata/pressure_judge.json`, still ends 2025-12-31 and the judge is not run on 2026 days, so Table M1 is not made). Evidence: `docs/pivot/evidence/derived-features-684/model-test-ordinary-days.json`, `model-test-tables.md` (M2 and M3). The same code with `--end` left out reproduces the earlier `model-test-ordinary-days.json` byte for byte. With the 2026 days (1,602 ordinary days, 84 pressure days) the test's AUROC less the parent's is -0.040 [-0.078, -0.013] at h = 1 (earlier -0.039 [-0.077, -0.014]), and the intervals at h = 2 to 5 still cover 0: the conclusion stands, lagged pressure does not help. Two pressure days are added, so a figure moves in the third decimal. The 2026 days alone are 133 ordinary days with 2 pressure days, under the minimum of 3, so no 2026-only figure is made.

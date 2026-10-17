@@ -110,7 +110,7 @@ from operator import itemgetter
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from . import lockbox
+from . import lockbox, risk_dates
 from .metrics import (
     MetricError,
     average_precision,
@@ -235,8 +235,8 @@ class Declaration:
             document["weighted_miss"] = self.weighted_miss.document()
         if self.always_flag_not_warning:
             document["tiers"]["onset_warning"]["always_flag_blocks"] = (
-                "a flag from a refit block whose cut-off is at or below every probability in it counts neither as a "
-                "warning nor as a false alarm; the blocks are listed (#588)"
+                "a flag from a refit block whose cut-off is at or below every probability in it is not a warning but "
+                "is still a false alarm; the blocks are listed (#588, #685)"
             )
         return document
 
@@ -1991,7 +1991,7 @@ def _onset_tier(
     count = len(common)
     always_flag: Dict[str, dict] = {}
     dropped: Dict[str, int] = {}
-    flags_anyway: Dict[int, List[int]] = {}
+    warned: Dict[int, List[int]] = {}
     rule = declaration.weighted_miss
     regime_column = grids[first].groups.get("regime")
     regimes = [regime_column[position[first][day]] for day in common] if regime_column is not None else None
@@ -2015,8 +2015,12 @@ def _onset_tier(
             raise ValueError(f"{name}: the outcome of a scored day differs between horizons {first} and {h}")
         chosen = by_name[name][h]
         raw = [1 if chosen.probabilities[tau][k] >= chosen.cutoffs[tau][k] else 0 for k in at]
+        flags[h] = _alarm_flags(declaration, name, raw, onset)
+        warned[h] = flags[h]
         if declaration.always_flag_not_warning:
-            # #588: a flag from a block whose cut-off flags every day in it counts as nothing; it is listed instead.
+            # #588, amended by #685: a flag from a block whose cut-off flags every day in it is not a warning, but it is
+            # still a false alarm (Eleonora's ruling of 13 October 2026 on #666). Only `warned` loses it; `flags` is
+            # what the judge counts as false alarms, as with the option off.
             step = declaration.cutoff_refit_every
             blocks = always_flag_blocks(chosen.probabilities[tau], chosen.cutoffs[tau], step)
             blanket = [blocks[k // step] for k in at]
@@ -2025,9 +2029,7 @@ def _onset_tier(
                 "first_days": [grids[h].dates[b * step].isoformat() for b, x in enumerate(blocks) if x],
             }
             dropped[str(h)] = sum(r for r, b in zip(raw, blanket) if b)
-            flags_anyway[h] = _alarm_flags(declaration, name, raw, onset)
-            raw = [0 if b else r for r, b in zip(raw, blanket)]
-        flags[h] = _alarm_flags(declaration, name, raw, onset)
+            warned[h] = _alarm_flags(declaration, name, [0 if b else r for r, b in zip(raw, blanket)], onset)
         raised = sum(1 for f, y in zip(flags[h], pressure) if f and not y)
         false_alarms[str(h)] = {"false_alarms": raised, "per_onset": raised / onsets if onsets else None}
     if rule is not None:
@@ -2045,7 +2047,7 @@ def _onset_tier(
         return [1 if (not pressure[k] and any(flags[h][k] for h in members)) else 0 for k in range(count)]
 
     def caught_by(members: Sequence[int]) -> List[float]:
-        return [float(any(flags[h][k] for h in members)) for k in range(count)]
+        return [float(any(warned[h][k] for h in members)) for k in range(count)]
 
     def reference_caught(members: Sequence[int], raised: int) -> List[float]:
         """Climatology's recall where its own ranking has raised as many false alarms as the cell."""
@@ -2105,7 +2107,7 @@ def _onset_tier(
         "pooled_false_alarms": pooled["false_alarms"]["flat"] if onsets else 0,
     }
     if declaration.always_flag_not_warning:
-        caught_by_anyway = [float(any(flags_anyway[h][k] for h in horizons)) for k in range(count)]
+        caught_by_anyway = [float(any(flags[h][k] for h in horizons)) for k in range(count)]
         out["always_flag"] = {
             "blocks_by_horizon": always_flag,
             "flags_dropped_by_horizon": dropped,
@@ -2496,9 +2498,4 @@ def _scheduled_risk_date(values: Mapping[str, Optional[float]]) -> bool:
     Calendar facts, known ahead of the day, as the day-type grouping already reads them.
     """
 
-    coupons = values.get("treasury_settlement_coupons")
-    return (
-        float(values["quarter_end"] or 0.0) == 1.0
-        or float(values["tax_date"] or 0.0) == 1.0
-        or (coupons is not None and float(coupons) > 0.0)
-    )
+    return risk_dates.is_risk_date(values, risk_dates.SCHEDULED)

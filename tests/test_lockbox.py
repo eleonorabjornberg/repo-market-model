@@ -347,6 +347,11 @@ NOT_ENTRY_POINTS = {
         "target on or before 2025-12-31 (`decision_indices`) and no training label after it is read; "
         "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
     ),
+    "scripts/backfill_h5_726.forecasts_command": (
+        "makes the H4 nested test's forecasts and scores nothing (#726): it calls require_unlocked, then "
+        "spread_distribution_634.walk, which refuses a locked scored day (refuse_locked) before any fit; "
+        "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
+    ),
     "protocol_benchmarks._anchor": (
         "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a forecast, "
         "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls "
@@ -469,6 +474,11 @@ NOT_ENTRY_POINTS = {
         "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
         "(tests/test_derived_features_631.py)"
     ),
+    "scripts/near_threshold_688.read_inputs": (
+        "reads the scored days' inputs as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "screen of #688; selects no model and scores no forecast, calls lockbox.require_unlocked on every day "
+        "before it reads one, and `refuse_locked` is tested (tests/test_near_threshold_688.py)"
+    ),
     "scripts/upper_bound_635.read_inputs": (
         "reads each input as of the decision instant at leads 1 to 5 on the lead-1 fold grid, for the upper-bound study of #635; "
         "selects no model and scores no forecast, calls lockbox.require_unlocked on every day before it reads one, and its `fit` "
@@ -499,6 +509,11 @@ NOT_ENTRY_POINTS = {
     "scripts/richer_targets_639.run_command": (
         "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls lockbox.require_unlocked on every "
         "scored day before it reads one, refuses a panel past 2025-12-31 and fits and selects nothing"
+    ),
+    "scripts/richer_targets_706.lead_on_onsets": (
+        "the pre-onset AUC of a modelled target's lead-1 median and of its as-of value (H9 step 2, #706); walks the lead-1 "
+        "fold grid, calls refuse_locked on every scored day before it reads one, and fits and selects nothing "
+        "(tests/test_richer_targets_706_script.py, LockedDayTests)"
     ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
@@ -1045,6 +1060,8 @@ CRPS_SCORERS = {
     "scripts/quarter_end_remedy._crps": ("delegates", "one loss; " + _WALK),
     "scripts/desk_outputs.check_against_published": ("delegates", "compares the days `history_command` chose, after its `require_unlocked`"),
     "scripts/spread_distribution_632.crps_contract": ("delegates", "one loss on the contract's levels; `distribution_command` calls `require_unlocked` on the last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the published daily file is read to that day only (#632)"),
+    "scripts/spread_distribution_634.five_crps": ("delegates", "B3's secondary loss of one vector on its own five levels at one outcome; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634, ruling on #660 and #700)"),
+    "scripts/spread_distribution_634.five_twcrps": ("delegates", "the upper-tail loss on the same five levels; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634)"),
     "scripts/desk_outputs._series": ("delegates", "the series of days `history_command` chose, after its `require_unlocked`"),
 }
 

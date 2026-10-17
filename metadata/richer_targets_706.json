@@ -1,0 +1,139 @@
+{
+  "status": "declared by the pull request that closes #706 before any score was computed; step 2 of H9, a measurement on development data, not a record and not a verdict (scoring protocol v1 section 1; ruling on #639, 13 October 2026). Nothing is published: no target joins any published declaration, no day after 2025-12-31 is read (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. A pass is not a confirmation",
+  "issue": 706,
+  "hypothesis": "H9 (secondary goal), step 2 of docs/research/hypotheses/H9.md",
+  "rulings": [
+    "Eleonora, 13 October 2026 (comment 6149435134 on #639): the models and the verdict against H9's kill criterion move to step 2; step 2's targets are chosen by the four-part rule, applied to step 1's tables and committed before any step 2 score",
+    "Eleonora, 12 October 2026: scoring protocol v1 (#640); development data never gives a verdict"
+  ],
+  "panel": {
+    "sha256": "26c51093de80bc1c5f6cc4e9e3742fd6606160e4c6ba0db2fa19d6fcbf3e1313",
+    "built_by": "scripts/richer_targets_639.py panel over the scratch panel of scripts/spread_distribution_634.py (AUG2D.csv)"
+  },
+  "screen": {
+    "path": "docs/pivot/evidence/richer-targets-639/screen.json",
+    "sha256": "569365cba6d8f328d5c7dba9fb7d761ee53d51427020ad9d5bade57037765fb7"
+  },
+  "choice": {
+    "rule": [
+      "drop a target whose pooled rank correlation with SOFR - IORB (level, all scored days) has magnitude 0.8 or more",
+      "drop a target with fewer than 15 pressure onsets in the development sample",
+      "rank the rest by the pre-onset AUC at lead 1 within the as-of scarcity state, averaged over the ample and scarce states, as step 1 published it (a value read high before onsets is above one half); ties by the larger grid-CRPS skill of B1 over B2 or of B2 over B1 at lead 1",
+      "take the top three; fewer survivors are all taken"
+    ],
+    "chosen": [
+      "bgcr_dispersion_bps",
+      "on_rrp_change_bn",
+      "sofr_dispersion_bps"
+    ],
+    "ranking": [
+      {
+        "target": "bgcr_dispersion_bps",
+        "auc_ample": 0.6527364110201043,
+        "auc_scarce": 0.4055263157894737,
+        "auc_mean": 0.529131363404789,
+        "skill_lead_1": 0.11617388011613804
+      },
+      {
+        "target": "on_rrp_change_bn",
+        "auc_ample": 0.5430938198064036,
+        "auc_scarce": 0.463859649122807,
+        "auc_mean": 0.5034767344646053,
+        "skill_lead_1": 0.38744990763028325
+      },
+      {
+        "target": "sofr_dispersion_bps",
+        "auc_ample": 0.5604290766939687,
+        "auc_scarce": 0.41042763157894735,
+        "auc_mean": 0.485428354136458,
+        "skill_lead_1": 0.12403425266679237
+      },
+      {
+        "target": "tgcr_dispersion_bps",
+        "auc_ample": 0.5362993298585257,
+        "auc_scarce": 0.43393640350877194,
+        "auc_mean": 0.4851178666836488,
+        "skill_lead_1": 0.03993329809966077
+      },
+      {
+        "target": "effr_iorb_bps",
+        "auc_ample": 0.26358897989575575,
+        "auc_scarce": 0.5202850877192983,
+        "auc_mean": 0.391937033807527,
+        "skill_lead_1": 0.7947532335718651
+      }
+    ],
+    "dropped": {
+      "bgcr_iorb_bps": {
+        "reason": "overlap",
+        "value": 0.9500191773548384
+      },
+      "on_rrp_bn": {
+        "reason": "overlap",
+        "value": -0.8073296228001765
+      },
+      "sofr_p99_iorb_bps": {
+        "reason": "overlap",
+        "value": 0.8279538112272955
+      },
+      "srf_take_up_bn": {
+        "reason": "onsets",
+        "value": 7
+      },
+      "tgcr_iorb_bps": {
+        "reason": "overlap",
+        "value": 0.9498200339424523
+      }
+    },
+    "readings": {
+      "signed": "the AUC as step 1 tabulated it. A target that is low before onsets (the ON RRP level, EFFR) ranks low. This is the rule's wording (\"the pre-onset AUC\") and is the one applied",
+      "unsigned_order_for_information": [
+        "effr_iorb_bps",
+        "bgcr_dispersion_bps",
+        "tgcr_dispersion_bps",
+        "sofr_dispersion_bps",
+        "on_rrp_change_bn"
+      ],
+      "near_tie": "the third and fourth places differ by less than 0.001 of AUC: a ranking that close is not evidence that one target leads more than the other"
+    }
+  },
+  "model": {
+    "class": "scripts/spread_distribution_634.py candidate (b): ml.fit_gradient_boosted_quantiles on the 23-level grid, inputs new_features(h)",
+    "label": "the target, put in the slot the model reads as SOFR - IORB (richer_targets.as_target); iorb is 0 and the real spread is not an input",
+    "availability": "richer_targets.swap_target_fields: the label is read under the release lag of the target's own sources",
+    "own_lag_replaces_the_spread_lag": "the model's autoregressive input (spread_bps) is the target's own as-of value; SOFR - IORB itself is not an input",
+    "leading_hole": "the first panel day has no ON RRP change; that row is dropped for that target, and the target's walks start with its own fold grid",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "seed": 706
+  },
+  "benchmarks": {
+    "B1": "richer_targets.b1_quantiles at each lead: the last public value plus the lead's own changes over the trailing two years",
+    "B2": "richer_targets.b2_quantiles: the trailing year's values on days of the target day's reporting day type",
+    "missing_forecast": "a lead the model has no law for is filled by B1 (scoring_protocol.fill_missing)"
+  },
+  "scoring": {
+    "score": "scoring_protocol.grid_crps on the 23 levels, the mean over leads 1 to 5 per decision day",
+    "interval": "scoring_protocol.paired_tests, stationary bootstrap, mean block 10, 10000 draws, seed 706, one-sided 95%",
+    "splits": {
+      "state": "the as-of scarcity state of the decision day, read as of the decision instant: ample (0, 1) or scarce (2, 3)",
+      "day_type": "SplitDeclaration.reporting_day_type of the target day"
+    },
+    "last_target_day": "2025-12-31"
+  },
+  "reading": {
+    "skill": "a target shows skill over persistence when the one-sided 95% lower bound of mean(S(B1) - S(model)) over all decision days is above zero",
+    "skill_over_climatology": "reported beside it against B2, never in its place",
+    "lead": "a target shows a lead on the +5 bp episodes when, in every as-of state that holds at least 3 onsets, the lower end of the two-sided 90% interval of the pre-onset AUC of the model's lead-1 median is above one half (the median of the law for the scored day, read on the 1 to 5 panel days before each onset against every other scored day of the state; intervals from resampling onsets, 2000 draws, seed 706); the as-of value of the target is shown beside it",
+    "kill_criterion": "H9 (docs/research/hypotheses/H9.md, #46): no forecast skill over persistence, or no lead on the +5 bp episodes. A target meets the criterion when it shows no skill or no lead; H9 is alive on development data only if at least one target shows both. A reading, labelled development and not a verdict"
+  },
+  "nested": "the tables sit beside #634's spread row (docs/pivot/evidence/spread-distribution/score.json, candidate b_gbm_new): the same model class, the same inputs, the same leads and the same bootstrap, for SOFR - IORB. The units differ, so the comparison is of skill, not of CRPS. A reading of the directive's wording \"the nested test is against #634's spread row\", put to Eleonora in the pull request"
+}

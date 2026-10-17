@@ -5,14 +5,14 @@ clusters, a partial rank correlation), the ordinary-day rule, and the two guards
 the back-filled 2014-18 history (`posting_instant` is null, #572).
 
 Recorded mutations, 12 October 2026, in a disposable copy of `scripts/source_matrix_629.py` (control green before and after):
-1. in `require_panel_window`, `if rows[-1].date > LAST_DAY:` -> `if False:` (a panel past 2025-12-31 is accepted).
+1. in `require_panel_window`, `if rows[-1].date > LAST_DAY:` -> `if False:` (a panel past 2026-09-03 is accepted).
    `PanelGuardTests.test_a_panel_past_the_last_day_is_refused` then fails with `AssertionError: LookAheadError not raised`.
 2. in `require_no_backfill`, `if rows[0].date < backfill.FIRST_PUBLISHED:` -> `if False:` (a panel that carries back-filled days is accepted).
    `PanelGuardTests.test_a_panel_with_backfilled_days_is_refused` then fails with `AssertionError: LookAheadError not raised`.
 3. in `complete_linkage`, the merge test `link >= threshold` where `link` is the smallest |rho| across the two clusters, replaced by
    the largest (single linkage). `ClusterTests.test_a_chain_is_not_one_group` then fails with
    `AssertionError: [['a', 'b', 'c'], ['d']] != [['a', 'b'], ['c'], ['d']]`.
-4. in `is_ordinary`, `> 0.0` -> `>= 0.0` on the coupon clause (a day with no coupon settlement is a risk date).
+4. in `risk_dates.non_ordinary_day` (which `is_ordinary` calls since #682), `> 0.0` -> `>= 0.0` on the coupon clause (a day with no coupon settlement is a risk date).
    `OrdinaryTests.test_a_day_with_no_coupon_settlement_is_ordinary` then fails with `AssertionError: False is not true`.
 """
 
@@ -69,10 +69,10 @@ class DeclarationTests(unittest.TestCase):
 class PanelGuardTests(unittest.TestCase):
     def test_a_panel_past_the_last_day_is_refused(self):
         with self.assertRaises(LookAheadError):
-            SCRIPT.require_panel_window([_row(date(2025, 12, 30)), _row(date(2026, 1, 2))])
+            SCRIPT.require_panel_window([_row(date(2026, 9, 2)), _row(date(2026, 9, 4))])
 
     def test_a_panel_ending_on_the_last_day_is_accepted(self):
-        SCRIPT.require_panel_window([_row(date(2025, 12, 30)), _row(date(2025, 12, 31))])
+        SCRIPT.require_panel_window([_row(date(2026, 9, 2)), _row(date(2026, 9, 3))])
 
     def test_a_panel_with_backfilled_days_is_refused(self):
         with self.assertRaises(LookAheadError):

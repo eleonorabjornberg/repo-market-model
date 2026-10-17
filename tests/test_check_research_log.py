@@ -8,12 +8,19 @@ declaration or candidate under `metadata/` that adds no new log entry naming the
 Written before the script: this module failed on the missing script first (`FileNotFoundError`).
 Recorded mutations, each killing the named test:
 
+* conflict markers (#795; the tests failed first on the missing `conflict_markers`): `line == "======="` replaced by
+  `line == "====== "` in `conflict_markers` fails
+  `test_a_conflict_block_in_the_log_is_refused_with_its_line_numbers` (`AssertionError: Lists differ: [11, 33] != [11, 22, 33]`);
+
 * `if hypothesis not in hypotheses:` replaced by `if False:` in `validate_log` fails
   `test_a_hypothesis_the_plan_lacks_is_refused` (`AssertionError: False is not true : []`);
 * `needed = paths_needing_entry(changed)` replaced by `needed = []` in `check_change` fails
   `test_a_result_page_without_a_new_entry_is_refused` (`AssertionError: [] is not true`);
 * `new_entries` returning every entry of the head log, not those absent from the base, fails
-  `test_an_entry_already_in_the_base_does_not_count` (`AssertionError: [] is not true`).
+  `test_an_entry_already_in_the_base_does_not_count` (`AssertionError: [] is not true`);
+* groundwork headings (#701; the tests failed first on the old `HEADING`): `G[1-9]\\d*` replaced by `G\\d*` in
+  `HEADING` fails `test_a_malformed_groundwork_heading_is_refused` for `groundwork G` and `groundwork G0`
+  (`AssertionError: [] is not true`).
 """
 import importlib.util
 import os
@@ -64,6 +71,23 @@ class FormatTests(unittest.TestCase):
         text = log(entry().replace("### 2026-10-12 [H5] step 3 · ", "### October 12 H5 "))
         self.assertTrue(crl.validate_log(text, {"H5"}))
 
+    def test_a_groundwork_heading_is_accepted(self):
+        text = log(entry().replace("step 3 · ", "groundwork G3 · "))
+        self.assertEqual(crl.validate_log(text, {"H5"}), [])
+
+    def test_a_malformed_groundwork_heading_is_refused(self):
+        for bad in ("groundwork 3", "groundwork G", "groundwork g3", "groundwork G3/G4", "groundwork G0",
+                    "groundwork G3 step 3", "groundwork"):
+            with self.subTest(heading=bad):
+                text = log(entry().replace("step 3 · ", bad + " · "))
+                self.assertTrue(crl.validate_log(text, {"H5"}))
+
+    def test_a_groundwork_entry_still_needs_its_lines_and_a_known_hypothesis(self):
+        text = log(entry(hyp="H11", drop=("Result",)).replace("step 3 · ", "groundwork G3 · "))
+        errors = crl.validate_log(text, {"H5"})
+        self.assertTrue(any("H11" in e for e in errors), errors)
+        self.assertTrue(any("Result" in e for e in errors), errors)
+
     def test_an_impossible_date_is_refused(self):
         self.assertTrue(crl.validate_log(log(entry(date="2026-13-40")), {"H5"}))
 
@@ -95,6 +119,33 @@ class FormatTests(unittest.TestCase):
         blocks = crl.extract_blocks(body)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(crl.validate_log(blocks[0], {"H10"}), [])
+
+
+class ConflictMarkerTests(unittest.TestCase):
+
+    def test_a_conflict_block_in_the_log_is_refused_with_its_line_numbers(self):
+        text = entry() + "\n<<<<<<< HEAD\n" + entry(date="2026-10-14") + "\n=======\n" + entry() + "\n>>>>>>> origin/main\n"
+        errors = crl.validate_log(text, {"H5"})
+        lines = [int(e.split("line ")[1].split(":")[0]) for e in errors if "conflict" in e]
+        self.assertEqual(lines, [text.splitlines().index(l) + 1 for l in
+                                 ("<<<<<<< HEAD", "=======", ">>>>>>> origin/main")])
+
+    def test_a_marker_must_start_the_line(self):
+        text = entry() + "\nSeven angle brackets <<<<<<< inside a sentence, and a setext rule:\n=== \n"
+        self.assertEqual(crl.conflict_markers(text, "x.md"), [])
+
+    def test_the_tracked_markdown_has_no_conflict_marker(self):
+        files = _git_files("*.md")
+        self.assertTrue(files)
+        found = []
+        for name in files:
+            found += crl.conflict_markers((ROOT / name).read_text(), name)
+        self.assertEqual(found, [])
+
+
+def _git_files(pattern):
+    out = subprocess.run(["git", "ls-files", pattern], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    return out.split()
 
 
 class ChangeTests(unittest.TestCase):

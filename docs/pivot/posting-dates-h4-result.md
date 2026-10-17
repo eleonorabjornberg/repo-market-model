@@ -9,13 +9,28 @@ on the longer history moves the 2018-19 calibration by less than its own interva
 score (`metadata/backfill_spread_633.json`): killed if the two-sided 90% interval of the 2018-19 change in the share of
 outcomes inside the forecast's central 90% interval covers zero.
 
-**Reading: H4 is not killed.** The first condition fails: the TGCR/BGCR/SOFR workbook has an established posting time,
-17 May 2018, by Eleonora's ruling of 13 October 2026 (`posting-dates-due-diligence.md`). The second fails too: with the
-history, 2018-19 coverage of the central 90% interval rises by +0.050 [+0.020, +0.082] for the declared model and by
-+0.035 [+0.017, +0.054] for the workbook-only sensitivity. Both intervals exclude zero. What it does not fix: both
-arms stay far below the nominal 0.90 in 2018-19, and the share of outcomes above the forecast's 95th percentile does not
-move (0.167 → 0.174 declared, 0.191 → 0.191 workbook-only). The history widens the body of the forecast; the 2018-19
-upper tail is still under-forecast. Not a confirmation: the protocol's prospective test (H4 step 4) is what would be.
+**Correction (#742, Eleonora's ruling of 14 October 2026).** The back-fill guard admits only listed series, each with
+its own posting instant: TGCR, BGCR and SOFR, from 2018-05-17 (`metadata/backfill_posting.json`, `admitted`). The
+declared model below also reads the 4-week bill rate, reserve balances and the TGA from the back-filled rows, and no
+posting is established for those 2014-17 series (`posting-dates-due-diligence.md`). Its run passed the guard of #572,
+which checked only the workbook's instant and never the columns a fit reads. Under the series guard
+(`backfill.require_series_admitted`) that run is refused. Read it this way:
+
+* **The workbook-only variant is the result that rests on admitted series.** It was declared after the first score
+  was seen, so it is a robustness check and not a fresh test.
+* **The declared model's pooled and 2021-23 gains rest on series that are not admitted** (pooled +0.081
+  [+0.035, +0.133] declared against +0.032 [−0.002, +0.072] workbook-only; 2021-23 +0.149 [+0.061, +0.257] against
+  +0.033 [−0.041, +0.125]). They are kept below as made and are not evidence of the history's effect.
+* The 2018-19 calibration gain survives on the admitted series alone: +0.035 [+0.017, +0.054] (workbook-only).
+
+**Reading: H4 is not killed, on the workbook-only variant.** The first condition fails: the TGCR/BGCR/SOFR workbook has
+an established posting time, 17 May 2018, by Eleonora's ruling of 13 October 2026 (`posting-dates-due-diligence.md`).
+The second fails too: with the history, 2018-19 coverage of the central 90% interval rises by +0.035 [+0.017, +0.054]
+for the workbook-only variant (the declared model's +0.050 [+0.020, +0.082] rests on series that are not admitted).
+The interval excludes zero. What it does not fix: both arms stay far below the nominal 0.90 in 2018-19, and the share of
+outcomes above the forecast's 95th percentile does not move (0.191 → 0.191 workbook-only; 0.167 → 0.174 declared). The
+history widens the body of the forecast; the 2018-19 upper tail is still under-forecast. Not a confirmation: the
+protocol's prospective test (H4 step 4) is what would be.
 
 ## What was run
 
@@ -39,8 +54,8 @@ upper tail is still under-forecast. Not a confirmation: the protocol's prospecti
   mean block 10, 10,000 draws, seed 633), shown as two-sided 90% intervals. Skill against B1 (as-of persistence,
   `protocol_benchmarks.b1_forecast` on the published days) for context. Calibration moves are means of paired daily
   differences with a two-sided 90% interval on the same bootstrap.
-* **Workbook-only sensitivity**, declared after the first score was seen, so a robustness check rather than a fresh
-  test: the same model without the bill rate, reserves and TGA, because the due-diligence table marks the 2014-17 bill
+* **Workbook-only variant** (the one the series guard admits, #742), declared after the first score was seen, so a
+  robustness check rather than a fresh test: the same model without the bill rate, reserves and TGA, because the due-diligence table marks the 2014-17 bill
   rates not usable and did not establish the posting of the FRED reserve and TGA levels for those years. It reads only
   the ruled workbook, IORB (an administered rate) and the calendar.
 
@@ -50,7 +65,9 @@ Full tables: `evidence/posting-dates-h4/score.md` (declared) and `score_wb.md` (
 
 ### CRPS, with against without (bp; d > 0 favours the history)
 
-| group | declared: without → with | d [90%] | workbook-only: without → with | d [90%] |
+The declared columns rest on series that are not admitted (#742); the workbook-only columns do not.
+
+| group | declared (not admitted): without → with | d [90%] | workbook-only: without → with | d [90%] |
 |---|---|---|---|---|
 | pooled | 1.865 → 1.784 | +0.081 [+0.035, +0.133] | 1.774 → 1.743 | +0.032 [−0.002, +0.072] |
 | **2018-19** | 3.950 → 3.907 | +0.043 [−0.013, +0.101] | 3.939 → 3.875 | +0.064 [+0.009, +0.117] |
@@ -69,7 +86,7 @@ margin (skill +0.31 without, +0.32 with, in both models).
 
 ### Calibration in 2018-19 (share of outcomes, mean over leads)
 
-| measure | declared: without → with, move [90%] | workbook-only: without → with, move [90%] |
+| measure | declared (not admitted): without → with, move [90%] | workbook-only: without → with, move [90%] |
 |---|---|---|
 | inside the central 90% interval (nominal 0.90) | 0.725 → 0.775, +0.050 [+0.020, +0.082] | 0.743 → 0.779, +0.035 [+0.017, +0.054] |
 | inside the central 50% interval (nominal 0.50) | 0.294 → 0.317, +0.023 [+0.001, +0.045] | 0.355 → 0.369, +0.014 [−0.004, +0.033] |
@@ -84,7 +101,15 @@ Every regime's 90%-interval coverage rises with the history in both models; the 
   needs those inputs before 2018, which the project does not hold. The nested test against the H5 incumbent (H4 step 3 as
   the manual words it) is therefore not run on the incumbent itself.
 * **The declared model's other back-filled inputs** (bill rate, reserves, TGA) have no established posting for
-  2014-17; the workbook-only sensitivity is the reading that rests on the ruling alone, and it agrees on the kill rule.
+  2014-17 and are not admitted (#742); the workbook-only variant is the reading that rests on the ruling alone, and it
+  agrees on the kill rule. The declared model's extended arm can no longer be re-run: `require_series_admitted` raises
+  `LookAheadError` on `tbill_4w`. Its figures stay as recorded.
+* **IORB** defines the spread and is subtracted from TGCR and BGCR in the workbook-only variant, and it is carried on
+  the back-filled rows from FRED's IOER. The ruling lists TGCR, BGCR and SOFR only. The guard does not list IORB as a
+  series the fit reads (a marked question on the pull request).
+* **The Liberty Street copy** that the research comment (6145957978) cites for the 16-17 May 2018 date is still not
+  held in the repository: the host `libertystreeteconomics.newyorkfed.org` is refused by this environment's egress
+  proxy. It is not tracked as evidence yet.
 * The back-filled SOFR is an indicative series computed after the fact (the due-diligence table); IORB before 2021 is the
   IOER from FRED.
 * Outcomes are the panel's values, not checked against first prints (protocol §11). No hyperparameter was tuned; one
@@ -98,7 +123,8 @@ PYTHONPATH=src python3 scripts/backfill_history.py panel --output EXT.csv --scra
 for h in 1 2 3 4 5:
   PYTHONPATH=src python3 scripts/backfill_spread_633.py forecasts --panel SCRATCH.csv --arm without --horizon $h --output OUT/without_h$h.json
   PYTHONPATH=src python3 scripts/backfill_spread_633.py forecasts --panel EXT.csv --arm with --horizon $h --output OUT/with_h$h.json
-  (the same with --inputs workbook and --output OUT/<arm>_h${h}_wb.json)
+  (the same with --inputs workbook and --output OUT/<arm>_h${h}_wb.json; since #742 the `with` arm runs only with
+   --inputs workbook: the declared inputs raise LookAheadError on the series that are not admitted)
 PYTHONPATH=src python3 scripts/backfill_spread_633.py score --scratch SCRATCH.csv --runs OUT --output OUT/score.json --markdown OUT/score.md
 PYTHONPATH=src python3 scripts/backfill_spread_633.py score --suffix _wb --scratch SCRATCH.csv --runs OUT --output OUT/score_wb.json --markdown OUT/score_wb.md
 ```

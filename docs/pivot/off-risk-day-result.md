@@ -518,3 +518,151 @@ PYTHONPATH=src python3 scripts/off_risk_day_624.py paired --input OUT/persistenc
 PYTHONPATH=src python3 scripts/off_risk_day_624.py tables --input OUT/persistence-step2.json --input OUT/persistence-step1.json \
     --cell all --cell 'regime 2018-19' --cell 'regime 2025-26' --output OUT/persistence-tables.md
 ```
+
+## Reliability within regimes (added 13 October 2026, #683, finding #670)
+
+> *Note, 13 October 2026 (#683).* The slopes in the tables above, and "0.78 to 0.85" and "0.45 to 0.65" in the text, are **pooled across regimes**
+> and must not be read as calibration. 2021-23 has no pressure day and forecasts near 0; it adds a long, well-ordered stretch at the bottom of the
+> curve and raises the pooled slope. Inside 2018-19 the same forecasts are badly over-spread (`+offday`: 0.48 at h = 1, 0.14 to 0.22 at h = 3 to 5).
+> A row is not "nearly calibrated" on a pooled slope. Why, and how to read it: `docs/pivot/diagnostics-reconciliation.md`, point 11.
+
+The slope of each row inside each regime, from the tracked evidence of this page (`evidence/off-risk-day/step1.json` and `step2-off-risk-days.json`; no
+forecast is rebuilt, and those files carry points without an interval for a regime's slope; tabulated by `scripts/reliability_regimes_683.py tracked`;
+`evidence/reliability-regimes/tracked-step1.md` and `tracked-step2.md`). 1 is reliable; `undefined` is a regime with no pressure day; `–` a regime in
+which the forecast is constant or the fit is not formed; `unstable` a near-separated fit (a slope beyond 25 in size); `†` a cell with fewer than 5
+pressure days, whose slope is a handful of events' worth. Development data, not a verdict.
+
+> *Correction, 15 October 2026 (#801).* The `†` mark and the `–` below were read off the cell's pressure days, but the fit keeps only days whose
+> forecast is above 1e-4, so many slopes rest on far fewer events than the mark implied (`+tailcap75` at h = 1 in 2018-19: 2 of 62 pressure days are
+> in the fit, 60 fall on zero forecasts). The tables below are unchanged, as published. `evidence/reliability-regimes/tracked-step1.md` and
+> `tracked-step2.md` are regenerated with the mark counting the pressure days in the fit, and a regime whose forecast is zero on every pressure day
+> reads `uncalibrated: zero on all N` instead of `–`. No slope moves. Read the regenerated files, not the copies here.
+
+### Step 1 rows
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.49 | 0.24 | – | undefined | – | 0.40 |
+| 2 | 0.57 | 0.28 | – | undefined | – | 0.29 |
+| 3 | 0.45 | 0.10 | – | undefined | – | 0.30 |
+| 4 | 0.65 | 0.38 | – | undefined | – | 0.26 |
+| 5 | 0.56 | 0.08 | – | undefined | – | 0.42 |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 2.03 | 1.39 | – | undefined | – | – |
+| 2 | 2.66 | 2.31 | – | undefined | – | – |
+| 3 | 3.19 | 2.31 | – | undefined | – | – |
+| 4 | 1.82 | 0.19 | – | undefined | – | – |
+| 5 | 2.40 | 1.58 | – | undefined | – | – |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+floor`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.46 | 0.12 | 6.20† | undefined | unstable | -11.27 |
+| 2 | 0.38 | -0.01 | 6.92† | undefined | unstable | -19.70 |
+| 3 | 0.27 | -0.05 | 6.66† | undefined | unstable | unstable |
+| 4 | 0.40 | 0.05 | 6.39† | undefined | unstable | unstable |
+| 5 | 0.46 | 0.12 | 7.09† | undefined | unstable | unstable |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+recent_floor`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.57 | 0.13 | 0.41† | undefined | – | 0.89 |
+| 2 | 0.55 | 0.08 | -0.69† | undefined | – | 0.81 |
+| 3 | 0.53 | 0.07 | -0.70† | undefined | – | 0.72 |
+| 4 | 0.58 | 0.13 | -0.70† | undefined | – | 0.73 |
+| 5 | 0.59 | 0.15 | 0.06† | undefined | – | 0.70 |
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75+state_floor`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.73 | 0.12 | 6.20† | undefined | unstable | 1.36 |
+| 2 | 0.73 | -0.01 | 6.92† | undefined | unstable | 1.35 |
+| 3 | 0.63 | -0.05 | 6.66† | undefined | unstable | 1.35 |
+| 4 | 0.75 | 0.05 | 6.39† | undefined | unstable | 1.34 |
+| 5 | 0.76 | 0.12 | 7.09† | undefined | unstable | 1.17 |
+
+### Step 2 rows
+
+#### `risk_gbm+every_day+gate+settle+h41+iorb+tailcap75`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 2.03 | 1.39 | – | undefined | – | – |
+| 2 | 2.66 | 2.31 | – | undefined | – | – |
+| 3 | 3.19 | 2.31 | – | undefined | – | – |
+| 4 | 1.82 | 0.19 | – | undefined | – | – |
+| 5 | 2.40 | 1.58 | – | undefined | – | – |
+
+#### `risk_gbm+settle+h41+dist_roll`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | – | – | – | undefined | – | – |
+| 2 | – | – | – | undefined | – | – |
+| 3 | – | – | – | undefined | – | – |
+| 4 | – | – | – | undefined | – | – |
+| 5 | – | – | – | undefined | – | – |
+
+#### `risk_gbm+settle+h41+dist_roll+offday`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.83 | 0.48 | 0.61† | undefined | 0.77† | 0.79 |
+| 2 | 0.85 | 0.45 | 0.91† | undefined | 2.82† | 0.70 |
+| 3 | 0.80 | 0.22 | 1.10† | undefined | -0.35† | 0.73 |
+| 4 | 0.78 | 0.14 | 0.98† | undefined | 1.76† | 0.76 |
+| 5 | 0.79 | 0.17 | 1.16† | undefined | 1.62† | 0.73 |
+
+#### `risk_gbm+settle+h41+dist_roll+offday_mono`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.46 | 0.31 | 0.01† | undefined | -0.69† | 0.32 |
+| 2 | 0.39 | 0.14 | 0.37† | undefined | 0.17† | 0.22 |
+| 3 | 0.36 | 0.10 | 0.21† | undefined | 0.26† | 0.27 |
+| 4 | 0.37 | 0.07 | 0.43† | undefined | – | 0.39 |
+| 5 | 0.32 | 0.09 | 0.21† | undefined | 0.39† | 0.21 |
+
+#### `risk_gbm+settle+h41+dist_roll+offday_rate`
+
+| lead | all days (pooled) | regime 2018-19 | regime 2020 | regime 2021-23 | regime 2024 | regime 2025-26 |
+|---|---|---|---|---|---|---|
+| 1 | 0.73 | 0.20 | 0.66† | undefined | 0.90† | 0.79 |
+| 2 | 0.70 | 0.06 | 0.67† | undefined | 2.76† | 0.71 |
+| 3 | 0.67 | -0.06 | 0.74† | undefined | 0.39† | 0.73 |
+| 4 | 0.65 | -0.13 | 0.70† | undefined | 1.71† | 0.76 |
+| 5 | 0.64 | -0.12 | 0.79† | undefined | 1.64† | 0.72 |
+
+## The 2026 extension (#684)
+
+**Development data, exploration only.** Steps 1 and 2 of this page and the comparison with persistence-logistic (#681) were re-run on a panel that runs to 2026-09-03, the opened near-blind tier. Nothing here is a verdict or out-of-sample evidence for a registered candidate (scoring protocol v1, #640); the blind tier stays shut. Eleonora's ruling of 13 October 2026 on PR #710: the re-runs use a separate scratch scored span (`metadata/exploration_684.json`, `--end` on each scoring command, checked by `repo_model.exploration.panel_end`), the published pressure-judge declaration does not move, and the 3-pressure-day minimum stays. Evidence: `docs/pivot/evidence/off-risk-day-684/`.
+
+* **Reproduction.** The `period 2018-2025` cell of every row at every lead is equal, to the digit, to the `all` cell of `docs/pivot/evidence/off-risk-day/persistence-step1.json` and `persistence-step2.json` (days, pressure days, AUROC).
+* **The 2026 column is empty**, for the reason on #629's page: 133 ordinary days and 2 pressure days (2026-01-02, 2026-02-18), under the minimum of 3. It is not read. The pooled cell (`all`) now holds 84 pressure days on 1,602 ordinary days, against 82 on 1,469, and no AUROC in it moves by more than 0.02 (for example persistence-logistic at lead 1, 0.897 to 0.894; the raw as-of spread, 0.941 to 0.938; the day-level `offday` variant, 0.887 to 0.878).
+* **The earlier reading is not changed.** At lead 1 the day-level variants are not above persistence-logistic on the pooled days (for `offday`, AUROC difference -0.016 [-0.068, +0.017]); at leads 2, 3 and 5 some intervals exclude 0, as on the earlier page, where the regime split showed that to be carried by near-empty regimes. The control, its cap and the every-day row are no better than before. See `persistence-step1-paired.md`, `persistence-step2-paired.md` and `persistence-tables.md`; the 2026 days (2 pressure days) are too few to move that reading.
+* **Not re-run:** the three floor rows of step 1 (the forecasts of `scripts/tailcap_floor_610.py`, which gates on the judge's declared window and has no `--end` yet), the judge's own tiers and the `compare` and `pg` outputs of step 2 (the judge is not run on 2026 days). The over-forecast and false-alarm check after reserve-management purchases began needs a 2026 column, which these two days cannot give.
+
+### Reproduction (#684)
+
+With the forecast files built to the same day (`--end 2026-09-03` on `pressure_judge.py forecasts`, `announcement_dating_rescore.py run`, `satiation_distance_598.py run`, `iorb_every_day_579.py run`, `every_day_conditioning_601.py cap` and `off_risk_day_624.py panel` and `run`), and the scratch panels built with `--end 2026-09-03`:
+
+```
+PYTHONPATH=src python3 scripts/off_risk_day_624.py measure --panel PUBLISHED.csv --scratch AUG2.csv --declaration metadata/off_risk_day_681.json \
+    --pair-with persistence_logistic --row 'persistence_logistic=OUT/bench_h{h}.json' --row 'spread_bps_asof=asof:spread_bps' \
+    --row 'risk_gbm+every_day+gate+settle+h41+iorb=OUT/iorb_h{h}.json' --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75=OUT/cap_h{h}.json' \
+    --end 2026-09-03 --output OUT/persistence-step1.json --markdown OUT/persistence-step1.md
+PYTHONPATH=src python3 scripts/off_risk_day_624.py measure --panel PUBLISHED.csv --scratch AUG2R.csv --declaration metadata/off_risk_day_681.json \
+    --pair-with persistence_logistic --row 'persistence_logistic=OUT/bench_h{h}.json' --row 'spread_bps_asof=asof:spread_bps' \
+    --row 'risk_gbm+settle+h41+dist_roll=OUT/dist_h{h}.json' --row 'risk_gbm+every_day+gate+settle+h41+iorb+tailcap75=OUT/cap_h{h}.json' \
+    --row 'risk_gbm+settle+h41+dist_roll+offday=OUT/v624_h{h}.json' --row 'risk_gbm+settle+h41+dist_roll+offday_mono=OUT/v624_h{h}.json' \
+    --row 'risk_gbm+settle+h41+dist_roll+offday_rate=OUT/v624_h{h}.json' --end 2026-09-03 --output OUT/persistence-step2.json --markdown OUT/persistence-step2.md
+```
