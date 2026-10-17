@@ -229,6 +229,7 @@ from fractions import Fraction
 from pathlib import Path
 from unittest import mock
 
+from nightly import nightly
 from repo_model import baseline, cli, cli_eval, ml, recalibration
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
@@ -300,7 +301,7 @@ REQUIRE_ML = "REPO_MODEL_REQUIRE_ML"
 
 #: Set by CI's ml job on pull requests. A subtest marked with `skip_if_fast`
 #: is skipped then, and runs everywhere else: locally, on every push to `main`
-#: and on the weekly schedule, where the ml job runs the whole suite
+#: and on the nightly schedule, where the ml job runs the whole suite
 #: (directive 05, "Do 4": a test that must stay slow runs only there).
 SKIP_SLOW = "REPO_MODEL_SKIP_SLOW"
 
@@ -313,7 +314,7 @@ def skip_if_fast(case: unittest.TestCase, why: str) -> None:
     """
 
     if os.environ.get(SKIP_SLOW):
-        case.skipTest(f"slow ({why}); runs on pushes to main and the weekly schedule")
+        case.skipTest(f"slow ({why}); runs on pushes to main and the nightly schedule")
 
 
 def _extra_installed() -> bool:
@@ -3048,6 +3049,7 @@ class ConstantQuantile:
         return [self.value] * len(design)
 
 
+@nightly
 class ScaledCrossConformalTests(unittest.TestCase):
     """`calibration="cross_conformal_scaled"`: B-SCALED's acceptance criterion and its mutation target.
 
@@ -3275,62 +3277,6 @@ class ScaledCrossConformalTests(unittest.TestCase):
                 else:
                     self.assertGreater(before, nominal + tolerance, msg=control)
 
-        with self.subTest("a held-out row's scale reads nothing after its feature row"):
-            frame = regime_frame(self.FRAME_ROWS)
-            moved = self.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
-            opens = frame[self.PERTURB_AT].date
-            before = self.constant_fit(frame, information=gap_rule(self.LEAK_PURGE))
-            after = self.constant_fit(moved, information=gap_rule(self.LEAK_PURGE))
-            checked = changed = 0
-            for number, (one, two) in enumerate(
-                zip(before.calibration_blocks, after.calibration_blocks), start=1
-            ):
-                self.assertEqual(one.scored_dates, two.scored_dates)
-                self.assertEqual(len(one.scales), len(one.scored_dates))
-                for when, left, right in zip(one.scored_dates, one.scales, two.scales):
-                    if when <= opens:
-                        checked += 1
-                        self.assertEqual(
-                            left,
-                            right,
-                            msg=(
-                                f"block {number}: the scale of the row scored on {when} "
-                                f"moved when only spreads after {opens} did"
-                            ),
-                        )
-                    else:
-                        changed += left != right
-            self.assertGreater(checked, 100)
-            self.assertGreater(
-                changed, 0, msg="the control: moving the later spreads moved no scale at all"
-            )
-            # And the scale is the trailing window at the feature row, rebuilt
-            # here: the row the 6-day gap chooses, seven calendar rows back.
-            block = before.calibration_blocks[2]
-            for when, scale in zip(block.scored_dates, block.scales):
-                index = (when - frame[0].date).days
-                self.assertEqual(scale, self.rms_scale(frame, index - self.LEAK_PURGE - 1))
-
-        with self.subTest("a forecast's scale and band read nothing after its feature row"):
-            frame = regime_frame(self.FRAME_ROWS)
-            model = self.constant_fit(frame, information=gap_rule(self.LEAK_PURGE))
-            row = frame[self.PERTURB_AT]
-            scale, band = model._origin_scale(row), model.predict(row)
-            self.assertEqual(scale, self.rms_scale(frame, self.PERTURB_AT))
-            history = model._history_spreads
-            model._history_spreads = history[: self.PERTURB_AT + 1] + tuple(
-                spread + self.PERTURB_BPS for spread in history[self.PERTURB_AT + 1 :]
-            )
-            self.assertEqual((model._origin_scale(row), model.predict(row)), (scale, band))
-            # The control: a spread inside the window moves both.
-            model._history_spreads = (
-                history[: self.PERTURB_AT - 3]
-                + (history[self.PERTURB_AT - 3] + self.PERTURB_BPS,)
-                + history[self.PERTURB_AT - 2 :]
-            )
-            self.assertNotEqual(model._origin_scale(row), scale)
-            self.assertNotEqual(model.predict(row), band)
-
         with self.subTest("a flat stretch takes the floor"):
             self.assertEqual(ml.SCALE_FLOOR_BPS, 1.0 / math.sqrt(ml.SCALE_WINDOW))
             self.assertEqual(
@@ -3474,6 +3420,88 @@ class ScaledCrossConformalTests(unittest.TestCase):
                 self.fit(rows[:40], calibration_share=0.25, information=gap_rule(0))
 
 
+class ScaledCrossConformalLeakTests(unittest.TestCase):
+    """The no-leak subtests of `ScaledCrossConformalTests`, not marked nightly (#869).
+
+    A leakage guard runs on every pull request. These two subtests moved here unchanged from
+    `ScaledCrossConformalTests.test_the_scaled_band_covers_each_regime_and_reads_nothing_after_its_decision`
+    so that the slow regime sweeps beside them can be nightly; their names, and the recorded
+    mutations that name them, are the same. The fixture, the helpers and the constants are that
+    class's own.
+    """
+
+    REGRESSORS = ScaledCrossConformalTests.REGRESSORS
+    FRAME_ROWS = ScaledCrossConformalTests.FRAME_ROWS
+    LEAK_PURGE = ScaledCrossConformalTests.LEAK_PURGE
+    PERTURB_AT = ScaledCrossConformalTests.PERTURB_AT
+    PERTURB_BPS = ScaledCrossConformalTests.PERTURB_BPS
+    NAME = ScaledCrossConformalTests.NAME
+    setUp = ScaledCrossConformalTests.setUp
+    fit = ScaledCrossConformalTests.fit
+    constant_fit = ScaledCrossConformalTests.constant_fit
+    rms_scale = staticmethod(ScaledCrossConformalTests.rms_scale)
+    perturbed = staticmethod(ScaledCrossConformalTests.perturbed)
+
+    def test_the_scaled_band_reads_nothing_after_its_decision(self):
+        """No leak: a held-out row's scale, and a forecast's scale and band."""
+
+        with self.subTest("a held-out row's scale reads nothing after its feature row"):
+            frame = regime_frame(self.FRAME_ROWS)
+            moved = self.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
+            opens = frame[self.PERTURB_AT].date
+            before = self.constant_fit(frame, information=gap_rule(self.LEAK_PURGE))
+            after = self.constant_fit(moved, information=gap_rule(self.LEAK_PURGE))
+            checked = changed = 0
+            for number, (one, two) in enumerate(
+                zip(before.calibration_blocks, after.calibration_blocks), start=1
+            ):
+                self.assertEqual(one.scored_dates, two.scored_dates)
+                self.assertEqual(len(one.scales), len(one.scored_dates))
+                for when, left, right in zip(one.scored_dates, one.scales, two.scales):
+                    if when <= opens:
+                        checked += 1
+                        self.assertEqual(
+                            left,
+                            right,
+                            msg=(
+                                f"block {number}: the scale of the row scored on {when} "
+                                f"moved when only spreads after {opens} did"
+                            ),
+                        )
+                    else:
+                        changed += left != right
+            self.assertGreater(checked, 100)
+            self.assertGreater(
+                changed, 0, msg="the control: moving the later spreads moved no scale at all"
+            )
+            # And the scale is the trailing window at the feature row, rebuilt
+            # here: the row the 6-day gap chooses, seven calendar rows back.
+            block = before.calibration_blocks[2]
+            for when, scale in zip(block.scored_dates, block.scales):
+                index = (when - frame[0].date).days
+                self.assertEqual(scale, self.rms_scale(frame, index - self.LEAK_PURGE - 1))
+
+        with self.subTest("a forecast's scale and band read nothing after its feature row"):
+            frame = regime_frame(self.FRAME_ROWS)
+            model = self.constant_fit(frame, information=gap_rule(self.LEAK_PURGE))
+            row = frame[self.PERTURB_AT]
+            scale, band = model._origin_scale(row), model.predict(row)
+            self.assertEqual(scale, self.rms_scale(frame, self.PERTURB_AT))
+            history = model._history_spreads
+            model._history_spreads = history[: self.PERTURB_AT + 1] + tuple(
+                spread + self.PERTURB_BPS for spread in history[self.PERTURB_AT + 1 :]
+            )
+            self.assertEqual((model._origin_scale(row), model.predict(row)), (scale, band))
+            # The control: a spread inside the window moves both.
+            model._history_spreads = (
+                history[: self.PERTURB_AT - 3]
+                + (history[self.PERTURB_AT - 3] + self.PERTURB_BPS,)
+                + history[self.PERTURB_AT - 2 :]
+            )
+            self.assertNotEqual(model._origin_scale(row), scale)
+            self.assertNotEqual(model.predict(row), band)
+
+
 #: How much of a declared band `NarrowRegimeQuantile` fits: the outer levels
 #: pulled toward the median to this share of their distance from it.
 NARROW_SHARE = 0.6
@@ -3533,6 +3561,7 @@ def skewed_frame(count, seed=20260916):
     return rows
 
 
+@nightly
 class PartialCrossConformalTests(unittest.TestCase):
     """`calibration="cross_conformal_partial"`: B-PARTIAL's acceptance criterion and its mutation target.
 
@@ -3818,53 +3847,6 @@ class PartialCrossConformalTests(unittest.TestCase):
                 separated += self.edges(reported) != self.edges(cross.predict(row))
             self.assertEqual(separated, len(forecasts))
 
-        with self.subTest("leak: a held-out row's scale reads nothing after its feature row"):
-            frame = regime_frame(self.FRAME_ROWS)
-            moved = ScaledCrossConformalTests.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
-            opens = frame[self.PERTURB_AT].date
-            before = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
-            after = self.stand_in_fit(ConstantQuantile, moved, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
-            checked = changed = 0
-            for number, (one, two) in enumerate(
-                zip(before.calibration_blocks, after.calibration_blocks), start=1
-            ):
-                self.assertEqual(one.scored_dates, two.scored_dates)
-                self.assertEqual(len(one.scales), len(one.partial_scores))
-                for when, left, right in zip(one.scored_dates, one.scales, two.scales):
-                    if when <= opens:
-                        checked += 1
-                        self.assertEqual(
-                            left,
-                            right,
-                            msg=(
-                                f"block {number}: the scale of the row scored on {when} "
-                                f"moved when only spreads after {opens} did"
-                            ),
-                        )
-                    else:
-                        changed += left != right
-            self.assertGreater(checked, 100)
-            self.assertGreater(changed, 0, msg="the control: no scale moved at all")
-
-        with self.subTest("leak: a forecast's factor and band read nothing after its decision"):
-            frame = regime_frame(self.FRAME_ROWS)
-            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
-            row = frame[self.PERTURB_AT]
-            scale, band = model._origin_scale(row), model.predict(row)
-            self.assertEqual(scale, ScaledCrossConformalTests.rms_scale(frame, self.PERTURB_AT))
-            history = model._history_spreads
-            model._history_spreads = history[: self.PERTURB_AT + 1] + tuple(
-                spread + self.PERTURB_BPS for spread in history[self.PERTURB_AT + 1 :]
-            )
-            self.assertEqual((model._origin_scale(row), model.predict(row)), (scale, band))
-            model._history_spreads = (
-                history[: self.PERTURB_AT - 3]
-                + (history[self.PERTURB_AT - 3] + self.PERTURB_BPS,)
-                + history[self.PERTURB_AT - 2 :]
-            )
-            self.assertNotEqual(model._origin_scale(row), scale)
-            self.assertNotEqual(model.predict(row), band)
-
         with self.subTest("ref cancels: one reference shared by the scores and the forecast moves no band"):
             frame = regime_frame(self.FRAME_ROWS)
             points = frame[-self.FORECAST_ROWS :]
@@ -4009,6 +3991,75 @@ def arx_frame(count, seed=20260911):
             + (1.0 + 0.02 * on_rrp) * next(shocks)
         )
     return rows
+
+
+class PartialCrossConformalLeakTests(unittest.TestCase):
+    """The no-leak subtests of `PartialCrossConformalTests`, not marked nightly (#869).
+
+    A leakage guard runs on every pull request. These two subtests moved here unchanged from
+    `PartialCrossConformalTests.test_the_partial_band_lies_between_and_keeps_the_fit_edges` so
+    that the slow regime sweep beside them can be nightly; their names, and the recorded
+    mutations that name them, are the same.
+    """
+
+    NAME = PartialCrossConformalTests.NAME
+    FRAME_ROWS = PartialCrossConformalTests.FRAME_ROWS
+    LEAK_PURGE = PartialCrossConformalTests.LEAK_PURGE
+    PERTURB_AT = PartialCrossConformalTests.PERTURB_AT
+    PERTURB_BPS = PartialCrossConformalTests.PERTURB_BPS
+    setUp = PartialCrossConformalTests.setUp
+    fit = PartialCrossConformalTests.fit
+    stand_in_fit = PartialCrossConformalTests.stand_in_fit
+
+    def test_the_partial_band_reads_nothing_after_its_decision(self):
+        """No leak: a held-out row's scale, and a forecast's factor and band."""
+
+        with self.subTest("leak: a held-out row's scale reads nothing after its feature row"):
+            frame = regime_frame(self.FRAME_ROWS)
+            moved = ScaledCrossConformalTests.perturbed(frame, self.PERTURB_AT, self.PERTURB_BPS)
+            opens = frame[self.PERTURB_AT].date
+            before = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
+            after = self.stand_in_fit(ConstantQuantile, moved, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
+            checked = changed = 0
+            for number, (one, two) in enumerate(
+                zip(before.calibration_blocks, after.calibration_blocks), start=1
+            ):
+                self.assertEqual(one.scored_dates, two.scored_dates)
+                self.assertEqual(len(one.scales), len(one.partial_scores))
+                for when, left, right in zip(one.scored_dates, one.scales, two.scales):
+                    if when <= opens:
+                        checked += 1
+                        self.assertEqual(
+                            left,
+                            right,
+                            msg=(
+                                f"block {number}: the scale of the row scored on {when} "
+                                f"moved when only spreads after {opens} did"
+                            ),
+                        )
+                    else:
+                        changed += left != right
+            self.assertGreater(checked, 100)
+            self.assertGreater(changed, 0, msg="the control: no scale moved at all")
+
+        with self.subTest("leak: a forecast's factor and band read nothing after its decision"):
+            frame = regime_frame(self.FRAME_ROWS)
+            model = self.stand_in_fit(ConstantQuantile, frame, ("sofr_volume",), information=gap_rule(self.LEAK_PURGE))
+            row = frame[self.PERTURB_AT]
+            scale, band = model._origin_scale(row), model.predict(row)
+            self.assertEqual(scale, ScaledCrossConformalTests.rms_scale(frame, self.PERTURB_AT))
+            history = model._history_spreads
+            model._history_spreads = history[: self.PERTURB_AT + 1] + tuple(
+                spread + self.PERTURB_BPS for spread in history[self.PERTURB_AT + 1 :]
+            )
+            self.assertEqual((model._origin_scale(row), model.predict(row)), (scale, band))
+            model._history_spreads = (
+                history[: self.PERTURB_AT - 3]
+                + (history[self.PERTURB_AT - 3] + self.PERTURB_BPS,)
+                + history[self.PERTURB_AT - 2 :]
+            )
+            self.assertNotEqual(model._origin_scale(row), scale)
+            self.assertNotEqual(model.predict(row), band)
 
 
 class GradientBoostedArxFeatureTests(unittest.TestCase):
