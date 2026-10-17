@@ -150,11 +150,14 @@ NYFED_REPO_OPS_FIELDS = (
 #: offered, so a date with no operation is a structural zero; from it to `SRF_INCEPTION` a date with
 #: none is missing (`fed_liquidity.assemble`).
 REPO_FACILITY_START = date(2019, 9, 17)
-#: The take-up floor (#743, Eleonora's ruling of 14 October 2026, data meaning): in every era a Fed
-#: repo operation with less than $0.1 bn accepted counts as no take-up. It covers the $64-66 mn
-#: tests before the facility and the $1-7 mn trades after it; a rule that differs by era builds a
-#: regime dummy (#672). The operation still happened, so its date keeps a row, at zero.
-REPO_TAKE_UP_FLOOR = 100_000_000
+#: The test-trade rule (#802, Eleonora's ruling of 15 October 2026, data meaning; it narrows the
+#: $0.1 bn floor of #743): a Fed repo operation is no take-up only if it is a test trade, that is, if
+#: it accepted at most this amount and a whole number of millions (the Desk's facility-era test trades
+#: are $1-7 mn, typically $1 mn per collateral type). An operation whose note names a small value
+#: exercise is dropped before this (`_is_small_value_exercise`). One amount, no date: a rule that
+#: differs by era builds a regime dummy (#672). The operation still happened, so its date keeps a
+#: row, at zero.
+TEST_TRADE_MAX = 7_000_000
 #: The OFR's Short-term Funding Monitor, repo collection (#187): one
 #: unmodified `timeseries` response per series mnemonic, saved by
 #: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
@@ -2070,10 +2073,16 @@ def _nyfed_on_rrp_rows(artifact: SnapshotArtifact, payload: bytes):
     return rows
 
 
-def _effective_accepted(accepted):
-    """The amount accepted that counts as take-up: zero below `REPO_TAKE_UP_FLOOR` (#743)."""
+def _is_test_trade(accepted) -> bool:
+    """Whether an operation that accepted `accepted` dollars is a test trade (#802)."""
 
-    return accepted if accepted >= REPO_TAKE_UP_FLOOR else 0
+    return 0 < accepted <= TEST_TRADE_MAX and accepted % 1_000_000 == 0
+
+
+def _effective_accepted(accepted):
+    """The amount accepted that counts as take-up: zero for a test trade (`_is_test_trade`, #802)."""
+
+    return 0 if _is_test_trade(accepted) else accepted
 
 
 def _is_small_value_exercise(operation: Mapping[str, object]) -> bool:

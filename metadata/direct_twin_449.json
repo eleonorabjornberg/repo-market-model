@@ -7,6 +7,10 @@
   ],
   "control": "gbm_funding of metadata/spread_distribution_634.json: ml.fit_gradient_boosted_quantiles at the 23 levels of protocol v1 on the published funding features (live_record.published_features at the lead), training_pairs unset (one-step pairs: every regressor of a training row is the row before its target)",
   "twin": "gbm_funding_direct: the same call with training_pairs=\"direct\" and nothing else changed (each training target is paired with its as-of read at its own decision instant, at the lead of the walk)",
+  "arms": {
+    "gbm_funding": "gbm_funding of metadata/spread_distribution_634.json: ml.fit_gradient_boosted_quantiles at the 23 levels of protocol v1 on the published funding features (live_record.published_features at the lead), training_pairs unset (one-step pairs: every regressor of a training row is the row before its target)",
+    "gbm_funding_direct": "gbm_funding_direct: the same call with training_pairs=\"direct\" and nothing else changed (each training target is paired with its as-of read at its own decision instant, at the lead of the walk)"
+  },
   "walks": "the walks of scripts/spread_distribution_634.py (control) and scripts/direct_twin_449.py walk (twin) on the published panel (digest 4ddc3882...), refit every 21 scored days, minimum history 61, decision time 16:00, leads 1 to 5; the same fold grid and the same as-of rule at each lead",
   "confirm_in_code": "the control's walk settings carry no training_pairs and the twin's carry training_pairs 'direct' (ml._model_settings names it only when set); both are written into score.json (key pairing) and the score refuses to run unless the control's are absent and the twin's say 'direct'",
   "scale": {
