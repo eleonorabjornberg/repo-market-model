@@ -1009,6 +1009,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a correction to how step 1's day set is read).
 - Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
 
+### 2026-10-15 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#816
+- Directive: #789
+- Step: groundwork G1 (publishing infrastructure for the results page; the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `8474e69f`
+- Tried: the committed results page and data carry no commit stamp; `emit_visual.py --stamp`, run by the pages job on main, writes it. `--check` and the tests no longer read git history. Variants: n/a (infrastructure, no model).
+- Result: a merge to main no longer makes the page stale or conflicting in an open PR; the page's content is still checked byte for byte. No published figure moves.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's call on where the stamp is written (the deployed copy, or a bot-committed stamp file).
+
 ### 2026-10-14 [H8] step 2 · eleonorabjornberg/repo-market-model#771
 - Directive: #765
 - Step: 2 (development: rank by tail probability combined with the day type)
