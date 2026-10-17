@@ -1,9 +1,23 @@
 # Research log
 
-One entry per scored experiment, newest last. The plan is [`plan.md`](plan.md); the format is the constant
-`ENTRY_FORMAT` in `scripts/check_research_log.py`, which `python3 scripts/check_research_log.py check` enforces in
-CI. The same format serves both repositories (`repo-market-liquidity` results arrive as a fenced `research-log`
-block copied verbatim from that repository's pull request body).
+<!-- generated: docs/research/log.md is assembled by `python3 scripts/check_research_log.py assemble` from this
+header and the entry files in docs/research/log/. Never edit it by hand. -->
+
+One entry per scored experiment, in the order of the file names under [`log/`](log/) (the entries from before 17
+October 2026 first, in the order they were merged; later ones by date, repository and pull request number). The plan
+is [`plan.md`](plan.md); the format is the constant `ENTRY_FORMAT` in `scripts/check_research_log.py`, which
+`python3 scripts/check_research_log.py check` enforces in CI. The same format serves both repositories
+(`repo-market-liquidity` results arrive as a fenced `research-log` block copied verbatim from that repository's pull
+request body).
+
+**To add an entry (#866), add a file; never edit this page.** Create
+`docs/research/log/<YYYY-MM-DD>-<model|liquidity>-<PR number, five digits>-<H#>-<step<N>|G<n>>.md`, for example
+`2026-10-17-model-00866-H5-step2.md`, holding only the entry: its `### ` heading and its lines. A liquidity entry
+copied from that repository's pull request body is a file in the same way, named `liquidity` and its PR number. A
+second entry with the same heading takes `-2` before `.md`. Then run `python3 scripts/check_research_log.py
+assemble`, which rewrites this page, and commit it with the regeneration commit like the other generated pages.
+Two pull requests that add different files never conflict; a conflict in this page alone is resolved by running
+`assemble` again. An entry file already on `main` is never edited, renamed or deleted: the check refuses it.
 
 Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
 hypothesis manual, kept apart from the six steps) has its own heading,
