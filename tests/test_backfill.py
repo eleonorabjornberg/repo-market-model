@@ -420,7 +420,7 @@ class TheSofrVolumeIsNotAdmittedOnBackFilledRows(unittest.TestCase):
     the workbook's volumes are not admitted and that the SOFR volume is Eleonora's open question on #742. The code had
     mapped `sofr_volume` onto the admitted `sofr` series, so a back-filled row could carry it and a fit could read it.
 
-    Red first, against main at f70bf93d: `AssertionError: Lists differ: [] != ['sofr_volume']` in
+    Red first, against main at f70bf93d: `AssertionError: Lists differ: ['tbill_4w'] != ['sofr_volume', 'tbill_4w']` in
     `test_the_sofr_volume_is_blank_on_a_back_filled_row` and `AssertionError: LookAheadError not raised` in
     `test_a_fit_that_reads_the_sofr_volume_is_refused`.
 
