@@ -1065,7 +1065,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 
 ### 2026-10-17 [H5] groundwork G2 · eleonorabjornberg/repo-market-model#907
 - Directive: #883
-- Step: groundwork G1 and step 3 (the two month-end readings of `risk_dates`, measured side by side; the choice stays Eleonora's, #800)
+- Step: groundwork G2 and step 3 (the two month-end readings of `risk_dates`, measured side by side; the choice stays Eleonora's, #800)
 - Tier: development
 - Pins: published panel `4ddc3882…`; base `161fd5b6`; walks and exceedance files as in `scripts/spread_distribution_634.py`; H2's fits rerun on a worktree at the merge of #775
 - Tried: listed the days on which the window reading and the business-day reading disagree (70 panel days to 2025-12-31, 5 of them pressure days), then re-ran #805, #761, #849, #694 and #758 under each reading, with the reading switched by a process-level shim and nothing in `src/` changed. Variants: 0.
