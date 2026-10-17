@@ -887,49 +887,7 @@
   "announced": 5
  },
  "by_year": {
-  "in force (floor $0.1 bn)": {
-   "2018": {
-    "longest": 250.0,
-    "take_up_days": 0
-   },
-   "2019": {
-    "longest": 250.0,
-    "take_up_days": 72
-   },
-   "2020": {
-    "longest": 124.0,
-    "take_up_days": 124
-   },
-   "2021": {
-    "longest": 250.0,
-    "take_up_days": 0
-   },
-   "2022": {
-    "longest": 250.0,
-    "take_up_days": 0
-   },
-   "2023": {
-    "longest": 250.0,
-    "take_up_days": 1
-   },
-   "2024": {
-    "longest": 52.0,
-    "take_up_days": 13
-   },
-   "2025": {
-    "longest": 41.0,
-    "take_up_days": 44
-   },
-   "2026": {
-    "longest": 22.0,
-    "take_up_days": 16
-   },
-   "2024-01..2026-09": {
-    "longest": 52.0,
-    "take_up_days": 73
-   }
-  },
-  "#826 (whole $1-7 mn)": {
+  "in force (#826: whole $1-7 mn)": {
    "2018": {
     "longest": 250.0,
     "take_up_days": 0
@@ -971,7 +929,7 @@
     "take_up_days": 106
    }
   },
-  "announcement-keyed": {
+  "superseded floor ($0.1 bn)": {
    "2018": {
     "longest": 250.0,
     "take_up_days": 0
@@ -1012,10 +970,52 @@
     "longest": 52.0,
     "take_up_days": 73
    }
+  },
+  "announcement-keyed": {
+   "2018": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2019": {
+    "longest": 250.0,
+    "take_up_days": 72
+   },
+   "2020": {
+    "longest": 66.0,
+    "take_up_days": 125
+   },
+   "2021": {
+    "longest": 156.0,
+    "take_up_days": 1
+   },
+   "2022": {
+    "longest": 250.0,
+    "take_up_days": 3
+   },
+   "2023": {
+    "longest": 39.0,
+    "take_up_days": 16
+   },
+   "2024": {
+    "longest": 50.0,
+    "take_up_days": 23
+   },
+   "2025": {
+    "longest": 32.0,
+    "take_up_days": 55
+   },
+   "2026": {
+    "longest": 17.0,
+    "take_up_days": 27
+   },
+   "2024-01..2026-09": {
+    "longest": 50.0,
+    "take_up_days": 105
+   }
   }
  },
- "announcement_rule_equals_in_force": true,
- "fed_repo_columns_identical": true,
+ "announcement_rule_equals_in_force": false,
+ "fed_repo_columns_identical": false,
  "h5_inputs": {
   "declarations_checked": [
    "backfill_h5_726.json",

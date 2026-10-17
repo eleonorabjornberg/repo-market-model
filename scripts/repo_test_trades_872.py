@@ -8,9 +8,10 @@ no panel. It does three things, on the tracked repo-operation snapshots (`tests/
    pages saved under `docs/pivot/evidence/repo-test-trades-872/sources/`, checked against `CHECKSUMS.sha256`): by
    operation date and by the announced time window;
 3. reports `fed_repo_days_since_positive` by year under three readings of what counts as take-up: the rule in force
-   (`ingest.REPO_TAKE_UP_FLOOR`), the rule #826 proposes (a whole number of millions, at most $7 mn, is a test
-   trade), and the announcement-keyed rule the directive asks for (an operation announced as a small value
-   exercise is not take-up, from the statement's public time). No size threshold is added or changed.
+   (`ingest._effective_accepted`, #826: a whole number of millions, at most $7 mn, is a test trade), the superseded
+   $0.1 bn floor (#743, for comparison only), and the announcement-keyed rule the directive asks for (an operation
+   announced as a small value exercise is not take-up, from the statement's public time). No size threshold is added
+   or changed.
 
 It reads operation amounts only. No spread, no forecast and no score is read, so no locked day counts toward a choice
 (`docs/decisions/lockbox.md`); the take-up counts run to 2026-09-03 as the directive asks.
@@ -154,8 +155,10 @@ def _rule_current(_operation, accepted):
     return _IN_FORCE(accepted)
 
 
-def _rule_826(_operation, accepted):
-    return 0 if 0 < accepted <= 7_000_000 and accepted % 1_000_000 == 0 else accepted
+def _rule_superseded_floor(_operation, accepted):
+    """The $0.1 bn floor (`REPO_TAKE_UP_FLOOR`, #743) that #826's rule replaced; kept for comparison only."""
+
+    return accepted if accepted >= 100_000_000 else 0
 
 
 def _rule_announced(operation, accepted):
@@ -165,7 +168,11 @@ def _rule_announced(operation, accepted):
     return _IN_FORCE(accepted)
 
 
-RULES = (("in force (floor $0.1 bn)", _rule_current), ("#826 (whole $1-7 mn)", _rule_826), ("announcement-keyed", _rule_announced))
+RULES = (
+    ("in force (#826: whole $1-7 mn)", _rule_current),
+    ("superseded floor ($0.1 bn)", _rule_superseded_floor),
+    ("announcement-keyed", _rule_announced),
+)
 
 
 def panel_under(rule, published):

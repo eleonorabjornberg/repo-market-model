@@ -68,23 +68,23 @@ Pages fetched 2026-10-17T15:52Z to 15:54Z, 17 October 2026; checksums in `source
 
 ## `fed_repo_days_since_positive`, longest value and number of take-up days, by year
 
-| year | in force (floor $0.1 bn): longest / take-up days | #826 (whole $1-7 mn): longest / take-up days | announcement-keyed: longest / take-up days |
+| year | in force (#826: whole $1-7 mn): longest / take-up days | superseded floor ($0.1 bn): longest / take-up days | announcement-keyed: longest / take-up days |
 |---|---|---|---|
 | 2018 | 250 / 0 | 250 / 0 | 250 / 0 |
 | 2019 | 250 / 72 | 250 / 72 | 250 / 72 |
-| 2020 | 124 / 124 | 66 / 125 | 124 / 124 |
-| 2021 | 250 / 0 | 156 / 1 | 250 / 0 |
-| 2022 | 250 / 0 | 250 / 3 | 250 / 0 |
-| 2023 | 250 / 1 | 39 / 16 | 250 / 1 |
-| 2024 | 52 / 13 | 50 / 24 | 52 / 13 |
-| 2025 | 41 / 44 | 32 / 55 | 41 / 44 |
-| 2026 | 22 / 16 | 17 / 27 | 22 / 16 |
-| 2024-01..2026-09 | 52 / 73 | 50 / 106 | 52 / 73 |
+| 2020 | 66 / 125 | 124 / 124 | 66 / 125 |
+| 2021 | 156 / 1 | 250 / 0 | 156 / 1 |
+| 2022 | 250 / 3 | 250 / 0 | 250 / 3 |
+| 2023 | 39 / 16 | 250 / 1 | 39 / 16 |
+| 2024 | 50 / 24 | 52 / 13 | 50 / 23 |
+| 2025 | 32 / 55 | 41 / 44 | 32 / 55 |
+| 2026 | 17 / 27 | 22 / 16 | 17 / 27 |
+| 2024-01..2026-09 | 50 / 106 | 52 / 73 | 50 / 105 |
 
-The announcement-keyed reading equals the rule in force in every cell: **True**; every `fed_repo_*` panel column is identical under the two: **True**.
+The announcement-keyed reading equals the rule in force in every cell: **False**; every `fed_repo_*` panel column is identical under the two: **False**.
 
 ## Effect on H5's candidate inputs
 
 | H5 declarations checked | naming a `fed_repo` column | change in any `fed_repo_*` column under the announcement-keyed rule |
 |---|---|---|
-| `backfill_h5_726.json`, `exploration_845.json`, `h5_step3_707.json`, `h5_step4_758.json`, `spread_distribution_632.json`, `spread_distribution_634.json`, `spread_distribution_686.json`, `spread_distribution_761.json` | none | none |
+| `backfill_h5_726.json`, `exploration_845.json`, `h5_step3_707.json`, `h5_step4_758.json`, `spread_distribution_632.json`, `spread_distribution_634.json`, `spread_distribution_686.json`, `spread_distribution_761.json` | none | some |
