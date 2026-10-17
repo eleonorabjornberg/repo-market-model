@@ -978,3 +978,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the control reproduces both published evidence files (largest difference 6e-14). Settlement cells at leads 2 to 5 drop (1907 to 1451 scored cells; 4 of 20 lead-by-type pairs move; target days 383 to 382). The first candidate's CRPS skill against B1 goes from +3.2% [+0.0%, +6.6%] to +2.2% [-1.4%, +5.7%] and its MAE skill against B1 from +0.7% to -0.9%, so #693's percentile reading flips from not killed to killed on the declared reading; #739's studentized reading is killed before and after. Development data, not a verdict.
 - Against kill: not applicable (a correction to how step 1's day set is read).
 - Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
+
+### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#856
+- Directive: #842
+- Step: 3 (milestone M4, the nested development test against H5's candidate `gbm_funding`)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `26c51093…`; declarations `metadata/h9_nested_842.json`, `metadata/richer_targets_706.json`; base `0065b4e3`
+- Tried: `gbm_funding` with and without one target's forecast (the median of #706's walk-forward law for the same target day) as an input, for BGCR dispersion, ON RRP daily change and SOFR dispersion, leads 1 to 5, scored by the protocol's grid CRPS on 1,848 decision days and split by regime, as-of scarcity state, day type and lead, with and without 2019-09-18. Variants: 3 new (nested), plus the re-walked candidate.
+- Result: nested d (lower 95%) −0.004 (−0.015), −0.000 (−0.009) and +0.006 (−0.005) for BGCR dispersion, ON RRP change and SOFR dispersion; skill −0.002, −0.000, +0.003; Holm p 1.000, 1.000, 0.517; the same without 2019-09-18. Two of about 40 cells per target show a lower bound above zero, both for SOFR dispersion (2025-26: +0.039 [+0.014]; lead 5: +0.017 [+0.002]). Detail in `docs/pivot/h9-nested-842-result.md`.
+- Against kill: the nested part of `H9.md`'s kill ("no nested gain for H5") holds on development data: no target improves the candidate beyond its interval. Not a verdict.
+- Next: no H9 registration on this evidence; whether H9 continues with other forms of the input (width, tail) or stops is Eleonora's; re-score if the candidate moves to the twin of #825.
