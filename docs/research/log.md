@@ -1062,3 +1062,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#908
+- Directive: #787
+- Step: 2 (inputs; data meaning of the Standing Repo Facility total, groundwork)
+- Tier: development
+- Pins: published panel unchanged; base `d4f76f94`
+- Tried: the test-trade rule of #802 (a whole-million trade of at most $7 mn is no take-up) applied to `srf_total_accepted`, as Eleonora ruled on 15 October 2026. Variants: 1 rule.
+- Result: three values on the results page move: 2022-10-03 0.003 to 0.0, 2025-12-23 0.006 to 0.0, 2025-12-24 0.503 to 0.5 (USD bn); nothing is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: H5 step 2 inputs.
