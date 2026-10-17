@@ -959,6 +959,26 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a robustness reading of step 2's ranking; no kill criterion assessed).
 - Next: `b1_quantiles` is unchanged; whether to align it to h + 1 for H9 is Eleonora's (marked in the PR).
 
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#855
+- Directive: #851 (finding #832)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `4832d8a2`
+- Tried: repaired the back-fill panel build (`panel_command` lacked `end`), blanked every series not admitted on back-filled rows, and made the guard read the `features` the backtest is given instead of `--reads`. Variants: 0 new models; nothing re-scored.
+- Result: the build runs again and the published rows still reproduce the scratch panel; the #484 page now carries a dated note that its 2018 gains rest on series that are not admitted. No figure changed.
+- Against kill: not applicable (a repair of the back-fill build; development data, no verdict).
+- Next: whether H4 and #484 are re-run on the workbook's three series is Eleonora's (marked question in the PR).
+
+### 2026-10-17 [H6] step 1 · eleonorabjornberg/repo-market-model#857
+- Directive: #849
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ce1f1ec7`
+- Tried: `risk_day_type` read a coupon settlement at every lead, so a settlement-only target was a risk date at leads 2 to 5 before its flag was public. `target_risk_type` now counts it only where the registry makes it public (lead 1) and raises `LookAheadError` otherwise. #693's score and #739's studentized re-read re-run on the corrected day set, with the old reading as a control. Variants: 0 new models.
+- Result: the control reproduces both published evidence files (largest difference 6e-14). Settlement cells at leads 2 to 5 drop (1907 to 1451 scored cells; 4 of 20 lead-by-type pairs move; target days 383 to 382). The first candidate's CRPS skill against B1 goes from +3.2% [+0.0%, +6.6%] to +2.2% [-1.4%, +5.7%] and its MAE skill against B1 from +0.7% to -0.9%, so #693's percentile reading flips from not killed to killed on the declared reading; #739's studentized reading is killed before and after. Development data, not a verdict.
+- Against kill: not applicable (a correction to how step 1's day set is read).
+- Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
+
 ### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#856
 - Directive: #842
 - Step: 3 (milestone M4, the nested development test against H5's candidate `gbm_funding`)
