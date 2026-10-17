@@ -1,0 +1,24 @@
+{
+  "status": "declared by the pull request that closes #849 before any addendum score was computed (a timing run of the corrected arithmetic was started to measure its run time; its output was not read). A development measurement, not a record. Nothing is published: no figure on the #693 page or the #739 page changes, nothing in docs/runs/ changes, no day after 2025-12-31 is scored. Development data never gives a verdict (scoring protocol v1, #640)",
+  "issue": 849,
+  "hypothesis": "H6 (the spread on known risk dates is forecastable), step 1, re-read after a leak fix",
+  "ruling": "Eleonora, ruling on #720 (13 October 2026), point 2: a settlement flag counts only at leads where it was already announced. #815 (H5) and #819 (H8) fixed the same pattern; this directive does it for H6",
+  "what_changes": "repo_model.risk_date_spread.risk_day_type used the coupon clause at every lead, so a target day that settles a coupon was a settlement risk date at leads 2 to 5 although the flag was not public at the decision. The calendar benchmark and the type x state model now type a target through risk_date_spread.target_risk_type, which counts the coupon settlement only where spread_mr_variants.coupon_public holds (the registry's declared availability, as #815 and #819 read it) and raises LookAheadError if a settlement is read that was not public. A quarter-end, month-end or tax date is a calendar fact and counts at every lead. A sample day (at or before the anchor) is typed in hindsight: its flag was public long before the decision",
+  "reads": [
+    "scripts/risk_date_spread_693.py score: #693's rows (percentile interval of the draws), unchanged except that the day set is the corrected one",
+    "scripts/risk_date_reread_739.py score: the same rows on the studentized stationary bootstrap, the interval step 1's development kill rule is read on since the ruling on #739"
+  ],
+  "unchanged": "targets, leads 1 to 5, candidates (the H5 mean-reverting row of #686 and the type x state model), benchmarks (B1 and the risk-date calendar), window lengths, minimum cell, scoring protocol v1 scorer, seed 693, 10,000 draws, the 20-day minimum for a split, the scored days (decision days whose five targets are on or before 2025-12-31) and the panel (step 1's, the digest of metadata/funding_panel_manifest.json)",
+  "control": "the same two scripts run with risk_date_spread.target_risk_type replaced by the old reading (the coupon clause read at every lead) must reproduce docs/pivot/evidence/risk-date-spread/score.json and docs/research/evidence/risk-date-reread-739.json in every pooled mean, skill and interval; the addendum states whether it does",
+  "report": {
+    "day_set": "the counts of risk-type target cells (decision day, lead) per lead and per type under both readings, the cells that drop, and the target days that stop being risk dates at every lead they were forecast at",
+    "pairs_that_move": "a (lead, target-type) pair moves when its number of cells differs between the two readings. The addendum counts the pairs that move out of the 5 leads x 4 types, and by regime and by day type the number of cells dropped",
+    "scores": "the pooled grid CRPS and MAE of both benchmarks and both candidates, each candidate's skill against each benchmark with its 90% interval on the #693 reading and on the #739 studentized reading, the declared kill rule on both, and the same by regime (2018-19, 2020-24, 2025-26) and by day type, each beside the published figure and their difference. A group of fewer than 20 target days is listed and not tested",
+    "marked_question": "if the corrected rows change the kill rule's outcome or the sign of a pooled skill on either reading, the page says so and the PR carries a marked question for Eleonora"
+  },
+  "limits": {
+    "last_day": "2025-12-31",
+    "label": "development data, not a verdict",
+    "published": "the pages docs/pivot/risk-date-spread-result.md and docs/research/risk-date-reread-739.md and their evidence are left as published; the addendum is a new page"
+  }
+}
