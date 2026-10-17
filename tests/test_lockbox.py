@@ -510,6 +510,11 @@ NOT_ENTRY_POINTS = {
         "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls lockbox.require_unlocked on every "
         "scored day before it reads one, refuses a panel past 2025-12-31 and fits and selects nothing"
     ),
+    "scripts/b1_alignment_850.run_command": (
+        "the B1 alignment measurement on step 1's panel (#850): walks the lead-1 fold grid, calls "
+        "lockbox.require_unlocked on every scored day before it reads one, refuses a panel past 2025-12-31 and "
+        "fits and selects nothing"
+    ),
     "scripts/richer_targets_706.lead_on_onsets": (
         "the pre-onset AUC of a modelled target's lead-1 median and of its as-of value (H9 step 2, #706); walks the lead-1 "
         "fold grid, calls refuse_locked on every scored day before it reads one, and fits and selects nothing "
