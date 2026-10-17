@@ -958,3 +958,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the as-of anchor is h + 1 rows back on every target. Lead-1 coverage of the level targets rises 4 to 7 points with h + 1-row changes (for example SOFR 99th percentile − IORB 81.6% to 87.2%); CRPS moves −1.9% to +1.3%. The persistence-against-climatology ranking is the same under both forms for every target at every lead 1 to 10; one flip in a 23-day cell (TGCR dispersion, quarter-end, lead 1). Development data, not a verdict.
 - Against kill: not applicable (a robustness reading of step 2's ranking; no kill criterion assessed).
 - Next: `b1_quantiles` is unchanged; whether to align it to h + 1 for H9 is Eleonora's (marked in the PR).
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#855
+- Directive: #851 (finding #832)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `4832d8a2`
+- Tried: repaired the back-fill panel build (`panel_command` lacked `end`), blanked every series not admitted on back-filled rows, and made the guard read the `features` the backtest is given instead of `--reads`. Variants: 0 new models; nothing re-scored.
+- Result: the build runs again and the published rows still reproduce the scratch panel; the #484 page now carries a dated note that its 2018 gains rest on series that are not admitted. No figure changed.
+- Against kill: not applicable (a repair of the back-fill build; development data, no verdict).
+- Next: whether H4 and #484 are re-run on the workbook's three series is Eleonora's (marked question in the PR).
