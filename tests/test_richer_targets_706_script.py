@@ -130,3 +130,51 @@ class ReadingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _cell(lower):
+    return {"skill": 0.1, "skill_lower_95_one_sided": lower}
+
+
+def _result(lower_b1, lower_b2=0.1, auc=0.55):
+    tests = {"B1 -> model": _cell(lower_b1), "B2 -> model": _cell(lower_b2)}
+    band = {"onsets": 5, "auc": auc, "auc_low": auc - 0.1, "auc_high": auc + 0.1}
+    return {
+        "decision_days": {"n": 100},
+        "pooled": tests,
+        "by_lead": {str(h): {"tests": tests} for h in script.HORIZONS},
+        "by_state": {"ample": {"n": 60, "tests": tests}},
+        "by_day_type": {"month_end": {"decision_days": 30, "tests": tests}},
+        "lead_on_onsets": {"cells": {"model_median": {"ample": band, "scarce": band}}},
+    }
+
+
+class SensitivityTests(unittest.TestCase):
+    """#902: the same score with and without decision day 2019-09-18."""
+
+    def document(self, lower_with, lower_without):
+        return {"dropped_day": "2019-09-18", "targets": {"t": {"with": _result(lower_with), "without": _result(lower_without)}}}
+
+    def test_a_with_column_that_differs_from_the_tracked_score_is_named(self):
+        tracked = {"a": {"x": 1}, "b": {"x": 2}}
+        self.assertEqual(script.reproduces({"a": {"x": 1}, "b": {"x": 3}}, tracked), ["b"])
+        self.assertEqual(script.reproduces(tracked, tracked), [])
+
+    def test_a_missing_target_does_not_reproduce(self):
+        self.assertEqual(script.reproduces({}, {"a": {"x": 1}}), ["a"])
+
+    def test_a_bound_that_changes_sign_is_listed_in_every_cut_it_changes(self):
+        changes = script.sign_changes(self.document(0.05, -0.02))
+        self.assertTrue(changes)
+        self.assertTrue(any("pooled" in c and "over B1" in c for c in changes))
+        self.assertFalse(any("over B2" in c for c in changes))
+
+    def test_bounds_on_the_same_side_are_not_listed(self):
+        self.assertEqual(script.sign_changes(self.document(0.05, 0.01)), [])
+
+    def test_the_page_is_labelled_and_states_the_sign_changes(self):
+        page = script.sensitivity_markdown(self.document(0.05, -0.02))
+        self.assertIn("not a verdict", page)
+        self.assertIn("## Interval bounds that change sign", page)
+        self.assertIn("lower bound +0.050 with the day, -0.020 without", page)
+        self.assertIn("None: no lower bound", script.sensitivity_markdown(self.document(0.05, 0.01)))
