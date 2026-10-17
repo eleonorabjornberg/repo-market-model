@@ -919,6 +919,36 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable.
 - Next: Eleonora's rulings on Q1 and Q2 above; then H7m G6 resumes.
 
+### 2026-10-16 [H7] groundwork G5 · eleonorabjornberg/repo-market-liquidity#102
+- Directive: #99 (L24, finding #94), the CDR archive workflow's ref clash and verified storage
+- Step: groundwork G5 for H7m
+- Tier: development
+- Pins: parent repo-market-model 53e61af; panel unchanged
+- Tried: named refs in full, retagged the release to cdr-archive-assets, made the run fail unless every manifest entry is a release asset with the same SHA-256 and size, reconciled the manifest
+- Result: archive fixed, nothing scored; two 14 Oct zips are not_stored (bytes lost)
+- Against kill: no goalpost is tested here; this is tooling
+- Next: Eleonora's G6 rulings and the remaining queue
+
+### 2026-10-16 [H7] groundwork G1 · eleonorabjornberg/repo-market-liquidity#103
+- Directive: eleonorabjornberg/repo-market-liquidity#100 (L25, finding #96)
+- Step: groundwork G1 for H7m: the research-log check also runs on the merge commit, with #76's entry corrected
+- Tier: development
+- Pins: parent 53e61af9b4175e854c196908d3c76b228c039667; panel digest unchanged; snapshot none
+- Tried: a push-path check that reads each merged PR's body over REST, a corrections file read in place of a merged body, test first with a recorded mutation
+- Result: check added, nothing scored; #76's corrected entry passes the model repo's checker
+- Against kill: not applicable
+- Next: the model repo copies the entries of #76 (corrected), #84, #90 and #91 in its next log PR
+
+### 2026-10-16 [H7] groundwork G6 · eleonorabjornberg/repo-market-liquidity#107
+- Directive: eleonorabjornberg/repo-market-liquidity#105
+- Step: H7m groundwork G6 (L27, parent pin to 8fd2cf8 for repo-operation labels to 2026-09-03)
+- Tier: development
+- Pins: model 8fd2cf8c72e7d5c6e81c509651b684b690054a6f, panel digest 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999, snapshot none
+- Tried: moved the pin; regenerated the snapshot manifests; read the event labels through the parent's fed_liquidity.assemble; no candidate scored, variant count 0
+- Result: panel digest unchanged; snapshot digests unchanged; repo-operation labels now reach 2026-09-03 (they stopped at 2025-12-31 at 53e61af)
+- Against kill: not applicable (no candidate scored); docs/decisions/measurement-protocol.md unchanged
+- Next: the G6 power study re-run on the extended labels (next directive)
+
 ### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
 - Directive: #785
 - Step: 3
