@@ -148,7 +148,7 @@ def excludes_zero(row: dict) -> bool:
 # -- the frame -----------------------------------------------------------------------------------------------------
 
 
-def build_frame(panel, splits, registry, declaration):
+def build_frame(panel, splits, registry, declaration, without_day=None):
     """The decision days with a forecast of every model, whose five targets are scored days."""
 
     frame = s686.Frame(panel, splits, registry, declaration)
@@ -171,6 +171,10 @@ def build_frame(panel, splits, registry, declaration):
     walk = var.walk(panel, candidate_days, b2=b2, **settings)
     days = [day for day in candidate_days if day in b1 and day in b2 and day in rc
             and all(day in walk.forecasts[name] for name in (REFERENCE,) + var.NAMES)]
+    frame.walked_days = days
+    if without_day is not None:
+        # #882 (finding #798): the same scoring on every decision day but one; the day must be a scored one
+        days = _load("h5_splits_805").drop_day(days, without_day)
     frame.days = days
     frame.forecasts = {
         name: {day: forecasts[day] for day in days}
@@ -238,12 +242,12 @@ def score(args) -> int:
     panel = load_daily_panel(panel_path)
     splits = load_split_declaration(SPLITS)
     registry = json.loads(SOURCES.read_text(encoding="utf-8"))
-    frame, notes, walk = build_frame(panel, splits, registry, declaration)
+    frame, notes, walk = build_frame(panel, splits, registry, declaration, args.without_day)
     days = frame.days
     draws = args.draws
 
     # the base model is #686's, exactly
-    base = smr.walk(panel, days, registry=registry, decision_time=DECISION_TIME, splits=splits)
+    base = smr.walk(panel, frame.walked_days, registry=registry, decision_time=DECISION_TIME, splits=splits)
     if any(base.forecasts[d] != frame.forecasts[REFERENCE][d] for d in days):
         raise SystemExit("the reference differs from spread_mean_reversion.walk")
 
@@ -520,6 +524,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     s.add_argument("--output", required=True)
     s.add_argument("--markdown")
     s.add_argument("--draws", type=int, default=sp.DRAWS)
+    s.add_argument("--without-day", type=date.fromisoformat, default=None, help="leave this decision day out of every window (#882)")
     s.add_argument("--workers", type=int, default=4)
     s.set_defaults(func=score)
     g = sub.add_parser("page", help="write the short result page from a score file")
