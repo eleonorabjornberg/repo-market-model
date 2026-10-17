@@ -32,8 +32,9 @@ records the ruling (drafted by the pull request that closes #430, for her to mer
   scored day are the ones the script scores without the history, and each fit's training frame also
   holds the back-filled rows. After each backtest the report's folds go through
   `backfill.require_training_only` and `backfill.require_posting_established` (#572: refused while
-  `metadata/backfill_posting.json` declares no posting instant) and `backfill.require_series_admitted` (#742:
-  `--reads` names the back-fill series the script's model reads, and only the admitted ones pass).
+  `metadata/backfill_posting.json` declares no posting instant) and `backfill.require_series_admitted` (#742, #832:
+  the series are derived from the `features` the script's backtest is given, and only the admitted ones pass). On the
+  extended panel every series that is not admitted is blank on a back-filled row.
 """
 
 from __future__ import annotations
@@ -141,7 +142,7 @@ def panel_command(args) -> int:
     columns = tuple(manifest["built_columns"]) + v11.EXTRA_COLUMNS
 
     scratch_panel = args.scratch
-    v11.panel_command(argparse.Namespace(output=scratch_panel))
+    v11.panel_command(argparse.Namespace(output=scratch_panel, end=None))
     published = load_daily_panel(scratch_panel)
 
     manifests = [
@@ -191,6 +192,9 @@ def panel_command(args) -> int:
     prefix = backfill.prefix_length([row.date for row in observations])
     header = next(csv.reader(scratch_panel.open(newline="", encoding="utf-8")))
     announced = [name for name in header if name.startswith("iorb_") and name.endswith(("_bps", "_change"))]
+    # A back-filled row serves only what the ruling admits (#742, #832): every other series is blank there.
+    admitted = backfill.load_admitted_series(REPO / "metadata" / "backfill_posting.json")
+    blank = set(backfill.unadmitted_columns(header[1:], admitted)) | set(announced)
     tail = observations[prefix:]
     if [row.date for row in tail] != [row.date for row in published]:
         raise SystemExit("the extended build's published days are not the scratch panel's days")
@@ -211,7 +215,7 @@ def panel_command(args) -> int:
         for row in observations[:prefix]:
             writer.writerow(
                 [row.date.isoformat()]
-                + ["" if name in announced or name.startswith("iorb_days") else cell(row.values.get(name))
+                + ["" if name in blank or name.startswith("iorb_days") else cell(row.values.get(name))
                    for name in header[1:]]
             )
         for source in published:
@@ -256,9 +260,6 @@ def run_command(args) -> int:
         raise SystemExit("the script must be one of scripts/*.py")
     posting = backfill.load_posting_instant(REPO / "metadata" / "backfill_posting.json")
     admitted = backfill.load_admitted_series(REPO / "metadata" / "backfill_posting.json")
-    reads = tuple(name for name in (args.reads or "").split(",") if name)
-    if not reads and not args.control:
-        raise SystemExit("--reads names the back-fill series the script's model reads (#742); e.g. --reads tgcr,bgcr,sofr")
     original = baseline.rolling_exceedance_backtest
     original_pairs = ml._pressure_pairs
 
@@ -272,6 +273,8 @@ def run_command(args) -> int:
         report = original(observations, minimum_history=minimum_history + shift, **kwargs)
         backfill.require_training_only(report.folds, where=script.name)
         backfill.require_posting_established(report.folds, posting, where=script.name)
+        # The columns the model reads are its own `features`, not a list the caller types (#832).
+        reads = backfill.series_read(kwargs.get("features") or ())
         backfill.require_series_admitted(report.folds, reads, admitted, where=script.name)
         calls.append((shift, len(report.folds)))
         for fold in report.folds:
@@ -538,7 +541,6 @@ def main(argv=None) -> int:
     run.add_argument("--extended", type=Path, required=True)
     run.add_argument("--script", type=Path, required=True)
     run.add_argument("--control", action="store_true", help="accept a panel with no back-filled row (the arm without history)")
-    run.add_argument("--reads", help="comma-separated back-fill series the script's model reads (#742); required unless --control")
     run.add_argument("--folds-output", type=Path)
     run.add_argument("--pairs-output", type=Path)
     run.add_argument("rest", nargs=argparse.REMAINDER)
