@@ -1062,3 +1062,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#897
+- Directive: #893
+- Step: groundwork G1 (the layout of the results page for H1 to H10; as in #816, the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: `site/index.html` re-set as a paper: title, dek, an executive summary in prose (no table), one contents list in place of the tile grids, numbered sections, numbered figure and table captions, a serif text column of about 66 characters with a margin column on wide screens for notes, a table and key figures (each key figure marked "development, not a verdict"), folding into the flow on a phone. Each hypothesis is one line, its id and a tagline from the new `docs/research/taglines.json`, over a native `<details>` fold holding its step, status, tests, kill criterion, milestones and log. Variants: n/a (presentation, no model).
+- Result: every chapter, view, figure and record of the page is still on it, folded or in the contents list; no figure, record or rule moves. The taglines are drafted from the plan's headings for Eleonora's review.
+- Against kill: not applicable (groundwork).
+- Next: #891 refreshes the milestones and status data the folds show; whichever merges second merges main and regenerates.
