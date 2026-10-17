@@ -58,7 +58,7 @@ ARMS = ("without", "with")
 #: What a back-filled row carries (#661 established the posting of TGCR, BGCR and SOFR; IORB is administered and announced;
 #: the calendar columns are functions of the date). Every other cell of such a row is blank.
 ESTABLISHED = (
-    "date", "sofr", "iorb", "sofr_volume", "tgcr", "bgcr", "quarter_end", "tax_date", "days_to_month_end",
+    "date", "sofr", "iorb", "tgcr", "bgcr", "quarter_end", "tax_date", "days_to_month_end",
 )
 LOW90, HIGH90 = sp.GRID.index(0.05), sp.GRID.index(0.95)
 LOW50, HIGH50 = sp.GRID.index(0.25), sp.GRID.index(0.75)
