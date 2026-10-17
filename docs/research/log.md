@@ -1063,6 +1063,26 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
 
+### 2026-10-17 [H1] step 4 · eleonorabjornberg/repo-market-model#878
+- Directive: #873 (recalibrate the protocol's critical and futility values in the candidate orientation; findings #830 and #833)
+- Step: 4
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `80b5ef0a`; rule of the power study `docs/research/power-study-769.md`, unchanged
+- Tried: the calibration of PR #695 re-run on d = S(B1) − S(candidate) with futility's benchmark B1 (20,000 windows, seed 1, as before), then #769's power study at the new values (four readings, 2,000 paths per cell) and #792's windows replayed at the protocol's values instead of each pair's own. Draft amendment to `docs/decisions/scoring-protocol.md`, not in force. Variants: 1 recalibration, 4 readings, 3 pairs.
+- Result: efficacy 2.55 and 1.35 at 125 and 250 days (grid) against 3.42 and 2.43 in force; B3 five levels 1.43 and 1.01 against 9.50 and 5.45; futility 2.44, 2.29 and 2.30 against 1.93, 1.56 and 1.45. Power of a true 3% by 250 days: 8.7%, 24.3%, 11.8% and 30.8% in readings (a) to (d), against 0.8%, 7.8%, 1.8% and 13.9%; size by 250 days 5.9%, 20.2%, 9.4% and 26.6% against 0.5%, 6.1%, 1.2% and 10.9%. Replay of B3 against B1 at the grid values: 59.0% of windows flagged against 31.5% in force; sign-flipped windows 14.2% against 2.5%. No reading reaches the 80% target.
+- Against kill: not applicable (H1 is a validity check; development and simulated data only).
+- Next: Eleonora's questions on the amendment and on the corrected test's size after 2020 (`docs/research/orientation-873-figures.md`); a follow-up directive applies the values to `scoring_protocol.py` only once she has merged the amendment.
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#895
+- Directive: #870 (findings #859, #861, #862)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; extended panel `1e09ae43…`; base `f70bf93d`; declaration `metadata/backfill_h5_726_reread.json`; seed 726
+- Tried: #759's ten walks re-run under the per-series admitted guard, re-scored on the studentized 90% interval with 2018-19 split into half-years and the days split by the back-filled share of the training frame (50%, with 75% and 90% as declared sensitivities). Variants: 0 new models.
+- Result: the 2018-19 figures reproduce (mean d −0.114). 2018-19 stays a cost on the ruled interval [−0.180, −0.058], carried by 2018 H2 (−0.229); 2019 H1, 2019 H2 and 2019 alone cover zero. 2024 and 2025-26 are costs on the ruled interval but cover zero at the 250-day reference c; the pooled sample covers zero. At most 50% back-filled leaves no 2018-19 day; at 75% 2018-19 covers zero (124 days), at 90% it stays a cost. Development data, not a verdict.
+- Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
+- Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
+
 ### 2026-10-17 [H5] groundwork G2 · eleonorabjornberg/repo-market-model#907
 - Directive: #883
 - Step: groundwork G2 and step 3 (the two month-end readings of `risk_dates`, measured side by side; the choice stays Eleonora's, #800)
