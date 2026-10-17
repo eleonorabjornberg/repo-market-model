@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#894
+- Directive: #887 (a correction: the code brought in line with the back-fill amendment of #881)
+- Step: 3 (the information set the back-fill trains under; no model, no scoring)
+- Tier: development
+- Pins: base `f70bf93d`; published panel `4ddc3882…`; `metadata/backfill_posting.json` unchanged
+- Tried: `backfill.WORKBOOK_SERIES` no longer maps `sofr_volume` onto the admitted `sofr` series, so the SOFR volume is blank on a back-filled row and a fit that reads it raises `LookAheadError`; `ESTABLISHED` of `scripts/backfill_h5_726.py` drops `sofr_volume`. Variants: 0.
+- Result: nothing is scored and no figure moves. The #726 with-history arm and the tier-1 extended-panel rows that read the volume are listed in the pull request; whether to re-score them is a marked question for Eleonora.
+- Against kill: not applicable (no verdict; development data).
+- Next: her answer on re-scoring #726; the SOFR volume's admission stays her open question on #742.
