@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H3] step 3 · eleonorabjornberg/repo-market-model#763
+- Directive: #708
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `a1cb8bcd…`; base `507a2fd0`; declaration `metadata/h3_nested_708_gbm.json` (commit `2a4b0472`, before any walk); seed 708
+- Tried: each of four source families (NY Fed primary-dealer financing, Treasury auction results, ON RRP counterparties, Treasury DTS debt and cash) added one at a time to `gbm_funding` (#634's control, the H5 candidate by Eleonora's ruling of 15 October), 25 walks at leads 1 to 5, scored by the protocol's grid CRPS against the candidate, B1 and B2, studentized bootstrap one-sided 95% (10,000 draws), Holm across the four families. Variants: 4 families, plus the re-walked base (it reproduces #634's `gbm_funding` row); the earlier plan in `metadata/h3_nested_708.json` (candidate: variant (b)) is not scored.
+- Result: no family improves the candidate beyond its interval on the pooled primary score (nested skill +0.1% [-1.1%, +1.3%] pd financing, -0.7% [-1.4%, -0.1%] auction results, +0.5% [-0.1%, +1.1%] ON RRP counterparties with Holm p 0.260, -0.9% [-1.6%, -0.3%] DTS debt and cash). Two families make it worse beyond the interval. ON RRP counterparties has a lower bound of +0.0001 bp on ordinary targets, one unadjusted split.
+- Against kill: the kill reading (no family improves the candidate beyond its interval) is met on development data; this is exploration, not a verdict (protocol v1).
+- Next: whether the ON RRP counterparties split warrants follow-up under the confirmation design is Eleonora's (marked question on the result page and in the PR).
