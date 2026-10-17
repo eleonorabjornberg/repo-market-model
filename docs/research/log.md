@@ -928,3 +928,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: inside 2018-19 (62 of 82 pressure days) the parent reads 0.32 to 0.61 at h = 1 to 5 and lagged pressure 0.21 to 0.51, intervals below 1 from h = 2; the pooled 0.85 to 1.00 is not calibration by regime. In 2025-26 the rows read 0.62 to 0.94 with intervals including 1. Two pooled cells differ from Table M2 (parent h = 3: 0.91 against 0.98; lagpress h = 4: 0.71 against 0.73), the fit definition being #725's.
 - Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
 - Next: any reliability-shape test (#628) is read within regimes; the two moved cells are not traced to the fit or to `ml.py`.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#847
+- Directive: #843 (finding #840)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `0065b4e3`
+- Tried: rebuilt #632's variants (a) and (b) at h = 1 in trees at `011023cb`, `09640f5b`, `e56c4fb3`, `dbbe3d8d` and main, then on main with the older `satiation_distance_598.py`. Variants: 0 new models.
+- Result: `ml.py` is not the cause: all five trees give the same rows ((a) AUROC 0.5673, (b) 0.9072, slope 0.497). The cause is the two distance columns, rebuilt per H.4.1 release since #622: with the older columns the page's 0.5629, 0.9029 and slope 0.463 return to the digit. Development data, no verdict.
+- Against kill: not applicable.
+- Next: whether #632's tracked tables are re-scored and published anew is Eleonora's (marked question in the PR); the other pages on `satiation_dist_roll` may have the same history.
