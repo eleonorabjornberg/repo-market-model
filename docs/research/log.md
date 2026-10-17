@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#895
+- Directive: #870 (findings #859, #861, #862)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; extended panel `1e09ae43…`; base `f70bf93d`; declaration `metadata/backfill_h5_726_reread.json`; seed 726
+- Tried: #759's ten walks re-run under the per-series admitted guard, re-scored on the studentized 90% interval with 2018-19 split into half-years and the days split by the back-filled share of the training frame (50%, with 75% and 90% as declared sensitivities). Variants: 0 new models.
+- Result: the 2018-19 figures reproduce (mean d −0.114). 2018-19 stays a cost on the ruled interval [−0.180, −0.058], carried by 2018 H2 (−0.229); 2019 H1, 2019 H2 and 2019 alone cover zero. 2024 and 2025-26 are costs on the ruled interval but cover zero at the 250-day reference c; the pooled sample covers zero. At most 50% back-filled leaves no 2018-19 day; at 75% 2018-19 covers zero (124 days), at 90% it stays a cost. Development data, not a verdict.
+- Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
+- Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
