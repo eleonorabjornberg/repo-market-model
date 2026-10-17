@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-14 [H8] step 2 · eleonorabjornberg/repo-market-model#771
+- Directive: #765
+- Step: 2 (development: rank by tail probability combined with the day type)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scoring protocol v1 scorer for the bootstrap; base `c0c4525`; seed 765
+- Tried: 3 rankers of the next 20 business days on the step-1 windows, from the tail probability of the model of #686 on 20 leads: (a) the calendar first with the tail probability within, (b) the tail probability from residuals pooled by the target's day type (fallback to the all-type residuals under 30), (c) a blend of the calendar and tail mid-ranks with the weight chosen at each refit on trailing scored windows. Variants: 3 (the declaration `metadata/ranking_765.json`; nothing is fitted to the +5 bp event).
+- Result: top-5 precision against the calendar's 13.0%: (a) 12.8%, gain -0.2 pp [-0.8 pp, +0.4 pp]; (b) 9.7%, -3.4 pp [-5.1 pp, -1.8 pp]; (c) 12.3%, -0.7 pp [-1.5 pp, -0.0 pp], over 1,825 decision days to 2025-12-31. Against the step-1 ranker (7.9%): (a) +5.0 pp [+2.9 pp, +7.3 pp]; (a) also beats persistence and climatology by day type. Block-10 sensitivity: the same readings. Detail, with splits by year, regime and scarcity state, in `docs/pivot/ranking-daytype-result.md`.
+- Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is met on development data, as exploration and not a verdict: the day type closes the gap to the calendar, and (a) ties it because its top 5 are the calendar's.
+- Next: whether any ranker goes on to registration (step 3) is Eleonora's decision.
