@@ -9,6 +9,14 @@
 > `risk_quantile_skewt_base` (0 of 4 onsets rising to 1 of 4) rest on those early fits and are not evidence until the
 > posting date is established. The arm without history is unaffected. Nothing is re-scored and no figure changes.
 
+> **Note, 17 October 2026 (#851, finding #832).** The posting date is now established (17 May 2018, Eleonora's ruling on
+> #661), but the 2018 gains above still do not count. They rest on series that are not admitted: these models read
+> settlements, ON RRP, reserves, the TGA and the scarcity state from the back-filled label days, and
+> `metadata/backfill_posting.json` admits only TGCR, BGCR and SOFR (Eleonora's ruling on #742). The extended panel built
+> for this page served those series on back-filled rows; since #851 it blanks them, and the guard reads the columns the
+> model's backtest is given rather than a list typed on the command line. Nothing is re-scored and no figure on this
+> page changes; a re-score on the workbook's three series is a question for Eleonora (marked in the pull request).
+
 A scratch measurement. It writes nothing into `docs/runs/` and moves no published figure. No comparison scores a locked day
 (`docs/decisions/lockbox.md`): scored days are 2018-06-29 to 2025-12-31, and the back-filled rows (2014-08-22 to 2018-04-02)
 are training history only, under the guard of `repo_model.backfill` (#430; the amendment of `information-set.md` that

@@ -185,15 +185,50 @@ def is_model_declaration(decl):
     return isinstance(decl, dict) and (declared_variants(decl) is not None or ("model" in decl and "scoring" in decl))
 
 
+ARM_KEYS = ("candidates", "arms")
+
+
+def declared_arms(decl):
+    """Arms a declaration names under `candidates` or `arms` (top level, else under `model`): their number, or 0 (#803)."""
+    if not isinstance(decl, dict):
+        return 0
+    total = 0
+    for key in ARM_KEYS:
+        block = decl.get(key)
+        if block is None and isinstance(decl.get("model"), dict):
+            block = decl["model"].get(key)
+        if isinstance(block, (dict, list)):
+            total += len(block)
+    return total
+
+
+def is_scored_declaration(decl):
+    """A `hypothesis`, `scoring` or `model` key marks a declaration, whether or not its arms can be counted (#803)."""
+    return isinstance(decl, dict) and any(k in decl for k in ("hypothesis", "scoring", "model"))
+
+
 def count_variants(root, order):
-    """Count by content, not by file name: every `metadata/*.json` with a `variants` block (#732)."""
-    declarations = variants = 0
+    """Count by content, not by file name, every `metadata/*.json` (#732, #803).
+
+    `variants` blocks are counted as before. A file with no `variants` block that names its arms `candidates` or `arms`
+    is counted apart (`arm_declarations`, `arms`), so the first figure keeps its meaning. A declaration whose arms
+    cannot be read from either (a `hypothesis`, `scoring` or `model` key and no block) is listed in `unread`.
+    """
+    declarations = variants = arm_declarations = arms = 0
+    unread = []
     for path in sorted(glob.glob(str(Path(root) / DECLARATIONS))):
-        block = declared_variants(json.loads(Path(path).read_text()))
+        decl = json.loads(Path(path).read_text())
+        block = declared_variants(decl)
         if block is not None:
             declarations += 1
             variants += len(block)
-    return {"candidate_files": len(order), "declarations": declarations, "variants": variants}
+        elif declared_arms(decl):
+            arm_declarations += 1
+            arms += declared_arms(decl)
+        elif is_scored_declaration(decl):
+            unread.append(Path(path).name)
+    return {"candidate_files": len(order), "declarations": declarations, "variants": variants,
+            "arm_declarations": arm_declarations, "arms": arms, "unread": unread}
 
 
 def build(root, order=None):
@@ -254,6 +289,11 @@ def render(model):
            "- Candidate files under `%s/`: %d." % (CANDIDATES, c["candidate_files"]),
            "- Declarations with a `variants` block (`%s`, by content): %d, declaring %d variants." % (
                DECLARATIONS, c["declarations"], c["variants"]),
+           "- Files with no `variants` block that name their arms `candidates` or `arms` (by content): %d, naming %d arms. "
+           "They are not added to the variants above: what counts as a variant under protocol section 2 is Eleonora's." % (
+               c["arm_declarations"], c["arms"]),
+           "- Declarations whose arms this count cannot read (%d): %s." % (
+               len(c["unread"]), ", ".join("`%s`" % n for n in c["unread"]) or "none"),
            "- Candidates with evidence in this page: %d. Candidate files with no committed evidence this page reads: "
            "%d (listed at the end)." % (len(rows), len(c["without_evidence"])),
            "", "Position is the order in which the candidate file was added.", "",

@@ -1,0 +1,45 @@
+{
+  "status": "declared by the pull request that closes #726 before any score was computed. Exploration on development data, not a record: nothing is published, nothing is written into docs/runs/, no day after 2025-12-31 is read, and under scoring protocol v1 (#640) development data never gives a verdict.",
+  "issue": 726,
+  "hypothesis": "H4, step 3 (docs/research/hypotheses/H4.md): development nested test of the back-fill, against H5's candidate, reported for 2018-19 and overall. Step 4 (registration) is Eleonora's and rides H5's registration.",
+  "rulings": [
+    "Eleonora, 13 October 2026 (PR #661, comment 6146010089): the back-fill workbook is public from 17 May 2018, one posting_instant for TGCR, BGCR and SOFR (metadata/backfill_posting.json); no value is read as of a decision before that date",
+    "Eleonora, 13 October 2026 (PR #695, comment 6149326627): the calibrated critical values belong to the confirmation checkpoints of 60, 125 and 250 days"
+  ],
+  "candidate": {
+    "name": "gbm_funding",
+    "what": "#634's re-fitted control: the phase 2 gradient-boosted quantile model on the published features, at the 23 levels of scoring_protocol.GRID (ml.fit_gradient_boosted_quantiles, calibration none), as scripts/spread_distribution_634.py walk --variant gbm_funding builds it",
+    "features": ["reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "spread_bps", "tbill_13w", "tbill_4w", "tga", "treasury_settlement"],
+    "why_this_one": "#634 names no single best candidate: none of its variants beat the published declaration on the primary score. This is the lowest grid CRPS among the models at the 23 levels without the new inputs (1.826 bp against 1.835 to 1.841 for the three variants), and the only one whose inputs the published panel carries in full. The variants (a) to (c) read columns that no back-filled row can carry. QUESTION FOR ELEONORA: if she names another candidate, the test is rerun for it with the same script and declaration.",
+    "fit_and_refit": "every 21 decision days with 61 rows of minimum history in the without arm (metadata/spread_distribution_634.json), the walk of scripts/spread_distribution_634.py (walk), unchanged"
+  },
+  "arms": {
+    "without": "the candidate on the published panel (from 2018-04-03), exactly #634's control",
+    "with": "the same candidate, features, settings, folds and days, on the published panel plus the 899 back-filled rows (2014-08-22 to 2018-03-29) in every training frame, with the minimum history raised by 899 so that the first scored origin and every refit block are the without arm's. Every block passes backfill.require_training_only and backfill.require_posting_established with the instant declared in metadata/backfill_posting.json (2018-05-17)."
+  },
+  "back_filled_rows": {
+    "rule": "a back-filled row carries only what was established: spread (SOFR less IORB), SOFR, IORB, SOFR volume, TGCR, BGCR, and the calendar columns. Every other cell (reserve balances, TGA, settlements, bill rates, SOFR percentiles, ON RRP, bank assets, the scarcity state) is blank, because #661 established the posting instant of TGCR, BGCR and SOFR only and the posting dates of the other 2014-17 series were not established (docs/pivot/posting-dates-due-diligence.md).",
+    "consequence": "the candidate reads a blank cell through the fitter's own fitted imputation (ml._design: a regressor carried as None gets its fitted imputation, computed on the training frame). The back-fill therefore reaches the candidate through the spread's own history and the SOFR volume, and the imputed cells are the same kind of neutral fill the fitter already uses for a missing published cell. This is a limit of the test, stated in the result: a model that reads inputs the back-fill cannot carry cannot show the full value of longer history."
+  },
+  "decision_days": "every business day of the published panel from 2018-06-29 whose five target days are on or before 2025-12-31 and have published outcomes, in both arms (a day missing from either arm is dropped and counted)",
+  "scoring": {
+    "primary": "scoring_protocol.day_scores with grid_crps (mean over h = 1 to 5), paired per decision day; d = S(without) - S(with), positive when the history helps. Stationary bootstrap, mean block 10, 10,000 draws, seed 726, scoring_protocol.paired_tests: the mean of d, its one-sided 95% lower bound and the skill.",
+    "critical_value": "PR #695's calibrated values (scoring_protocol.CRITICAL_VALUES) are for confirmation windows of 60, 125 and 250 days and are not defined for a development sample of about 1,900 days, so the one-sided bound is the bootstrap's 5% quantile, as in #634 and #633. For reference the bound mean - 5.455 * se (the 250-day value) is reported beside it.",
+    "secondary": "upper_tail_twcrps the same way",
+    "coverage": "per decision day the share of the five leads whose outcome falls inside the central 90% interval (q0.05 to q0.95) and the central 50% interval (q0.25 to q0.75), and the share above q0.95; the move is with minus without, a mean of paired daily differences with a two-sided 90% stationary-bootstrap interval (mean block 10, seed 726)",
+    "context": "both arms' CRPS skill against B1 (as-of persistence, protocol_benchmarks.b1_forecast)",
+    "splits": "pooled (the full period), by regime of metadata/evaluation_splits.json (2018-19 is the headline), and by the pressure-day type of the lead-1 target"
+  },
+  "reading_rule": {
+    "gain": "the back-fill moves H5's 2018-19 score beyond its interval when the one-sided 95% lower bound of mean d for the 2018-19 grid CRPS is above zero",
+    "cost": "it costs something elsewhere when, in another regime or in the full period, the upper end of the two-sided 90% interval of mean d is below zero (the history made the score worse beyond the interval)",
+    "kill": "H4's kill rule, read in words and labelled development, not a verdict: no development gain beyond the interval means the 2018-19 lower bound is at or below zero; the 90% coverage move is reported beside it and decides nothing",
+    "published_declaration": "the back-filled rows stay off in every published declaration until Eleonora merges the amendment of information-set.md (#734); nothing is published either way and no figure moves"
+  },
+  "variant_count": "two new fits per lead and ten in all: the candidate without and with the history at h = 1 to 5. The without arm is #634's control re-run, not a new variant; the with arm is the one new variant.",
+  "not_checked": [
+    "any 2026 day (locked), the 2014-18 days as scored days, and any verdict under protocol v1",
+    "H5's variants (a) to (c), whose inputs no back-filled row carries",
+    "the posting dates of the FRED reserve, TGA and bill-rate series for 2014-17 (not established)"
+  ]
+}

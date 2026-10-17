@@ -5,22 +5,20 @@
 
 from __future__ import annotations
 
-import contextlib
-import io
 import json
 import math
-import tempfile
 import unittest
 from datetime import date, time, timedelta
 from pathlib import Path
 from unittest import mock
 
-from repo_model import cli, onset
+from repo_model import onset
 from repo_model.asof import TARGET, InformationRule, fold_grid
-from repo_model.data import DailyObservation, exceeds_bp, load_daily_panel
+from repo_model.data import DailyObservation, exceeds_bp
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
 
+import panel_cache
 from test_benchmarks import BenchmarkCommandTests
 from lockbox_support import setUpModule, tearDownModule  # noqa: F401  (synthetic 2026 panels)
 
@@ -47,32 +45,10 @@ def weekdays(start, count):
     return out
 
 
-_PANEL = {}
-
-
 def published_panel():
     """The published panel, built once from the tracked fixtures (no network)."""
 
-    if "rows" not in _PANEL:
-        manifest = json.loads(
-            (ROOT / "metadata" / "funding_panel_manifest.json").read_text(encoding="utf-8")
-        )
-        directory = tempfile.mkdtemp()
-        output = Path(directory) / "panel.csv"
-        argv = [
-            "build",
-            "--raw-root", str(ROOT / "tests" / "fixtures" / "snapshots" / "funding_inputs"),
-            "--output", str(output),
-            "--build-cutoff", manifest["build_cutoff"],
-            "--decision-time", manifest["decision_time"],
-        ]
-        out, err = io.StringIO(), io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = cli.main(argv)
-        if code != 0:
-            raise RuntimeError(err.getvalue())
-        _PANEL["rows"] = load_daily_panel(output)
-    return _PANEL["rows"]
+    return panel_cache.published_build()["rows"]
 
 
 class OnsetDefinitionTests(unittest.TestCase):

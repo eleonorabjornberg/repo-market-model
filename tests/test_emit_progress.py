@@ -8,6 +8,8 @@ Recorded mutations (run on the tests below, then restored):
 * `read_ordinary` filling a missing lead-1 interval (`interval(...) or [0.0, 1.0]`) instead of leaving None:
   `test_missing_figure_is_not_measured` failed with AssertionError.
 * `build` dropping the `if not any(measured)` skip, so a candidate with no evidence is tabled: `test_candidate_without_evidence_is_counted_not_tabled` failed with AssertionError.
+* `count_variants` skipping the arms branch (`elif declared_arms(decl):` made `elif False:`): `test_arms_named_candidates_or_arms_are_counted_apart`
+  failed with AssertionError.
 * `check` looping over only the first output (`list(outputs(...).items())[:1]`), so the data file is not compared: `test_check_fails_on_a_stale_data_file` failed
   with AssertionError.
 """
@@ -118,6 +120,33 @@ class ReaderTest(unittest.TestCase):
             write(tmp, "metadata/not_an_object.json", [1, 2])
             count = emit_progress.build(tmp, order=["a", "b", "c"])["variant_count"]
         self.assertEqual((count["declarations"], count["variants"]), (3, 6))
+
+    def test_arms_named_candidates_or_arms_are_counted_apart(self):
+        """#803: a file that names its arms `candidates` or `arms` (top level or under `model`) is counted, apart from the
+        `variants` figure, and a file already counted by its `variants` block is not counted twice."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture(tmp)
+            write(tmp, "metadata/a_1.json", {"hypothesis": "H6", "candidates": {"x": 1, "y": 2}})
+            write(tmp, "metadata/b_1.json", {"scoring": {}, "arms": [{"id": "p"}, {"id": "q"}, {"id": "r"}]})
+            write(tmp, "metadata/c_1.json", {"model": {"candidates": {"m": 1}}})
+            write(tmp, "metadata/d_1.json", {"variants": {"u": 1}, "arms": {"v": 1, "w": 2}})
+            write(tmp, "metadata/e_1.json", {"candidates": "prose only"})
+            count = emit_progress.build(tmp, order=["a", "b", "c"])["variant_count"]
+        self.assertEqual((count["declarations"], count["variants"]), (2, 2))
+        self.assertEqual((count["arm_declarations"], count["arms"]), (3, 6))
+
+    def test_scored_declaration_without_a_block_is_listed_unread(self):
+        """#803: a declaration the count cannot read (a `hypothesis` or `scoring` key, no block) is listed, not hidden."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture(tmp)
+            write(tmp, "metadata/f_1.json", {"hypothesis": "H8", "candidate": {"x": 1}})
+            write(tmp, "metadata/g_1.json", {"status": "x", "rows": [1]})
+            write(tmp, "metadata/h_1.json", {"scoring": {}, "variants": {"a": 1}})
+            model = emit_progress.build(tmp, order=["a", "b", "c"])
+            count = model["variant_count"]
+            text = emit_progress.render(model)
+        self.assertEqual(count["unread"], ["f_1.json"])
+        self.assertIn("f_1.json", text)
 
     def test_every_figure_is_labelled_development(self):
         self.assertIn("development, not a verdict", emit_progress.render(self.model))

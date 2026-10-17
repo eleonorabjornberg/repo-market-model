@@ -1,0 +1,4864 @@
+{
+ "block_length": 10,
+ "horizons": {
+  "1": {
+   "days": 1603,
+   "events": 101,
+   "rows": {
+    "calendar_climatology": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": 0.3052432872517449,
+       "intercept_interval": [
+        -0.8303569384264844,
+        1.5617997013111415
+       ],
+       "slope": 0.6762454752206295,
+       "slope_interval": [
+        0.22414661666224428,
+        1.1917383829875838
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.841705531380842,
+       "intercept_interval": null,
+       "slope": 1.0373230446308135,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 7.538366369311611,
+       "intercept_interval": null,
+       "slope": 3.5040260880457446,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.5058118678468142,
+       "intercept_interval": [
+        -3.7960835862462137,
+        0.16521654913715147
+       ],
+       "slope": 0.5327408757341773,
+       "slope_interval": [
+        -0.37656611207277274,
+        1.3449585423884547
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.5058118678468142,
+       "intercept_interval": [
+        -3.7960835862462137,
+        0.16521654913715147
+       ],
+       "slope": 0.5327408757341773,
+       "slope_interval": [
+        -0.37656611207277274,
+        1.3449585423884547
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -40.64542104521093,
+       "intercept_interval": null,
+       "slope": -13.005774398063954,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": -8.615302631733819,
+       "intercept_interval": null,
+       "slope": -2.6654644656099906,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": -0.5295039071194522,
+       "intercept_interval": [
+        -1.6791370411795778,
+        0.5719486459178358
+       ],
+       "slope": 0.337700031623172,
+       "slope_interval": [
+        -0.10486478070376742,
+        0.774598674675326
+       ]
+      }
+     }
+    },
+    "ngboost_laplace": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.17811954907386796,
+       "intercept_interval": [
+        -0.6610312876684444,
+        0.2638741470117444
+       ],
+       "slope": 0.6342450347494993,
+       "slope_interval": [
+        0.44073688990711435,
+        0.8741583241228407
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.841538899052374,
+       "intercept_interval": [
+        -5.832435677946129,
+        -1.2970851880149818
+       ],
+       "slope": 0.2733399496665651,
+       "slope_interval": [
+        -0.018683327385779266,
+        0.6148425232846146
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 1.38600473470866,
+       "intercept_interval": [
+        0.4560430699331669,
+        5.254849251739513
+       ],
+       "slope": 0.799429629159241,
+       "slope_interval": [
+        0.6228464810580192,
+        1.8899739951587784
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.25476072312227793,
+       "intercept_interval": [
+        -0.712726556017912,
+        0.1435416100210812
+       ],
+       "slope": 0.610152021220505,
+       "slope_interval": [
+        0.4814286105756253,
+        0.7749470472201415
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.25476072312227793,
+       "intercept_interval": [
+        -0.712726556017912,
+        0.1435416100210812
+       ],
+       "slope": 0.610152021220505,
+       "slope_interval": [
+        0.4814286105756253,
+        0.7749470472201415
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -2.5356521018520577,
+       "intercept_interval": null,
+       "slope": 0.2904290648741399,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 6.64209613756865,
+       "intercept_interval": null,
+       "slope": 1.9101256710927774,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": -0.1746361251466341,
+       "intercept_interval": [
+        -0.6104065780988859,
+        0.2110722134017206
+       ],
+       "slope": 0.5869553279527455,
+       "slope_interval": [
+        0.4247279639479613,
+        0.7773174001265076
+       ]
+      }
+     }
+    },
+    "persistence_logistic": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.2092763311225374,
+       "intercept_interval": [
+        -0.9783189942980778,
+        0.8522603188180973
+       ],
+       "slope": 0.5611349052309457,
+       "slope_interval": [
+        0.2815568256962002,
+        1.112118776566618
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.695945609602302,
+       "intercept_interval": [
+        -6.039214542783624,
+        -1.1334079463305886
+       ],
+       "slope": 0.7802904798962471,
+       "slope_interval": [
+        -0.0284713535958007,
+        1.48124547460741
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.0025772277695638494,
+       "intercept_interval": [
+        -1.0039885947329004,
+        1.102786735295123
+       ],
+       "slope": 0.9786050819286075,
+       "slope_interval": [
+        0.7254911025404762,
+        1.5434107112205449
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.1875330552912481,
+       "intercept_interval": [
+        -1.053664075323919,
+        0.6143119784945753
+       ],
+       "slope": 1.0462223236174524,
+       "slope_interval": [
+        0.7399104600472377,
+        1.4072185547008715
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.1875330552912481,
+       "intercept_interval": [
+        -1.053664075323919,
+        0.6143119784945753
+       ],
+       "slope": 1.0462223236174524,
+       "slope_interval": [
+        0.7399104600472377,
+        1.4072185547008715
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -2.39414741943996,
+       "intercept_interval": null,
+       "slope": 0.8875190612032678,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 0.4018059518494807,
+       "intercept_interval": null,
+       "slope": 0.8225572141300828,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": -0.4575530843420321,
+       "intercept_interval": [
+        -1.0807780731750238,
+        0.32223764338513194
+       ],
+       "slope": 0.49692735852830916,
+       "slope_interval": [
+        0.29052371680230366,
+        0.8910708477164753
+       ]
+      }
+     }
+    },
+    "risk_gbm": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.11564892074471646,
+       "intercept_interval": [
+        -0.7345611333430369,
+        0.5080680483931637
+       ],
+       "slope": 0.0893380280240243,
+       "slope_interval": [
+        0.05035388310527368,
+        0.13112698855695068
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -1.8880944383193914,
+       "intercept_interval": null,
+       "slope": 0.2600237462957304,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 1.1569509684858357,
+       "intercept_interval": [
+        -0.07381705279794666,
+        2.574568496801239
+       ],
+       "slope": 0.27572858969924074,
+       "slope_interval": [
+        0.19423630452080545,
+        0.45800808381215674
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.6563722407069225,
+       "intercept_interval": [
+        -1.1940314279934177,
+        -0.23074107672569985
+       ],
+       "slope": 0.16600218759786828,
+       "slope_interval": [
+        0.12783455815964012,
+        0.21104998207190845
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.6563722407069225,
+       "intercept_interval": [
+        -1.1940314279934177,
+        -0.23074107672569985
+       ],
+       "slope": 0.16600218759786828,
+       "slope_interval": [
+        0.12783455815964012,
+        0.21104998207190845
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -1.313747997292817,
+       "intercept_interval": null,
+       "slope": 0.3569176756473312,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 0.7836154154599339,
+       "intercept_interval": null,
+       "slope": 0.1490041289241693,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": -0.024688267194265496,
+       "intercept_interval": [
+        -0.6087020308000803,
+        0.5296405537319044
+       ],
+       "slope": 0.10363741429750833,
+       "slope_interval": [
+        0.06515405375880806,
+        0.14340594153271666
+       ]
+      }
+     }
+    },
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.5126316409891546,
+       "intercept_interval": [
+        -1.088186490964062,
+        0.04424638574534955
+       ],
+       "slope": 0.059861067431284685,
+       "slope_interval": [
+        0.0168700692530626,
+        0.10731552714755019
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.4829415071925536,
+       "intercept_interval": null,
+       "slope": 0.2405209442820681,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.6038022240343157,
+       "intercept_interval": [
+        -0.6014297471614581,
+        1.8294866679108355
+       ],
+       "slope": 0.2338641153444334,
+       "slope_interval": [
+        0.15515440378347517,
+        0.38771841501573123
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2469901000112122,
+       "intercept_interval": [
+        -1.7762022154912653,
+        -0.8286326239481138
+       ],
+       "slope": 0.12440174740914639,
+       "slope_interval": [
+        0.08568114568276256,
+        0.16911229955692708
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2469901000112122,
+       "intercept_interval": [
+        -1.7762022154912653,
+        -0.8286326239481138
+       ],
+       "slope": 0.12440174740914639,
+       "slope_interval": [
+        0.08568114568276256,
+        0.16911229955692708
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -4.480051687732775,
+       "intercept_interval": null,
+       "slope": 0.09948882103452059,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 0.009974100861024805,
+       "intercept_interval": null,
+       "slope": 0.09091873059161247,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": -0.32472173361515877,
+       "intercept_interval": [
+        -0.8302118272039911,
+        0.16272398814441583
+       ],
+       "slope": 0.08308686373789743,
+       "slope_interval": [
+        0.04303447813803547,
+        0.1256962983316364
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.1241960052314522,
+       "intercept_interval": [
+        -0.7369147829260637,
+        0.49291659846248537
+       ],
+       "slope": 0.08876376307123508,
+       "slope_interval": [
+        0.05023292561018786,
+        0.13003290422039254
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.0882473088507854,
+       "intercept_interval": null,
+       "slope": 0.24046258311744684,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.6038022240343157,
+       "intercept_interval": [
+        -0.6014297471614581,
+        1.8294866679108355
+       ],
+       "slope": 0.2338641153444334,
+       "slope_interval": [
+        0.15515440378347517,
+        0.38771841501573123
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.696624548248171,
+       "intercept_interval": [
+        -1.235307779936559,
+        -0.2760082724845628
+       ],
+       "slope": 0.1628252928105741,
+       "slope_interval": [
+        0.12529526234981334,
+        0.2066235855756248
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.696624548248171,
+       "intercept_interval": [
+        -1.235307779936559,
+        -0.2760082724845628
+       ],
+       "slope": 0.1628252928105741,
+       "slope_interval": [
+        0.12529526234981334,
+        0.2066235855756248
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -2.042093586840011,
+       "intercept_interval": null,
+       "slope": 0.2889900850348733,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 0.009974100861024805,
+       "intercept_interval": null,
+       "slope": 0.09091873059161247,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": -0.0473442810088751,
+       "intercept_interval": [
+        -0.6203793222107721,
+        0.4977291453594309
+       ],
+       "slope": 0.10198264117723804,
+       "slope_interval": [
+        0.0643653791502779,
+        0.140751388779596
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.07440977971504696,
+       "intercept_interval": [
+        -0.6850758644213448,
+        0.5363400042477309
+       ],
+       "slope": 0.09252277363600885,
+       "slope_interval": [
+        0.05212603588754829,
+        0.1343693888670448
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.0673583682888346,
+       "intercept_interval": null,
+       "slope": 0.24034040643948254,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.36394832693260837,
+       "intercept_interval": [
+        -0.8014957398985152,
+        1.49908024977861
+       ],
+       "slope": 0.21682146232658822,
+       "slope_interval": [
+        0.14672252948427758,
+        0.3614921211634213
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.6735532441235659,
+       "intercept_interval": [
+        -1.1945402903258484,
+        -0.26329995604893364
+       ],
+       "slope": 0.16488220691672675,
+       "slope_interval": [
+        0.12658447198652945,
+        0.20873349464851781
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.6735532441235659,
+       "intercept_interval": [
+        -1.1945402903258484,
+        -0.26329995604893364
+       ],
+       "slope": 0.16488220691672675,
+       "slope_interval": [
+        0.12658447198652945,
+        0.20873349464851781
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -1.9763399586488644,
+       "intercept_interval": null,
+       "slope": 0.2969149867208409,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 0.14535003540005773,
+       "intercept_interval": null,
+       "slope": 0.10207979758746767,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": 0.02995068009848648,
+       "intercept_interval": [
+        -0.5418270156396766,
+        0.5594156434642321
+       ],
+       "slope": 0.10800872610844633,
+       "slope_interval": [
+        0.06945698508789677,
+        0.14833981605646612
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.07833683437520265,
+       "intercept_interval": [
+        -0.7392161221029371,
+        0.5594806761991655
+       ],
+       "slope": 0.09142329187700962,
+       "slope_interval": [
+        0.04765139425060416,
+        0.13652417251512278
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.3156506021977563,
+       "intercept_interval": null,
+       "slope": 0.14531068414981566,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.07386517849750543,
+       "intercept_interval": [
+        -1.0881589464014891,
+        1.0376476061311626
+       ],
+       "slope": 0.19755998578028391,
+       "slope_interval": [
+        0.12669739237638802,
+        0.33586817055772367
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2990113604668907,
+       "intercept_interval": [
+        -1.9117578239515185,
+        -0.8612153456172875
+       ],
+       "slope": 0.11611994791214354,
+       "slope_interval": [
+        0.07629023968742009,
+        0.1578405261937909
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2990113604668907,
+       "intercept_interval": [
+        -1.9117578239515185,
+        -0.8612153456172875
+       ],
+       "slope": 0.11611994791214354,
+       "slope_interval": [
+        0.07629023968742009,
+        0.1578405261937909
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -3.846713977614705,
+       "intercept_interval": null,
+       "slope": 0.15556203275291494,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 0.27803305997765093,
+       "intercept_interval": null,
+       "slope": 0.11354046121464038,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": 0.05239760868921409,
+       "intercept_interval": [
+        -0.576596359187206,
+        0.6385368402064172
+       ],
+       "slope": 0.10909966053974837,
+       "slope_interval": [
+        0.0681548309902739,
+        0.15320884593317527
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+two_part+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.5954597790681159,
+       "intercept_interval": [
+        -1.3313807065534833,
+        0.12651767434383016
+       ],
+       "slope": 0.3349762785810416,
+       "slope_interval": [
+        0.06429780061189219,
+        0.9312969869587635
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.989774190115836,
+       "intercept_interval": null,
+       "slope": 0.24723762116293924,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.1053542793701969,
+       "intercept_interval": [
+        -0.9055823476390057,
+        0.7321313507328401
+       ],
+       "slope": 0.8192081910511465,
+       "slope_interval": [
+        0.633220480351611,
+        1.0933780484074178
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.706970962910722,
+       "intercept_interval": [
+        -1.3630737278194482,
+        -0.16303293073919767
+       ],
+       "slope": 0.49699336402242533,
+       "slope_interval": [
+        0.3061625093995621,
+        0.8398303784086169
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.706970962910722,
+       "intercept_interval": [
+        -1.3630737278194482,
+        -0.16303293073919767
+       ],
+       "slope": 0.49699336402242533,
+       "slope_interval": [
+        0.3061625093995621,
+        0.8398303784086169
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -4.824527442023559,
+       "intercept_interval": null,
+       "slope": 0.07696085690514334,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 8,
+       "intercept": 0.564725919707296,
+       "intercept_interval": [
+        -0.6376932791797485,
+        2.0515555693037673
+       ],
+       "slope": 0.6427546988107221,
+       "slope_interval": [
+        0.3399422932603492,
+        1.3915687999223068
+       ]
+      },
+      "scarcity state 3": {
+       "days": 410,
+       "events": 90,
+       "intercept": -0.6082141783274966,
+       "intercept_interval": [
+        -1.269470152347393,
+        0.015986432360757783
+       ],
+       "slope": 0.37672533705297734,
+       "slope_interval": [
+        0.09655014404116818,
+        0.8612746721412573
+       ]
+      }
+     }
+    }
+   }
+  },
+  "2": {
+   "days": 1603,
+   "events": 101,
+   "rows": {
+    "calendar_climatology": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": 0.2556605859695563,
+       "intercept_interval": [
+        -0.8964739230270774,
+        1.529378453532599
+       ],
+       "slope": 0.6511821706909634,
+       "slope_interval": [
+        0.1982090699550472,
+        1.1835950904175996
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.8628642624345098,
+       "intercept_interval": null,
+       "slope": 1.0275922649874885,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 4.559307444638929,
+       "intercept_interval": null,
+       "slope": 2.437505181698449,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.607401194255689,
+       "intercept_interval": [
+        -3.8373451548275193,
+        0.19066625374522814
+       ],
+       "slope": 0.4860350661627622,
+       "slope_interval": [
+        -0.39614414549038107,
+        1.3578125230344866
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.607401194255689,
+       "intercept_interval": [
+        -3.8373451548275193,
+        0.19066625374522814
+       ],
+       "slope": 0.4860350661627622,
+       "slope_interval": [
+        -0.39614414549038107,
+        1.3578125230344866
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -38.466547834936335,
+       "intercept_interval": null,
+       "slope": -12.07410896149539,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": -16.848437451097805,
+       "intercept_interval": null,
+       "slope": -4.626670331418762,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": -6.1621583667530055,
+       "intercept_interval": null,
+       "slope": -1.8655369107637172,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": -0.5705320769640114,
+       "intercept_interval": [
+        -1.7622668077312893,
+        0.5066072144408778
+       ],
+       "slope": 0.3232999762251445,
+       "slope_interval": [
+        -0.12704218322935512,
+        0.7690351754702083
+       ]
+      }
+     }
+    },
+    "ngboost_laplace": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.5471919401334575,
+       "intercept_interval": [
+        -1.1665689478425478,
+        -0.01034220615336236
+       ],
+       "slope": 0.40198483212845326,
+       "slope_interval": [
+        0.18232388204295857,
+        0.7363494962009076
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.7627150439096013,
+       "intercept_interval": null,
+       "slope": 0.2552801513503652,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.6797975314993029,
+       "intercept_interval": [
+        -0.41256794422305487,
+        3.4681172226245653
+       ],
+       "slope": 0.5187499806866553,
+       "slope_interval": [
+        0.35807441361125947,
+        1.1348913368681084
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.5268706962831483,
+       "intercept_interval": [
+        -1.0478405911289486,
+        -0.043195423591419445
+       ],
+       "slope": 0.4509899042826431,
+       "slope_interval": [
+        0.3523092669370962,
+        0.6165415186424246
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.5268706962831483,
+       "intercept_interval": [
+        -1.0478405911289486,
+        -0.043195423591419445
+       ],
+       "slope": 0.4509899042826431,
+       "slope_interval": [
+        0.3523092669370962,
+        0.6165415186424246
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -8.19110413382808,
+       "intercept_interval": null,
+       "slope": -0.1683495314262085,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 4.155089388379732,
+       "intercept_interval": null,
+       "slope": 1.0324390091492444,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": -0.6288395651578669,
+       "intercept_interval": [
+        -1.187814494895627,
+        -0.11113862058103854
+       ],
+       "slope": 0.3461531380630732,
+       "slope_interval": [
+        0.13971011595830776,
+        0.6146550657075989
+       ]
+      }
+     }
+    },
+    "persistence_logistic": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.2781834193905262,
+       "intercept_interval": [
+        -1.0930486806696647,
+        0.7546876910189817
+       ],
+       "slope": 0.4809703095219593,
+       "slope_interval": [
+        0.1840151546838898,
+        1.0036941994274442
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.7402620127828023,
+       "intercept_interval": [
+        -14.364553405448673,
+        -0.7891615152237884
+       ],
+       "slope": 0.8242016956201511,
+       "slope_interval": [
+        -2.427101068190348,
+        1.8374690749421339
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.31500371310610065,
+       "intercept_interval": [
+        -1.3526159150510173,
+        1.0230757655169564
+       ],
+       "slope": 0.8247737716671562,
+       "slope_interval": [
+        0.5458840401497088,
+        1.523405692713828
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.3532018836045931,
+       "intercept_interval": [
+        -1.153557016602512,
+        0.4914458311927651
+       ],
+       "slope": 0.9890164082714124,
+       "slope_interval": [
+        0.7134609814745597,
+        1.3806374098754963
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.3532018836045931,
+       "intercept_interval": [
+        -1.153557016602512,
+        0.4914458311927651
+       ],
+       "slope": 0.9890164082714124,
+       "slope_interval": [
+        0.7134609814745597,
+        1.3806374098754963
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -10.273864136645628,
+       "intercept_interval": null,
+       "slope": -1.1549366024090646,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": -30.07632225924932,
+       "intercept_interval": null,
+       "slope": -6.9993689741075205,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.7249271132993376,
+       "intercept_interval": [
+        -1.8993034239648647,
+        3.0870977986038524
+       ],
+       "slope": 0.9600626580796835,
+       "slope_interval": [
+        -0.03521386525657341,
+        2.6166514769299445
+       ]
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": -0.6655128678510537,
+       "intercept_interval": [
+        -1.3024413080061796,
+        0.014759958731295642
+       ],
+       "slope": 0.3471527300935875,
+       "slope_interval": [
+        0.13303176322536464,
+        0.6764123494996387
+       ]
+      }
+     }
+    },
+    "risk_gbm": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 1.2914437630663593,
+       "intercept_interval": null,
+       "slope": 0.26660582435501534,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -2.3065989694601003,
+       "intercept_interval": null,
+       "slope": 0.028846759296451443,
+       "slope_interval": null
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -2.3065989694601003,
+       "intercept_interval": null,
+       "slope": 0.028846759296451443,
+       "slope_interval": null
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": -2.3139246740862793,
+       "intercept_interval": null,
+       "slope": -0.0761530900683749,
+       "slope_interval": null
+      }
+     }
+    },
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.701366584944261,
+       "intercept_interval": [
+        -1.353002580165236,
+        -0.05976326627955488
+       ],
+       "slope": 0.046495066836580425,
+       "slope_interval": [
+        2.752189164931832e-05,
+        0.09960035737629991
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.472136702772798,
+       "intercept_interval": null,
+       "slope": 0.1309261796781318,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.8421967423280435,
+       "intercept_interval": [
+        -0.3575766373311082,
+        2.2030645084362193
+       ],
+       "slope": 0.25232613963259193,
+       "slope_interval": [
+        0.17453955195321685,
+        0.4261845073487852
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2619895909476289,
+       "intercept_interval": [
+        -1.8684575016940295,
+        -0.7821562582466878
+       ],
+       "slope": 0.12516000639133917,
+       "slope_interval": [
+        0.08530924364898121,
+        0.170851654097823
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2619895909476289,
+       "intercept_interval": [
+        -1.8684575016940295,
+        -0.7821562582466878
+       ],
+       "slope": 0.12516000639133917,
+       "slope_interval": [
+        0.08530924364898121,
+        0.170851654097823
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -4.433217008370403,
+       "intercept_interval": null,
+       "slope": 0.14071726141053953,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 1.3563146409891158,
+       "intercept_interval": null,
+       "slope": 0.18806533358378208,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": -0.5575957443819034,
+       "intercept_interval": [
+        -1.1738536155761226,
+        0.05752024151448893
+       ],
+       "slope": 0.06642332639714825,
+       "slope_interval": [
+        0.022637547467717917,
+        0.11284227971556807
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.08944579786603016,
+       "intercept_interval": [
+        -0.7756953145593326,
+        0.5450118707236737
+       ],
+       "slope": 0.09093818151822737,
+       "slope_interval": [
+        0.04895868156353701,
+        0.1352148866223229
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.202048257165838,
+       "intercept_interval": null,
+       "slope": 0.22948917457124862,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.8421967423280435,
+       "intercept_interval": [
+        -0.3575766373311082,
+        2.2030645084362193
+       ],
+       "slope": 0.25232613963259193,
+       "slope_interval": [
+        0.17453955195321685,
+        0.4261845073487852
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.6806641764771506,
+       "intercept_interval": [
+        -1.2609295184098517,
+        -0.236984800465224
+       ],
+       "slope": 0.16362441445169418,
+       "slope_interval": [
+        0.12489458248171126,
+        0.20822792786560065
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.6806641764771506,
+       "intercept_interval": [
+        -1.2609295184098517,
+        -0.236984800465224
+       ],
+       "slope": 0.16362441445169418,
+       "slope_interval": [
+        0.12489458248171126,
+        0.20822792786560065
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -2.1148463445644006,
+       "intercept_interval": null,
+       "slope": 0.32304472918820953,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 1.3563146409891158,
+       "intercept_interval": null,
+       "slope": 0.18806533358378208,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": -0.026759468557736817,
+       "intercept_interval": [
+        -0.668000490399582,
+        0.5520062614427529
+       ],
+       "slope": 0.10372169806541928,
+       "slope_interval": [
+        0.06575425384576974,
+        0.14786042157415016
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.0525467000362059,
+       "intercept_interval": [
+        -0.7457873410197475,
+        0.5725031654962321
+       ],
+       "slope": 0.09367551394049364,
+       "slope_interval": [
+        0.05070512533015364,
+        0.13803964931943732
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.367258010464496,
+       "intercept_interval": null,
+       "slope": 0.21275990450397492,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.4506508534793801,
+       "intercept_interval": [
+        -0.726130220000035,
+        1.549497186272951
+       ],
+       "slope": 0.2240644406634532,
+       "slope_interval": [
+        0.15132049405583015,
+        0.37343681494827435
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.647826454846603,
+       "intercept_interval": [
+        -1.2299589079870485,
+        -0.21687375420113958
+       ],
+       "slope": 0.16631962206675832,
+       "slope_interval": [
+        0.12589039653296866,
+        0.21155985771245464
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.647826454846603,
+       "intercept_interval": [
+        -1.2299589079870485,
+        -0.21687375420113958
+       ],
+       "slope": 0.16631962206675832,
+       "slope_interval": [
+        0.12589039653296866,
+        0.21155985771245464
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -2.6936677599906815,
+       "intercept_interval": null,
+       "slope": 0.2711769466908804,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.7306496730966164,
+       "intercept_interval": null,
+       "slope": 0.14140693966767953,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": 0.057336203799399,
+       "intercept_interval": [
+        -0.5729152948711355,
+        0.6388361515881285
+       ],
+       "slope": 0.11025492280378504,
+       "slope_interval": [
+        0.07033681372183649,
+        0.15484940529946858
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.01896570002050808,
+       "intercept_interval": [
+        -0.7381919230399405,
+        0.632417675461527
+       ],
+       "slope": 0.09583800547884902,
+       "slope_interval": [
+        0.049837021108716364,
+        0.14306893968124673
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.3541679971135605,
+       "intercept_interval": null,
+       "slope": 0.1413986319154446,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.04226943332138589,
+       "intercept_interval": [
+        -1.1550038770912727,
+        1.0313401614761666
+       ],
+       "slope": 0.19404779182334023,
+       "slope_interval": [
+        0.1253048466657841,
+        0.3259041514805152
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2948203076358538,
+       "intercept_interval": [
+        -1.9315557094759803,
+        -0.8447077368145137
+       ],
+       "slope": 0.11616931064119244,
+       "slope_interval": [
+        0.07759577418775632,
+        0.15752550919658465
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -1.2948203076358538,
+       "intercept_interval": [
+        -1.9315557094759803,
+        -0.8447077368145137
+       ],
+       "slope": 0.11616931064119244,
+       "slope_interval": [
+        0.07759577418775632,
+        0.15752550919658465
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -3.6366424973324984,
+       "intercept_interval": null,
+       "slope": 0.21929164393661155,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.8840682351687942,
+       "intercept_interval": null,
+       "slope": 0.15664508248760176,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": 0.03808326937560951,
+       "intercept_interval": [
+        -0.6396660984852199,
+        0.6646202582421221
+       ],
+       "slope": 0.10808391701501793,
+       "slope_interval": [
+        0.06540091562199844,
+        0.15576122914292684
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+two_part+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 320,
+       "events": 74,
+       "intercept": -0.17040224599385287,
+       "intercept_interval": [
+        -0.7486474229368507,
+        0.36426540707658367
+       ],
+       "slope": 0.5961595737568773,
+       "slope_interval": [
+        0.3796381171378976,
+        0.8832785895730885
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.001498789160912,
+       "intercept_interval": null,
+       "slope": 0.24021316051371733,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.2869805085874633,
+       "intercept_interval": [
+        -1.2020337209716623,
+        0.4412817780415965
+       ],
+       "slope": 0.6583493018848118,
+       "slope_interval": [
+        0.4651403570152279,
+        1.0662510178520337
+       ]
+      },
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.49555302904090354,
+       "intercept_interval": [
+        -1.0511636452685955,
+        0.005525382807306153
+       ],
+       "slope": 0.5998587846941141,
+       "slope_interval": [
+        0.41637697767657034,
+        0.8592548098494689
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1603,
+       "events": 101,
+       "intercept": -0.49555302904090354,
+       "intercept_interval": [
+        -1.0511636452685955,
+        0.005525382807306153
+       ],
+       "slope": 0.5998587846941141,
+       "slope_interval": [
+        0.41637697767657034,
+        0.8592548098494689
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 2,
+       "intercept": -4.733861315345173,
+       "intercept_interval": null,
+       "slope": 0.1297993738681659,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.8757842168348562,
+       "intercept_interval": [
+        -0.6316755005813837,
+        2.4352573672581155
+       ],
+       "slope": 0.8437794361877459,
+       "slope_interval": [
+        0.5233229003562433,
+        1.5543508877205987
+       ]
+      },
+      "scarcity state 3": {
+       "days": 409,
+       "events": 89,
+       "intercept": -0.30928986438722633,
+       "intercept_interval": [
+        -0.7658894028167842,
+        0.1327420552283824
+       ],
+       "slope": 0.5702407784838414,
+       "slope_interval": [
+        0.38169897510378314,
+        0.8139909741745303
+       ]
+      }
+     }
+    }
+   }
+  },
+  "3": {
+   "days": 1602,
+   "events": 100,
+   "rows": {
+    "calendar_climatology": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": 0.2884461507091351,
+       "intercept_interval": [
+        -0.8495188737389269,
+        1.497790358906786
+       ],
+       "slope": 0.6720496029988002,
+       "slope_interval": [
+        0.21005819341019163,
+        1.1784230025316405
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.8837557441277055,
+       "intercept_interval": null,
+       "slope": 1.0179808829951846,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 2.69353002841112,
+       "intercept_interval": null,
+       "slope": 1.7706101781585357,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -1.6007796203267153,
+       "intercept_interval": [
+        -3.85123603510774,
+        0.12755880729409286
+       ],
+       "slope": 0.4936745262512203,
+       "slope_interval": [
+        -0.4050397843770649,
+        1.3337754963377277
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -1.6007796203267153,
+       "intercept_interval": [
+        -3.85123603510774,
+        0.12755880729409286
+       ],
+       "slope": 0.4936745262512203,
+       "slope_interval": [
+        -0.4050397843770649,
+        1.3337754963377277
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": -38.52929440792677,
+       "intercept_interval": null,
+       "slope": -12.096952913051622,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": -16.822510519152004,
+       "intercept_interval": null,
+       "slope": -4.61694513373787,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": -6.752086100716266,
+       "intercept_interval": null,
+       "slope": -2.0900095598161834,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.5546314260705977,
+       "intercept_interval": [
+        -1.7198749163927618,
+        0.5041461156384343
+       ],
+       "slope": 0.3356779811593242,
+       "slope_interval": [
+        -0.1132019813534468,
+        0.7911068652000328
+       ]
+      }
+     }
+    },
+    "ngboost_laplace": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": -0.6401564717290348,
+       "intercept_interval": [
+        -1.2332380574013222,
+        -0.10198003689267751
+       ],
+       "slope": 0.31528667572210317,
+       "slope_interval": [
+        0.07988141444828029,
+        0.673923228702608
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.721018812303849,
+       "intercept_interval": null,
+       "slope": 0.263029849789381,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.8508994149135818,
+       "intercept_interval": [
+        -0.26660223841971203,
+        4.415003303181194
+       ],
+       "slope": 0.5014198693158876,
+       "slope_interval": [
+        0.34213900830558963,
+        1.1371868831477798
+       ]
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.6099675305678288,
+       "intercept_interval": [
+        -1.103963604068065,
+        -0.14786163480988493
+       ],
+       "slope": 0.40814046036294643,
+       "slope_interval": [
+        0.31667916875264146,
+        0.5518811106604162
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.6099675305678288,
+       "intercept_interval": [
+        -1.103963604068065,
+        -0.14786163480988493
+       ],
+       "slope": 0.40814046036294643,
+       "slope_interval": [
+        0.31667916875264146,
+        0.5518811106604162
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": -6.561954938343114,
+       "intercept_interval": null,
+       "slope": -0.038144103256529935,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": -0.8563746512534222,
+       "intercept_interval": [
+        -4.130675931310446,
+        1.0647231665086019
+       ],
+       "slope": 0.03789712262237079,
+       "slope_interval": [
+        -0.6485731628851246,
+        0.48679131744297344
+       ]
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.7849941975365713,
+       "intercept_interval": [
+        -1.3758415004467992,
+        -0.26277853776486615
+       ],
+       "slope": 0.255855779057199,
+       "slope_interval": [
+        0.04536935726469189,
+        0.5404587611372623
+       ]
+      }
+     }
+    },
+    "persistence_logistic": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": -0.5412858161134901,
+       "intercept_interval": [
+        -1.25532181170923,
+        0.6294596529000734
+       ],
+       "slope": 0.3456707202115921,
+       "slope_interval": [
+        0.09661032432083791,
+        0.9148729337425026
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.949239070592686,
+       "intercept_interval": [
+        -28.623432859944387,
+        2.2801023846180852
+       ],
+       "slope": 0.8643643839076608,
+       "slope_interval": [
+        -7.2801515310448295,
+        4.318867218980884
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.26196283767939743,
+       "intercept_interval": [
+        -1.045722725755959,
+        2.7188961282011945
+       ],
+       "slope": 1.0692509727479054,
+       "slope_interval": [
+        0.6212869578561795,
+        2.299754374199294
+       ]
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.6613520802705142,
+       "intercept_interval": [
+        -1.6550763439511798,
+        0.36044648244601535
+       ],
+       "slope": 0.9237940394468361,
+       "slope_interval": [
+        0.5422860317515997,
+        1.425423185133971
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.6613520802705142,
+       "intercept_interval": [
+        -1.6550763439511798,
+        0.36044648244601535
+       ],
+       "slope": 0.9237940394468361,
+       "slope_interval": [
+        0.5422860317515997,
+        1.425423185133971
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": -15.614089097279823,
+       "intercept_interval": null,
+       "slope": -3.042496523135153,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": -38.3487834191845,
+       "intercept_interval": null,
+       "slope": -10.460633930741032,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.4627024982044275,
+       "intercept_interval": null,
+       "slope": 0.7926217189579593,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.9051765920422896,
+       "intercept_interval": [
+        -1.5044640926972563,
+        -0.10486505384046757
+       ],
+       "slope": 0.21333955465800342,
+       "slope_interval": [
+        0.02033686680036591,
+        0.6128023896915692
+       ]
+      }
+     }
+    },
+    "risk_gbm": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 1.4338345851521694,
+       "intercept_interval": null,
+       "slope": 0.2770771115635185,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -2.1900548671267552,
+       "intercept_interval": null,
+       "slope": 0.03821817924660142,
+       "slope_interval": null
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -2.1900548671267552,
+       "intercept_interval": null,
+       "slope": 0.03821817924660142,
+       "slope_interval": null
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -1.9756765586774894,
+       "intercept_interval": null,
+       "slope": -0.050535861100046243,
+       "slope_interval": null
+      }
+     }
+    },
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": -0.8717031307696728,
+       "intercept_interval": [
+        -1.5529770948580532,
+        -0.29835888137541916
+       ],
+       "slope": 0.03132287960578312,
+       "slope_interval": [
+        -0.014161637181491108,
+        0.07873558378056043
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.763486069848137,
+       "intercept_interval": null,
+       "slope": 0.10517148635244412,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.5230834489082737,
+       "intercept_interval": [
+        -0.9848747493010168,
+        1.728864297351081
+       ],
+       "slope": 0.2277087991350861,
+       "slope_interval": [
+        0.13564569122107872,
+        0.3727372267532767
+       ]
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -1.4809846767756152,
+       "intercept_interval": [
+        -2.0634967069271903,
+        -0.9986054080677759
+       ],
+       "slope": 0.1055004293678899,
+       "slope_interval": [
+        0.06456959104711285,
+        0.14786636114296875
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -1.4809846767756152,
+       "intercept_interval": [
+        -2.0634967069271903,
+        -0.9986054080677759
+       ],
+       "slope": 0.1055004293678899,
+       "slope_interval": [
+        0.06456959104711285,
+        0.14786636114296875
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": -3.1858429318758397,
+       "intercept_interval": null,
+       "slope": 0.20659895613628176,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.8151027637789106,
+       "intercept_interval": null,
+       "slope": 0.14686701658358978,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.7156899411032681,
+       "intercept_interval": [
+        -1.2912217525388217,
+        -0.16573901284576023
+       ],
+       "slope": 0.05198888159594568,
+       "slope_interval": [
+        0.010817303400146583,
+        0.10020539257849123
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": -0.19166614762236592,
+       "intercept_interval": [
+        -0.8933312239418838,
+        0.47647309882623207
+       ],
+       "slope": 0.08339795614511684,
+       "slope_interval": [
+        0.043572852766257386,
+        0.12539757856978398
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.504288756902544,
+       "intercept_interval": null,
+       "slope": 0.20284420549231455,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.5230834489082737,
+       "intercept_interval": [
+        -0.9848747493010168,
+        1.728864297351081
+       ],
+       "slope": 0.2277087991350861,
+       "slope_interval": [
+        0.13564569122107872,
+        0.3727372267532767
+       ]
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.8016289058682587,
+       "intercept_interval": [
+        -1.353092246753618,
+        -0.33924760076826666
+       ],
+       "slope": 0.1539414511296255,
+       "slope_interval": [
+        0.11575233458459315,
+        0.1964168691613542
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.8016289058682587,
+       "intercept_interval": [
+        -1.353092246753618,
+        -0.33924760076826666
+       ],
+       "slope": 0.1539414511296255,
+       "slope_interval": [
+        0.11575233458459315,
+        0.1964168691613542
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": -2.9970488362786996,
+       "intercept_interval": null,
+       "slope": 0.2215010958613347,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.8151027637789106,
+       "intercept_interval": null,
+       "slope": 0.14686701658358978,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.12320305313149459,
+       "intercept_interval": [
+        -0.728568655608128,
+        0.44946836617489966
+       ],
+       "slope": 0.09621754163560316,
+       "slope_interval": [
+        0.05896939004255273,
+        0.13910242189727132
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": -0.13325559686110278,
+       "intercept_interval": [
+        -0.8374686710657333,
+        0.5049620672137647
+       ],
+       "slope": 0.08797774723033061,
+       "slope_interval": [
+        0.04772386082019177,
+        0.13079599550497062
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.5505410364203827,
+       "intercept_interval": null,
+       "slope": 0.19683369521186816,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.2745747178743055,
+       "intercept_interval": [
+        -1.0605294273467416,
+        1.3394457425040307
+       ],
+       "slope": 0.21016323999781666,
+       "slope_interval": [
+        0.12837782919278898,
+        0.34770386028899847
+       ]
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.7294649825402223,
+       "intercept_interval": [
+        -1.264407400568901,
+        -0.29411407855237337
+       ],
+       "slope": 0.15976811163854054,
+       "slope_interval": [
+        0.12205127978629601,
+        0.20189799701484534
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.7294649825402223,
+       "intercept_interval": [
+        -1.264407400568901,
+        -0.29411407855237337
+       ],
+       "slope": 0.15976811163854054,
+       "slope_interval": [
+        0.12205127978629601,
+        0.20189799701484534
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": -3.6759730572541613,
+       "intercept_interval": null,
+       "slope": 0.15533876135880176,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.4808056905631911,
+       "intercept_interval": null,
+       "slope": 0.12236947133369006,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.049143133589223634,
+       "intercept_interval": [
+        -0.6517087642948604,
+        0.5035690899675527
+       ],
+       "slope": 0.1021821312896898,
+       "slope_interval": [
+        0.06505723711827986,
+        0.14440684232979542
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": -0.11503123204289181,
+       "intercept_interval": [
+        -0.8363427823767723,
+        0.5595337273260443
+       ],
+       "slope": 0.08903694846309447,
+       "slope_interval": [
+        0.046007500417436314,
+        0.13398753443407038
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.3753966160795277,
+       "intercept_interval": null,
+       "slope": 0.13933414335885128,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.009049519816754125,
+       "intercept_interval": [
+        -1.3968862079969806,
+        0.957011929313502
+       ],
+       "slope": 0.1896281583527486,
+       "slope_interval": [
+        0.11433034541167315,
+        0.3043170557424877
+       ]
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -1.3583677274994783,
+       "intercept_interval": [
+        -1.9269108822323973,
+        -0.8907560304689459
+       ],
+       "slope": 0.11142752855581953,
+       "slope_interval": [
+        0.07496805249185114,
+        0.1499626636276417
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -1.3583677274994783,
+       "intercept_interval": [
+        -1.9269108822323973,
+        -0.8907560304689459
+       ],
+       "slope": 0.11142752855581953,
+       "slope_interval": [
+        0.07496805249185114,
+        0.1499626636276417
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": -2.1338151393435183,
+       "intercept_interval": null,
+       "slope": 0.4252586954721314,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 1.284561314056563,
+       "intercept_interval": null,
+       "slope": 0.18570143029527755,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.02881803123568661,
+       "intercept_interval": [
+        -0.6533667103041144,
+        0.5555183443361206
+       ],
+       "slope": 0.10339837858762146,
+       "slope_interval": [
+        0.06419967272024286,
+        0.1480877013417551
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+two_part+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 319,
+       "events": 73,
+       "intercept": -0.17163771836939035,
+       "intercept_interval": [
+        -0.7385316388879202,
+        0.37948360790031577
+       ],
+       "slope": 0.5939499298095829,
+       "slope_interval": [
+        0.35097543841203416,
+        0.9241182662368562
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.4163925371655703,
+       "intercept_interval": null,
+       "slope": 0.18915759028117243,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.2843524213669657,
+       "intercept_interval": [
+        -1.220479552493143,
+        0.5758698335227637
+       ],
+       "slope": 0.6467325560245423,
+       "slope_interval": [
+        0.4005009423936598,
+        1.378742661555302
+       ]
+      },
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.5280692834840311,
+       "intercept_interval": [
+        -1.109016080920892,
+        -0.019231533275669635
+       ],
+       "slope": 0.6028874547445993,
+       "slope_interval": [
+        0.403649763287715,
+        0.8824126254784594
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1602,
+       "events": 100,
+       "intercept": -0.5280692834840311,
+       "intercept_interval": [
+        -1.109016080920892,
+        -0.019231533275669635
+       ],
+       "slope": 0.6028874547445993,
+       "slope_interval": [
+        0.403649763287715,
+        0.8824126254784594
+       ]
+      },
+      "scarcity state 0": {
+       "days": 892,
+       "events": 2,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 267,
+       "events": 1,
+       "intercept": -3.6578340235126703,
+       "intercept_interval": null,
+       "slope": 0.34587444223306996,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 9,
+       "intercept": 0.5803665218252625,
+       "intercept_interval": [
+        -2.087257990223303,
+        2.6035981965476274
+       ],
+       "slope": 0.6713969914490289,
+       "slope_interval": [
+        0.019017825257515004,
+        1.7313275048893406
+       ]
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.3287056750956474,
+       "intercept_interval": [
+        -0.8481915821636601,
+        0.10949328277210815
+       ],
+       "slope": 0.538245064823823,
+       "slope_interval": [
+        0.3254859582490566,
+        0.8211596991563659
+       ]
+      }
+     }
+    }
+   }
+  },
+  "4": {
+   "days": 1601,
+   "events": 100,
+   "rows": {
+    "calendar_climatology": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": 0.24936174230113115,
+       "intercept_interval": [
+        -0.8559089990500958,
+        1.4590367464863416
+       ],
+       "slope": 0.6502192299211997,
+       "slope_interval": [
+        0.2178807670678635,
+        1.1741091285635066
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.904339593551013,
+       "intercept_interval": null,
+       "slope": 1.0085104096573745,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 1.6084922447279748,
+       "intercept_interval": null,
+       "slope": 1.3834142599448216,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.6851651159825876,
+       "intercept_interval": [
+        -3.9880172579342434,
+        0.027167021381846866
+       ],
+       "slope": 0.45476065458956033,
+       "slope_interval": [
+        -0.47902000596761257,
+        1.3182931287995856
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.6851651159825876,
+       "intercept_interval": [
+        -3.9880172579342434,
+        0.027167021381846866
+       ],
+       "slope": 0.45476065458956033,
+       "slope_interval": [
+        -0.47902000596761257,
+        1.3182931287995856
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -40.63313143398596,
+       "intercept_interval": null,
+       "slope": -13.003754174822701,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": -7.062533440863214,
+       "intercept_interval": null,
+       "slope": -2.2177005263165115,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.6032304992855658,
+       "intercept_interval": [
+        -1.7836161942152802,
+        0.5747471165601432
+       ],
+       "slope": 0.31280010115295787,
+       "slope_interval": [
+        -0.14147672289377802,
+        0.7780823561766641
+       ]
+      }
+     }
+    },
+    "ngboost_laplace": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": -0.8324149426843086,
+       "intercept_interval": [
+        -1.482522854613282,
+        -0.2994282166955895
+       ],
+       "slope": 0.16632640288695133,
+       "slope_interval": [
+        -0.0265810274153642,
+        0.439561549548658
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.781836305049284,
+       "intercept_interval": [
+        -6.995611545762898,
+        -0.014116500364397856
+       ],
+       "slope": 0.273458166335503,
+       "slope_interval": [
+        -0.13465876800717214,
+        1.2792482013544442
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.593708107868993,
+       "intercept_interval": [
+        -0.4847145268959431,
+        5.610163369052477
+       ],
+       "slope": 0.44785943620053464,
+       "slope_interval": [
+        0.300485484788629,
+        1.3189709222391857
+       ]
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.7613009671450899,
+       "intercept_interval": [
+        -1.2762711099577115,
+        -0.31043812506035656
+       ],
+       "slope": 0.3601999589842913,
+       "slope_interval": [
+        0.2782469349225948,
+        0.4877286626815567
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.7613009671450899,
+       "intercept_interval": [
+        -1.2762711099577115,
+        -0.31043812506035656
+       ],
+       "slope": 0.3601999589842913,
+       "slope_interval": [
+        0.2782469349225948,
+        0.4877286626815567
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -5.350274924789454,
+       "intercept_interval": null,
+       "slope": 0.02925699382329818,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": -2.5298937848837943,
+       "intercept_interval": [
+        -5.423289370072316,
+        0.37472832610708257
+       ],
+       "slope": -0.26675920091417155,
+       "slope_interval": [
+        -0.9114309720733779,
+        0.35828364177309113
+       ]
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -1.0164374111254344,
+       "intercept_interval": [
+        -1.684771819587303,
+        -0.47745436396744206
+       ],
+       "slope": 0.11737857985576618,
+       "slope_interval": [
+        -0.07166191806657117,
+        0.3509404481060668
+       ]
+      }
+     }
+    },
+    "persistence_logistic": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": -0.0699475767031063,
+       "intercept_interval": [
+        -0.8313937321421208,
+        0.7861394441278452
+       ],
+       "slope": 0.5789210612415177,
+       "slope_interval": [
+        0.2927639297451262,
+        1.0483524104367226
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.91828448831141,
+       "intercept_interval": [
+        -14.764713412471771,
+        -0.7125582488041731
+       ],
+       "slope": 0.7843045137664335,
+       "slope_interval": [
+        -2.6941998278392774,
+        1.8511500747631935
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.34010886646748667,
+       "intercept_interval": [
+        -1.5713055690910083,
+        1.4133305291148832
+       ],
+       "slope": 0.8229107160766326,
+       "slope_interval": [
+        0.49890988580964396,
+        1.6556777752907361
+       ]
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.21790390333013127,
+       "intercept_interval": [
+        -1.014231618850474,
+        0.5627694749167532
+       ],
+       "slope": 1.0775161987400295,
+       "slope_interval": [
+        0.78651873107308,
+        1.4557255891791718
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.21790390333013127,
+       "intercept_interval": [
+        -1.014231618850474,
+        0.5627694749167532
+       ],
+       "slope": 1.0775161987400295,
+       "slope_interval": [
+        0.78651873107308,
+        1.4557255891791718
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -11.49112613918216,
+       "intercept_interval": null,
+       "slope": -1.6702969691302585,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": 1.0919884998662348,
+       "intercept_interval": [
+        -10.321711486669267,
+        3.5128620165704794
+       ],
+       "slope": 1.1026639144238843,
+       "slope_interval": [
+        -3.023444945255583,
+        2.355051690654064
+       ]
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.6276521019450574,
+       "intercept_interval": [
+        -1.270665222249437,
+        0.05620353004025639
+       ],
+       "slope": 0.3638929416995977,
+       "slope_interval": [
+        0.12768227655402492,
+        0.70268646496017
+       ]
+      }
+     }
+    },
+    "risk_gbm": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 1.5098020185497052,
+       "intercept_interval": null,
+       "slope": 0.2825822144925668,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -2.2102376137280393,
+       "intercept_interval": null,
+       "slope": 0.03664778251246155,
+       "slope_interval": null
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -2.2102376137280393,
+       "intercept_interval": null,
+       "slope": 0.03664778251246155,
+       "slope_interval": null
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -2.133878369331238,
+       "intercept_interval": null,
+       "slope": -0.06210431996256321,
+       "slope_interval": null
+      }
+     }
+    },
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": -0.6257934213307454,
+       "intercept_interval": [
+        -1.2612079388413397,
+        -0.04916018512903255
+       ],
+       "slope": 0.053954468701712076,
+       "slope_interval": [
+        0.009956536206521538,
+        0.10291838543066027
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.4245418419834937,
+       "intercept_interval": null,
+       "slope": 0.13681638888716935,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.9560411400479722,
+       "intercept_interval": [
+        -0.506059888527125,
+        2.2503348341674183
+       ],
+       "slope": 0.2599129460439356,
+       "slope_interval": [
+        0.1695533726209194,
+        0.42579967084991166
+       ]
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.2812240318825219,
+       "intercept_interval": [
+        -1.9046484349754318,
+        -0.8212080716201234
+       ],
+       "slope": 0.12424640054995419,
+       "slope_interval": [
+        0.08205906877996268,
+        0.1678785849119323
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.2812240318825219,
+       "intercept_interval": [
+        -1.9046484349754318,
+        -0.8212080716201234
+       ],
+       "slope": 0.12424640054995419,
+       "slope_interval": [
+        0.08205906877996268,
+        0.1678785849119323
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -4.13559227520185,
+       "intercept_interval": null,
+       "slope": 0.13168155676615945,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": 2.069387452099495,
+       "intercept_interval": null,
+       "slope": 0.23737333454520934,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.4985088834694934,
+       "intercept_interval": [
+        -1.0341710791764622,
+        0.026464953687510246
+       ],
+       "slope": 0.07218810924072483,
+       "slope_interval": [
+        0.03318786816748809,
+        0.11712768032420968
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": -0.21979702638605256,
+       "intercept_interval": [
+        -0.9226469926766453,
+        0.3928122647563673
+       ],
+       "slope": 0.08030718877156633,
+       "slope_interval": [
+        0.04154736449408833,
+        0.12146252279840435
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.0429576616881144,
+       "intercept_interval": null,
+       "slope": 0.24426783639218352,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.9560411400479722,
+       "intercept_interval": [
+        -0.506059888527125,
+        2.2503348341674183
+       ],
+       "slope": 0.2599129460439356,
+       "slope_interval": [
+        0.1695533726209194,
+        0.42579967084991166
+       ]
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.7665974752575042,
+       "intercept_interval": [
+        -1.3442031968677632,
+        -0.3416962260228586
+       ],
+       "slope": 0.15627527391777807,
+       "slope_interval": [
+        0.11764911038177545,
+        0.20048668756096538
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.7665974752575042,
+       "intercept_interval": [
+        -1.3442031968677632,
+        -0.3416962260228586
+       ],
+       "slope": 0.15627527391777807,
+       "slope_interval": [
+        0.11764911038177545,
+        0.20048668756096538
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -1.4473597407557224,
+       "intercept_interval": null,
+       "slope": 0.34358195070098557,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": 2.069387452099495,
+       "intercept_interval": null,
+       "slope": 0.23737333454520934,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.12282942126470747,
+       "intercept_interval": [
+        -0.7188194473780798,
+        0.4290944464249137
+       ],
+       "slope": 0.09578351247875344,
+       "slope_interval": [
+        0.0578546623638249,
+        0.13583146640114568
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": -0.1507219081515415,
+       "intercept_interval": [
+        -0.849148549784694,
+        0.45411889818238715
+       ],
+       "slope": 0.08549261256747269,
+       "slope_interval": [
+        0.04561347441840634,
+        0.1263544413237304
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.2221844298529816,
+       "intercept_interval": null,
+       "slope": 0.22599196030203744,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.7534055241735258,
+       "intercept_interval": [
+        -0.47877205028136594,
+        1.769318935802029
+       ],
+       "slope": 0.24759592379513304,
+       "slope_interval": [
+        0.17204549954448042,
+        0.3899332993205692
+       ]
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.6968175054303681,
+       "intercept_interval": [
+        -1.282401326088822,
+        -0.2766275722822526
+       ],
+       "slope": 0.1619610143431621,
+       "slope_interval": [
+        0.12265977107895991,
+        0.20567555337039445
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -0.6968175054303681,
+       "intercept_interval": [
+        -1.282401326088822,
+        -0.2766275722822526
+       ],
+       "slope": 0.1619610143431621,
+       "slope_interval": [
+        0.12265977107895991,
+        0.20567555337039445
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -2.1975250876191903,
+       "intercept_interval": null,
+       "slope": 0.2778755879539097,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": 1.5838194614102703,
+       "intercept_interval": null,
+       "slope": 0.20482331608915968,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.017749748377147552,
+       "intercept_interval": [
+        -0.6183063484855575,
+        0.5200564333355696
+       ],
+       "slope": 0.10390915852332863,
+       "slope_interval": [
+        0.06510609267419663,
+        0.14468035163516418
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": -0.2243918249255072,
+       "intercept_interval": [
+        -0.9478014146204015,
+        0.4196362666025454
+       ],
+       "slope": 0.0792907145894706,
+       "slope_interval": [
+        0.038005781801492264,
+        0.1238450984138862
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.4378514721413107,
+       "intercept_interval": null,
+       "slope": 0.13269269268124992,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.07751491083234607,
+       "intercept_interval": [
+        -1.3722361149585784,
+        0.7708398589125744
+       ],
+       "slope": 0.1854201782967017,
+       "slope_interval": [
+        0.11379341691540448,
+        0.2974863368264155
+       ]
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.4121952567779714,
+       "intercept_interval": [
+        -2.0583026623973995,
+        -0.9627072505812204
+       ],
+       "slope": 0.1063369157056785,
+       "slope_interval": [
+        0.06875660895246705,
+        0.14657044827622062
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.4121952567779714,
+       "intercept_interval": [
+        -2.0583026623973995,
+        -0.9627072505812204
+       ],
+       "slope": 0.1063369157056785,
+       "slope_interval": [
+        0.06875660895246705,
+        0.14657044827622062
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -3.8635770278187715,
+       "intercept_interval": null,
+       "slope": 0.15362477453832932,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": 1.0190812406236462,
+       "intercept_interval": null,
+       "slope": 0.16388489820025148,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -0.10242183864735661,
+       "intercept_interval": [
+        -0.7363663575920889,
+        0.48056074440349783
+       ],
+       "slope": 0.09670424071158003,
+       "slope_interval": [
+        0.05510219989366664,
+        0.14067368536301172
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+two_part+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 318,
+       "events": 73,
+       "intercept": -0.9762377109462184,
+       "intercept_interval": [
+        -1.5840903225545548,
+        -0.41769503498448535
+       ],
+       "slope": 0.06892686480247585,
+       "slope_interval": [
+        -0.011203047484574834,
+        0.31800108850292513
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.4942623795902112,
+       "intercept_interval": null,
+       "slope": 0.18285972342549411,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.049779060245703104,
+       "intercept_interval": [
+        -0.9691105053769697,
+        0.893030618909944
+       ],
+       "slope": 0.9033982494922316,
+       "slope_interval": [
+        0.6824278244433535,
+        1.4210730092545152
+       ]
+      },
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.1850241773095724,
+       "intercept_interval": [
+        -1.7807815511038028,
+        -0.5378276069561593
+       ],
+       "slope": 0.28895563376028965,
+       "slope_interval": [
+        0.1844690008872419,
+        0.6100201531735814
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1601,
+       "events": 100,
+       "intercept": -1.1850241773095724,
+       "intercept_interval": [
+        -1.7807815511038028,
+        -0.5378276069561593
+       ],
+       "slope": 0.28895563376028965,
+       "slope_interval": [
+        0.1844690008872419,
+        0.6100201531735814
+       ]
+      },
+      "scarcity state 0": {
+       "days": 891,
+       "events": 3,
+       "intercept": -5.085783830162656,
+       "intercept_interval": null,
+       "slope": 0.05447479417863873,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 34,
+       "events": 9,
+       "intercept": 1.4739985886892548,
+       "intercept_interval": [
+        -0.9144137472265662,
+        3.6494168048983364
+       ],
+       "slope": 1.0687118038426473,
+       "slope_interval": [
+        0.4784370763854589,
+        1.787533550196423
+       ]
+      },
+      "scarcity state 3": {
+       "days": 408,
+       "events": 88,
+       "intercept": -1.0668589251408924,
+       "intercept_interval": [
+        -1.5609410974929998,
+        -0.5129870184396068
+       ],
+       "slope": 0.07409702777383298,
+       "slope_interval": [
+        -0.0036864124178552556,
+        0.3746734959051678
+       ]
+      }
+     }
+    }
+   }
+  },
+  "5": {
+   "days": 1600,
+   "events": 100,
+   "rows": {
+    "calendar_climatology": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": 0.22040012471582207,
+       "intercept_interval": [
+        -0.9961834564807645,
+        1.4592715627382418
+       ],
+       "slope": 0.6334590401425999,
+       "slope_interval": [
+        0.17478006037031085,
+        1.1925292649613894
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.8443676897828736,
+       "intercept_interval": null,
+       "slope": 1.0393279378823455,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.5628503966257864,
+       "intercept_interval": null,
+       "slope": 0.6089210972043404,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -1.7549609203802858,
+       "intercept_interval": [
+        -4.199227411370377,
+        0.026748092878767487
+       ],
+       "slope": 0.4226583575054831,
+       "slope_interval": [
+        -0.5509719270491866,
+        1.2846002271904153
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -1.7549609203802858,
+       "intercept_interval": [
+        -4.199227411370377,
+        0.026748092878767487
+       ],
+       "slope": 0.4226583575054831,
+       "slope_interval": [
+        -0.5509719270491866,
+        1.2846002271904153
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -37.847284578969784,
+       "intercept_interval": null,
+       "slope": -11.99464382481901,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": -6.951727177387545,
+       "intercept_interval": null,
+       "slope": -2.216378136910166,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -0.6318986035072292,
+       "intercept_interval": [
+        -1.8010692926323564,
+        0.45674897267715014
+       ],
+       "slope": 0.3049780471415037,
+       "slope_interval": [
+        -0.14973375770671152,
+        0.7431570139491188
+       ]
+      }
+     }
+    },
+    "ngboost_laplace": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": -0.8838975142045086,
+       "intercept_interval": [
+        -1.5415436009262642,
+        -0.3537841415603816
+       ],
+       "slope": 0.14358212910282406,
+       "slope_interval": [
+        -0.027977045780749304,
+        0.4237043543274303
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.534794998601416,
+       "intercept_interval": [
+        -5.148229735199407,
+        0.15458324926532688
+       ],
+       "slope": 0.335652486409615,
+       "slope_interval": [
+        0.0594505685471194,
+        1.630181232274388
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.1263406215645914,
+       "intercept_interval": [
+        -0.7882438077310413,
+        2.818928494265399
+       ],
+       "slope": 0.3490809356798284,
+       "slope_interval": [
+        0.2083686040359095,
+        0.9042401389319046
+       ]
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.8740255395079246,
+       "intercept_interval": [
+        -1.386704272664841,
+        -0.40148581170884434
+       ],
+       "slope": 0.3371507628453926,
+       "slope_interval": [
+        0.2554838478033168,
+        0.4780633936843896
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.8740255395079246,
+       "intercept_interval": [
+        -1.386704272664841,
+        -0.40148581170884434
+       ],
+       "slope": 0.3371507628453926,
+       "slope_interval": [
+        0.2554838478033168,
+        0.4780633936843896
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -1.9167508140687382,
+       "intercept_interval": null,
+       "slope": 0.3645301301442904,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": -4.2183408971842145,
+       "intercept_interval": [
+        -7.20530956988596,
+        -1.855001915327539
+       ],
+       "slope": -0.5235993547534569,
+       "slope_interval": [
+        -1.0321606194923338,
+        -0.0046673949630409795
+       ]
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -1.0762723291584944,
+       "intercept_interval": [
+        -1.7116692463313163,
+        -0.5457186086500844
+       ],
+       "slope": 0.097489865584842,
+       "slope_interval": [
+        -0.06516757011796431,
+        0.31143716833202195
+       ]
+      }
+     }
+    },
+    "persistence_logistic": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": -0.4327473028646113,
+       "intercept_interval": [
+        -1.091607768863909,
+        0.22279301373267058
+       ],
+       "slope": 0.3230033147096672,
+       "slope_interval": [
+        0.16351085318211034,
+        0.625989670499344
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.33932157930317,
+       "intercept_interval": [
+        -8.761757287679595,
+        0.12910351291383987
+       ],
+       "slope": 1.0512052018729574,
+       "slope_interval": [
+        -0.9966868649809963,
+        2.30919618368154
+       ]
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -0.20422906794287798,
+       "intercept_interval": [
+        -1.459153410161123,
+        1.5442354648782985
+       ],
+       "slope": 0.8878798342650034,
+       "slope_interval": [
+        0.5428087477430403,
+        1.730443903841431
+       ]
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.5870845443532829,
+       "intercept_interval": [
+        -1.5825701132836036,
+        0.2777746141819691
+       ],
+       "slope": 0.8934372951599988,
+       "slope_interval": [
+        0.5295055086164188,
+        1.3324343036194377
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.5870845443532829,
+       "intercept_interval": [
+        -1.5825701132836036,
+        0.2777746141819691
+       ],
+       "slope": 0.8934372951599988,
+       "slope_interval": [
+        0.5295055086164188,
+        1.3324343036194377
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -4.6024389337235245,
+       "intercept_interval": null,
+       "slope": 0.3305380187921569,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": 1.2595927216031308,
+       "intercept_interval": [
+        -4.732660545172998,
+        3.307407841525685
+       ],
+       "slope": 1.1337323597156976,
+       "slope_interval": [
+        -1.0531571804158886,
+        2.3363933649073383
+       ]
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -0.7616458111953242,
+       "intercept_interval": [
+        -1.3265311036263459,
+        -0.20871287529120108
+       ],
+       "slope": 0.25068438878555,
+       "slope_interval": [
+        0.1218869662422576,
+        0.4596505300361914
+       ]
+      }
+     }
+    },
+    "risk_gbm": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 1.2417184776023618,
+       "intercept_interval": null,
+       "slope": 0.2618125357751736,
+       "slope_interval": null
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -2.968446035381017,
+       "intercept_interval": null,
+       "slope": -0.01910743567912654,
+       "slope_interval": null
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -2.968446035381017,
+       "intercept_interval": null,
+       "slope": -0.01910743567912654,
+       "slope_interval": null
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -2.787902862918815,
+       "intercept_interval": null,
+       "slope": -0.10908513477087345,
+       "slope_interval": null
+      }
+     }
+    },
+    "risk_gbm+every_day+gate+settle+h41+iorb+tailcap75": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": -0.5985377221492906,
+       "intercept_interval": [
+        -1.1845153760252336,
+        -0.09445340618656659
+       ],
+       "slope": 0.05614764362467414,
+       "slope_interval": [
+        0.01653259057666659,
+        0.10307510495038849
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -4.19159001763518,
+       "intercept_interval": null,
+       "slope": 0.06737937436476026,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.19952195672815284,
+       "intercept_interval": [
+        -1.227737010796924,
+        1.26401772598592
+       ],
+       "slope": 0.2036694090400179,
+       "slope_interval": [
+        0.12024259143573479,
+        0.34189562361245485
+       ]
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -1.2746837406028373,
+       "intercept_interval": [
+        -1.821196633070198,
+        -0.8324106845657128
+       ],
+       "slope": 0.12419006174718975,
+       "slope_interval": [
+        0.08716917544631617,
+        0.16736029115743942
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -1.2746837406028373,
+       "intercept_interval": [
+        -1.821196633070198,
+        -0.8324106845657128
+       ],
+       "slope": 0.12419006174718975,
+       "slope_interval": [
+        0.08716917544631617,
+        0.16736029115743942
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -5.798317864569578,
+       "intercept_interval": null,
+       "slope": -0.008567151896159388,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": 1.171181375584925,
+       "intercept_interval": null,
+       "slope": 0.16303076882534046,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -0.505676308929723,
+       "intercept_interval": [
+        -1.0187813482330639,
+        -0.022999079484694807
+       ],
+       "slope": 0.07252217591265618,
+       "slope_interval": [
+        0.03327750646940455,
+        0.11577516053858847
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": -0.21391769451181292,
+       "intercept_interval": [
+        -0.8844479244967038,
+        0.3746194723441
+       ],
+       "slope": 0.0805044551098643,
+       "slope_interval": [
+        0.041418346963866454,
+        0.12345540553636683
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.0147634614890375,
+       "intercept_interval": null,
+       "slope": 0.15819215940881678,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.5784551929245324,
+       "intercept_interval": [
+        -0.7064699122906294,
+        1.6814845186702665
+       ],
+       "slope": 0.23230655206356818,
+       "slope_interval": [
+        0.15160160119629418,
+        0.3824153802664788
+       ]
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.8444612429681909,
+       "intercept_interval": [
+        -1.3980016859455255,
+        -0.38966227006324144
+       ],
+       "slope": 0.14968995969157944,
+       "slope_interval": [
+        0.11386482902486313,
+        0.19158963698380943
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.8444612429681909,
+       "intercept_interval": [
+        -1.3980016859455255,
+        -0.38966227006324144
+       ],
+       "slope": 0.14968995969157944,
+       "slope_interval": [
+        0.11386482902486313,
+        0.19158963698380943
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -4.02526744473874,
+       "intercept_interval": null,
+       "slope": 0.12720675757909397,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": 1.171181375584925,
+       "intercept_interval": null,
+       "slope": 0.16303076882534046,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -0.1611689365674719,
+       "intercept_interval": [
+        -0.741745585194556,
+        0.3806474761146168
+       ],
+       "slope": 0.09350992587822446,
+       "slope_interval": [
+        0.05631420510968553,
+        0.13560889574450222
+       ]
+      }
+     }
+    },
+    "risk_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": -0.17403994428661373,
+       "intercept_interval": [
+        -0.8359984496850147,
+        0.4256956297211583
+       ],
+       "slope": 0.08344976651232072,
+       "slope_interval": [
+        0.04387768421684311,
+        0.12761992508918388
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -2.654186340955576,
+       "intercept_interval": null,
+       "slope": 0.1888311618761348,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.3092836709699088,
+       "intercept_interval": [
+        -1.0035771323576648,
+        1.407071182161438
+       ],
+       "slope": 0.21300333304937571,
+       "slope_interval": [
+        0.13715700096359548,
+        0.35634177600372874
+       ]
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.8014852298838893,
+       "intercept_interval": [
+        -1.3437860822426355,
+        -0.371340670242974
+       ],
+       "slope": 0.15354785382944083,
+       "slope_interval": [
+        0.1160842479980406,
+        0.19642519639784584
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.8014852298838893,
+       "intercept_interval": [
+        -1.3437860822426355,
+        -0.371340670242974
+       ],
+       "slope": 0.15354785382944083,
+       "slope_interval": [
+        0.1160842479980406,
+        0.19642519639784584
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -3.462660172650751,
+       "intercept_interval": null,
+       "slope": 0.17283891601766282,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": 0.9704537969267919,
+       "intercept_interval": null,
+       "slope": 0.14722818222757042,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -0.08128150585988175,
+       "intercept_interval": [
+        -0.6530381508896388,
+        0.44774749302155925
+       ],
+       "slope": 0.1001007306519596,
+       "slope_interval": [
+        0.06210194988945842,
+        0.14183597074093499
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": -0.2011988905983299,
+       "intercept_interval": [
+        -0.8979923605292832,
+        0.42743299622859815
+       ],
+       "slope": 0.08080368184942267,
+       "slope_interval": [
+        0.037973471563413345,
+        0.12830425622336927
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.5473576826277937,
+       "intercept_interval": null,
+       "slope": 0.12307021112192183,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": 0.05892571600571545,
+       "intercept_interval": [
+        -1.2633359655772767,
+        1.09495739980918
+       ],
+       "slope": 0.19456730210653875,
+       "slope_interval": [
+        0.12178584133577798,
+        0.3319672953855327
+       ]
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -1.4353599777055048,
+       "intercept_interval": [
+        -2.0204600877741847,
+        -0.9862184654090184
+       ],
+       "slope": 0.10423847251166583,
+       "slope_interval": [
+        0.06760132181157193,
+        0.1439293024258594
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -1.4353599777055048,
+       "intercept_interval": [
+        -2.0204600877741847,
+        -0.9862184654090184
+       ],
+       "slope": 0.10423847251166583,
+       "slope_interval": [
+        0.06760132181157193,
+        0.1439293024258594
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -3.866585020192774,
+       "intercept_interval": null,
+       "slope": 0.15292897486347032,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": 0.760869658536228,
+       "intercept_interval": null,
+       "slope": 0.13342179926020745,
+       "slope_interval": null
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -0.10815048837020501,
+       "intercept_interval": [
+        -0.7220433690823322,
+        0.4814977969262957
+       ],
+       "slope": 0.09720771807147657,
+       "slope_interval": [
+        0.05575397239352439,
+        0.14327735253014515
+       ]
+      }
+     }
+    },
+    "spread_q_gbm+two_part+settle+h41+dist_roll": {
+     "regime": {
+      "2018-19": {
+       "days": 317,
+       "events": 73,
+       "intercept": -0.7162166130991087,
+       "intercept_interval": [
+        -1.3650864793842366,
+        -0.11751384136918928
+       ],
+       "slope": 0.21083971529567813,
+       "slope_interval": [
+        0.06092842390405484,
+        0.5945441024771658
+       ]
+      },
+      "2020-24": {
+       "days": 1069,
+       "events": 7,
+       "intercept": -3.039060785589258,
+       "intercept_interval": null,
+       "slope": 0.286197665562503,
+       "slope_interval": null
+      },
+      "2025-26": {
+       "days": 214,
+       "events": 20,
+       "intercept": -1.0725099485730158,
+       "intercept_interval": [
+        -2.219735954144323,
+        -0.26542155954483526
+       ],
+       "slope": 0.29883288161957033,
+       "slope_interval": [
+        0.12164129645345109,
+        1.1991088055593813
+       ]
+      },
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.930246909791581,
+       "intercept_interval": [
+        -1.489085505690425,
+        -0.39156993269011375
+       ],
+       "slope": 0.4203445881178254,
+       "slope_interval": [
+        0.2842447071178102,
+        0.7131101407104828
+       ]
+      }
+     },
+     "scarcity_state": {
+      "pooled": {
+       "days": 1600,
+       "events": 100,
+       "intercept": -0.930246909791581,
+       "intercept_interval": [
+        -1.489085505690425,
+        -0.39156993269011375
+       ],
+       "slope": 0.4203445881178254,
+       "slope_interval": [
+        0.2842447071178102,
+        0.7131101407104828
+       ]
+      },
+      "scarcity state 0": {
+       "days": 890,
+       "events": 3,
+       "intercept": -4.016631341294026,
+       "intercept_interval": null,
+       "slope": 0.17863068340862281,
+       "slope_interval": null
+      },
+      "scarcity state 1": {
+       "days": 268,
+       "events": 0,
+       "intercept": null,
+       "intercept_interval": null,
+       "slope": null,
+       "slope_interval": null
+      },
+      "scarcity state 2": {
+       "days": 35,
+       "events": 10,
+       "intercept": -1.0150914486800733,
+       "intercept_interval": [
+        -3.1363088839540314,
+        0.4921135143951821
+       ],
+       "slope": -0.027429087406006733,
+       "slope_interval": [
+        -0.19922050044077638,
+        0.9242717192189982
+       ]
+      },
+      "scarcity state 3": {
+       "days": 407,
+       "events": 87,
+       "intercept": -0.7887315788369297,
+       "intercept_interval": [
+        -1.3532348398257104,
+        -0.25917755752414745
+       ],
+       "slope": 0.24143269829935743,
+       "slope_interval": [
+        0.08195104562481302,
+        0.5925694314674835
+       ]
+      }
+     }
+    }
+   }
+  }
+ },
+ "level": 0.9,
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "reading": "Pooled slopes mislead here (#670): a regime with no pressure day (2021-23) forecasts near 0 and adds a long, well-ordered stretch at the bottom of the curve, which raises the pooled slope. Read calibration within a regime. A cell with no pressure day has no slope. Figures here are development, not a verdict.",
+ "replications": 2000,
+ "title": "Reliability slope within regimes, #632's rows on the ordinary days (#786)"
+}
