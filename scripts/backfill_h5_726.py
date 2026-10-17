@@ -168,14 +168,32 @@ def require_same_published_days(published: Sequence[Tuple[date, Mapping]], exten
                 raise ValueError(f"{day}: {name} is {right.get(name)!r} on the extended panel and {value!r} on the published one")
 
 
-def guarded_fit(fit, posting: Optional[datetime], *, where: str):
-    """`fit`, refusing any training frame that holds back-filled values before the posting instant is established."""
+def refit_record(train_frame: Sequence, inputs: Sequence[str]) -> dict:
+    """What one refit trained on: its rows, the back-filled share of them and the share of its input cells that are blank (#870)."""
+
+    rows = len(train_frame)
+    back = sum(1 for row in train_frame if row.date < backfill.FIRST_PUBLISHED)
+    blank = sum(1 for row in train_frame for name in inputs if row.values.get(name) is None)
+    return {
+        "train_start": train_frame[0].date.isoformat(), "train_end": train_frame[-1].date.isoformat(), "train_rows": rows,
+        "backfilled_rows": back, "backfilled_share": back / rows,
+        "imputed_cells": blank, "imputed_share": blank / (rows * len(inputs)) if inputs else 0.0,
+    }
+
+
+def guarded_fit(fit, posting: Optional[datetime], *, where: str, log: Optional[list] = None, inputs: Sequence[str] = ()):
+    """`fit`, refusing any training frame that holds back-filled values before the posting instant is established.
+
+    With `log`, each refit's `refit_record` over `inputs` is appended to it, in fit order.
+    """
 
     @functools.wraps(fit)
     def wrapped(train_frame, **kwargs):
         first, last = train_frame[0].date, train_frame[-1].date
         fold = ScoredFold(train_start=first, train_end=last, train_rows=len(train_frame), feature_date=last, scored_date=last)
         backfill.require_posting_established([fold], posting, where=where)
+        if log is not None:
+            log.append(refit_record(train_frame, inputs))
         return fit(train_frame, **kwargs)
 
     return wrapped
@@ -249,10 +267,10 @@ def forecasts_command(args) -> int:
     live = sd._load("live_record")
     lead_features = tuple(live.published_features(h))
     minimum = json.loads(sd.DECLARATION.read_text(encoding="utf-8"))["scoring"]["minimum_history"]
-    fit = functools.partial(
-        ml.fit_gradient_boosted_quantiles, regressors=tuple(f for f in lead_features if f != "spread_bps"), levels=sd.GRID
-    )
-    fit = guarded_fit(fit, posting, where="backfill_h5_726")
+    regressors = tuple(f for f in lead_features if f != "spread_bps")
+    fit = functools.partial(ml.fit_gradient_boosted_quantiles, regressors=regressors, levels=sd.GRID)
+    refits: list = []
+    fit = guarded_fit(fit, posting, where="backfill_h5_726", log=refits, inputs=regressors)
     result, levels, settings = sd.walk(
         rows, fit=fit, features=lead_features, online_calibration=None, registry=registry, horizon=h,
         minimum_history=minimum + prefix, refit_every=21, expected_levels=sd.GRID,
@@ -268,11 +286,15 @@ def forecasts_command(args) -> int:
     backfill.require_training_only(folds, where="backfill_h5_726")
     backfill.require_series_admitted(folds, series_carried(lead_features, rows), admitted, where="backfill_h5_726")
     laws = {rows[i].date.isoformat(): q for i, q in result}
+    blocks = list(sd.refit_blocks(sd.fold_grid(dates, registry, decision_time=sd.DECISION, minimum_history=minimum + prefix, horizon=h), 21))
+    if len(blocks) != len(refits) or [i for block in blocks for i in block] != [i for i, _ in result]:
+        raise ValueError("the refit blocks are not the walk's blocks")
+    refit_of_day = {rows[i].date.isoformat(): k for k, block in enumerate(blocks) for i in block}
     document = {
         "issue": 726, "arm": args.arm, "horizon": h, "levels": levels, "panel_sha256": panel_sha256(args.panel),
         "published_panel_sha256": panel_sha256(args.published), "backfilled_rows": prefix,
         "posting_instant": None if posting is None else posting.isoformat(), "features": list(lead_features),
-        "first_scored": min(laws), "settings": json.loads(json.dumps(settings, default=str)), "laws": laws,
+        "first_scored": min(laws), "refits": refits, "refit_of_day": refit_of_day, "settings": json.loads(json.dumps(settings, default=str)), "laws": laws,
     }
     args.output.write_text(json.dumps(document, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"arm": args.arm, "horizon": h, "scored": len(laws), "backfilled_rows": prefix}))
