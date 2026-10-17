@@ -51,7 +51,7 @@ on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo
 
 ## H3. New public data adds signal
 
-- **Tests:** [#630](https://github.com/eleonorabjornberg/repo-market-model/issues/630), then [#708](https://github.com/eleonorabjornberg/repo-market-model/issues/708) (step 3, the nested test against H5's candidate; queued).
+- **Tests:** [#630](https://github.com/eleonorabjornberg/repo-market-model/issues/630), then [#708](https://github.com/eleonorabjornberg/repo-market-model/issues/708) (step 3; the nested development run against H5's candidate; queued).
 - **Kill:** no new series ranks above the held ones on ordinary days.
 - **Next:** on kill, the held data is the data. Otherwise register the sources that pass as nested tests on H5.
 - **Status:** open. Manual: [`hypotheses/H3.md`](hypotheses/H3.md).
