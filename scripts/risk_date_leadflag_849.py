@@ -89,10 +89,39 @@ def reading(target_risk_type: Callable) -> Iterator[None]:
         rds.target_risk_type = kept
 
 
+@contextlib.contextmanager
+def undefined_where_no_variance() -> Iterator[None]:
+    """A split whose paired differences have no long-run variance is reported as `undefined`, not as a crash.
+
+    The corrected day set can leave a split with constant differences; the studentized test refuses it (`ProtocolError`). The
+    row then reads `{"undefined": reason}`, which both scripts' tables and kill rules already treat as no skill.
+    """
+
+    run_pairs, vs_all = s693.s686.run_pairs, s739.vs_all
+
+    def safe_run_pairs(named, candidate, days, **kwargs):
+        try:
+            return run_pairs(named, candidate, days, **kwargs)
+        except sp.ProtocolError as error:
+            return {name: {"undefined": str(error)} for name in named}
+
+    def safe_vs_all(series, days, draws):
+        try:
+            return vs_all(series, days, draws)
+        except sp.ProtocolError as error:
+            return {c: {b: {"undefined": str(error)} for b in s693.BENCHMARKS} for c in s693.CANDIDATES}
+
+    s693.s686.run_pairs, s739.vs_all = safe_run_pairs, safe_vs_all
+    try:
+        yield
+    finally:
+        s693.s686.run_pairs, s739.vs_all = run_pairs, vs_all
+
+
 def scores(panel_path: str, draws: int) -> dict:
     """#693's score and #739's re-read as they run on the code now in `rds` (the caller sets the reading)."""
 
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory() as tmp, undefined_where_no_variance():
         out693, out739 = Path(tmp) / "693.json", Path(tmp) / "739.json"
         s693.score(Namespace(panel=panel_path, output=str(out693), markdown=None, draws=draws))
         s739.score(Namespace(panel=panel_path, output=str(out739), markdown=None, draws=draws))
