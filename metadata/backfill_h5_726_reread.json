@@ -42,6 +42,7 @@
     "not_re_read": "H4's calibration clause (coverage moves by less than their interval) is not re-read: the coverage tables of #759 stand as published on the percentile interval and are not re-scored here"
   },
   "published_declaration": "the back-filled rows stay off in every published declaration; nothing is published and no figure moves",
+  "variants": {},
   "variant_count": "none new: the same two arms at the same five leads as #759, re-run",
   "not_checked": [
     "any 2026 day (locked), the 2014-18 days as scored days, and any verdict under protocol v1",
