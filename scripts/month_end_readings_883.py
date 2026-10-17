@@ -212,6 +212,38 @@ def report_command(args) -> int:
     return 0
 
 
+def ordinary_flags(rows, scored_rows, splits, reading: str):
+    """H2's `ordinary` flag (`upper_bound_635.py fit`: not a risk date under `risk_dates.NON_ORDINARY`, coupon clause on) under one reading.
+
+    The window reading is what the fit used. The reporting reading passes the row's date as `reporting_on`.
+    """
+
+    from repo_model import risk_dates
+
+    flags = []
+    for index in scored_rows:
+        row = rows[index]
+        on = row.date if reading == REPORTING else None
+        flags.append(not risk_dates.is_risk_date(row.values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=True, reporting_on=on))
+    return flags
+
+
+def fits_command(args) -> int:
+    """Write H2's fits with only the `ordinary` list re-read; the laws, spreads and everything else are the fit's own."""
+
+    fits = json.loads(args.fits.read_text(encoding="utf-8"))
+    rows = load_daily_panel(args.panel)
+    if [rows[i].date.isoformat() for i in fits["scored_rows"]] != fits["scored_days"]:
+        raise ValueError("the fits' scored rows are not rows of this panel")
+    splits = load_split_declaration(SPLITS)
+    flags = ordinary_flags(rows, fits["scored_rows"], splits, args.reading)
+    changed = sum(1 for old, new in zip(fits["ordinary"], flags) if old != new)
+    fits["ordinary"] = flags
+    args.output.write_text(json.dumps(fits), encoding="utf-8")
+    print(json.dumps({"reading": args.reading, "scored_days": len(flags), "ordinary_days": sum(flags), "changed_from_the_fit": changed}))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -220,12 +252,19 @@ def main(argv=None) -> int:
     report.add_argument("--days", type=Path, required=True, help="the output of `days`")
     report.add_argument("--figures", type=Path, required=True, help="the extracted figures, JSON")
     report.add_argument("--markdown", type=Path, required=True)
+    fits = sub.add_parser("fits", help="re-read the ordinary flag of H2's fits (#635) under one reading")
+    fits.add_argument("--panel", type=Path, required=True, help="the scratch panel the fits were made on")
+    fits.add_argument("--fits", type=Path, required=True)
+    fits.add_argument("--reading", choices=(WINDOW, REPORTING), required=True)
+    fits.add_argument("--output", type=Path, required=True)
     days = sub.add_parser("days", help="list the days on which the two readings disagree")
     days.add_argument("--published", type=Path, required=True)
     days.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "report":
         return report_command(args)
+    if args.command == "fits":
+        return fits_command(args)
     require_unlocked([LAST_DAY], where="month_end_readings_883")
     rows = load_daily_panel(args.published)
     audit_panel(rows)
