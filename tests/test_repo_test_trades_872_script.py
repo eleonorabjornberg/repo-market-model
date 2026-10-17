@@ -62,13 +62,18 @@ class SourceTests(unittest.TestCase):
 
 
 class RuleTests(unittest.TestCase):
-    def test_the_826_reading_drops_whole_million_trades_up_to_seven_million_only(self):
-        self.assertEqual(script._rule_826({}, 7_000_000), 0)
-        self.assertEqual(script._rule_826({}, 8_000_000), 8_000_000)
-        self.assertEqual(script._rule_826({}, 100_000_000), 100_000_000)
-        self.assertEqual(script._rule_826({}, 7_500_000), 7_500_000)
+    def test_the_rule_in_force_is_826s_whole_million_trades_up_to_seven_million_only(self):
+        self.assertEqual(script._rule_current({}, 7_000_000), 0)
+        self.assertEqual(script._rule_current({}, 8_000_000), 8_000_000)
+        self.assertEqual(script._rule_current({}, 100_000_000), 100_000_000)
+        self.assertEqual(script._rule_current({}, 7_500_000), 7_500_000)
 
-    def test_the_announced_rule_leaves_a_not_announced_operation_to_the_floor(self):
+    def test_the_superseded_floor_is_kept_for_comparison_only(self):
+        self.assertEqual(script._rule_superseded_floor({}, 99_999_999), 0)
+        self.assertEqual(script._rule_superseded_floor({}, 100_000_000), 100_000_000)
+        self.assertEqual(script.RULES[0][1], script._rule_current)
+
+    def test_the_announced_rule_leaves_a_not_announced_operation_to_the_rule_in_force(self):
         self.assertEqual(script._rule_announced(operation("2025-07-08", "13:29", "13:45"), 100_000_000), 100_000_000)
         self.assertEqual(script._rule_announced(operation("2025-10-08", "10:15", "10:30"), 150_000_000), 0)
         self.assertEqual(script._rule_announced(operation("2025-07-08", "13:29", "13:45"), 5_000_000), 0)
