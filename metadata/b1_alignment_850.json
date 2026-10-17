@@ -1,0 +1,106 @@
+{
+  "status": "declared by the pull request that closes #850 before any score; step 2 of H9, a measurement on development data, not a record and not a verdict (scoring protocol v1 section 1). Nothing is published: richer_targets.b1_quantiles, the protocol's benchmarks and every published figure are unchanged, no day after 2025-12-31 is read (docs/decisions/lockbox.md) and no hindsight regime label is used (ruling on #515). None of the intervals is corrected for multiplicity",
+  "issue": 850,
+  "hypothesis": "H9 (secondary goal), step 2 of docs/research/hypotheses/H9.md",
+  "finding": 744,
+  "panel": {
+    "sha256": "347f5afb6b9359c8da279f090fbe22a28febb5c7c864f9811daa161932284edf",
+    "built_by": "scripts/richer_targets_639.py panel over measurement_fields.py's scratch panel and early_warning_inputs.py's (the panel of step 1, metadata/richer_targets_639.json)"
+  },
+  "targets": [
+    {
+      "column": "sofr_p99_iorb_bps",
+      "unit": "bp",
+      "group": "sofr_tail",
+      "definition": "SOFR 99th percentile \u2212 IORB"
+    },
+    {
+      "column": "sofr_dispersion_bps",
+      "unit": "bp",
+      "group": "sofr_tail",
+      "definition": "SOFR 99th \u2212 1st percentile"
+    },
+    {
+      "column": "tgcr_iorb_bps",
+      "unit": "bp",
+      "group": "tgcr",
+      "definition": "TGCR \u2212 IORB"
+    },
+    {
+      "column": "tgcr_dispersion_bps",
+      "unit": "bp",
+      "group": "tgcr",
+      "definition": "TGCR 99th \u2212 1st percentile"
+    },
+    {
+      "column": "bgcr_iorb_bps",
+      "unit": "bp",
+      "group": "bgcr",
+      "definition": "BGCR \u2212 IORB"
+    },
+    {
+      "column": "bgcr_dispersion_bps",
+      "unit": "bp",
+      "group": "bgcr",
+      "definition": "BGCR 99th \u2212 1st percentile"
+    },
+    {
+      "column": "effr_iorb_bps",
+      "unit": "bp",
+      "group": "effr",
+      "definition": "EFFR \u2212 IORB"
+    },
+    {
+      "column": "on_rrp_bn",
+      "unit": "USD bn",
+      "group": "on_rrp",
+      "definition": "ON RRP take-up, the day's total accepted"
+    },
+    {
+      "column": "on_rrp_change_bn",
+      "unit": "USD bn",
+      "group": "on_rrp",
+      "definition": "ON RRP take-up, change from the previous panel day"
+    },
+    {
+      "column": "srf_take_up_bn",
+      "unit": "USD bn",
+      "group": "srf",
+      "definition": "standing repo facility take-up, the day's total accepted"
+    }
+  ],
+  "leads": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "days": "the scored days of the lead-1 fold grid, 2018-06-29 to 2025-12-31, the same days at every lead",
+  "arms": {
+    "h": "richer_targets.b1_quantiles at lead h: the last public value plus the empirical distribution of the h-row changes over the trailing two years",
+    "h1": "the same function called with h + 1: the (h + 1)-row changes over the same window and the same anchor",
+    "dropped": "a day on which either arm, B2 or the outcome is missing is dropped for both arms"
+  },
+  "benchmark_b2": "richer_targets.b2_quantiles: the trailing year's values on days of the scored day's reporting day type",
+  "metrics": {
+    "coverage": "share of days on which the outcome lies between the forecast's 0.05 and 0.95 quantiles, both included",
+    "crps": "scoring_protocol.grid_crps on the protocol's 23 quantile levels, mean over days, in the target's unit",
+    "ranking": "B1 if its mean CRPS is below B2's, B2 if above; a flip is a cell where the two arms rank differently",
+    "skill": "mean(S(B2) - S(B1)) / mean(S(B2))"
+  },
+  "interval": "metrics.stationary_bootstrap_interval, mean block 10, 2000 resamples, seed 850, two-sided 90%; the same resamples for every statistic of a cell",
+  "splits": {
+    "regime": "the as-of scarcity state at the same lead: ample (0, 1), scarce (2, 3)",
+    "day_type": "SplitDeclaration.reporting_day_type of the scored day",
+    "minimum_days": 30
+  },
+  "control": "on step 1's day set (arm h and B2 only) arm h reproduces docs/pivot/evidence/richer-targets-639/screen.json at its leads",
+  "gap": "the share of scored days on which the as-of anchor is h, h + 1 or another number of panel days before the scored day",
+  "not_run": "no model, no change to any benchmark, no ruling; a flip is a marked question for Eleonora"
+}

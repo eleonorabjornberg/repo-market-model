@@ -919,6 +919,96 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable.
 - Next: Eleonora's rulings on Q1 and Q2 above; then H7m G6 resumes.
 
+### 2026-10-16 [H7] groundwork G5 · eleonorabjornberg/repo-market-liquidity#102
+- Directive: #99 (L24, finding #94), the CDR archive workflow's ref clash and verified storage
+- Step: groundwork G5 for H7m
+- Tier: development
+- Pins: parent repo-market-model 53e61af; panel unchanged
+- Tried: named refs in full, retagged the release to cdr-archive-assets, made the run fail unless every manifest entry is a release asset with the same SHA-256 and size, reconciled the manifest
+- Result: archive fixed, nothing scored; two 14 Oct zips are not_stored (bytes lost)
+- Against kill: no goalpost is tested here; this is tooling
+- Next: Eleonora's G6 rulings and the remaining queue
+
+### 2026-10-16 [H7] groundwork G1 · eleonorabjornberg/repo-market-liquidity#103
+- Directive: eleonorabjornberg/repo-market-liquidity#100 (L25, finding #96)
+- Step: groundwork G1 for H7m: the research-log check also runs on the merge commit, with #76's entry corrected
+- Tier: development
+- Pins: parent 53e61af9b4175e854c196908d3c76b228c039667; panel digest unchanged; snapshot none
+- Tried: a push-path check that reads each merged PR's body over REST, a corrections file read in place of a merged body, test first with a recorded mutation
+- Result: check added, nothing scored; #76's corrected entry passes the model repo's checker
+- Against kill: not applicable
+- Next: the model repo copies the entries of #76 (corrected), #84, #90 and #91 in its next log PR
+
+### 2026-10-16 [H7] groundwork G6 · eleonorabjornberg/repo-market-liquidity#107
+- Directive: eleonorabjornberg/repo-market-liquidity#105
+- Step: H7m groundwork G6 (L27, parent pin to 8fd2cf8 for repo-operation labels to 2026-09-03)
+- Tier: development
+- Pins: model 8fd2cf8c72e7d5c6e81c509651b684b690054a6f, panel digest 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999, snapshot none
+- Tried: moved the pin; regenerated the snapshot manifests; read the event labels through the parent's fed_liquidity.assemble; no candidate scored, variant count 0
+- Result: panel digest unchanged; snapshot digests unchanged; repo-operation labels now reach 2026-09-03 (they stopped at 2025-12-31 at 53e61af)
+- Against kill: not applicable (no candidate scored); docs/decisions/measurement-protocol.md unchanged
+- Next: the G6 power study re-run on the extended labels (next directive)
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
+- Directive: #785
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `dfbbc03`
+- Tried: #631's two every-day rows (`+every_day` and `+every_day+lagpress`) rebuilt at h = 1 to 5 and tabulated for the reliability slope on the ordinary days inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals (2,000 replications). Variants: 0 new models.
+- Result: inside 2018-19 (62 of 82 pressure days) the parent reads 0.32 to 0.61 at h = 1 to 5 and lagged pressure 0.21 to 0.51, intervals below 1 from h = 2; the pooled 0.85 to 1.00 is not calibration by regime. In 2025-26 the rows read 0.62 to 0.94 with intervals including 1. Two pooled cells differ from Table M2 (parent h = 3: 0.91 against 0.98; lagpress h = 4: 0.71 against 0.73), the fit definition being #725's.
+- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
+- Next: any reliability-shape test (#628) is read within regimes; the two moved cells are not traced to the fit or to `ml.py`.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#847
+- Directive: #843 (finding #840)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `0065b4e3`
+- Tried: rebuilt #632's variants (a) and (b) at h = 1 in trees at `011023cb`, `09640f5b`, `e56c4fb3`, `dbbe3d8d` and main, then on main with the older `satiation_distance_598.py`. Variants: 0 new models.
+- Result: `ml.py` is not the cause: all five trees give the same rows ((a) AUROC 0.5673, (b) 0.9072, slope 0.497). The cause is the two distance columns, rebuilt per H.4.1 release since #622: with the older columns the page's 0.5629, 0.9029 and slope 0.463 return to the digit. Development data, no verdict.
+- Against kill: not applicable.
+- Next: whether #632's tracked tables are re-scored and published anew is Eleonora's (marked question in the PR); the other pages on `satiation_dist_roll` may have the same history.
+
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#852
+- Directive: #845
+- Step: 3 (calibration in the regime where the confirmation days fall: H5's laws on ordinary target days after reserve-management purchases began)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `0065b4e3`; declaration `metadata/exploration_845.json`; seed 845; target days to 2026-09-03 (`EXPLORATORY_END`), no locked day read
+- Tried: mean reversion (#686), #761's variant (i), #634's (c) and `gbm_funding` (their 10 walks re-run to 2026-09-03) and `persistence_logistic`, by lead, mean P(spread > +5 bp) against the realised share for 2025-12-12 to 2026-09-03 and 2019-10-15 to 2020-02-28, with the error split into a level part and a residual-pool part. No model changed; variants: 0 new.
+- Result: on ordinary target days from 2025-12-12 (6 pressure days of 152 to 155 cells per lead) every law over-forecasts: lead 1 mean P 0.086 mean reversion, 0.070 (i), 0.077 (c), 0.057 gbm_funding, 0.085 persistence-logistic against 0.039 realised; lead 5 0.117, 0.090, 0.123, 0.067, 0.095. In 2019-10-15 to 2020-02-28 (9 pressure days of 80) lead 1 is 0.232, 0.201, 0.159, 0.160, 0.224 against 0.113. The level part is 0.001 to 0.025 of an error of 0.02 to 0.09: the over-forecast sits in the residual pool, not the centre. Detail in `docs/pivot/calibration-reserve-mgmt-845-result.md`.
+- Against kill: not applicable (calibration in the large of existing laws; development data, not a verdict).
+- Next: a residual pool conditioned on the as-of policy register would be a later declared variant; whether calibration in the large may be reported under the 3-pressure-day minimum is Eleonora's (question in the pull request).
+
+### 2026-10-16 [H9] step 2 · eleonorabjornberg/repo-market-model#854
+- Directive: #850 (finding #744, H9 remainder)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `4832d8a2`; step 1's panel `347f5afb…`; declaration `metadata/b1_alignment_850.json`; seed 850
+- Tried: B1 with h-row changes (as `richer_targets.b1_quantiles` has it) and with h + 1-row changes for the ten targets of step 1 at leads 1 to 10, central-90% coverage and grid CRPS, 90% stationary-bootstrap intervals (block 10), by scarcity regime and day type. Variants: 0 new models.
+- Result: the as-of anchor is h + 1 rows back on every target. Lead-1 coverage of the level targets rises 4 to 7 points with h + 1-row changes (for example SOFR 99th percentile − IORB 81.6% to 87.2%); CRPS moves −1.9% to +1.3%. The persistence-against-climatology ranking is the same under both forms for every target at every lead 1 to 10; one flip in a 23-day cell (TGCR dispersion, quarter-end, lead 1). Development data, not a verdict.
+- Against kill: not applicable (a robustness reading of step 2's ranking; no kill criterion assessed).
+- Next: `b1_quantiles` is unchanged; whether to align it to h + 1 for H9 is Eleonora's (marked in the PR).
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#855
+- Directive: #851 (finding #832)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `4832d8a2`
+- Tried: repaired the back-fill panel build (`panel_command` lacked `end`), blanked every series not admitted on back-filled rows, and made the guard read the `features` the backtest is given instead of `--reads`. Variants: 0 new models; nothing re-scored.
+- Result: the build runs again and the published rows still reproduce the scratch panel; the #484 page now carries a dated note that its 2018 gains rest on series that are not admitted. No figure changed.
+- Against kill: not applicable (a repair of the back-fill build; development data, no verdict).
+- Next: whether H4 and #484 are re-run on the workbook's three series is Eleonora's (marked question in the PR).
+
+### 2026-10-17 [H6] step 1 · eleonorabjornberg/repo-market-model#857
+- Directive: #849
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ce1f1ec7`
+- Tried: `risk_day_type` read a coupon settlement at every lead, so a settlement-only target was a risk date at leads 2 to 5 before its flag was public. `target_risk_type` now counts it only where the registry makes it public (lead 1) and raises `LookAheadError` otherwise. #693's score and #739's studentized re-read re-run on the corrected day set, with the old reading as a control. Variants: 0 new models.
+- Result: the control reproduces both published evidence files (largest difference 6e-14). Settlement cells at leads 2 to 5 drop (1907 to 1451 scored cells; 4 of 20 lead-by-type pairs move; target days 383 to 382). The first candidate's CRPS skill against B1 goes from +3.2% [+0.0%, +6.6%] to +2.2% [-1.4%, +5.7%] and its MAE skill against B1 from +0.7% to -0.9%, so #693's percentile reading flips from not killed to killed on the declared reading; #739's studentized reading is killed before and after. Development data, not a verdict.
+- Against kill: not applicable (a correction to how step 1's day set is read).
+- Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
+
 ### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
 - Directive: #841
 - Step: 6 (the model-risk validation report rewritten for `gbm_funding`; milestone M5a)

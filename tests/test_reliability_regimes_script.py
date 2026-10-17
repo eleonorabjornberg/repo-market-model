@@ -151,6 +151,30 @@ class MergedColumnsTests(unittest.TestCase):
             S.merged_columns([self._doc(x={"2018-07-02": 0.1})], ["x"], 0.10)
 
 
+class SharedColumnsTests(unittest.TestCase):
+    """`shared_columns` is how the `derived631` command (#785) gathers #631's rows: the days every named row forecasts, up to the last scored day."""
+
+    def _doc(self, **rows):
+        return {"forecasts": {name: {"5": column} for name, column in rows.items()}}
+
+    def test_only_the_shared_days_up_to_the_last_day_are_kept(self):
+        a = self._doc(x={"2018-07-02": 0.1, "2018-07-03": 0.2, "2018-07-04": 0.3, "2026-01-02": 0.4})
+        b = self._doc(y={"2018-07-02": 0.5, "2018-07-03": 0.6, "2026-01-02": 0.7})
+        days, columns = S.shared_columns([a, b], ["x", "y"], "5", S.date(2025, 12, 31))
+        self.assertEqual(days, [S.date(2018, 7, 2), S.date(2018, 7, 3)])
+        self.assertEqual(columns["x"], [0.1, 0.2])
+        self.assertEqual(columns["y"], [0.5, 0.6])
+
+    def test_a_row_no_file_carries_is_refused_by_name(self):
+        with self.assertRaisesRegex(ValueError, "'z'"):
+            S.shared_columns([self._doc(x={"2018-07-02": 0.1})], ["x", "z"], "5", S.date(2025, 12, 31))
+
+    def test_no_shared_day_is_refused(self):
+        a = self._doc(x={"2018-07-02": 0.1}, y={"2018-07-03": 0.2})
+        with self.assertRaises(ValueError):
+            S.shared_columns([a], ["x", "y"], "5", S.date(2025, 12, 31))
+
+
 class Spread632TextTests(unittest.TestCase):
     def test_the_page_names_its_days_and_a_kinked_table_keeps_its_title(self):
         cell = {"days": 100, "events": 8, "slope": 0.5, "intercept": -1.0, "slope_interval": [0.2, 0.9], "intercept_interval": [-2.0, 0.0]}
@@ -160,6 +184,10 @@ class Spread632TextTests(unittest.TestCase):
         result["title"] = S.SPREAD632_TITLE
         text = S.kinked_text(result)
         self.assertIn("#632's rows on the ordinary days", text)
+        self.assertNotIn("#626", text)
+        result["title"] = S.DERIVED631_TITLE
+        text = S.kinked_text(result)
+        self.assertIn("#631's rows on the ordinary days", text)
         self.assertNotIn("#626", text)
 
 
