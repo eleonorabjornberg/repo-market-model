@@ -948,3 +948,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: on ordinary target days from 2025-12-12 (6 pressure days of 152 to 155 cells per lead) every law over-forecasts: lead 1 mean P 0.086 mean reversion, 0.070 (i), 0.077 (c), 0.057 gbm_funding, 0.085 persistence-logistic against 0.039 realised; lead 5 0.117, 0.090, 0.123, 0.067, 0.095. In 2019-10-15 to 2020-02-28 (9 pressure days of 80) lead 1 is 0.232, 0.201, 0.159, 0.160, 0.224 against 0.113. The level part is 0.001 to 0.025 of an error of 0.02 to 0.09: the over-forecast sits in the residual pool, not the centre. Detail in `docs/pivot/calibration-reserve-mgmt-845-result.md`.
 - Against kill: not applicable (calibration in the large of existing laws; development data, not a verdict).
 - Next: a residual pool conditioned on the as-of policy register would be a later declared variant; whether calibration in the large may be reported under the 3-pressure-day minimum is Eleonora's (question in the pull request).
+
+### 2026-10-17 [H6] step 1 · eleonorabjornberg/repo-market-model#857
+- Directive: #849
+- Step: 1
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ce1f1ec7`
+- Tried: `risk_day_type` read a coupon settlement at every lead, so a settlement-only target was a risk date at leads 2 to 5 before its flag was public. `target_risk_type` now counts it only where the registry makes it public (lead 1) and raises `LookAheadError` otherwise. #693's score and #739's studentized re-read re-run on the corrected day set, with the old reading as a control. Variants: 0 new models.
+- Result: the control reproduces both published evidence files (largest difference 6e-14). Settlement cells at leads 2 to 5 drop (1907 to 1451 scored cells; 4 of 20 lead-by-type pairs move; target days 383 to 382). The first candidate's CRPS skill against B1 goes from +3.2% [+0.0%, +6.6%] to +2.2% [-1.4%, +5.7%] and its MAE skill against B1 from +0.7% to -0.9%, so #693's percentile reading flips from not killed to killed on the declared reading; #739's studentized reading is killed before and after. Development data, not a verdict.
+- Against kill: not applicable (a correction to how step 1's day set is read).
+- Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
