@@ -166,8 +166,31 @@ def figures_694(doc):
     return out
 
 
-EXTRACTORS = {"805": ("score", figures_805), "761": ("score", figures_761), "849": ("result", figures_849), "694": ("score", figures_694)}
-TRACKED = {"805": REPORTING, "761": REPORTING, "849": REPORTING, "694": REPORTING}
+def figures_758(doc):
+    out = {}
+    for metric in ("crps", "twcrps"):
+        for cells in ("pooled, ordinary targets", "day type: month_end", "day type: ordinary"):
+            cell_ = dig(doc, "cells", metric, cells)
+            if cell_ is None:
+                continue
+            for name in ("gbm_funding", "c_two_part_new", "reachable gbm", "ceiling gbm"):
+                entry = dig(cell_, "tests", f"B1 -> {name}")
+                if entry is not None:
+                    out[f"{metric}, {cells}, {name}, vs B1"] = {
+                        "skill": entry["skill"], "lo": entry["skill_interval_90"][0], "hi": entry["skill_interval_90"][1], "days": entry["n"]}
+            for pair in ("gbm_funding -> ceiling gbm", "c_two_part_new -> ceiling gbm"):
+                entry = dig(cell_, "headroom", pair)
+                if entry is not None:
+                    out[f"{metric}, {cells}, headroom {pair}"] = {
+                        "skill": entry["headroom"], "lo": entry["interval_90"][0], "hi": entry["interval_90"][1], "days": entry["n"]}
+    out["ordinary target days among the scored days"] = dig(doc, "decision_days", "n")
+    return out
+
+
+EXTRACTORS = {"758": ("score", figures_758), "805": ("score", figures_805), "761": ("score", figures_761), "849": ("result", figures_849), "694": ("score", figures_694)}
+
+ORIGINAL = {"758": "window (H2's fits flag a day through `risk_dates` without `reporting_on`)", "805": "reporting", "761": "reporting", "849": "reporting", "694": "reporting"}
+UNITS = {"694": "Gains are in percentage points of precision or recall, not relative skill.", "758": "Headroom is the candidate's CRPS skill less the ceiling's, in skill points (negative: the candidate is ahead of the ceiling)."}
 TITLES = {
     "805": "#805 (the page of #820): H5 splits by the decision day's anchor type",
     "761": "#761 (the pages of #815): mean-reversion variants",
@@ -202,7 +225,8 @@ def report_command(args) -> int:
         for reading in (REPORTING, WINDOW):
             loaded[reading] = extract(json.loads((args.results / page / f"{stem}_{reading}.json").read_text(encoding="utf-8")))
         figures[page] = loaded
-        lines += [f"## {TITLES[page]}", "", "| figure | reporting reading (business days) | window reading (calendar days) |", "|---|---|---|"]
+        lines += [f"## {TITLES[page]}", "", f"The page's own reading: {ORIGINAL[page]}. {UNITS.get(page, '')}".rstrip() + "", "",
+                  "| figure | reporting reading (business days) | window reading (calendar days) |", "|---|---|---|"]
         for key in loaded[REPORTING]:
             lines.append(f"| {key} | {cell(loaded[REPORTING][key])} | {cell(loaded[WINDOW].get(key))} |")
         lines.append("")
