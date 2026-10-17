@@ -32,6 +32,22 @@ Recorded mutation for the partly announced class (#620, #679), 13 October 2026, 
   Deleting the `if partly_announced: continue` branch is the same mutation and fails the same four tests.
 * `value = sum(a.offering for a in members) - maturing` mutated to sum `everything[is_bill]` is an equivalent
   mutation now: a class with unannounced auctions never reaches that line, so there is no look-ahead left to kill.
+
+Recorded mutations for cash management bills read point in time (#738), 15 October 2026, in a disposable copy:
+
+* `src/repo_model/net_settlement.py`, `_visible_to_schedule`, the returned condition
+  `future_cmb or not a.cmb or a.announced_at <= instant` mutated to `True` (every CMB of the day is on the
+  schedule, the reading #738 rules out). Killed by
+  `LateCashManagementBillTests.test_a_cmb_announced_later_does_not_make_the_regular_class_partial`
+  (`AssertionError: 0.0 != 10.0`), `LateCashManagementBillTests.test_the_ahead_columns_are_rebuilt_point_in_time`
+  (`AssertionError: 0.0 != 10.0`) and
+  `LateCashManagementBillTests.test_a_column_that_read_a_later_cmb_into_the_partial_status_is_refused`
+  (`AssertionError: LookAheadError not raised`).
+* `src/repo_model/net_settlement.py`, `check_known_columns`, the test
+  `abs(float(value) - _columns_for(row.date, by_day, instant, future_cmb=True)[column]) <= TOLERANCE` mutated to
+  `False`, so a column that read a later CMB into a class's partial status falls to the stale branch.
+  `LateCashManagementBillTests.test_a_column_that_read_a_later_cmb_into_the_partial_status_is_refused` then
+  fails with `StaleReadError` (the wrong type, an error rather than a pass).
 """
 
 from __future__ import annotations
@@ -282,6 +298,77 @@ class PartlyAnnouncedTests(unittest.TestCase):
             r["est_pub_held_mat_by_type_amt"] = "null"
         values = self.built(records, "2026-01-07")
         self.assertAlmostEqual(values["net_settlement_due_5d"], 30.0 + 60.0)
+
+
+class LateCashManagementBillTests(unittest.TestCase):
+    """A cash management bill counts toward a class's partial status only from its own announcement (#738).
+
+    CMBs are ad hoc and on no published schedule, so that one will settle with the regular bills of a day is
+    unknown until it is announced. Reading it earlier is look-ahead under the information-set rule.
+    """
+
+    def regular(self):
+        return record(offering=50e9, maturing="40000000000", announced="2026-01-05", auctioned="2026-01-07")
+
+    def late_cmb(self, announced="2026-01-08"):
+        return record(
+            kind="Bill", offering=30e9, maturing="null", announced=announced, auctioned="2026-01-08",
+            term="119-Day", cmb="Yes",
+        )
+
+    def column(self, records, day, column="net_settlement_due_5d"):
+        auctions = ns.auction_records(records, DECLARATION)
+        built = {r.date.isoformat(): r.values for r in ns.with_net_settlement(rows(*DAYS), auctions, DECLARATION)}
+        return built[day][column]
+
+    def test_a_cmb_announced_later_does_not_make_the_regular_class_partial(self):
+        # 2026-01-07: only the regular bill is public, and no CMB is known; the class nets as it is.
+        self.assertAlmostEqual(self.column([self.regular(), self.late_cmb()], "2026-01-07"), 50.0 - 40.0)
+
+    def test_the_class_nets_in_full_once_the_cmb_is_announced(self):
+        self.assertAlmostEqual(self.column([self.regular(), self.late_cmb()], "2026-01-08"), 50.0 + 30.0 - 40.0)
+
+    def test_a_cmb_announced_first_makes_a_later_regular_bill_a_partial_class(self):
+        early = self.late_cmb(announced="2026-01-05")
+        late_regular = record(offering=50e9, maturing="40000000000", announced="2026-01-08", auctioned="2026-01-08")
+        self.assertAlmostEqual(self.column([early, late_regular], "2026-01-07"), 0.0)
+        self.assertAlmostEqual(self.column([early, late_regular], "2026-01-08"), 50.0 + 30.0 - 40.0)
+
+    def test_a_late_regular_bill_still_makes_the_class_partial(self):
+        late_regular = record(offering=60e9, maturing="40000000000", announced="2026-01-08", auctioned="2026-01-08", term="8-Week")
+        self.assertAlmostEqual(self.column([self.regular(), late_regular], "2026-01-07"), 0.0)
+
+    def test_the_cmb_flag_must_be_yes_or_no(self):
+        bad = record(cmb="Maybe")
+        with self.assertRaises(ValueError):
+            ns.auction_records([bad], DECLARATION)
+        missing = record()
+        del missing["cash_management_bill_cmb"]
+        with self.assertRaises(ValueError):
+            ns.auction_records([missing], DECLARATION)
+
+    def test_the_ahead_columns_are_rebuilt_point_in_time(self):
+        from repo_model import projected_reserves as pr
+
+        auctions = ns.auction_records([self.regular(), self.late_cmb()], DECLARATION)
+        built = {r.date.isoformat(): r.values for r in pr.ahead_columns(rows(*DAYS), auctions, DECLARATION)}
+        self.assertAlmostEqual(built["2026-01-07"]["net_settlement_ahead_2d"], 50.0 - 40.0)
+        self.assertAlmostEqual(built["2026-01-08"]["net_settlement_ahead_1d"], 50.0 + 30.0 - 40.0)
+
+    def test_a_column_that_read_a_later_cmb_into_the_partial_status_is_refused(self):
+        # the old reading dropped the class on 2026-01-07 (0.0) because a CMB announced on the 8th settles with it.
+        records = [self.regular(), self.late_cmb()]
+        auctions = ns.auction_records(records, DECLARATION)
+        good = ns.with_net_settlement(rows(*DAYS), auctions, DECLARATION)
+        ns.check_known_columns(good, auctions, DECLARATION)
+        bad = []
+        for row in good:
+            values = dict(row.values)
+            if row.date.isoformat() == "2026-01-07":
+                values["net_settlement_due_5d"] = 0.0
+            bad.append(DailyObservation(row.date, values))
+        with self.assertRaises(LookAheadError):
+            ns.check_known_columns(bad, auctions, DECLARATION)
 
 
 class GuardTests(unittest.TestCase):

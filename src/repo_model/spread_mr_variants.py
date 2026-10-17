@@ -5,7 +5,9 @@
 
 - `spread_mr_ctx`: `eps_h` is pooled by the target day's context, one of a risk day, an ordinary day after a risk day
   and an ordinary day after an ordinary day (`CONTEXTS`). The context is read from the calendar columns of the target
-  row and the row before it, through `calendar_view`, which raises `LookAheadError` on any other column. A pool of
+  row and the row before it, through `calendar_view`, which raises `LookAheadError` on any other column; a row's coupon
+  settlement counts only where the registry makes it public at the decision instant (#799: the day before at 15:00, so
+  not for the target at leads 2 to 5), in the pools and in the forecast alike. A pool of
   fewer than `POOL_MIN` values falls back to the lead's pooled residuals. `phi` is the base fit's.
 - `spread_mr_b2`: `w * q_MR + (1 - w) * q_B2`, level by level. `w` is chosen on `WEIGHT_GRID` at each refit, by the mean
   grid CRPS over the last `TRAIL_DAYS` decision days with a forecast of both legs whose five targets were public at the
@@ -20,10 +22,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
-from datetime import date, time
+from datetime import date, datetime, time
 from typing import Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
 
 from . import protocol_benchmarks as pb
+from . import risk_dates
+from .asof import declared_availability
 from . import spread_mean_reversion as smr
 from .data import DailyObservation
 from .evaluation_splits import DAY_TYPE_COLUMNS, SplitDeclaration
@@ -32,6 +36,8 @@ from .splits import LookAheadError, SplitError
 
 #: The coupon-settlement column that makes an ordinary day a scheduled-pressure day (`onset.COUPON_SETTLEMENT_COLUMN`).
 COUPON_COLUMN = "treasury_settlement_coupons"
+#: The registry source and field that date `COUPON_COLUMN` (`metadata/sources.json`, `scheduled_availability`).
+COUPON_SOURCE, COUPON_FIELD = "treasury_auctions", "treasury_settlement_coupon"
 #: The only columns a context may read: the calendar, known in advance.
 CALENDAR_COLUMNS: Tuple[str, ...] = tuple(DAY_TYPE_COLUMNS) + (COUPON_COLUMN,)
 CONTEXTS: Tuple[str, ...] = ("risk_day", "ordinary_after_risk", "ordinary_after_ordinary")
@@ -82,28 +88,72 @@ def calendar_view(row: DailyObservation) -> CalendarView:
     return CalendarView(row.values)
 
 
-def is_risk_day(row: DailyObservation, splits: SplitDeclaration) -> bool:
-    """A quarter-end, month-end or tax date, or a day that settles a coupon: read from the calendar columns alone."""
+def is_risk_day(row: DailyObservation, splits: SplitDeclaration, *, coupon_clause: bool = True) -> bool:
+    """A quarter-end, month-end or tax date, or (`coupon_clause`) a day that settles a coupon: read from the calendar
+    columns alone. The coupon settlement is dated by the registry, not known in advance (#799); `coupon_clause=False`
+    drops it, as the model does at the leads where it is not yet public."""
 
-    view = calendar_view(row)
-    if splits.reporting_day_type(row.date, view) != "ordinary":
-        return True
-    coupons = view.get(COUPON_COLUMN)
-    return coupons is not None and float(coupons) > 0.0
+    return risk_dates.is_risk_date(
+        calendar_view(row), risk_dates.NON_ORDINARY, splits=splits, coupon_clause=coupon_clause, reporting_on=row.date
+    )
 
 
-def target_context(panel: Sequence[DailyObservation], index: int, splits: SplitDeclaration) -> str:
+def coupon_public(
+    panel: Sequence[DailyObservation],
+    row: int,
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> bool:
+    """Whether row `row`'s coupon settlement is public at the decision instant on row `decision_index`.
+
+    Read through the registry's declared availability (`asof.declared_availability`), not assumed.
+    """
+
+    dates = [panel_row.date for panel_row in panel]
+    available = declared_availability(registry, COUPON_SOURCE, COUPON_FIELD, dates, row)
+    return available is not None and available <= datetime.combine(dates[decision_index], decision_time)
+
+
+def target_context(
+    panel: Sequence[DailyObservation],
+    index: int,
+    splits: SplitDeclaration,
+    *,
+    h: Optional[int] = None,
+    registry: Optional[Mapping[str, Mapping[str, object]]] = None,
+    decision_time: Optional[time] = None,
+) -> str:
     """The context of row `index` as a target: one of `CONTEXTS`, from its calendar columns and the row before's.
 
+    With `h` (and `registry`, `decision_time`) the context is the one a forecast made `h` rows before `index` can
+    read: a row's coupon settlement counts only if it is public at that decision instant (`coupon_public`). Without
+    `h` it is the hindsight label of the day, for splits and reports only, never an input to a forecast.
+
     Raises:
-        ValueError: the first row, which has no row before it.
+        ValueError: the first row, which has no row before it; or `h` without `registry` and `decision_time`.
+        LookAheadError: never from here; a coupon not yet public is left out, not read.
     """
 
     if index < 1:
         raise ValueError("the first row has no day before it, so no context")
-    if is_risk_day(panel[index], splits):
+    if h is None:
+        clause = {index: True, index - 1: True}
+    else:
+        if registry is None or decision_time is None:
+            raise ValueError("a context at a lead needs the registry and the decision time")
+        clause = {
+            row: coupon_public(panel, row, index - h, registry=registry, decision_time=decision_time)
+            for row in (index, index - 1)
+        }
+    if is_risk_day(panel[index], splits, coupon_clause=clause[index]):
         return "risk_day"
-    return "ordinary_after_risk" if is_risk_day(panel[index - 1], splits) else "ordinary_after_ordinary"
+    return (
+        "ordinary_after_risk"
+        if is_risk_day(panel[index - 1], splits, coupon_clause=clause[index - 1])
+        else "ordinary_after_ordinary"
+    )
 
 
 def context_quantiles(
@@ -157,7 +207,7 @@ def context_fit(
         pools: Dict[str, List[float]] = {context: [] for context in CONTEXTS}
         for origin, target in rows[h]:
             deviation = panel[origin].spread_bps - levels[origin]
-            pools[target_context(panel, target, splits)].append(
+            pools[target_context(panel, target, splits, h=h, registry=registry, decision_time=decision_time)].append(
                 (panel[target].spread_bps - levels[origin]) - base.phi**k * deviation
             )
         sizes[h] = {context: len(pool) for context, pool in pools.items()}
@@ -196,7 +246,9 @@ def context_forecast(
     out = {}
     for h in HORIZONS:
         centre = level + fit_.base.phi ** (h + lag) * (last - level)
-        context = target_context(panel, decision_index + h, splits)
+        context = target_context(
+            panel, decision_index + h, splits, h=h, registry=registry, decision_time=decision_time
+        )
         out[h] = [centre + value for value in fit_.residuals[h][context]]
     return out
 

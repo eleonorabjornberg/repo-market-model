@@ -49,7 +49,7 @@ Ordinary scored days, 2018-06-29 to 2025-12-31. Pressure day: the spread strictl
 
 # The model test (#688)
 
-Decision days: 1868 (2018-06-29 to 2025-12-23). Grid CRPS in bp, averaged over h = 1 to 5, per decision day. A paired cell is the reference's score minus the candidate's (positive favours the candidate), its skill the same over the reference's mean, with the one-sided 95% interval of the protocol (10000 stationary-bootstrap draws, seed 688). Development days: a description, not a verdict.
+Decision days: 1868 (2018-06-29 to 2025-12-23). Grid CRPS in bp, averaged over h = 1 to 5, per decision day. A paired cell is the reference's score minus the candidate's (positive favours the candidate), its skill the same over the reference's mean, with the one-sided 95% interval of the protocol (10000 studentized stationary-bootstrap draws, seed 688). Development days: a description, not a verdict.
 
 | row | mean grid CRPS | mean twCRPS above 0 bp | days filled with B1 |
 |---|---|---|---|
@@ -63,27 +63,27 @@ Decision days: 1868 (2018-06-29 to 2025-12-23). Grid CRPS in bp, averaged over h
 
 | pair | difference (skill [95% bounds]), bootstrap p |
 |---|---|
-| B1 as-of persistence -> + bill settlement (#676) | +0.4416 (+19.18% [+8.25%, +28.21%]), p 0.000 |
-| B1 as-of persistence -> control (two-part, #632) | +0.4435 (+19.26% [+8.36%, +28.35%]), p 0.001 |
-| B1 as-of persistence -> + post-month-end window (#677) | +0.4627 (+20.10% [+9.40%, +28.99%]), p 0.000 |
-| B2 calendar climatology -> + bill settlement (#676) | +0.6535 (+25.99% [+18.94%, +33.35%]), p 0.000 |
-| B2 calendar climatology -> control (two-part, #632) | +0.6554 (+26.07% [+18.95%, +33.46%]), p 0.000 |
-| B2 calendar climatology -> + post-month-end window (#677) | +0.6746 (+26.83% [+19.75%, +34.22%]), p 0.000 |
-| control (two-part, #632) -> + bill settlement (#676) | -0.0019 (-0.10% [-0.49%, +0.28%]), p 0.667 |
-| control (two-part, #632) -> + post-month-end window (#677) | +0.0192 (+1.03% [+0.50%, +1.61%]), p 0.001 |
+| B1 as-of persistence -> + bill settlement (#676) | +0.4416 (+19.18% [+10.47%, +38.81%]), p 0.001 |
+| B1 as-of persistence -> control (two-part, #632) | +0.4435 (+19.26% [+10.55%, +39.09%]), p 0.001 |
+| B1 as-of persistence -> + post-month-end window (#677) | +0.4627 (+20.10% [+11.59%, +39.30%]), p 0.000 |
+| B2 calendar climatology -> + bill settlement (#676) | +0.6535 (+25.99% [+16.92%, +34.72%]), p 0.000 |
+| B2 calendar climatology -> control (two-part, #632) | +0.6554 (+26.07% [+16.98%, +34.86%]), p 0.000 |
+| B2 calendar climatology -> + post-month-end window (#677) | +0.6746 (+26.83% [+17.69%, +35.60%]), p 0.000 |
+| control (two-part, #632) -> + bill settlement (#676) | -0.0019 (-0.10% [-0.54%, +0.28%]), p 0.672 |
+| control (two-part, #632) -> + post-month-end window (#677) | +0.0192 (+1.03% [+0.44%, +1.64%]), p 0.001 |
 
 ## Key secondary: upper-tail twCRPS, pooled
 
 | pair | difference (skill [95% bounds]), bootstrap p |
 |---|---|
-| B1 as-of persistence -> + bill settlement (#676) | +0.4680 (+33.94% [+21.22%, +43.79%]), p 0.000 |
-| B1 as-of persistence -> control (two-part, #632) | +0.4655 (+33.76% [+20.93%, +43.70%]), p 0.000 |
-| B1 as-of persistence -> + post-month-end window (#677) | +0.4695 (+34.05% [+21.39%, +43.81%]), p 0.000 |
-| B2 calendar climatology -> + bill settlement (#676) | +0.2152 (+19.11% [+11.11%, +29.40%]), p 0.000 |
-| B2 calendar climatology -> control (two-part, #632) | +0.2127 (+18.89% [+10.86%, +29.14%]), p 0.000 |
-| B2 calendar climatology -> + post-month-end window (#677) | +0.2167 (+19.25% [+11.24%, +29.38%]), p 0.000 |
-| control (two-part, #632) -> + bill settlement (#676) | +0.0025 (+0.27% [-0.29%, +1.00%]), p 0.209 |
-| control (two-part, #632) -> + post-month-end window (#677) | +0.0040 (+0.44% [-0.38%, +1.23%]), p 0.174 |
+| B1 as-of persistence -> + bill settlement (#676) | +0.4680 (+33.94% [+24.88%, +51.56%]), p 0.000 |
+| B1 as-of persistence -> control (two-part, #632) | +0.4655 (+33.76% [+24.62%, +51.94%]), p 0.000 |
+| B1 as-of persistence -> + post-month-end window (#677) | +0.4695 (+34.05% [+25.08%, +52.10%]), p 0.000 |
+| B2 calendar climatology -> + bill settlement (#676) | +0.2152 (+19.11% [+6.89%, +31.08%]), p 0.000 |
+| B2 calendar climatology -> control (two-part, #632) | +0.2127 (+18.89% [+7.07%, +30.94%]), p 0.000 |
+| B2 calendar climatology -> + post-month-end window (#677) | +0.2167 (+19.25% [+7.30%, +31.15%]), p 0.000 |
+| control (two-part, #632) -> + bill settlement (#676) | +0.0025 (+0.27% [-0.40%, +0.94%]), p 0.245 |
+| control (two-part, #632) -> + post-month-end window (#677) | +0.0040 (+0.44% [-0.35%, +1.23%]), p 0.183 |
 
 ## By lead, grid CRPS of one lead alone
 
@@ -99,27 +99,27 @@ Each variant against the control, by lead (difference, skill [95% bounds], p):
 
 | variant | h = 1 | h = 2 | h = 3 | h = 4 | h = 5 |
 |---|---|---|---|---|---|
-| + bill settlement (#676) | -0.0004 (-0.03% [-0.57%, +0.51%]), p 0.533 | +0.0087 (+0.48% [-0.06%, +1.08%]), p 0.075 | -0.0023 (-0.12% [-0.81%, +0.55%]), p 0.607 | -0.0084 (-0.43% [-1.11%, +0.21%]), p 0.854 | -0.0072 (-0.36% [-0.76%, -0.00%]), p 0.952 |
-| + post-month-end window (#677) | -0.0013 (-0.08% [-0.38%, +0.24%]), p 0.656 | +0.0057 (+0.31% [-0.19%, +0.82%]), p 0.147 | +0.0246 (+1.30% [+0.44%, +2.20%]), p 0.008 | +0.0335 (+1.74% [+0.88%, +2.64%]), p 0.001 | +0.0337 (+1.69% [+0.96%, +2.54%]), p 0.000 |
+| + bill settlement (#676) | -0.0004 (-0.03% [-0.58%, +0.54%]), p 0.532 | +0.0087 (+0.48% [-0.09%, +1.07%]), p 0.086 | -0.0023 (-0.12% [-0.85%, +0.55%]), p 0.629 | -0.0084 (-0.43% [-1.20%, +0.20%]), p 0.860 | -0.0072 (-0.36% [-0.76%, -0.01%]), p 0.957 |
+| + post-month-end window (#677) | -0.0013 (-0.08% [-0.40%, +0.21%]), p 0.669 | +0.0057 (+0.31% [-0.16%, +0.82%]), p 0.136 | +0.0246 (+1.30% [+0.39%, +2.18%]), p 0.007 | +0.0335 (+1.74% [+0.80%, +2.65%]), p 0.000 | +0.0337 (+1.69% [+0.88%, +2.53%]), p 0.000 |
 
 ## By regime of the decision day, grid CRPS
 
 | group | days | B1 as-of persistence | B2 calendar climatology | control (two-part, #632) | + bill settlement (#676) | + post-month-end window (#677) | control -> + bill settlement (#676) | control -> + post-month-end window (#677) |
 |---|---|---|---|---|---|---|---|---|
-| 2018-19 | 375 | 5.7269 | 4.3640 | 3.8794 | 3.8814 | 3.8554 | -0.0020 (-0.05% [-0.55%, +0.50%]), p 0.574 | +0.0240 (+0.62% [-0.30%, +1.57%]), p 0.130 |
-| 2020 | 251 | 1.6439 | 2.7862 | 1.5348 | 1.5398 | 1.5285 | -0.0050 (-0.33% [-1.46%, +0.60%]), p 0.730 | +0.0063 (+0.41% [-1.38%, +2.74%]), p 0.350 |
-| 2021-23 | 748 | 0.7106 | 1.4809 | 0.9008 | 0.9026 | 0.8788 | -0.0017 (-0.19% [-0.68%, +0.29%]), p 0.743 | +0.0221 (+2.45% [+1.63%, +3.46%]), p 0.000 |
-| 2024 | 250 | 1.6833 | 1.3782 | 1.4195 | 1.4023 | 1.4008 | +0.0171 (+1.21% [+0.38%, +1.71%]), p 0.014 | +0.0187 (+1.32% [-0.34%, +3.07%]), p 0.097 |
-| 2025-26 | 244 | 3.2310 | 3.7240 | 2.4746 | 2.4933 | 2.4575 | -0.0188 (-0.76% [-2.14%, +0.61%]), p 0.801 | +0.0171 (+0.69% [-0.17%, +1.57%]), p 0.093 |
+| 2018-19 | 375 | 5.7269 | 4.3640 | 3.8794 | 3.8814 | 3.8554 | -0.0020 (-0.05% [-0.55%, +0.48%]), p 0.560 | +0.0240 (+0.62% [-0.35%, +1.60%]), p 0.138 |
+| 2020 | 251 | 1.6439 | 2.7862 | 1.5348 | 1.5398 | 1.5285 | -0.0050 (-0.33% [-1.36%, +1.83%]), p 0.626 | +0.0063 (+0.41% [-1.96%, +2.78%]), p 0.396 |
+| 2021-23 | 748 | 0.7106 | 1.4809 | 0.9008 | 0.9026 | 0.8788 | -0.0017 (-0.19% [-0.76%, +0.40%]), p 0.717 | +0.0221 (+2.45% [+1.42%, +3.66%]), p 0.000 |
+| 2024 | 250 | 1.6833 | 1.3782 | 1.4195 | 1.4023 | 1.4008 | +0.0171 (+1.21% [+0.61%, +1.85%]), p 0.007 | +0.0187 (+1.32% [-1.74%, +3.33%]), p 0.149 |
+| 2025-26 | 244 | 3.2310 | 3.7240 | 2.4746 | 2.4933 | 2.4575 | -0.0188 (-0.76% [-2.90%, +0.63%]), p 0.814 | +0.0171 (+0.69% [-0.11%, +1.77%]), p 0.089 |
 
 ## By pressure-day type of the target day, grid CRPS
 
 | group | days | B1 as-of persistence | B2 calendar climatology | control (two-part, #632) | + bill settlement (#676) | + post-month-end window (#677) | control -> + bill settlement (#676) | control -> + post-month-end window (#677) |
 |---|---|---|---|---|---|---|---|---|
-| month_end | 507 | 2.2200 | 2.8750 | 1.8960 | 1.8887 | 1.8971 | +0.0072 (+0.38% [-0.02%, +0.86%]), p 0.060 | -0.0011 (-0.06% [-0.36%, +0.32%]), p 0.641 |
-| ordinary | 1868 | 1.9946 | 2.1513 | 1.5900 | 1.5946 | 1.5655 | -0.0045 (-0.29% [-0.83%, +0.24%]), p 0.809 | +0.0246 (+1.55% [+0.72%, +2.34%]), p 0.002 |
-| quarter_end | 146 | 6.7447 | 7.3823 | 6.1240 | 6.1240 | 6.1240 | +0.0000 (+0.00% [+0.00%, +0.00%]), p 1.000 | +0.0000 (+0.00% [+0.00%, +0.00%]), p 1.000 |
-| tax_date | 214 | 4.9188 | 7.1623 | 5.1973 | 5.1961 | 5.2021 | +0.0012 (+0.02% [-0.33%, +0.29%]), p 0.461 | -0.0048 (-0.09% [-0.34%, +0.02%]), p 0.894 |
+| month_end | 507 | 2.2200 | 2.8750 | 1.8960 | 1.8887 | 1.8971 | +0.0072 (+0.38% [-0.02%, +1.06%]), p 0.045 | -0.0011 (-0.06% [-0.35%, +0.39%]), p 0.564 |
+| ordinary | 1868 | 1.9946 | 2.1513 | 1.5900 | 1.5946 | 1.5655 | -0.0045 (-0.29% [-0.93%, +0.27%]), p 0.805 | +0.0246 (+1.55% [+0.66%, +2.38%]), p 0.001 |
+| quarter_end | 146 | 6.7447 | 7.3823 | 6.1240 | 6.1240 | 6.1240 | +0.0000 (+0.00%; identical forecasts) | +0.0000 (+0.00%; identical forecasts) |
+| tax_date | 214 | 4.9188 | 7.1623 | 5.1973 | 5.1961 | 5.2021 | +0.0012 (+0.02%; no interval: the difference cannot be studentized) | -0.0048 (-0.09%; no interval: the difference cannot be studentized) |
 
 ## Pinball loss at the contract's levels, the median's absolute error and central coverage
 
@@ -138,11 +138,11 @@ Each variant against the control on those measures (positive favours the variant
 
 | measure | + bill settlement (#676) | + post-month-end window (#677) |
 |---|---|---|
-| mae_median | -0.0043 (-0.17% [-0.65%, +0.28%]), p 0.710 | +0.0245 (+0.95% [+0.31%, +1.63%]), p 0.008 |
-| pinball_0.05 | -0.0005 (-0.13% [-1.08%, +0.89%]), p 0.591 | +0.0041 (+1.09% [+0.12%, +2.14%]), p 0.030 |
-| pinball_0.25 | -0.0054 (-0.56% [-1.42%, +0.25%]), p 0.868 | +0.0099 (+1.04% [+0.22%, +1.85%]), p 0.019 |
-| pinball_0.5 | -0.0021 (-0.17% [-0.65%, +0.28%]), p 0.710 | +0.0123 (+0.95% [+0.31%, +1.63%]), p 0.008 |
-| pinball_0.75 | -0.0005 (-0.04% [-0.60%, +0.48%]), p 0.552 | +0.0167 (+1.34% [+0.69%, +2.08%]), p 0.001 |
-| pinball_0.95 | +0.0035 (+0.45% [-0.63%, +1.63%]), p 0.243 | +0.0047 (+0.60% [-0.41%, +1.72%]), p 0.167 |
+| mae_median | -0.0043 (-0.17% [-0.73%, +0.29%]), p 0.729 | +0.0245 (+0.95% [+0.27%, +1.64%]), p 0.011 |
+| pinball_0.05 | -0.0005 (-0.13% [-1.14%, +0.91%]), p 0.586 | +0.0041 (+1.09% [-0.03%, +2.23%]), p 0.039 |
+| pinball_0.25 | -0.0054 (-0.56% [-1.58%, +0.30%]), p 0.857 | +0.0099 (+1.04% [+0.15%, +1.87%]), p 0.027 |
+| pinball_0.5 | -0.0021 (-0.17% [-0.73%, +0.29%]), p 0.729 | +0.0123 (+0.95% [+0.27%, +1.64%]), p 0.011 |
+| pinball_0.75 | -0.0005 (-0.04% [-0.64%, +0.50%]), p 0.554 | +0.0167 (+1.34% [+0.65%, +2.09%]), p 0.000 |
+| pinball_0.95 | +0.0035 (+0.45% [-0.62%, +1.56%]), p 0.261 | +0.0047 (+0.60% [-0.52%, +1.80%]), p 0.167 |
 
 Decision days without a benchmark (not scored for any row): 1.

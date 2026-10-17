@@ -48,7 +48,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import metrics, ml, pressure_judge as pj  # noqa: E402
+from repo_model import metrics, ml, pressure_judge as pj, reliability_regimes  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.contract import QUANTILE_LEVELS  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
@@ -169,51 +169,16 @@ def auroc(probabilities: Sequence[float], outcomes: Sequence[int]) -> Optional[f
     return (rank_sum - positives * (positives + 1) / 2.0) / (positives * negatives)
 
 
-def _sigmoid(x: float) -> float:
-    x = max(-40.0, min(40.0, x))
-    return 1.0 / (1.0 + math.exp(-x))
-
-
-def reliability(probabilities: Sequence[float], outcomes: Sequence[int], clip: float = 1e-6) -> Optional[Tuple[float, float]]:
+def reliability(probabilities: Sequence[float], outcomes: Sequence[int]) -> Optional[Tuple[float, float]]:
     """The slope and intercept of the logistic fit of the outcome on logit(p), `(slope, intercept)`.
 
-    A perfectly reliable forecast has slope 1 and intercept 0 (Cox 1958; the calibration slope and intercept of
-    Van Calster et al.). `p` is clipped to `[clip, 1 - clip]`. `None` when the forecast is constant or one class is
-    absent: the slope is undefined. Fitted by Newton's method with a ridge of 1e-8 for stability.
+    A perfectly reliable forecast has slope 1 and intercept 0 (Cox 1958; the calibration slope and intercept of Van Calster et al.).
+    `None` when the forecast is constant or one class is absent: the slope is undefined. The fit is
+    `repo_model.reliability_regimes.fit`, the one definition (#725).
     """
 
-    if len(probabilities) != len(outcomes):
-        raise ValueError("probabilities and outcomes differ in length")
-    if len(set(probabilities)) < 2 or len(set(outcomes)) < 2:
-        return None
-    z = [math.log(min(1 - clip, max(clip, p)) / (1 - min(1 - clip, max(clip, p)))) for p in probabilities]
-    a, b = 0.0, 1.0
-    for _ in range(50):
-        g0 = g1 = h00 = h01 = h11 = 0.0
-        for zi, yi in zip(z, outcomes):
-            mu = _sigmoid(a + b * zi)
-            w = mu * (1.0 - mu)
-            g0 += yi - mu
-            g1 += (yi - mu) * zi
-            h00 += w
-            h01 += w * zi
-            h11 += w * zi * zi
-        h00 += 1e-8
-        h11 += 1e-8
-        det = h00 * h11 - h01 * h01
-        if abs(det) < 1e-18:
-            return None
-        da = (h11 * g0 - h01 * g1) / det
-        db = (h00 * g1 - h01 * g0) / det
-        step = max(abs(da), abs(db))
-        if step > 5.0:  # damp a runaway step (near-separated data)
-            da, db = da * 5.0 / step, db * 5.0 / step
-        a, b = a + da, b + db
-        if abs(da) + abs(db) < 1e-9:
-            break
-    if not (math.isfinite(a) and math.isfinite(b)) or abs(a) > 50 or abs(b) > 50:
-        return None
-    return b, a
+    line = reliability_regimes.fit(probabilities, outcomes)
+    return None if line is None else (line.slope, line.intercept)
 
 
 def interval(statistic, n: int, seed: int) -> Optional[Tuple[float, float]]:

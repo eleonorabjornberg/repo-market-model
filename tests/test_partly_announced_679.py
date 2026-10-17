@@ -1,8 +1,11 @@
 """The audit of the partly announced bill-class rules (#679, finding #665): `scripts/partly_announced_679.py`.
 
-Pins the figures #665 reported, which the script reproduces on the tracked fixture, and that the rule the audit
-calls `left_out` is the rule `net_settlement.net_for_day` applies, so the audit and the code cannot drift apart.
+Pins the figures #665 reported, which the script reproduces on the tracked fixture, and that the rule in force
+(`net_settlement.net_for_day`) is the audit's `left_out_pit`: `left_out` as #679 audited it, with a cash management
+bill read only from its own announcement (#738). The audit's recorded `left_out` figures are the earlier reading and
+are not recomputed, so the audit and the code cannot drift apart without this test failing.
 """
+
 
 from __future__ import annotations
 
@@ -53,7 +56,7 @@ class AuditTests(unittest.TestCase):
         for settles, day in sorted(by_day.items()):
             for announced in sorted({a.announced_at for a in day}):
                 instant = datetime.combine(announced.date(), time(12))
-                self.assertAlmostEqual(ns.net_for_day(day, instant)[0], audit.net(day, instant, "left_out"), places=9)
+                self.assertAlmostEqual(ns.net_for_day(day, instant)[0], audit.net(day, instant, "left_out_pit"), places=9)
                 checked += 1
         self.assertGreater(checked, 1000)
 
