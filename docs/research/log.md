@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#905
+- Directive: #901
+- Step: 3 (the as-of scarcity-state split that scoring protocol v1 section 7 asks for and #634's and #758's pages did not run; milestones M2 and M4)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `71cf91d2`; seed 634; no day after 2025-12-31, no locked day read
+- Tried: a new script, `scripts/h5_state_splits_901.py`, that re-reads #634's walks unchanged and cuts each skill headline of the four candidates and of B3 against B1 and B2 by the as-of scarcity state of the decision day (ample 0 and 1, scarce 2 and 3; ruling on #515), with and without 2019-09-18. Variants: 0 new. The scoring is not run yet: it needs #634's walks, which go to the Mac (needs-mac).
+- Result: pending the Mac run. The script's tests pass, with one recorded mutation on the as-of read of the state. Nothing is scored, so no figure moves.
+- Against kill: not applicable (a split of existing laws; development data, not a verdict).
+- Next: run the commands in the pull request on the Mac, commit `daily.json` and the report, and fill in this entry's result line.
