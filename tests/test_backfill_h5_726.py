@@ -68,7 +68,7 @@ class TheEstablishedRows(unittest.TestCase):
                 self.assertEqual(new[name], "1.5", name)
         self.assertEqual(set(module.ESTABLISHED) - set(FIELDS), set())
         self.assertEqual(
-            set(module.ESTABLISHED), {"date", "sofr", "iorb", "sofr_volume", "tgcr", "bgcr", "quarter_end", "tax_date", "days_to_month_end"}
+            set(module.ESTABLISHED), {"date", "sofr", "iorb", "tgcr", "bgcr", "quarter_end", "tax_date", "days_to_month_end"}
         )
 
     def test_the_arms_agree_on_the_published_days(self):
