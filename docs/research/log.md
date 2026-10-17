@@ -938,3 +938,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `ml.py` is not the cause: all five trees give the same rows ((a) AUROC 0.5673, (b) 0.9072, slope 0.497). The cause is the two distance columns, rebuilt per H.4.1 release since #622: with the older columns the page's 0.5629, 0.9029 and slope 0.463 return to the digit. Development data, no verdict.
 - Against kill: not applicable.
 - Next: whether #632's tracked tables are re-scored and published anew is Eleonora's (marked question in the PR); the other pages on `satiation_dist_roll` may have the same history.
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#855
+- Directive: #851 (finding #832)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `4832d8a2`
+- Tried: repaired the back-fill panel build (`panel_command` lacked `end`), blanked every series not admitted on back-filled rows, and made the guard read the `features` the backtest is given instead of `--reads`. Variants: 0 new models; nothing re-scored.
+- Result: the build runs again and the published rows still reproduce the scratch panel; the #484 page now carries a dated note that its 2018 gains rest on series that are not admitted. No figure changed.
+- Against kill: not applicable (a repair of the back-fill build; development data, no verdict).
+- Next: whether H4 and #484 are re-run on the workbook's three series is Eleonora's (marked question in the PR).
