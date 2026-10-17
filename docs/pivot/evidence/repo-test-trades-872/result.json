@@ -1,0 +1,1040 @@
+{
+ "retrieved_at": "2026-10-17T15:52Z to 15:54Z",
+ "announced_exercises": [
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_240502",
+   "page": "statement_240502.html",
+   "public": "2024-05-02",
+   "operation_date": "2024-05-09",
+   "window": "10:00-10:15",
+   "kind": "overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_240919",
+   "page": "statement_240919.html",
+   "public": "2024-09-19",
+   "operation_date": "2024-09-24",
+   "window": "10:30-10:45",
+   "kind": "term repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_250117",
+   "page": "statement_250117.html",
+   "public": "2025-01-17",
+   "operation_date": "2025-01-24",
+   "window": "10:00-10:15",
+   "kind": "overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_250212",
+   "page": "statement_250212.html",
+   "public": "2025-02-12",
+   "operation_date": "2025-02-26",
+   "window": "10:00-10:15",
+   "kind": "overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_250220",
+   "page": "statement_250220.html",
+   "public": "2025-02-20",
+   "operation_date": "2025-03-05",
+   "window": "08:15-08:30",
+   "kind": "overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_250814",
+   "page": "statement_250814.html",
+   "public": "2025-08-14",
+   "operation_date": "2025-08-21",
+   "window": "10:30-10:45",
+   "kind": "term repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_251002",
+   "page": "statement_251002.html",
+   "public": "2025-10-02",
+   "operation_date": "2025-10-08",
+   "window": "10:15-10:30",
+   "kind": "overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_251031",
+   "page": "statement_251031.html",
+   "public": "2025-10-31",
+   "operation_date": "2025-11-05",
+   "window": "10:00-10:15",
+   "kind": "overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_260211",
+   "page": "statement_260211.html",
+   "public": "2026-02-11",
+   "operation_date": "2026-02-18",
+   "window": "10:30-10:45",
+   "kind": "forward start overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_260506",
+   "page": "statement_260506.html",
+   "public": "2026-05-06",
+   "operation_date": "2026-05-27",
+   "window": "10:15-10:30",
+   "kind": "overnight repo"
+  },
+  {
+   "statement": "https://www.newyorkfed.org/markets/opolicy/operating_policy_261013",
+   "page": "statement_261013.html",
+   "public": "2026-10-13",
+   "operation_date": "2026-10-20",
+   "window": "10:30-10:45",
+   "kind": "forward start term repo"
+  }
+ ],
+ "listed": [
+  {
+   "date": "2024-02-22",
+   "operationId": "RP 022224 2",
+   "release": "13:29",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 106000000,
+   "submitted": 106000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    102000000,
+    2000000,
+    2000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-03-07",
+   "operationId": "RP 030724 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 110000000,
+   "submitted": 110000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    110000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-04-18",
+   "operationId": "RP 041824 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 113000000,
+   "submitted": 113000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    112000000,
+    1000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-05-09",
+   "operationId": "RP 050924 99",
+   "release": "10:00",
+   "close": "10:15",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 94000000,
+   "submitted": 94000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    45000000,
+    19000000,
+    30000000
+   ],
+   "note": "This operation is a Small Value Exercise (SVE); the daily Repo operation will still take place at its regularly scheduled time (1:30pm).",
+   "note_says_sve": true,
+   "announced": "statement_240502.html",
+   "announced_public": "2024-05-02"
+  },
+  {
+   "date": "2024-05-16",
+   "operationId": "RP 051624 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-06-05",
+   "operationId": "RP 060524 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 106000000,
+   "submitted": 106000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    104000000,
+    2000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-06-13",
+   "operationId": "RP 061324 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-07-09",
+   "operationId": "RP 070924 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 97000000,
+   "submitted": 97000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    97000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-07-11",
+   "operationId": "RP 071124 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 102000000,
+   "submitted": 102000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    102000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-08-08",
+   "operationId": "RP 080824 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 101000000,
+   "submitted": 101000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    101000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-09-10",
+   "operationId": "RP 091024 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 103000000,
+   "submitted": 103000000,
+   "rates": [
+    5.5
+   ],
+   "counterparties": [
+    102000000,
+    1000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-10-03",
+   "operationId": "RP 100324 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 102000000,
+   "submitted": 102000000,
+   "rates": [
+    5.0
+   ],
+   "counterparties": [
+    102000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-11-06",
+   "operationId": "RP 110624 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 101000000,
+   "submitted": 101000000,
+   "rates": [
+    5.0
+   ],
+   "counterparties": [
+    101000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2024-12-10",
+   "operationId": "RP 121024 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    4.75
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-02-11",
+   "operationId": "RP 021125 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-02-12",
+   "operationId": "RP 021225 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-02-26",
+   "operationId": "RP 022625 99",
+   "release": "10:00",
+   "close": "10:15",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 94000000,
+   "submitted": 94000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    48000000,
+    15000000,
+    31000000
+   ],
+   "note": "This is a small value exercise for operational readiness testing. The regular SRF operation will take place at its regularly scheduled time (1:30 PM ET).",
+   "note_says_sve": true,
+   "announced": "statement_250212.html",
+   "announced_public": "2025-02-12"
+  },
+  {
+   "date": "2025-03-11",
+   "operationId": "RP 031125 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-04-08",
+   "operationId": "RP 040825 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-04-30",
+   "operationId": "RP 043025 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 110000000,
+   "submitted": 110000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    10000000,
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-05-06",
+   "operationId": "RP 050625 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-06-10",
+   "operationId": "RP 061025 2",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 105000000,
+   "submitted": 105000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    102000000,
+    1000000,
+    2000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-07-08",
+   "operationId": "RP 070825 3",
+   "release": "13:29",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-08-12",
+   "operationId": "RP 081225 3",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 101000000,
+   "submitted": 101000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    101000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-09-09",
+   "operationId": "RP 090925 3",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 101000000,
+   "submitted": 101000000,
+   "rates": [
+    4.5
+   ],
+   "counterparties": [
+    100000000,
+    1000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-10-03",
+   "operationId": "RP 100325 3",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 105000000,
+   "submitted": 105000000,
+   "rates": [
+    4.25
+   ],
+   "counterparties": [
+    105000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2025-10-08",
+   "operationId": "RP 100825 99",
+   "release": "10:15",
+   "close": "10:30",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 97000000,
+   "submitted": 97000000,
+   "rates": [
+    4.25
+   ],
+   "counterparties": [
+    45000000,
+    18000000,
+    34000000
+   ],
+   "note": "This operation is a Small Value Exercise (SVE), the daily SRF operation will still take place at its regularly scheduled time (1:30pm)",
+   "note_says_sve": true,
+   "announced": "statement_251002.html",
+   "announced_public": "2025-10-02"
+  },
+  {
+   "date": "2025-11-05",
+   "operationId": "RP 110525 25",
+   "release": "10:00",
+   "close": "10:15",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 99000000,
+   "submitted": 99000000,
+   "rates": [
+    4.0
+   ],
+   "counterparties": [
+    42000000,
+    20000000,
+    37000000
+   ],
+   "note": "This operation is a Small Value Exercise (SVE); the daily SRF operation will still take place at its regularly scheduled time, 1:30pm ET.",
+   "note_says_sve": true,
+   "announced": "statement_251031.html",
+   "announced_public": "2025-10-31"
+  },
+  {
+   "date": "2025-12-09",
+   "operationId": "RP 120925 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Multiple Price",
+   "accepted": 102000000,
+   "submitted": 102000000,
+   "rates": [
+    4.0
+   ],
+   "counterparties": [
+    102000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-01-13",
+   "operationId": "RP 011326 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 102000000,
+   "submitted": 102000000,
+   "rates": [],
+   "counterparties": [
+    102000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-02-10",
+   "operationId": "RP 021026 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-03-10",
+   "operationId": "RP 031026 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 104000000,
+   "submitted": 104000000,
+   "rates": [],
+   "counterparties": [
+    102000000,
+    2000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-04-08",
+   "operationId": "RP 040826 25",
+   "release": "08:15",
+   "close": "08:30",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-05-12",
+   "operationId": "RP 051226 26",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 101000000,
+   "submitted": 101000000,
+   "rates": [],
+   "counterparties": [
+    101000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-05-27",
+   "operationId": "RP 052726 99",
+   "release": "10:15",
+   "close": "10:30",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [],
+   "counterparties": [
+    47000000,
+    18000000,
+    35000000
+   ],
+   "note": "This operation is a Small Value Exercise (SVE), the daily SRP operation will still take place at its regularly scheduled time (1:30pm)",
+   "note_says_sve": true,
+   "announced": "statement_260506.html",
+   "announced_public": "2026-05-06"
+  },
+  {
+   "date": "2026-06-09",
+   "operationId": "RP 060926 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 101000000,
+   "submitted": 101000000,
+   "rates": [],
+   "counterparties": [
+    101000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-07-14",
+   "operationId": "RP 071426 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-07-15",
+   "operationId": "RP 071526 25",
+   "release": "08:15",
+   "close": "08:30",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-08-11",
+   "operationId": "RP 081126 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  },
+  {
+   "date": "2026-08-27",
+   "operationId": "RP 082726 27",
+   "release": "13:30",
+   "close": "13:45",
+   "term": "Overnight",
+   "method": "Full Allotment",
+   "accepted": 100000000,
+   "submitted": 100000000,
+   "rates": [],
+   "counterparties": [
+    100000000
+   ],
+   "note": "",
+   "note_says_sve": false,
+   "announced": null,
+   "announced_public": null
+  }
+ ],
+ "classes": {
+  "neither": 35,
+  "announced": 5
+ },
+ "by_year": {
+  "in force (floor $0.1 bn)": {
+   "2018": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2019": {
+    "longest": 250.0,
+    "take_up_days": 72
+   },
+   "2020": {
+    "longest": 124.0,
+    "take_up_days": 124
+   },
+   "2021": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2022": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2023": {
+    "longest": 250.0,
+    "take_up_days": 1
+   },
+   "2024": {
+    "longest": 52.0,
+    "take_up_days": 13
+   },
+   "2025": {
+    "longest": 41.0,
+    "take_up_days": 44
+   },
+   "2026": {
+    "longest": 22.0,
+    "take_up_days": 16
+   },
+   "2024-01..2026-09": {
+    "longest": 52.0,
+    "take_up_days": 73
+   }
+  },
+  "#826 (whole $1-7 mn)": {
+   "2018": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2019": {
+    "longest": 250.0,
+    "take_up_days": 72
+   },
+   "2020": {
+    "longest": 66.0,
+    "take_up_days": 125
+   },
+   "2021": {
+    "longest": 156.0,
+    "take_up_days": 1
+   },
+   "2022": {
+    "longest": 250.0,
+    "take_up_days": 3
+   },
+   "2023": {
+    "longest": 39.0,
+    "take_up_days": 16
+   },
+   "2024": {
+    "longest": 50.0,
+    "take_up_days": 24
+   },
+   "2025": {
+    "longest": 32.0,
+    "take_up_days": 55
+   },
+   "2026": {
+    "longest": 17.0,
+    "take_up_days": 27
+   },
+   "2024-01..2026-09": {
+    "longest": 50.0,
+    "take_up_days": 106
+   }
+  },
+  "announcement-keyed": {
+   "2018": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2019": {
+    "longest": 250.0,
+    "take_up_days": 72
+   },
+   "2020": {
+    "longest": 124.0,
+    "take_up_days": 124
+   },
+   "2021": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2022": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2023": {
+    "longest": 250.0,
+    "take_up_days": 1
+   },
+   "2024": {
+    "longest": 52.0,
+    "take_up_days": 13
+   },
+   "2025": {
+    "longest": 41.0,
+    "take_up_days": 44
+   },
+   "2026": {
+    "longest": 22.0,
+    "take_up_days": 16
+   },
+   "2024-01..2026-09": {
+    "longest": 52.0,
+    "take_up_days": 73
+   }
+  }
+ },
+ "announcement_rule_equals_in_force": true,
+ "fed_repo_columns_identical": true,
+ "h5_inputs": {
+  "declarations_checked": [
+   "backfill_h5_726.json",
+   "exploration_845.json",
+   "h5_step3_707.json",
+   "h5_step4_758.json",
+   "spread_distribution_632.json",
+   "spread_distribution_634.json",
+   "spread_distribution_686.json",
+   "spread_distribution_761.json"
+  ],
+  "reading_fed_repo": []
+ }
+}

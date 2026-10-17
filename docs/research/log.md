@@ -1008,3 +1008,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the control reproduces both published evidence files (largest difference 6e-14). Settlement cells at leads 2 to 5 drop (1907 to 1451 scored cells; 4 of 20 lead-by-type pairs move; target days 383 to 382). The first candidate's CRPS skill against B1 goes from +3.2% [+0.0%, +6.6%] to +2.2% [-1.4%, +5.7%] and its MAE skill against B1 from +0.7% to -0.9%, so #693's percentile reading flips from not killed to killed on the declared reading; #739's studentized reading is killed before and after. Development data, not a verdict.
 - Against kill: not applicable (a correction to how step 1's day set is read).
 - Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
+
+### 2026-10-17 [H3] groundwork G1 · eleonorabjornberg/repo-market-model#878
+- Directive: #872 (finding #860)
+- Step: groundwork G1 (data quality of the Fed repo take-up recency input)
+- Tier: development
+- Pins: tracked repo-operation snapshots to 2026-09-03; published panel `4ddc3882…`; base `80b5ef0a`; Fed statement pages saved with checksums
+- Tried: listed the 40 Repo operations with $0.09 to $0.13 bn accepted and matched them to the eleven small value exercises the Desk announced from 2024 to October 2026; recomputed `fed_repo_days_since_positive` under the floor in force, #826's rule and an announcement-keyed rule. Variants: 0 new models; nothing scored.
+- Result: no announcement exists for the recurring afternoon trade of $100 to $113 mn (35 of 40 operations, 34 at or above the floor); the 5 announced exercises are morning operations already dropped by their note. The announcement-keyed rule changes no panel column (longest gap 52, 41, 22 operation days in 2024 to 2026; 13, 44, 16 take-up days). No H5 declaration reads a `fed_repo` column. Development data, not a verdict.
+- Against kill: not applicable (data quality of an input; no kill criterion assessed).
+- Next: whether the recurring trade is take-up is Eleonora's (data meaning), with the evidence table in `docs/pivot/repo-test-trades-872-result.md`.
