@@ -14,6 +14,13 @@ Recorded mutation (the new leakage guard; run on `test_a_future_spread_moves_no_
 * `sample_rows`: `range(first, anchor + 1)` replaced with `range(first, anchor + 2)`, so the row after the anchor, whose spread
   was not public at the decision instant, is sampled. Both tests failed with `LookAheadError` ("... reads ..., after ..., the
   last row public at the decision instant", raised by `protocol_benchmarks._require_public`); restored, both pass.
+
+Recorded mutation (the settlement flag is read by lead, #849; run on `SettlementByLeadTests`, then restored):
+
+* `target_risk_type`: `coupon_clause=public` replaced with `coupon_clause=True`, so a coupon settlement is read at every lead
+  whether or not it was public at the decision instant. `test_a_settlement_day_is_not_a_risk_date_before_it_is_public` (40
+  subtests) and `test_a_settlement_day_is_a_risk_date_where_it_is_public` failed with `LookAheadError` ("the coupon settlement
+  of 2020-09-25 was not public at the decision instant of ...", raised by `require_settlement_public`); restored, both pass.
 """
 
 from __future__ import annotations
@@ -24,6 +31,7 @@ import unittest
 from repo_model import protocol_benchmarks as pb
 from repo_model import risk_date_spread as rds
 from repo_model import scoring_protocol as sp
+from repo_model import spread_mr_variants as smv
 from repo_model.splits import LookAheadError
 
 import test_protocol_benchmarks as tpb
@@ -265,3 +273,71 @@ class AsOfTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def settlement_only_targets(panel, leads):
+    """(decision index, lead) pairs, after 2020, whose target is an ordinary day by its calendar columns that settles a coupon."""
+    return [
+        (i, h) for i in range(600, len(panel) - max(sp.HORIZONS)) for h in leads
+        if tpb.SPLITS.reporting_day_type(panel[i + h].date, panel[i + h].values) == "ordinary"
+        and float(panel[i + h].values.get("treasury_settlement_coupons") or 0.0) > 0.0
+    ]
+
+
+class SettlementByLeadTests(unittest.TestCase):
+    """A coupon settlement makes a day a risk date only at the leads where it was public at the decision (#849)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.panel, cls.settings = panel_and_settings()
+        cls.states = synthetic_states(cls.panel)
+
+    def public(self, i, h):
+        return smv.coupon_public(self.panel, i + h, i, registry=tpb.REGISTRY, decision_time=tpb.DECISION)
+
+    def test_the_declared_availability_makes_a_settlement_public_one_panel_day_ahead(self):
+        pairs = settlement_only_targets(self.panel, sp.HORIZONS)
+        self.assertTrue(pairs)
+        for i, h in pairs:
+            with self.subTest(decision=self.panel[i].date, lead=h):
+                self.assertEqual(self.public(i, h), h == 1)
+
+    def test_a_settlement_day_is_not_a_risk_date_before_it_is_public(self):
+        for i, h in settlement_only_targets(self.panel, range(2, max(sp.HORIZONS) + 1))[:40]:
+            with self.subTest(decision=self.panel[i].date, lead=h):
+                self.assertIsNone(rds.target_risk_type(self.panel, i, h, splits=tpb.SPLITS, **_clock()))
+                self.assertNotIn(h, rds.calendar_forecast(self.panel, i, **self.settings))
+                self.assertNotIn(h, rds.type_state_forecast(self.panel, i, self.states, **self.settings).quantiles)
+
+    def test_a_settlement_day_is_a_risk_date_where_it_is_public(self):
+        for i, h in settlement_only_targets(self.panel, [1])[:40]:
+            with self.subTest(decision=self.panel[i].date):
+                self.assertEqual(rds.target_risk_type(self.panel, i, h, splits=tpb.SPLITS, **_clock()), "settlement")
+                self.assertIn(h, rds.calendar_forecast(self.panel, i, **self.settings))
+
+    def test_a_calendar_type_is_a_risk_date_at_every_lead(self):
+        checked = 0
+        for i in range(600, 700):
+            for h in sp.HORIZONS:
+                target = self.panel[i + h]
+                kind = tpb.SPLITS.reporting_day_type(target.date, target.values)
+                if kind in ("quarter_end", "month_end", "tax_date"):
+                    checked += 1
+                    self.assertEqual(rds.target_risk_type(self.panel, i, h, splits=tpb.SPLITS, **_clock()), kind)
+        self.assertTrue(checked)
+
+    def test_a_settlement_the_decision_could_not_see_is_refused(self):
+        i, h = settlement_only_targets(self.panel, [3])[0]
+        with self.assertRaises(LookAheadError):
+            rds.require_settlement_public(self.panel, i + h, i, **_clock())
+        j, one = settlement_only_targets(self.panel, [1])[0]
+        rds.require_settlement_public(self.panel, j + one, j, **_clock())
+
+    def test_the_hindsight_reading_of_a_day_already_public_is_unchanged(self):
+        row = next(r for i, h in settlement_only_targets(self.panel, [1]) for r in [self.panel[i + h]])
+        self.assertEqual(rds.risk_day_type(row.date, row.values, tpb.SPLITS), "settlement")
+        self.assertIsNone(rds.risk_day_type(row.date, row.values, tpb.SPLITS, coupon_clause=False))
+
+
+def _clock():
+    return dict(registry=tpb.REGISTRY, decision_time=tpb.DECISION)
