@@ -1009,7 +1009,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a correction to how step 1's day set is read).
 - Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
 
-### 2026-10-17 [H3] groundwork G1 · eleonorabjornberg/repo-market-model#878
+### 2026-10-17 [H3] groundwork G1 · eleonorabjornberg/repo-market-model#884
 - Directive: #872 (finding #860)
 - Step: groundwork G1 (data quality of the Fed repo take-up recency input)
 - Tier: development
