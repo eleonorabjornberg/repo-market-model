@@ -7,11 +7,12 @@ no panel. It does three things, on the tracked repo-operation snapshots (`tests/
 2. matches each against the small value exercises the Desk announced beforehand on newyorkfed.org (the statement
    pages saved under `docs/pivot/evidence/repo-test-trades-872/sources/`, checked against `CHECKSUMS.sha256`): by
    operation date and by the announced time window;
-3. reports `fed_repo_days_since_positive` by year under three readings of what counts as take-up: the rule in force
+3. reports `fed_repo_days_since_positive` by year under four readings of what counts as take-up: the rule in force
    (`ingest._effective_accepted`, #826: a whole number of millions, at most $7 mn, is a test trade), the superseded
    $0.1 bn floor (#743, for comparison only), and the announcement-keyed rule the directive asks for (an operation
-   announced as a small value exercise is not take-up, from the statement's public time). No size threshold is added
-   or changed.
+   announced as a small value exercise is not take-up, from the statement's public time), and the ruling of 17 October
+   2026 on #860 (the listed operations with no note and no announcement are test trades, so not take-up), applied to
+   those operations by id. No size threshold is added or changed.
 
 It reads operation amounts only. No spread, no forecast and no score is read, so no locked day counts toward a choice
 (`docs/decisions/lockbox.md`); the take-up counts run to 2026-09-03 as the directive asks.
@@ -168,10 +169,32 @@ def _rule_announced(operation, accepted):
     return _IN_FORCE(accepted)
 
 
+def _ruling_ids():
+    """The operations the ruling of 17 October 2026 (on #860) reads as not take-up: the listed ones with no note and no
+    announcement (35). A list of operations, not a size cutoff: a rule that picks them without one is not drafted here."""
+
+    return {row["operationId"] for row in listing() if not row["announced"] and not row["note_says_sve"]}
+
+
+_RULING_IDS = None
+
+
+def _rule_ruling(operation, accepted):
+    """The ruling as applied to the listed operations; every other operation is left to the rule in force."""
+
+    global _RULING_IDS
+    if _RULING_IDS is None:
+        _RULING_IDS = _ruling_ids()
+    if operation.get("operationId") in _RULING_IDS:
+        return 0
+    return _IN_FORCE(accepted)
+
+
 RULES = (
     ("in force (#826: whole $1-7 mn)", _rule_current),
     ("superseded floor ($0.1 bn)", _rule_superseded_floor),
     ("announcement-keyed", _rule_announced),
+    ("ruling of 17 Oct 2026 (listed unannounced, no note)", _rule_ruling),
 )
 
 
@@ -240,6 +263,8 @@ def report(panel_path):
     results = {name: by_year(rows) for name, rows in panels.items()}
     same = results[RULES[0][0]] == results[RULES[2][0]]
     columns_identical = fed_repo_columns(panels[RULES[0][0]]) == fed_repo_columns(panels[RULES[2][0]])
+    ruling = RULES[3][0]
+    ruling_identical = fed_repo_columns(panels[RULES[0][0]]) == fed_repo_columns(panels[ruling])
     cells = Counter()
     for row in listed:
         cells[("announced" if row["announced"] else "note" if row["note_says_sve"] else "neither")] += 1
@@ -255,6 +280,8 @@ def report(panel_path):
         "by_year": results,
         "announcement_rule_equals_in_force": same,
         "fed_repo_columns_identical": columns_identical,
+        "ruling_columns_identical": ruling_identical,
+        "ruling_operations": len(_ruling_ids()),
         "h5_inputs": h5_inputs(),
     }
 
@@ -303,13 +330,17 @@ def markdown(result):
         f"The announcement-keyed reading equals the rule in force in every cell: **{result['announcement_rule_equals_in_force']}**; "
         f"every `fed_repo_*` panel column is identical under the two: **{result['fed_repo_columns_identical']}**.",
         "",
+        f"Under the ruling of 17 October 2026 ({result['ruling_operations']} listed operations with no note and no announcement are not take-up) "
+        f"every `fed_repo_*` panel column is identical to the rule in force: **{result['ruling_columns_identical']}**.",
+        "",
         "## Effect on H5's candidate inputs",
         "",
-        "| H5 declarations checked | naming a `fed_repo` column | change in any `fed_repo_*` column under the announcement-keyed rule |",
-        "|---|---|---|",
+        "| H5 declarations checked | naming a `fed_repo` column | change in any `fed_repo_*` column under the announcement-keyed rule | change under the ruling |",
+        "|---|---|---|---|",
         f"| {', '.join('`' + n + '`' for n in result['h5_inputs']['declarations_checked'])} | "
         f"{', '.join(result['h5_inputs']['reading_fed_repo']) or 'none'} | "
-        f"{'none' if result['fed_repo_columns_identical'] else 'some'} |",
+        f"{'none' if result['fed_repo_columns_identical'] else 'some'} | "
+        f"{'none' if result['ruling_columns_identical'] else 'some'} |",
         "",
     ]
     return "\n".join(lines)

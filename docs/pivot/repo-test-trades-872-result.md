@@ -7,7 +7,13 @@ so no locked day counts toward a choice (`docs/decisions/lockbox.md`).
 
 ## Answer
 
-**No announcement was found for the recurring trade, so its classification does not change and no size threshold is added.** The Desk's public
+**Ruling applied (Eleonora, 17 October 2026, on #860, relayed): the recurring ~$0.1 bn calm-day operation is a test trade and is not take-up, as in #743.** The page
+now carries a fourth column, the ruling's classification, applied to the 35 listed operations with no note and no announcement (by operation id: the script's `_rule_ruling`).
+It is a list, not a rule: no size cutoff is added, and nothing in `src/` or any published declaration changes, so no published figure moves. The 2024 longest gap under it is
+134 days on this panel (the rule in force gives 50; the 185 operation days that #860 names are a different count and are not traced here). Whether the ruling can be written as a rule without a size
+cutoff is answered below; it cannot, and a draft section for Eleonora is in `docs/DATA_QUALITY_DECISIONS.md`.
+
+**No announcement was found for the recurring trade, so the announcement-keyed rule does not classify it, and no size threshold is added.** The Desk's public
 record names small value exercises that were announced in advance; every one of them in the tracked snapshots is a morning operation of
 $94 mn to $100 mn made of three or four $1 mn propositions per security type (the per-line amounts are in the evidence table), and each already carries the Desk's own
 "Small Value Exercise" note, so the rule in force already treats it as not take-up. The recurring operation of #860 is a different thing:
@@ -42,36 +48,36 @@ Under it the announcement-keyed rule differs from the rule in force on one day, 
 
 The panel is the scratch panel to 2026-09-03 (`pressure_v1_1.py panel --end 2026-09-03`, then the script's own assembly).
 
-| year | in force (#826: whole $1-7 mn is a test trade) | superseded floor ($0.1 bn), for comparison | announcement-keyed (this PR) |
-|---|---|---|---|
-| 2018 | 250 / 0 | 250 / 0 | 250 / 0 |
-| 2019 | 250 / 72 | 250 / 72 | 250 / 72 |
-| 2020 | 66 / 125 | 124 / 124 | 66 / 125 |
-| 2021 | 156 / 1 | 250 / 0 | 156 / 1 |
-| 2022 | 250 / 3 | 250 / 0 | 250 / 3 |
-| 2023 | 39 / 16 | 250 / 1 | 39 / 16 |
-| 2024 | 50 / 24 | 52 / 13 | 50 / 23 |
-| 2025 | 32 / 55 | 41 / 44 | 32 / 55 |
-| 2026 | 17 / 27 | 22 / 16 | 17 / 27 |
-| 2024-01 to 2026-09 | 50 / 106 | 52 / 73 | 50 / 105 |
+| year | in force (#826: whole $1-7 mn is a test trade) | superseded floor ($0.1 bn), for comparison | announcement-keyed (this PR) | ruling of 17 Oct 2026 (35 listed operations are not take-up) |
+|---|---|---|---|---|
+| 2018 | 250 / 0 | 250 / 0 | 250 / 0 | 250 / 0 |
+| 2019 | 250 / 72 | 250 / 72 | 250 / 72 | 250 / 72 |
+| 2020 | 66 / 125 | 124 / 124 | 66 / 125 | 66 / 125 |
+| 2021 | 156 / 1 | 250 / 0 | 156 / 1 | 156 / 1 |
+| 2022 | 250 / 3 | 250 / 0 | 250 / 3 | 250 / 3 |
+| 2023 | 39 / 16 | 250 / 1 | 39 / 16 | 39 / 16 |
+| 2024 | 50 / 24 | 52 / 13 | 50 / 23 | 134 / 11 |
+| 2025 | 32 / 55 | 41 / 44 | 32 / 55 | 62 / 43 |
+| 2026 | 17 / 27 | 22 / 16 | 17 / 27 | 27 / 17 |
+| 2024-01 to 2026-09 | 50 / 106 | 52 / 73 | 50 / 105 | 134 / 71 |
 
 The superseded-floor column reproduces #860's figures for 2024 to 2026 (longest 52, 41, 22; 13, 44, 16 take-up days). The rule in force (#826)
 counts the ~$0.1 bn trade as take-up and drops the whole-million trades of $1 mn to $7 mn, so it has more take-up days than the floor did. The
 announcement-keyed column equals it in every cell except 2024 (23 take-up days instead of 24, from the 2024-09-24 term repo), so the `fed_repo_*` panel
 columns are not identical under the two: they differ on 2024-09-24 to 2024-09-27 only.
 
-**Effect on H5's candidate inputs:** none. No H5 declaration (the eight listed in the evidence file) names a `fed_repo` column, so the
-change on 2024-09-24 to 2024-09-27 reaches none of them. The recency input is read by H2's upper bound (#635) and the unused-inputs
+**Effect on H5's candidate inputs:** none. No H5 declaration (the eight listed in the evidence file) names a `fed_repo` column, so neither the
+change on 2024-09-24 to 2024-09-27 nor the ruling's change reaches any of them. The recency input is read by H2's upper bound (#635) and the unused-inputs
 records, not by an H5 candidate.
 
 ## Not checked, or for Eleonora
 
 * **Her question (data meaning), second part:** whether the rule in force should also drop an operation the Desk announced as a small value
   exercise beforehand when it is not a whole number of millions of at most $7 mn (one case, the $57 mn term repo of 2024-09-24). Not settled here.
-* **Her question (data meaning):** whether the recurring ~$0.1 bn afternoon operation is take-up. The evidence is above: not announced, on calm
-  days, roughly monthly (the dates are in the table of the evidence file). A rule that is not a size threshold and not an announcement would
-  have to be one she names; none is drafted here. No section of `docs/DATA_QUALITY_DECISIONS.md` is drafted because nothing is classified
-  differently; if she rules the trade is not take-up, that is a new rule and a new directive.
+* **Her question, answered by her ruling and now open only as a definition (data meaning):** the ruling says the recurring afternoon operation is not take-up. A rule that picks
+  it out without a size cutoff cannot be stated from the data here: the 35 have no note and no announcement, 27 of 35 are one line and one rate, but no field separates them from a real
+  borrow of the same size except size and time of day. `docs/DATA_QUALITY_DECISIONS.md` carries a **draft** section ("DRAFT for Eleonora: the recurring ~$0.1 bn afternoon operation")
+  with the options and the exact definition as a marked question; it is hers to merge, and `src/` is unchanged until she decides.
 * The statement index lists older Repo small value exercise statements (2016 to 2023); they were not fetched, because the operations in
   the $0.09 to $0.13 bn band all fall in 2024 to 2026 in the tracked snapshots, so none could be matched by an older statement.
 * Announcements are matched by operation date and window as the statements state them; a Desk change announced elsewhere (a press release,

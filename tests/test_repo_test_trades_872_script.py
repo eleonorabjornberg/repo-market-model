@@ -79,5 +79,30 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(script._rule_announced(operation("2025-07-08", "13:29", "13:45"), 5_000_000), 0)
 
 
+class RulingTests(unittest.TestCase):
+    """The ruling of 17 October 2026 on #860 applied to the listed operations (no size cutoff in the rule)."""
+
+    def test_the_ruling_drops_the_listed_operations_with_no_note_and_no_announcement(self):
+        listed = [row for row in script.listing() if not row["announced"] and not row["note_says_sve"]]
+        self.assertEqual(len(listed), 35)
+        op = {"operationId": listed[0]["operationId"], "operationDate": listed[0]["date"]}
+        self.assertEqual(script._rule_ruling(op, 100_000_000), 0)
+
+    def test_the_ruling_leaves_an_operation_outside_the_list_to_the_rule_in_force(self):
+        op = {"operationId": "repo-not-listed", "operationDate": "2025-07-08"}
+        self.assertEqual(script._rule_ruling(op, 100_000_000), 100_000_000)
+        self.assertEqual(script._rule_ruling(op, 5_000_000), 0)
+
+    def test_the_ruling_is_the_fourth_reading_and_the_rule_in_force_stays_the_first(self):
+        self.assertEqual([name for name, _rule in script.RULES][-1], "ruling of 17 Oct 2026 (listed unannounced, no note)")
+        self.assertEqual(script.RULES[0][1], script._rule_current)
+
+    def test_the_ruling_is_a_list_not_a_size_cutoff(self):
+        listed = {row["operationId"] for row in script.listing() if not row["announced"] and not row["note_says_sve"]}
+        self.assertEqual(script._ruling_ids(), listed)
+        near = {"operationId": "repo-near-band", "operationDate": "2025-07-08"}
+        self.assertEqual(script._rule_ruling(near, 101_000_000), 101_000_000)
+
+
 if __name__ == "__main__":
     unittest.main()

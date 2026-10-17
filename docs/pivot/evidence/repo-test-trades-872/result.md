@@ -68,23 +68,25 @@ Pages fetched 2026-10-17T15:52Z to 15:54Z, 17 October 2026; checksums in `source
 
 ## `fed_repo_days_since_positive`, longest value and number of take-up days, by year
 
-| year | in force (#826: whole $1-7 mn): longest / take-up days | superseded floor ($0.1 bn): longest / take-up days | announcement-keyed: longest / take-up days |
-|---|---|---|---|
-| 2018 | 250 / 0 | 250 / 0 | 250 / 0 |
-| 2019 | 250 / 72 | 250 / 72 | 250 / 72 |
-| 2020 | 66 / 125 | 124 / 124 | 66 / 125 |
-| 2021 | 156 / 1 | 250 / 0 | 156 / 1 |
-| 2022 | 250 / 3 | 250 / 0 | 250 / 3 |
-| 2023 | 39 / 16 | 250 / 1 | 39 / 16 |
-| 2024 | 50 / 24 | 52 / 13 | 50 / 23 |
-| 2025 | 32 / 55 | 41 / 44 | 32 / 55 |
-| 2026 | 17 / 27 | 22 / 16 | 17 / 27 |
-| 2024-01..2026-09 | 50 / 106 | 52 / 73 | 50 / 105 |
+| year | in force (#826: whole $1-7 mn): longest / take-up days | superseded floor ($0.1 bn): longest / take-up days | announcement-keyed: longest / take-up days | ruling of 17 Oct 2026 (listed unannounced, no note): longest / take-up days |
+|---|---|---|---|---|
+| 2018 | 250 / 0 | 250 / 0 | 250 / 0 | 250 / 0 |
+| 2019 | 250 / 72 | 250 / 72 | 250 / 72 | 250 / 72 |
+| 2020 | 66 / 125 | 124 / 124 | 66 / 125 | 66 / 125 |
+| 2021 | 156 / 1 | 250 / 0 | 156 / 1 | 156 / 1 |
+| 2022 | 250 / 3 | 250 / 0 | 250 / 3 | 250 / 3 |
+| 2023 | 39 / 16 | 250 / 1 | 39 / 16 | 39 / 16 |
+| 2024 | 50 / 24 | 52 / 13 | 50 / 23 | 134 / 11 |
+| 2025 | 32 / 55 | 41 / 44 | 32 / 55 | 62 / 43 |
+| 2026 | 17 / 27 | 22 / 16 | 17 / 27 | 27 / 17 |
+| 2024-01..2026-09 | 50 / 106 | 52 / 73 | 50 / 105 | 134 / 71 |
 
 The announcement-keyed reading equals the rule in force in every cell: **False**; every `fed_repo_*` panel column is identical under the two: **False**.
 
+Under the ruling of 17 October 2026 (35 listed operations with no note and no announcement are not take-up) every `fed_repo_*` panel column is identical to the rule in force: **False**.
+
 ## Effect on H5's candidate inputs
 
-| H5 declarations checked | naming a `fed_repo` column | change in any `fed_repo_*` column under the announcement-keyed rule |
-|---|---|---|
-| `backfill_h5_726.json`, `exploration_845.json`, `h5_step3_707.json`, `h5_step4_758.json`, `spread_distribution_632.json`, `spread_distribution_634.json`, `spread_distribution_686.json`, `spread_distribution_761.json` | none | some |
+| H5 declarations checked | naming a `fed_repo` column | change in any `fed_repo_*` column under the announcement-keyed rule | change under the ruling |
+|---|---|---|---|
+| `backfill_h5_726.json`, `exploration_845.json`, `h5_step3_707.json`, `h5_step4_758.json`, `spread_distribution_632.json`, `spread_distribution_634.json`, `spread_distribution_686.json`, `spread_distribution_761.json` | none | some | some |

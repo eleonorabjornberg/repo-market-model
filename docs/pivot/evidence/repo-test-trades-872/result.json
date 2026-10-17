@@ -1012,10 +1012,54 @@
     "longest": 50.0,
     "take_up_days": 105
    }
+  },
+  "ruling of 17 Oct 2026 (listed unannounced, no note)": {
+   "2018": {
+    "longest": 250.0,
+    "take_up_days": 0
+   },
+   "2019": {
+    "longest": 250.0,
+    "take_up_days": 72
+   },
+   "2020": {
+    "longest": 66.0,
+    "take_up_days": 125
+   },
+   "2021": {
+    "longest": 156.0,
+    "take_up_days": 1
+   },
+   "2022": {
+    "longest": 250.0,
+    "take_up_days": 3
+   },
+   "2023": {
+    "longest": 39.0,
+    "take_up_days": 16
+   },
+   "2024": {
+    "longest": 134.0,
+    "take_up_days": 11
+   },
+   "2025": {
+    "longest": 62.0,
+    "take_up_days": 43
+   },
+   "2026": {
+    "longest": 27.0,
+    "take_up_days": 17
+   },
+   "2024-01..2026-09": {
+    "longest": 134.0,
+    "take_up_days": 71
+   }
   }
  },
  "announcement_rule_equals_in_force": false,
  "fed_repo_columns_identical": false,
+ "ruling_columns_identical": false,
+ "ruling_operations": 35,
  "h5_inputs": {
   "declarations_checked": [
    "backfill_h5_726.json",
