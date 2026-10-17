@@ -9,9 +9,11 @@ unchanged. No day after 2025-12-31 is read (`docs/decisions/lockbox.md`; `spread
 H5's candidate is #634's `gbm_funding` (declared in `metadata/backfill_h5_726.json`). It is walked twice by
 `scripts/spread_distribution_634.py`'s own `walk`, unchanged: on the published panel (the `without` arm, #634's control)
 and on the published panel with the 899 back-filled rows before it (the `with` arm). A back-filled row carries only the
-series #661 established (`ESTABLISHED`); every other cell is blank, which the fitter reads through its fitted imputation.
-Every fit of the with arm passes `backfill.require_posting_established` with the instant of
-`metadata/backfill_posting.json`, and the scored folds pass `backfill.require_training_only`.
+series `metadata/backfill_posting.json` admits (`kept_columns`; #742); every other cell is blank, which the fitter reads
+through its fitted imputation. `forecasts` refuses an extended panel whose back-filled rows carry an unadmitted column
+(`require_backfilled_admitted`, #870). Every fit of the with arm passes `backfill.require_posting_established` with the
+instant of that file, the scored folds pass `backfill.require_training_only`, and the series the fits read from
+back-filled rows pass `backfill.require_series_admitted`.
 
     PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs --output PUBLISHED.csv \\
         --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
@@ -49,17 +51,13 @@ from repo_model.baseline import ScoredFold, panel_sha256  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
+from repo_model.splits import LookAheadError  # noqa: E402
 
 DECLARATION = REPO / "metadata" / "backfill_h5_726.json"
 POSTING = REPO / "metadata" / "backfill_posting.json"
 SEED = 726
 LAST_TARGET = date(2025, 12, 31)
 ARMS = ("without", "with")
-#: What a back-filled row carries (#661 established the posting of TGCR, BGCR and SOFR; IORB is administered and announced;
-#: the calendar columns are functions of the date). Every other cell of such a row is blank.
-ESTABLISHED = (
-    "date", "sofr", "iorb", "sofr_volume", "tgcr", "bgcr", "quarter_end", "tax_date", "days_to_month_end",
-)
 LOW90, HIGH90 = sp.GRID.index(0.05), sp.GRID.index(0.95)
 LOW50, HIGH50 = sp.GRID.index(0.25), sp.GRID.index(0.75)
 CRITICAL_250 = sp.CRITICAL_VALUES[sp.GRID_COMPARISON][250]
@@ -88,8 +86,45 @@ def committed_declaration() -> dict:
 # -- the pure parts ------------------------------------------------------------------------------------------------
 
 
-def established_panel(extended: Path, output: Path) -> int:
-    """Write `extended` with every cell of a back-filled row blanked except the established series. Returns the rows blanked."""
+def kept_columns(fields: Sequence[str], admitted: Mapping[str, datetime]) -> List[str]:
+    """The columns a back-filled row keeps: the date, the calendar, IORB (an administered rate) and every admitted series.
+
+    The admitted list is `metadata/backfill_posting.json`'s (#742), not a copy of it (#862).
+    """
+
+    return [
+        name for name in fields
+        if name == "date" or name in backfill.NOT_A_SERIES or (
+            backfill.series_read([name]) and not backfill.unadmitted_columns([name], admitted)
+        )
+    ]
+
+
+def require_backfilled_admitted(rows: Sequence, admitted: Mapping[str, datetime], *, where: str) -> None:
+    """Refuse an extended panel whose back-filled rows carry a value of a series that is not admitted (#862).
+
+    Raises:
+        LookAheadError: a back-filled row holds a non-blank cell of an unadmitted column.
+    """
+
+    seen = sorted({name for row in rows if row.date < backfill.FIRST_PUBLISHED for name, value in row.values.items() if value is not None})
+    bad = backfill.unadmitted_columns(seen, admitted)
+    if bad:
+        raise LookAheadError(
+            f"{where}: back-filled rows carry values of {bad}, which are not admitted; only {sorted(admitted)} are "
+            f"(metadata/backfill_posting.json, #742)"
+        )
+
+
+def series_carried(features: Sequence[str], rows: Sequence) -> Tuple[str, ...]:
+    """The back-fill series a model reading `features` draws from the back-filled rows that carry a value of them."""
+
+    carried = {name for row in rows if row.date < backfill.FIRST_PUBLISHED for name, value in row.values.items() if value is not None}
+    return backfill.series_read([f for f in features if f in carried or f in backfill.contract.DERIVED_FEATURES])
+
+
+def established_panel(extended: Path, output: Path, admitted: Mapping[str, datetime]) -> int:
+    """Write `extended` with every cell of a back-filled row blanked except the admitted series. Returns the rows blanked."""
 
     with Path(extended).open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
@@ -98,11 +133,12 @@ def established_panel(extended: Path, output: Path) -> int:
     if "date" not in fields:
         raise ValueError(f"{extended}: no date column")
     blanked = 0
+    kept = set(kept_columns(fields, admitted))
     for row in rows:
         if date.fromisoformat(row["date"]) < backfill.FIRST_PUBLISHED:
             blanked += 1
             for name in fields:
-                if name not in ESTABLISHED:
+                if name not in kept:
                     row[name] = ""
     with Path(output).open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
@@ -183,7 +219,7 @@ def _coverage(forecasts, outcomes, calendar) -> Dict[str, Dict[date, float]]:
 def panel_command(args) -> int:
     require_unlocked([LAST_TARGET], where="backfill_h5_726")
     committed_declaration()
-    blanked = established_panel(args.extended, args.output)
+    blanked = established_panel(args.extended, args.output, backfill.load_admitted_series(POSTING))
     print(json.dumps({"blanked_rows": blanked, "panel_sha256": panel_sha256(args.output)}))
     return 0
 
@@ -207,6 +243,8 @@ def forecasts_command(args) -> int:
         [(row.date, {name: row.values.get(name) for name in features if name != "spread_bps"}) for row in rows],
     )
     posting = backfill.load_posting_instant(POSTING)
+    admitted = backfill.load_admitted_series(POSTING)
+    require_backfilled_admitted(rows, admitted, where="backfill_h5_726")
     registry = json.loads(sd.SOURCES.read_text(encoding="utf-8"))
     live = sd._load("live_record")
     lead_features = tuple(live.published_features(h))
@@ -228,6 +266,7 @@ def forecasts_command(args) -> int:
         for index, _ in result
     ]
     backfill.require_training_only(folds, where="backfill_h5_726")
+    backfill.require_series_admitted(folds, series_carried(lead_features, rows), admitted, where="backfill_h5_726")
     laws = {rows[i].date.isoformat(): q for i, q in result}
     document = {
         "issue": 726, "arm": args.arm, "horizon": h, "levels": levels, "panel_sha256": panel_sha256(args.panel),
