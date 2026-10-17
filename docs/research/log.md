@@ -949,7 +949,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (calibration in the large of existing laws; development data, not a verdict).
 - Next: a residual pool conditioned on the as-of policy register would be a later declared variant; whether calibration in the large may be reported under the 3-pressure-day minimum is Eleonora's (question in the pull request).
 
-### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#848
+### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#856
 - Directive: #842
 - Step: 3 (milestone M4, the nested development test against H5's candidate `gbm_funding`)
 - Tier: development
