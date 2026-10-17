@@ -1072,3 +1072,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the 2018-19 figures reproduce (mean d −0.114). 2018-19 stays a cost on the ruled interval [−0.180, −0.058], carried by 2018 H2 (−0.229); 2019 H1, 2019 H2 and 2019 alone cover zero. 2024 and 2025-26 are costs on the ruled interval but cover zero at the 250-day reference c; the pooled sample covers zero. At most 50% back-filled leaves no 2018-19 day; at 75% 2018-19 covers zero (124 days), at 90% it stays a cost. Development data, not a verdict.
 - Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
 - Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
+
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#905
+- Directive: #901
+- Step: 3 (the as-of scarcity-state split that scoring protocol v1 section 7 asks for and #634's and #758's pages did not run; milestones M2 and M4)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `1d38d7ed`; seed 634; no day after 2025-12-31, no locked day read
+- Tried: a new script, `scripts/h5_state_splits_901.py`, that re-reads #634's walks unchanged and cuts each skill headline of the four candidates and of B3 against B1 and B2 by the as-of scarcity state of the decision day (ample 0 and 1, scarce 2 and 3; ruling on #515), with and without 2019-09-18. Variants: 0 new. The scoring is not run yet: it needs #634's walks, which go to the Mac (needs-mac).
+- Result: pending the Mac run. The script's tests pass, with one recorded mutation on the as-of read of the state. Nothing is scored, so no figure moves.
+- Against kill: not applicable (a split of existing laws; development data, not a verdict).
+- Next: run the commands in the pull request on the Mac, commit `daily.json` and the report, and fill in this entry's result line.
