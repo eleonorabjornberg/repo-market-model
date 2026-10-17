@@ -1009,7 +1009,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a correction to how step 1's day set is read).
 - Next: whether the #693 and #739 pages carry a note pointing to the addendum is Eleonora's (marked question in the PR).
 
-### 2026-10-17 [H1] step 4 · eleonorabjornberg/repo-market-model#875
+### 2026-10-17 [H1] step 4 · eleonorabjornberg/repo-market-model#878
 - Directive: #873 (recalibrate the protocol's critical and futility values in the candidate orientation; findings #830 and #833)
 - Step: 4
 - Tier: development
