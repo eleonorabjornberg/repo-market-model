@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H3] groundwork G1 · eleonorabjornberg/repo-market-model#884
+- Directive: #872 (finding #860)
+- Step: groundwork G1 (data quality of the Fed repo take-up recency input)
+- Tier: development
+- Pins: tracked repo-operation snapshots to 2026-09-03; published panel `4ddc3882…`; base `80b5ef0a`; Fed statement pages saved with checksums
+- Tried: listed the 40 Repo operations with $0.09 to $0.13 bn accepted and matched them to the ten small value exercises the Desk announced from 2024 to May 2026; recomputed `fed_repo_days_since_positive` under the rule in force (#826, merged), the superseded $0.1 bn floor and an announcement-keyed rule. Variants: 0 new models; nothing scored.
+- Result: no announcement exists for the recurring afternoon trade of $100 to $113 mn (35 of 40 operations; all 35 are take-up under the rule in force); the 5 announced exercises in that band are morning operations already dropped by their note. Figures are under the rule now in force (#826). The announcement-keyed rule changes one operation, the announced $57 mn term repo of 2024-09-24, which the rule in force counts as take-up: `fed_repo_*` columns differ on 2024-09-24 to 2024-09-27 only (2024: 50 / 24 longest gap / take-up days in force, 50 / 23 announcement-keyed; 2025: 32 / 55; 2026: 17 / 27, unchanged). No H5 declaration reads a `fed_repo` column. Development data, not a verdict.
+- Against kill: not applicable (data quality of an input; no kill criterion assessed).
+- Next: whether the recurring trade is take-up is Eleonora's (data meaning), with the evidence table in `docs/pivot/repo-test-trades-872-result.md`.
