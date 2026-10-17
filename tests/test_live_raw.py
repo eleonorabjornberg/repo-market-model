@@ -483,7 +483,9 @@ class WorkflowTests(unittest.TestCase):
         """#892: `continue-on-error` let a failed archive finish the run green.
 
         The failure still never blocks the record or the anchor (they run first), but the
-        run ends red, so the failed-runs issue is opened and the run page shows it.
+        run ends red and the run page shows it. The failed-runs issue (#237) already hears of it from
+        "Report a raw archive that failed"; its generic opener (`if: failure()`) is evaluated before this
+        step, while the job status is still success, so it does not fire for an archive failure.
 
         Recorded mutation: the final step deleted; this test failed with AssertionError
         (step "Fail the run when the raw archive failed" not found).
@@ -496,8 +498,6 @@ class WorkflowTests(unittest.TestCase):
         for later in ("Anchor the digests in Sigstore Rekor", "Report a raw archive that failed",
                       "Verify every logged file"):
             self.assertLess(names.index(later), names.index(final))
-        opener = self.step(self.log, "Open or update the failed-runs issue")
-        self.assertIn("raw=${{ steps.raw.outcome }}", opener)
 
     def test_the_scoring_workflow_is_started_by_hand_and_never_overrides_the_clock(self):
         head = self.score.split("\njobs:")[0]

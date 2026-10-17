@@ -409,7 +409,6 @@ jobs:
             branch=${{ steps.branch.outcome }}
             record=${{ steps.record.outcome }}
             push=${{ steps.push.outcome }}
-            raw=${{ steps.raw.outcome }}
             digest=${{ steps.digest.outcome }}
             reconcile=${{ steps.reconcile.outcome }}
             integrity=${{ steps.integrity.outcome }}
