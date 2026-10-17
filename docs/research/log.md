@@ -1048,3 +1048,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#896
+- Directive: #891
+- Step: 3 (progress tracking for H1 to H10; scores nothing)
+- Tier: development
+- Pins: no panel read; base `f70bf93d`
+- Tried: recorded merged work on the results page: eleven milestones done with their merged pull requests, each hypothesis's phase on the plan's six-step scale (a log entry's step no longer sets it), `gbm_funding` and its development figures in `progress.json`, and the factual status lines of the plan. Variants: 0 new models.
+- Result: H5 reads step 3 of 6 (development done on merged records, registration not yet), not step 6. Every figure is copied from a merged record; nothing is a verdict.
+- Against kill: not applicable (no verdict; development data).
+- Next: the milestones left open in the pull request are Eleonora's to match; the layout redesign is #893.
