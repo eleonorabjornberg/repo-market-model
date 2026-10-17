@@ -105,5 +105,31 @@ class TestTheDraftRecord(unittest.TestCase):
                 self.assertEqual(sp.CRITICAL_VALUES[comparison][n], original["comparison_critical_values"][comparison][str(n)])
 
 
+def load_script(name):
+    spec = importlib.util.spec_from_file_location(name + "_for_873", ROOT / "scripts" / (name + ".py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestTheScratchResults(unittest.TestCase):
+    """The re-run studies are read back against the records they were made from, and the page against all of them."""
+
+    def test_the_power_study_is_at_the_drafts_values(self):
+        study = load_script("power_study_769")
+        self.assertEqual(study.main(["check", "--out", str(ROOT / "docs" / "research" / "power-study-873")]), 0)
+        result = json.loads((ROOT / "docs" / "research" / "power-study-873" / "result.json").read_text(encoding="utf-8"))
+        self.assertEqual(result["values"], "draft-873")
+        self.assertEqual(result["constants"]["critical_values"],
+                         {str(n): v for n, v in study.critical_values("draft-873").items()})
+
+    def test_the_replay_is_at_the_drafts_and_the_in_force_values(self):
+        replay = load_script("power_replay_inforce_873")
+        self.assertEqual(replay.main(["check", "--out", str(ROOT / "docs" / "research" / "power-replay-873")]), 0)
+
+    def test_the_page_is_what_the_records_give(self):
+        self.assertEqual(load_script("orientation_873").main(["check"]), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
