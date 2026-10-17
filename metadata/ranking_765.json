@@ -6,7 +6,7 @@
   "task": "as declared in metadata/ranking_694.json: at each decision day, rank the next 20 business days (the 20 panel rows after the decision day), and score the top k against the days that were realised pressure days (strictly above +5 bp on whole basis points). The windows, days, outcomes, metrics, bootstrap and seed are those of step 1; only the rankers change",
   "quantity": "The +5 bp level is only the ranking quantity carried over from step 1 (P(spread > +5 bp), repo_model.spread_mean_reversion.exceedance). Nothing is fitted to the +5 bp event, which is retired as a decision rule",
   "day_type": "SplitDeclaration.reporting_day_type of the target day (quarter_end, month_end, tax_date, ordinary), read from the target row's calendar columns, which are known in advance (the reading step 1's climatology already uses). No spread, and no column that depends on one, is read for a day after the anchor",
-  "rankers": {
+  "candidates": {
     "calendar_then_tail": {
       "letter": "a",
       "rule": "order by the calendar's own ordering first (1 on a scheduled risk date, pressure_judge._scheduled_risk_date, else 0), and within each of the two groups by the step-1 tail probability P(spread > +5 bp) from the model of #686 extended to 20 leads (ranking.fit and ranking.forecast, unchanged). Score: 2 x calendar + tail probability, so the calendar always dominates. A tie in the score is broken by its expected value over a random order",

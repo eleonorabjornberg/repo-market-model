@@ -8300,8 +8300,8 @@
   "tiers": "docs/pivot/evidence/weighted-miss/tier1.json"
  },
  "variant_count": {
-  "arm_declarations": 20,
-  "arms": 77,
+  "arm_declarations": 21,
+  "arms": 80,
   "candidate_files": 358,
   "declarations": 23,
   "unread": [
@@ -8327,7 +8327,6 @@
    "pressure_tail.json",
    "projected_reserves.json",
    "ranking_694.json",
-   "ranking_765.json",
    "recency_adaptive_training.json",
    "regime_recalibration.json",
    "regime_thresholds.json",

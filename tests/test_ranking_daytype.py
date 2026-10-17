@@ -247,7 +247,7 @@ class DeclarationTests(unittest.TestCase):
         cls.declaration = json.loads((ROOT / "metadata" / "ranking_765.json").read_text(encoding="utf-8"))
 
     def test_the_declaration_names_the_constants_of_the_module(self):
-        r = self.declaration["rankers"]
+        r = self.declaration["candidates"]
         self.assertEqual(r["tail_by_type"]["pool_band"], rd.POOL_BAND)
         self.assertEqual(r["tail_by_type"]["min_pool"], rd.MIN_POOL)
         self.assertEqual(tuple(r["blend"]["weight_grid"]), rd.WEIGHT_GRID)
@@ -256,7 +256,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(r["blend"]["min_trailing_windows"], rd.MIN_TRAILING)
 
     def test_at_most_three_rankers_and_they_are_the_modules(self):
-        self.assertEqual(set(self.declaration["rankers"]), set(rd.CANDIDATES))
+        self.assertEqual(set(self.declaration["candidates"]), set(rd.CANDIDATES))
         self.assertLessEqual(len(rd.CANDIDATES), self.declaration["limits"]["max_rankers"])
         self.assertEqual(self.declaration["limits"]["max_rankers"], 3)
 
