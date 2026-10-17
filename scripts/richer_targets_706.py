@@ -16,6 +16,9 @@ other command refuses to read unless it is committed and unchanged. Nothing is p
         PYTHONPATH=src python3 scripts/richer_targets_706.py walk --target $T --horizon $h --panel H9D.csv --output OUT/${T}_h$h.json
     PYTHONPATH=src python3 scripts/richer_targets_706.py score --panel H9D.csv --walks OUT --output OUT/score.json
     PYTHONPATH=src python3 scripts/richer_targets_706.py report --score OUT/score.json --output OUT/report.md
+    # #902: the same walks scored with and without decision day 2019-09-18; refuses unless "with" reproduces the tracked score.json
+    PYTHONPATH=src python3 scripts/richer_targets_706.py sensitivity --panel H9D.csv --walks OUT --output OUT/sensitivity.json
+    PYTHONPATH=src python3 scripts/richer_targets_706.py sensitivity-report --sensitivity OUT/sensitivity.json --output OUT/sensitivity.md
 
 * **The model** is #634's candidate (b), the gradient-boosted quantile model on the 23 levels of the protocol's grid with the inputs of
   `spread_distribution_634.new_features`, fitted walk-forward on the shared fold grid (minimum history 61, refit every 21 days, leads
@@ -300,8 +303,10 @@ def auc_cell(groups: Sequence[Sequence[float]], other: Sequence[float]) -> Optio
     return richer_targets.pre_onset_interval(list(groups), list(other), seed=SEED, draws=ONSET_DRAWS)
 
 
-def score_target(target: str, args, declared: dict, all_rows, splits, registry) -> dict:
-    """One target's decision-day scores against its own B1 and B2, in all its splits, and its lead on the onsets."""
+def score_target(target: str, args, declared: dict, all_rows, splits, registry, drop: Optional[date] = None) -> dict:
+    """One target's decision-day scores against its own B1 and B2, in all its splits, and its lead on the onsets.
+
+    `drop` is a decision day left out of every cut after the benchmarks are built (#902, the sensitivity to 2019-09-18); `None` is #706's score."""
 
     rows = panel_rows(args.panel, target)
     dates = [row.date for row in rows]
@@ -335,7 +340,7 @@ def score_target(target: str, args, declared: dict, all_rows, splits, registry) 
             unbuilt.append(d.isoformat())
             continue
         b1[d], b2[d] = built1, built2
-    days = [d for d in decision_days if d in b1]
+    days = [d for d in decision_days if d in b1 and d != drop]
     if not days:
         raise SystemExit(f"{target}: no decision day has both benchmarks")
     filled = sp.fill_missing({d: by_decision[d] for d in days}, b1, days)
@@ -386,11 +391,11 @@ def score_target(target: str, args, declared: dict, all_rows, splits, registry) 
                 "tests": m634.pair_table(means, pairs, group, args.draws),
             }
     out["by_day_type"] = by_type
-    out["lead_on_onsets"] = lead_on_onsets(target, args, all_rows, laws[1], values, position, rows)
+    out["lead_on_onsets"] = lead_on_onsets(target, args, all_rows, laws[1], values, position, rows, drop)
     return out
 
 
-def lead_on_onsets(target, args, all_rows, laws1, values, position, rows) -> dict:
+def lead_on_onsets(target, args, all_rows, laws1, values, position, rows, drop: Optional[date] = None) -> dict:
     """The pre-onset AUC of the model's lead-1 median and of the as-of value, within each as-of state (step 1's contrast)."""
 
     registry = s639.measurement_fields.load_registry()
@@ -426,7 +431,7 @@ def lead_on_onsets(target, args, all_rows, laws1, values, position, rows) -> dic
     for name, series in (("model_median", median), ("as_of_value", asof_value)):
         cell = {}
         for band in BANDS:
-            usable = lambda k, band=band: series[k] is not None and state[k] == band
+            usable = lambda k, band=band: series[k] is not None and state[k] == band and scored_days[k] != drop
             groups = [[series[k] for k in g if usable(k)] for g in groups_idx]
             groups = [g for g in groups if g]
             other = [series[k] for k in range(len(scored_days)) if k not in pre and usable(k)]
@@ -463,6 +468,130 @@ def score_command(args) -> int:
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"output": str(args.output), "targets": list(results)}))
+    return 0
+
+
+# -- the sensitivity to one decision day (#902) --------------------------------------------------------------------
+
+SENSITIVITY_DAY = date(2019, 9, 18)
+
+
+def reproduces(with_day: Mapping[str, dict], tracked: Mapping[str, dict]) -> List[str]:
+    """The targets whose "with the day" score is not the tracked `score.json`'s (empty when it reproduces #706 exactly)."""
+
+    return sorted(t for t in tracked if with_day.get(t) != tracked[t])
+
+
+def sensitivity_command(args) -> int:
+    declared = committed_declaration()
+    require_unlocked([LAST_TARGET], where="richer_targets_706")
+    panel_digest = hashlib.sha256(args.panel.read_bytes()).hexdigest()
+    if panel_digest != declared["panel"]["sha256"]:
+        raise SystemExit(f"the panel's digest {panel_digest} is not the declared {declared['panel']['sha256']}")
+    all_rows = [row for row in load_daily_panel(args.panel) if row.date <= LAST_TARGET]
+    splits = load_split_declaration(SPLITS)
+    registry = s639.measurement_fields.load_registry()
+    tracked = json.loads(args.reference.read_text(encoding="utf-8"))
+    if tracked["draws"] != args.draws or tracked["seed"] != SEED or tracked["panel_sha256"] != panel_digest:
+        raise SystemExit("the reference score was made with other draws, seed or panel than this run")
+    targets = {}
+    for target in declared["choice"]["chosen"]:
+        targets[target] = {
+            "with": score_target(target, args, declared, all_rows, splits, registry),
+            "without": score_target(target, args, declared, all_rows, splits, registry, drop=SENSITIVITY_DAY),
+        }
+    differs = reproduces({t: v["with"] for t, v in targets.items()}, tracked["targets"])
+    if differs:
+        raise SystemExit(f"the \"with the day\" column does not reproduce the tracked score for {differs}; nothing written")
+    document = {
+        "declaration": "metadata/richer_targets_706.json",
+        "declaration_sha256": hashlib.sha256(DECLARATION.read_bytes()).hexdigest(),
+        "panel_sha256": panel_digest,
+        "draws": args.draws,
+        "seed": SEED,
+        "dropped_day": SENSITIVITY_DAY.isoformat(),
+        "reproduces_tracked_score": True,
+        "targets": targets,
+    }
+    args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output), "targets": list(targets)}))
+    return 0
+
+
+def _lower(test: Optional[dict]) -> Optional[float]:
+    return None if not test else test["skill_lower_95_one_sided"]
+
+
+def sign_changes(document: Mapping) -> List[str]:
+    """Every skill cell whose lower 95% bound changes sign when the day is dropped, one line each."""
+
+    out = []
+    for target, pair in document["targets"].items():
+        cuts = [("pooled", lambda r: r["pooled"])]
+        cuts += [(f"lead {h}", lambda r, h=h: r["by_lead"][str(h)]["tests"]) for h in HORIZONS]
+        cuts += [(f"state {b}", lambda r, b=b: r["by_state"].get(b, {}).get("tests", {})) for b in BANDS]
+        kinds = sorted(set(pair["with"]["by_day_type"]) | set(pair["without"]["by_day_type"]))
+        cuts += [(f"day type {k}", lambda r, k=k: r["by_day_type"].get(k, {}).get("tests", {})) for k in kinds]
+        for label, pick in cuts:
+            for bench in ("B1", "B2"):
+                a, b = _lower(pick(pair["with"]).get(f"{bench} -> model")), _lower(pick(pair["without"]).get(f"{bench} -> model"))
+                if a is not None and b is not None and (a > 0.0) != (b > 0.0):
+                    out.append(f"`{target}`, {label}, over {bench}: lower bound {fmt(a, 3, True)} with the day, {fmt(b, 3, True)} without")
+    return out
+
+
+def sensitivity_markdown(document: dict) -> str:
+    day = document["dropped_day"]
+    lines = [f"# H9 step 2 without decision day {day} (#902)", ""]
+    lines += [
+        "**Development data, not a verdict** (scoring protocol v1 §1). A sensitivity table on #706's walks, unchanged: same declaration, panel, seed and interval. "
+        f"\"With\" reproduces `docs/pivot/evidence/richer-targets-706/score.json` exactly; \"without\" leaves out decision day {day} from every cut (#798; Eleonora's ruling, option (b)). "
+        "Cells are skill over the benchmark (lower 95% bound).", "",
+    ]
+    for bench in ("B1", "B2"):
+        lines += [f"## Pooled, skill over {bench}", "", "| target | days with / without | with | without |", "|---|---|---|---|"]
+        for target, pair in document["targets"].items():
+            w, wo = pair["with"], pair["without"]
+            lines.append(f"| `{target}` | {w['decision_days']['n']} / {wo['decision_days']['n']} | {skill_cell(w['pooled'].get(f'{bench} -> model'))} | {skill_cell(wo['pooled'].get(f'{bench} -> model'))} |")
+        lines.append("")
+    for bench in ("B1", "B2"):
+        lines += [f"## By as-of scarcity state, skill over {bench}", "", "| target | state | days with / without | with | without |", "|---|---|---|---|---|"]
+        for target, pair in document["targets"].items():
+            for band in BANDS:
+                w, wo = pair["with"]["by_state"].get(band), pair["without"]["by_state"].get(band)
+                lines.append(
+                    f"| `{target}` | {band} | {w['n'] if w else '-'} / {wo['n'] if wo else '-'} | "
+                    f"{skill_cell(w['tests'].get(f'{bench} -> model')) if w else '-'} | {skill_cell(wo['tests'].get(f'{bench} -> model')) if wo else '-'} |"
+                )
+        lines.append("")
+    for bench in ("B1", "B2"):
+        lines += [f"## By day type of the target day, skill over {bench}", "", "| target | day type | with | without |", "|---|---|---|---|"]
+        for target, pair in document["targets"].items():
+            for kind in sorted(set(pair["with"]["by_day_type"]) | set(pair["without"]["by_day_type"])):
+                w, wo = pair["with"]["by_day_type"].get(kind), pair["without"]["by_day_type"].get(kind)
+                lines.append(
+                    f"| `{target}` | {kind} | {skill_cell(w['tests'].get(f'{bench} -> model')) if w else '-'} | {skill_cell(wo['tests'].get(f'{bench} -> model')) if wo else '-'} |"
+                )
+        lines.append("")
+    lines += ["## Pre-onset AUC of the model's lead-1 median (90% interval)", "", "| target | state | onsets | with | without |", "|---|---|---|---|---|"]
+    for target, pair in document["targets"].items():
+        for band in BANDS:
+            w = pair["with"]["lead_on_onsets"]["cells"]["model_median"][band]
+            wo = pair["without"]["lead_on_onsets"]["cells"]["model_median"][band]
+            cell = lambda c: "-" if "auc" not in c else f"{fmt(c['auc'])} [{fmt(c.get('auc_low'))}, {fmt(c.get('auc_high'))}]"
+            lines.append(f"| `{target}` | {band} | {w['onsets']} / {wo['onsets']} | {cell(w)} | {cell(wo)} |")
+    lines += ["", "## Interval bounds that change sign", ""]
+    changes = sign_changes(document)
+    lines += [f"* {c}" for c in changes] if changes else ["None: no lower bound changes sign when the day is dropped."]
+    lines.append("")
+    return "\n".join(lines)
+
+
+def sensitivity_report_command(args) -> int:
+    committed_declaration()
+    document = json.loads(args.sensitivity.read_text(encoding="utf-8"))
+    args.output.write_text(sensitivity_markdown(document) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(args.output)}))
     return 0
 
 
@@ -595,6 +724,17 @@ def main(argv=None) -> int:
     report.add_argument("--score", type=Path, required=True)
     report.add_argument("--output", type=Path, required=True)
     report.set_defaults(handler=report_command)
+    sens = commands.add_parser("sensitivity", help=f"score with and without decision day {SENSITIVITY_DAY} (#902); refuses unless 'with' reproduces the tracked score")
+    sens.add_argument("--panel", type=Path, required=True)
+    sens.add_argument("--walks", type=Path, required=True)
+    sens.add_argument("--reference", type=Path, default=REPO / "docs" / "pivot" / "evidence" / "richer-targets-706" / "score.json")
+    sens.add_argument("--output", type=Path, required=True)
+    sens.add_argument("--draws", type=int, default=DRAWS)
+    sens.set_defaults(handler=sensitivity_command)
+    sens_report = commands.add_parser("sensitivity-report", help="the with / without tables")
+    sens_report.add_argument("--sensitivity", type=Path, required=True)
+    sens_report.add_argument("--output", type=Path, required=True)
+    sens_report.set_defaults(handler=sensitivity_report_command)
     args = parser.parse_args(argv)
     return args.handler(args)
 
