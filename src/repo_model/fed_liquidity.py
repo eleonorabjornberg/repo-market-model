@@ -15,9 +15,11 @@ operation date. The cash outstanding is its own series, `nyfed_repo_ops.repo_ter
 (USD billions of term repos with settlement <= d < maturity, rebuilt across the snapshot files),
 so no different measure sits under one name. It is declared and left off the panel columns.
 
-* **The take-up floor** (#743, Eleonora, 14 October 2026): in every era an operation with less than
-  $0.1 bn accepted (`ingest.REPO_TAKE_UP_FLOOR`) counts as no take-up, so the $1-7 mn trades of the
-  facility era are zero like the $64-66 mn tests. The operation still happened and its date keeps a row.
+* **The test-trade rule** (#802, Eleonora, 15 October 2026; it narrows #743's $0.1 bn floor): an operation
+  counts as no take-up only if it is a test trade, that is, if it accepted at most $7 mn and a whole
+  number of millions (`ingest.TEST_TRADE_MAX`); an operation whose note names a small value exercise is
+  dropped as before. The $8-97 mn operations the floor zeroed count again. The operation still happened
+  and its date keeps a row.
 * Before 2019-09-17 (`ingest.REPO_FACILITY_START`) no Fed repo was offered to the market; the six
   operations of $64-66 million before it are test operations and are not take-up. A date with no
   operation is a structural zero.
