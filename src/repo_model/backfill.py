@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 from xml.etree import ElementTree
 
+from . import contract
 from .splits import LookAheadError
 
 __all__ = [
@@ -56,6 +57,8 @@ __all__ = [
     "prefix_length",
     "require_posting_established",
     "require_series_admitted",
+    "series_read",
+    "unadmitted_columns",
     "require_training_only",
 ]
 
@@ -290,6 +293,45 @@ def load_admitted_series(path: Path) -> Dict[str, datetime]:
         except (TypeError, ValueError) as exc:
             raise ValueError(f"{path}: admitted[{name!r}] must be an ISO date-time, got {value!r}") from exc
     return out
+
+
+#: Panel columns the New York Fed's workbook feeds, by the back-fill series each is drawn from. SOFR's volume and
+#: percentiles are the same series as its rate (the workbook publishes none of them, so they are blank).
+WORKBOOK_SERIES = {"sofr": "sofr", "sofr_volume": "sofr", "sofr_p25": "sofr", "sofr_p75": "sofr",
+                   "tgcr": "tgcr", "bgcr": "bgcr"}
+
+#: Features that are not a back-fill series: the calendar, and IORB, an administered rate that defines the
+#: spread (whether it needs its own `admitted` entry is a marked question on #742's pull request, not settled here).
+NOT_A_SERIES = contract.CALENDAR_FEATURES | {"iorb"}
+
+
+def series_read(features: Iterable[str]) -> Tuple[str, ...]:
+    """The back-fill series that a model reading `features` draws on, from the feature declarations (#832).
+
+    Derived and composed features (`spread_bps`, `reserves_when_depleted`) are followed to the panel columns
+    they are computed from. A workbook column maps to its series; the calendar and IORB are no series; any other
+    column stands for itself, so a column this module does not know is never admitted.
+    """
+
+    pending, seen, out = list(features), set(), []
+    while pending:
+        name = str(pending.pop(0))
+        if name in seen:
+            continue
+        seen.add(name)
+        if name in contract.DERIVED_FEATURES:
+            pending.extend(contract.DERIVED_FEATURES[name])
+        elif name in contract.COMPOSED_FEATURES:
+            pending.extend(contract.COMPOSED_FEATURES[name])
+        elif name not in NOT_A_SERIES:
+            out.append(WORKBOOK_SERIES.get(name, name))
+    return tuple(sorted(dict.fromkeys(out)))
+
+
+def unadmitted_columns(columns: Iterable[str], admitted: Mapping[str, datetime]) -> List[str]:
+    """The panel columns that carry a series `admitted` does not list: blank on a back-filled row (#742, #832)."""
+
+    return [name for name in columns if any(series not in admitted for series in series_read([name]))]
 
 
 def require_series_admitted(
