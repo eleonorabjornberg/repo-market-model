@@ -949,7 +949,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no candidate scored); docs/decisions/measurement-protocol.md unchanged
 - Next: the G6 power study re-run on the extended labels (next directive)
 
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#837
 - Directive: #785
 - Step: 3
 - Tier: development
