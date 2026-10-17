@@ -48,13 +48,17 @@ def headline(record: Mapping) -> Tuple[str, float]:
 
 
 def bounds(record: Mapping) -> Optional[Tuple[float, float]]:
-    """The record's interval for its headline, whichever way the source stored it, or None."""
+    """The record's interval for its headline, whichever way the source stored it, or None.
+
+    A one-sided pair (lower and upper) is the headline's own when both keys start with the headline's name.
+    """
 
     for key, value in record.items():
         if "interval" in key and isinstance(value, list) and len(value) == 2 and all(_is_number(v) for v in value):
             return float(value[0]), float(value[1])
-    lower = [v for k, v in record.items() if "lower" in k and "one_sided" in k and _is_number(v)]
-    upper = [v for k, v in record.items() if "upper" in k and "one_sided" in k and _is_number(v)]
+    name = next((k for k in HEADLINES if _is_number(record.get(k))), "")
+    lower = [v for k, v in record.items() if k.startswith(name) and "lower" in k and "one_sided" in k and _is_number(v)]
+    upper = [v for k, v in record.items() if k.startswith(name) and "upper" in k and "one_sided" in k and _is_number(v)]
     if lower and upper:
         return float(lower[0]), float(upper[0])
     return None
@@ -72,36 +76,36 @@ def bound_sign_change(a: Optional[Tuple[float, float]], b: Optional[Tuple[float,
     return any(_sign(x) != _sign(y) for x, y in zip(a, b))
 
 
-def max_difference(a, b) -> float:
-    """The largest absolute difference between the numbers of two documents of one shape.
+def reproduction(tracked: Mapping, rerun: Mapping, words: Sequence[str] = ()) -> dict:
+    """How far the rerun's records sit from the tracked score file's, on the headline figure and the interval's bounds.
 
-    Raises:
-        ValueError: the documents differ in shape (a key, a length or a type).
+    A record whose path contains one of `words` (the rows of a fit that cannot be rebuilt byte for byte) is counted apart.
     """
 
-    if isinstance(a, dict) and isinstance(b, dict):
-        if set(a) != set(b):
-            raise ValueError(f"keys differ: {sorted(set(a) ^ set(b))[:3]}")
-        return max((max_difference(a[k], b[k]) for k in a), default=0.0)
-    if isinstance(a, list) and isinstance(b, list):
-        if len(a) != len(b):
-            raise ValueError("lengths differ")
-        return max((max_difference(x, y) for x, y in zip(a, b)), default=0.0)
-    if _is_number(a) and _is_number(b):
-        return abs(float(a) - float(b))
-    if a != b:
-        raise ValueError(f"values differ: {a!r} and {b!r}")
-    return 0.0
+    tracked_records = dict(records(tracked))
+    worst, worst_words, missing, compared = 0.0, 0.0, [], 0
+    for path, rec in records(rerun):
+        if path not in tracked_records:
+            missing.append(path)
+            continue
+        compared += 1
+        _, value = headline(rec)
+        _, tracked_value = headline(tracked_records[path])
+        gaps = [abs(value - tracked_value)]
+        mine, theirs = bounds(rec), bounds(tracked_records[path])
+        if mine is not None and theirs is not None:
+            gaps += [abs(x - y) for x, y in zip(mine, theirs)]
+        if any(word in path for word in words):
+            worst_words = max(worst_words, *gaps)
+        else:
+            worst = max(worst, *gaps)
+    return {"records_compared": compared, "not_in_the_tracked_file": len(missing), "max_abs_difference": worst,
+            "words": list(words), "max_abs_difference_words": worst_words}
 
 
-def compare(name: str, tracked: Mapping, with_day: Mapping, without_day: Mapping) -> dict:
+def compare(name: str, tracked: Mapping, with_day: Mapping, without_day: Mapping, words: Sequence[str] = ()) -> dict:
     """The reproduction of `tracked` by `with_day`, and every record of `with_day` beside its record without the day."""
 
-    reproduction: dict
-    try:
-        reproduction = {"max_abs_difference": max_difference(tracked, with_day), "same_shape": True}
-    except ValueError as error:
-        reproduction = {"max_abs_difference": None, "same_shape": False, "note": str(error)}
     without = dict(records(without_day))
     rows = []
     for path, rec in records(with_day):
@@ -117,7 +121,7 @@ def compare(name: str, tracked: Mapping, with_day: Mapping, without_day: Mapping
             "interval_with": interval, "interval_without": interval_without,
             "bound_sign_change": bound_sign_change(interval, interval_without),
         })
-    return {"name": name, "reproduction": reproduction, "rows": rows}
+    return {"name": name, "reproduction": reproduction(tracked, with_day, words), "rows": rows}
 
 
 def _fmt(x: Optional[float]) -> str:
@@ -133,10 +137,9 @@ def render(comparisons: Sequence[Mapping], headline_filter=lambda path: True) ->
     for comp in comparisons:
         repro = comp["reproduction"]
         lines += [f"## {comp['name']}", ""]
-        if repro["same_shape"]:
-            lines.append(f"Reproduction of the tracked score file: largest absolute difference {repro['max_abs_difference']:.2e}.")
-        else:
-            lines.append(f"Reproduction of the tracked score file: the shape differs ({repro['note']}).")
+        lines.append(f"Reproduction of the tracked score file: {repro['records_compared']} records compared, largest absolute difference "
+                     f"{repro['max_abs_difference']:.2e} (headline figures and interval bounds); {repro['not_in_the_tracked_file']} not in the tracked file."
+                     + (f" Records whose path names {' or '.join(repro['words'])}: largest difference {repro['max_abs_difference_words']:.2e}." if repro["words"] else ""))
         changed = [r for r in comp["rows"] if r["bound_sign_change"]]
         lines += ["", f"Records compared: {len(comp['rows'])}; records in which a bound of the interval changes sign: {len(changed)}.", ""]
         lines += ["| record | metric | days (without) | with | without | interval with | interval without | bound changes sign |",
@@ -153,7 +156,7 @@ def render(comparisons: Sequence[Mapping], headline_filter=lambda path: True) ->
 
 def compare_command(args) -> int:
     load = lambda p: json.loads(Path(p).read_text(encoding="utf-8"))
-    document = compare(args.name, load(args.tracked), load(args.with_), load(args.without))
+    document = compare(args.name, load(args.tracked), load(args.with_), load(args.without), args.words)
     Path(args.output).write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"name": args.name, "records": len(document["rows"]), "reproduction": document["reproduction"]}))
     return 0
@@ -174,6 +177,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     c.add_argument("--tracked", required=True)
     c.add_argument("--with", dest="with_", required=True)
     c.add_argument("--without", required=True)
+    c.add_argument("--words", nargs="*", default=[], help="path words of the rows of a fit that cannot be rebuilt byte for byte")
     c.add_argument("--output", required=True)
     c.set_defaults(func=compare_command)
     r = sub.add_parser("report")

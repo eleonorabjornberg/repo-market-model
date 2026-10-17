@@ -1,0 +1,1858 @@
+{
+ "name": "688",
+ "reproduction": {
+  "max_abs_difference": 0.0,
+  "max_abs_difference_words": 0.0,
+  "not_in_the_tracked_file": 0,
+  "records_compared": 110,
+  "words": []
+ },
+ "rows": [
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0072568205690904134,
+    0.002858944541392373
+   ],
+   "interval_without": [
+    -0.007093429952526891,
+    0.002989602292573653
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/mae_median/tests/control -> bill_x_band",
+   "with": -0.0016696466218314087,
+   "without": -0.0015631445988455374
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0027093490397257364,
+    0.016355239431154203
+   ],
+   "interval_without": [
+    0.002723882443840188,
+    0.01622032473954499
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/mae_median/tests/control -> post_month_end_window",
+   "with": 0.009539359250026662,
+   "without": 0.009554516907731798
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.011422841614575156,
+    0.009134026788096316
+   ],
+   "interval_without": [
+    -0.011195257936519609,
+    0.009125229130386063
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.05/tests/control -> bill_x_band",
+   "with": -0.0013082032832298263,
+   "without": -0.001313636781541146
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0002534490150782071,
+    0.022288698041172013
+   ],
+   "interval_without": [
+    -0.0002611338116429024,
+    0.022257533378482002
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.05/tests/control -> post_month_end_window",
+   "with": 0.01085890614217439,
+   "without": 0.010870572153489983
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.01577123500615321,
+    0.0029776236451900893
+   ],
+   "interval_without": [
+    -0.015644120322933712,
+    0.0030322686189816674
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.25/tests/control -> bill_x_band",
+   "with": -0.005635340506582593,
+   "without": -0.005606006878395629
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0014821770745362152,
+    0.018701732729738112
+   ],
+   "interval_without": [
+    0.0015076598162791447,
+    0.018695828665979904
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.25/tests/control -> post_month_end_window",
+   "with": 0.010370394797300213,
+   "without": 0.01042033666595236
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0072568205690904134,
+    0.002858944541392373
+   ],
+   "interval_without": [
+    -0.007093429952526891,
+    0.002989602292573653
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.5/tests/control -> bill_x_band",
+   "with": -0.0016696466218314087,
+   "without": -0.0015631445988455374
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0027093490397257364,
+    0.016355239431154203
+   ],
+   "interval_without": [
+    0.002723882443840188,
+    0.01622032473954499
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.5/tests/control -> post_month_end_window",
+   "with": 0.009539359250026662,
+   "without": 0.009554516907731798
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.006410896238767811,
+    0.005023261196366619
+   ],
+   "interval_without": [
+    -0.006455630368187993,
+    0.0051098187691753436
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.75/tests/control -> bill_x_band",
+   "with": -0.0004356681887018492,
+   "without": -0.0004511854762481187
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.006531659510805541,
+    0.020857782530828536
+   ],
+   "interval_without": [
+    0.0066791194653616996,
+    0.02108779081987027
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.75/tests/control -> post_month_end_window",
+   "with": 0.013406238352877312,
+   "without": 0.013474419708403495
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.00621718671985977,
+    0.01561865866042395
+   ],
+   "interval_without": [
+    -0.006584710778408384,
+    0.015475903542982405
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.95/tests/control -> bill_x_band",
+   "with": 0.0044546588937221625,
+   "without": 0.004140831194957091
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0051531490775747054,
+    0.017997353045354013
+   ],
+   "interval_without": [
+    -0.005684766728141656,
+    0.01805965291203031
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/also/pinball_0.95/tests/control -> post_month_end_window",
+   "with": 0.006041409074110891,
+   "without": 0.0060543701886671035
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.005820944226006307,
+    0.005351354453475391
+   ],
+   "interval_without": [
+    -0.00594646820766453,
+    0.005159639176855844
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/1/control -> bill_x_band",
+   "with": -0.00025089011505614336,
+   "without": -0.0003937161708287869
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.004007340679160483,
+    0.002109193082642051
+   ],
+   "interval_without": [
+    -0.0038405540917141336,
+    0.0022927348409098594
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/1/control -> post_month_end_window",
+   "with": -0.0007865257337673066,
+   "without": -0.0006265658953766117
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.00088194032170284,
+    0.01066650602142101
+   ],
+   "interval_without": [
+    -0.0008817392977325629,
+    0.01072138949874633
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/2/control -> bill_x_band",
+   "with": 0.004758489766824468,
+   "without": 0.00473559428913374
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0016048187489773875,
+    0.008210676981405322
+   ],
+   "interval_without": [
+    -0.0016554653362127513,
+    0.008247492504539138
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/2/control -> post_month_end_window",
+   "with": 0.0031198381315869447,
+   "without": 0.003132120616977101
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.008472005767408523,
+    0.005467452590903218
+   ],
+   "interval_without": [
+    -0.008310960427331062,
+    0.005475405308696576
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/3/control -> bill_x_band",
+   "with": -0.0012371491473564392,
+   "without": -0.0011967017905849318
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.003920839517227102,
+    0.021796544102558504
+   ],
+   "interval_without": [
+    0.0038677425066165425,
+    0.021755293950597908
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/3/control -> post_month_end_window",
+   "with": 0.013023421783780074,
+   "without": 0.013026249888987883
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.011974979841616728,
+    0.002023034423847646
+   ],
+   "interval_without": [
+    -0.011747753050110686,
+    0.002065534838044599
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/4/control -> bill_x_band",
+   "with": -0.0043355122789171,
+   "without": -0.004127378065431401
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.008035024604722335,
+    0.02645435485275696
+   ],
+   "interval_without": [
+    0.00805039769392344,
+    0.026601573157317315
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/4/control -> post_month_end_window",
+   "with": 0.01735163659535409,
+   "without": 0.017369853114565226
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0075947098526049665,
+    -5.532484429435734e-05
+   ],
+   "interval_without": [
+    -0.007619039178483073,
+    -7.591903012604904e-05
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/5/control -> bill_x_band",
+   "with": -0.0035976770138815544,
+   "without": -0.0036029346933768255
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.008774949015055922,
+    0.025318791623025826
+   ],
+   "interval_without": [
+    0.008968839115318449,
+    0.02544967440802962
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_lead_tests/5/control -> post_month_end_window",
+   "with": 0.016917579912877182,
+   "without": 0.016987958987748242
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2062238393432968,
+    0.5935895360740382
+   ],
+   "interval_without": [
+    0.12228013534726873,
+    0.3493990488993305
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/B1 -> bill_x_band",
+   "with": 0.3222522169944806,
+   "without": 0.2163761229844329
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.20558184924486475,
+    0.5961008824539624
+   ],
+   "interval_without": [
+    0.12396301902536268,
+    0.34999193493107156
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/B1 -> control",
+   "with": 0.3226041657298975,
+   "without": 0.21673751759140863
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21303056188041267,
+    0.5988598831429819
+   ],
+   "interval_without": [
+    0.12786091945088757,
+    0.3556515603251552
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/B1 -> post_month_end_window",
+   "with": 0.32678744985247726,
+   "without": 0.22164482206274472
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.024322390876313604,
+    0.22464292062949082
+   ],
+   "interval_without": [
+    0.023285567774750632,
+    0.2245751218978823
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/B2 -> bill_x_band",
+   "with": 0.11060043630108202,
+   "without": 0.11039760518168151
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.026698212068380148,
+    0.22518366360394776
+   ],
+   "interval_without": [
+    0.02403729251568179,
+    0.22512187386143534
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/B2 -> control",
+   "with": 0.1110622940298321,
+   "without": 0.11080787536010482
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.030234379225354477,
+    0.23295589206571804
+   ],
+   "interval_without": [
+    0.027595930289191953,
+    0.23299910283504283
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/B2 -> post_month_end_window",
+   "with": 0.11655196314678865,
+   "without": 0.11637885135745382
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.005467760542846598,
+    0.00480161037419571
+   ],
+   "interval_without": [
+    -0.0053894291927481935,
+    0.004831270156752787
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/control -> bill_x_band",
+   "with": -0.0005195614109381124,
+   "without": -0.0004613965498056544
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.003480773184538534,
+    0.01596608960173903
+   ],
+   "interval_without": [
+    -0.0033085231795289714,
+    0.015915205219514877
+   ],
+   "metric": "skill",
+   "n": 375,
+   "n_without": 374,
+   "path": "/by_regime/2018-19/tests/control -> post_month_end_window",
+   "with": 0.0061755386008351945,
+   "without": 0.006265210681668199
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1856046495916973,
+    0.21302942808061814
+   ],
+   "interval_without": [
+    -0.1856046495916973,
+    0.21302942808061814
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/B1 -> bill_x_band",
+   "with": 0.06332750557860108,
+   "without": 0.06332750557860108
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1712503212788522,
+    0.20713149104231415
+   ],
+   "interval_without": [
+    -0.1712503212788522,
+    0.20713149104231415
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/B1 -> control",
+   "with": 0.06636392184438637,
+   "without": 0.06636392184438637
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.20914472379589547,
+    0.21168270144351378
+   ],
+   "interval_without": [
+    -0.20914472379589547,
+    0.21168270144351378
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/B1 -> post_month_end_window",
+   "with": 0.0702000986990268,
+   "without": 0.0702000986990268
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22155114388564828,
+    0.6211856718816473
+   ],
+   "interval_without": [
+    0.22155114388564828,
+    0.6211856718816473
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/B2 -> bill_x_band",
+   "with": 0.44732828077926534,
+   "without": 0.44732828077926534
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21092779893966793,
+    0.6242096268602478
+   ],
+   "interval_without": [
+    0.21092779893966793,
+    0.6242096268602478
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/B2 -> control",
+   "with": 0.4491198796656168,
+   "without": 0.4491198796656168
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21060978419047893,
+    0.6186475116506489
+   ],
+   "interval_without": [
+    0.21060978419047893,
+    0.6186475116506489
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/B2 -> post_month_end_window",
+   "with": 0.4513833671386833,
+   "without": 0.4513833671386833
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.013575635334338643,
+    0.018341741817031503
+   ],
+   "interval_without": [
+    -0.013575635334338643,
+    0.018341741817031503
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/control -> bill_x_band",
+   "with": -0.0032522482119410503,
+   "without": -0.0032522482119410503
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.019619881616228824,
+    0.02784411601265802
+   ],
+   "interval_without": [
+    -0.019619881616228824,
+    0.02784411601265802
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/by_regime/2020/tests/control -> post_month_end_window",
+   "with": 0.004108856699517014,
+   "without": 0.004108856699517014
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.49622226521119306,
+    -0.12342890393973893
+   ],
+   "interval_without": [
+    -0.49622226521119306,
+    -0.12342890393973893
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/B1 -> bill_x_band",
+   "with": -0.2700792128393308,
+   "without": -0.2700792128393308
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4898349534328162,
+    -0.12336675327199131
+   ],
+   "interval_without": [
+    -0.4898349534328162,
+    -0.12336675327199131
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/B1 -> control",
+   "with": -0.26764438610492786,
+   "without": -0.26764438610492786
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4636477851406353,
+    -0.09195159524735452
+   ],
+   "interval_without": [
+    -0.4636477851406353,
+    -0.09195159524735452
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/B1 -> post_month_end_window",
+   "with": -0.23657849888517463,
+   "without": -0.23657849888517463
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.23105957749877037,
+    0.5613421034159956
+   ],
+   "interval_without": [
+    0.23105957749877037,
+    0.5613421034159956
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/B2 -> bill_x_band",
+   "with": 0.39054855670008987,
+   "without": 0.39054855670008987
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2327503747542349,
+    0.5623091205669468
+   ],
+   "interval_without": [
+    0.2327503747542349,
+    0.5623091205669468
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/B2 -> control",
+   "with": 0.39171691584845375,
+   "without": 0.39171691584845375
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24694329726769418,
+    0.5743023655276482
+   ],
+   "interval_without": [
+    0.24694329726769418,
+    0.5743023655276482
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/B2 -> post_month_end_window",
+   "with": 0.4066239780317198,
+   "without": 0.4066239780317198
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.007575789644583188,
+    0.004049084003994363
+   ],
+   "interval_without": [
+    -0.007575789644583188,
+    0.004049084003994363
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/control -> bill_x_band",
+   "with": -0.0019207490374207037,
+   "without": -0.0019207490374207037
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.014226242929875094,
+    0.03663766045713266
+   ],
+   "interval_without": [
+    0.014226242929875094,
+    0.03663766045713266
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/by_regime/2021-23/tests/control -> post_month_end_window",
+   "with": 0.024506784047857992,
+   "without": 0.024506784047857992
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09723545590898473,
+    0.264554924931906
+   ],
+   "interval_without": [
+    0.09723545590898473,
+    0.264554924931906
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/B1 -> bill_x_band",
+   "with": 0.16692880824107123,
+   "without": 0.16692880824107123
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08773772490184491,
+    0.24812427308430524
+   ],
+   "interval_without": [
+    0.08773772490184491,
+    0.24812427308430524
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/B1 -> control",
+   "with": 0.15674549887882352,
+   "without": 0.15674549887882352
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10065434857764645,
+    0.24391981699123533
+   ],
+   "interval_without": [
+    0.10065434857764645,
+    0.24391981699123533
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/B1 -> post_month_end_window",
+   "with": 0.167872209983831,
+   "without": 0.167872209983831
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2618815577841109,
+    0.11962152513930174
+   ],
+   "interval_without": [
+    -0.2618815577841109,
+    0.11962152513930174
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/B2 -> bill_x_band",
+   "with": -0.01751290662671384,
+   "without": -0.01751290662671384
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2806856093810524,
+    0.11107281647394121
+   ],
+   "interval_without": [
+    -0.2806856093810524,
+    0.11107281647394121
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/B2 -> control",
+   "with": -0.02995079766263161,
+   "without": -0.02995079766263161
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2733109285731188,
+    0.12149381527441899
+   ],
+   "interval_without": [
+    -0.2733109285731188,
+    0.12149381527441899
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/B2 -> post_month_end_window",
+   "with": -0.016360636017805432,
+   "without": -0.016360636017805432
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.006084958705934291,
+    0.018549853825994483
+   ],
+   "interval_without": [
+    0.006084958705934291,
+    0.018549853825994483
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/control -> bill_x_band",
+   "with": 0.012076199236064828,
+   "without": 0.012076199236064828
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.017410466209889848,
+    0.03331721823967103
+   ],
+   "interval_without": [
+    -0.017410466209889848,
+    0.03331721823967103
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/by_regime/2024/tests/control -> post_month_end_window",
+   "with": 0.013194962007571396,
+   "without": 0.013194962007571396
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16069109966971018,
+    0.32392749276083943
+   ],
+   "interval_without": [
+    0.16069109966971018,
+    0.32392749276083943
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/B1 -> bill_x_band",
+   "with": 0.2283123054254417,
+   "without": 0.2283123054254417
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1732620670324191,
+    0.3282182848983166
+   ],
+   "interval_without": [
+    0.1732620670324191,
+    0.3282182848983166
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/B1 -> control",
+   "with": 0.23411574287745684,
+   "without": 0.23411574287745684
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1790876602112417,
+    0.3322777068701641
+   ],
+   "interval_without": [
+    0.1790876602112417,
+    0.3322777068701641
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/B1 -> post_month_end_window",
+   "with": 0.2393992992747343,
+   "without": 0.2393992992747343
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12180534859288938,
+    0.5034521460390599
+   ],
+   "interval_without": [
+    0.12180534859288938,
+    0.5034521460390599
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/B2 -> bill_x_band",
+   "with": 0.33048170610077376,
+   "without": 0.33048170610077376
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12144296635301469,
+    0.5127713450664855
+   ],
+   "interval_without": [
+    0.12144296635301469,
+    0.5127713450664855
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/B2 -> control",
+   "with": 0.33551678385171035,
+   "without": 0.33551678385171035
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12692189827648945,
+    0.5163702227584184
+   ],
+   "interval_without": [
+    0.12692189827648945,
+    0.5163702227584184
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/B2 -> post_month_end_window",
+   "with": 0.3401008114184269,
+   "without": 0.3401008114184269
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.028974831304802315,
+    0.006279949279122135
+   ],
+   "interval_without": [
+    -0.028974831304802315,
+    0.006279949279122135
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/control -> bill_x_band",
+   "with": -0.007577434054877695,
+   "without": -0.007577434054877695
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.001146051781686511,
+    0.017684164862353663
+   ],
+   "interval_without": [
+    -0.001146051781686511,
+    0.017684164862353663
+   ],
+   "metric": "skill",
+   "n": 244,
+   "n_without": 244,
+   "path": "/by_regime/2025-26/tests/control -> post_month_end_window",
+   "with": 0.006898635594271282,
+   "without": 0.006898635594271282
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.021046155269282496,
+    0.2569999536332751
+   ],
+   "interval_without": [
+    0.021046155269282496,
+    0.2569999536332751
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/B1 -> bill_x_band",
+   "with": 0.14923046291846132,
+   "without": 0.14923046291846132
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.01850401434463103,
+    0.25344637605838083
+   ],
+   "interval_without": [
+    0.01850401434463103,
+    0.25344637605838083
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/B1 -> control",
+   "with": 0.1459693478717331,
+   "without": 0.1459693478717331
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.018067516271844303,
+    0.25286274330822567
+   ],
+   "interval_without": [
+    0.018067516271844303,
+    0.25286274330822567
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/B1 -> post_month_end_window",
+   "with": 0.1454604639712954,
+   "without": 0.1454604639712954
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.25193753256617313,
+    0.4421584073056453
+   ],
+   "interval_without": [
+    0.25193753256617313,
+    0.4421584073056453
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/B2 -> bill_x_band",
+   "with": 0.34303563073449145,
+   "without": 0.34303563073449145
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24929116385947647,
+    0.44066126433564523
+   ],
+   "interval_without": [
+    0.24929116385947647,
+    0.44066126433564523
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/B2 -> control",
+   "with": 0.3405173971866315,
+   "without": 0.3405173971866315
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24894255769643808,
+    0.4398917493092559
+   ],
+   "interval_without": [
+    0.24894255769643808,
+    0.4398917493092559
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/B2 -> post_month_end_window",
+   "with": 0.3401244369593208,
+   "without": 0.3401244369593208
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.00015311069469753314,
+    0.010610174321284261
+   ],
+   "interval_without": [
+    -0.00015311069469753314,
+    0.010610174321284261
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/control -> bill_x_band",
+   "with": 0.0038184988309276457,
+   "without": 0.0038184988309276457
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.003514951445831302,
+    0.00394476240500971
+   ],
+   "interval_without": [
+    -0.003514951445831302,
+    0.00394476240500971
+   ],
+   "metric": "skill",
+   "n": 507,
+   "n_without": 507,
+   "path": "/by_type/month_end/tests/control -> post_month_end_window",
+   "with": -0.0005958614004890952,
+   "without": -0.0005958614004890952
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0824912568573009,
+    0.4932195941542127
+   ],
+   "interval_without": [
+    0.06229195010999054,
+    0.21952913245062516
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/B1 -> bill_x_band",
+   "with": 0.2005334501229207,
+   "without": 0.13283290859575653
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0843964418904251,
+    0.5001631757814324
+   ],
+   "interval_without": [
+    0.06508993876014851,
+    0.22192084841472243
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/B1 -> control",
+   "with": 0.20281066492985145,
+   "without": 0.13528235861721566
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09817435576831601,
+    0.5068418715755265
+   ],
+   "interval_without": [
+    0.08014435430966743,
+    0.23453677189541072
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/B1 -> post_month_end_window",
+   "with": 0.21512891082508345,
+   "without": 0.14869752639416037
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1765433508295119,
+    0.3426192332161833
+   ],
+   "interval_without": [
+    0.177971851490779,
+    0.3428047202995154
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/B2 -> bill_x_band",
+   "with": 0.2587997524150842,
+   "without": 0.25897364967526165
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17776114273403554,
+    0.3456089081579668
+   ],
+   "interval_without": [
+    0.17861650486064257,
+    0.3458317025968497
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/B2 -> control",
+   "with": 0.2609110004453619,
+   "without": 0.26106679530739707
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.18940399435421054,
+    0.35537132085148515
+   ],
+   "interval_without": [
+    0.19093135561850028,
+    0.35523155433887443
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/B2 -> post_month_end_window",
+   "with": 0.2723314743961008,
+   "without": 0.2725305523102667
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.009314989593431093,
+    0.0026635308205485426
+   ],
+   "interval_without": [
+    -0.009160844167130186,
+    0.0026962552548367544
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/control -> bill_x_band",
+   "with": -0.0028565545307128923,
+   "without": -0.0028326587827465746
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0066195999925120035,
+    0.023799462016992304
+   ],
+   "interval_without": [
+    0.0064291960078789664,
+    0.023696220599867493
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/by_type/ordinary/tests/control -> post_month_end_window",
+   "with": 0.015452095698380913,
+   "without": 0.015513928633967127
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07890105169120605,
+    0.2349952242354414
+   ],
+   "interval_without": [
+    -0.07890105169120605,
+    0.2349952242354414
+   ],
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/B1 -> bill_x_band",
+   "with": 0.09203040035485117,
+   "without": 0.09203040035485117
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07890105169120605,
+    0.2349952242354414
+   ],
+   "interval_without": [
+    -0.07890105169120605,
+    0.2349952242354414
+   ],
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/B1 -> control",
+   "with": 0.09203040035485117,
+   "without": 0.09203040035485117
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07890105169120605,
+    0.2349952242354414
+   ],
+   "interval_without": [
+    -0.07890105169120605,
+    0.2349952242354414
+   ],
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/B1 -> post_month_end_window",
+   "with": 0.09203040035485117,
+   "without": 0.09203040035485117
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.30888681997743783,
+    0.4799176367622663
+   ],
+   "interval_without": [
+    -0.30888681997743783,
+    0.4799176367622663
+   ],
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/B2 -> bill_x_band",
+   "with": 0.17045071800978703,
+   "without": 0.17045071800978703
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.30888681997743783,
+    0.4799176367622663
+   ],
+   "interval_without": [
+    -0.30888681997743783,
+    0.4799176367622663
+   ],
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/B2 -> control",
+   "with": 0.17045071800978703,
+   "without": 0.17045071800978703
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.30888681997743783,
+    0.4799176367622663
+   ],
+   "interval_without": [
+    -0.30888681997743783,
+    0.4799176367622663
+   ],
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/B2 -> post_month_end_window",
+   "with": 0.17045071800978703,
+   "without": 0.17045071800978703
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": null,
+   "interval_without": null,
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/control -> bill_x_band",
+   "with": 0.0,
+   "without": 0.0
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": null,
+   "interval_without": null,
+   "metric": "skill",
+   "n": 146,
+   "n_without": 146,
+   "path": "/by_type/quarter_end/tests/control -> post_month_end_window",
+   "with": 0.0,
+   "without": 0.0
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1941320393772665,
+    0.028434032488493813
+   ],
+   "interval_without": [
+    -0.1941320393772665,
+    0.028434032488493813
+   ],
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/B1 -> bill_x_band",
+   "with": -0.05637082385436737,
+   "without": -0.05637082385436737
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.19561961785623322,
+    0.028468464167610785
+   ],
+   "interval_without": [
+    -0.19561961785623322,
+    0.028468464167610785
+   ],
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/B1 -> control",
+   "with": -0.05661489206484317,
+   "without": -0.05661489206484317
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1984681432317108,
+    0.028231868924569914
+   ],
+   "interval_without": [
+    -0.1984681432317108,
+    0.028231868924569914
+   ],
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/B1 -> post_month_end_window",
+   "with": -0.057590489805729186,
+   "without": -0.057590489805729186
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3318504624495068,
+    0.5448934670452581
+   ],
+   "interval_without": [
+    -0.3318504624495068,
+    0.5448934670452581
+   ],
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/B2 -> bill_x_band",
+   "with": 0.27452047258797463,
+   "without": 0.27452047258797463
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3279786217116636,
+    0.5456074450278219
+   ],
+   "interval_without": [
+    -0.3279786217116636,
+    0.5456074450278219
+   ],
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/B2 -> control",
+   "with": 0.27435285484807326,
+   "without": 0.27435285484807326
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.32577902240421236,
+    0.5453978180261474
+   ],
+   "interval_without": [
+    -0.32577902240421236,
+    0.5453978180261474
+   ],
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/B2 -> post_month_end_window",
+   "with": 0.27368284752486843,
+   "without": 0.27368284752486843
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": null,
+   "interval_without": null,
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/control -> bill_x_band",
+   "with": 0.00023099069709197275,
+   "without": 0.00023099069709197275
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": null,
+   "interval_without": null,
+   "metric": "skill",
+   "n": 214,
+   "n_without": 214,
+   "path": "/by_type/tax_date/tests/control -> post_month_end_window",
+   "with": -0.0009233238601999181,
+   "without": -0.0009233238601999181
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24881649551715002,
+    0.5156294402903883
+   ],
+   "interval_without": [
+    0.16251042672680016,
+    0.3561036858231813
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/B1 -> bill_x_band",
+   "with": 0.3394024715415782,
+   "without": 0.25564859855129857
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24616895292442775,
+    0.5193829657200408
+   ],
+   "interval_without": [
+    0.16294965712799758,
+    0.35350961101562595
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/B1 -> control",
+   "with": 0.3375989206939104,
+   "without": 0.2535728100290166
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2507625093518282,
+    0.5210453118477543
+   ],
+   "interval_without": [
+    0.16506529852314106,
+    0.35691155942054953
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/B1 -> post_month_end_window",
+   "with": 0.34050232096120636,
+   "without": 0.2568976897217914
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06890369464369807,
+    0.31079577955482424
+   ],
+   "interval_without": [
+    0.06863694071140354,
+    0.31004497890765537
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/B2 -> bill_x_band",
+   "with": 0.19111938126402733,
+   "without": 0.19123294351824824
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07072749537884555,
+    0.3093845134458821
+   ],
+   "interval_without": [
+    0.0693254198056862,
+    0.30881086955074577
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/B2 -> control",
+   "with": 0.18891099073464276,
+   "without": 0.1889775176941323
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07298643521072204,
+    0.31150468656692076
+   ],
+   "interval_without": [
+    0.07269707422906313,
+    0.31003729013391923
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/B2 -> post_month_end_window",
+   "with": 0.19246611182346654,
+   "without": 0.19259013017400187
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.00396919215595189,
+    0.009385071638316483
+   ],
+   "interval_without": [
+    -0.0037849165383716586,
+    0.00953377734061539
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/control -> bill_x_band",
+   "with": 0.0027227474471455486,
+   "without": 0.0027809658465989475
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0035216993729299617,
+    0.012328756350390456
+   ],
+   "interval_without": [
+    -0.0034647256375951174,
+    0.012262175010492338
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_key_secondary/control -> post_month_end_window",
+   "with": 0.00438314543559611,
+   "without": 0.004454392521398691
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10468247689558177,
+    0.3880983040853323
+   ],
+   "interval_without": [
+    0.07473452360415206,
+    0.20505548144833408
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/B1 -> bill_x_band",
+   "with": 0.1917880732143971,
+   "without": 0.1331633883103031
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10546168426516969,
+    0.3909124734211231
+   ],
+   "interval_without": [
+    0.07581495424618115,
+    0.20541642662215234
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/B1 -> control",
+   "with": 0.19262339771641254,
+   "without": 0.13403901252229627
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.11587178538538996,
+    0.3930427803735364
+   ],
+   "interval_without": [
+    0.08520400166177683,
+    0.21394960410748215
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/B1 -> post_month_end_window",
+   "with": 0.20097686491560376,
+   "without": 0.14303706919433282
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16921127006006603,
+    0.34719528945879574
+   ],
+   "interval_without": [
+    0.16840938508556708,
+    0.3479345078813256
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/B2 -> bill_x_band",
+   "with": 0.2599043755213354,
+   "without": 0.26005476384864673
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16983540614988635,
+    0.3486275113418801
+   ],
+   "interval_without": [
+    0.16890581331102184,
+    0.3493187442839183
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/B2 -> control",
+   "with": 0.26066929866645755,
+   "without": 0.2608022103173195
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17692491816026473,
+    0.3560455146132502
+   ],
+   "interval_without": [
+    0.1754280857400628,
+    0.3558320891787087
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/B2 -> post_month_end_window",
+   "with": 0.268318733571403,
+   "without": 0.2684830916729352
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.005397993292550033,
+    0.002812629611887007
+   ],
+   "interval_without": [
+    -0.005240397877070078,
+    0.0028276999958025224
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/control -> bill_x_band",
+   "with": -0.0010346156919248996,
+   "without": -0.0010111589605712663
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.004378266535960267,
+    0.016355424127995767
+   ],
+   "interval_without": [
+    0.004423057989675836,
+    0.0162589477091275
+   ],
+   "metric": "skill",
+   "n": 1868,
+   "n_without": 1867,
+   "path": "/pooled_primary/control -> post_month_end_window",
+   "with": 0.010346432105617809,
+   "without": 0.010390833769827381
+  }
+ ]
+}

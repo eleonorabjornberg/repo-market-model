@@ -64,19 +64,19 @@ class CompareTests(unittest.TestCase):
 
     def test_intervals_are_read_in_each_stored_form(self):
         self.assertEqual(self.m.bounds({"skill": 1, "skill_interval_90": [0.1, 0.2]}), (0.1, 0.2))
-        self.assertEqual(self.m.bounds({"skill": 1, "skill_lower_95_one_sided": 0.1, "skill_upper_95_one_sided": 0.3}), (0.1, 0.3))
+        self.assertEqual(self.m.bounds({"skill": 1, "skill_lower_95_one_sided": 0.1, "skill_upper_95_one_sided": 0.3, "mean_difference_lower_95_one_sided": 9.0}), (0.1, 0.3))
         self.assertIsNone(self.m.bounds({"skill": 1}))
 
     def test_records_are_found_at_any_depth_with_their_path(self):
         doc = {"a": {"b": {"skill": 0.1, "n": 3}, "c": [1, 2]}, "headroom": 0.2}
         self.assertEqual([p for p, _ in self.m.records(doc)], ["", "/a/b"])
 
-    def test_the_reproduction_is_the_largest_difference_and_a_changed_shape_is_refused(self):
-        self.assertEqual(self.m.max_difference({"a": [1.0, 2.0]}, {"a": [1.0, 2.5]}), 0.5)
-        with self.assertRaises(ValueError):
-            self.m.max_difference({"a": 1.0}, {"b": 1.0})
-        with self.assertRaises(ValueError):
-            self.m.max_difference({"a": [1.0]}, {"a": [1.0, 2.0]})
+    def test_the_reproduction_is_the_largest_difference_of_a_figure_or_a_bound(self):
+        tracked = {"x": {"skill": 0.2, "skill_interval_90": [0.1, 0.3]}, "y": {"skill": 0.5}}
+        rerun = {"x": {"skill": 0.25, "skill_interval_90": [0.1, 0.2]}, "z": {"skill": 0.5}}
+        out = self.m.reproduction(tracked, rerun)
+        self.assertEqual((out["records_compared"], out["not_in_the_tracked_file"]), (1, 1))
+        self.assertAlmostEqual(out["max_abs_difference"], 0.1)
 
     def test_compare_pairs_each_record_with_its_own_path(self):
         tracked = {"x": {"skill": 0.2, "n": 5, "skill_interval_90": [0.1, 0.3]}}
