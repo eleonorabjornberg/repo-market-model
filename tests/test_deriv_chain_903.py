@@ -12,15 +12,17 @@ No look-ahead, availability or staleness guard is added, so no mutation is recor
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-
-import deriv_chain_903 as chain  # noqa: E402
+_spec = importlib.util.spec_from_file_location("deriv_chain_903", ROOT / "scripts" / "deriv_chain_903.py")
+chain = importlib.util.module_from_spec(_spec)
+sys.modules["deriv_chain_903"] = chain
+_spec.loader.exec_module(chain)
 
 
 class ChainShapeTests(unittest.TestCase):
