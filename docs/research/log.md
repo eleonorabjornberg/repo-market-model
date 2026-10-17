@@ -1029,7 +1029,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
 - Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
 
-### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#879
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#885
 - Directive: #865 (why the direct-pairs twin of #449 scores below gbm_funding)
 - Step: 2
 - Tier: development
