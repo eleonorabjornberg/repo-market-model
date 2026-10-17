@@ -1093,12 +1093,12 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
 - Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
 
-### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#908
-- Directive: #787
-- Step: 2 (inputs; data meaning of the Standing Repo Facility total, groundwork)
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
+- Directive: #882
+- Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
 - Tier: development
-- Pins: published panel unchanged; base `d4f76f94`
-- Tried: the test-trade rule of #802 (a whole-million trade of at most $7 mn is no take-up) applied to `srf_total_accepted`, as Eleonora ruled on 15 October 2026. Variants: 1 rule.
-- Result: three values on the results page move: 2022-10-03 0.003 to 0.0, 2025-12-23 0.006 to 0.0, 2025-12-24 0.503 to 0.5 (USD bn); nothing is scored.
-- Against kill: not applicable (no verdict; development data).
-- Next: H5 step 2 inputs.
+- Pins: base `f70bf93d`; published panel `4ddc3882…`; scripts and seeds of the three results unchanged (one option `--without-day` added)
+- Tried: each result re-run with its original script, once as published and once without the day. Variants: 0 new (25 walks of #634 and #688 and the H2 fits rerun).
+- Result: #761 and #688 reproduce the tracked figures (differences 5e-15 and 0); in #758 the candidates reproduce and the H2 ceiling does not (scratch panel digest differs). Without the day the candidates' pooled ordinary skill against B1 falls by about 9 points and stays above zero (gbm_funding +0.257 to +0.169); headroom changes sign nowhere; the reachable line's skill against B1 loses its resolved lower bound (+0.193 [+0.015, +0.352] to +0.097 [-0.008, +0.186]). Against B2 nothing moves. Development data, not a verdict.
+- Against kill: not applicable (a sensitivity table; nothing re-ruled).
+- Next: Eleonora's call on the H2 ceiling's reproducibility (three digests of DERIV.csv) and on whether the reachable-line sign change bears on H2 (marked questions in the PR).
