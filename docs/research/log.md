@@ -939,7 +939,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable.
 - Next: whether #632's tracked tables are re-scored and published anew is Eleonora's (marked question in the PR); the other pages on `satiation_dist_roll` may have the same history.
 
-### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#PR
+### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#848
 - Directive: #842
 - Step: 3 (milestone M4, the nested development test against H5's candidate `gbm_funding`)
 - Tier: development
