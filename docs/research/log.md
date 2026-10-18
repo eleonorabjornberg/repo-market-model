@@ -1122,3 +1122,33 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: #761 and #688 reproduce the tracked figures (differences 5e-15 and 0); in #758 the candidates reproduce and the H2 ceiling does not (scratch panel digest differs). Without the day the candidates' pooled ordinary skill against B1 falls by about 9 points and stays above zero (gbm_funding +0.257 to +0.169); headroom changes sign nowhere; the reachable line's skill against B1 loses its resolved lower bound (+0.193 [+0.015, +0.352] to +0.097 [-0.008, +0.186]). Against B2 nothing moves. Development data, not a verdict.
 - Against kill: not applicable (a sensitivity table; nothing re-ruled).
 - Next: Eleonora's call on the H2 ceiling's reproducibility (three digests of DERIV.csv) and on whether the reachable-line sign change bears on H2 (marked questions in the PR).
+
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#899
+- Directive: #892
+- Step: groundwork G1 (the prospective log's raw-input archive; the hypothesis tag is the nearest fit)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: the three "Raw archive failed" days on #237 (2026-10-10, 2026-10-12, 2026-10-17) are non-decision days with no record, so the archive step ran on an empty raw root; it now runs only when the record step wrote the day, and a real archive failure ends the run red. Variants: n/a (infrastructure, no model).
+- Result: no false archive alarm on a weekend or holiday; a failed archive on a decision day can no longer finish green. No record, archive or published figure moves.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's call on decision days without an archive (2026-10-05 and 2026-10-06).
+
+### 2026-10-17 [H5] groundwork G2 · eleonorabjornberg/repo-market-model#907
+- Directive: #883
+- Step: groundwork G2 and step 3 (the two month-end readings of `risk_dates`, measured side by side; the choice stays Eleonora's, #800)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `161fd5b6`; walks and exceedance files as in `scripts/spread_distribution_634.py`; H2's fits rerun on a worktree at the merge of #775
+- Tried: listed the days on which the window reading and the business-day reading disagree (70 panel days to 2025-12-31, 5 of them pressure days), then re-ran #805, #761, #849, #694 and #758 under each reading, with the reading switched by a process-level shim and nothing in `src/` changed. Variants: 0.
+- Result: the controls reproduce the tracked evidence to 1e-9 for #805, #761, #849 and #694; #775's does not byte for byte (scratch panel digest drift, #811) but is within the declared tolerance. Pooled skills move by about 0.1 points at most, ordinary-day groups by at most 0.8 points with no sign change, month-end groups by up to 5.5 points; the kill outcomes shown do not change. Development data, not a verdict.
+- Against kill: not applicable (a measurement of a definition, no kill criterion assessed).
+- Next: which reading is shared is Eleonora's (marked question in the PR, #800).
+
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#908
+- Directive: #787
+- Step: 2 (inputs; data meaning of the Standing Repo Facility total, groundwork)
+- Tier: development
+- Pins: published panel unchanged; base `d4f76f94`
+- Tried: the test-trade rule of #802 (a whole-million trade of at most $7 mn is no take-up) applied to `srf_total_accepted`, as Eleonora ruled on 15 October 2026. Variants: 1 rule.
+- Result: three values on the results page move: 2022-10-03 0.003 to 0.0, 2025-12-23 0.006 to 0.0, 2025-12-24 0.503 to 0.5 (USD bn); nothing is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: H5 step 2 inputs.
