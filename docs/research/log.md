@@ -1172,3 +1172,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: three values on the results page move: 2022-10-03 0.003 to 0.0, 2025-12-23 0.006 to 0.0, 2025-12-24 0.503 to 0.5 (USD bn); nothing is scored.
 - Against kill: not applicable (no verdict; development data).
 - Next: H5 step 2 inputs.
+
+### 2026-10-17 [H2] step 3 · eleonorabjornberg/repo-market-model#909
+- Directive: #903
+- Step: 3 (reproducibility of the scratch panel `DERIV.csv`; milestone M3; an input to H5 step 4)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `71cf91d2`; chain `scripts/deriv_chain_903.py`
+- Tried: the chain that builds `DERIV.csv` rebuilt twice at each of five commits, with a digest per step
+- Result: every commit rebuilds identically twice, so there is no nondeterminism and the digests differ by code drift: the first step that moves is `net_settlement` (#679, #738). `92bf10a4…` is the chain at `2c9bd283` and `400372d6…` the chain at `38a00d81`; H2's `08df8d19…` is not reproduced at its own commit, which gives `1e5b748a…`.
+- Against kill: not applicable (no verdict; development data).
+- Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
