@@ -2105,8 +2105,10 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
     `Overnight`, on or after `SRF_INCEPTION`, that are not small-value
     exercises (`_is_small_value_exercise`), and sums `totalAmtAccepted` (US
     dollars) per `operationDate`, both operations of a two-operation day
-    included, in USD billions. A day the facility operated and nothing was
-    taken is 0.0. A day whose only operation was a test yields no row. Term
+    included, in USD billions. A test trade (`_is_test_trade`, #802) adds
+    nothing (#787). A day the facility operated and nothing was taken, a
+    day of test trades only included, is 0.0. A day whose only operation was
+    a small-value exercise yields no row. Term
     repos are left out: the facility is overnight, and its two term operations
     since the inception were tests of a few tens of millions.
 
@@ -2143,7 +2145,7 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
                 f"on {ref_date} has no numeric totalAmtAccepted ({accepted!r}); a "
                 f"day summed without one of its operations is not that day's total"
             )
-        totals[ref_date] = totals.get(ref_date, 0) + accepted
+        totals[ref_date] = totals.get(ref_date, 0) + _effective_accepted(accepted)
     retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
     rows = []
     for ref_date in sorted(totals):

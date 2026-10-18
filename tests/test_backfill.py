@@ -413,6 +413,45 @@ class RefusesSeriesThatAreNotAdmitted(unittest.TestCase):
             self.assertIn(call, text)
 
 
+class TheSofrVolumeIsNotAdmittedOnBackFilledRows(unittest.TestCase):
+    """The SOFR volume is blank on a back-filled row and a fit that reads it is refused (#887).
+
+    H4 (the information set it trains under). `docs/decisions/information-set.md` (the back-fill amendment, #881) says
+    the workbook's volumes are not admitted and that the SOFR volume is Eleonora's open question on #742. The code had
+    mapped `sofr_volume` onto the admitted `sofr` series, so a back-filled row could carry it and a fit could read it.
+
+    Red first, against main at f70bf93d: `AssertionError: Lists differ: ['tbill_4w'] != ['sofr_volume', 'tbill_4w']` in
+    `test_the_sofr_volume_is_blank_on_a_back_filled_row` and `AssertionError: LookAheadError not raised` in
+    `test_a_fit_that_reads_the_sofr_volume_is_refused`.
+
+    Mutation record. In a copy of the working tree, CPython 3.11, `python -B`, this class run alone, unmutated control
+    green before and after, the mutated line confirmed applied by grep. In `backfill.WORKBOOK_SERIES` the entry
+    `"sofr_volume": "sofr"` was restored (the line as it was before the fix). Killed: both of those tests failed, the
+    first with `AssertionError: Lists differ: ['tbill_4w'] != ['sofr_volume', 'tbill_4w']` and the second with
+    `AssertionError: LookAheadError not raised`.
+    """
+
+    ADMITTED = {name: datetime(2018, 5, 17, 0, 0) for name in ("tgcr", "bgcr", "sofr")}
+
+    def test_the_sofr_volume_is_blank_on_a_back_filled_row(self):
+        columns = ["sofr", "sofr_volume", "tgcr", "bgcr", "tbill_4w"]
+        self.assertEqual(backfill.unadmitted_columns(columns, self.ADMITTED), ["sofr_volume", "tbill_4w"])
+
+    def test_a_fit_that_reads_the_sofr_volume_is_refused(self):
+        fit = [_fold(date(2018, 6, 29), date(2018, 6, 27))]
+        reads = backfill.series_read(["sofr", "sofr_volume"])
+        with self.assertRaises(LookAheadError) as caught:
+            backfill.require_series_admitted(fit, reads, self.ADMITTED, where="test")
+        self.assertIn("sofr_volume", str(caught.exception))
+
+    def test_the_admitted_rates_are_unchanged(self):
+        self.assertEqual(backfill.unadmitted_columns(["sofr", "tgcr", "bgcr"], self.ADMITTED), [])
+        backfill.require_series_admitted(
+            [_fold(date(2018, 6, 29), date(2018, 6, 27))], backfill.series_read(["sofr", "tgcr", "bgcr"]),
+            self.ADMITTED, where="test",
+        )
+
+
 def _spread_633():
     import importlib.util
 

@@ -1,0 +1,91 @@
+{
+ "comparison_critical_values": {
+  "B2-B1": {
+   "125": 2.5476176053580666,
+   "250": 1.3467953558970605,
+   "60": null
+  },
+  "B3-B1 (five levels)": {
+   "125": 1.4342750488305942,
+   "250": 1.0059739885853967,
+   "60": null
+  }
+ },
+ "critical_values": {
+  "B2-B1": {
+   "125": 2.5476176053580666,
+   "250": 1.3467953558970605,
+   "60": 6.749330041257863
+  },
+  "B3-B1 (five levels)": {
+   "125": 1.4342750488305942,
+   "250": 1.0059739885853967,
+   "60": 2.677692689554682
+  }
+ },
+ "directive": "https://github.com/eleonorabjornberg/repo-market-model/issues/873",
+ "futility_critical_values": {
+  "B2-B1": {
+   "125": 2.2894925847522316,
+   "250": 2.298412229495495,
+   "60": 2.438209347282723
+  }
+ },
+ "futility_level": 0.05,
+ "futility_windows": 20000,
+ "in_force_before_this_amendment": {
+  "comparison_critical_values": {
+   "B2-B1": {
+    "125": 3.419438620805254,
+    "250": 2.425730476113518,
+    "60": null
+   },
+   "B3-B1 (five levels)": {
+    "125": 9.50052772574656,
+    "250": 5.454950300123988,
+    "60": null
+   }
+  },
+  "futility_critical_values": {
+   "B2-B1": {
+    "125": 1.564595026945276,
+    "250": 1.446264200252977,
+    "60": 1.9297931884419124
+   }
+  },
+  "orientation": "d = S(B2) - S(B1) and S(B3) - S(B1), futility on benchmark B2 (the reversed one)"
+ },
+ "nominal_levels": {
+  "125": 0.005552272301342587,
+  "250": 0.0482414793805519,
+  "60": 6.313944260094573e-05
+ },
+ "note": "each comparison is read at its own value (Q-E (b)); look 1 checks futility only (Q-B); futility is one-sided at 0.05 at every look, non-binding (Q-C). Every value is calibrated on the series the test applies, d = S(B1) - S(candidate) (#830), with the windows, block and seed of the record in force. Null rates: #699's rule on the comparison's full development history, detections at looks 2 and 3.",
+ "null_false_detection_full_history": {
+  "B2-B1": {
+   "125": 0.013,
+   "250": 0.0795,
+   "paths": 2000,
+   "series_days": 2037
+  },
+  "B3-B1 (five levels)": {
+   "125": 0.006,
+   "250": 0.0635,
+   "paths": 2000,
+   "series_days": 1869
+  }
+ },
+ "orientation": "d = S(benchmark) - S(candidate), benchmark B1",
+ "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/695#issuecomment-6159852603",
+ "seed": 1,
+ "series_days": {
+  "B2-B1": 2037,
+  "B3-B1 (five levels)": 1869
+ },
+ "window_block": 10,
+ "windows": {
+  "125": 20000,
+  "250": 20000,
+  "60": 200000
+ }
+}

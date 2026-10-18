@@ -657,6 +657,9 @@ def score_command(args) -> int:
         except sp.ProtocolError as error:
             unbuilt.append((day.isoformat(), str(error)))
     common = usable
+    if args.without_day is not None:
+        # #882 (finding #798): the same scoring on every decision day but one; the day must be a scored one
+        common = _load("h5_splits_805").drop_day(common, args.without_day)
     b1 = pb.forecasts(pb.b1_forecast, rows, common, registry=registry, decision_time=DECISION)
     b2 = pb.forecasts(pb.b2_forecast, rows, common, registry=registry, decision_time=DECISION, splits=splits)
     forecasts: Dict[str, Dict[date, Dict[int, Sequence[float]]]] = {"B1": b1, "B2": b2}
@@ -679,6 +682,7 @@ def score_command(args) -> int:
         "decision_days": {"n": len(days), "first": days[0].isoformat(), "last": days[-1].isoformat()},
         "draws": draws, "seed": SEED,
         "decision_days_without_a_benchmark": unbuilt,
+        **({"without_day": args.without_day.isoformat()} if args.without_day is not None else {}),
         "missing": missing,
         "names": names,
         "mean_primary": {n: sum(primary[n].values()) / len(days) for n in names},
@@ -945,6 +949,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     score.add_argument("--walks", type=Path, required=True)
     score.add_argument("--output", type=Path, required=True)
     score.add_argument("--draws", type=int, default=sp.DRAWS)
+    score.add_argument("--without-day", type=date.fromisoformat, default=None, help="leave this decision day out of every window (#882)")
     score.set_defaults(function=score_command)
     report = commands.add_parser("report", help="write the report from the screen and the score")
     report.add_argument("--screen", type=Path, required=True)
