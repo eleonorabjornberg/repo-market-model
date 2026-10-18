@@ -1,0 +1,1878 @@
+{
+ "758": {
+  "reporting": {
+   "crps, pooled, ordinary targets, gbm_funding, vs B1": {
+    "skill": 0.2588504882102244,
+    "lo": 0.11680138010328651,
+    "hi": 0.4012226712136101,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, c_two_part_new, vs B1": {
+    "skill": 0.2208414875793976,
+    "lo": 0.04810877347148542,
+    "hi": 0.37803908266954,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, reachable gbm, vs B1": {
+    "skill": 0.19450256676587382,
+    "lo": 0.01633722292070366,
+    "hi": 0.35354530376436943,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, ceiling gbm, vs B1": {
+    "skill": 0.1664763597680154,
+    "lo": 0.001871907640400083,
+    "hi": 0.31418687641489595,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, headroom gbm_funding -> ceiling gbm": {
+    "skill": -0.09237412844221102,
+    "lo": -0.16367996404863283,
+    "hi": -0.021941124540158966,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.05436512781138263,
+    "lo": -0.12123012427797404,
+    "hi": 0.021116275105813254,
+    "days": 1598
+   },
+   "crps, day type: month_end, gbm_funding, vs B1": {
+    "skill": 0.07460791453620164,
+    "lo": -0.0072528384442223865,
+    "hi": 0.15298129187305443,
+    "days": 433
+   },
+   "crps, day type: month_end, c_two_part_new, vs B1": {
+    "skill": 0.1402413333922566,
+    "lo": -0.04039750800790809,
+    "hi": 0.2634804381863821,
+    "days": 433
+   },
+   "crps, day type: month_end, reachable gbm, vs B1": {
+    "skill": 0.09814265737365704,
+    "lo": -0.1321482552060468,
+    "hi": 0.2563903446251553,
+    "days": 433
+   },
+   "crps, day type: month_end, ceiling gbm, vs B1": {
+    "skill": 0.11342903445529236,
+    "lo": -0.074253710915058,
+    "hi": 0.2783525031471877,
+    "days": 433
+   },
+   "crps, day type: month_end, headroom gbm_funding -> ceiling gbm": {
+    "skill": 0.03882111991909083,
+    "lo": -0.1177575615777681,
+    "hi": 0.18632736560241553,
+    "days": 433
+   },
+   "crps, day type: month_end, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.026812298936963994,
+    "lo": -0.13348188211195486,
+    "hi": 0.08740177767004811,
+    "days": 433
+   },
+   "crps, day type: ordinary, gbm_funding, vs B1": {
+    "skill": 0.25207451785039264,
+    "lo": 0.1139431015922315,
+    "hi": 0.39012796675631384,
+    "days": 1598
+   },
+   "crps, day type: ordinary, c_two_part_new, vs B1": {
+    "skill": 0.2283666551949865,
+    "lo": 0.06463525594813246,
+    "hi": 0.3756380632421039,
+    "days": 1598
+   },
+   "crps, day type: ordinary, reachable gbm, vs B1": {
+    "skill": 0.19770841904940242,
+    "lo": 0.022606316551116817,
+    "hi": 0.3488294012137435,
+    "days": 1598
+   },
+   "crps, day type: ordinary, ceiling gbm, vs B1": {
+    "skill": 0.17144870250853872,
+    "lo": 0.009153676306819446,
+    "hi": 0.31154705704355967,
+    "days": 1598
+   },
+   "crps, day type: ordinary, headroom gbm_funding -> ceiling gbm": {
+    "skill": -0.0806258153418555,
+    "lo": -0.14766290728068657,
+    "hi": -0.015071329045022746,
+    "days": 1598
+   },
+   "crps, day type: ordinary, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.05691795268644798,
+    "lo": -0.12149206760290789,
+    "hi": 0.011311393020284454,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, gbm_funding, vs B1": {
+    "skill": 0.5177741703335088,
+    "lo": 0.29373053995580345,
+    "hi": 0.665587835362537,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, c_two_part_new, vs B1": {
+    "skill": 0.5548107769845019,
+    "lo": 0.34002247307503286,
+    "hi": 0.6951812139151232,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, reachable gbm, vs B1": {
+    "skill": 0.4868634548331618,
+    "lo": 0.23550137682153394,
+    "hi": 0.6440431292463565,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, ceiling gbm, vs B1": {
+    "skill": 0.460125149862638,
+    "lo": 0.23332478378485322,
+    "hi": 0.6105955358979281,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, headroom gbm_funding -> ceiling gbm": {
+    "skill": -0.05764902047086995,
+    "lo": -0.11985210185554918,
+    "hi": 0.02637129968363607,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.09468562712186143,
+    "lo": -0.14820136649858115,
+    "hi": -0.030081514168965224,
+    "days": 1598
+   },
+   "ordinary target days among the scored days": 1598
+  },
+  "window": {
+   "crps, pooled, ordinary targets, gbm_funding, vs B1": {
+    "skill": 0.2574380277281791,
+    "lo": 0.11449749566469869,
+    "hi": 0.39997675324809523,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, c_two_part_new, vs B1": {
+    "skill": 0.2242797093291166,
+    "lo": 0.05178642889574127,
+    "hi": 0.3803785632419552,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, reachable gbm, vs B1": {
+    "skill": 0.19420475596075068,
+    "lo": 0.01661750145782073,
+    "hi": 0.3526920085285834,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, ceiling gbm, vs B1": {
+    "skill": 0.1655619392452541,
+    "lo": 0.0006467088833199931,
+    "hi": 0.31357939937122475,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, headroom gbm_funding -> ceiling gbm": {
+    "skill": -0.09187608848292646,
+    "lo": -0.1630281454593021,
+    "hi": -0.021252046419480235,
+    "days": 1598
+   },
+   "crps, pooled, ordinary targets, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.058717770083862926,
+    "lo": -0.1254644431457154,
+    "hi": 0.017402594185395387,
+    "days": 1598
+   },
+   "crps, day type: month_end, gbm_funding, vs B1": {
+    "skill": 0.07460791453620164,
+    "lo": -0.0072528384442223865,
+    "hi": 0.15298129187305443,
+    "days": 433
+   },
+   "crps, day type: month_end, c_two_part_new, vs B1": {
+    "skill": 0.1402413333922566,
+    "lo": -0.04039750800790809,
+    "hi": 0.2634804381863821,
+    "days": 433
+   },
+   "crps, day type: month_end, reachable gbm, vs B1": {
+    "skill": 0.09814265737365704,
+    "lo": -0.1321482552060468,
+    "hi": 0.2563903446251553,
+    "days": 433
+   },
+   "crps, day type: month_end, ceiling gbm, vs B1": {
+    "skill": 0.11342903445529236,
+    "lo": -0.074253710915058,
+    "hi": 0.2783525031471877,
+    "days": 433
+   },
+   "crps, day type: month_end, headroom gbm_funding -> ceiling gbm": {
+    "skill": 0.03882111991909083,
+    "lo": -0.1177575615777681,
+    "hi": 0.18632736560241553,
+    "days": 433
+   },
+   "crps, day type: month_end, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.026812298936963994,
+    "lo": -0.13348188211195486,
+    "hi": 0.08740177767004811,
+    "days": 433
+   },
+   "crps, day type: ordinary, gbm_funding, vs B1": {
+    "skill": 0.25207451785039264,
+    "lo": 0.1139431015922315,
+    "hi": 0.39012796675631384,
+    "days": 1598
+   },
+   "crps, day type: ordinary, c_two_part_new, vs B1": {
+    "skill": 0.2283666551949865,
+    "lo": 0.06463525594813246,
+    "hi": 0.3756380632421039,
+    "days": 1598
+   },
+   "crps, day type: ordinary, reachable gbm, vs B1": {
+    "skill": 0.19770841904940242,
+    "lo": 0.022606316551116817,
+    "hi": 0.3488294012137435,
+    "days": 1598
+   },
+   "crps, day type: ordinary, ceiling gbm, vs B1": {
+    "skill": 0.17144870250853872,
+    "lo": 0.009153676306819446,
+    "hi": 0.31154705704355967,
+    "days": 1598
+   },
+   "crps, day type: ordinary, headroom gbm_funding -> ceiling gbm": {
+    "skill": -0.0806258153418555,
+    "lo": -0.14766290728068657,
+    "hi": -0.015071329045022746,
+    "days": 1598
+   },
+   "crps, day type: ordinary, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.05691795268644798,
+    "lo": -0.12149206760290789,
+    "hi": 0.011311393020284454,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, gbm_funding, vs B1": {
+    "skill": 0.5160619764153166,
+    "lo": 0.2914426791476836,
+    "hi": 0.6651702073311992,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, c_two_part_new, vs B1": {
+    "skill": 0.558775129178867,
+    "lo": 0.34725022986991616,
+    "hi": 0.6982683034205598,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, reachable gbm, vs B1": {
+    "skill": 0.48667771524811715,
+    "lo": 0.23816005562798853,
+    "hi": 0.6433570574557865,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, ceiling gbm, vs B1": {
+    "skill": 0.4571360056481188,
+    "lo": 0.2310336538507236,
+    "hi": 0.6097779975149746,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, headroom gbm_funding -> ceiling gbm": {
+    "skill": -0.058925970767197536,
+    "lo": -0.12262386989564517,
+    "hi": 0.026798091788590946,
+    "days": 1598
+   },
+   "twcrps, pooled, ordinary targets, headroom c_two_part_new -> ceiling gbm": {
+    "skill": -0.10163912353074585,
+    "lo": -0.15651514657525922,
+    "hi": -0.03807964800930166,
+    "days": 1598
+   },
+   "ordinary target days among the scored days": 1598
+  }
+ },
+ "805": {
+  "reporting": {
+   "grid_crps, a_published_new, pooled, vs B1": {
+    "skill": 0.2018290170692803,
+    "lo": 0.12410900864267985,
+    "hi": 0.41869183590665493,
+    "days": 1868
+   },
+   "grid_crps, a_published_new, anchor:ordinary, vs B1": {
+    "skill": 0.08523321673028433,
+    "lo": 0.04493545376205381,
+    "hi": 0.142072739467906,
+    "days": 1599
+   },
+   "grid_crps, a_published_new, anchor:month_end, vs B1": {
+    "skill": 0.30702649088976275,
+    "lo": 0.20798121089519037,
+    "hi": 0.5111592722135427,
+    "days": 150
+   },
+   "grid_crps, b_gbm_new, pooled, vs B1": {
+    "skill": 0.20060170792383247,
+    "lo": 0.12328803625042725,
+    "hi": 0.4138383519455284,
+    "days": 1868
+   },
+   "grid_crps, b_gbm_new, anchor:ordinary, vs B1": {
+    "skill": 0.0828153551835208,
+    "lo": 0.04079799159002065,
+    "hi": 0.14246206995777008,
+    "days": 1599
+   },
+   "grid_crps, b_gbm_new, anchor:month_end, vs B1": {
+    "skill": 0.3077715503216052,
+    "lo": 0.20973603119911202,
+    "hi": 0.4862327317446963,
+    "days": 150
+   },
+   "grid_crps, c_two_part_new, pooled, vs B1": {
+    "skill": 0.20281059668738272,
+    "lo": 0.10979508079155312,
+    "hi": 0.3804309630443453,
+    "days": 1868
+   },
+   "grid_crps, c_two_part_new, anchor:ordinary, vs B1": {
+    "skill": 0.08953159402277315,
+    "lo": 0.028700726170738267,
+    "hi": 0.1579627128863636,
+    "days": 1599
+   },
+   "grid_crps, c_two_part_new, anchor:month_end, vs B1": {
+    "skill": 0.3157203316151807,
+    "lo": 0.16521520404181442,
+    "hi": 0.4966132436689539,
+    "days": 150
+   },
+   "grid_crps, gbm_funding, pooled, vs B1": {
+    "skill": 0.20687013198914334,
+    "lo": 0.133032998980714,
+    "hi": 0.4001634971890752,
+    "days": 1868
+   },
+   "grid_crps, gbm_funding, anchor:ordinary, vs B1": {
+    "skill": 0.09011638997395137,
+    "lo": 0.04642020542147053,
+    "hi": 0.14939807153924756,
+    "days": 1599
+   },
+   "grid_crps, gbm_funding, anchor:month_end, vs B1": {
+    "skill": 0.2909540714581832,
+    "lo": 0.19943006641822975,
+    "hi": 0.4349434233635161,
+    "days": 150
+   },
+   "upper_tail_twcrps, a_published_new, pooled, vs B1": {
+    "skill": 0.32326191978343255,
+    "lo": 0.23194949788807387,
+    "hi": 0.543600530265742,
+    "days": 1868
+   },
+   "upper_tail_twcrps, a_published_new, anchor:ordinary, vs B1": {
+    "skill": 0.1495283807581954,
+    "lo": 0.0727014325338161,
+    "hi": 0.2530341046724083,
+    "days": 1599
+   },
+   "upper_tail_twcrps, a_published_new, anchor:month_end, vs B1": {
+    "skill": 0.41948610201927977,
+    "lo": 0.2673193742748702,
+    "hi": 0.6230920522738197,
+    "days": 150
+   },
+   "upper_tail_twcrps, b_gbm_new, pooled, vs B1": {
+    "skill": 0.3156549176074367,
+    "lo": 0.22290911278376024,
+    "hi": 0.5242260138604199,
+    "days": 1868
+   },
+   "upper_tail_twcrps, b_gbm_new, anchor:ordinary, vs B1": {
+    "skill": 0.13576428563129533,
+    "lo": 0.05416125864995852,
+    "hi": 0.24972158707683723,
+    "days": 1599
+   },
+   "upper_tail_twcrps, b_gbm_new, anchor:month_end, vs B1": {
+    "skill": 0.4201081113321069,
+    "lo": 0.25940966190631776,
+    "hi": 0.6145977726669773,
+    "days": 150
+   },
+   "upper_tail_twcrps, c_two_part_new, pooled, vs B1": {
+    "skill": 0.3573890565421609,
+    "lo": 0.26268660309038466,
+    "hi": 0.5156731148794474,
+    "days": 1868
+   },
+   "upper_tail_twcrps, c_two_part_new, anchor:ordinary, vs B1": {
+    "skill": 0.19506850518728253,
+    "lo": 0.09398568161761295,
+    "hi": 0.3011222373582835,
+    "days": 1599
+   },
+   "upper_tail_twcrps, c_two_part_new, anchor:month_end, vs B1": {
+    "skill": 0.4554048484984114,
+    "lo": 0.21831944682034884,
+    "hi": 0.6533522894935339,
+    "days": 150
+   },
+   "upper_tail_twcrps, gbm_funding, pooled, vs B1": {
+    "skill": 0.3130242308042091,
+    "lo": 0.22058572407986055,
+    "hi": 0.5041795519233861,
+    "days": 1868
+   },
+   "upper_tail_twcrps, gbm_funding, anchor:ordinary, vs B1": {
+    "skill": 0.1326953315990509,
+    "lo": 0.04257082640782586,
+    "hi": 0.24577465126418857,
+    "days": 1599
+   },
+   "upper_tail_twcrps, gbm_funding, anchor:month_end, vs B1": {
+    "skill": 0.3931427699073564,
+    "lo": 0.22141397271637261,
+    "hi": 0.5766306707491784,
+    "days": 150
+   },
+   "anchor day types (decision days)": {
+    "month_end": 150,
+    "ordinary": 1599,
+    "quarter_end": 30,
+    "tax_date": 89
+   }
+  },
+  "window": {
+   "grid_crps, a_published_new, pooled, vs B1": {
+    "skill": 0.2018290170692803,
+    "lo": 0.12410900864267985,
+    "hi": 0.41869183590665493,
+    "days": 1868
+   },
+   "grid_crps, a_published_new, anchor:ordinary, vs B1": {
+    "skill": 0.08310272438117453,
+    "lo": 0.04245693737871952,
+    "hi": 0.14019521534460214,
+    "days": 1592
+   },
+   "grid_crps, a_published_new, anchor:month_end, vs B1": {
+    "skill": 0.3278103342023568,
+    "lo": 0.2173925734533691,
+    "hi": 0.5429328991259562,
+    "days": 157
+   },
+   "grid_crps, b_gbm_new, pooled, vs B1": {
+    "skill": 0.20060170792383247,
+    "lo": 0.12328803625042725,
+    "hi": 0.4138383519455284,
+    "days": 1868
+   },
+   "grid_crps, b_gbm_new, anchor:ordinary, vs B1": {
+    "skill": 0.08095563498100095,
+    "lo": 0.038941699736144905,
+    "hi": 0.14291596704625428,
+    "days": 1592
+   },
+   "grid_crps, b_gbm_new, anchor:month_end, vs B1": {
+    "skill": 0.3262266770493167,
+    "lo": 0.21523197853591827,
+    "hi": 0.5126801780783561,
+    "days": 157
+   },
+   "grid_crps, c_two_part_new, pooled, vs B1": {
+    "skill": 0.20281059668738272,
+    "lo": 0.10979508079155312,
+    "hi": 0.3804309630443453,
+    "days": 1868
+   },
+   "grid_crps, c_two_part_new, anchor:ordinary, vs B1": {
+    "skill": 0.08585657264522334,
+    "lo": 0.024867415914743174,
+    "hi": 0.15440911131523377,
+    "days": 1592
+   },
+   "grid_crps, c_two_part_new, anchor:month_end, vs B1": {
+    "skill": 0.3500114052169057,
+    "lo": 0.19092177270922986,
+    "hi": 0.5258426948057702,
+    "days": 157
+   },
+   "grid_crps, gbm_funding, pooled, vs B1": {
+    "skill": 0.20687013198914334,
+    "lo": 0.133032998980714,
+    "hi": 0.4001634971890752,
+    "days": 1868
+   },
+   "grid_crps, gbm_funding, anchor:ordinary, vs B1": {
+    "skill": 0.08820539836968999,
+    "lo": 0.04431913662952531,
+    "hi": 0.14909442314106214,
+    "days": 1592
+   },
+   "grid_crps, gbm_funding, anchor:month_end, vs B1": {
+    "skill": 0.30961550243484365,
+    "lo": 0.20644160102251716,
+    "hi": 0.46224251354229506,
+    "days": 157
+   },
+   "upper_tail_twcrps, a_published_new, pooled, vs B1": {
+    "skill": 0.32326191978343255,
+    "lo": 0.23194949788807387,
+    "hi": 0.543600530265742,
+    "days": 1868
+   },
+   "upper_tail_twcrps, a_published_new, anchor:ordinary, vs B1": {
+    "skill": 0.14576432391347383,
+    "lo": 0.07350037616725008,
+    "hi": 0.2535686593442229,
+    "days": 1592
+   },
+   "upper_tail_twcrps, a_published_new, anchor:month_end, vs B1": {
+    "skill": 0.4610385079664741,
+    "lo": 0.31822959457561617,
+    "hi": 0.6594346436936125,
+    "days": 157
+   },
+   "upper_tail_twcrps, b_gbm_new, pooled, vs B1": {
+    "skill": 0.3156549176074367,
+    "lo": 0.22290911278376024,
+    "hi": 0.5242260138604199,
+    "days": 1868
+   },
+   "upper_tail_twcrps, b_gbm_new, anchor:ordinary, vs B1": {
+    "skill": 0.13329014690522736,
+    "lo": 0.05454969313428701,
+    "hi": 0.2501753076964405,
+    "days": 1592
+   },
+   "upper_tail_twcrps, b_gbm_new, anchor:month_end, vs B1": {
+    "skill": 0.450938034703153,
+    "lo": 0.28306888479158243,
+    "hi": 0.6454657248857569,
+    "days": 157
+   },
+   "upper_tail_twcrps, c_two_part_new, pooled, vs B1": {
+    "skill": 0.3573890565421609,
+    "lo": 0.26268660309038466,
+    "hi": 0.5156731148794474,
+    "days": 1868
+   },
+   "upper_tail_twcrps, c_two_part_new, anchor:ordinary, vs B1": {
+    "skill": 0.18975093648068062,
+    "lo": 0.09156309625728233,
+    "hi": 0.2981259308390567,
+    "days": 1592
+   },
+   "upper_tail_twcrps, c_two_part_new, anchor:month_end, vs B1": {
+    "skill": 0.5101243670646894,
+    "lo": 0.33337222753617435,
+    "hi": 0.6401989121038647,
+    "days": 157
+   },
+   "upper_tail_twcrps, gbm_funding, pooled, vs B1": {
+    "skill": 0.3130242308042091,
+    "lo": 0.22058572407986055,
+    "hi": 0.5041795519233861,
+    "days": 1868
+   },
+   "upper_tail_twcrps, gbm_funding, anchor:ordinary, vs B1": {
+    "skill": 0.13027470182490064,
+    "lo": 0.04316855913973508,
+    "hi": 0.24794897733067794,
+    "days": 1592
+   },
+   "upper_tail_twcrps, gbm_funding, anchor:month_end, vs B1": {
+    "skill": 0.4227220078757539,
+    "lo": 0.2693861023944904,
+    "hi": 0.5925861594956239,
+    "days": 157
+   },
+   "anchor day types (decision days)": {
+    "month_end": 157,
+    "ordinary": 1592,
+    "quarter_end": 30,
+    "tax_date": 89
+   }
+  }
+ },
+ "761": {
+  "reporting": {
+   "grid_crps, all decision days, spread_mr_level10, vs B1": {
+    "skill": 0.2230277115772675,
+    "lo": 0.1570045794779129,
+    "hi": 0.3947801943902034,
+    "days": 1855
+   },
+   "grid_crps, all decision days, spread_mr_ctx, vs B1": {
+    "skill": 0.23526139831045798,
+    "lo": 0.1639553551986392,
+    "hi": 0.40669052659005017,
+    "days": 1855
+   },
+   "grid_crps, all decision days, spread_mr_b2, vs B1": {
+    "skill": 0.22236611267644982,
+    "lo": 0.1468754672426747,
+    "hi": 0.3821280656420398,
+    "days": 1855
+   },
+   "grid_crps, all decision days, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.23160569531118602,
+    "lo": 0.15254465457632443,
+    "hi": 0.39468099491952935,
+    "days": 1855
+   },
+   "grid_crps, target day ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.28584786420304575,
+    "lo": 0.17910808637220016,
+    "hi": 0.5921053452155629,
+    "days": 1590
+   },
+   "grid_crps, target day ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.2963330229358745,
+    "lo": 0.1901615868725453,
+    "hi": 0.570252150956915,
+    "days": 1590
+   },
+   "grid_crps, target day ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.28493261714598633,
+    "lo": 0.17008604001033137,
+    "hi": 0.551153987030899,
+    "days": 1590
+   },
+   "grid_crps, target day ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.2958648696304158,
+    "lo": 0.18285090207223678,
+    "hi": 0.5472036837605471,
+    "days": 1590
+   },
+   "grid_crps, anchor ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.1121867381183933,
+    "lo": 0.07189382752095669,
+    "hi": 0.17074475536750916,
+    "days": 1588
+   },
+   "grid_crps, anchor ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.12774024582089247,
+    "lo": 0.0879872719271944,
+    "hi": 0.1840594931063264,
+    "days": 1588
+   },
+   "grid_crps, anchor ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.10381122745153941,
+    "lo": 0.04847821321871426,
+    "hi": 0.16876726732669434,
+    "days": 1588
+   },
+   "grid_crps, anchor ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.11490034131386205,
+    "lo": 0.061040170767479335,
+    "hi": 0.17715390124502442,
+    "days": 1588
+   },
+   "grid_crps, anchor month-end, spread_mr_level10, vs B1": {
+    "skill": 0.3417794781007006,
+    "lo": 0.22902424029989377,
+    "hi": 0.528944553011105,
+    "days": 149
+   },
+   "grid_crps, anchor month-end, spread_mr_ctx, vs B1": {
+    "skill": 0.35563447986693125,
+    "lo": 0.2436004884592996,
+    "hi": 0.5303000561482576,
+    "days": 149
+   },
+   "grid_crps, anchor month-end, spread_mr_b2, vs B1": {
+    "skill": 0.36084486529413545,
+    "lo": 0.24585327946613694,
+    "hi": 0.552251620251973,
+    "days": 149
+   },
+   "grid_crps, anchor month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.372401437210093,
+    "lo": 0.25607613453694844,
+    "hi": 0.563627751505966,
+    "days": 149
+   },
+   "grid_crps, target month-end, spread_mr_level10, vs B1": {
+    "skill": 0.06639518465316376,
+    "lo": 0.025841545979736154,
+    "hi": 0.1079615177022637,
+    "days": 150
+   },
+   "grid_crps, target month-end, spread_mr_ctx, vs B1": {
+    "skill": 0.057026684424046285,
+    "lo": -0.24769017492096318,
+    "hi": 0.19364963857011042,
+    "days": 150
+   },
+   "grid_crps, target month-end, spread_mr_b2, vs B1": {
+    "skill": 0.04758300647208923,
+    "lo": -0.07391045698471699,
+    "hi": 0.15337004854609365,
+    "days": 150
+   },
+   "grid_crps, target month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.02207591199498245,
+    "lo": -0.19560950782035946,
+    "hi": 0.18417980176642515,
+    "days": 150
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_level10, vs B1": {
+    "skill": 0.33616044366618963,
+    "lo": 0.21406195562148017,
+    "hi": 0.6623001684117582,
+    "days": 1276
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_ctx, vs B1": {
+    "skill": 0.34824690874290326,
+    "lo": 0.22742440099944639,
+    "hi": 0.6489645027629843,
+    "days": 1276
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_b2, vs B1": {
+    "skill": 0.35253565646433666,
+    "lo": 0.22103641640163396,
+    "hi": 0.6255964921876722,
+    "days": 1276
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.3628649154722518,
+    "lo": 0.23340797259244173,
+    "hi": 0.6224599392272431,
+    "days": 1276
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_level10, vs B1": {
+    "skill": 0.1164594174312641,
+    "lo": 0.00037331957010912353,
+    "hi": 0.5759355167935533,
+    "days": 200
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.11576233905780943,
+    "lo": 0.00716245367260053,
+    "hi": 0.48695553313074574,
+    "days": 200
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_b2, vs B1": {
+    "skill": 0.07808680468240277,
+    "lo": -0.06465017119016024,
+    "hi": 0.43671585228112386,
+    "days": 200
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.08398720503718408,
+    "lo": -0.04760097784659238,
+    "hi": 0.4307504069224747,
+    "days": 200
+   },
+   "grid_crps, risk day, spread_mr_level10, vs B1": {
+    "skill": 0.03183116843637431,
+    "lo": -0.007618882880307563,
+    "hi": 0.06043798720510303,
+    "days": 383
+   },
+   "grid_crps, risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.05172622433688827,
+    "lo": -0.024237610963462858,
+    "hi": 0.10451587784587196,
+    "days": 383
+   },
+   "grid_crps, risk day, spread_mr_b2, vs B1": {
+    "skill": 0.009992734866846879,
+    "lo": -0.051700002922232605,
+    "hi": 0.0632419903524224,
+    "days": 383
+   },
+   "grid_crps, risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.020189903845948837,
+    "lo": -0.08329097000637356,
+    "hi": 0.09210164826757875,
+    "days": 383
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_level10, vs B1": {
+    "skill": 0.323824831865159,
+    "lo": 0.2450827980697839,
+    "hi": 0.48727789033985897,
+    "days": 1855
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_ctx, vs B1": {
+    "skill": 0.3398548812447435,
+    "lo": 0.26006139242126525,
+    "hi": 0.5026873335528166,
+    "days": 1855
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_b2, vs B1": {
+    "skill": 0.32204645270155263,
+    "lo": 0.23107447138791415,
+    "hi": 0.4871845821206561,
+    "days": 1855
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.33451594731451345,
+    "lo": 0.24166773968682653,
+    "hi": 0.5027085814858765,
+    "days": 1855
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.45007170165223165,
+    "lo": 0.31279986807903953,
+    "hi": 0.7544095837086657,
+    "days": 1590
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.4683386747768864,
+    "lo": 0.33364265285151473,
+    "hi": 0.7260063628362043,
+    "days": 1590
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.4589591270955552,
+    "lo": 0.3103600831279095,
+    "hi": 0.734022095291056,
+    "days": 1590
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.47322312483939566,
+    "lo": 0.32627075652633797,
+    "hi": 0.7172276785656082,
+    "days": 1590
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.157029529456535,
+    "lo": 0.07431434612383463,
+    "hi": 0.27378385090659324,
+    "days": 1588
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.17767565306332142,
+    "lo": 0.10789162319066622,
+    "hi": 0.2817113367901895,
+    "days": 1588
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.14463185698680225,
+    "lo": 0.051793175966036956,
+    "hi": 0.2593925488880559,
+    "days": 1588
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.16020427972955723,
+    "lo": 0.07588968632167667,
+    "hi": 0.26629184041802023,
+    "days": 1588
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_level10, vs B1": {
+    "skill": 0.45317972482541885,
+    "lo": 0.3403099665700161,
+    "hi": 0.5905849402135283,
+    "days": 149
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_ctx, vs B1": {
+    "skill": 0.4684199780017607,
+    "lo": 0.34415038679433135,
+    "hi": 0.5965541812598864,
+    "days": 149
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_b2, vs B1": {
+    "skill": 0.49393082059180066,
+    "lo": 0.3283125714604328,
+    "hi": 0.6671995356592746,
+    "days": 149
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.5087165841421178,
+    "lo": 0.3309060699680014,
+    "hi": 0.6808336438484811,
+    "days": 149
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_level10, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 150
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_ctx, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 150
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_b2, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 150
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 150
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_level10, vs B1": {
+    "skill": 0.5422264338892985,
+    "lo": 0.38852063390976116,
+    "hi": 0.802747781364096,
+    "days": 1276
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_ctx, vs B1": {
+    "skill": 0.5715508254046127,
+    "lo": 0.4236212263198369,
+    "hi": 0.7827542549779921,
+    "days": 1276
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_b2, vs B1": {
+    "skill": 0.5735817004377678,
+    "lo": 0.41981027499138623,
+    "hi": 0.7906009977020266,
+    "days": 1276
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.5926933599560748,
+    "lo": 0.4376692439063779,
+    "hi": 0.7779975860507535,
+    "days": 1276
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_level10, vs B1": {
+    "skill": 0.17053622893366524,
+    "lo": -0.0077824144826073305,
+    "hi": 0.9699396089546961,
+    "days": 200
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.150207045423081,
+    "lo": -0.021804043225240016,
+    "hi": 0.8210092038598797,
+    "days": 200
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_b2, vs B1": {
+    "skill": 0.1310464059946959,
+    "lo": -0.08400657636996642,
+    "hi": 0.7666769940015632,
+    "days": 200
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.12128310202171272,
+    "lo": -0.08331031151811721,
+    "hi": 0.7521969540550286,
+    "days": 200
+   },
+   "upper_tail_twcrps, risk day, spread_mr_level10, vs B1": {
+    "skill": 0.02066512026142096,
+    "lo": -0.0071671565439018585,
+    "hi": 0.04731488205789518,
+    "days": 383
+   },
+   "upper_tail_twcrps, risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.031161571769609032,
+    "lo": -0.057341029419839956,
+    "hi": 0.08531137929222672,
+    "days": 383
+   },
+   "upper_tail_twcrps, risk day, spread_mr_b2, vs B1": {
+    "skill": -0.021490095456664367,
+    "lo": -0.10433605569606497,
+    "hi": 0.03531919911407408,
+    "days": 383
+   },
+   "upper_tail_twcrps, risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": -0.009338646404086574,
+    "lo": -0.15462809929720747,
+    "hi": 0.08332643069040287,
+    "days": 383
+   }
+  },
+  "window": {
+   "grid_crps, all decision days, spread_mr_level10, vs B1": {
+    "skill": 0.22286756570184865,
+    "lo": 0.15637149683593132,
+    "hi": 0.39625452902848024,
+    "days": 1855
+   },
+   "grid_crps, all decision days, spread_mr_ctx, vs B1": {
+    "skill": 0.2351655115437715,
+    "lo": 0.1641846231532478,
+    "hi": 0.4095440411922492,
+    "days": 1855
+   },
+   "grid_crps, all decision days, spread_mr_b2, vs B1": {
+    "skill": 0.22265291840622098,
+    "lo": 0.1470592770850555,
+    "hi": 0.384380728931502,
+    "days": 1855
+   },
+   "grid_crps, all decision days, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.23053212451529764,
+    "lo": 0.15091060543497123,
+    "hi": 0.39791045092784816,
+    "days": 1855
+   },
+   "grid_crps, target day ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.2873808649072428,
+    "lo": 0.18023048922958096,
+    "hi": 0.5951480286724782,
+    "days": 1582
+   },
+   "grid_crps, target day ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.2976719694803084,
+    "lo": 0.1910947354920428,
+    "hi": 0.5800893568668404,
+    "days": 1582
+   },
+   "grid_crps, target day ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.2883432667728379,
+    "lo": 0.1723962008255947,
+    "hi": 0.5617280754219129,
+    "days": 1582
+   },
+   "grid_crps, target day ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.2965558190529959,
+    "lo": 0.182077971043178,
+    "hi": 0.556202890344214,
+    "days": 1582
+   },
+   "grid_crps, anchor ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.11132820241494129,
+    "lo": 0.07214657670360293,
+    "hi": 0.16892494920967313,
+    "days": 1581
+   },
+   "grid_crps, anchor ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.12595853475627086,
+    "lo": 0.08785731491786872,
+    "hi": 0.1805916722037157,
+    "days": 1581
+   },
+   "grid_crps, anchor ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.10351557066407976,
+    "lo": 0.050566326631592995,
+    "hi": 0.166880675166268,
+    "days": 1581
+   },
+   "grid_crps, anchor ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.11294868750762581,
+    "lo": 0.06037783704240269,
+    "hi": 0.17462177418931157,
+    "days": 1581
+   },
+   "grid_crps, anchor month-end, spread_mr_level10, vs B1": {
+    "skill": 0.3412429717387486,
+    "lo": 0.20320746092212358,
+    "hi": 0.5609532783174246,
+    "days": 156
+   },
+   "grid_crps, anchor month-end, spread_mr_ctx, vs B1": {
+    "skill": 0.3655628234508593,
+    "lo": 0.21933969658145758,
+    "hi": 0.5852194353955315,
+    "days": 156
+   },
+   "grid_crps, anchor month-end, spread_mr_b2, vs B1": {
+    "skill": 0.36518238650116325,
+    "lo": 0.22880514186055975,
+    "hi": 0.5799385703140122,
+    "days": 156
+   },
+   "grid_crps, anchor month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.3799108658371332,
+    "lo": 0.23862280994392185,
+    "hi": 0.6035582030836364,
+    "days": 156
+   },
+   "grid_crps, target month-end, spread_mr_level10, vs B1": {
+    "skill": 0.047747446180640356,
+    "lo": 0.00442960513059925,
+    "hi": 0.0921993419229958,
+    "days": 158
+   },
+   "grid_crps, target month-end, spread_mr_ctx, vs B1": {
+    "skill": 0.041555767213406904,
+    "lo": -0.16900738932819134,
+    "hi": 0.17243553002673165,
+    "days": 158
+   },
+   "grid_crps, target month-end, spread_mr_b2, vs B1": {
+    "skill": 0.01585106927098863,
+    "lo": -0.14266826672997035,
+    "hi": 0.12308826854644986,
+    "days": 158
+   },
+   "grid_crps, target month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": -0.0011064755025569618,
+    "lo": -0.19803445258974328,
+    "hi": 0.1557035431162161,
+    "days": 158
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_level10, vs B1": {
+    "skill": 0.3386161455214251,
+    "lo": 0.21414158834111854,
+    "hi": 0.6674117017940626,
+    "days": 1264
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_ctx, vs B1": {
+    "skill": 0.35033694913156027,
+    "lo": 0.22720840734024725,
+    "hi": 0.6541087513239723,
+    "days": 1264
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_b2, vs B1": {
+    "skill": 0.3556091290995343,
+    "lo": 0.22641485593481775,
+    "hi": 0.6405297093804916,
+    "days": 1264
+   },
+   "grid_crps, ordinary after an ordinary day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.36323160330084453,
+    "lo": 0.23624105855494962,
+    "hi": 0.6362071820160609,
+    "days": 1264
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_level10, vs B1": {
+    "skill": 0.11903413635257655,
+    "lo": 0.004851576396060001,
+    "hi": 0.6044072975480815,
+    "days": 194
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.11979313629007916,
+    "lo": 0.012447670755545176,
+    "hi": 0.5093204392261612,
+    "days": 194
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_b2, vs B1": {
+    "skill": 0.0825192150743249,
+    "lo": -0.05732435422071035,
+    "hi": 0.44581475468442383,
+    "days": 194
+   },
+   "grid_crps, ordinary after a risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.08699930001345389,
+    "lo": -0.0460338578931342,
+    "hi": 0.4340232758983323,
+    "days": 194
+   },
+   "grid_crps, risk day, spread_mr_level10, vs B1": {
+    "skill": 0.028268503461780524,
+    "lo": -0.008678831266895656,
+    "hi": 0.05803629291473766,
+    "days": 401
+   },
+   "grid_crps, risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.049000522835848756,
+    "lo": -0.018766165881913488,
+    "hi": 0.09623326918376081,
+    "days": 401
+   },
+   "grid_crps, risk day, spread_mr_b2, vs B1": {
+    "skill": 0.0062959517666488045,
+    "lo": -0.0628185748177978,
+    "hi": 0.06327169555487226,
+    "days": 401
+   },
+   "grid_crps, risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.018345543413030675,
+    "lo": -0.08099673085239736,
+    "hi": 0.0878563891442877,
+    "days": 401
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_level10, vs B1": {
+    "skill": 0.32408092695192464,
+    "lo": 0.2444787664230111,
+    "hi": 0.48904779627543293,
+    "days": 1855
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_ctx, vs B1": {
+    "skill": 0.34038670199004145,
+    "lo": 0.25957922759707164,
+    "hi": 0.506606711436405,
+    "days": 1855
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_b2, vs B1": {
+    "skill": 0.3219364273880265,
+    "lo": 0.23034953725895732,
+    "hi": 0.4895577057805026,
+    "days": 1855
+   },
+   "upper_tail_twcrps, all decision days, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.33418672811050604,
+    "lo": 0.24070072296377118,
+    "hi": 0.5066093160505705,
+    "days": 1855
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.4535323431034352,
+    "lo": 0.3180874858285171,
+    "hi": 0.7562848115426195,
+    "days": 1582
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.4717385294144177,
+    "lo": 0.33933333302918167,
+    "hi": 0.7274296207034013,
+    "days": 1582
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.4632804950903608,
+    "lo": 0.31828147060717304,
+    "hi": 0.7406911174060922,
+    "days": 1582
+   },
+   "upper_tail_twcrps, target day ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.47641853481456103,
+    "lo": 0.3328593566389999,
+    "hi": 0.7255938976682854,
+    "days": 1582
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_level10, vs B1": {
+    "skill": 0.15501256713217862,
+    "lo": 0.07511912067326532,
+    "hi": 0.267857527813498,
+    "days": 1581
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_ctx, vs B1": {
+    "skill": 0.17429258068246642,
+    "lo": 0.10769502756763252,
+    "hi": 0.2752637813067183,
+    "days": 1581
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_b2, vs B1": {
+    "skill": 0.14272054259619854,
+    "lo": 0.05477582567826854,
+    "hi": 0.2564956321245234,
+    "days": 1581
+   },
+   "upper_tail_twcrps, anchor ordinary, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.15725396586184315,
+    "lo": 0.07885045431031203,
+    "hi": 0.26211264710182236,
+    "days": 1581
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_level10, vs B1": {
+    "skill": 0.47459935405702575,
+    "lo": 0.3580244780357251,
+    "hi": 0.6388240273256557,
+    "days": 156
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_ctx, vs B1": {
+    "skill": 0.5053905165504843,
+    "lo": 0.3809036750679445,
+    "hi": 0.6637043847111896,
+    "days": 156
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_b2, vs B1": {
+    "skill": 0.5160349410466349,
+    "lo": 0.3781819829258476,
+    "hi": 0.6778973818631732,
+    "days": 156
+   },
+   "upper_tail_twcrps, anchor month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.5375932264088045,
+    "lo": 0.3940521862477515,
+    "hi": 0.699019946092256,
+    "days": 156
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_level10, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 158
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_ctx, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 158
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_b2, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 158
+   },
+   "upper_tail_twcrps, target month-end, spread_mr_ctx_b2, vs B1": {
+    "skill": null,
+    "lo": null,
+    "hi": null,
+    "days": 158
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_level10, vs B1": {
+    "skill": 0.5455924884070252,
+    "lo": 0.3934119203723982,
+    "hi": 0.8155929545931737,
+    "days": 1264
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_ctx, vs B1": {
+    "skill": 0.5740301723454602,
+    "lo": 0.4301469101548191,
+    "hi": 0.795873912709063,
+    "days": 1264
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_b2, vs B1": {
+    "skill": 0.5773273412702616,
+    "lo": 0.42883274796044213,
+    "hi": 0.8054460958416886,
+    "days": 1264
+   },
+   "upper_tail_twcrps, ordinary after an ordinary day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.5943781317470003,
+    "lo": 0.44874118362074467,
+    "hi": 0.7930774321998268,
+    "days": 1264
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_level10, vs B1": {
+    "skill": 0.17479800728612951,
+    "lo": -0.0034045542508142346,
+    "hi": 1.0150981595105706,
+    "days": 194
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.15741647443514098,
+    "lo": -0.011932031380258362,
+    "hi": 0.8568191279156743,
+    "days": 194
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_b2, vs B1": {
+    "skill": 0.13567305737941104,
+    "lo": -0.07354222009487141,
+    "hi": 0.7821941115179226,
+    "days": 194
+   },
+   "upper_tail_twcrps, ordinary after a risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": 0.1285956212505495,
+    "lo": -0.07198741394170122,
+    "hi": 0.779219602411894,
+    "days": 194
+   },
+   "upper_tail_twcrps, risk day, spread_mr_level10, vs B1": {
+    "skill": 0.014516735853022862,
+    "lo": -0.010022624658082254,
+    "hi": 0.03852954093412507,
+    "days": 401
+   },
+   "upper_tail_twcrps, risk day, spread_mr_ctx, vs B1": {
+    "skill": 0.026928003319791047,
+    "lo": -0.05329789037449456,
+    "hi": 0.07582962066694941,
+    "days": 401
+   },
+   "upper_tail_twcrps, risk day, spread_mr_b2, vs B1": {
+    "skill": -0.02939595174744366,
+    "lo": -0.14161350289127309,
+    "hi": 0.03454328154192323,
+    "days": 401
+   },
+   "upper_tail_twcrps, risk day, spread_mr_ctx_b2, vs B1": {
+    "skill": -0.014983613182653415,
+    "lo": -0.16197106624631272,
+    "hi": 0.08088246877156208,
+    "days": 401
+   }
+  }
+ },
+ "849": {
+  "reporting": {
+   "risk-type cells at lead 1: month_end": 154,
+   "risk-type cells at lead 1: all four types": 397,
+   "risk-type cells at lead 2: month_end": 154,
+   "risk-type cells at lead 2: all four types": 279,
+   "risk-type cells at lead 3: month_end": 154,
+   "risk-type cells at lead 3: all four types": 279,
+   "risk-type cells at lead 4: month_end": 155,
+   "risk-type cells at lead 4: all four types": 280,
+   "risk-type cells at lead 5: month_end": 155,
+   "risk-type cells at lead 5: all four types": 281,
+   "#693 grid_crps, h5_mean_reversion, vs B1": {
+    "skill": 0.02206758986983056,
+    "lo": -0.013657192629190604,
+    "hi": 0.05692727192011599,
+    "days": 382
+   },
+   "#693 grid_crps, h5_mean_reversion, vs calendar": {
+    "skill": 0.27746852133070143,
+    "lo": 0.1425918657104877,
+    "hi": 0.4616956301171787,
+    "days": 382
+   },
+   "#693 grid_crps, type_state, vs B1": {
+    "skill": -0.4468704081146339,
+    "lo": -1.022486955595023,
+    "hi": -0.19810661908397542,
+    "days": 382
+   },
+   "#693 grid_crps, type_state, vs calendar": {
+    "skill": -0.06899966151931351,
+    "lo": -0.16403321440176769,
+    "hi": -0.006466984980090046,
+    "days": 382
+   },
+   "#739 grid_crps, h5_mean_reversion, vs B1": {
+    "skill": 0.02206758986983056,
+    "lo": -0.017436299209185324,
+    "hi": 0.05158127062169432,
+    "days": 382
+   },
+   "#739 grid_crps, h5_mean_reversion, vs calendar": {
+    "skill": 0.27746852133070143,
+    "lo": -0.03497406522728952,
+    "hi": 0.48590427582121387,
+    "days": 382
+   },
+   "#739 grid_crps, type_state, vs B1": {
+    "skill": -0.4468704081146339,
+    "lo": -0.9963821102756931,
+    "hi": 0.08587945938277458,
+    "days": 382
+   },
+   "#739 grid_crps, type_state, vs calendar": {
+    "skill": -0.06899966151931351,
+    "lo": -0.1636986569839479,
+    "hi": 0.019607637786742016,
+    "days": 382
+   },
+   "#739 mae, h5_mean_reversion, vs B1": {
+    "skill": -0.009404218023345292,
+    "lo": -0.05237608782612771,
+    "hi": 0.01616458686907455,
+    "days": 382
+   },
+   "#739 mae, h5_mean_reversion, vs calendar": {
+    "skill": 0.29529180552572704,
+    "lo": 0.010109528181172278,
+    "hi": 0.5165365892525562,
+    "days": 382
+   },
+   "#739 mae, type_state, vs B1": {
+    "skill": -0.574278927723108,
+    "lo": -1.2471148525098346,
+    "hi": -0.0008064901595223883,
+    "days": 382
+   },
+   "#739 mae, type_state, vs calendar": {
+    "skill": -0.09907135411731287,
+    "lo": -0.2199449479737885,
+    "hi": -0.008865936096414992,
+    "days": 382
+   },
+   "#739 kill rule met (weaker reading)": false,
+   "#739 kill rule met": true,
+   "control reproduces #693 / #739": [
+    true,
+    true
+   ]
+  },
+  "window": {
+   "risk-type cells at lead 1: month_end": 161,
+   "risk-type cells at lead 1: all four types": 414,
+   "risk-type cells at lead 2: month_end": 161,
+   "risk-type cells at lead 2: all four types": 286,
+   "risk-type cells at lead 3: month_end": 162,
+   "risk-type cells at lead 3: all four types": 287,
+   "risk-type cells at lead 4: month_end": 163,
+   "risk-type cells at lead 4: all four types": 288,
+   "risk-type cells at lead 5: month_end": 163,
+   "risk-type cells at lead 5: all four types": 289,
+   "#693 grid_crps, h5_mean_reversion, vs B1": {
+    "skill": 0.018750539429210164,
+    "lo": -0.020203167588422912,
+    "hi": 0.050913491827583576,
+    "days": 400
+   },
+   "#693 grid_crps, h5_mean_reversion, vs calendar": {
+    "skill": 0.28380113216599867,
+    "lo": 0.1468410593109609,
+    "hi": 0.46808364101246025,
+    "days": 400
+   },
+   "#693 grid_crps, type_state, vs B1": {
+    "skill": -0.46683089388105137,
+    "lo": -1.0592981012561034,
+    "hi": -0.2060784333781585,
+    "days": 400
+   },
+   "#693 grid_crps, type_state, vs calendar": {
+    "skill": -0.07061727696690716,
+    "lo": -0.1625128856540756,
+    "hi": -0.008228337809999384,
+    "days": 400
+   },
+   "#739 grid_crps, h5_mean_reversion, vs B1": {
+    "skill": 0.018750539429210164,
+    "lo": -0.015268964422337133,
+    "hi": 0.04593047622168306,
+    "days": 400
+   },
+   "#739 grid_crps, h5_mean_reversion, vs calendar": {
+    "skill": 0.28380113216599867,
+    "lo": -0.032812852031911977,
+    "hi": 0.49648687300458794,
+    "days": 400
+   },
+   "#739 grid_crps, type_state, vs B1": {
+    "skill": -0.46683089388105137,
+    "lo": -1.0445335850438089,
+    "hi": 0.09432594786330384,
+    "days": 400
+   },
+   "#739 grid_crps, type_state, vs calendar": {
+    "skill": -0.07061727696690716,
+    "lo": -0.1622145513713959,
+    "hi": 0.018230630759559913,
+    "days": 400
+   },
+   "#739 mae, h5_mean_reversion, vs B1": {
+    "skill": -0.013982486139359988,
+    "lo": -0.06073117886714341,
+    "hi": 0.014519095507008972,
+    "days": 400
+   },
+   "#739 mae, h5_mean_reversion, vs calendar": {
+    "skill": 0.30738292052285643,
+    "lo": 0.019516265448314418,
+    "hi": 0.5237101771498238,
+    "days": 400
+   },
+   "#739 mae, type_state, vs B1": {
+    "skill": -0.5928823713506503,
+    "lo": -1.2823961308097476,
+    "hi": -0.0005994152220003546,
+    "days": 400
+   },
+   "#739 mae, type_state, vs calendar": {
+    "skill": -0.08804397617956955,
+    "lo": -0.19704353003448782,
+    "hi": 0.00046054478128820797,
+    "days": 400
+   },
+   "#739 kill rule met (weaker reading)": false,
+   "#739 kill rule met": true,
+   "control reproduces #693 / #739": [
+    false,
+    false
+   ]
+  }
+ },
+ "694": {
+  "reporting": {
+   "model_prob, precision@3, gain over calendar": {
+    "skill": -0.024819033886085133,
+    "lo": -0.04449118000480647,
+    "hi": -0.007445662100456627,
+    "days": 1825
+   },
+   "model_prob, precision@3, gain over climatology": {
+    "skill": -0.029199247447116362,
+    "lo": -0.04947306996338554,
+    "hi": -0.011578543682152822,
+    "days": 1825
+   },
+   "model_prob, precision@3, gain over persistence": {
+    "skill": 0.0005607687060462823,
+    "lo": -0.004132910420509557,
+    "hi": 0.005307857560741481,
+    "days": 1825
+   },
+   "model_prob, precision@5, gain over calendar": {
+    "skill": -0.015770968517183372,
+    "lo": -0.02949901465993753,
+    "hi": -0.0030136625811103095,
+    "days": 1825
+   },
+   "model_prob, precision@5, gain over climatology": {
+    "skill": -0.01666119859142887,
+    "lo": -0.02821232697308677,
+    "hi": -0.006369971776742435,
+    "days": 1825
+   },
+   "model_prob, precision@5, gain over persistence": {
+    "skill": 0.00132524014477872,
+    "lo": -0.002781282320579364,
+    "hi": 0.0055226092836907536,
+    "days": 1825
+   },
+   "model_prob, recall@3, gain over calendar": {
+    "skill": -0.09274717579564637,
+    "lo": -0.14943597966181824,
+    "hi": -0.040453427020227514,
+    "days": 436
+   },
+   "model_prob, recall@3, gain over climatology": {
+    "skill": -0.11419800517939468,
+    "lo": -0.17978347683573442,
+    "hi": -0.05665667207659941,
+    "days": 436
+   },
+   "model_prob, recall@3, gain over persistence": {
+    "skill": 0.009189856423252702,
+    "lo": -0.009420036365889109,
+    "hi": 0.030769754807104994,
+    "days": 436
+   },
+   "model_prob, recall@5, gain over calendar": {
+    "skill": -0.09505535302864311,
+    "lo": -0.17025055320832813,
+    "hi": -0.023535486766804434,
+    "days": 436
+   },
+   "model_prob, recall@5, gain over climatology": {
+    "skill": -0.10115920448064297,
+    "lo": -0.16333950548452805,
+    "hi": -0.044727262954385595,
+    "days": 436
+   },
+   "model_prob, recall@5, gain over persistence": {
+    "skill": 0.018975460143752693,
+    "lo": -0.0032439719733839147,
+    "hi": 0.044260199841174,
+    "days": 436
+   },
+   "model_median, precision@3, gain over calendar": {
+    "skill": -0.03231746031746036,
+    "lo": -0.05097392911502498,
+    "hi": -0.01519165035877363,
+    "days": 1825
+   },
+   "model_median, precision@3, gain over climatology": {
+    "skill": -0.03669767387849161,
+    "lo": -0.05688101282169514,
+    "hi": -0.01851060961114401,
+    "days": 1825
+   },
+   "model_median, precision@3, gain over persistence": {
+    "skill": -0.006937657725328954,
+    "lo": -0.015717226735719875,
+    "hi": 0.0018617375648197479,
+    "days": 1825
+   },
+   "model_median, precision@5, gain over calendar": {
+    "skill": -0.024901935203305112,
+    "lo": -0.039309175907806124,
+    "hi": -0.011592650576212218,
+    "days": 1825
+   },
+   "model_median, precision@5, gain over climatology": {
+    "skill": -0.02579216527755059,
+    "lo": -0.03996099685151639,
+    "hi": -0.012885188787843905,
+    "days": 1825
+   },
+   "model_median, precision@5, gain over persistence": {
+    "skill": -0.007805726541342975,
+    "lo": -0.015765099428729574,
+    "hi": -0.0005684049892269125,
+    "days": 1825
+   },
+   "model_median, recall@3, gain over calendar": {
+    "skill": -0.11571546894671561,
+    "lo": -0.17759345621174408,
+    "hi": -0.06174026859840406,
+    "days": 436
+   },
+   "model_median, recall@3, gain over climatology": {
+    "skill": -0.1371662983304638,
+    "lo": -0.1950942992635426,
+    "hi": -0.08461114403972016,
+    "days": 436
+   },
+   "model_median, recall@3, gain over persistence": {
+    "skill": -0.01377843672781662,
+    "lo": -0.04016042986952428,
+    "hi": 0.012706684734973201,
+    "days": 436
+   },
+   "model_median, recall@5, gain over calendar": {
+    "skill": -0.14579153644520626,
+    "lo": -0.2208654355328668,
+    "hi": -0.07831109803392933,
+    "days": 436
+   },
+   "model_median, recall@5, gain over climatology": {
+    "skill": -0.15189538789720616,
+    "lo": -0.2127055427787676,
+    "hi": -0.09823550522322252,
+    "days": 436
+   },
+   "model_median, recall@5, gain over persistence": {
+    "skill": -0.03176072327281033,
+    "lo": -0.06516175363748072,
+    "hi": 0.0012377622429101413,
+    "days": 436
+   },
+   "calendar ranker's own precision@3 (all windows)": {
+    "skill": 0.1052054794520551,
+    "lo": null,
+    "hi": null,
+    "days": null
+   },
+   "calendar ranker's own precision@5 (all windows)": {
+    "skill": 0.09435616438356123,
+    "lo": null,
+    "hi": null,
+    "days": null
+   }
+  },
+  "window": {
+   "model_prob, precision@3, gain over calendar": {
+    "skill": -0.024928622927181024,
+    "lo": -0.04392420091324199,
+    "hi": -0.007737755347272304,
+    "days": 1825
+   },
+   "model_prob, precision@3, gain over climatology": {
+    "skill": -0.022172252302346894,
+    "lo": -0.039720863550899835,
+    "hi": -0.006178544546072867,
+    "days": 1825
+   },
+   "model_prob, precision@3, gain over persistence": {
+    "skill": 0.00045117966495038914,
+    "lo": -0.00433835083245682,
+    "hi": 0.00529615907937825,
+    "days": 1825
+   },
+   "model_prob, precision@5, gain over calendar": {
+    "skill": -0.01571160778658976,
+    "lo": -0.029794520547945243,
+    "hi": -0.0025205479452054796,
+    "days": 1825
+   },
+   "model_prob, precision@5, gain over climatology": {
+    "skill": -0.012238501504903791,
+    "lo": -0.023905511421583776,
+    "hi": -0.0015028731882082349,
+    "days": 1825
+   },
+   "model_prob, precision@5, gain over persistence": {
+    "skill": 0.0013846008753723258,
+    "lo": -0.002572003894127183,
+    "hi": 0.005653374074455543,
+    "days": 1825
+   },
+   "model_prob, recall@3, gain over calendar": {
+    "skill": -0.09567339076314574,
+    "lo": -0.15346548952711275,
+    "hi": -0.042694501243644566,
+    "days": 436
+   },
+   "model_prob, recall@3, gain over climatology": {
+    "skill": -0.10226230399932269,
+    "lo": -0.16694878614350736,
+    "hi": -0.044560732897496805,
+    "days": 436
+   },
+   "model_prob, recall@3, gain over persistence": {
+    "skill": 0.006263641455753336,
+    "lo": -0.011982586978708706,
+    "hi": 0.02687569433984585,
+    "days": 436
+   },
+   "model_prob, recall@5, gain over calendar": {
+    "skill": -0.10066878372808297,
+    "lo": -0.17482927161494727,
+    "hi": -0.030064544067343605,
+    "days": 436
+   },
+   "model_prob, recall@5, gain over climatology": {
+    "skill": -0.09163489727360973,
+    "lo": -0.16041602525279203,
+    "hi": -0.029993797967488366,
+    "days": 436
+   },
+   "model_prob, recall@5, gain over persistence": {
+    "skill": 0.013362029444312824,
+    "lo": -0.008435972770306872,
+    "hi": 0.03929823763338085,
+    "days": 436
+   },
+   "model_median, precision@3, gain over calendar": {
+    "skill": -0.03639965209828228,
+    "lo": -0.05672804957599462,
+    "hi": -0.01819569471624266,
+    "days": 1825
+   },
+   "model_median, precision@3, gain over climatology": {
+    "skill": -0.033643281473448215,
+    "lo": -0.05296275200939942,
+    "hi": -0.016244428938762885,
+    "days": 1825
+   },
+   "model_median, precision@3, gain over persistence": {
+    "skill": -0.01101984950615088,
+    "lo": -0.01966320132176297,
+    "hi": -0.0031317379601626164,
+    "days": 1825
+   },
+   "model_median, precision@5, gain over calendar": {
+    "skill": -0.02540433691118627,
+    "lo": -0.03948156318567279,
+    "hi": -0.012478647532072193,
+    "days": 1825
+   },
+   "model_median, precision@5, gain over climatology": {
+    "skill": -0.021931230629500274,
+    "lo": -0.03515401800046231,
+    "hi": -0.010138986530925756,
+    "days": 1825
+   },
+   "model_median, precision@5, gain over persistence": {
+    "skill": -0.008308128249224138,
+    "lo": -0.01594836071082646,
+    "hi": -0.001500196188894818,
+    "days": 1825
+   },
+   "model_median, recall@3, gain over calendar": {
+    "skill": -0.11818056976752339,
+    "lo": -0.1811568383515057,
+    "hi": -0.062042739819992865,
+    "days": 436
+   },
+   "model_median, recall@3, gain over climatology": {
+    "skill": -0.12476948300370028,
+    "lo": -0.18136759459818444,
+    "hi": -0.07279919912687811,
+    "days": 436
+   },
+   "model_median, recall@3, gain over persistence": {
+    "skill": -0.016243537548624398,
+    "lo": -0.038602713311979994,
+    "hi": 0.005995690730741516,
+    "days": 436
+   },
+   "model_median, recall@5, gain over calendar": {
+    "skill": -0.1382549903849824,
+    "lo": -0.21592607792646587,
+    "hi": -0.06666412783115433,
+    "days": 436
+   },
+   "model_median, recall@5, gain over climatology": {
+    "skill": -0.12922110393050906,
+    "lo": -0.1917762532104806,
+    "hi": -0.07280503929599727,
+    "days": 436
+   },
+   "model_median, recall@5, gain over persistence": {
+    "skill": -0.024224177212586444,
+    "lo": -0.05106371669991053,
+    "hi": 0.003538489017700434,
+    "days": 436
+   },
+   "calendar ranker's own precision@3 (all windows)": {
+    "skill": 0.1052054794520551,
+    "lo": null,
+    "hi": null,
+    "days": null
+   },
+   "calendar ranker's own precision@5 (all windows)": {
+    "skill": 0.09435616438356123,
+    "lo": null,
+    "hi": null,
+    "days": null
+   }
+  }
+ }
+}
