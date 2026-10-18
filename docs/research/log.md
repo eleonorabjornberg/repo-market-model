@@ -1093,6 +1093,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (data quality of an input; no kill criterion assessed).
 - Next: Eleonora decides the exact definition of the test trade (draft section in `docs/DATA_QUALITY_DECISIONS.md`); then a directive puts it in `src/` test first.
 
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#885
+- Directive: #865 (why the direct-pairs twin of #449 scores below gbm_funding)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `80b5ef0a` with #825's head `6b234b8d` merged in; declaration `metadata/twin_diagnosis_865.json`, committed before any diagnostic score; seed 865
+- Tried: #449's control and twin re-walked at leads 2, 3 and 5 (reproducing #449's recorded skill to rounding), the training pairs' alignment checked on named days, and five arms that each change one thing: the twin with its training pairs read k = 1 or 2 (lead 3) and k = 1 or 3 (lead 5) rows fresher than it is served, and the control without the first h + 3 rows the twin cannot pair. Grid CRPS, studentized stationary bootstrap, by lead, regime, day type and half-year. Variants: 0 new models (5 diagnostic arms, none joins a declaration).
+- Result: no defect. The pairs are aligned (anchor h + 1 rows before the target, both guards pass); the sample difference is immaterial (+0.1% [-0.2, +0.6]). The shortfall falls as the training pairs get fresher: lead 5, twin -7.0% against the control, k = 3 -3.0% [-8.2, +1.8], k = 1 +0.9% [-2.0, +3.8]; lead 3, k = 2 -3.2%, k = 1 -0.5% [-3.4, +2.2]. It sits in 2021-23 (-20.1% [-30.9, -12.5]) and on ordinary days; the twin is ahead in 2024. Development data, not a verdict.
+- Against kill: not applicable (a diagnosis of a construction question; no kill criterion assessed).
+- Next: whether gbm_funding is declared on the freshest training pairs on purpose is Eleonora's (marked in the PR); the declared candidate is unchanged.
+
 ### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#895
 - Directive: #870 (findings #859, #861, #862)
 - Step: 3
