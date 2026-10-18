@@ -645,5 +645,66 @@
     },
     "reviewed_note": "Structural-zero semantics have not been reviewed against the statement; the empty declaration is not a finding.",
     "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/deposits_withdrawals_operating_cash"
+  },
+  "h9_target_forecasts": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 16 October 2026 for #842. Not a fetched series: each column holds the median of the lead-h law that a walk-forward fit of #706 (scripts/richer_targets_706.py) gave for the target day h business days after the row's own decision day. A walk fits once per block of rows, at the 16:00 ET decision instant of the block's first row, and forecasts each row of the block from the reads of that row's own decision instant (asof.refit_blocks), so the value on the row of day t uses only what was public at 16:00 ET on t. repo_model.target_forecasts.attach refuses, with LookAheadError, a forecast whose recorded fit is later than its own decision day.",
+      "publication": "Computed by this repository from the public inputs of #706's walks; nothing is published."
+    },
+    "coverage": [
+      "one value per panel day to 2025-12-31 on which the walk of the target at that lead forecast it (the walk starts after 61 labels); a hole elsewhere"
+    ],
+    "field_frequencies": {
+      "h9fc_bgcr_dispersion_bps_h1": "business_daily",
+      "h9fc_bgcr_dispersion_bps_h2": "business_daily",
+      "h9fc_bgcr_dispersion_bps_h3": "business_daily",
+      "h9fc_bgcr_dispersion_bps_h4": "business_daily",
+      "h9fc_bgcr_dispersion_bps_h5": "business_daily",
+      "h9fc_on_rrp_change_bn_h1": "business_daily",
+      "h9fc_on_rrp_change_bn_h2": "business_daily",
+      "h9fc_on_rrp_change_bn_h3": "business_daily",
+      "h9fc_on_rrp_change_bn_h4": "business_daily",
+      "h9fc_on_rrp_change_bn_h5": "business_daily",
+      "h9fc_sofr_dispersion_bps_h1": "business_daily",
+      "h9fc_sofr_dispersion_bps_h2": "business_daily",
+      "h9fc_sofr_dispersion_bps_h3": "business_daily",
+      "h9fc_sofr_dispersion_bps_h4": "business_daily",
+      "h9fc_sofr_dispersion_bps_h5": "business_daily"
+    },
+    "fields": [
+      "h9fc_bgcr_dispersion_bps_h1",
+      "h9fc_bgcr_dispersion_bps_h2",
+      "h9fc_bgcr_dispersion_bps_h3",
+      "h9fc_bgcr_dispersion_bps_h4",
+      "h9fc_bgcr_dispersion_bps_h5",
+      "h9fc_on_rrp_change_bn_h1",
+      "h9fc_on_rrp_change_bn_h2",
+      "h9fc_on_rrp_change_bn_h3",
+      "h9fc_on_rrp_change_bn_h4",
+      "h9fc_on_rrp_change_bn_h5",
+      "h9fc_sofr_dispersion_bps_h1",
+      "h9fc_sofr_dispersion_bps_h2",
+      "h9fc_sofr_dispersion_bps_h3",
+      "h9fc_sofr_dispersion_bps_h4",
+      "h9fc_sofr_dispersion_bps_h5"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#842). Read only by a track that switches the columns on (repo_model.target_forecasts.COLUMN_FIELDS). The median of the 23-level law of a richer target (BGCR dispersion, ON RRP daily change, SOFR dispersion), in that target's own unit. Development use only: the forecasts are #706's re-walked, and nothing here is a verdict.",
+    "provider": "repo-market-model",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 16 October 2026 (#842). The value on the row of day t uses only reads the as-of rule allows at 16:00 ET on t, so the 16:00 ET decision of t reads it.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Derived columns: no structural zeros. A hole is a day the target's walk did not forecast, or a lead it had no law for.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/richer_targets_706.json"
   }
 }

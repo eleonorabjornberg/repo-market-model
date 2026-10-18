@@ -5,10 +5,11 @@ on:
     branches: [main]
   push:
     branches: [main]
-  # Weekly run on main, so a change in the runner image or a dependency surfaces
-  # between one merge and the next Monday.
+  # Nightly run on main, so a change in the runner image or a dependency surfaces
+  # between one merge and the next day, and so the classes marked nightly run
+  # here even on a day with no merge (#869).
   schedule:
-    - cron: "0 5 * * 1"
+    - cron: "0 5 * * *"
 
 permissions:
   contents: read
@@ -19,13 +20,20 @@ concurrency:
   group: tests-${{ github.ref }}
   cancel-in-progress: true
 
+# On a pull request the classes declared in tests/nightly.py (the slowest ones,
+# #858) skip with their reason printed. A push to main and the nightly schedule
+# leave REPO_MODEL_SKIP_NIGHTLY empty, so the whole suite runs there and a
+# failure turns main red (#869).
+env:
+  REPO_MODEL_SKIP_NIGHTLY: ${{ github.event_name == 'pull_request' && '1' || '' }}
+
 jobs:
   suite:
-    name: unit tests (3.11)
+    name: "unit tests: suite (3.11)"
     runs-on: ubuntu-latest
-    # The suite runs twice here (once with networking off, #262), about 20
-    # minutes each; a hung run is stopped well after that.
-    timeout-minutes: 90
+    # The suite and the networking-off pass are two jobs that run in parallel
+    # (#869); a hung run is stopped well after the ~20 minutes either takes.
+    timeout-minutes: 60
     # 3.11 only, the one declared interpreter (requires-python, #53). 3.9 and
     # 3.10 left the matrix on the human's ruling of 30 Sep (#29): every
     # environment that runs this project is the rmm cloud environment, on 3.11.
@@ -76,15 +84,29 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -B scripts/emit_progress.py --check
 
-      # The same suite again with the network namespace empty, so a test that
-      # reaches a host fails here by name even if the in-process guard
-      # (tests/netguard.py) were bypassed (#262). `sudo` for the namespace;
-      # the environment and PATH are passed through so it is this job's python.
+  offline:
+    # The same suite again with the network namespace empty, so a test that
+    # reaches a host fails here by name even if the in-process guard
+    # (tests/netguard.py) were bypassed (#262). A job of its own, in parallel
+    # with `suite` (#869). `sudo` for the namespace; the environment and PATH
+    # are passed through so it is this job's python.
+    name: "unit tests: networking off (3.11)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+
       - name: Run the suite with networking disabled
         env:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: src
-        run: sudo --preserve-env=PYTHONDONTWRITEBYTECODE,PYTHONPATH env "PATH=$PATH" unshare --net python3 -B -m unittest discover -s tests
+        run: sudo --preserve-env=PYTHONDONTWRITEBYTECODE,PYTHONPATH,REPO_MODEL_SKIP_NIGHTLY env "PATH=$PATH" unshare --net python3 -B -m unittest discover -s tests
 
   ml:
     # The optional ml extra (AGENT_CONTRACT.md, working rules; 10 Sep), with
@@ -103,9 +125,9 @@ jobs:
     # proven by the core job above in the same run. The two conformance-
     # coverage checks in test_baseline and test_contract import the modules
     # that define conformance cases themselves (#29), so they no longer need
-    # this job to load test_ml beside them. Pushes and the weekly schedule run
+    # this job to load test_ml beside them. Pushes and the nightly schedule run
     # the whole suite here too, so a merge is never under-tested on the way in.
-    name: unit tests with the ml extra (3.11)
+    name: "unit tests: ml extra (3.11)"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -143,7 +165,7 @@ jobs:
           fi
 
   research-log:
-    # The research log (#638): `docs/research/log.md` keeps to its format and to the hypotheses of
+    # The research log (#638): `docs/research/log/` (one file per entry, #866) keeps to its format and to the hypotheses of
     # `docs/research/plan.md`, and a pull request that changes a result page or a declaration adds an entry that
     # names its directive (the `Closes #N` line of its body).
     name: research log
@@ -157,6 +179,12 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
+
+      # `log.md` is generated from the entry files under `docs/research/log/` (#866); this refuses a stale one.
+      - name: Check the log page is current
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -B scripts/check_research_log.py assemble --check
 
       - name: The log is well formed
         if: github.event_name != 'pull_request'
