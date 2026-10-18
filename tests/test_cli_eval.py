@@ -114,6 +114,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from nightly import nightly
 from repo_model import baseline, cli, cli_eval
 from repo_model.baseline import (
     BacktestReport,
@@ -3520,6 +3521,7 @@ class ExceedanceBacktestHarness(unittest.TestCase):
         return json.loads(self.report_path.read_text(encoding="utf-8"))
 
 
+@nightly
 class ExceedanceBacktestCommandTests(ExceedanceBacktestHarness):
     """The headline metric, reachable by name from the command line.
 

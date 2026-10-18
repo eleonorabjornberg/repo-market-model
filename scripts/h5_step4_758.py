@@ -168,6 +168,9 @@ def score_command(args) -> int:
         except sp.ProtocolError:
             pass  # the first decision days have no B2 and are left out of every window (as in H2)
     walk_days = [d for d in walk_days if d in b2]
+    if args.without_day is not None:
+        # #882 (finding #798): the same scoring on every decision day but one; the day must be a scored one
+        walk_days = _load("h5_splits_805").drop_day(walk_days, args.without_day)
 
     candidates: Dict[str, Dict] = {}
     missing = {}
@@ -254,7 +257,10 @@ def score_command(args) -> int:
     rerun = {k: head["tests"][f"B1 -> {k}"]["skill"] for k in RECORDED}
     document["reproduction"] = {"rerun": rerun, "recorded": RECORDED, "tolerance": args.tolerance, "fits_panel_sha256": fits["panel_sha256"]}
     print(json.dumps({"reproduction": document["reproduction"]}), flush=True)
-    require_reproduced(rerun, tolerance=args.tolerance)
+    if args.without_day is None:
+        require_reproduced(rerun, tolerance=args.tolerance)
+    else:
+        document["without_day"] = args.without_day.isoformat()
     best = min(ceiling_candidates, key=lambda c: head["means"][c])
     document["best_candidate"] = best
     reading_cells = {}
@@ -325,6 +331,7 @@ def main(argv=None) -> int:
     p.add_argument("--fits", type=Path, required=True)
     p.add_argument("--walks", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--without-day", type=date.fromisoformat, default=None, help="leave this decision day out of every window (#882); the reproduction check is then not made")
     p.add_argument("--tolerance", type=float, default=RECORDED_TOLERANCE, help="how far the rerun's skills may sit from H2's recorded ones")
     p.set_defaults(run=score_command)
     p = sub.add_parser("report")

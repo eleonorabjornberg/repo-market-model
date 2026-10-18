@@ -18,6 +18,7 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
+from nightly import nightly
 from test_protocol_benchmarks import published_panel
 
 from repo_model import scoring_protocol as sp
@@ -71,6 +72,7 @@ class DevelopmentSeriesTests(unittest.TestCase):
         self.assertEqual(days[-1], ps.development_series(published_panel()["rows"])[0][-1])
 
 
+@nightly
 class SimulationTests(unittest.TestCase):
     def series(self, skill):
         rng = random.Random(3)
