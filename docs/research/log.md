@@ -1122,3 +1122,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the controls reproduce the tracked evidence to 1e-9 for #805, #761, #849 and #694; #775's does not byte for byte (scratch panel digest drift, #811) but is within the declared tolerance. Pooled skills move by about 0.1 points at most, ordinary-day groups by at most 0.8 points with no sign change, month-end groups by up to 5.5 points; the kill outcomes shown do not change. Development data, not a verdict.
 - Against kill: not applicable (a measurement of a definition, no kill criterion assessed).
 - Next: which reading is shared is Eleonora's (marked question in the PR, #800).
+
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#908
+- Directive: #787
+- Step: 2 (inputs; data meaning of the Standing Repo Facility total, groundwork)
+- Tier: development
+- Pins: published panel unchanged; base `d4f76f94`
+- Tried: the test-trade rule of #802 (a whole-million trade of at most $7 mn is no take-up) applied to `srf_total_accepted`, as Eleonora ruled on 15 October 2026. Variants: 1 rule.
+- Result: three values on the results page move: 2022-10-03 0.003 to 0.0, 2025-12-23 0.006 to 0.0, 2025-12-24 0.503 to 0.5 (USD bn); nothing is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: H5 step 2 inputs.
