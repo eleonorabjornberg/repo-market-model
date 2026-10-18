@@ -67,6 +67,18 @@ class CompareTests(unittest.TestCase):
         self.assertEqual(self.m.bounds({"skill": 1, "skill_lower_95_one_sided": 0.1, "skill_upper_95_one_sided": 0.3, "mean_difference_lower_95_one_sided": 9.0}), (0.1, 0.3))
         self.assertIsNone(self.m.bounds({"skill": 1}))
 
+    def test_the_interval_is_the_headline_s_own_when_a_record_stores_several(self):
+        """#761 stores `difference_interval` (mean d in bp) before `skill_interval`; the skill is paired with the latter (#919).
+
+        Mutation (recorded): reverting `bounds()` to the first key containing "interval" makes this fail with AssertionError
+        ((0.266, 1.425) is read instead of (0.153, 0.395)).
+        """
+
+        record = {"skill": 0.232, "difference_interval": [0.266, 1.425], "skill_interval": [0.153, 0.395]}
+        self.assertEqual(self.m.bounds(record), (0.153, 0.395))
+        self.assertEqual(self.m.bounds({"mean_difference": 1.0, "skill_interval": [0.1, 0.2], "mean_difference_interval": [0.5, 1.5]}), (0.5, 1.5))
+        self.assertEqual(self.m.bounds({"skill": 1, "other_interval": [0.7, 0.9]}), (0.7, 0.9))
+
     def test_records_are_found_at_any_depth_with_their_path(self):
         doc = {"a": {"b": {"skill": 0.1, "n": 3}, "c": [1, 2]}, "headroom": 0.2}
         self.assertEqual([p for p, _ in self.m.records(doc)], ["", "/a/b"])

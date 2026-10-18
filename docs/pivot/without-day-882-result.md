@@ -12,11 +12,13 @@ On decision day 2019-09-18 B1's anchor is +315 bp (the day's anchor, 2019-09-17,
 
 Each script gained one option, `score --without-day YYYY-MM-DD`, which leaves that one decision day out of every window and changes nothing else; without it a script's output is what it was (tested in `tests/test_without_day_882.py`). `scripts/without_day_882.py` lines the two score files up and compares the "with" run with the tracked file. Everything below is in `docs/pivot/evidence/without-day-882/` (`comparison-*.json`, every record; `report.md`, every record as a table).
 
+**Correction (#919).** The first version of this page paired every #761 skill with the interval of mean(d) in bp, because `bounds()` read the first key containing "interval". It now reads the headline's own (`skill_interval`). The #761 tables, the list of sign changes (twelve before, sixteen now, four in both) and the reading under them are regenerated from a re-run of `scripts/spread_mr_variants_761.py` (panel `4ddc3882…`, as published, and `--without-day 2019-09-18`); the "with" run again equals the tracked score file (largest difference 6e-16). The #758 and #688 sections are unchanged: their records store one interval per headline.
+
 ## The "with" column reproduces the tracked figures, except the H2 ceiling
 
 Published panel `4ddc3882…` (`build` and `verify-panel` clean, byte-identical after the merge of main). `/opt/rmm-venv`, one thread per process. The studentized stationary bootstrap and the seeds are the scripts' own.
 
-* **#761 and #688 reproduce.** Every record of the "with" run equals the tracked score file: the largest difference is 5e-15 (#761, the sum order of the bootstrap) and 0 (#688).
+* **#761 and #688 reproduce.** Every record of the "with" run equals the tracked score file: the largest difference is 6e-16 (#761, the sum order of the bootstrap) and 0 (#688).
 * **#758: the candidates reproduce, the H2 lines do not.** The records of `gbm_funding` and `c_two_part_new` (the walks of #634, rerun) equal the tracked ones exactly. The records that involve "ceiling gbm" or "reachable gbm" differ by up to 0.056 in skill or bound. The scratch panel `DERIV.csv` of H2 (`docs/pivot/upper-bound-result.md`) could not be rebuilt byte for byte: the chain of `derived-features-result.md` (Reproduce) gives digest `400372d6…` here, `92bf10a4…` in the #758 rerun and `08df8d19…` in H2's record. The #758 reproduction check (tolerance 0.01 on the pooled skills of the two lines) passes (reachable +0.193, ceiling +0.160 against recorded +0.192 and +0.162). So the "with the day" and "without the day" columns of the ceiling and reachable rows are this session's fits, compared with each other; they are not the tracked page's. **The declared reading of #758 does not reproduce either:** the tracked page shows headroom in regime 2024 (+0.110 [+0.027, +0.160]); this rerun gives +0.087 [-0.021, +0.146] with or without the day, so it reads "stop at the best available candidate" (nowhere shown). This is a marked question below, and it does not depend on 2019-09-18.
 
 ## #775 / #758: the candidate, the H2 lines and the headroom
@@ -84,64 +86,68 @@ Decision days 1,855 with the day, 1,854 without. Variants: the level-10 mean rev
 
 | row | days (without) | with the day | without the day | a bound changes sign |
 |---|---|---|---|---|
-| spread_mr_level10 | 1855 (1854) | +0.223 [+0.275, +1.473] | +0.172 [+0.237, +0.617] |  |
-| spread_mr_b2 | 1855 (1854) | +0.222 [+0.258, +1.387] | +0.170 [+0.220, +0.608] |  |
-| spread_mr_ctx | 1855 (1854) | +0.235 [+0.287, +1.507] | +0.186 [+0.251, +0.653] |  |
-| spread_mr_ctx_b2 | 1855 (1854) | +0.232 [+0.266, +1.425] | +0.180 [+0.232, +0.639] |  |
+| spread_mr_level10 | 1855 (1854) | +0.223 [+0.157, +0.395] | +0.172 [+0.128, +0.238] |  |
+| spread_mr_b2 | 1855 (1854) | +0.222 [+0.147, +0.382] | +0.170 [+0.116, +0.240] |  |
+| spread_mr_ctx | 1855 (1854) | +0.235 [+0.164, +0.407] | +0.186 [+0.140, +0.250] |  |
+| spread_mr_ctx_b2 | 1855 (1854) | +0.232 [+0.153, +0.395] | +0.180 [+0.125, +0.250] |  |
 
 **Grid CRPS, all decision days: skill against B2**
 
 | row | days (without) | with the day | without the day | a bound changes sign |
 |---|---|---|---|---|
-| spread_mr_level10 | 1855 (1854) | +0.294 [+0.502, +1.036] | +0.300 [+0.521, +1.051] |  |
-| spread_mr_b2 | 1855 (1854) | +0.293 [+0.532, +0.998] | +0.297 [+0.545, +1.008] |  |
-| spread_mr_ctx | 1855 (1854) | +0.305 [+0.531, +1.062] | +0.311 [+0.551, +1.078] |  |
-| spread_mr_ctx_b2 | 1855 (1854) | +0.302 [+0.555, +1.019] | +0.306 [+0.566, +1.027] |  |
+| spread_mr_level10 | 1855 (1854) | +0.294 [+0.184, +0.387] | +0.300 [+0.199, +0.392] |  |
+| spread_mr_b2 | 1855 (1854) | +0.293 [+0.195, +0.374] | +0.297 [+0.206, +0.377] |  |
+| spread_mr_ctx | 1855 (1854) | +0.305 [+0.204, +0.393] | +0.311 [+0.218, +0.397] |  |
+| spread_mr_ctx_b2 | 1855 (1854) | +0.302 [+0.211, +0.380] | +0.306 [+0.221, +0.382] |  |
 
 **Upper-tail twCRPS, all decision days: skill against B1**
 
 | row | days (without) | with the day | without the day | a bound changes sign |
 |---|---|---|---|---|
-| spread_mr_level10 | 1855 (1854) | +0.324 [+0.214, +1.520] | +0.249 [+0.179, +0.578] |  |
-| spread_mr_b2 | 1855 (1854) | +0.322 [+0.201, +1.478] | +0.243 [+0.166, +0.567] |  |
-| spread_mr_ctx | 1855 (1854) | +0.340 [+0.222, +1.545] | +0.267 [+0.187, +0.610] |  |
-| spread_mr_ctx_b2 | 1855 (1854) | +0.335 [+0.206, +1.509] | +0.258 [+0.172, +0.593] |  |
+| spread_mr_level10 | 1855 (1854) | +0.324 [+0.245, +0.487] | +0.249 [+0.163, +0.346] |  |
+| spread_mr_b2 | 1855 (1854) | +0.322 [+0.231, +0.487] | +0.243 [+0.151, +0.347] |  |
+| spread_mr_ctx | 1855 (1854) | +0.340 [+0.260, +0.503] | +0.267 [+0.189, +0.359] |  |
+| spread_mr_ctx_b2 | 1855 (1854) | +0.335 [+0.242, +0.503] | +0.258 [+0.170, +0.357] |  |
 
 **Upper-tail twCRPS, all decision days: skill against B2**
 
 | row | days (without) | with the day | without the day | a bound changes sign |
 |---|---|---|---|---|
-| spread_mr_level10 | 1855 (1854) | +0.178 [+0.091, +0.350] | +0.191 [+0.110, +0.367] |  |
-| spread_mr_b2 | 1855 (1854) | +0.176 [+0.107, +0.321] | +0.185 [+0.120, +0.332] |  |
-| spread_mr_ctx | 1855 (1854) | +0.198 [+0.116, +0.376] | +0.210 [+0.132, +0.394] |  |
-| spread_mr_ctx_b2 | 1855 (1854) | +0.191 [+0.123, +0.345] | +0.200 [+0.134, +0.357] |  |
+| spread_mr_level10 | 1855 (1854) | +0.178 [+0.031, +0.311] | +0.191 [+0.068, +0.318] |  |
+| spread_mr_b2 | 1855 (1854) | +0.176 [+0.047, +0.291] | +0.185 [+0.073, +0.292] |  |
+| spread_mr_ctx | 1855 (1854) | +0.198 [+0.069, +0.323] | +0.210 [+0.102, +0.330] |  |
+| spread_mr_ctx_b2 | 1855 (1854) | +0.191 [+0.077, +0.304] | +0.200 [+0.102, +0.306] |  |
 
 **Grid CRPS by regime, skill of `spread_mr_ctx_b2` against B1**
 
 | row | days (without) | with the day | without the day | a bound changes sign |
 |---|---|---|---|---|
-| 2018-19 | 361 (361) | +0.368 [+0.925, +8.417] | +0.279 [+0.826, +2.798] |  |
-| 2020 | 251 (251) | -0.021 [-0.226, +0.203] | -0.021 [-0.226, +0.203] |  |
-| 2021-23 | 748 (748) | -0.038 [-0.067, +0.012] | -0.038 [-0.067, +0.012] |  |
-| 2024 | 250 (250) | +0.250 [+0.202, +0.852] | +0.250 [+0.202, +0.852] |  |
-| 2025-26 | 249 (249) | +0.170 [+0.065, +1.094] | +0.170 [+0.065, +1.094] |  |
+| 2018-19 | 361 (361) | +0.368 [+0.271, +0.548] | +0.279 [+0.156, +0.393] |  |
+| 2020 | 251 (251) | -0.021 [-0.172, +0.137] | -0.021 [-0.172, +0.137] |  |
+| 2021-23 | 748 (748) | -0.038 [-0.099, +0.019] | -0.038 [-0.099, +0.019] |  |
+| 2024 | 250 (250) | +0.250 [+0.158, +0.366] | +0.250 [+0.158, +0.366] |  |
+| 2025-26 | 249 (249) | +0.170 [-0.014, +0.299] | +0.170 [-0.014, +0.299] |  |
 
-**Reading.** Against B1 every pooled skill falls without the day (for example `spread_mr_ctx_b2`, grid CRPS +0.232 to +0.180, upper-tail twCRPS +0.335 to +0.258) and the upper bounds, inflated by the day, fall by half or more; every pooled interval stays above zero. Against B2 the figures do not move (+0.302 to +0.306). The records in which a bound changes sign (twelve of 421) are all in groups that hold the day's cells: the tax-date-anchor group (where the day's weight made the intervals against B1 run to +100 and more; without it they close to a few units and exclude zero), the context "ordinary after a risk day" and regime 2018-19. They move in both directions:
+**Reading.** Against B1 every pooled skill falls without the day (for example `spread_mr_ctx_b2`, grid CRPS +0.232 to +0.180, upper-tail twCRPS +0.335 to +0.258) and the upper bounds fall by about a third; every pooled interval stays above zero. Against B2 the pooled figures do not move (+0.302 to +0.306, interval [+0.211, +0.380] to [+0.221, +0.382]). The intervals are those of the skill (corrected in #919; the first version of this page paired each #761 skill with the interval of mean(d) in bp). Sixteen of 421 records have a bound that changes sign. They are in groups that hold the day's cells: the tax-date-anchor group, the context "ordinary after a risk day", regime 2018-19, the scarce state and the comparison with the published distribution. Against B2 the tax-date anchors and regime 2018-19 move from covering zero to excluding it without the day (for example `spread_mr_ctx_b2` on tax-date anchors against B2: +0.372 [-0.007, +0.555] to +0.461 [+0.167, +0.618]); against B1 the tax-date intervals exclude zero with and without the day. The published distribution's gap moves from covering zero to excluding it (`spread_mr_ctx`: +0.031 [-0.008, +0.068] to +0.040 [+0.001, +0.076]). Development data, not a verdict. Records in which a bound changes sign:
 
 | record | days (without) | with the day | without the day | a bound changes sign |
 |---|---|---|---|---|
-| anchor_day_type/tax_date/grid_crps/vs/B1_recentred/B1 | 89 (88) | +0.744 [-0.261, +101.363] | +0.386 [+0.254, +2.859] | **yes** |
-| anchor_day_type/tax_date/grid_crps/vs/spread_mr_b2/B1 | 89 (88) | +0.703 [-0.217, +92.685] | +0.387 [+0.182, +3.086] | **yes** |
-| anchor_day_type/tax_date/grid_crps/vs/spread_mr_b2/spread_mr_level10 | 89 (88) | +0.086 [+0.037, +0.418] | +0.052 [-0.063, +0.344] | **yes** |
-| anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx/B1 | 89 (88) | +0.672 [-0.380, +124.640] | +0.346 [+0.073, +4.365] | **yes** |
-| anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/B1 | 89 (88) | +0.705 [-0.230, +91.759] | +0.391 [+0.167, +3.255] | **yes** |
-| anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10 | 89 (88) | +0.090 [+0.037, +0.474] | +0.059 [-0.036, +0.359] | **yes** |
-| anchor_day_type/tax_date/grid_crps/vs/spread_mr_level10/B1 | 89 (88) | +0.675 [-0.346, +121.789] | +0.353 [+0.111, +4.048] | **yes** |
-| context/ordinary after a risk day/grid_crps/vs/spread_mr_b2/spread_mr_level10 | 200 (200) | -0.043 [-0.380, +0.002] | -0.054 [-0.435, -0.015] | **yes** |
-| context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx/B1 | 200 (200) | +0.116 [+0.009, +1.814] | +0.033 [-0.020, +0.181] | **yes** |
-| context/ordinary after a risk day/upper_tail_twcrps/vs/B1_recentred/B1 | 200 (200) | +0.227 [-0.009, +6.980] | +0.054 [+0.012, +0.189] | **yes** |
-| context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10 | 200 (200) | -0.025 [-0.075, -0.000] | -0.025 [-0.070, +0.000] | **yes** |
-| regime/2018-19/upper_tail_twcrps/vs/spread_mr_level10/B2 | 361 (361) | +0.095 [-0.036, +0.840] | +0.114 [+0.081, +0.903] | **yes** |
+| anchor_day_type/tax_date/grid_crps/vs/spread_mr_b2/B2 | 89 (88) | +0.369 [-0.018, +0.553] | +0.457 [+0.193, +0.614] | **yes** |
+| anchor_day_type/tax_date/grid_crps/vs/spread_mr_b2/spread_mr_level10 | 89 (88) | +0.086 [+0.029, +0.134] | +0.052 [-0.079, +0.196] | **yes** |
+| anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/B2 | 89 (88) | +0.372 [-0.007, +0.555] | +0.461 [+0.167, +0.618] | **yes** |
+| anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10 | 89 (88) | +0.090 [+0.040, +0.140] | +0.059 [-0.037, +0.186] | **yes** |
+| context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx/B1 | 200 (200) | +0.116 [+0.007, +0.487] | +0.033 [-0.008, +0.071] | **yes** |
+| context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10 | 200 (200) | -0.037 [-0.102, +0.004] | -0.047 [-0.115, -0.000] | **yes** |
+| context/ordinary after a risk day/grid_crps/vs/spread_mr_level10/B1 | 200 (200) | +0.116 [+0.000, +0.576] | +0.033 [-0.005, +0.075] | **yes** |
+| context/ordinary after a risk day/upper_tail_twcrps/vs/B1_recentred/B1 | 200 (200) | +0.227 [-0.003, +2.066] | +0.054 [+0.030, +0.088] | **yes** |
+| context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_level10/B1 | 200 (200) | +0.171 [-0.008, +0.970] | +0.042 [+0.007, +0.093] | **yes** |
+| context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10 | 1276 (1276) | +0.068 [+0.002, +0.132] | +0.064 [-0.002, +0.129] | **yes** |
+| regime/2018-19/grid_crps/vs/spread_mr_b2/B2 | 361 (361) | +0.156 [-0.010, +0.292] | +0.168 [+0.031, +0.291] | **yes** |
+| regime/2018-19/grid_crps/vs/spread_mr_level10/B2 | 361 (361) | +0.142 [-0.018, +0.301] | +0.159 [+0.030, +0.301] | **yes** |
+| regime/2018-19/upper_tail_twcrps/vs/spread_mr_b2/B2 | 361 (361) | +0.116 [-0.034, +0.260] | +0.130 [+0.005, +0.260] | **yes** |
+| regime/2018-19/upper_tail_twcrps/vs/spread_mr_ctx/B2 | 361 (361) | +0.131 [-0.004, +0.290] | +0.151 [+0.041, +0.293] | **yes** |
+| scarcity_state/scarce/grid_crps/vs/B1_recentred/B2 | 501 (500) | +0.158 [+0.001, +0.296] | +0.157 [-0.003, +0.297] | **yes** |
+| published/candidate_vs/spread_mr_ctx | 1855 (1854) | +0.031 [-0.008, +0.068] | +0.040 [+0.001, +0.076] | **yes** |
 
 ## #822 / #688: the window flag and bill settlement against the control
 
