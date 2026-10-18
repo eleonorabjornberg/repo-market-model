@@ -1113,6 +1113,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a sensitivity table; nothing re-ruled).
 - Next: Eleonora's call on the H2 ceiling's reproducibility (three digests of DERIV.csv) and on whether the reachable-line sign change bears on H2 (marked questions in the PR).
 
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#899
+- Directive: #892
+- Step: groundwork G1 (the prospective log's raw-input archive; the hypothesis tag is the nearest fit)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: the three "Raw archive failed" days on #237 (2026-10-10, 2026-10-12, 2026-10-17) are non-decision days with no record, so the archive step ran on an empty raw root; it now runs only when the record step wrote the day, and a real archive failure ends the run red. Variants: n/a (infrastructure, no model).
+- Result: no false archive alarm on a weekend or holiday; a failed archive on a decision day can no longer finish green. No record, archive or published figure moves.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's call on decision days without an archive (2026-10-05 and 2026-10-06).
+
 ### 2026-10-17 [H5] groundwork G2 · eleonorabjornberg/repo-market-model#907
 - Directive: #883
 - Step: groundwork G2 and step 3 (the two month-end readings of `risk_dates`, measured side by side; the choice stays Eleonora's, #800)
