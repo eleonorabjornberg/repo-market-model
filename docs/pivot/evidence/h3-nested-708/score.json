@@ -1,0 +1,2545 @@
+{
+ "by_lead": {
+  "B1": {
+   "1": 2.0290354971603963,
+   "2": 2.2283577111069826,
+   "3": 2.352810131738195,
+   "4": 2.4236337899171407,
+   "5": 2.4783386567824124
+  },
+  "B2": {
+   "1": 2.479641788474072,
+   "2": 2.5027310655432493,
+   "3": 2.5176993471278313,
+   "4": 2.5276718345591656,
+   "5": 2.5439797609626664
+  },
+  "base": {
+   "1": 1.6356530195627488,
+   "2": 1.7682982786635948,
+   "3": 1.8594796653465824,
+   "4": 1.904927587013433,
+   "5": 1.9622919116408784
+  },
+  "plus_nyfed_on_rrp_counterparties": {
+   "1": 1.634953929224597,
+   "2": 1.7599611358413028,
+   "3": 1.8514722433416668,
+   "4": 1.890458616548279,
+   "5": 1.9477177538277217
+  },
+  "plus_nyfed_pd_financing": {
+   "1": 1.6524021404072422,
+   "2": 1.773381714998623,
+   "3": 1.8539729451695028,
+   "4": 1.8925248121438178,
+   "5": 1.9472046432146553
+  },
+  "plus_treasury_auction_results": {
+   "1": 1.6445992295792289,
+   "2": 1.784395444916805,
+   "3": 1.8735797224688902,
+   "4": 1.9152052281026413,
+   "5": 1.9782369323618005
+  },
+  "plus_treasury_dts_debt_cash": {
+   "1": 1.6481930017845545,
+   "2": 1.7849237290377338,
+   "3": 1.8806160713739386,
+   "4": 1.9167817769000792,
+   "5": 1.9806529027838102
+  }
+ },
+ "by_lead_nested": {
+  "base -> plus_nyfed_on_rrp_counterparties": {
+   "1": {
+    "mean_difference": 0.000699090338152607
+   },
+   "2": {
+    "mean_difference": 0.008337142822290207
+   },
+   "3": {
+    "mean_difference": 0.008007422004914345
+   },
+   "4": {
+    "mean_difference": 0.014468970465150896
+   },
+   "5": {
+    "mean_difference": 0.014574157813157124
+   }
+  },
+  "base -> plus_nyfed_pd_financing": {
+   "1": {
+    "mean_difference": -0.016749120844495556
+   },
+   "2": {
+    "mean_difference": -0.005083436335029919
+   },
+   "3": {
+    "mean_difference": 0.005506720177077285
+   },
+   "4": {
+    "mean_difference": 0.012402774869610488
+   },
+   "5": {
+    "mean_difference": 0.01508726842622335
+   }
+  },
+  "base -> plus_treasury_auction_results": {
+   "1": {
+    "mean_difference": -0.008946210016476492
+   },
+   "2": {
+    "mean_difference": -0.016097166253212433
+   },
+   "3": {
+    "mean_difference": -0.014100057122309266
+   },
+   "4": {
+    "mean_difference": -0.010277641089215969
+   },
+   "5": {
+    "mean_difference": -0.015945020720923988
+   }
+  },
+  "base -> plus_treasury_dts_debt_cash": {
+   "1": {
+    "mean_difference": -0.012539982221807352
+   },
+   "2": {
+    "mean_difference": -0.016625450374137738
+   },
+   "3": {
+    "mean_difference": -0.021136406027356832
+   },
+   "4": {
+    "mean_difference": -0.011854189886645997
+   },
+   "5": {
+    "mean_difference": -0.0183609911429284
+   }
+  }
+ },
+ "by_regime": {
+  "2018-19": {
+   "mean_primary": {
+    "B1": 5.726860306086956,
+    "B2": 4.364030559999997,
+    "base": 3.9925996098227854,
+    "plus_nyfed_on_rrp_counterparties": 3.9806601640542603,
+    "plus_nyfed_pd_financing": 3.96576662312932,
+    "plus_treasury_auction_results": 3.9733526154199903,
+    "plus_treasury_dts_debt_cash": 4.006678075897164
+   },
+   "n": 375,
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 5.726860306086956,
+     "bootstrap_p": 0.0036,
+     "dm_p": 0.027762168454840808,
+     "dm_statistic": 1.9147504453854278,
+     "mean_difference": 1.7342606962641687,
+     "mean_difference_lower_95_one_sided": 0.6305677964963237,
+     "n": 375,
+     "skill": 0.3028292299047107,
+     "skill_lower_95_one_sided": 0.1887405118871557,
+     "skill_upper_95_one_sided": 0.6188780398899942
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 5.726860306086956,
+     "bootstrap_p": 0.0031,
+     "dm_p": 0.026462858690662117,
+     "dm_statistic": 1.9355265212706014,
+     "mean_difference": 1.746200142032692,
+     "mean_difference_lower_95_one_sided": 0.6492938517859588,
+     "n": 375,
+     "skill": 0.304914045166545,
+     "skill_lower_95_one_sided": 0.1929512525686232,
+     "skill_upper_95_one_sided": 0.6170044726237722
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 5.726860306086956,
+     "bootstrap_p": 0.0031,
+     "dm_p": 0.026077147181472915,
+     "dm_statistic": 1.9418579896571047,
+     "mean_difference": 1.761093682957637,
+     "mean_difference_lower_95_one_sided": 0.6559266750799391,
+     "n": 375,
+     "skill": 0.30751469196582437,
+     "skill_lower_95_one_sided": 0.1960618652992906,
+     "skill_upper_95_one_sided": 0.633203204959154
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 5.726860306086956,
+     "bootstrap_p": 0.0028,
+     "dm_p": 0.026111693779588663,
+     "dm_statistic": 1.9412877252309555,
+     "mean_difference": 1.753507690666963,
+     "mean_difference_lower_95_one_sided": 0.6584037309193322,
+     "n": 375,
+     "skill": 0.30619005824241907,
+     "skill_lower_95_one_sided": 0.19429856949842197,
+     "skill_upper_95_one_sided": 0.6158474875976888
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 5.726860306086956,
+     "bootstrap_p": 0.0039,
+     "dm_p": 0.029019182961929513,
+     "dm_statistic": 1.8954080281906218,
+     "mean_difference": 1.7201822301897953,
+     "mean_difference_lower_95_one_sided": 0.61176519980746,
+     "n": 375,
+     "skill": 0.30037090801070365,
+     "skill_lower_95_one_sided": 0.18588721908069544,
+     "skill_upper_95_one_sided": 0.6280856287176558
+    },
+    "B2 -> base": {
+     "benchmark_mean": 4.364030559999997,
+     "bootstrap_p": 0.0457,
+     "dm_p": 0.03557166339775253,
+     "dm_statistic": 1.8045615030087185,
+     "mean_difference": 0.37143095017721284,
+     "mean_difference_lower_95_one_sided": 0.010649596156453611,
+     "n": 375,
+     "skill": 0.08511190402324155,
+     "skill_lower_95_one_sided": -0.008397758186193469,
+     "skill_upper_95_one_sided": 0.19976794875514675
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 4.364030559999997,
+     "bootstrap_p": 0.0414,
+     "dm_p": 0.031168242928353074,
+     "dm_statistic": 1.8638947520529903,
+     "mean_difference": 0.3833703959457362,
+     "mean_difference_lower_95_one_sided": 0.020626403582239106,
+     "n": 375,
+     "skill": 0.0878477798619578,
+     "skill_lower_95_one_sided": -0.009209734451074605,
+     "skill_upper_95_one_sided": 0.20460055798435578
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 4.364030559999997,
+     "bootstrap_p": 0.0353,
+     "dm_p": 0.022074495758406254,
+     "dm_statistic": 2.012673476069247,
+     "mean_difference": 0.398263936870681,
+     "mean_difference_lower_95_one_sided": 0.04006056609955705,
+     "n": 375,
+     "skill": 0.09126057469008221,
+     "skill_lower_95_one_sided": -0.004946447294481959,
+     "skill_upper_95_one_sided": 0.20168357779711
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 4.364030559999997,
+     "bootstrap_p": 0.0389,
+     "dm_p": 0.0284772022733224,
+     "dm_statistic": 1.9036605720758593,
+     "mean_difference": 0.3906779445800076,
+     "mean_difference_lower_95_one_sided": 0.026601433730411017,
+     "n": 375,
+     "skill": 0.08952227515565515,
+     "skill_lower_95_one_sided": -0.007130057392663161,
+     "skill_upper_95_one_sided": 0.20853415762364608
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 4.364030559999997,
+     "bootstrap_p": 0.0511,
+     "dm_p": 0.04124004613423338,
+     "dm_statistic": 1.7364738044971104,
+     "mean_difference": 0.35735248410283815,
+     "mean_difference_lower_95_one_sided": -0.0015287932459125408,
+     "n": 375,
+     "skill": 0.08188588030942624,
+     "skill_lower_95_one_sided": -0.009121793008688872,
+     "skill_upper_95_one_sided": 0.19522701293872255
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 3.9925996098227854,
+     "bootstrap_p": 0.1971,
+     "dm_p": 0.1762982934389401,
+     "dm_statistic": 0.9295645545016631,
+     "mean_difference": 0.011939445768523304,
+     "mean_difference_lower_95_one_sided": -0.011743499180528846,
+     "n": 375,
+     "skill": 0.0029903939626576394,
+     "skill_lower_95_one_sided": -0.0034593238772951352,
+     "skill_upper_95_one_sided": 0.009885026883476925
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 3.9925996098227854,
+     "bootstrap_p": 0.261,
+     "dm_p": 0.2230524460901222,
+     "dm_statistic": 0.7619247921475846,
+     "mean_difference": 0.026832986693467977,
+     "mean_difference_lower_95_one_sided": -0.03865312249242639,
+     "n": 375,
+     "skill": 0.006720680588018937,
+     "skill_lower_95_one_sided": -0.00969094519706644,
+     "skill_upper_95_one_sided": 0.022703672260333138
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 3.9925996098227854,
+     "bootstrap_p": 0.0985,
+     "dm_p": 0.09306266120213413,
+     "dm_statistic": 1.3221286277322828,
+     "mean_difference": 0.019246994402794763,
+     "mean_difference_lower_95_one_sided": -0.004736991793295002,
+     "n": 375,
+     "skill": 0.004820667305442394,
+     "skill_lower_95_one_sided": -0.0019740777710592072,
+     "skill_upper_95_one_sided": 0.014508139989418502
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 3.9925996098227854,
+     "bootstrap_p": 0.8004,
+     "dm_p": 0.8054351666650661,
+     "dm_statistic": -0.8611967919115523,
+     "mean_difference": -0.014078466074374537,
+     "mean_difference_lower_95_one_sided": -0.04427553095079415,
+     "n": 375,
+     "skill": -0.0035261402219591512,
+     "skill_lower_95_one_sided": -0.012504847858850796,
+     "skill_upper_95_one_sided": 0.0032839536924147324
+    }
+   }
+  },
+  "2020": {
+   "mean_primary": {
+    "B1": 1.6439478156937466,
+    "B2": 2.7861760384548773,
+    "base": 1.4171279521573148,
+    "plus_nyfed_on_rrp_counterparties": 1.3976447077402854,
+    "plus_nyfed_pd_financing": 1.3431411750220072,
+    "plus_treasury_auction_results": 1.4281791816151095,
+    "plus_treasury_dts_debt_cash": 1.441678397788902
+   },
+   "n": 251,
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 1.6439478156937466,
+     "bootstrap_p": 0.0207,
+     "dm_p": 0.05353518791080758,
+     "dm_statistic": 1.6115018890166721,
+     "mean_difference": 0.22681986353643313,
+     "mean_difference_lower_95_one_sided": 0.043537229362508395,
+     "n": 251,
+     "skill": 0.13797266638948333,
+     "skill_lower_95_one_sided": -0.017979705911875282,
+     "skill_upper_95_one_sided": 0.23333648363882403
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.6439478156937466,
+     "bootstrap_p": 0.0084,
+     "dm_p": 0.03907799135976586,
+     "dm_statistic": 1.761487169609592,
+     "mean_difference": 0.2463031079534615,
+     "mean_difference_lower_95_one_sided": 0.07648811714907303,
+     "n": 251,
+     "skill": 0.1498241644912077,
+     "skill_lower_95_one_sided": -0.0014913206200933005,
+     "skill_upper_95_one_sided": 0.23911457458041538
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.6439478156937466,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.008537523288118187,
+     "dm_statistic": 2.385087779200951,
+     "mean_difference": 0.30080664067173973,
+     "mean_difference_lower_95_one_sided": 0.16876477832102696,
+     "n": 251,
+     "skill": 0.18297821731330274,
+     "skill_lower_95_one_sided": 0.06227432121944673,
+     "skill_upper_95_one_sided": 0.259996458600909
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.6439478156937466,
+     "bootstrap_p": 0.0184,
+     "dm_p": 0.05817437962819705,
+     "dm_statistic": 1.5702852709730573,
+     "mean_difference": 0.21576863407863697,
+     "mean_difference_lower_95_one_sided": 0.04407343698124086,
+     "n": 251,
+     "skill": 0.13125029396847523,
+     "skill_lower_95_one_sided": -0.012789692953534798,
+     "skill_upper_95_one_sided": 0.22408527048556534
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.6439478156937466,
+     "bootstrap_p": 0.0444,
+     "dm_p": 0.07170104939985356,
+     "dm_statistic": 1.4632386119030159,
+     "mean_difference": 0.20226941790484404,
+     "mean_difference_lower_95_one_sided": 0.005542885688415378,
+     "n": 251,
+     "skill": 0.12303883126575174,
+     "skill_lower_95_one_sided": -0.05176002376372829,
+     "skill_upper_95_one_sided": 0.21813812601555138
+    },
+    "B2 -> base": {
+     "benchmark_mean": 2.7861760384548773,
+     "bootstrap_p": 0.0014,
+     "dm_p": 0.0004815496882635273,
+     "dm_statistic": 3.3010901323516997,
+     "mean_difference": 1.3690480862975645,
+     "mean_difference_lower_95_one_sided": 0.5941563383151571,
+     "n": 251,
+     "skill": 0.4913717106894631,
+     "skill_lower_95_one_sided": 0.2070070241798882,
+     "skill_upper_95_one_sided": 0.6771415961229658
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 2.7861760384548773,
+     "bootstrap_p": 0.0015,
+     "dm_p": 0.00046624943700268595,
+     "dm_statistic": 3.310138291249763,
+     "mean_difference": 1.3885313307145903,
+     "mean_difference_lower_95_one_sided": 0.597596962961237,
+     "n": 251,
+     "skill": 0.4983645367521805,
+     "skill_lower_95_one_sided": 0.2083959431907575,
+     "skill_upper_95_one_sided": 0.6897008831830329
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 2.7861760384548773,
+     "bootstrap_p": 0.0013,
+     "dm_p": 0.00043296314368790334,
+     "dm_statistic": 3.3308133961661865,
+     "mean_difference": 1.4430348634328696,
+     "mean_difference_lower_95_one_sided": 0.6263546788429728,
+     "n": 251,
+     "skill": 0.517926664904178,
+     "skill_lower_95_one_sided": 0.20179387503486695,
+     "skill_upper_95_one_sided": 0.7038389512683627
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 2.7861760384548773,
+     "bootstrap_p": 0.0016,
+     "dm_p": 0.0005997238965884666,
+     "dm_statistic": 3.239011399808978,
+     "mean_difference": 1.3579968568397653,
+     "mean_difference_lower_95_one_sided": 0.5712471621813633,
+     "n": 251,
+     "skill": 0.48740526014747665,
+     "skill_lower_95_one_sided": 0.19946085746042774,
+     "skill_upper_95_one_sided": 0.6786291624941921
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 2.7861760384548773,
+     "bootstrap_p": 0.0015,
+     "dm_p": 0.0005943577924817367,
+     "dm_statistic": 3.2415740225312457,
+     "mean_difference": 1.3444976406659737,
+     "mean_difference_lower_95_one_sided": 0.5660301005798738,
+     "n": 251,
+     "skill": 0.48256019078090573,
+     "skill_lower_95_one_sided": 0.17402862667910396,
+     "skill_upper_95_one_sided": 0.6755417349356226
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.4171279521573148,
+     "bootstrap_p": 0.117,
+     "dm_p": 0.12122803080571831,
+     "dm_statistic": 1.1688698771102315,
+     "mean_difference": 0.01948324441702808,
+     "mean_difference_lower_95_one_sided": -0.006404987440063462,
+     "n": 251,
+     "skill": 0.013748401749727997,
+     "skill_lower_95_one_sided": -0.004104069715444433,
+     "skill_upper_95_one_sided": 0.04330913393766816
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.4171279521573148,
+     "bootstrap_p": 0.0159,
+     "dm_p": 0.01785407693505492,
+     "dm_statistic": 2.100235228216463,
+     "mean_difference": 0.07398677713530628,
+     "mean_difference_lower_95_one_sided": 0.0167286219479369,
+     "n": 251,
+     "skill": 0.052208960399570924,
+     "skill_lower_95_one_sided": 0.007165770405177539,
+     "skill_upper_95_one_sided": 0.1157356095237686
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.4171279521573148,
+     "bootstrap_p": 0.8125,
+     "dm_p": 0.8448658335957828,
+     "dm_statistic": -1.0146591503318572,
+     "mean_difference": -0.011051229457796383,
+     "mean_difference_lower_95_one_sided": -0.03275703162747655,
+     "n": 251,
+     "skill": -0.007798328613145294,
+     "skill_lower_95_one_sided": -0.024112340577827008,
+     "skill_upper_95_one_sided": 0.006027826870083086
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.4171279521573148,
+     "bootstrap_p": 0.8835,
+     "dm_p": 0.9022829630699378,
+     "dm_statistic": -1.294670056102872,
+     "mean_difference": -0.02455044563158927,
+     "mean_difference_lower_95_one_sided": -0.07756484880383613,
+     "n": 251,
+     "skill": -0.017324085375788237,
+     "skill_lower_95_one_sided": -0.039231447689446544,
+     "skill_upper_95_one_sided": 0.00941793739007336
+    }
+   }
+  },
+  "2021-23": {
+   "mean_primary": {
+    "B1": 0.710632341315974,
+    "B2": 1.4809372831899545,
+    "base": 0.7170665580406874,
+    "plus_nyfed_on_rrp_counterparties": 0.7086374648728077,
+    "plus_nyfed_pd_financing": 0.7510142696861579,
+    "plus_treasury_auction_results": 0.7502878153736341,
+    "plus_treasury_dts_debt_cash": 0.7319024081495398
+   },
+   "n": 748,
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 0.710632341315974,
+     "bootstrap_p": 0.5723,
+     "dm_p": 0.5484151223216488,
+     "dm_statistic": -0.12165815387598317,
+     "mean_difference": -0.006434216724713264,
+     "mean_difference_lower_95_one_sided": -0.12126991326048324,
+     "n": 748,
+     "skill": -0.009054213199469863,
+     "skill_lower_95_one_sided": -0.17692114198759942,
+     "skill_upper_95_one_sided": 0.10065501283425213
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 0.710632341315974,
+     "bootstrap_p": 0.5184,
+     "dm_p": 0.4847787458901487,
+     "dm_statistic": 0.038163287637969015,
+     "mean_difference": 0.001994876443165939,
+     "mean_difference_lower_95_one_sided": -0.11581699005547985,
+     "n": 748,
+     "skill": 0.002807184991709998,
+     "skill_lower_95_one_sided": -0.1690967178106587,
+     "skill_upper_95_one_sided": 0.10785209826984002
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 0.710632341315974,
+     "bootstrap_p": 0.7884,
+     "dm_p": 0.7656978885933354,
+     "dm_statistic": -0.7247519427983322,
+     "mean_difference": -0.04038192837018307,
+     "mean_difference_lower_95_one_sided": -0.1705497631672504,
+     "n": 748,
+     "skill": -0.05682534557237065,
+     "skill_lower_95_one_sided": -0.24060651211123152,
+     "skill_upper_95_one_sided": 0.056480111603095434
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 0.710632341315974,
+     "bootstrap_p": 0.7863,
+     "dm_p": 0.7668482751958461,
+     "dm_statistic": -0.7285067313376483,
+     "mean_difference": -0.03965547405765976,
+     "mean_difference_lower_95_one_sided": -0.1611718296864939,
+     "n": 748,
+     "skill": -0.05580308093524756,
+     "skill_lower_95_one_sided": -0.22422380656219038,
+     "skill_upper_95_one_sided": 0.056837879434011924
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 0.710632341315974,
+     "bootstrap_p": 0.6728,
+     "dm_p": 0.6561215846658999,
+     "dm_statistic": -0.4019010762082126,
+     "mean_difference": -0.02127006683356506,
+     "mean_difference_lower_95_one_sided": -0.13568973859127395,
+     "n": 748,
+     "skill": -0.029931183253180404,
+     "skill_lower_95_one_sided": -0.1933123199895514,
+     "skill_upper_95_one_sided": 0.07934208955945643
+    },
+    "B2 -> base": {
+     "benchmark_mean": 1.4809372831899545,
+     "bootstrap_p": 0.0001,
+     "dm_p": 3.421214422871799e-10,
+     "dm_statistic": 6.169689321232907,
+     "mean_difference": 0.7638707251492651,
+     "mean_difference_lower_95_one_sided": 0.49202455682474094,
+     "n": 748,
+     "skill": 0.5158022110861302,
+     "skill_lower_95_one_sided": 0.37872292799846985,
+     "skill_upper_95_one_sided": 0.6580241462791675
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.4809372831899545,
+     "bootstrap_p": 0.0001,
+     "dm_p": 1.2239287361381912e-10,
+     "dm_statistic": 6.330236467786048,
+     "mean_difference": 0.7722998183171442,
+     "mean_difference_lower_95_one_sided": 0.503624962036546,
+     "n": 748,
+     "skill": 0.5214939397390295,
+     "skill_lower_95_one_sided": 0.38340764744325406,
+     "skill_upper_95_one_sided": 0.6621863420819194
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.4809372831899545,
+     "bootstrap_p": 0.0001,
+     "dm_p": 7.839082716287749e-10,
+     "dm_statistic": 6.037230527486165,
+     "mean_difference": 0.7299230135037956,
+     "mean_difference_lower_95_one_sided": 0.4637206595062642,
+     "n": 748,
+     "skill": 0.4928790852854577,
+     "skill_lower_95_one_sided": 0.35284711215902764,
+     "skill_upper_95_one_sided": 0.6378524058314482
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.4809372831899545,
+     "bootstrap_p": 0.0001,
+     "dm_p": 9.824909774636126e-10,
+     "dm_statistic": 6.000675621400228,
+     "mean_difference": 0.7306494678163193,
+     "mean_difference_lower_95_one_sided": 0.46272411357590937,
+     "n": 748,
+     "skill": 0.4933696221371999,
+     "skill_lower_95_one_sided": 0.35497821036139154,
+     "skill_upper_95_one_sided": 0.6367026564541844
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.4809372831899545,
+     "bootstrap_p": 0.0001,
+     "dm_p": 4.5559467309885804e-10,
+     "dm_statistic": 6.124237438835075,
+     "mean_difference": 0.7490348750404136,
+     "mean_difference_lower_95_one_sided": 0.4798802904886891,
+     "n": 748,
+     "skill": 0.5057843323567252,
+     "skill_lower_95_one_sided": 0.3682435814495444,
+     "skill_upper_95_one_sided": 0.6483291074278494
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 0.7170665580406874,
+     "bootstrap_p": 0.2022,
+     "dm_p": 0.14497562751349713,
+     "dm_statistic": 1.058228556910005,
+     "mean_difference": 0.00842909316787918,
+     "mean_difference_lower_95_one_sided": -0.007985808255768464,
+     "n": 748,
+     "skill": 0.011754966220863559,
+     "skill_lower_95_one_sided": -0.012061485572137726,
+     "skill_upper_95_one_sided": 0.03619540546144856
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 0.7170665580406874,
+     "bootstrap_p": 0.9952,
+     "dm_p": 0.996927724975498,
+     "dm_statistic": -2.7399662133890903,
+     "mean_difference": -0.03394771164546984,
+     "mean_difference_lower_95_one_sided": -0.059588202266186795,
+     "n": 748,
+     "skill": -0.04734248343449256,
+     "skill_lower_95_one_sided": -0.08182521107761331,
+     "skill_upper_95_one_sided": -0.01567168360421861
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 0.7170665580406874,
+     "bootstrap_p": 0.9999,
+     "dm_p": 0.9999770639968444,
+     "dm_statistic": -4.075720929243001,
+     "mean_difference": -0.03322125733294645,
+     "mean_difference_lower_95_one_sided": -0.051007648930869336,
+     "n": 748,
+     "skill": -0.046329391547306586,
+     "skill_lower_95_one_sided": -0.06959070434598857,
+     "skill_upper_95_one_sided": -0.026589852885511734
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 0.7170665580406874,
+     "bootstrap_p": 0.9772,
+     "dm_p": 0.9869396959275287,
+     "dm_statistic": -2.224413920247919,
+     "mean_difference": -0.014835850108851821,
+     "mean_difference_lower_95_one_sided": -0.027568906399459768,
+     "n": 748,
+     "skill": -0.020689641627395505,
+     "skill_lower_95_one_sided": -0.03898946527821333,
+     "skill_upper_95_one_sided": -0.0033362554342770932
+    }
+   }
+  },
+  "2024": {
+   "mean_primary": {
+    "B1": 1.683338942608698,
+    "B2": 1.3782048069565258,
+    "base": 1.4111287186949968,
+    "plus_nyfed_on_rrp_counterparties": 1.4193722285235455,
+    "plus_nyfed_pd_financing": 1.3960615608343003,
+    "plus_treasury_auction_results": 1.4320724098692128,
+    "plus_treasury_dts_debt_cash": 1.4339032719866676
+   },
+   "n": 250,
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 1.683338942608698,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.0026298274059166626,
+     "dm_statistic": 2.7906855203873793,
+     "mean_difference": 0.2722102239137023,
+     "mean_difference_lower_95_one_sided": 0.12819632400559208,
+     "n": 250,
+     "skill": 0.1617085050571299,
+     "skill_lower_95_one_sided": 0.11068105781056803,
+     "skill_upper_95_one_sided": 0.23063995712668361
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.683338942608698,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.0024412924609448217,
+     "dm_statistic": 2.814679844453522,
+     "mean_difference": 0.26396671408515243,
+     "mean_difference_lower_95_one_sided": 0.12488902176687558,
+     "n": 250,
+     "skill": 0.15681138682390303,
+     "skill_lower_95_one_sided": 0.10626184100975838,
+     "skill_upper_95_one_sided": 0.2209616889027235
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.683338942608698,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.0017851906009231922,
+     "dm_statistic": 2.913817888649318,
+     "mean_difference": 0.28727738177439877,
+     "mean_difference_lower_95_one_sided": 0.1381028105477176,
+     "n": 250,
+     "skill": 0.1706592620789728,
+     "skill_lower_95_one_sided": 0.12433356237819347,
+     "skill_upper_95_one_sided": 0.22880170241041245
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.683338942608698,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.00279573192320548,
+     "dm_statistic": 2.7708240129351602,
+     "mean_difference": 0.2512665327394853,
+     "mean_difference_lower_95_one_sided": 0.1185847947348288,
+     "n": 250,
+     "skill": 0.1492667497789206,
+     "skill_lower_95_one_sided": 0.1010605559761652,
+     "skill_upper_95_one_sided": 0.21462613649656692
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.683338942608698,
+     "bootstrap_p": 0.0006,
+     "dm_p": 0.004173649673700375,
+     "dm_statistic": 2.637689416396051,
+     "mean_difference": 0.24943567062203148,
+     "mean_difference_lower_95_one_sided": 0.11094162946125824,
+     "n": 250,
+     "skill": 0.1481791125413382,
+     "skill_lower_95_one_sided": 0.09464676577520632,
+     "skill_upper_95_one_sided": 0.21920731260358084
+    },
+    "B2 -> base": {
+     "benchmark_mean": 1.3782048069565258,
+     "bootstrap_p": 0.6024,
+     "dm_p": 0.6170779162561879,
+     "dm_statistic": -0.297815259317064,
+     "mean_difference": -0.0329239117384705,
+     "mean_difference_lower_95_one_sided": -0.2807071454489955,
+     "n": 250,
+     "skill": -0.02388898338787252,
+     "skill_lower_95_one_sided": -0.2031440520849394,
+     "skill_upper_95_one_sided": 0.12854462114015394
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.3782048069565258,
+     "bootstrap_p": 0.6278,
+     "dm_p": 0.6420355457338772,
+     "dm_statistic": -0.3639050566366016,
+     "mean_difference": -0.04116742156702023,
+     "mean_difference_lower_95_one_sided": -0.3067433662872927,
+     "n": 250,
+     "skill": -0.02987032214604576,
+     "skill_lower_95_one_sided": -0.22060877737597223,
+     "skill_upper_95_one_sided": 0.12193357216473258
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.3782048069565258,
+     "bootstrap_p": 0.5544,
+     "dm_p": 0.5634469738510881,
+     "dm_statistic": -0.15971440592143726,
+     "mean_difference": -0.017856753877774068,
+     "mean_difference_lower_95_one_sided": -0.26800173831827084,
+     "n": 250,
+     "skill": -0.012956531415100008,
+     "skill_lower_95_one_sided": -0.19886466975391012,
+     "skill_upper_95_one_sided": 0.13640799170932186
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.3782048069565258,
+     "bootstrap_p": 0.6657,
+     "dm_p": 0.6785611884285511,
+     "dm_statistic": -0.46367916994966224,
+     "mean_difference": -0.05386760291268744,
+     "mean_difference_lower_95_one_sided": -0.32298411571856384,
+     "n": 250,
+     "skill": -0.03908533959596518,
+     "skill_lower_95_one_sided": -0.2301765081276252,
+     "skill_upper_95_one_sided": 0.11498692703440923
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.3782048069565258,
+     "bootstrap_p": 0.6735,
+     "dm_p": 0.6935775304398135,
+     "dm_statistic": -0.5060166815502382,
+     "mean_difference": -0.05569846503014124,
+     "mean_difference_lower_95_one_sided": -0.3030436851805312,
+     "n": 250,
+     "skill": -0.040413779395487334,
+     "skill_lower_95_one_sided": -0.21250946939171034,
+     "skill_upper_95_one_sided": 0.10838048424526643
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.4111287186949968,
+     "bootstrap_p": 0.8323,
+     "dm_p": 0.8132313474101935,
+     "dm_statistic": -0.8898670002053238,
+     "mean_difference": -0.008243509828549706,
+     "mean_difference_lower_95_one_sided": -0.03048412609104441,
+     "n": 250,
+     "skill": -0.005841784466106858,
+     "skill_lower_95_one_sided": -0.01824593624017604,
+     "skill_upper_95_one_sided": 0.003590059323614431
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.4111287186949968,
+     "bootstrap_p": 0.1913,
+     "dm_p": 0.2018885639448318,
+     "dm_statistic": 0.8348944713610382,
+     "mean_difference": 0.015067157860696434,
+     "mean_difference_lower_95_one_sided": -0.013311898137136033,
+     "n": 250,
+     "skill": 0.010677380214209267,
+     "skill_lower_95_one_sided": -0.009986016069829887,
+     "skill_upper_95_one_sided": 0.0339537619876648
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.4111287186949968,
+     "bootstrap_p": 0.9692,
+     "dm_p": 0.9618365565044833,
+     "dm_statistic": -1.7724078057919068,
+     "mean_difference": -0.02094369117421695,
+     "mean_difference_lower_95_one_sided": -0.04591779406915362,
+     "n": 250,
+     "skill": -0.014841800678243972,
+     "skill_lower_95_one_sided": -0.02698347594965201,
+     "skill_upper_95_one_sided": -0.0033813648323153186
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.4111287186949968,
+     "bootstrap_p": 0.949,
+     "dm_p": 0.9680692962269752,
+     "dm_statistic": -1.8531461922969157,
+     "mean_difference": -0.022774553291670715,
+     "mean_difference_lower_95_one_sided": -0.05334596982253782,
+     "n": 250,
+     "skill": -0.016139245832040384,
+     "skill_lower_95_one_sided": -0.03563534814261031,
+     "skill_upper_95_one_sided": 0.0025575855401605598
+    }
+   }
+  },
+  "2025-26": {
+   "mean_primary": {
+    "B1": 3.230973895224518,
+    "B2": 3.724024898431938,
+    "base": 2.7423732701839305,
+    "plus_nyfed_on_rrp_counterparties": 2.727593140879641,
+    "plus_nyfed_pd_financing": 2.7539962404878917,
+    "plus_treasury_auction_results": 2.7373696398399243,
+    "plus_treasury_dts_debt_cash": 2.7499499820960476
+   },
+   "n": 244,
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 3.230973895224518,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.0027872340724858224,
+     "dm_statistic": 2.7718151547756187,
+     "mean_difference": 0.4886006250405867,
+     "mean_difference_lower_95_one_sided": 0.23481378056908453,
+     "n": 244,
+     "skill": 0.1512239469847633,
+     "skill_lower_95_one_sided": 0.08532744853933909,
+     "skill_upper_95_one_sided": 0.24432804374636008
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 3.230973895224518,
+     "bootstrap_p": 0.0002,
+     "dm_p": 0.0022107550518706276,
+     "dm_statistic": 2.8464108980808027,
+     "mean_difference": 0.5033807543448771,
+     "mean_difference_lower_95_one_sided": 0.24647609658676928,
+     "n": 244,
+     "skill": 0.15579845912369944,
+     "skill_lower_95_one_sided": 0.08985514667471328,
+     "skill_upper_95_one_sided": 0.25241735228170664
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 3.230973895224518,
+     "bootstrap_p": 0.0007,
+     "dm_p": 0.004032958773904971,
+     "dm_statistic": 2.649297995499187,
+     "mean_difference": 0.47697765473662684,
+     "mean_difference_lower_95_one_sided": 0.22341267027034084,
+     "n": 244,
+     "skill": 0.14762658882562157,
+     "skill_lower_95_one_sided": 0.0756046391475939,
+     "skill_upper_95_one_sided": 0.2376280264937934
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 3.230973895224518,
+     "bootstrap_p": 0.0002,
+     "dm_p": 0.0019178478891817008,
+     "dm_statistic": 2.891367269547939,
+     "mean_difference": 0.49360425538459607,
+     "mean_difference_lower_95_one_sided": 0.25400226631032796,
+     "n": 244,
+     "skill": 0.15277259160594234,
+     "skill_lower_95_one_sided": 0.08970813152608138,
+     "skill_upper_95_one_sided": 0.2450062112648395
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 3.230973895224518,
+     "bootstrap_p": 0.0002,
+     "dm_p": 0.002456516195103786,
+     "dm_statistic": 2.8126812645057404,
+     "mean_difference": 0.48102391312847037,
+     "mean_difference_lower_95_one_sided": 0.24635881378324662,
+     "n": 244,
+     "skill": 0.14887892280387624,
+     "skill_lower_95_one_sided": 0.08703020184508461,
+     "skill_upper_95_one_sided": 0.23950556897130262
+    },
+    "B2 -> base": {
+     "benchmark_mean": 3.724024898431938,
+     "bootstrap_p": 0.0529,
+     "dm_p": 0.020626618542050723,
+     "dm_statistic": 2.0409757545550056,
+     "mean_difference": 0.9816516282480049,
+     "mean_difference_lower_95_one_sided": -0.011501230250910877,
+     "n": 244,
+     "skill": 0.2635996415226293,
+     "skill_lower_95_one_sided": 0.023562873632713227,
+     "skill_upper_95_one_sided": 0.4666130194609892
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 3.724024898431938,
+     "bootstrap_p": 0.0512,
+     "dm_p": 0.019167721356297407,
+     "dm_statistic": 2.071249962486264,
+     "mean_difference": 0.9964317575522955,
+     "mean_difference_lower_95_one_sided": -0.004856697074617,
+     "n": 244,
+     "skill": 0.2675685004071427,
+     "skill_lower_95_one_sided": 0.026765391311014602,
+     "skill_upper_95_one_sided": 0.46749870655110287
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 3.724024898431938,
+     "bootstrap_p": 0.0476,
+     "dm_p": 0.017777803306303075,
+     "dm_statistic": 2.101973392833955,
+     "mean_difference": 0.9700286579440455,
+     "mean_difference_lower_95_one_sided": 0.01096696909041861,
+     "n": 244,
+     "skill": 0.2604785640269194,
+     "skill_lower_95_one_sided": 0.032377663786686106,
+     "skill_upper_95_one_sided": 0.44907997497998126
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 3.724024898431938,
+     "bootstrap_p": 0.0497,
+     "dm_p": 0.01803681092405518,
+     "dm_statistic": 2.096096608131404,
+     "mean_difference": 0.9866552585920142,
+     "mean_difference_lower_95_one_sided": 0.0006879019350377602,
+     "n": 244,
+     "skill": 0.2649432497101353,
+     "skill_lower_95_one_sided": 0.02732458161305054,
+     "skill_upper_95_one_sided": 0.4554371421707898
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 3.724024898431938,
+     "bootstrap_p": 0.0498,
+     "dm_p": 0.019155548934348565,
+     "dm_statistic": 2.0715106753424024,
+     "mean_difference": 0.9740749163358889,
+     "mean_difference_lower_95_one_sided": 0.002547807937473223,
+     "n": 244,
+     "skill": 0.26156509231343733,
+     "skill_lower_95_one_sided": 0.02803358915914156,
+     "skill_upper_95_one_sided": 0.4554031890535946
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 2.7423732701839305,
+     "bootstrap_p": 0.212,
+     "dm_p": 0.2208363156803851,
+     "dm_statistic": 0.7693717883579362,
+     "mean_difference": 0.014780129304290379,
+     "mean_difference_lower_95_one_sided": -0.01492759348520416,
+     "n": 244,
+     "skill": 0.005389539587839944,
+     "skill_lower_95_one_sided": -0.0059836237401321365,
+     "skill_upper_95_one_sided": 0.020157981671556535
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 2.7423732701839305,
+     "bootstrap_p": 0.6223,
+     "dm_p": 0.6228608720771516,
+     "dm_statistic": -0.3130031672647856,
+     "mean_difference": -0.011622970303959573,
+     "mean_difference_lower_95_one_sided": -0.09296656801052852,
+     "n": 244,
+     "skill": -0.004238288941308133,
+     "skill_lower_95_one_sided": -0.032830169566242566,
+     "skill_upper_95_one_sided": 0.02076740482864554
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 2.7423732701839305,
+     "bootstrap_p": 0.4601,
+     "dm_p": 0.4328275987521969,
+     "dm_statistic": 0.16917982608475543,
+     "mean_difference": 0.005003630344009413,
+     "mean_difference_lower_95_one_sided": -0.052498036799794194,
+     "n": 244,
+     "skill": 0.0018245621040763064,
+     "skill_lower_95_one_sided": -0.019655969193496048,
+     "skill_upper_95_one_sided": 0.021442334064476307
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 2.7423732701839305,
+     "bootstrap_p": 0.6506,
+     "dm_p": 0.6261039887174923,
+     "dm_statistic": -0.3215521185324284,
+     "mean_difference": -0.007576711912116129,
+     "mean_difference_lower_95_one_sided": -0.05021085273997884,
+     "n": 244,
+     "skill": -0.0027628302807983394,
+     "skill_lower_95_one_sided": -0.017917762422425227,
+     "skill_upper_95_one_sided": 0.010882230462026375
+    }
+   }
+  }
+ },
+ "by_scarcity_state": {
+  "high": {
+   "mean_primary": {
+    "B1": 5.286926926070031,
+    "B2": 4.89269465488073,
+    "base": 3.835722265463363,
+    "plus_nyfed_on_rrp_counterparties": 3.8234565958407134,
+    "plus_nyfed_pd_financing": 3.8133507308297685,
+    "plus_treasury_auction_results": 3.8282557657233998,
+    "plus_treasury_dts_debt_cash": 3.871748917806905
+   },
+   "n": 514,
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 5.286926926070031,
+     "bootstrap_p": 0.0005,
+     "dm_p": 0.015322214704890147,
+     "dm_statistic": 2.1616595276732213,
+     "mean_difference": 1.4512046606066729,
+     "mean_difference_lower_95_one_sided": 0.630989061569889,
+     "n": 514,
+     "skill": 0.27448926018832026,
+     "skill_lower_95_one_sided": 0.1769157554639062,
+     "skill_upper_95_one_sided": 0.5186126803954023
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 5.286926926070031,
+     "bootstrap_p": 0.0004,
+     "dm_p": 0.014352110116398809,
+     "dm_statistic": 2.187524999903932,
+     "mean_difference": 1.4634703302293226,
+     "mean_difference_lower_95_one_sided": 0.6458903836017034,
+     "n": 514,
+     "skill": 0.27680926002833456,
+     "skill_lower_95_one_sided": 0.1805458170115576,
+     "skill_upper_95_one_sided": 0.5156992405686242
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 5.286926926070031,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.014143794886167238,
+     "dm_statistic": 2.1932747494152784,
+     "mean_difference": 1.4735761952402697,
+     "mean_difference_lower_95_one_sided": 0.6450654364046521,
+     "n": 514,
+     "skill": 0.27872074190660956,
+     "skill_lower_95_one_sided": 0.18152962543823495,
+     "skill_upper_95_one_sided": 0.525802670527836
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 5.286926926070031,
+     "bootstrap_p": 0.0003,
+     "dm_p": 0.014712048115214094,
+     "dm_statistic": 2.1777574907406527,
+     "mean_difference": 1.4586711603466374,
+     "mean_difference_lower_95_one_sided": 0.6434774216651329,
+     "n": 514,
+     "skill": 0.27590151722239176,
+     "skill_lower_95_one_sided": 0.17866566888386,
+     "skill_upper_95_one_sided": 0.5138735378584429
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 5.286926926070031,
+     "bootstrap_p": 0.0006,
+     "dm_p": 0.017784266575728402,
+     "dm_statistic": 2.101825857921785,
+     "mean_difference": 1.4151780082631351,
+     "mean_difference_lower_95_one_sided": 0.5886075320860845,
+     "n": 514,
+     "skill": 0.267674970366025,
+     "skill_lower_95_one_sided": 0.16669004990269456,
+     "skill_upper_95_one_sided": 0.5237448609500355
+    },
+    "B2 -> base": {
+     "benchmark_mean": 4.89269465488073,
+     "bootstrap_p": 0.0008,
+     "dm_p": 8.021345657649448e-05,
+     "dm_statistic": 3.7743476484221783,
+     "mean_difference": 1.0569723894173693,
+     "mean_difference_lower_95_one_sided": 0.513706586979787,
+     "n": 514,
+     "skill": 0.21603072825380215,
+     "skill_lower_95_one_sided": 0.07651566506633434,
+     "skill_upper_95_one_sided": 0.35376405834594943
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 4.89269465488073,
+     "bootstrap_p": 0.0007,
+     "dm_p": 6.50125969725579e-05,
+     "dm_statistic": 3.826410877760512,
+     "mean_difference": 1.0692380590400183,
+     "mean_difference_lower_95_one_sided": 0.5240124686339217,
+     "n": 514,
+     "skill": 0.21853766369282723,
+     "skill_lower_95_one_sided": 0.07559548119743298,
+     "skill_upper_95_one_sided": 0.35647697526822275
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 4.89269465488073,
+     "bootstrap_p": 0.0007,
+     "dm_p": 4.295516750119077e-05,
+     "dm_statistic": 3.9272845067416755,
+     "mean_difference": 1.079343924050964,
+     "mean_difference_lower_95_one_sided": 0.5454359224062172,
+     "n": 514,
+     "skill": 0.22060316455151344,
+     "skill_lower_95_one_sided": 0.08067762923043167,
+     "skill_upper_95_one_sided": 0.35523725838832676
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 4.89269465488073,
+     "bootstrap_p": 0.0007,
+     "dm_p": 5.6503134517771336e-05,
+     "dm_statistic": 3.8608218688316747,
+     "mean_difference": 1.0644388891573324,
+     "mean_difference_lower_95_one_sided": 0.5257927819377405,
+     "n": 514,
+     "skill": 0.21755677887960914,
+     "skill_lower_95_one_sided": 0.07695782693322298,
+     "skill_upper_95_one_sided": 0.35390603664734277
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 4.89269465488073,
+     "bootstrap_p": 0.0009,
+     "dm_p": 0.00010775913591243302,
+     "dm_statistic": 3.700095589996904,
+     "mean_difference": 1.02094573707383,
+     "mean_difference_lower_95_one_sided": 0.48658632759934817,
+     "n": 514,
+     "skill": 0.2086673722946068,
+     "skill_lower_95_one_sided": 0.07428919880293916,
+     "skill_upper_95_one_sided": 0.34360467964235747
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 3.835722265463363,
+     "bootstrap_p": 0.1651,
+     "dm_p": 0.15664016372143663,
+     "dm_statistic": 1.0083627942492581,
+     "mean_difference": 0.012265669622648962,
+     "mean_difference_lower_95_one_sided": -0.008824079946438019,
+     "n": 514,
+     "skill": 0.003197747066592488,
+     "skill_lower_95_one_sided": -0.002570151292207151,
+     "skill_upper_95_one_sided": 0.009734332114149338
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 3.835722265463363,
+     "bootstrap_p": 0.2749,
+     "dm_p": 0.24485388127137164,
+     "dm_statistic": 0.690773705025568,
+     "mean_difference": 0.022371534633594765,
+     "mean_difference_lower_95_one_sided": -0.03813540363614889,
+     "n": 514,
+     "skill": 0.005832417752199334,
+     "skill_lower_95_one_sided": -0.009654703837925827,
+     "skill_upper_95_one_sided": 0.021241240527453454
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 3.835722265463363,
+     "bootstrap_p": 0.3441,
+     "dm_p": 0.31907242577432327,
+     "dm_statistic": 0.47029418483865565,
+     "mean_difference": 0.007466499739962968,
+     "mean_difference_lower_95_one_sided": -0.022455659625420735,
+     "n": 514,
+     "skill": 0.0019465694393963114,
+     "skill_lower_95_one_sided": -0.005563398196611995,
+     "skill_upper_95_one_sided": 0.009743713877301791
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 3.835722265463363,
+     "bootstrap_p": 0.9809,
+     "dm_p": 0.9839944905074052,
+     "dm_statistic": -2.144272998751719,
+     "mean_difference": -0.03602665234353882,
+     "mean_difference_lower_95_one_sided": -0.06673359588412037,
+     "n": 514,
+     "skill": -0.00939240379000348,
+     "skill_lower_95_one_sided": -0.01930414525535206,
+     "skill_upper_95_one_sided": -0.000618571496735892
+    }
+   }
+  },
+  "low": {
+   "mean_primary": {
+    "B1": 1.1694744711322342,
+    "B2": 1.611485197803604,
+    "base": 1.0632568450811832,
+    "plus_nyfed_on_rrp_counterparties": 1.0551966766110878,
+    "plus_nyfed_pd_financing": 1.0686689730948176,
+    "plus_treasury_auction_results": 1.0841272690352912,
+    "plus_treasury_dts_debt_cash": 1.0717970660839433
+   },
+   "n": 1354,
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 1.1694744711322342,
+     "bootstrap_p": 0.008,
+     "dm_p": 0.004350091468311668,
+     "dm_statistic": 2.6236159361197333,
+     "mean_difference": 0.10621762605104945,
+     "mean_difference_lower_95_one_sided": 0.03356672580024693,
+     "n": 1354,
+     "skill": 0.09082509167405269,
+     "skill_lower_95_one_sided": 0.02656169076564574,
+     "skill_upper_95_one_sided": 0.13908792102184048
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.1694744711322342,
+     "bootstrap_p": 0.0034,
+     "dm_p": 0.001823825944505253,
+     "dm_statistic": 2.9071269003425515,
+     "mean_difference": 0.11427779452114675,
+     "mean_difference_lower_95_one_sided": 0.04376794949518863,
+     "n": 1354,
+     "skill": 0.09771722029169903,
+     "skill_lower_95_one_sided": 0.034980128692273876,
+     "skill_upper_95_one_sided": 0.14290604615782812
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.1694744711322342,
+     "bootstrap_p": 0.0188,
+     "dm_p": 0.00875090908865872,
+     "dm_statistic": 2.375992507793062,
+     "mean_difference": 0.10080549803741673,
+     "mean_difference_lower_95_one_sided": 0.02115570859972421,
+     "n": 1354,
+     "skill": 0.08619726255317163,
+     "skill_lower_95_one_sided": 0.013886983995586896,
+     "skill_upper_95_one_sided": 0.13782012663950755
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.1694744711322342,
+     "bootstrap_p": 0.0294,
+     "dm_p": 0.01641151571078403,
+     "dm_statistic": 2.1342413262605593,
+     "mean_difference": 0.08534720209694331,
+     "mean_difference_lower_95_one_sided": 0.011019955147130181,
+     "n": 1354,
+     "skill": 0.07297910660188578,
+     "skill_lower_95_one_sided": 0.006465138968236014,
+     "skill_upper_95_one_sided": 0.1215616452754012
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.1694744711322342,
+     "bootstrap_p": 0.0132,
+     "dm_p": 0.006977511410654058,
+     "dm_statistic": 2.4584190630939577,
+     "mean_difference": 0.09767740504829062,
+     "mean_difference_lower_95_one_sided": 0.025343852205952963,
+     "n": 1354,
+     "skill": 0.08352247736859413,
+     "skill_lower_95_one_sided": 0.019667818549210278,
+     "skill_upper_95_one_sided": 0.1311268494827522
+    },
+    "B2 -> base": {
+     "benchmark_mean": 1.611485197803604,
+     "bootstrap_p": 0.0,
+     "dm_p": 1.2727893916597566e-07,
+     "dm_statistic": 5.154316361342581,
+     "mean_difference": 0.5482283527224239,
+     "mean_difference_lower_95_one_sided": 0.33075105720933323,
+     "n": 1354,
+     "skill": 0.34020067542018956,
+     "skill_lower_95_one_sided": 0.21355302800897377,
+     "skill_upper_95_one_sided": 0.4670242903040207
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.611485197803604,
+     "bootstrap_p": 0.0,
+     "dm_p": 9.72228180184942e-08,
+     "dm_statistic": 5.204570653098886,
+     "mean_difference": 0.5562885211925231,
+     "mean_difference_lower_95_one_sided": 0.33804832062991275,
+     "n": 1354,
+     "skill": 0.3452023772546743,
+     "skill_lower_95_one_sided": 0.2162910454755759,
+     "skill_upper_95_one_sided": 0.47364000023459485
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.611485197803604,
+     "bootstrap_p": 0.0,
+     "dm_p": 1.3098980466974552e-07,
+     "dm_statistic": 5.148927859478681,
+     "mean_difference": 0.5428162247087911,
+     "mean_difference_lower_95_one_sided": 0.32750809391528024,
+     "n": 1354,
+     "skill": 0.33684220335913106,
+     "skill_lower_95_one_sided": 0.21070725291417663,
+     "skill_upper_95_one_sided": 0.46492636753628114
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.611485197803604,
+     "bootstrap_p": 0.0,
+     "dm_p": 3.365982621517105e-07,
+     "dm_statistic": 4.968940698436348,
+     "mean_difference": 0.527357928768318,
+     "mean_difference_lower_95_one_sided": 0.3110049290138487,
+     "n": 1354,
+     "skill": 0.3272496262994459,
+     "skill_lower_95_one_sided": 0.19813913924929985,
+     "skill_upper_95_one_sided": 0.45614485950069117
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.611485197803604,
+     "bootstrap_p": 0.0,
+     "dm_p": 1.865038166126709e-07,
+     "dm_statistic": 5.082241048372685,
+     "mean_difference": 0.539688131719665,
+     "mean_difference_lower_95_one_sided": 0.32328078819834927,
+     "n": 1354,
+     "skill": 0.33490107911337963,
+     "skill_lower_95_one_sided": 0.2070837999619148,
+     "skill_upper_95_one_sided": 0.46305697468576246
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.0632568450811832,
+     "bootstrap_p": 0.121,
+     "dm_p": 0.09037970307525411,
+     "dm_statistic": 1.338420480966019,
+     "mean_difference": 0.008060168470097306,
+     "mean_difference_lower_95_one_sided": -0.0030678410379578434,
+     "n": 1354,
+     "skill": 0.007580641034558197,
+     "skill_lower_95_one_sided": -0.003147000933610483,
+     "skill_upper_95_one_sided": 0.01955628662256919
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.0632568450811832,
+     "bootstrap_p": 0.674,
+     "dm_p": 0.7055932746916868,
+     "dm_statistic": -0.5405562926666398,
+     "mean_difference": -0.005412128013632797,
+     "mean_difference_lower_95_one_sided": -0.024164136250093365,
+     "n": 1354,
+     "skill": -0.0050901417081585425,
+     "skill_lower_95_one_sided": -0.02332716574508463,
+     "skill_upper_95_one_sided": 0.013294901149470541
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.0632568450811832,
+     "bootstrap_p": 0.999,
+     "dm_p": 0.9994016488411976,
+     "dm_statistic": -3.2396649382670724,
+     "mean_difference": -0.020870423954106137,
+     "mean_difference_lower_95_one_sided": -0.033261373561940935,
+     "n": 1354,
+     "skill": -0.019628769897561873,
+     "skill_lower_95_one_sided": -0.0315086369509224,
+     "skill_upper_95_one_sided": -0.008131275661830278
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.0632568450811832,
+     "bootstrap_p": 0.918,
+     "dm_p": 0.9465440545961998,
+     "dm_statistic": -1.612230039183832,
+     "mean_difference": -0.00854022100275892,
+     "mean_difference_lower_95_one_sided": -0.01836851149597686,
+     "n": 1354,
+     "skill": -0.008032133573621005,
+     "skill_lower_95_one_sided": -0.017379116722998623,
+     "skill_upper_95_one_sided": 0.001490088021145074
+    }
+   }
+  }
+ },
+ "by_type": {
+  "month_end": {
+   "decision_days": 507,
+   "mean_primary": {
+    "B1": 2.220043291741707,
+    "B2": 2.8749583569162156,
+    "base": 2.1499274071097685,
+    "plus_nyfed_on_rrp_counterparties": 2.152724457096874,
+    "plus_nyfed_pd_financing": 2.132030361104996,
+    "plus_treasury_auction_results": 2.1864400873241534,
+    "plus_treasury_dts_debt_cash": 2.1893730870910755
+   },
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 2.220043291741707,
+     "bootstrap_p": 0.2346,
+     "dm_p": 0.23645198839020765,
+     "dm_statistic": 0.7177621145549501,
+     "mean_difference": 0.07011588463193556,
+     "mean_difference_lower_95_one_sided": -0.08811045004544373,
+     "n": 507,
+     "skill": 0.03158311592064812,
+     "skill_lower_95_one_sided": -0.04325164897389229,
+     "skill_upper_95_one_sided": 0.10950432012559108
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 2.220043291741707,
+     "bootstrap_p": 0.2477,
+     "dm_p": 0.2480934549544117,
+     "dm_statistic": 0.6805015986828088,
+     "mean_difference": 0.06731883464483113,
+     "mean_difference_lower_95_one_sided": -0.09512012579242607,
+     "n": 507,
+     "skill": 0.030323208063216187,
+     "skill_lower_95_one_sided": -0.04689820948324233,
+     "skill_upper_95_one_sided": 0.11135889753786192
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 2.220043291741707,
+     "bootstrap_p": 0.1665,
+     "dm_p": 0.17020519338630136,
+     "dm_statistic": 0.9533546971209889,
+     "mean_difference": 0.08801293063670984,
+     "mean_difference_lower_95_one_sided": -0.0605045490723328,
+     "n": 507,
+     "skill": 0.03964469114818946,
+     "skill_lower_95_one_sided": -0.030953926713894707,
+     "skill_upper_95_one_sided": 0.1154082751588931
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 2.220043291741707,
+     "bootstrap_p": 0.3703,
+     "dm_p": 0.3704642607325086,
+     "dm_statistic": 0.3306239920335458,
+     "mean_difference": 0.033603204417551304,
+     "mean_difference_lower_95_one_sided": -0.13236861106883163,
+     "n": 507,
+     "skill": 0.015136283397063098,
+     "skill_lower_95_one_sided": -0.06346971359018577,
+     "skill_upper_95_one_sided": 0.09496798421905497
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 2.220043291741707,
+     "bootstrap_p": 0.3784,
+     "dm_p": 0.3780195910319054,
+     "dm_statistic": 0.31068620944570025,
+     "mean_difference": 0.0306702046506292,
+     "mean_difference_lower_95_one_sided": -0.13506514609940043,
+     "n": 507,
+     "skill": 0.013815138094251883,
+     "skill_lower_95_one_sided": -0.06453073686827247,
+     "skill_upper_95_one_sided": 0.09235311748592032
+    },
+    "B2 -> base": {
+     "benchmark_mean": 2.8749583569162156,
+     "bootstrap_p": 0.006,
+     "dm_p": 0.0033048101853512257,
+     "dm_statistic": 2.71589837287355,
+     "mean_difference": 0.7250309498064472,
+     "mean_difference_lower_95_one_sided": 0.23250737045319264,
+     "n": 507,
+     "skill": 0.2521883310282594,
+     "skill_lower_95_one_sided": 0.07855900883425723,
+     "skill_upper_95_one_sided": 0.408389660866053
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 2.8749583569162156,
+     "bootstrap_p": 0.0061,
+     "dm_p": 0.003255445566693105,
+     "dm_statistic": 2.7208773620773083,
+     "mean_difference": 0.7222338998193429,
+     "mean_difference_lower_95_one_sided": 0.23011175295412112,
+     "n": 507,
+     "skill": 0.25121542998418844,
+     "skill_lower_95_one_sided": 0.07679493895444275,
+     "skill_upper_95_one_sided": 0.4070889158865246
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 2.8749583569162156,
+     "bootstrap_p": 0.0037,
+     "dm_p": 0.002418751987130374,
+     "dm_statistic": 2.817659773276881,
+     "mean_difference": 0.7429279958112217,
+     "mean_difference_lower_95_one_sided": 0.25770951820063087,
+     "n": 507,
+     "skill": 0.25841348067667774,
+     "skill_lower_95_one_sided": 0.09012653320774977,
+     "skill_upper_95_one_sided": 0.4115319803411642
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 2.8749583569162156,
+     "bootstrap_p": 0.0076,
+     "dm_p": 0.0037490412025456,
+     "dm_statistic": 2.673873074989145,
+     "mean_difference": 0.6885182695920625,
+     "mean_difference_lower_95_one_sided": 0.20490697364308663,
+     "n": 507,
+     "skill": 0.23948808438762645,
+     "skill_lower_95_one_sided": 0.07203994358263097,
+     "skill_upper_95_one_sided": 0.39301209564590267
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 2.8749583569162156,
+     "bootstrap_p": 0.0081,
+     "dm_p": 0.004138730019795034,
+     "dm_statistic": 2.6405376275981824,
+     "mean_difference": 0.6855852698251412,
+     "mean_difference_lower_95_one_sided": 0.2030373269443918,
+     "n": 507,
+     "skill": 0.23846789577868002,
+     "skill_lower_95_one_sided": 0.06584753822527253,
+     "skill_upper_95_one_sided": 0.3961545402098624
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 2.1499274071097685,
+     "bootstrap_p": 0.5998,
+     "dm_p": 0.6027583923457064,
+     "dm_statistic": -0.26049338750826007,
+     "mean_difference": -0.002797049987104485,
+     "mean_difference_lower_95_one_sided": -0.02179270588243923,
+     "n": 507,
+     "skill": -0.0013009974094263345,
+     "skill_lower_95_one_sided": -0.009890997144576738,
+     "skill_upper_95_one_sided": 0.0071107219340248405
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 2.1499274071097685,
+     "bootstrap_p": 0.2318,
+     "dm_p": 0.22859385029452406,
+     "dm_statistic": 0.7434856593780602,
+     "mean_difference": 0.017897046004774257,
+     "mean_difference_lower_95_one_sided": -0.0217803739888685,
+     "n": 507,
+     "skill": 0.008324488513234946,
+     "skill_lower_95_one_sided": -0.010199985119928718,
+     "skill_upper_95_one_sided": 0.02944545121200745
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 2.1499274071097685,
+     "bootstrap_p": 0.9901,
+     "dm_p": 0.9718933339453321,
+     "dm_statistic": -1.9093781133370074,
+     "mean_difference": -0.036512680214384245,
+     "mean_difference_lower_95_one_sided": -0.08401704966549645,
+     "n": 507,
+     "skill": -0.016983215383755523,
+     "skill_lower_95_one_sided": -0.03708920555154642,
+     "skill_upper_95_one_sided": -0.0024562408045035074
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 2.1499274071097685,
+     "bootstrap_p": 0.9909,
+     "dm_p": 0.9881495536778228,
+     "dm_statistic": -2.2619435269156125,
+     "mean_difference": -0.03944567998130637,
+     "mean_difference_lower_95_one_sided": -0.0750083317360711,
+     "n": 507,
+     "skill": -0.018347447383972253,
+     "skill_lower_95_one_sided": -0.03033232195362514,
+     "skill_upper_95_one_sided": -0.005729885348769481
+    }
+   }
+  },
+  "ordinary": {
+   "decision_days": 1868,
+   "mean_primary": {
+    "B1": 1.9945510792950718,
+    "B2": 2.1513442219067116,
+    "base": 1.4955271648996464,
+    "plus_nyfed_on_rrp_counterparties": 1.4852756841585077,
+    "plus_nyfed_pd_financing": 1.4918797645096729,
+    "plus_treasury_auction_results": 1.5050589919363682,
+    "plus_treasury_dts_debt_cash": 1.5061849736955062
+   },
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 1.9945510792950718,
+     "bootstrap_p": 0.0002,
+     "dm_p": 0.006450150445160174,
+     "dm_statistic": 2.486509820996999,
+     "mean_difference": 0.4990239143954245,
+     "mean_difference_lower_95_one_sided": 0.2415069804808327,
+     "n": 1868,
+     "skill": 0.2501935997406459,
+     "skill_lower_95_one_sided": 0.14128452231356403,
+     "skill_upper_95_one_sided": 0.5570247021686827
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.9945510792950718,
+     "bootstrap_p": 0.0,
+     "dm_p": 0.005452473469452546,
+     "dm_statistic": 2.5457300929689457,
+     "mean_difference": 0.5092753951365618,
+     "mean_difference_lower_95_one_sided": 0.2526399669498554,
+     "n": 1868,
+     "skill": 0.2553333431383234,
+     "skill_lower_95_one_sided": 0.14821564104592272,
+     "skill_upper_95_one_sided": 0.5594437357720079
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.9945510792950718,
+     "bootstrap_p": 0.0002,
+     "dm_p": 0.006291118265737916,
+     "dm_statistic": 2.4953798300939183,
+     "mean_difference": 0.5026713147853964,
+     "mean_difference_lower_95_one_sided": 0.24408796330203508,
+     "n": 1868,
+     "skill": 0.2520222821082396,
+     "skill_lower_95_one_sided": 0.14287812645132658,
+     "skill_upper_95_one_sided": 0.5609724018701358
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.9945510792950718,
+     "bootstrap_p": 0.0002,
+     "dm_p": 0.0073028096050911095,
+     "dm_statistic": 2.4420130360653065,
+     "mean_difference": 0.489492087358698,
+     "mean_difference_lower_95_one_sided": 0.23310859002683681,
+     "n": 1868,
+     "skill": 0.24541466620734412,
+     "skill_lower_95_one_sided": 0.1371700695948037,
+     "skill_upper_95_one_sided": 0.5551111176981441
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.9945510792950718,
+     "bootstrap_p": 0.0002,
+     "dm_p": 0.007524301183386317,
+     "dm_statistic": 2.431207286695098,
+     "mean_difference": 0.4883661055995636,
+     "mean_difference_lower_95_one_sided": 0.23115017826922407,
+     "n": 1868,
+     "skill": 0.24485013729112687,
+     "skill_lower_95_one_sided": 0.13537748571978603,
+     "skill_upper_95_one_sided": 0.5563804117583064
+    },
+    "B2 -> base": {
+     "benchmark_mean": 2.1513442219067116,
+     "bootstrap_p": 0.0,
+     "dm_p": 3.2153835149983934e-11,
+     "dm_statistic": 6.533366492471154,
+     "mean_difference": 0.6558170570070689,
+     "mean_difference_lower_95_one_sided": 0.4478361087376823,
+     "n": 1868,
+     "skill": 0.30484059702255634,
+     "skill_lower_95_one_sided": 0.2248796830243413,
+     "skill_upper_95_one_sided": 0.38630007094545926
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 2.1513442219067116,
+     "bootstrap_p": 0.0,
+     "dm_p": 1.8442358751258325e-11,
+     "dm_statistic": 6.6160807153703205,
+     "mean_difference": 0.6660685377482072,
+     "mean_difference_lower_95_one_sided": 0.4563810438726963,
+     "n": 1868,
+     "skill": 0.3096057483343499,
+     "skill_lower_95_one_sided": 0.22859500156655882,
+     "skill_upper_95_one_sided": 0.3915593058491369
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 2.1513442219067116,
+     "bootstrap_p": 0.0,
+     "dm_p": 1.854849607241249e-11,
+     "dm_statistic": 6.6152315520592335,
+     "mean_difference": 0.6594644573970406,
+     "mean_difference_lower_95_one_sided": 0.4520448638005683,
+     "n": 1868,
+     "skill": 0.3065360023197798,
+     "skill_lower_95_one_sided": 0.22801378511696296,
+     "skill_upper_95_one_sided": 0.38632281336401003
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 2.1513442219067116,
+     "bootstrap_p": 0.0,
+     "dm_p": 5.281464154904825e-11,
+     "dm_statistic": 6.458667194629137,
+     "mean_difference": 0.6462852299703417,
+     "mean_difference_lower_95_one_sided": 0.4373018234292866,
+     "n": 1868,
+     "skill": 0.30040995921961133,
+     "skill_lower_95_one_sided": 0.2201459815290358,
+     "skill_upper_95_one_sided": 0.3817138212040213
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 2.1513442219067116,
+     "bootstrap_p": 0.0,
+     "dm_p": 4.7276405013008116e-11,
+     "dm_statistic": 6.475413241377191,
+     "mean_difference": 0.645159248211206,
+     "mean_difference_lower_95_one_sided": 0.43798472890870827,
+     "n": 1868,
+     "skill": 0.29988657400414,
+     "skill_lower_95_one_sided": 0.21963680270850644,
+     "skill_upper_95_one_sided": 0.3816908877253326
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 1.4955271648996464,
+     "bootstrap_p": 0.048,
+     "dm_p": 0.033466584217248796,
+     "dm_statistic": 1.8321225231372356,
+     "mean_difference": 0.010251480741136867,
+     "mean_difference_lower_95_one_sided": 9.694158221377168e-05,
+     "n": 1868,
+     "skill": 0.006854760636744948,
+     "skill_lower_95_one_sided": 6.726043572912593e-05,
+     "skill_upper_95_one_sided": 0.014179916143329835
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 1.4955271648996464,
+     "bootstrap_p": 0.3923,
+     "dm_p": 0.3772670730177349,
+     "dm_statistic": 0.31266637289688226,
+     "mean_difference": 0.003647400389971367,
+     "mean_difference_lower_95_one_sided": -0.01894800032211147,
+     "n": 1868,
+     "skill": 0.002438872710290165,
+     "skill_lower_95_one_sided": -0.01325824948450744,
+     "skill_upper_95_one_sided": 0.017352656029075278
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 1.4955271648996464,
+     "bootstrap_p": 0.8904,
+     "dm_p": 0.9225252931414861,
+     "dm_statistic": -1.422264730098181,
+     "mean_difference": -0.009531827036728262,
+     "mean_difference_lower_95_one_sided": -0.021904107472403872,
+     "n": 1868,
+     "skill": -0.006373556602944,
+     "skill_lower_95_one_sided": -0.014840853608153994,
+     "skill_upper_95_one_sided": 0.002479132289400437
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 1.4955271648996464,
+     "bootstrap_p": 0.944,
+     "dm_p": 0.9573214884584651,
+     "dm_statistic": -1.7204150507912692,
+     "mean_difference": -0.010657808795863172,
+     "mean_difference_lower_95_one_sided": -0.022191890050240522,
+     "n": 1868,
+     "skill": -0.007126456172782617,
+     "skill_lower_95_one_sided": -0.014771858041653,
+     "skill_upper_95_one_sided": 0.0003036882080171962
+    }
+   }
+  },
+  "quarter_end": {
+   "decision_days": 146,
+   "mean_primary": {
+    "B1": 6.744715530077431,
+    "B2": 7.3823180762358565,
+    "base": 7.639083441041284,
+    "plus_nyfed_on_rrp_counterparties": 7.602584078434407,
+    "plus_nyfed_pd_financing": 7.538867347724751,
+    "plus_treasury_auction_results": 7.6575955627507835,
+    "plus_treasury_dts_debt_cash": 7.67950171921247
+   },
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 6.744715530077431,
+     "bootstrap_p": 0.9984,
+     "dm_p": 0.9971277985393905,
+     "dm_statistic": -2.762025287069586,
+     "mean_difference": -0.8943679109638566,
+     "mean_difference_lower_95_one_sided": -2.212154087642319,
+     "n": 146,
+     "skill": -0.13260276241088392,
+     "skill_lower_95_one_sided": -0.23749241228109388,
+     "skill_upper_95_one_sided": -0.05968891384777392
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 6.744715530077431,
+     "bootstrap_p": 0.9984,
+     "dm_p": 0.9963259746037563,
+     "dm_statistic": -2.6806446097873717,
+     "mean_difference": -0.8578685483569721,
+     "mean_difference_lower_95_one_sided": -2.2447029793228666,
+     "n": 146,
+     "skill": -0.12719121281414866,
+     "skill_lower_95_one_sided": -0.24414342238379358,
+     "skill_upper_95_one_sided": -0.0549123063695183
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 6.744715530077431,
+     "bootstrap_p": 0.9985,
+     "dm_p": 0.9954526515084613,
+     "dm_statistic": -2.608473814263847,
+     "mean_difference": -0.7941518176473191,
+     "mean_difference_lower_95_one_sided": -1.9529232815292397,
+     "n": 146,
+     "skill": -0.11774430131350581,
+     "skill_lower_95_one_sided": -0.22922413623061033,
+     "skill_upper_95_one_sided": -0.045449003174598726
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 6.744715530077431,
+     "bootstrap_p": 0.9991,
+     "dm_p": 0.9978556801344228,
+     "dm_statistic": -2.8561118876019345,
+     "mean_difference": -0.9128800326733532,
+     "mean_difference_lower_95_one_sided": -2.198231636431517,
+     "n": 146,
+     "skill": -0.13534744773185017,
+     "skill_lower_95_one_sided": -0.2445268863326067,
+     "skill_upper_95_one_sided": -0.05569495784829849
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 6.744715530077431,
+     "bootstrap_p": 0.999,
+     "dm_p": 0.9988822740614666,
+     "dm_statistic": -3.057025594027024,
+     "mean_difference": -0.9347861891350442,
+     "mean_difference_lower_95_one_sided": -2.1475742676631504,
+     "n": 146,
+     "skill": -0.13859534697445017,
+     "skill_lower_95_one_sided": -0.23473802246345027,
+     "skill_upper_95_one_sided": -0.06984858767944155
+    },
+    "B2 -> base": {
+     "benchmark_mean": 7.3823180762358565,
+     "bootstrap_p": 0.5497,
+     "dm_p": 0.560157023435019,
+     "dm_statistic": -0.15136733790862203,
+     "mean_difference": -0.25676536480543255,
+     "mean_difference_lower_95_one_sided": -3.944559363171676,
+     "n": 146,
+     "skill": -0.034781130012804015,
+     "skill_lower_95_one_sided": -0.6021713596688306,
+     "skill_upper_95_one_sided": 0.45393710174403074
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 7.3823180762358565,
+     "bootstrap_p": 0.5427,
+     "dm_p": 0.5520989073343794,
+     "dm_statistic": -0.13096602330005438,
+     "mean_difference": -0.22026600219854897,
+     "mean_difference_lower_95_one_sided": -3.853398982142056,
+     "n": 146,
+     "skill": -0.029836969895350215,
+     "skill_lower_95_one_sided": -0.5917179376571153,
+     "skill_upper_95_one_sided": 0.45795455241385563
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 7.3823180762358565,
+     "bootstrap_p": 0.5276,
+     "dm_p": 0.5371993970601383,
+     "dm_statistic": -0.09338059527323064,
+     "mean_difference": -0.1565492714888958,
+     "mean_difference_lower_95_one_sided": -3.710351000419552,
+     "n": 146,
+     "skill": -0.021205977563177304,
+     "skill_lower_95_one_sided": -0.5751428715646604,
+     "skill_upper_95_one_sided": 0.4650453600035285
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 7.3823180762358565,
+     "bootstrap_p": 0.5522,
+     "dm_p": 0.5648634676908925,
+     "dm_statistic": -0.1633116462586715,
+     "mean_difference": -0.27527748651493045,
+     "mean_difference_lower_95_one_sided": -3.8966100911961203,
+     "n": 146,
+     "skill": -0.037288759935861594,
+     "skill_lower_95_one_sided": -0.5932719413514735,
+     "skill_upper_95_one_sided": 0.44880266684868203
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 7.3823180762358565,
+     "bootstrap_p": 0.5587,
+     "dm_p": 0.5704146762828219,
+     "dm_statistic": -0.17742999632157289,
+     "mean_difference": -0.2971836429766213,
+     "mean_difference_lower_95_one_sided": -3.9130238613688983,
+     "n": 146,
+     "skill": -0.04025614175759699,
+     "skill_lower_95_one_sided": -0.5949563450464695,
+     "skill_upper_95_one_sided": 0.4513737497652155
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 7.639083441041284,
+     "bootstrap_p": 0.0565,
+     "dm_p": 0.08046950646009055,
+     "dm_statistic": 1.4019204167996977,
+     "mean_difference": 0.036499362606883856,
+     "mean_difference_lower_95_one_sided": -0.0015023096146127152,
+     "n": 146,
+     "skill": 0.004777976689034388,
+     "skill_lower_95_one_sided": 6.219718555073531e-05,
+     "skill_upper_95_one_sided": 0.010900385570660118
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 7.639083441041284,
+     "bootstrap_p": 0.0723,
+     "dm_p": 0.05262388509233884,
+     "dm_statistic": 1.6199278794467284,
+     "mean_difference": 0.10021609331653722,
+     "mean_difference_lower_95_one_sided": -0.011959941072323232,
+     "n": 146,
+     "skill": 0.013118863550844623,
+     "skill_lower_95_one_sided": 0.0033225302187570947,
+     "skill_upper_95_one_sided": 0.02234827908807336
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 7.639083441041284,
+     "bootstrap_p": 0.6887,
+     "dm_p": 0.6852158268573807,
+     "dm_statistic": -0.48233449519222743,
+     "mean_difference": -0.018512121709496964,
+     "mean_difference_lower_95_one_sided": -0.07492778513307453,
+     "n": 146,
+     "skill": -0.0024233433045173776,
+     "skill_lower_95_one_sided": -0.012043550837963926,
+     "skill_upper_95_one_sided": 0.006260760796404766
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 7.639083441041284,
+     "bootstrap_p": 0.8265,
+     "dm_p": 0.8162960201922168,
+     "dm_statistic": -0.9013392712587317,
+     "mean_difference": -0.04041827817118778,
+     "mean_difference_lower_95_one_sided": -0.11031887035914334,
+     "n": 146,
+     "skill": -0.00529098529727257,
+     "skill_lower_95_one_sided": -0.017084692511940145,
+     "skill_upper_95_one_sided": 0.00511206953999802
+    }
+   }
+  },
+  "tax_date": {
+   "decision_days": 214,
+   "mean_primary": {
+    "B1": 4.918835806921304,
+    "B2": 7.162317387918186,
+    "base": 5.195950088383498,
+    "plus_nyfed_on_rrp_counterparties": 5.205683243546788,
+    "plus_nyfed_pd_financing": 5.228907458958462,
+    "plus_treasury_auction_results": 5.240201819762428,
+    "plus_treasury_dts_debt_cash": 5.245136197841757
+   },
+   "tests": {
+    "B1 -> base": {
+     "benchmark_mean": 4.918835806921304,
+     "bootstrap_p": 0.8838,
+     "dm_p": 0.8856064888122608,
+     "dm_statistic": -1.2034893185093904,
+     "mean_difference": -0.27711428146218736,
+     "mean_difference_lower_95_one_sided": -0.9145674841843567,
+     "n": 214,
+     "skill": -0.05633737175619062,
+     "skill_lower_95_one_sided": -0.13079310322345447,
+     "skill_upper_95_one_sided": -0.0074761678745309396
+    },
+    "B1 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 4.918835806921304,
+     "bootstrap_p": 0.8892,
+     "dm_p": 0.8864687970665963,
+     "dm_statistic": -1.2079606312527793,
+     "mean_difference": -0.28684743662548007,
+     "mean_difference_lower_95_one_sided": -0.9547044629121281,
+     "n": 214,
+     "skill": -0.058316123547335424,
+     "skill_lower_95_one_sided": -0.13262236367004543,
+     "skill_upper_95_one_sided": -0.009134224223990524
+    },
+    "B1 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 4.918835806921304,
+     "bootstrap_p": 0.9039,
+     "dm_p": 0.8994750926050332,
+     "dm_statistic": -1.2785663250082164,
+     "mean_difference": -0.31007165203716036,
+     "mean_difference_lower_95_one_sided": -0.9985367194068153,
+     "n": 214,
+     "skill": -0.063037609753279,
+     "skill_lower_95_one_sided": -0.14462202722154854,
+     "skill_upper_95_one_sided": -0.010580886607063314
+    },
+    "B1 -> plus_treasury_auction_results": {
+     "benchmark_mean": 4.918835806921304,
+     "bootstrap_p": 0.9163,
+     "dm_p": 0.9144319350531279,
+     "dm_statistic": -1.368562317339054,
+     "mean_difference": -0.32136601284112015,
+     "mean_difference_lower_95_one_sided": -0.9886434096685239,
+     "n": 214,
+     "skill": -0.06533375486714263,
+     "skill_lower_95_one_sided": -0.15047703929154027,
+     "skill_upper_95_one_sided": -0.012099173838234063
+    },
+    "B1 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 4.918835806921304,
+     "bootstrap_p": 0.928,
+     "dm_p": 0.9251747003233844,
+     "dm_statistic": -1.4407667167159393,
+     "mean_difference": -0.3263003909204525,
+     "mean_difference_lower_95_one_sided": -0.9623155799865909,
+     "n": 214,
+     "skill": -0.06633691461327385,
+     "skill_lower_95_one_sided": -0.15439653144285392,
+     "skill_upper_95_one_sided": -0.011279607041418158
+    },
+    "B2 -> base": {
+     "benchmark_mean": 7.162317387918186,
+     "bootstrap_p": 0.0001,
+     "dm_p": 6.24742705018777e-05,
+     "dm_statistic": 3.836208108395286,
+     "mean_difference": 1.9663672995346966,
+     "mean_difference_lower_95_one_sided": 1.1175363033127432,
+     "n": 214,
+     "skill": 0.27454344635043393,
+     "skill_lower_95_one_sided": -0.36716609666969713,
+     "skill_upper_95_one_sided": 0.5796263681852294
+    },
+    "B2 -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 7.162317387918186,
+     "bootstrap_p": 0.0001,
+     "dm_p": 7.928095185505413e-05,
+     "dm_statistic": 3.7772620034641546,
+     "mean_difference": 1.9566341443714035,
+     "mean_difference_lower_95_one_sided": 1.1047437317179465,
+     "n": 214,
+     "skill": 0.2731845069686479,
+     "skill_lower_95_one_sided": -0.3606733592051014,
+     "skill_upper_95_one_sided": 0.5800837526410251
+    },
+    "B2 -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 7.162317387918186,
+     "bootstrap_p": 0.0001,
+     "dm_p": 6.511928777863663e-05,
+     "dm_statistic": 3.826007022876529,
+     "mean_difference": 1.9334099289597226,
+     "mean_difference_lower_95_one_sided": 1.106327195407145,
+     "n": 214,
+     "skill": 0.2699419509418992,
+     "skill_lower_95_one_sided": -0.3503726201371321,
+     "skill_upper_95_one_sided": 0.5697856682841576
+    },
+    "B2 -> plus_treasury_auction_results": {
+     "benchmark_mean": 7.162317387918186,
+     "bootstrap_p": 0.0001,
+     "dm_p": 8.849093180507417e-05,
+     "dm_statistic": 3.749791211914422,
+     "mean_difference": 1.9221155681557642,
+     "mean_difference_lower_95_one_sided": 1.0803731246607882,
+     "n": 214,
+     "skill": 0.26836503662880123,
+     "skill_lower_95_one_sided": -0.34708580293568053,
+     "skill_upper_95_one_sided": 0.5708990069142206
+    },
+    "B2 -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 7.162317387918186,
+     "bootstrap_p": 0.0001,
+     "dm_p": 8.699095580455563e-05,
+     "dm_statistic": 3.754076233923826,
+     "mean_difference": 1.9171811900764324,
+     "mean_difference_lower_95_one_sided": 1.0694721122244817,
+     "n": 214,
+     "skill": 0.26767610065848874,
+     "skill_lower_95_one_sided": -0.32667926183522406,
+     "skill_upper_95_one_sided": 0.5696383450784722
+    },
+    "base -> plus_nyfed_on_rrp_counterparties": {
+     "benchmark_mean": 5.195950088383498,
+     "bootstrap_p": 0.7561,
+     "dm_p": 0.7445239511041364,
+     "dm_statistic": -0.6573559045747658,
+     "mean_difference": -0.00973315516329283,
+     "mean_difference_lower_95_one_sided": -0.03797538590523004,
+     "n": 214,
+     "skill": -0.001873219526310133,
+     "skill_lower_95_one_sided": -0.004756460790879178,
+     "skill_upper_95_one_sided": 0.002076376276055867
+    },
+    "base -> plus_nyfed_pd_financing": {
+     "benchmark_mean": 5.195950088383498,
+     "bootstrap_p": 0.7988,
+     "dm_p": 0.8157404710838312,
+     "dm_statistic": -0.8992508552288269,
+     "mean_difference": -0.03295737057497294,
+     "mean_difference_lower_95_one_sided": -0.09853063973645876,
+     "n": 214,
+     "skill": -0.006342895912078756,
+     "skill_lower_95_one_sided": -0.018012932465691935,
+     "skill_upper_95_one_sided": 0.005053682044337399
+    },
+    "base -> plus_treasury_auction_results": {
+     "benchmark_mean": 5.195950088383498,
+     "bootstrap_p": 0.9999,
+     "dm_p": 0.9983396340039783,
+     "dm_statistic": -2.936374460993501,
+     "mean_difference": -0.044251731378932554,
+     "mean_difference_lower_95_one_sided": -0.0718466971771815,
+     "n": 214,
+     "skill": -0.00851658130394005,
+     "skill_lower_95_one_sided": -0.02133445599570851,
+     "skill_upper_95_one_sided": 0.0035031603160898
+    },
+    "base -> plus_treasury_dts_debt_cash": {
+     "benchmark_mean": 5.195950088383498,
+     "bootstrap_p": 0.9961,
+     "dm_p": 0.9918560112197929,
+     "dm_statistic": -2.402397970765859,
+     "mean_difference": -0.049186109458265424,
+     "mean_difference_lower_95_one_sided": -0.0942686883563947,
+     "n": 214,
+     "skill": -0.009466239787066089,
+     "skill_lower_95_one_sided": -0.031290486344955286,
+     "skill_upper_95_one_sided": 0.011210003941273512
+    }
+   }
+  }
+ },
+ "decision_days": {
+  "first": "2018-06-29",
+  "last": "2025-12-23",
+  "n": 1868
+ },
+ "decision_days_without_a_benchmark": [
+  [
+   "2018-06-28",
+   "B2 has no quarter_end day in the year before 2018-06-28 to forecast 2018-06-29 from"
+  ]
+ ],
+ "declaration": "metadata/h3_nested_708_gbm.json",
+ "draws": 10000,
+ "families": [
+  "plus_nyfed_pd_financing",
+  "plus_treasury_auction_results",
+  "plus_nyfed_on_rrp_counterparties",
+  "plus_treasury_dts_debt_cash"
+ ],
+ "mean_key_secondary": {
+  "B1": 1.3789021366725636,
+  "B2": 1.1261233393073216,
+  "base": 0.9472723559863551,
+  "plus_nyfed_on_rrp_counterparties": 0.9445159396022855,
+  "plus_nyfed_pd_financing": 0.9450788126342421,
+  "plus_treasury_auction_results": 0.9472342857260745,
+  "plus_treasury_dts_debt_cash": 0.9526704354886194
+ },
+ "mean_primary": {
+  "B1": 2.3024351573410318,
+  "B2": 2.5143447593333943,
+  "base": 1.8261300924454473,
+  "plus_nyfed_on_rrp_counterparties": 1.8169127357567116,
+  "plus_nyfed_pd_financing": 1.8238972511867657,
+  "plus_treasury_auction_results": 1.8392033114858712,
+  "plus_treasury_dts_debt_cash": 1.8422334963760234
+ },
+ "missing": {
+  "base": {
+   "days": 0,
+   "share": 0.0
+  },
+  "plus_nyfed_on_rrp_counterparties": {
+   "days": 0,
+   "share": 0.0
+  },
+  "plus_nyfed_pd_financing": {
+   "days": 0,
+   "share": 0.0
+  },
+  "plus_treasury_auction_results": {
+   "days": 0,
+   "share": 0.0
+  },
+  "plus_treasury_dts_debt_cash": {
+   "days": 0,
+   "share": 0.0
+  }
+ },
+ "names": [
+  "B1",
+  "B2",
+  "base",
+  "plus_nyfed_pd_financing",
+  "plus_treasury_auction_results",
+  "plus_nyfed_on_rrp_counterparties",
+  "plus_treasury_dts_debt_cash"
+ ],
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "pooled_key_secondary": {
+  "B1 -> base": {
+   "benchmark_mean": 1.3789021366725636,
+   "bootstrap_p": 0.0005,
+   "dm_p": 0.011821793179470297,
+   "dm_statistic": 2.262871911304584,
+   "mean_difference": 0.4316297806862096,
+   "mean_difference_lower_95_one_sided": 0.1923756523142432,
+   "n": 1868,
+   "skill": 0.3130242308042091,
+   "skill_lower_95_one_sided": 0.22212411062647142,
+   "skill_upper_95_one_sided": 0.5112323304307376
+  },
+  "B1 -> plus_nyfed_on_rrp_counterparties": {
+   "benchmark_mean": 1.3789021366725636,
+   "bootstrap_p": 0.0005,
+   "dm_p": 0.011198472937358428,
+   "dm_statistic": 2.283567767978489,
+   "mean_difference": 0.43438619707027526,
+   "mean_difference_lower_95_one_sided": 0.19560737391550587,
+   "n": 1868,
+   "skill": 0.3150232242866017,
+   "skill_lower_95_one_sided": 0.22558651878830066,
+   "skill_upper_95_one_sided": 0.5087200550046571
+  },
+  "B1 -> plus_nyfed_pd_financing": {
+   "benchmark_mean": 1.3789021366725636,
+   "bootstrap_p": 0.0007,
+   "dm_p": 0.011599694339677558,
+   "dm_statistic": 2.2701350765047326,
+   "mean_difference": 0.43382332403832125,
+   "mean_difference_lower_95_one_sided": 0.19317389639088836,
+   "n": 1868,
+   "skill": 0.3146150205301608,
+   "skill_lower_95_one_sided": 0.22400057837056964,
+   "skill_upper_95_one_sided": 0.517374949482954
+  },
+  "B1 -> plus_treasury_auction_results": {
+   "benchmark_mean": 1.3789021366725636,
+   "bootstrap_p": 0.0005,
+   "dm_p": 0.011705028405476936,
+   "dm_statistic": 2.266675489119883,
+   "mean_difference": 0.43166785094648774,
+   "mean_difference_lower_95_one_sided": 0.1930667579126283,
+   "n": 1868,
+   "skill": 0.31305183991385194,
+   "skill_lower_95_one_sided": 0.2225954815354445,
+   "skill_upper_95_one_sided": 0.5089005678263403
+  },
+  "B1 -> plus_treasury_dts_debt_cash": {
+   "benchmark_mean": 1.3789021366725636,
+   "bootstrap_p": 0.0008,
+   "dm_p": 0.01278200622931669,
+   "dm_statistic": 2.232771563103642,
+   "mean_difference": 0.4262317011839434,
+   "mean_difference_lower_95_one_sided": 0.18648450916907924,
+   "n": 1868,
+   "skill": 0.3091094645864321,
+   "skill_lower_95_one_sided": 0.2171637917863503,
+   "skill_upper_95_one_sided": 0.5138157597103423
+  },
+  "B2 -> base": {
+   "benchmark_mean": 1.1261233393073216,
+   "bootstrap_p": 0.0017,
+   "dm_p": 0.000982950507749214,
+   "dm_statistic": 3.0953359317462663,
+   "mean_difference": 0.17885098332097377,
+   "mean_difference_lower_95_one_sided": 0.07436292467708387,
+   "n": 1868,
+   "skill": 0.15882006622026412,
+   "skill_lower_95_one_sided": 0.03962491441689864,
+   "skill_upper_95_one_sided": 0.2952686182361336
+  },
+  "B2 -> plus_nyfed_on_rrp_counterparties": {
+   "benchmark_mean": 1.1261233393073216,
+   "bootstrap_p": 0.0015,
+   "dm_p": 0.000799672123288464,
+   "dm_statistic": 3.156026325690618,
+   "mean_difference": 0.1816073997050401,
+   "mean_difference_lower_95_one_sided": 0.07638608554565664,
+   "n": 1868,
+   "skill": 0.16126777002663564,
+   "skill_lower_95_one_sided": 0.03795994518580913,
+   "skill_upper_95_one_sided": 0.29715893054376274
+  },
+  "B2 -> plus_nyfed_pd_financing": {
+   "benchmark_mean": 1.1261233393073216,
+   "bootstrap_p": 0.0009,
+   "dm_p": 0.0005589148301485825,
+   "dm_statistic": 3.259057610370791,
+   "mean_difference": 0.18104452667308552,
+   "mean_difference_lower_95_one_sided": 0.07987155451967065,
+   "n": 1868,
+   "skill": 0.16076793753732696,
+   "skill_lower_95_one_sided": 0.043470190666733494,
+   "skill_upper_95_one_sided": 0.28828366676161465
+  },
+  "B2 -> plus_treasury_auction_results": {
+   "benchmark_mean": 1.1261233393073216,
+   "bootstrap_p": 0.0014,
+   "dm_p": 0.0007966813867457123,
+   "dm_statistic": 3.157119054513214,
+   "mean_difference": 0.17888905358125268,
+   "mean_difference_lower_95_one_sided": 0.07505595552131548,
+   "n": 1868,
+   "skill": 0.1588538726950525,
+   "skill_lower_95_one_sided": 0.038861940757581134,
+   "skill_upper_95_one_sided": 0.293692028551376
+  },
+  "B2 -> plus_treasury_dts_debt_cash": {
+   "benchmark_mean": 1.1261233393073216,
+   "bootstrap_p": 0.0019,
+   "dm_p": 0.0011829219794043944,
+   "dm_statistic": 3.039992046977486,
+   "mean_difference": 0.17345290381870726,
+   "mean_difference_lower_95_one_sided": 0.07091902148370194,
+   "n": 1868,
+   "skill": 0.15402655975978452,
+   "skill_lower_95_one_sided": 0.03843607997289382,
+   "skill_upper_95_one_sided": 0.28737818638457135
+  },
+  "base -> plus_nyfed_on_rrp_counterparties": {
+   "benchmark_mean": 0.9472723559863551,
+   "bootstrap_p": 0.2005,
+   "dm_p": 0.18784812775708648,
+   "dm_statistic": 0.8858539093325131,
+   "mean_difference": 0.0027564163840661697,
+   "mean_difference_lower_95_one_sided": -0.0023375616879903055,
+   "n": 1868,
+   "skill": 0.002909845691840156,
+   "skill_lower_95_one_sided": -0.0030444305343320915,
+   "skill_upper_95_one_sided": 0.010058056762483615
+  },
+  "base -> plus_nyfed_pd_financing": {
+   "benchmark_mean": 0.9472723559863551,
+   "bootstrap_p": 0.4039,
+   "dm_p": 0.38201680791940584,
+   "dm_statistic": 0.30018818618500653,
+   "mean_difference": 0.002193543352111762,
+   "mean_difference_lower_95_one_sided": -0.011268595852125475,
+   "n": 1868,
+   "skill": 0.002315641682404758,
+   "skill_lower_95_one_sided": -0.012594022288788559,
+   "skill_upper_95_one_sided": 0.01659988268723125
+  },
+  "base -> plus_treasury_auction_results": {
+   "benchmark_mean": 0.9472723559863551,
+   "bootstrap_p": 0.509,
+   "dm_p": 0.49634056339678767,
+   "dm_statistic": 0.009172975898237451,
+   "mean_difference": 3.807026027866892e-05,
+   "mean_difference_lower_95_one_sided": -0.007637365834403301,
+   "n": 1868,
+   "skill": 4.0189350019644505e-05,
+   "skill_lower_95_one_sided": -0.007671803189642608,
+   "skill_upper_95_one_sided": 0.008224722487528873
+  },
+  "base -> plus_treasury_dts_debt_cash": {
+   "benchmark_mean": 0.9472723559863551,
+   "bootstrap_p": 0.9356,
+   "dm_p": 0.920708221697269,
+   "dm_statistic": -1.4098514306823735,
+   "mean_difference": -0.00539807950226653,
+   "mean_difference_lower_95_one_sided": -0.012342558921949938,
+   "n": 1868,
+   "skill": -0.0056985506524633404,
+   "skill_lower_95_one_sided": -0.014097907068285941,
+   "skill_upper_95_one_sided": 0.0013044681590672772
+  }
+ },
+ "pooled_primary": {
+  "B1 -> base": {
+   "benchmark_mean": 2.3024351573410318,
+   "bootstrap_p": 0.0002,
+   "dm_p": 0.006683713706393757,
+   "dm_statistic": 2.473827362473742,
+   "mean_difference": 0.4763050648955833,
+   "mean_difference_lower_95_one_sided": 0.23259805675989217,
+   "n": 1868,
+   "skill": 0.20687013198914334,
+   "skill_lower_95_one_sided": 0.13182398934598932,
+   "skill_upper_95_one_sided": 0.40375534257282375
+  },
+  "B1 -> plus_nyfed_on_rrp_counterparties": {
+   "benchmark_mean": 2.3024351573410318,
+   "bootstrap_p": 0.0,
+   "dm_p": 0.0056850626943477645,
+   "dm_statistic": 2.5311128696070777,
+   "mean_difference": 0.4855224215843172,
+   "mean_difference_lower_95_one_sided": 0.24281115458521474,
+   "n": 1868,
+   "skill": 0.21087343981709478,
+   "skill_lower_95_one_sided": 0.13772363155416206,
+   "skill_upper_95_one_sided": 0.40405674404586134
+  },
+  "B1 -> plus_nyfed_pd_financing": {
+   "benchmark_mean": 2.3024351573410318,
+   "bootstrap_p": 0.0002,
+   "dm_p": 0.006605932917035484,
+   "dm_statistic": 2.478006716061433,
+   "mean_difference": 0.47853790615426167,
+   "mean_difference_lower_95_one_sided": 0.23412800896081404,
+   "n": 1868,
+   "skill": 0.207839905774763,
+   "skill_lower_95_one_sided": 0.13298627895758391,
+   "skill_upper_95_one_sided": 0.4079433794961932
+  },
+  "B1 -> plus_treasury_auction_results": {
+   "benchmark_mean": 2.3024351573410318,
+   "bootstrap_p": 0.0002,
+   "dm_p": 0.008002769514443231,
+   "dm_statistic": 2.4087892160795716,
+   "mean_difference": 0.46323184585515764,
+   "mean_difference_lower_95_one_sided": 0.22043531230951735,
+   "n": 1868,
+   "skill": 0.20119213536945862,
+   "skill_lower_95_one_sided": 0.12532986098820872,
+   "skill_upper_95_one_sided": 0.4030598552483736
+  },
+  "B1 -> plus_treasury_dts_debt_cash": {
+   "benchmark_mean": 2.3024351573410318,
+   "bootstrap_p": 0.0002,
+   "dm_p": 0.008481568916066662,
+   "dm_statistic": 2.3875057406231655,
+   "mean_difference": 0.460201660965011,
+   "mean_difference_lower_95_one_sided": 0.21657674568114627,
+   "n": 1868,
+   "skill": 0.19987605709446996,
+   "skill_lower_95_one_sided": 0.12326848857938806,
+   "skill_upper_95_one_sided": 0.40627900837074254
+  },
+  "B2 -> base": {
+   "benchmark_mean": 2.5143447593333943,
+   "bootstrap_p": 0.0,
+   "dm_p": 3.902221878959722e-10,
+   "dm_statistic": 6.148854678446583,
+   "mean_difference": 0.688214666887948,
+   "mean_difference_lower_95_one_sided": 0.46000596945165684,
+   "n": 1868,
+   "skill": 0.27371531462948945,
+   "skill_lower_95_one_sided": 0.17719915418518928,
+   "skill_upper_95_one_sided": 0.36813541921400517
+  },
+  "B2 -> plus_nyfed_on_rrp_counterparties": {
+   "benchmark_mean": 2.5143447593333943,
+   "bootstrap_p": 0.0,
+   "dm_p": 2.484777938960292e-10,
+   "dm_statistic": 6.220062914150258,
+   "mean_difference": 0.6974320235766831,
+   "mean_difference_lower_95_one_sided": 0.467610987528428,
+   "n": 1868,
+   "skill": 0.27738122267750864,
+   "skill_lower_95_one_sided": 0.17949230750213602,
+   "skill_upper_95_one_sided": 0.3723112376744918
+  },
+  "B2 -> plus_nyfed_pd_financing": {
+   "benchmark_mean": 2.5143447593333943,
+   "bootstrap_p": 0.0,
+   "dm_p": 2.3343948996057406e-10,
+   "dm_statistic": 6.229851019398886,
+   "mean_difference": 0.6904475081466275,
+   "mean_difference_lower_95_one_sided": 0.46391225741604186,
+   "n": 1868,
+   "skill": 0.2746033556391366,
+   "skill_lower_95_one_sided": 0.17965973552208886,
+   "skill_upper_95_one_sided": 0.3673938275599441
+  },
+  "B2 -> plus_treasury_auction_results": {
+   "benchmark_mean": 2.5143447593333943,
+   "bootstrap_p": 0.0,
+   "dm_p": 6.251273942936564e-10,
+   "dm_statistic": 6.073662339426709,
+   "mean_difference": 0.6751414478475231,
+   "mean_difference_lower_95_one_sided": 0.44689884741678465,
+   "n": 1868,
+   "skill": 0.2685158609778387,
+   "skill_lower_95_one_sided": 0.17250373898543508,
+   "skill_upper_95_one_sided": 0.3617264046440622
+  },
+  "B2 -> plus_treasury_dts_debt_cash": {
+   "benchmark_mean": 2.5143447593333943,
+   "bootstrap_p": 0.0,
+   "dm_p": 6.759719450855073e-10,
+   "dm_statistic": 6.061099223795415,
+   "mean_difference": 0.6721112629573741,
+   "mean_difference_lower_95_one_sided": 0.44580172753388186,
+   "n": 1868,
+   "skill": 0.26731070210736135,
+   "skill_lower_95_one_sided": 0.17278253463679832,
+   "skill_upper_95_one_sided": 0.3605065020398923
+  },
+  "base -> plus_nyfed_on_rrp_counterparties": {
+   "benchmark_mean": 1.8261300924454473,
+   "bootstrap_p": 0.065,
+   "dm_p": 0.0469569452070534,
+   "dm_statistic": 1.675103683335522,
+   "holm_p": 0.26,
+   "mean_difference": 0.009217356688733056,
+   "mean_difference_lower_95_one_sided": -0.0007243011142156214,
+   "n": 1868,
+   "skill": 0.005047480859586355,
+   "skill_lower_95_one_sided": -0.0006177227801797656,
+   "skill_upper_95_one_sided": 0.011310534135961569
+  },
+  "base -> plus_nyfed_pd_financing": {
+   "benchmark_mean": 1.8261300924454473,
+   "bootstrap_p": 0.4292,
+   "dm_p": 0.42373685730438193,
+   "dm_statistic": 0.19234277456558285,
+   "holm_p": 1.0,
+   "mean_difference": 0.002232841258677152,
+   "mean_difference_lower_95_one_sided": -0.01992848124157764,
+   "n": 1868,
+   "skill": 0.0012227175204626635,
+   "skill_lower_95_one_sided": -0.011074568731421623,
+   "skill_upper_95_one_sided": 0.013309809188058897
+  },
+  "base -> plus_treasury_auction_results": {
+   "benchmark_mean": 1.8261300924454473,
+   "bootstrap_p": 0.964,
+   "dm_p": 0.9777935594315186,
+   "dm_statistic": -2.0101730080557245,
+   "holm_p": 1.0,
+   "mean_difference": -0.013073219040427598,
+   "mean_difference_lower_95_one_sided": -0.025478541762086193,
+   "n": 1868,
+   "skill": -0.007158974650552252,
+   "skill_lower_95_one_sided": -0.014286256111653309,
+   "skill_upper_95_one_sided": -0.0005787634495474769
+  },
+  "base -> plus_treasury_dts_debt_cash": {
+   "benchmark_mean": 1.8261300924454473,
+   "bootstrap_p": 0.9945,
+   "dm_p": 0.996010100598422,
+   "dm_statistic": -2.652923356159071,
+   "holm_p": 1.0,
+   "mean_difference": -0.01610340393057527,
+   "mean_difference_lower_95_one_sided": -0.027300311515730546,
+   "n": 1868,
+   "skill": -0.008818322417002901,
+   "skill_lower_95_one_sided": -0.015656583944924342,
+   "skill_upper_95_one_sided": -0.0027339992608361643
+  }
+ },
+ "seed": 708
+}

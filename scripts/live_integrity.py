@@ -75,7 +75,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 BOT_NAME = "github-actions[bot]"
@@ -261,6 +261,25 @@ def adding_commit(repo: Path, rel: str) -> str:
     if len(commits) != 1:
         raise ValueError(f"{rel} was touched by {len(commits)} commits; a record is only added, once")
     return commits[0]
+
+
+def committed_times(repo: Path) -> dict:
+    """The commit time of each logged day's record, read from the branch's history (#806).
+
+    Maps each day to the committer date, as a timezone-aware datetime, of the one commit that added
+    `live/<day>.json`: the `committed_at` that `prospective_log.filled_candidate` checks against the cut-off of
+    the day's decision day. The date is the committing bot's own claim, so it guards a mistake, not an adversary;
+    the Rekor anchor is the control the token cannot touch.
+
+    Raises:
+        ValueError: a record file was touched by other than one commit (`adding_commit`).
+    """
+
+    repo = Path(repo)
+    out = {}
+    for day, rel in logged_files(repo):
+        out[day] = datetime.fromisoformat(_git(repo, "show", "-s", "--format=%cI", adding_commit(repo, rel)))
+    return out
 
 
 def chain_for(repo: Path, day: date):

@@ -1,0 +1,300 @@
+{
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "rows": [
+  {
+   "anchor": "2019-09-16",
+   "anchor_rows_before_target": 2,
+   "decision_day": "2019-09-17",
+   "earliest_read": "2019-09-11",
+   "fields_read_after_the_anchor": [
+    "treasury_settlement"
+   ],
+   "fields_read_after_the_decision_day": [
+    "treasury_settlement"
+   ],
+   "latest_read": "2019-09-18",
+   "lead": 1,
+   "target_day": "2019-09-18"
+  },
+  {
+   "anchor": "2020-03-13",
+   "anchor_rows_before_target": 2,
+   "decision_day": "2020-03-16",
+   "earliest_read": "2020-03-10",
+   "fields_read_after_the_anchor": [
+    "treasury_settlement"
+   ],
+   "fields_read_after_the_decision_day": [
+    "treasury_settlement"
+   ],
+   "latest_read": "2020-03-17",
+   "lead": 1,
+   "target_day": "2020-03-17"
+  },
+  {
+   "anchor": "2021-12-30",
+   "anchor_rows_before_target": 2,
+   "decision_day": "2021-12-31",
+   "earliest_read": "2021-12-23",
+   "fields_read_after_the_anchor": [
+    "treasury_settlement"
+   ],
+   "fields_read_after_the_decision_day": [
+    "treasury_settlement"
+   ],
+   "latest_read": "2022-01-03",
+   "lead": 1,
+   "target_day": "2022-01-03"
+  },
+  {
+   "anchor": "2023-03-10",
+   "anchor_rows_before_target": 2,
+   "decision_day": "2023-03-13",
+   "earliest_read": "2023-03-07",
+   "fields_read_after_the_anchor": [
+    "treasury_settlement"
+   ],
+   "fields_read_after_the_decision_day": [
+    "treasury_settlement"
+   ],
+   "latest_read": "2023-03-14",
+   "lead": 1,
+   "target_day": "2023-03-14"
+  },
+  {
+   "anchor": "2025-12-11",
+   "anchor_rows_before_target": 2,
+   "decision_day": "2025-12-12",
+   "earliest_read": "2025-12-05",
+   "fields_read_after_the_anchor": [
+    "treasury_settlement"
+   ],
+   "fields_read_after_the_decision_day": [
+    "treasury_settlement"
+   ],
+   "latest_read": "2025-12-15",
+   "lead": 1,
+   "target_day": "2025-12-15"
+  },
+  {
+   "anchor": "2019-09-16",
+   "anchor_rows_before_target": 3,
+   "decision_day": "2019-09-17",
+   "earliest_read": "2019-09-11",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2019-09-16",
+   "lead": 2,
+   "target_day": "2019-09-19"
+  },
+  {
+   "anchor": "2020-03-13",
+   "anchor_rows_before_target": 3,
+   "decision_day": "2020-03-16",
+   "earliest_read": "2020-03-10",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2020-03-13",
+   "lead": 2,
+   "target_day": "2020-03-18"
+  },
+  {
+   "anchor": "2021-12-30",
+   "anchor_rows_before_target": 3,
+   "decision_day": "2021-12-31",
+   "earliest_read": "2021-12-23",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2021-12-30",
+   "lead": 2,
+   "target_day": "2022-01-04"
+  },
+  {
+   "anchor": "2023-03-10",
+   "anchor_rows_before_target": 3,
+   "decision_day": "2023-03-13",
+   "earliest_read": "2023-03-07",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2023-03-10",
+   "lead": 2,
+   "target_day": "2023-03-15"
+  },
+  {
+   "anchor": "2025-12-11",
+   "anchor_rows_before_target": 3,
+   "decision_day": "2025-12-12",
+   "earliest_read": "2025-12-05",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2025-12-11",
+   "lead": 2,
+   "target_day": "2025-12-16"
+  },
+  {
+   "anchor": "2019-09-16",
+   "anchor_rows_before_target": 4,
+   "decision_day": "2019-09-17",
+   "earliest_read": "2019-09-11",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2019-09-16",
+   "lead": 3,
+   "target_day": "2019-09-20"
+  },
+  {
+   "anchor": "2020-03-13",
+   "anchor_rows_before_target": 4,
+   "decision_day": "2020-03-16",
+   "earliest_read": "2020-03-10",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2020-03-13",
+   "lead": 3,
+   "target_day": "2020-03-19"
+  },
+  {
+   "anchor": "2021-12-30",
+   "anchor_rows_before_target": 4,
+   "decision_day": "2021-12-31",
+   "earliest_read": "2021-12-23",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2021-12-30",
+   "lead": 3,
+   "target_day": "2022-01-05"
+  },
+  {
+   "anchor": "2023-03-10",
+   "anchor_rows_before_target": 4,
+   "decision_day": "2023-03-13",
+   "earliest_read": "2023-03-07",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2023-03-10",
+   "lead": 3,
+   "target_day": "2023-03-16"
+  },
+  {
+   "anchor": "2025-12-11",
+   "anchor_rows_before_target": 4,
+   "decision_day": "2025-12-12",
+   "earliest_read": "2025-12-05",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2025-12-11",
+   "lead": 3,
+   "target_day": "2025-12-17"
+  },
+  {
+   "anchor": "2019-09-16",
+   "anchor_rows_before_target": 5,
+   "decision_day": "2019-09-17",
+   "earliest_read": "2019-09-11",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2019-09-16",
+   "lead": 4,
+   "target_day": "2019-09-23"
+  },
+  {
+   "anchor": "2020-03-13",
+   "anchor_rows_before_target": 5,
+   "decision_day": "2020-03-16",
+   "earliest_read": "2020-03-10",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2020-03-13",
+   "lead": 4,
+   "target_day": "2020-03-20"
+  },
+  {
+   "anchor": "2021-12-30",
+   "anchor_rows_before_target": 5,
+   "decision_day": "2021-12-31",
+   "earliest_read": "2021-12-23",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2021-12-30",
+   "lead": 4,
+   "target_day": "2022-01-06"
+  },
+  {
+   "anchor": "2023-03-10",
+   "anchor_rows_before_target": 5,
+   "decision_day": "2023-03-13",
+   "earliest_read": "2023-03-07",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2023-03-10",
+   "lead": 4,
+   "target_day": "2023-03-17"
+  },
+  {
+   "anchor": "2025-12-11",
+   "anchor_rows_before_target": 5,
+   "decision_day": "2025-12-12",
+   "earliest_read": "2025-12-05",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2025-12-11",
+   "lead": 4,
+   "target_day": "2025-12-18"
+  },
+  {
+   "anchor": "2019-09-16",
+   "anchor_rows_before_target": 6,
+   "decision_day": "2019-09-17",
+   "earliest_read": "2019-09-11",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2019-09-16",
+   "lead": 5,
+   "target_day": "2019-09-24"
+  },
+  {
+   "anchor": "2020-03-13",
+   "anchor_rows_before_target": 6,
+   "decision_day": "2020-03-16",
+   "earliest_read": "2020-03-10",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2020-03-13",
+   "lead": 5,
+   "target_day": "2020-03-23"
+  },
+  {
+   "anchor": "2021-12-30",
+   "anchor_rows_before_target": 6,
+   "decision_day": "2021-12-31",
+   "earliest_read": "2021-12-23",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2021-12-30",
+   "lead": 5,
+   "target_day": "2022-01-07"
+  },
+  {
+   "anchor": "2023-03-10",
+   "anchor_rows_before_target": 6,
+   "decision_day": "2023-03-13",
+   "earliest_read": "2023-03-07",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2023-03-10",
+   "lead": 5,
+   "target_day": "2023-03-20"
+  },
+  {
+   "anchor": "2025-12-11",
+   "anchor_rows_before_target": 6,
+   "decision_day": "2025-12-12",
+   "earliest_read": "2025-12-05",
+   "fields_read_after_the_anchor": [],
+   "fields_read_after_the_decision_day": [],
+   "latest_read": "2025-12-11",
+   "lead": 5,
+   "target_day": "2025-12-19"
+  }
+ ]
+}
