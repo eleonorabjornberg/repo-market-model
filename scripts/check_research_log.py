@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Check the research log (#638): `docs/research/log.md` against `docs/research/plan.md`.
+"""Check the research log (#638): `docs/research/log/` against `docs/research/plan.md`.
 
 Two documents keep the research honest. The plan names the hypotheses H1 to H10; the log has one dated entry per
-scored experiment. This check fails when
+scored experiment. Since #866 each entry is its own file under `docs/research/log/`, so pull requests that add
+entries never conflict, and `docs/research/log.md` is generated from the files by `assemble` (never hand-edited).
+This check fails when
 
 1. a log entry breaks the format (`ENTRY_FORMAT`);
 2. a log entry names a hypothesis the plan does not have;
-3. a change adds or changes a result page (`docs/pivot/*-result.md`) or a declaration or candidate under
+3. an entry file is badly named, holds more than one entry, or disagrees with its own heading;
+4. `log.md` is not the assembly of the entry files and the header;
+5. a change edits, renames or deletes an entry file already on the base (the log is append-only);
+6. a change adds or changes a result page (`docs/pivot/*-result.md`) or a declaration or candidate under
    `metadata/` and adds no new log entry whose Directive line names the pull request's directive.
 
 The format is one constant so that a change to it is one edit. It is shared with the liquidity repository
@@ -16,10 +21,12 @@ verbatim from its pull request body: `check-block` validates such a block the sa
     python3 scripts/check_research_log.py check
     python3 scripts/check_research_log.py check --base REF [--head REF] [--body-env PR_BODY]
     python3 scripts/check_research_log.py check-block FILE
+    python3 scripts/check_research_log.py assemble [--check]
 
 `check --base` compares the log at REF with the log in the working tree and looks at the paths changed since the
 merge base; the directive comes from the `Closes #N` lines of the pull request body in the environment variable
-named by `--body-env`. Standard library only.
+named by `--body-env`. `assemble` writes `docs/research/log.md` from `docs/research/log/_header.md` and the entry
+files, in file-name order; with `--check` it writes nothing and exits 1 when `log.md` is stale. Standard library only.
 """
 from __future__ import annotations
 
@@ -35,6 +42,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / "docs" / "research" / "plan.md"
 LOG = ROOT / "docs" / "research" / "log.md"
+LOG_DIR = ROOT / "docs" / "research" / "log"
+HEADER_NAME = "_header.md"
 
 # The log format, in one place. A heading `### YYYY-MM-DD [H#] step N · owner/repo#PR`, or for groundwork (G1 to G5
 # in a hypothesis manual, kept apart from the six steps) `### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR`, then
@@ -44,6 +53,12 @@ GROUNDWORK_FORMAT = "### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR"
 HEADING = re.compile(r"^### (?P<date>\d{4}-\d{2}-\d{2}) \[(?P<hyp>H\d+)\] "
                      r"(?:step (?P<step>\d+)|groundwork (?P<groundwork>G[1-9]\d*)) · "
                      r"(?P<ref>[\w.-]+/[\w.-]+#\d+)\s*$")
+# An entry file is `<date>-<model|liquidity>-<PR, five digits>-<H#>-<step N | G n>.md`, so that a plain sort of the
+# names is date, then repository, then pull request number. The entries migrated from the single file (#866) keep
+# their old order under a four-digit prefix, `0001-` to `0099-`, which sorts before every date. A second entry for
+# the same heading takes `-2`, `-3`, ... before `.md`.
+ENTRY_NAME = re.compile(r"^(?:\d{4}-(?=\d{4}-\d{2}-\d{2}-))?(?P<date>\d{4}-\d{2}-\d{2})-(?P<repo>model|liquidity)-"
+                        r"(?P<pr>\d{5})-(?P<hyp>H\d+)-(?P<what>step[1-6]|G[1-9]\d*)(?:-[2-9])?\.md$")
 REQUIRED_LINES = ("Directive", "Step", "Tier", "Pins", "Tried", "Result", "Against kill", "Next")
 TIERS = ("development", "confirmation")
 STEPS = range(1, 7)
@@ -115,6 +130,108 @@ def validate_log(text, hypotheses):
     return errors
 
 
+def name_parts(heading):
+    """The parts a valid entry file name must carry, from a heading match; None when the repository is not ours."""
+    repo = heading.group("ref").split("#")[0].split("/")[1]
+    if not repo.startswith("repo-market-") or repo[len("repo-market-"):] not in ("model", "liquidity"):
+        return None
+    what = "step%s" % heading.group("step") if heading.group("step") else heading.group("groundwork")
+    return {"date": heading.group("date"), "repo": repo[len("repo-market-"):],
+            "pr": "%05d" % int(heading.group("ref").split("#")[1]), "hyp": heading.group("hyp"), "what": what}
+
+
+def heading_matches_name(name, heading):
+    """True when the file name `name` says what the entry heading says (date, repository, PR, hypothesis, step)."""
+    named = ENTRY_NAME.match(name)
+    expected = name_parts(heading)
+    if named is None or expected is None:
+        return False
+    mismatch = [key for key in expected if named.group(key) != expected[key]]
+    return not mismatch
+
+
+def entry_name(heading, sequence=None, taken=()):
+    """The file name for an entry; `sequence` gives a migrated entry its order prefix."""
+    parts = name_parts(heading)
+    stem = "%s-%s-%s-%s-%s" % (parts["date"], parts["repo"], parts["pr"], parts["hyp"], parts["what"])
+    if sequence is not None:
+        return "%04d-%s.md" % (sequence, stem)
+    name, repeat = stem + ".md", 1
+    while name in taken:
+        repeat += 1
+        name = "%s-%d.md" % (stem, repeat)
+    return name
+
+
+def assemble(header, entries):
+    """`log.md`: the header, then every entry in file-name order, each after one blank line."""
+    return header + "".join("\n" + entries[name] for name in sorted(entries))
+
+
+def split_log(text):
+    """The one-off migration (#866): a single-file log as (header, [(file name, entry text)]) in its own order."""
+    lines = text.splitlines(keepends=True)
+    starts = [i for i, line in enumerate(lines) if line.startswith("### ")]
+    if not starts:
+        return text, []
+    header = "".join(lines[:starts[0]]).rstrip("\n") + "\n"
+    files = []
+    for number, start in enumerate(starts, 1):
+        stop = starts[number] if number < len(starts) else len(lines)
+        chunk = "".join(lines[start:stop]).rstrip("\n") + "\n"
+        heading = HEADING.match(lines[start].rstrip("\n"))
+        if heading is None:
+            raise ValueError("log line %d: heading is not `%s`: %r" % (start + 1, ENTRY_FORMAT, lines[start]))
+        files.append((entry_name(heading, number), chunk))
+    return header, files
+
+
+def read_entry_files(directory=None):
+    """(header text, {file name: text}) of the entry directory."""
+    directory = Path(directory) if directory else LOG_DIR
+    header = (directory / HEADER_NAME).read_text(encoding="utf-8")
+    files = {p.name: p.read_text(encoding="utf-8") for p in sorted(directory.glob("*.md")) if p.name != HEADER_NAME}
+    return header, files
+
+
+def validate_entry_files(files, hypotheses):
+    """Every way the entry files break the naming, the one-entry rule or the format. Empty when sound."""
+    errors = []
+    for name in sorted(files):
+        text = files[name]
+        lines = text.splitlines()
+        if ENTRY_NAME.match(name) is None:
+            errors.append("%s: not named `<date>-<model|liquidity>-<PR, 5 digits>-<H#>-<step N|G n>.md`" % name)
+            continue
+        if sum(1 for line in lines if line.startswith("### ")) != 1 or not lines or not lines[0].startswith("### "):
+            errors.append("%s: must hold exactly one entry, starting with its `### ` heading" % name)
+            continue
+        heading = HEADING.match(lines[0])
+        if heading is not None and not heading_matches_name(name, heading):
+            errors.append("%s: the file name disagrees with its heading %r" % (name, lines[0]))
+        errors += ["%s: %s" % (name, e) for e in validate_log(text, hypotheses)]
+    return errors
+
+
+def stale_errors(log_text, header, files):
+    """`log.md` against the assembly of the header and the entry files."""
+    if log_text == assemble(header, files):
+        return []
+    return ["docs/research/log.md is not the assembly of docs/research/log/: run "
+            "`python3 scripts/check_research_log.py assemble` (never edit log.md by hand)"]
+
+
+def frozen_errors(base, head):
+    """Entry files on the base ({name: text}) that the head edits, renames or deletes: the log is append-only."""
+    errors = []
+    for name, base_text in sorted(base.items()):
+        if name not in head:
+            errors.append("%s: an entry file on the base is deleted or renamed" % name)
+        elif base_text != head[name]:
+            errors.append("%s: an entry file on the base is edited" % name)
+    return errors
+
+
 def extract_blocks(body):
     """The fenced `research-log` blocks of a pull request body."""
     return re.findall(r"(?ms)^```research-log\s*\n(.*?)^```", body or "")
@@ -173,13 +290,30 @@ def main(argv=None):
     check.add_argument("--body-env", default="PR_BODY")
     block = sub.add_parser("check-block")
     block.add_argument("file")
+    build = sub.add_parser("assemble")
+    build.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
 
     hypotheses = plan_hypotheses(PLAN.read_text())
+    if args.command == "assemble":
+        header, files = read_entry_files()
+        if args.check:
+            errors = stale_errors(LOG.read_text(encoding="utf-8"), header, files)
+            for error in errors:
+                print(error)
+            if not errors:
+                print("research log: log.md is the assembly of the entry files")
+            return 1 if errors else 0
+        LOG.write_text(assemble(header, files), encoding="utf-8")
+        print("wrote %s from %d entry files" % (LOG.relative_to(ROOT), len(files)))
+        return 0
     if args.command == "check-block":
         errors = validate_log(Path(args.file).read_text(), hypotheses)
     else:
         errors = validate_log(LOG.read_text(), hypotheses)
+        header, files = read_entry_files()
+        errors += validate_entry_files(files, hypotheses)
+        errors += stale_errors(LOG.read_text(encoding="utf-8"), header, files)
         for name in _git("ls-files", "*.md").split("\n"):
             if name and name != "docs/research/log.md":
                 errors += conflict_markers((ROOT / name).read_text(), name)
@@ -191,6 +325,12 @@ def main(argv=None):
             except subprocess.CalledProcessError:
                 base_text = ""
             head_text = _git("show", "%s:docs/research/log.md" % args.head)
+            base_files = {}
+            for path in _git("ls-tree", "-r", "--name-only", merge_base, "--", "docs/research/log/").split("\n"):
+                name = path.rsplit("/", 1)[-1]
+                if path and name != HEADER_NAME:
+                    base_files[name] = _git("show", "%s:%s" % (merge_base, path))
+            errors += frozen_errors(base_files, files)
             errors += check_change(changed, base_text, head_text,
                                    closed_issues(os.environ.get(args.body_env, "")))
     for error in errors:
