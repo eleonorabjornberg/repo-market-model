@@ -1063,6 +1063,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
 
+### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#856
+- Directive: #842
+- Step: 3 (milestone M4, the nested development test against H5's candidate `gbm_funding`)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `26c51093…`; declarations `metadata/h9_nested_842.json`, `metadata/richer_targets_706.json`; base `0065b4e3`
+- Tried: `gbm_funding` with and without one target's forecast (the median of #706's walk-forward law for the same target day) as an input, for BGCR dispersion, ON RRP daily change and SOFR dispersion, leads 1 to 5, scored by the protocol's grid CRPS on 1,848 decision days and split by regime, as-of scarcity state, day type and lead, with and without 2019-09-18. Variants: 3 new (nested), plus the re-walked candidate.
+- Result: nested d (lower 95%) −0.004 (−0.015), −0.000 (−0.009) and +0.006 (−0.005) for BGCR dispersion, ON RRP change and SOFR dispersion; skill −0.002, −0.000, +0.003; Holm p 1.000, 1.000, 0.517; the same without 2019-09-18. Two of about 40 cells per target show a lower bound above zero, both for SOFR dispersion (2025-26: +0.039 [+0.014]; lead 5: +0.017 [+0.002]). Detail in `docs/pivot/h9-nested-842-result.md`.
+- Against kill: the nested part of `H9.md`'s kill ("no nested gain for H5") holds on development data: no target improves the candidate beyond its interval. Not a verdict.
+- Next: no H9 registration on this evidence; whether H9 continues with other forms of the input (width, tail) or stops is Eleonora's; re-score if the candidate moves to the twin of #825.
+
 ### 2026-10-17 [H1] step 4 · eleonorabjornberg/repo-market-model#878
 - Directive: #873 (recalibrate the protocol's critical and futility values in the candidate orientation; findings #830 and #833)
 - Step: 4
