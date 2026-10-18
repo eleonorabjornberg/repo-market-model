@@ -64,7 +64,7 @@ class TheEstablishedRows(unittest.TestCase):
             rows = list(csv.DictReader(target.read_text(encoding="utf-8").splitlines()))
         self.assertEqual(blanked, 1)
         old, new = rows
-        kept = {"date", "sofr", "iorb", "sofr_volume", "sofr_p25", "tgcr", "bgcr", "quarter_end", "tax_date", "days_to_month_end"}
+        kept = {"date", "sofr", "iorb", "sofr_p25", "tgcr", "bgcr", "quarter_end", "tax_date", "days_to_month_end"}
         self.assertEqual(set(module.kept_columns(FIELDS, admitted)), kept)
         for name in FIELDS:
             if name not in kept:
@@ -79,7 +79,7 @@ class TheEstablishedRows(unittest.TestCase):
         kept = set(module.kept_columns(FIELDS, only_sofr))
         self.assertNotIn("tgcr", kept)
         self.assertNotIn("bgcr", kept)
-        self.assertIn("sofr_volume", kept)
+        self.assertNotIn("sofr_volume", kept)
 
     def test_the_arms_agree_on_the_published_days(self):
         module = _module()
@@ -136,20 +136,26 @@ class TheAdmittedGuard(unittest.TestCase):
 
     def test_an_extended_panel_with_an_unadmitted_back_filled_column_is_refused(self):
         module = _module()
-        clean = [_Row(date(2018, 3, 29), {"sofr": 1.5, "iorb": 1.7, "sofr_volume": 9.0, "tga": None, "quarter_end": 0.0})]
+        clean = [_Row(date(2018, 3, 29), {"sofr": 1.5, "iorb": 1.7, "tga": None, "quarter_end": 0.0})]
         published = [_Row(date(2018, 4, 3), {"sofr": 1.5, "iorb": 1.7, "tga": 100.0})]
         module.require_backfilled_admitted(clean + published, self.ADMITTED, where="test")
         dirty = [_Row(date(2018, 3, 29), {"sofr": 1.5, "iorb": 1.7, "tga": 250.0})]
         with self.assertRaises(LookAheadError):
             module.require_backfilled_admitted(dirty + published, self.ADMITTED, where="test")
+        volume = [_Row(date(2018, 3, 29), {"sofr": 1.5, "iorb": 1.7, "sofr_volume": 9.0, "tga": None})]
+        with self.assertRaises(LookAheadError):
+            module.require_backfilled_admitted(volume + published, self.ADMITTED, where="test")
         with self.assertRaises(LookAheadError):
             module.require_backfilled_admitted(clean + published, {"tgcr": datetime(2018, 5, 17)}, where="test")
 
     def test_the_series_a_fit_reads_are_those_a_back_filled_row_carries(self):
         module = _module()
-        rows = [_Row(date(2018, 3, 29), {"sofr": 1.5, "iorb": 1.7, "sofr_volume": 9.0, "tga": None}),
+        rows = [_Row(date(2018, 3, 29), {"sofr": 1.5, "iorb": 1.7, "tga": None}),
                 _Row(date(2018, 4, 3), {"sofr": 1.5, "iorb": 1.7, "sofr_volume": 9.0, "tga": 1.0})]
-        self.assertEqual(module.series_carried(["spread_bps", "sofr_volume", "tga"], rows), ("sofr",))
+        self.assertEqual(module.series_carried(["spread_bps", "tga"], rows), ("sofr",))
+        # The SOFR volume is a series of its own (#887): a fit that read it would need it admitted.
+        carried = [_Row(date(2018, 3, 29), {"sofr": 1.5, "sofr_volume": 9.0})]
+        self.assertEqual(module.series_carried(["sofr_volume"], carried), ("sofr_volume",))
 
 
 class TheReread(unittest.TestCase):

@@ -1,0 +1,582 @@
+{
+ "summary": {
+  "days": 70,
+  "by_year": {
+   "2018": 7,
+   "2019": 9,
+   "2020": 8,
+   "2021": 10,
+   "2022": 10,
+   "2023": 7,
+   "2024": 9,
+   "2025": 10
+  },
+  "by_type": {
+   "ordinary -> month_end": 31,
+   "month_end -> ordinary": 39
+  },
+  "pressure_days": 5
+ },
+ "days": [
+  {
+   "date": "2018-04-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -3.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2018-05-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -3.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2018-08-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -2.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2018-09-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -4.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2018-10-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -2.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2018-11-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -1.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2018-12-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": 6.0,
+   "pressure_day": true
+  },
+  {
+   "date": "2019-01-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": 0.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2019-02-26",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -2.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2019-03-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": 3.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2019-05-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": 5.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2019-06-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": 7.0,
+   "pressure_day": true
+  },
+  {
+   "date": "2019-07-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": 5.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2019-09-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": 2.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2019-10-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": 1.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2019-11-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": 0.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-01-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -2.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-04-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-05-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -4.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-07-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -1.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-08-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -3.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-09-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -2.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-11-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -2.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2020-12-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": 0.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-01-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -6.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-02-25",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -7.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-03-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-04-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-05-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-05-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-06-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-09-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-10-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2021-12-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-01-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-02-25",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-03-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -12.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-05-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -12.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-06-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -13.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-07-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -12.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-08-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -12.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-09-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -17.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-10-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2022-11-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2023-03-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -7.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2023-04-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2023-06-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2023-07-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2023-08-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -10.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2023-11-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -8.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2023-12-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": 0.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-01-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-02-27",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -9.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-03-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -7.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-05-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -7.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-06-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -6.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-07-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -7.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-09-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -6.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-10-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -8.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2024-11-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -8.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-01-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -5.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-02-26",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -7.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-03-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -6.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-04-28",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -4.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-06-27",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -1.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-07-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": -4.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-08-28",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": -6.0,
+   "pressure_day": false
+  },
+  {
+   "date": "2025-10-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": 12.0,
+   "pressure_day": true
+  },
+  {
+   "date": "2025-11-26",
+   "window": "ordinary",
+   "reporting": "month_end",
+   "month_end_by": "reporting only",
+   "spread_bp": 15.0,
+   "pressure_day": true
+  },
+  {
+   "date": "2025-12-29",
+   "window": "month_end",
+   "reporting": "ordinary",
+   "month_end_by": "window only",
+   "spread_bp": 12.0,
+   "pressure_day": true
+  }
+ ]
+}
