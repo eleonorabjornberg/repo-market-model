@@ -1093,6 +1093,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a diagnosis of a construction question; no kill criterion assessed).
 - Next: whether gbm_funding is declared on the freshest training pairs on purpose is Eleonora's (marked in the PR); the declared candidate is unchanged.
 
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#894
+- Directive: #887 (a correction: the code brought in line with the back-fill amendment of #881)
+- Step: 3 (the information set the back-fill trains under; no model, no scoring)
+- Tier: development
+- Pins: base `f70bf93d`; published panel `4ddc3882…`; `metadata/backfill_posting.json` unchanged
+- Tried: `backfill.WORKBOOK_SERIES` no longer maps `sofr_volume` onto the admitted `sofr` series, so the SOFR volume is blank on a back-filled row and a fit that reads it raises `LookAheadError`; `ESTABLISHED` of `scripts/backfill_h5_726.py` drops `sofr_volume`. Variants: 0.
+- Result: nothing is scored and no figure moves. The #726 with-history arm and the tier-1 extended-panel rows that read the volume are listed in the pull request; whether to re-score them is a marked question for Eleonora.
+- Against kill: not applicable (no verdict; development data).
+- Next: her answer on re-scoring #726; the SOFR volume's admission stays her open question on #742.
+
 ### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#895
 - Directive: #870 (findings #859, #861, #862)
 - Step: 3
