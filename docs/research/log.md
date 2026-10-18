@@ -1212,3 +1212,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: every commit rebuilds identically twice, so there is no nondeterminism and the digests differ by code drift: the first step that moves is `net_settlement` (#679, #738). `92bf10a4…` is the chain at `2c9bd283` and `400372d6…` the chain at `38a00d81`; H2's `08df8d19…` is not reproduced at its own commit, which gives `1e5b748a…`.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
+
+### 2026-10-18 [H5] step 3 · eleonorabjornberg/repo-market-model#921
+- Directive: #919
+- Step: 3 (correction of the #761 section of #882's page, finding #919)
+- Tier: development
+- Pins: base `41eed02e`; published panel `4ddc3882…`; `scripts/spread_mr_variants_761.py` and its seeds unchanged
+- Tried: #761 re-run as published and with `--without-day 2019-09-18`, with each skill now paired with its own interval. Variants: 0 new.
+- Result: the "with" run equals the tracked file (6e-16). Records whose bound changes sign: 16 (12 before; 4 in both). Against B2 the tax-date and 2018-19 cells move from covering zero to excluding it (`spread_mr_ctx_b2`, tax dates: +0.372 [-0.007, +0.555] to +0.461 [+0.167, +0.618]); the published-distribution gap goes from +0.031 [-0.008, +0.068] to +0.040 [+0.001, +0.076]. Pooled skills are unchanged. Development data, not a verdict.
+- Against kill: not applicable (a correction of a sensitivity table).
+- Next: Eleonora's reading of what the corrected B2 and tax-date cells mean for context pooling.
