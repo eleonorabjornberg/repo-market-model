@@ -1083,6 +1083,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a re-score of an exploratory page; development data, not a verdict).
 - Next: whether the old page and evidence get a superseding note, and whether #598's hinge rows and #631's model rows are re-scored, is Eleonora's (marked questions in the pull request).
 
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#885
+- Directive: #865 (why the direct-pairs twin of #449 scores below gbm_funding)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `80b5ef0a` with #825's head `6b234b8d` merged in; declaration `metadata/twin_diagnosis_865.json`, committed before any diagnostic score; seed 865
+- Tried: #449's control and twin re-walked at leads 2, 3 and 5 (reproducing #449's recorded skill to rounding), the training pairs' alignment checked on named days, and five arms that each change one thing: the twin with its training pairs read k = 1 or 2 (lead 3) and k = 1 or 3 (lead 5) rows fresher than it is served, and the control without the first h + 3 rows the twin cannot pair. Grid CRPS, studentized stationary bootstrap, by lead, regime, day type and half-year. Variants: 0 new models (5 diagnostic arms, none joins a declaration).
+- Result: no defect. The pairs are aligned (anchor h + 1 rows before the target, both guards pass); the sample difference is immaterial (+0.1% [-0.2, +0.6]). The shortfall falls as the training pairs get fresher: lead 5, twin -7.0% against the control, k = 3 -3.0% [-8.2, +1.8], k = 1 +0.9% [-2.0, +3.8]; lead 3, k = 2 -3.2%, k = 1 -0.5% [-3.4, +2.2]. It sits in 2021-23 (-20.1% [-30.9, -12.5]) and on ordinary days; the twin is ahead in 2024. Development data, not a verdict.
+- Against kill: not applicable (a diagnosis of a construction question; no kill criterion assessed).
+- Next: whether gbm_funding is declared on the freshest training pairs on purpose is Eleonora's (marked in the PR); the declared candidate is unchanged.
+
 ### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#895
 - Directive: #870 (findings #859, #861, #862)
 - Step: 3
@@ -1092,6 +1102,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the 2018-19 figures reproduce (mean d −0.114). 2018-19 stays a cost on the ruled interval [−0.180, −0.058], carried by 2018 H2 (−0.229); 2019 H1, 2019 H2 and 2019 alone cover zero. 2024 and 2025-26 are costs on the ruled interval but cover zero at the 250-day reference c; the pooled sample covers zero. At most 50% back-filled leaves no 2018-19 day; at 75% 2018-19 covers zero (124 days), at 90% it stays a cost. Development data, not a verdict.
 - Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
 - Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
+
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
+- Directive: #882
+- Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
+- Tier: development
+- Pins: base `f70bf93d`; published panel `4ddc3882…`; scripts and seeds of the three results unchanged (one option `--without-day` added)
+- Tried: each result re-run with its original script, once as published and once without the day. Variants: 0 new (25 walks of #634 and #688 and the H2 fits rerun).
+- Result: #761 and #688 reproduce the tracked figures (differences 5e-15 and 0); in #758 the candidates reproduce and the H2 ceiling does not (scratch panel digest differs). Without the day the candidates' pooled ordinary skill against B1 falls by about 9 points and stays above zero (gbm_funding +0.257 to +0.169); headroom changes sign nowhere; the reachable line's skill against B1 loses its resolved lower bound (+0.193 [+0.015, +0.352] to +0.097 [-0.008, +0.186]). Against B2 nothing moves. Development data, not a verdict.
+- Against kill: not applicable (a sensitivity table; nothing re-ruled).
+- Next: Eleonora's call on the H2 ceiling's reproducibility (three digests of DERIV.csv) and on whether the reachable-line sign change bears on H2 (marked questions in the PR).
 
 ### 2026-10-17 [H5] groundwork G2 · eleonorabjornberg/repo-market-model#907
 - Directive: #883
