@@ -5,8 +5,9 @@ Decided by Eleonora on 12 October 2026 and taken from the top block of the queue
 made. A change to it after the pull request that adds it is hers, or is a ruling she has relayed (cite the
 ruling).
 
-The log is [`log.md`](log.md). Each hypothesis has a manual in [`hypotheses/`](hypotheses/). The check that keeps
-the plan, the log and the result pages in step is `scripts/check_research_log.py` (run in CI).
+The log is [`log.md`](log.md), a generated page assembled from one file per entry under [`log/`](log/) (#866; to
+add an entry, add a file, as that page's header says). Each hypothesis has a manual in [`hypotheses/`](hypotheses/).
+The check that keeps the plan, the log and the result pages in step is `scripts/check_research_log.py` (run in CI).
 
 ## Order
 

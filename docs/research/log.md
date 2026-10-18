@@ -1,9 +1,23 @@
 # Research log
 
-One entry per scored experiment, newest last. The plan is [`plan.md`](plan.md); the format is the constant
-`ENTRY_FORMAT` in `scripts/check_research_log.py`, which `python3 scripts/check_research_log.py check` enforces in
-CI. The same format serves both repositories (`repo-market-liquidity` results arrive as a fenced `research-log`
-block copied verbatim from that repository's pull request body).
+<!-- generated: docs/research/log.md is assembled by `python3 scripts/check_research_log.py assemble` from this
+header and the entry files in docs/research/log/. Never edit it by hand. -->
+
+One entry per scored experiment, in the order of the file names under [`log/`](log/) (the entries from before 17
+October 2026 first, in the order they were merged; later ones by date, repository and pull request number). The plan
+is [`plan.md`](plan.md); the format is the constant `ENTRY_FORMAT` in `scripts/check_research_log.py`, which
+`python3 scripts/check_research_log.py check` enforces in CI. The same format serves both repositories
+(`repo-market-liquidity` results arrive as a fenced `research-log` block copied verbatim from that repository's pull
+request body).
+
+**To add an entry (#866), add a file; never edit this page.** Create
+`docs/research/log/<YYYY-MM-DD>-<model|liquidity>-<PR number, five digits>-<H#>-<step<N>|G<n>>.md`, for example
+`2026-10-17-model-00866-H5-step2.md`, holding only the entry: its `### ` heading and its lines. A liquidity entry
+copied from that repository's pull request body is a file in the same way, named `liquidity` and its PR number. A
+second entry with the same heading takes `-2` before `.md`. Then run `python3 scripts/check_research_log.py
+assemble`, which rewrites this page, and commit it with the regeneration commit like the other generated pages.
+Two pull requests that add different files never conflict; a conflict in this page alone is resolved by running
+`assemble` again. An entry file already on `main` is never edited, renamed or deleted: the check refuses it.
 
 Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
 hypothesis manual, kept apart from the six steps) has its own heading,
@@ -1019,15 +1033,15 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's call on where the stamp is written (the deployed copy, or a bot-committed stamp file).
 
-### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
-- Directive: #841
-- Step: 6 (the model-risk validation report rewritten for `gbm_funding`; milestone M5a)
+### 2026-10-15 [H5] step 1 · eleonorabjornberg/repo-market-model#825
+- Directive: #449 (gbm_funding against its twin trained on direct pairs; measurement only, ahead of step 5)
+- Step: 1
 - Tier: development
-- Pins: base `0065b4e3`; published panel `4ddc3882…`; subject `docs/model/candidate.json`; declaration `metadata/spread_distribution_634.json`
-- Tried: no model and no scoring. `docs/model/validation.md` and `scripts/validation_report.py` rewritten for the candidate, keeping the structure ruled on #119; every development result cited by issue and page, with no figure stated, because none has a record in `docs/runs/`. Variants: 0.
-- Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
-- Against kill: not applicable (no verdict; development data).
-- Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+- Pins: published panel `4ddc3882…`; base `09f2409c`; declaration `metadata/direct_twin_449.json`, committed before any score
+- Tried: `gbm_funding` of #634 (one-step training pairs, `training_pairs` unset) against the same call with `training_pairs="direct"` and nothing else changed, on the same walks (refit every 21 days, leads 1 to 5, 1,868 decision days, 2018-06-29 to 2025-12-23); grid CRPS against B1 and B2 and against each other, studentized stationary bootstrap, pooled, per lead, by regime and by target-day type, with and without decision day 2019-09-18 (#798). One variant.
+- Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
+- Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
+- Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
 
 ### 2026-10-15 [H3] step 1 · eleonorabjornberg/repo-market-model#826
 - Directive: #802
@@ -1039,15 +1053,45 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: #787 applies the rule to `srf_total_accepted` and publishes; H5 step 2 inputs.
 
-### 2026-10-15 [H5] step 1 · eleonorabjornberg/repo-market-model#825
-- Directive: #449 (gbm_funding against its twin trained on direct pairs; measurement only, ahead of step 5)
-- Step: 1
+### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
+- Directive: #841
+- Step: 6 (the model-risk validation report rewritten for `gbm_funding`; milestone M5a)
 - Tier: development
-- Pins: published panel `4ddc3882…`; base `09f2409c`; declaration `metadata/direct_twin_449.json`, committed before any score
-- Tried: `gbm_funding` of #634 (one-step training pairs, `training_pairs` unset) against the same call with `training_pairs="direct"` and nothing else changed, on the same walks (refit every 21 days, leads 1 to 5, 1,868 decision days, 2018-06-29 to 2025-12-23); grid CRPS against B1 and B2 and against each other, studentized stationary bootstrap, pooled, per lead, by regime and by target-day type, with and without decision day 2019-09-18 (#798). One variant.
-- Result: the twin is behind the control: pooled skill of the twin over the control -5.4% [-10.2, -1.2] (-5.4% [-10.1, -1.2] without 2019-09-18), whole interval below zero at leads 2 to 5; ordinary targets -7.7%, regime 2021-23 -19.7%; no split has an interval wholly above zero (2024: +9.5% [-0.7, +18.9]). Skill against B1 is +20.7% for the control and +16.4% for the twin (+14.9% and +10.3% without 2019-09-18).
-- Against kill: not applicable (a measurement ahead of step 5; development data gives no verdict).
-- Next: Eleonora's marked question (does the declared candidate switch to the twin); step 5, the validation report for `gbm_funding`.
+- Pins: base `0065b4e3`; published panel `4ddc3882…`; subject `docs/model/candidate.json`; declaration `metadata/spread_distribution_634.json`
+- Tried: no model and no scoring. `docs/model/validation.md` and `scripts/validation_report.py` rewritten for the candidate, keeping the structure ruled on #119; every development result cited by issue and page, with no figure stated, because none has a record in `docs/runs/`. Variants: 0.
+- Result: the report replaces the phase 2 content and carries a proposed use-limitation statement; the phase 2 records are untouched. Nothing is published and no day is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
+
+### 2026-10-17 [H1] step 4 · eleonorabjornberg/repo-market-model#878
+- Directive: #873 (recalibrate the protocol's critical and futility values in the candidate orientation; findings #830 and #833)
+- Step: 4
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `80b5ef0a`; rule of the power study `docs/research/power-study-769.md`, unchanged
+- Tried: the calibration of PR #695 re-run on d = S(B1) − S(candidate) with futility's benchmark B1 (20,000 windows, seed 1, as before), then #769's power study at the new values (four readings, 2,000 paths per cell) and #792's windows replayed at the protocol's values instead of each pair's own. Draft amendment to `docs/decisions/scoring-protocol.md`, not in force. Variants: 1 recalibration, 4 readings, 3 pairs.
+- Result: efficacy 2.55 and 1.35 at 125 and 250 days (grid) against 3.42 and 2.43 in force; B3 five levels 1.43 and 1.01 against 9.50 and 5.45; futility 2.44, 2.29 and 2.30 against 1.93, 1.56 and 1.45. Power of a true 3% by 250 days: 8.7%, 24.3%, 11.8% and 30.8% in readings (a) to (d), against 0.8%, 7.8%, 1.8% and 13.9%; size by 250 days 5.9%, 20.2%, 9.4% and 26.6% against 0.5%, 6.1%, 1.2% and 10.9%. Replay of B3 against B1 at the grid values: 59.0% of windows flagged against 31.5% in force; sign-flipped windows 14.2% against 2.5%. No reading reaches the 80% target.
+- Against kill: not applicable (H1 is a validity check; development and simulated data only).
+- Next: Eleonora's questions on the amendment and on the corrected test's size after 2020 (`docs/research/orientation-873-figures.md`); a follow-up directive applies the values to `scoring_protocol.py` only once she has merged the amendment.
+
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#880
+- Directive: #871 (#847's marked question)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `80b5ef0a`; declaration `metadata/spread_distribution_632.json`; no locked day read
+- Tried: re-ran #632's scoring as its page describes, on the distance columns built per H.4.1 release (h = 1 to 5, both variants, both judge rules), and set every headline cell beside its tracked value; checked the other pages that read `satiation_dist_roll`. Variants: 0 new models.
+- Result: no verdict or tier changes. (b) warns 19 of 26 onsets (0.731 [0.560, 0.889]), tracked 20 (0.769 [0.600, 0.923]), and fails tier 1 at 5.09 weighted false alarms per onset (5.35); its onset-recall gain over the `+tailcap75` row is +0.038 [-0.048, +0.133] (tracked +0.077 [0.000, +0.172]) and its h = 5 Brier gain over the comparator now includes zero. Ordinary-day AUROC of (b) 0.907 (0.903). CRPS moves by at most 0.03 bp. #598, #610 and #631 drift slightly on their pre-#622 columns; #629, #624 and #626 read the new ones.
+- Against kill: not applicable (a re-score of an exploratory page; development data, not a verdict).
+- Next: whether the old page and evidence get a superseding note, and whether #598's hinge rows and #631's model rows are re-scored, is Eleonora's (marked questions in the pull request).
+
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#885
+- Directive: #865 (why the direct-pairs twin of #449 scores below gbm_funding)
+- Step: 2
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `80b5ef0a` with #825's head `6b234b8d` merged in; declaration `metadata/twin_diagnosis_865.json`, committed before any diagnostic score; seed 865
+- Tried: #449's control and twin re-walked at leads 2, 3 and 5 (reproducing #449's recorded skill to rounding), the training pairs' alignment checked on named days, and five arms that each change one thing: the twin with its training pairs read k = 1 or 2 (lead 3) and k = 1 or 3 (lead 5) rows fresher than it is served, and the control without the first h + 3 rows the twin cannot pair. Grid CRPS, studentized stationary bootstrap, by lead, regime, day type and half-year. Variants: 0 new models (5 diagnostic arms, none joins a declaration).
+- Result: no defect. The pairs are aligned (anchor h + 1 rows before the target, both guards pass); the sample difference is immaterial (+0.1% [-0.2, +0.6]). The shortfall falls as the training pairs get fresher: lead 5, twin -7.0% against the control, k = 3 -3.0% [-8.2, +1.8], k = 1 +0.9% [-2.0, +3.8]; lead 3, k = 2 -3.2%, k = 1 -0.5% [-3.4, +2.2]. It sits in 2021-23 (-20.1% [-30.9, -12.5]) and on ordinary days; the twin is ahead in 2024. Development data, not a verdict.
+- Against kill: not applicable (a diagnosis of a construction question; no kill criterion assessed).
+- Next: whether gbm_funding is declared on the freshest training pairs on purpose is Eleonora's (marked in the PR); the declared candidate is unchanged.
 
 ### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#894
 - Directive: #887 (a correction: the code brought in line with the back-fill amendment of #881)
@@ -1058,3 +1102,53 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: nothing is scored and no figure moves. The #726 with-history arm and the tier-1 extended-panel rows that read the volume are listed in the pull request; whether to re-score them is a marked question for Eleonora.
 - Against kill: not applicable (no verdict; development data).
 - Next: her answer on re-scoring #726; the SOFR volume's admission stays her open question on #742.
+
+### 2026-10-17 [H4] step 3 · eleonorabjornberg/repo-market-model#895
+- Directive: #870 (findings #859, #861, #862)
+- Step: 3
+- Tier: development
+- Pins: published panel `4ddc3882…`; extended panel `1e09ae43…`; base `f70bf93d`; declaration `metadata/backfill_h5_726_reread.json`; seed 726
+- Tried: #759's ten walks re-run under the per-series admitted guard, re-scored on the studentized 90% interval with 2018-19 split into half-years and the days split by the back-filled share of the training frame (50%, with 75% and 90% as declared sensitivities). Variants: 0 new models.
+- Result: the 2018-19 figures reproduce (mean d −0.114). 2018-19 stays a cost on the ruled interval [−0.180, −0.058], carried by 2018 H2 (−0.229); 2019 H1, 2019 H2 and 2019 alone cover zero. 2024 and 2025-26 are costs on the ruled interval but cover zero at the 250-day reference c; the pooled sample covers zero. At most 50% back-filled leaves no 2018-19 day; at 75% 2018-19 covers zero (124 days), at 90% it stays a cost. Development data, not a verdict.
+- Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
+- Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
+
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
+- Directive: #882
+- Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
+- Tier: development
+- Pins: base `f70bf93d`; published panel `4ddc3882…`; scripts and seeds of the three results unchanged (one option `--without-day` added)
+- Tried: each result re-run with its original script, once as published and once without the day. Variants: 0 new (25 walks of #634 and #688 and the H2 fits rerun).
+- Result: #761 and #688 reproduce the tracked figures (differences 5e-15 and 0); in #758 the candidates reproduce and the H2 ceiling does not (scratch panel digest differs). Without the day the candidates' pooled ordinary skill against B1 falls by about 9 points and stays above zero (gbm_funding +0.257 to +0.169); headroom changes sign nowhere; the reachable line's skill against B1 loses its resolved lower bound (+0.193 [+0.015, +0.352] to +0.097 [-0.008, +0.186]). Against B2 nothing moves. Development data, not a verdict.
+- Against kill: not applicable (a sensitivity table; nothing re-ruled).
+- Next: Eleonora's call on the H2 ceiling's reproducibility (three digests of DERIV.csv) and on whether the reachable-line sign change bears on H2 (marked questions in the PR).
+
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#899
+- Directive: #892
+- Step: groundwork G1 (the prospective log's raw-input archive; the hypothesis tag is the nearest fit)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: the three "Raw archive failed" days on #237 (2026-10-10, 2026-10-12, 2026-10-17) are non-decision days with no record, so the archive step ran on an empty raw root; it now runs only when the record step wrote the day, and a real archive failure ends the run red. Variants: n/a (infrastructure, no model).
+- Result: no false archive alarm on a weekend or holiday; a failed archive on a decision day can no longer finish green. No record, archive or published figure moves.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's call on decision days without an archive (2026-10-05 and 2026-10-06).
+
+### 2026-10-17 [H5] groundwork G2 · eleonorabjornberg/repo-market-model#907
+- Directive: #883
+- Step: groundwork G2 and step 3 (the two month-end readings of `risk_dates`, measured side by side; the choice stays Eleonora's, #800)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `161fd5b6`; walks and exceedance files as in `scripts/spread_distribution_634.py`; H2's fits rerun on a worktree at the merge of #775
+- Tried: listed the days on which the window reading and the business-day reading disagree (70 panel days to 2025-12-31, 5 of them pressure days), then re-ran #805, #761, #849, #694 and #758 under each reading, with the reading switched by a process-level shim and nothing in `src/` changed. Variants: 0.
+- Result: the controls reproduce the tracked evidence to 1e-9 for #805, #761, #849 and #694; #775's does not byte for byte (scratch panel digest drift, #811) but is within the declared tolerance. Pooled skills move by about 0.1 points at most, ordinary-day groups by at most 0.8 points with no sign change, month-end groups by up to 5.5 points; the kill outcomes shown do not change. Development data, not a verdict.
+- Against kill: not applicable (a measurement of a definition, no kill criterion assessed).
+- Next: which reading is shared is Eleonora's (marked question in the PR, #800).
+
+### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#908
+- Directive: #787
+- Step: 2 (inputs; data meaning of the Standing Repo Facility total, groundwork)
+- Tier: development
+- Pins: published panel unchanged; base `d4f76f94`
+- Tried: the test-trade rule of #802 (a whole-million trade of at most $7 mn is no take-up) applied to `srf_total_accepted`, as Eleonora ruled on 15 October 2026. Variants: 1 rule.
+- Result: three values on the results page move: 2022-10-03 0.003 to 0.0, 2025-12-23 0.006 to 0.0, 2025-12-24 0.503 to 0.5 (USD bn); nothing is scored.
+- Against kill: not applicable (no verdict; development data).
+- Next: H5 step 2 inputs.
