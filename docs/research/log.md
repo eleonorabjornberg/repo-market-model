@@ -1113,7 +1113,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a sensitivity table; nothing re-ruled).
 - Next: Eleonora's call on the H2 ceiling's reproducibility (three digests of DERIV.csv) and on whether the reachable-line sign change bears on H2 (marked questions in the PR).
 
-
 ### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#899
 - Directive: #892
 - Step: groundwork G1 (the prospective log's raw-input archive; the hypothesis tag is the nearest fit)
