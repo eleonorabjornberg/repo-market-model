@@ -1063,6 +1063,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: Eleonora reads the report with the registration (hers); the twin question on #449 and the choice of figures to publish as records are hers.
 
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#853
+- Directive: #844
+- Step: 3 (evaluation; ordinary-day P(spread > +5 bp) of H5's spread models against the persistence-logistic, the "no ordinary-day ranking gain" half of the kill rule)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `161fd5b6`; days to 2025-12-31 only
+- Tried: 4 existing spread models (mean reversion #686, (i) context-pooled #761, (c) two-part and `gbm_funding` #634), no variant added; P(> 5 bp) read off each model's 23 quantiles, paired against the persistence-logistic by regime and lead 1 to 5, 90% stationary bootstrap.
+- Result: lead 1 pooled, ordinary days: AUROC above persistence-logistic for mean reversion (+0.037 [+0.012, +0.069]), (i) (+0.038 [+0.013, +0.069]) and `gbm_funding` (+0.029 [+0.006, +0.059]); (c) covers zero (+0.012 [-0.017, +0.040]). Across 15 regime-by-lead cells with an interval: above zero in 5 (mean reversion), 5 ((i)), 0 ((c)), 1 (`gbm_funding`); below zero in 2, 2, 2, 1. Brier differences mostly cover zero. Detail in `docs/pivot/ordinary-day-p5-result.md`.
+- Against kill: not applicable (no verdict; development data, scoring protocol v1 #640).
+- Next: Eleonora reads the report with the registration (hers); scoring under protocol v1 waits for its scorer (#655).
+
 ### 2026-10-17 [H9] step 3 · eleonorabjornberg/repo-market-model#856
 - Directive: #842
 - Step: 3 (milestone M4, the nested development test against H5's candidate `gbm_funding`)
