@@ -8254,8 +8254,9 @@ class NyFedSrfAdapterTests(unittest.TestCase):
         # day of 2025, and nothing at 13:45.
         self.assertAlmostEqual(rows[date(2025, 12, 31)].value, 74.6, places=9)
         # 2025-10-08's 10:30 small-value exercise (97 million) is not take-up;
-        # the day's 13:45 operation took 1 million.
-        self.assertAlmostEqual(rows[date(2025, 10, 8)].value, 0.001, places=9)
+        # the day's 13:45 operation took 1 million, a test trade (#787, #802): the date
+        # keeps its row, at zero.
+        self.assertEqual(rows[date(2025, 10, 8)].value, 0.0)
 
     def test_a_take_up_is_available_at_the_next_business_day_at_16(self):
         _artifacts, rows = self.tracked()
@@ -8348,11 +8349,11 @@ class NyFedSrfAdapterTests(unittest.TestCase):
         )
 
     def test_parse_snapshots_dispatches_the_source_to_its_parser(self):
-        payload = self.operations(self.repo("2026-01-05", 1_000_000))
+        payload = self.operations(self.repo("2026-01-05", 8_000_000))
         with tempfile.TemporaryDirectory() as directory:
             artifact = self.artifact(directory, payload)
             rows = ingest.parse_snapshots([artifact]).rows
-        self.assertEqual([(row.series_id, row.value) for row in rows], [(ingest.NYFED_SRF_FIELD, 0.001)])
+        self.assertEqual([(row.series_id, row.value) for row in rows], [(ingest.NYFED_SRF_FIELD, 0.008)])
 def _h8_page(release_date, weeks, values, *, layout="tables", stated="4:15"):
     """A minimal archived H.8 page carrying the total-assets line, NSA.
 

@@ -338,6 +338,10 @@ NON_SCORING_COMMANDS = {
 
 #: Functions that read an as-of information set but score nothing, and why.
 NOT_ENTRY_POINTS = {
+    "scripts/twin_diagnosis_865.alignment_row": (
+        "reads one training pair's information set for a named decision day and checks both guards (#865); scores "
+        "nothing; the named days (`ALIGNMENT_DAYS`) all end on or before 2025-12-31"
+    ),
     "scripts/backfill_spread_633.features": (
         "reads one forecast's declared inputs through InformationRule and checks both guards (#633); scores "
         "nothing"
