@@ -111,11 +111,13 @@ import re
 import subprocess
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest import mock
 
 from test_live_record import _record, live, score
+
+from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "live-log.yml"
@@ -316,6 +318,55 @@ class ChainTests(unittest.TestCase):
             with self.subTest(chain=chain):
                 with self.assertRaises(ValueError):
                     live.validate_record({**record, "chain": chain})
+
+
+class CommitTimeTests(unittest.TestCase):
+    """#806: the commit time of each logged day, read from the live-log branch's history.
+
+    `prospective_log.filled_candidate` needs `committed_at` for every logged day, and nothing derived it.
+    `committed_times` reads it from git, so a block written after the cut-off cannot be passed off as on time
+    by the `written_at` the same code stores. The committer date is the bot's own claim (the add-only check
+    guards a mistake, not an adversary); the Rekor anchor is the control the token cannot touch.
+    """
+
+    def _commit_at(self, repo, day, stamp):
+        write_day(repo, day, chained=False)
+        env = {**BOT, "GIT_COMMITTER_DATE": stamp, "GIT_AUTHOR_DATE": stamp}
+        return commit_day(repo, day, env=env)
+
+    def test_each_days_commit_time_is_read_from_git(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit_at(repo, "2026-10-06", "2026-10-06T17:30:00-04:00")
+            self._commit_at(repo, "2026-10-07", "2026-10-08T00:30:00-04:00")
+            times = integrity.committed_times(repo)
+            self.assertEqual(sorted(times), [date(2026, 10, 6), date(2026, 10, 7)])
+            self.assertEqual(times[date(2026, 10, 6)], datetime(2026, 10, 6, 21, 30, tzinfo=timezone.utc))
+            self.assertEqual(times[date(2026, 10, 7)], datetime(2026, 10, 8, 4, 30, tzinfo=timezone.utc))
+            self.assertTrue(all(t.tzinfo is not None for t in times.values()))
+
+    def test_a_day_committed_after_the_cutoff_is_refused_by_the_guard(self):
+        from repo_model import prospective_log
+
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit_at(repo, "2026-10-06", "2026-10-06T17:30:00-04:00")
+            self._commit_at(repo, "2026-10-07", "2026-10-08T00:30:00-04:00")
+            times = integrity.committed_times(repo)
+            prospective_log.require_written_by_decision_day_end(times[date(2026, 10, 6)], date(2026, 10, 6))
+            with self.assertRaises(LookAheadError):
+                prospective_log.require_written_by_decision_day_end(times[date(2026, 10, 7)], date(2026, 10, 7))
+
+    def test_a_file_touched_twice_has_no_single_commit_time(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = new_log(tmp)
+            self._commit_at(repo, "2026-10-06", "2026-10-06T17:30:00-04:00")
+            path = repo / "live" / "2026-10-06.json"
+            path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
+            git(repo, "add", "live/2026-10-06.json")
+            git(repo, "commit", "--quiet", "-m", "edit")
+            with self.assertRaises(ValueError):
+                integrity.committed_times(repo)
 
 
 class AppendOnlyTests(unittest.TestCase):

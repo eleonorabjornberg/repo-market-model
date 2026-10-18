@@ -1033,6 +1033,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's call on where the stamp is written (the deployed copy, or a bot-committed stamp file).
 
+### 2026-10-15 [H5] step 5 · eleonorabjornberg/repo-market-model#823
+- Directive: #806
+- Step: 5 (goal G3, prospective logging; the follow-up to #740's cut-off)
+- Tier: development
+- Pins: no panel and no scoring; tracked fixtures only; base `06801bb`
+- Tried: reading a record back now checks its stored `written_at` against the record's own decision day (`validate_record` passes `decision_day`); `live_integrity.committed_times` derives each logged day's commit time from the live-log branch's git history, the `committed_at` that `filled_candidate` needs; `run_command` refuses to start from 23:59 ET, the minute the block already refuses. Variants: n/a (guards, no model).
+- Result: a block regenerated or committed after its decision day now fails on read-back; commit times exist for the fill step. Two recorded mutations kill the two guards. No rule changes, nothing published moves and no registration is made.
+- Against kill: not applicable (no hypothesis test).
+- Next: the registration waits on the confirmation design (#733); the fill step reads `committed_times` when a candidate is registered.
+
 ### 2026-10-15 [H5] step 1 · eleonorabjornberg/repo-market-model#825
 - Directive: #449 (gbm_funding against its twin trained on direct pairs; measurement only, ahead of step 5)
 - Step: 1
