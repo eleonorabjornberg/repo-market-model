@@ -34,7 +34,9 @@ RULE = REPO / "docs" / "research" / "power-study-769.md"
 CALIBRATION = REPO / "docs" / "research" / "protocol-calibration" / "result.json"
 #: The values recalibrated in the orientation the protocol applies (#873), a draft until the amendment is merged.
 CALIBRATION_873 = REPO / "docs" / "research" / "protocol-calibration-873" / "result.json"
-VALUES = ("in-force", "draft-873")
+#: The values recalibrated on post-2020 stationary-bootstrap windows (#886), a scratch record.
+CALIBRATION_886 = REPO / "docs" / "research" / "protocol-calibration-886" / "result.json"
+VALUES = ("in-force", "draft-873", "draft-886")
 LOOKS = (125, 250)
 PATH_DAYS = 250
 DELTA = 0.03
@@ -60,11 +62,14 @@ def critical_values(source="in-force"):
     """The grid comparison's values at looks 2 and 3.
 
     `in-force`: from `scoring_protocol`, refused if the calibration record disagrees. `draft-873`: the record of
-    #873's recalibration, read as it stands.
+    #873's recalibration, read as it stands; `draft-886`: the post-2020 record of #886.
     """
 
     if source == "draft-873":
         draft = json.loads(CALIBRATION_873.read_text(encoding="utf-8"))["comparison_critical_values"][sp.GRID_COMPARISON]
+        return {n: draft[str(n)] for n in LOOKS}
+    if source == "draft-886":
+        draft = json.loads(CALIBRATION_886.read_text(encoding="utf-8"))["comparison_critical_values"][sp.GRID_COMPARISON]
         return {n: draft[str(n)] for n in LOOKS}
     if source != "in-force":
         raise ValueError(f"unknown source of critical values {source!r}")
@@ -136,7 +141,7 @@ def load_protocol_coverage():
 
 
 def source_record(source):
-    return CALIBRATION_873 if source == "draft-873" else CALIBRATION
+    return {"draft-873": CALIBRATION_873, "draft-886": CALIBRATION_886}.get(source, CALIBRATION)
 
 
 def run_command(args) -> int:
