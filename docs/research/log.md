@@ -1177,6 +1177,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
 - Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
 
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#896
+- Directive: #891
+- Step: 3 (progress tracking for H1 to H10; scores nothing)
+- Tier: development
+- Pins: no panel read; base `f70bf93d`
+- Tried: recorded merged work on the results page: eleven milestones done with their merged pull requests, each hypothesis's phase on the plan's six-step scale (a log entry's step no longer sets it), `gbm_funding` and its development figures in `progress.json`, and the factual status lines of the plan. Variants: 0 new models.
+- Result: H5 reads step 3 of 6 (development done on merged records, registration not yet), not step 6. Every figure is copied from a merged record; nothing is a verdict.
+- Against kill: not applicable (no verdict; development data).
+- Next: the milestones left open in the pull request are Eleonora's to match; the layout redesign is #893.
+
 ### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
 - Directive: #882
 - Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
@@ -1306,3 +1316,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: over 1,868 decision days to 2025-12-23, the arm's skill over `gbm_funding` is +2.8% [+1.7%, +3.8%] pooled; on month-end targets +13.8% [+11.1%, +16.6%] (149 days); on mid-month coupon dates +13.8% [+8.6%, +21.5%] (115 days); on ordinary days -0.2% [-1.9%, +1.3%] (1,486 days); on tax dates +2.4% [-1.0%, +7.4%]; quarter-ends too thin. The direct-pairs twin's skill over the arm is -4.9% [-7.3%, -2.6%] pooled. Against B1 +21.6% [+13.8%, +39.2%], against B2 +35.9% [+24.2%, +44.4%]. By regime the arm is ahead of `gbm_funding` in every regime, the interval clear of zero in 2018-19 only. Detail in `docs/research/aligned-pairs-931-result.md`.
 - Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
 - Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
+
+### 2026-10-19 [H1] step 3 · eleonorabjornberg/repo-market-model#980
+- Directive: #949
+- Step: 3 (does the protocol's mean block of 10 suit H5's paired CRPS loss differentials; a report that changes nothing, Eleonora's ruling of 19 October 2026)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `eec10573`; `scripts/block_length_949.py`, seed 1, 10,000 draws pooled and 4,000 per split; `gbm_funding` walks by `scripts/spread_distribution_634.py walk`
+- Tried: the ACF at lags 1 to 10, the Politis-White automatic block and the studentized stationary-bootstrap interval at mean block 5, 10 and 20, for d = S(B) − S(`gbm_funding`) with B = B1 and B2, at each lead and lead-averaged, over 1,868 decision days to 2025-12-23, pooled and by regime and day type. Variants: 0 new.
+- Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
+- Against kill: not applicable (a check on the interval, not a model).
+- Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
