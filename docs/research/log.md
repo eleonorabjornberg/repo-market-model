@@ -1272,3 +1272,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#955
+- Directive: #940
+- Step: groundwork G3 (prospective logging): SOFR first prints kept in the morning, before the 14:30 ET revision window
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ddaf391e`; SOFR snapshot `3a5e22446415…` (current vintage); no panel built
+- Tried: a capture module, script and morning workflow for first prints, and a revision report on the tracked snapshot. Variants: 0 (no model or score).
+- Result: the API's revision indicator is blank on all 2104 rows, so no revised date can be shown and first prints for the past are not recoverable here; the paired effect on grid CRPS and on the +0, +5 and +10 bp labels is not computed, and earlier H5 figures stay "current vintage". Exposure bound to 2025-12-31 is on the page, not an effect.
+- Against kill: not applicable (groundwork; nothing is scored).
+- Next: the first captured prints accrue from the next business morning; the treatment of a same-day revision and the outcome vintage are Eleonora's.
