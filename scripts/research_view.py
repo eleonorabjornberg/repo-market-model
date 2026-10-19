@@ -7,7 +7,8 @@ Read by `scripts/emit_visual.py`. Everything shown is parsed from tracked source
 - `docs/research/hypotheses/H<n>.md`: its owner, question, milestones and progress markers;
 - `docs/research/log.md`: its log view (every entry tagged `[H<n>]`);
 - `docs/research/milestones.json`: the two facts no other source holds, which milestones are done (each with the
-  tracked file that shows it) and a step floor for a hypothesis whose work predates the log.
+  tracked file that shows it and the merged pull request) and each hypothesis's phase on the plan's six-step scale.
+  A log entry's step is the step of the hypothesis's own manual, so it never sets the phase.
 
 Nothing is typed into the page. A figure with no source reads "not measured"; a figure from development days
 carries the label `DEV_LABEL`. Standard library only.
@@ -131,7 +132,7 @@ def parse_manual(hid, text):
     owner = section(text, "Owner")
     milestone_text = section(text, "Milestones") or section(text, "Milestones (done when)") or ""
     milestones = [(m.group(1), m.group(2).strip())
-                  for m in (re.match(r"^- (M\d+)\.\s*(.*)$", line) for line in milestone_text.splitlines()) if m]
+                  for m in (re.match(r"^- (M\d+[a-z]?)\.\s*(.*)$", line) for line in milestone_text.splitlines()) if m]
     markers_text = section(text, "Progress markers") or section(text, "Markers") or ""
     bullets = [line[2:].strip() for line in markers_text.splitlines() if line.startswith("- ")]
     if bullets:
@@ -175,13 +176,15 @@ def load(repo):
         if stray:
             raise ResearchError(f"{PROGRESS}: {stray} are not milestones of the {hid} manual")
         entries = log.get(hid, [])
-        floor = progress.get("steps", {}).get(hid, 1)
-        step = max([floor] + [e["step"] for e in entries if e["step"] is not None])
+        if hid not in progress.get("steps", {}):
+            raise ResearchError(f"{PROGRESS}: {hid} has no phase under 'steps' (one of the plan's six steps)")
+        step = progress["steps"][hid]
+        manual_step = max((e["step"] for e in entries if e["step"] is not None), default=None)
         status_text = (bullet(entry, "status") or "").split(".")[0].strip().lower()
         status = status_text.split(",")[0]
         hypotheses.append({
             "id": hid, "role": entry["role"], "title": entry["title"], "plan": entry["bullets"], "status_text": status_text,
-            "manual": manual, "log": entries, "step": step, "status": status,
+            "manual": manual, "log": entries, "step": step, "manual_step": manual_step, "status": status,
             "done": {mid for mid, _ in manual["milestones"] if f"{hid}.{mid}" in done},
             "evidence": {mid: done[f"{hid}.{mid}"]["evidence"] for mid, _ in manual["milestones"]
                          if f"{hid}.{mid}" in done}})
@@ -343,7 +346,8 @@ def hypothesis_html(h):
         + row("Goal", goal) + row("Open questions", open_questions) + row("Test", tests)
         + f'<dt>Kill criterion</dt><dd>{inline(kill[:1].upper() + kill[1:])}</dd>'
         f'<dt>Owner</dt><dd>{inline(m["owner"] or NOT_MEASURED)}</dd>'
-        f'<dt>Step</dt><dd>{h["step"]} of {len(STEPS)}: {STEPS[h["step"] - 1]}; status {esc(h["status_text"] or "open")}</dd>'
+        f'<dt>Step</dt><dd>{h["step"]} of {len(STEPS)}: {STEPS[h["step"] - 1]}; status {esc(h["status_text"] or "open")}'
+        + (f'; the manual&rsquo;s own step {h["manual_step"]}' if h["manual_step"] else "") + '</dd>'
         f'<dt>Milestones</dt><dd><ul class="rs-miles">{miles}</ul></dd>'
         f'<dt>Progress markers</dt><dd><ul>{markers}</ul></dd>'
         f'<dt>Development variants</dt><dd><span class="rs-nm">{NOT_MEASURED}</span> '
