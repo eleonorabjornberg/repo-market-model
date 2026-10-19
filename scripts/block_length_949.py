@@ -304,6 +304,8 @@ def render(record) -> str:
                   "| regime | days | rho(1) | rho(2) | rho(5) | rho(10) | Politis-White block |", "|---|---|---|---|---|---|---|"]
         for label in record["regimes"]:
             e = comps[b]["avg"][f"regime {label}"]
+            if e["n"] == 0:
+                continue
             if e.get("thin"):
                 lines.append(f"| {label} | {e['n']} | too thin | | | | |")
             else:
@@ -313,6 +315,8 @@ def render(record) -> str:
         groups = ["all", *[f"regime {x}" for x in record["regimes"]], *[f"day type {k}" for k in record["kinds"]]]
         for name in groups:
             e = comps[b]["avg"][name]
+            if e["n"] == 0:
+                continue
             if "intervals" not in e:
                 lines.append(f"| {name} | {e['n']} | too thin | | | |")
                 continue
@@ -320,7 +324,23 @@ def render(record) -> str:
             cell = lambda k: f"[{iv[k]['lower_95']:+.3f}, {iv[k]['upper_95']:+.3f}]"  # noqa: E731
             lines.append(f"| {name} | {e['n']} | {iv['10']['mean']:+.3f} | {cell('5')} | {cell('10')} | {cell('20')} |")
         lines.append("")
-    lines += ["## Reading", "", "See the pull request for the reading; this page states the figures. The block stays 10 until Eleonora decides.", ""]
+    one, two = comps["B1"]["avg"]["all"], comps["B2"]["avg"]["all"]
+    w1, w2 = one["intervals"], two["intervals"]
+    lines += [
+        "## Reading", "",
+        f"Against B1, the lead-averaged differentials are close to uncorrelated beyond lag 1 (rho(1) {f(one['acf'][0])}, rho(2) "
+        f"{f(one['acf'][1])}) and Politis and White ask for a block of {f(one['politis_white'], 1)} days pooled; the protocol's "
+        f"{record['protocol_block']} is longer than that. Against B2 the differentials are strongly persistent (rho(1) {f(two['acf'][0])}, "
+        f"rho(10) {f(two['acf'][9])}) and the automatic block is {f(two['politis_white'], 1)} days pooled, well above 10. "
+        "That persistence is mostly a slow change of level from regime to regime (the regime rows give the "
+        "within-regime figures), so the pooled automatic block may overstate the dependence a resample sees within a regime; "
+        "the automatic rule assumes a stationary series, which these are not across regimes.", "",
+        f"What the block changes in the interval: pooled against B1 the one-sided 95% lower bound of mean(d) is {w1['5']['lower_95']:+.3f}, "
+        f"{w1['10']['lower_95']:+.3f} and {w1['20']['lower_95']:+.3f} at mean block 5, 10 and 20; against B2 it is "
+        f"{w2['5']['lower_95']:+.3f}, {w2['10']['lower_95']:+.3f} and {w2['20']['lower_95']:+.3f}. "
+        "A longer block widens the interval where the differentials are persistent. Whether a group's lower bound changes sign "
+        "between block 10 and block 20 is visible in the tables above.", "",
+        "The block stays 10. Whether it changes is Eleonora's decision (the marked question above); nothing here is a verdict for a hypothesis.", ""]
     return "\n".join(lines)
 
 
