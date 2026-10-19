@@ -1,0 +1,29 @@
+{
+  "status": "declared before any score of the arm was computed (#931, H5, the candidate's construction): a scratch measurement, not a record. Nothing is published, nothing is registered, no rule changes, the declared candidate stays one-step gbm_funding, no published model, declaration or figure moves, no day after 2025-12-31 is read, and no day of a locked tier is scored (docs/decisions/lockbox.md). Development days give a score and an interval, never a verdict (scoring protocol v1, #46).",
+  "issue": 931,
+  "hypothesis": "H5 (primary goal), the candidate's construction: does training treasury_settlement from the row it is served from, at lead 1, change gbm_funding's score on settlement days?",
+  "rulings": [
+    "Eleonora, 19 October 2026 (#914, relayed by the orchestrating session): run aligned (direct) training pairs for treasury_settlement at lead 1 as a development step; the candidate stays unchanged until she has seen the result"
+  ],
+  "finding": "#914: gbm_funding's published_features(1) includes treasury_settlement; served, the as-of rule reads it from the target's own row (announced a day ahead); trained on one-step pairs it is read from row p for spread(p + 1), one day early",
+  "reference": "the walks of metadata/direct_twin_449.json at lead 1, re-walked here with that script's commands on the same published panel: gbm_funding (one-step pairs) and gbm_funding_direct (direct pairs, which also read every other field at the as-of read); the score reproduces docs/research/direct-twin-449/score.json at lead 1 to the digit and refuses to run otherwise",
+  "arm": {
+    "gbm_funding_aligned": "gbm_funding (ml.fit_gradient_boosted_quantiles, training_pairs unset, one-step pairs) fitted on the training frame in which treasury_settlement of row p is replaced by row p + 1's, so the pair (p, p + 1) trains the field from the target's own row, where serving reads it. Every other field is one-step. The last row of the frame has no successor and is no origin: its settlement is a hole. Same features (live_record.published_features(1)), fit, seed, hyper-parameters, fold grid (61 rows, refit every 21 days) and quantile grid. Lead 1 only: at the other leads the field is not an input"
+  },
+  "scale": {
+    "metric": "grid CRPS in bp (twice the mean pinball loss over the 23 levels of protocol v1), one number per decision day (repo_model.scoring_protocol.grid_crps)",
+    "difference": "d = S(reference) - S(arm); skill = mean(d) / mean(S(reference)); positive favours the arm",
+    "interval": "the protocol's studentized stationary bootstrap (scoring_protocol.paired_tests): mean block 10, seed 931, one-sided 95%, 10,000 draws on the pooled row, 2,000 on the regime and day-type splits; Diebold-Mariano with Newey-West lag 10 beside it",
+    "pairs": "B1, B2 against gbm_funding, the aligned arm and the twin; gbm_funding against the aligned arm and the twin; the aligned arm against the twin",
+    "missing": "a missing lead takes B1's law (scoring_protocol.fill_missing semantics), the share reported",
+    "decision_days": "those of #449's score (docs/research/direct-twin-449/score.json), so that the figures are those of #825 for the same days"
+  },
+  "locate": "pooled; by regime of the decision day (evaluation_splits.json); by pressure-day type of the target day: month_end, quarter_end, tax_date, ordinary, and the ordinary days split into mid_month_coupon (a target day the splits call ordinary on which treasury_settlement_coupons > 0) and the rest; on all decision days and without decision day 2019-09-18 (#798); a split with fewer than 30 decision days is too thin and carries no interval",
+  "alignment_days": ["2019-09-16", "2019-09-30", "2020-03-16", "2021-12-31", "2023-03-13", "2023-03-31", "2025-12-12"],
+  "alignment_check": "on the named target days, the row the as-of rule serves treasury_settlement from (InformationRule(horizon=1), both guards called) is the row the aligned arm trains it from, and is not the row the one-step pair trains it from",
+  "reading_rule": "none: nothing here is a verdict and nothing registers; whether the candidate changes is Eleonora's, asked as a marked question in the pull request",
+  "checks": {
+    "lookahead": "a day after 2025-12-31 raises LookAheadError (aligned_pairs_931.require_study_window) and the scorer's lockbox guard (require_unlocked) refuses a locked day",
+    "variant_count": "one arm; nothing tuned, nothing else changed; it joins no published declaration"
+  }
+}
