@@ -86,6 +86,14 @@ def _median(values: Sequence[float]) -> float:
     return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2.0
 
 
+def _decide(window: Sequence[float]) -> Optional[bool]:
+    """The flag from the defined spreads to the floor of a row's trailing window: `None` under `MIN_ROWS` of them."""
+
+    if len(window) < MIN_ROWS:
+        return None
+    return round(_median(window), ROUND) <= THRESHOLD_BP
+
+
 def flags(
     panel: Sequence[DailyObservation], register: Sequence[PolicyEntry], decision_time: time
 ) -> List[Optional[bool]]:
@@ -97,14 +105,18 @@ def flags(
     """
 
     spreads = spread_to_floor_bp(panel, register, decision_time)
-    out: List[Optional[bool]] = []
-    for i in range(len(panel)):
-        window = [v for v in spreads[max(0, i - WINDOW + 1): i + 1] if v is not None]
-        if len(window) < MIN_ROWS:
-            out.append(None)
-        else:
-            out.append(round(_median(window), ROUND) <= THRESHOLD_BP)
-    return out
+    return [
+        _decide([v for v in spreads[max(0, i - WINDOW + 1): i + 1] if v is not None]) for i in range(len(panel))
+    ]
+
+
+def flag_at(
+    panel: Sequence[DailyObservation], register: Sequence[PolicyEntry], decision_time: time
+) -> Optional[bool]:
+    """The flag of the last row of `panel`, from that row and the rows before it: the panel is the cut at the row."""
+
+    tail = panel[-WINDOW:]
+    return _decide([v for v in spread_to_floor_bp(tail, register, decision_time) if v is not None])
 
 
 def check_no_future(
@@ -123,7 +135,7 @@ def check_no_future(
     """
 
     for i in indices:
-        again = flags(panel[: i + 1], register, decision_time)[i]
+        again = flag_at(panel[: i + 1], register, decision_time)
         if built[i] != again:
             raise LookAheadError(
                 f"the floor flag on {panel[i].date.isoformat()} is {built[i]}, but the panel cut at that row gives "
