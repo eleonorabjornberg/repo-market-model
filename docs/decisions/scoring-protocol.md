@@ -125,6 +125,36 @@ The power studies re-run on the amended values, and the published figures that u
 amendment, that the amended test's size is near 5% on the generator it was calibrated on and above it elsewhere (post-2020
 history, stationary bootstrap, sign-flipped windows).
 
+## Draft amendment 2: the values are calibrated on post-2020 stationary-bootstrap windows (#886)
+
+**Status: a second draft, by the pull request that closes #886, for Eleonora to review. Nothing here is in force until she
+merges it, and it is not additive to the draft above: it replaces that draft's values if she adopts it** (§13: this record is
+merged by her, not under delegated review; the change is of kind (a), a demonstration). Until then item 5 and Q-C stand as
+written, the draft above stands as drafted, and `scoring_protocol.py` is unchanged.
+
+**The reason.** Every confirmation day falls after 2020. The values of the draft above are calibrated on circular blocks of
+the full development history, and the power study shows the amended test's size is near 5% only under that generator (see
+`docs/research/postcovid-886-result.md`, section 2). The values below are calibrated by `scripts/postcovid_886.py calibrate`
+on the same orientation, d = S(B1) − S(candidate), the same looks, windows, level and seed, with the windows drawn by the
+stationary bootstrap of the power study (mean block 10) from the post-2020 decision days (from 2020-04-03) only:
+
+| value | days | draft above | this draft |
+|---|---|---|---|
+| efficacy, grid comparison (B2 against B1) | 125 | 2.548 | 5.710 |
+| efficacy, grid comparison | 250 | 1.347 | 3.012 |
+| efficacy, B3 against B1 (five levels) | 125 | 1.434 | 2.267 |
+| efficacy, B3 against B1 (five levels) | 250 | 1.006 | 1.583 |
+| futility, grid comparison | 60 | 2.438 | 2.256 |
+| futility, grid comparison | 125 | 2.289 | 2.026 |
+| futility, grid comparison | 250 | 2.298 | 1.987 |
+
+Look 1 still has no efficacy value (Q-B). The record is `docs/research/protocol-calibration-886/result.json`. The same page
+reports size and power at the MME and at 10% under both drafts, the replay of #754 and #792, and #733's designs recalibrated.
+
+**What she decides.** Whether to adopt these values in place of the draft above, and if so whether to keep #733's recommended
+design, which the page reports changes under them. The page reports (section 2), as a question and not as part of this draft, that the
+test then detects a true 3% skill within 250 days on a small share of paths.
+
 ---
 
 **Draft scoring protocol, v1 (orchestrating session, 12 Oct 2026, for Eleonora's decision). Designed from first principles; current rules are kept only where they survive scrutiny.**

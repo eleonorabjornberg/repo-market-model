@@ -114,6 +114,7 @@ def grid_scores():
     s2 = sp.day_scores(b2, outcomes, days)
     ordered = sorted(s1)
     _SCORES["grid"] = ([s1[day] for day in ordered], [s2[day] for day in ordered])
+    _SCORES["grid_days"] = ordered
     return _SCORES["grid"]
 
 
@@ -155,6 +156,7 @@ def five_level_scores():
     s3 = sp.day_scores(b3, outcomes, days, score=five)
     ordered = sorted(set(s1) & set(s3))
     _SCORES["five"] = ([s1[day] for day in ordered], [s3[day] for day in ordered])
+    _SCORES["five_days"] = ordered
     return _SCORES["five"]
 
 
