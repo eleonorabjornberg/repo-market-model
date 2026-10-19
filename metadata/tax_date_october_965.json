@@ -1,0 +1,63 @@
+{
+  "status": "declared by the pull request that closes #965 before any number was computed; a measurement, not a record. Nothing is published: no published declaration, no record in docs/runs/ and no decided value changes, nothing after 2025-12-31 is scored, and no lockbox day is read. The tax-date definition is a data meaning and adopting it for B2 or for H8's calendar is a section 13 question: both are Eleonora's (#965, criterion 3). Development data, never a verdict (scoring protocol v1, #640)",
+  "issue": 965,
+  "hypothesis": "H5 step 2 (B2's day-type pools), H6 step 1 (the risk-date set) and H8 (the calendar ranker)",
+  "ruling": "Eleonora, 19 October 2026, relayed on #958 (five-lens review, next-in-line, Lens A)",
+  "why": "tax_date marks the 15th of the months 4, 6, 9 and 12 (data.TAX_DEADLINE_MONTHS). 15 October is the extended corporate and individual filing deadline, a mid-month coupon settlement and the first settlement of Treasury's fiscal year; in 2019 and 2025 the spread printed +20, +25 and +14 bp on 2019-10-15, 2019-10-16 and 2025-10-15, on days where tax_date reads 0",
+  "alternative": {
+    "module": "repo_model.tax_date_october; each label is a function of the date and metadata/market_holidays.json",
+    "october": "the 15th of October rolled forward off weekends and DC holidays (the rule of data.corporate_tax_deadline) and the two market days after it (the count of data.tax_date_market_days): a day the declared types call ordinary becomes tax_date inside it. The published tax_date column is not changed, so the alternative differs from the as-is B2 only in October; the market-day count of #538 and the DC-day count of the published column agree in October (Columbus Day is 8-14 October)",
+    "precedence": "quarter_end and month_end keep their precedence over tax_date, as in the declared reporting_day_type; 15 October is never either",
+    "control": "the coupon effect: the 15th of the months 1, 2, 3, 5, 7, 8 and 11 (neither a published tax month nor October) rolled forward on the market calendar, with the two market days after it, relabelled tax_date in the same way. The same shape as the October window, in months with no tax deadline. A calendar rule, so that every label is known ahead of its date as B2's target labels must be; the share of control deadlines on which the panel's treasury_settlement_coupons column is positive is reported beside it",
+    "windows": "tax_date_october.october_window and tax_date_october.control_window"
+  },
+  "scored_days": {
+    "decision_days": "every business day of the published panel on which every forecast of the comparison builds and whose five targets (h = 1..5 business days later on the panel's calendar) all fall on or before 2025-12-31; for the ranker (b) the 20 targets (h = 1..20) all fall on or before 2025-12-31. A decision day on which B2 as is or B2 with an alternative has no sample of a lead's type in the trailing year is dropped from every model of the comparison and counted",
+    "last_day": "2025-12-31",
+    "lockbox": "the script calls lockbox.require_unlocked on every decision and target day and refuses a day after 2025-12-31",
+    "panel": "the published panel (tests/fixtures/snapshots/funding_inputs built at cutoff 2026-09-08T21:31:42+00:00, digest in metadata/funding_panel_manifest.json)"
+  },
+  "comparisons": {
+    "a": {
+      "label": "B2 with the alternative tax_date against B2 as is",
+      "candidates": ["B2 october", "B2 control"],
+      "candidate": "protocol_benchmarks.b2_forecast with splits = AlternativeLabels(declared splits, which=...), unchanged otherwise",
+      "benchmark": "protocol_benchmarks.b2_forecast with the declared splits, unchanged",
+      "reference": "B1 (protocol_benchmarks.b1_forecast) against B2 as is and against each alternative, to put the size of the change beside the gap B2 has to B1",
+      "scores": "grid_crps (primary) and upper_tail_twcrps (key secondary), each the mean over a decision day's leads"
+    },
+    "b": {
+      "label": "H8's calendar ranker with the alternative's window in its set, against the calendar ranker as is",
+      "candidate": "ranking.calendar with a lead also flagged where tax_date_october.extra_risk_flag(target day, which) holds",
+      "benchmark": "ranking.calendar as is (a quarter-end, a tax date, or a coupon settlement where it was public at the decision instant), ties broken by date",
+      "metrics": "precision@3, precision@5 over all windows and recall@3, recall@5 over the windows with a pressure day (ranking_694.json), pressure the whole-basis-point event strictly above +5 bp (ranking.realised)",
+      "interval": "the percentile interval of ranking_694.paired (stationary bootstrap, mean block 20, 10,000 draws, seed 965); the studentized scorer is used where it is defined"
+    }
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "pairing": "each candidate against its benchmark on the same decision days, skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate): positive favours the candidate",
+    "interval": "scoring_protocol.paired_test, the studentized stationary bootstrap of ruling 1 (#739): mean block 10, 10,000 draws, seed 965; the 90% two-sided interval is the 5th to 95th studentized bound, for mean(d) and for skill",
+    "outcomes": "the panel's spread_bps at the target day, as #686, #693 and #959 read it"
+  },
+  "splits": {
+    "pooled": "all scored decision days",
+    "regime": "SplitDeclaration.regime of the decision day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024 and 2025-26 (the last is scored to 2025-12-31 only)",
+    "target": "the target day's window: 'target: october window' (the October window alone: its count of target days is reported), 'target: control window' (the control months), 'target: tax_date as is' (the published tax types), and 'target: other days'. A decision day's score in a target group is the mean over the leads whose target is in it",
+    "ranker": "the windows that contain an October window day among their 20 targets, the windows that contain a control day, and the rest, beside the pooled and regime rows",
+    "minimum": "a group of fewer than 20 decision days is listed with its means and is not tested"
+  },
+  "reading_rules": {
+    "a": "the alternative is better than B2 as is on a group when the 90% interval of its skill against B2 as is lies above zero, worse when it lies below; otherwise the group shows no difference. A gain that appears in the October window and also in the control's own window is the coupon effect and not a tax-date effect; a gain in the October window alone is the expected place for the October label and is read as such. The control is read on its own window the same way",
+    "b": "read the same way against the calendar ranker as is, on the October windows and on the control windows",
+    "no_verdict": "every sentence on the page says development data, not a verdict"
+  },
+  "limits": {
+    "published": "no published declaration and no docs/runs/ record changes; the B2 of scoring protocol v1, H8's declaration (#694) and the published tax_date are only read",
+    "walk_time": "B2 and the ranker's calendar need no refit; if the run is expected to take more than about two hours it follows the needs-mac rule on #46",
+    "questions_for_eleonora": [
+      "adopt 15 October in the tax_date definition (a data meaning), for B2 and so for scoring protocol v1's B2 and its section 13, and for H8's calendar?",
+      "whether the coupon-effect control, if it matches the October result, means the label should be a coupon-settlement label and not a tax-date label"
+    ]
+  }
+}
