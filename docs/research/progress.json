@@ -8539,7 +8539,7 @@
   "arm_declarations": 24,
   "arms": 85,
   "candidate_files": 358,
-  "declarations": 28,
+  "declarations": 30,
   "unread": [
    "alarm_cooldown.json",
    "always_flag_588.json",
@@ -8577,7 +8577,7 @@
    "structural_liquidity.json",
    "upper_bound_635.json"
   ],
-  "variants": 86,
+  "variants": 90,
   "without_evidence": [
    "vote_2_of_3",
    "window_onset_gbm+recalibrated",
