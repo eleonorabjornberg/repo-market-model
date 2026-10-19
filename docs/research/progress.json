@@ -8300,8 +8300,8 @@
   "tiers": "docs/pivot/evidence/weighted-miss/tier1.json"
  },
  "variant_count": {
-  "arm_declarations": 23,
-  "arms": 84,
+  "arm_declarations": 24,
+  "arms": 85,
   "candidate_files": 358,
   "declarations": 28,
   "unread": [
