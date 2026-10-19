@@ -1213,6 +1213,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
 
+### 2026-10-18 [H5] step 3 · eleonorabjornberg/repo-market-model#920
+- Directive: #912
+- Step: 3 (correction to #844's result page; no new run)
+- Tier: development
+- Pins: published panel unchanged; base `41eed02e`
+- Tried: the result page of #844 pointed at `docs/pivot/evidence/ordinary-day-p5-844/`, which does not exist; it now points at `docs/pivot/ordinary-day-p5-844/`, which holds `report.md` and `score.json`. The recorded mutation of `require_scored_days` now carries the import it needs. Variants: 0.
+- Result: one path changes on the page; no figure moves and nothing is scored. The result is development data, not a verdict.
+- Against kill: not applicable (no verdict; development data).
+- Next: H5 step 3, as queued.
+
 ### 2026-10-18 [H5] step 3 · eleonorabjornberg/repo-market-model#921
 - Directive: #919
 - Step: 3 (correction of the #761 section of #882's page, finding #919)
