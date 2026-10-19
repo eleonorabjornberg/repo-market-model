@@ -1,0 +1,3551 @@
+{
+ "name": "758",
+ "reproduction": {
+  "max_abs_difference": 0.0,
+  "max_abs_difference_words": 0.05585502001691836,
+  "not_in_the_tracked_file": 0,
+  "records_compared": 208,
+  "words": [
+   "ceiling",
+   "reachable"
+  ]
+ },
+ "rows": [
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.14100715682632356,
+    0.08190887018097352
+   ],
+   "interval_without": [
+    -0.14100715682632356,
+    0.08190887018097352
+   ],
+   "metric": "headroom",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.03318001366703018,
+   "without": -0.03318001366703018
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12210252368865752,
+    0.009189406591697365
+   ],
+   "interval_without": [
+    -0.12210252368865752,
+    0.009189406591697365
+   ],
+   "metric": "headroom",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.04659880936433349,
+   "without": -0.04659880936433349
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12762289079093783,
+    0.18325590398952343
+   ],
+   "interval_without": [
+    -0.12762289079093783,
+    0.18325590398952343
+   ],
+   "metric": "headroom",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/headroom/gbm_funding -> ceiling gbm",
+   "with": 0.03245340518902465,
+   "without": 0.03245340518902465
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.17558167793813823,
+    0.1464719396695322
+   ],
+   "interval_without": [
+    -0.17558167793813823,
+    0.1464719396695322
+   ],
+   "metric": "headroom",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/headroom/gbm_funding -> reachable gbm",
+   "with": 0.01903460949172133,
+   "without": 0.01903460949172133
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04039750800790809,
+    0.2634804381863821
+   ],
+   "interval_without": [
+    -0.04039750800790809,
+    0.2634804381863821
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B1 -> c_two_part_new",
+   "with": 0.1402413333922566,
+   "without": 0.1402413333922566
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08356548915955778,
+    0.274979091252223
+   ],
+   "interval_without": [
+    -0.08356548915955778,
+    0.274979091252223
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B1 -> ceiling gbm",
+   "with": 0.10706131972522585,
+   "without": 0.10706131972522585
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0072528384442223865,
+    0.15298129187305443
+   ],
+   "interval_without": [
+    -0.0072528384442223865,
+    0.15298129187305443
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B1 -> gbm_funding",
+   "with": 0.07460791453620164,
+   "without": 0.07460791453620164
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.13719983078789855,
+    0.2505128568595168
+   ],
+   "interval_without": [
+    -0.13719983078789855,
+    0.2505128568595168
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B1 -> reachable gbm",
+   "with": 0.09364252402792278,
+   "without": 0.09364252402792278
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.26219189386894703,
+    0.45484255377280464
+   ],
+   "interval_without": [
+    0.26219189386894703,
+    0.45484255377280464
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B2 -> c_two_part_new",
+   "with": 0.376407773774112,
+   "without": 0.376407773774112
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24122331514259462,
+    0.45843658863762043
+   ],
+   "interval_without": [
+    0.24122331514259462,
+    0.45843658863762043
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B2 -> ceiling gbm",
+   "with": 0.35234195229136184,
+   "without": 0.35234195229136184
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15330839620317263,
+    0.4650067436905111
+   ],
+   "interval_without": [
+    0.15330839620317263,
+    0.4650067436905111
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B2 -> gbm_funding",
+   "with": 0.32880314776813,
+   "without": 0.32880314776813
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.250573813332629,
+    0.40662974352679626
+   ],
+   "interval_without": [
+    0.250573813332629,
+    0.40662974352679626
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/B2 -> reachable gbm",
+   "with": 0.34260915516217716,
+   "without": 0.34260915516217716
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16105020511764853,
+    0.09133033889679766
+   ],
+   "interval_without": [
+    -0.16105020511764853,
+    0.09133033889679766
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.03859224100403147,
+   "without": -0.03859224100403147
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12769395928417546,
+    0.011328023377429396
+   ],
+   "interval_without": [
+    -0.12769395928417546,
+    0.011328023377429396
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/c_two_part_new -> reachable gbm",
+   "with": -0.05419987163164501,
+   "without": -0.05419987163164501
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.13416121333663947,
+    0.19983249717183726
+   ],
+   "interval_without": [
+    -0.13416121333663947,
+    0.19983249717183726
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/gbm_funding -> ceiling gbm",
+   "with": 0.03506989707261093,
+   "without": 0.03506989707261093
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.18435484829167034,
+    0.1595401001031948
+   ],
+   "interval_without": [
+    -0.18435484829167034,
+    0.1595401001031948
+   ],
+   "metric": "skill",
+   "n": 433,
+   "n_without": 433,
+   "path": "/cells/crps/day type: month_end/tests/gbm_funding -> reachable gbm",
+   "with": 0.02056923739755244,
+   "without": 0.02056923739755244
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12677672545816257,
+    0.0059819637618553165
+   ],
+   "interval_without": [
+    -0.1454838780497058,
+    0.010340977359307212
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.061352336410758455,
+   "without": -0.06764462036045818
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07580949048078303,
+    0.01134410739878603
+   ],
+   "interval_without": [
+    -0.08646277234175286,
+    0.014493425624948566
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.0313775677620431,
+   "without": -0.03526710413315907
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15260517962858855,
+    -0.017982776924857728
+   ],
+   "interval_without": [
+    -0.17106956756896466,
+    -0.016900455483294052
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.08506019906616598,
+   "without": -0.09354002182412509
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11459549620318707,
+    -0.0055872932481299716
+   ],
+   "interval_without": [
+    -0.12576618822766397,
+    -0.006432612038493128
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/headroom/gbm_funding -> reachable gbm",
+   "with": -0.05508543041745062,
+   "without": -0.06116250559682598
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06463525594813246,
+    0.3756380632421039
+   ],
+   "interval_without": [
+    0.04309001615902003,
+    0.21982880538797073
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B1 -> c_two_part_new",
+   "with": 0.2283666551949865,
+   "without": 0.13810804911229746
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.003964837779016665,
+    0.3076260411921555
+   ],
+   "interval_without": [
+    -0.023742999246028643,
+    0.15419363277999962
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B1 -> ceiling gbm",
+   "with": 0.16701431878422715,
+   "without": 0.07046342875183763
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1139431015922315,
+    0.39012796675631384
+   ],
+   "interval_without": [
+    0.10425009005829328,
+    0.22356561552758092
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B1 -> gbm_funding",
+   "with": 0.25207451785039264,
+   "without": 0.16400345057596236
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.02123629125116218,
+    0.3480826908985379
+   ],
+   "interval_without": [
+    -0.0009481504101759453,
+    0.19019637280489016
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B1 -> reachable gbm",
+   "with": 0.19698908743294014,
+   "without": 0.10284094497913453
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24446612307915247,
+    0.39579337049469876
+   ],
+   "interval_without": [
+    0.24504701090902312,
+    0.398126300048041
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B2 -> c_two_part_new",
+   "with": 0.3241093896517497,
+   "without": 0.32428582309634557
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1861903967621781,
+    0.3505677266443331
+   ],
+   "interval_without": [
+    0.18596268379561703,
+    0.35188599618962346
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B2 -> ceiling gbm",
+   "with": 0.2703695294161371,
+   "without": 0.2712531559253028
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2665221069792323,
+    0.4161770735446745
+   ],
+   "interval_without": [
+    0.2645066851513945,
+    0.4197733941303901
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B2 -> gbm_funding",
+   "with": 0.34487562774668873,
+   "without": 0.34458754405752684
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.23324338183538315,
+    0.3582113101509309
+   ],
+   "interval_without": [
+    0.2336549816139551,
+    0.35908780063063367
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/B2 -> reachable gbm",
+   "with": 0.2966250882426498,
+   "without": 0.29663678632721086
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.17954455498172137,
+    0.006993766483757049
+   ],
+   "interval_without": [
+    -0.17925391928544504,
+    0.01117846615996949
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.07950970084925896,
+   "without": -0.07848387525929357
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.09955554286647106,
+    0.013616132367455876
+   ],
+   "interval_without": [
+    -0.10108069153921587,
+    0.016459337691663606
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/c_two_part_new -> reachable gbm",
+   "with": -0.04066383078607785,
+   "without": -0.04091824282247851
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.208652826699618,
+    -0.022815710477904115
+   ],
+   "interval_without": [
+    -0.2084481997665751,
+    -0.019792157593166163
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/gbm_funding -> ceiling gbm",
+   "with": -0.11372817358982712,
+   "without": -0.11189044008443483
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.14667698390702721,
+    -0.007009163985717214
+   ],
+   "interval_without": [
+    -0.1483329622277931,
+    -0.007601845269718696
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/day type: ordinary/tests/gbm_funding -> reachable gbm",
+   "with": -0.0736509608672934,
+   "without": -0.07316119383383314
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1338216989373789,
+    0.021222347913735246
+   ],
+   "interval_without": [
+    -0.1338216989373789,
+    0.021222347913735246
+   ],
+   "metric": "headroom",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.07503934586384312,
+   "without": -0.07503934586384312
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.20699171229353477,
+    -0.07015521201716386
+   ],
+   "interval_without": [
+    -0.20699171229353477,
+    -0.07015521201716386
+   ],
+   "metric": "headroom",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.1534066212733353,
+   "without": -0.1534066212733353
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12374874778066196,
+    0.3781390421965861
+   ],
+   "interval_without": [
+    -0.12374874778066196,
+    0.3781390421965861
+   ],
+   "metric": "headroom",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/headroom/gbm_funding -> ceiling gbm",
+   "with": 0.203053312304909,
+   "without": 0.203053312304909
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.19470571722518168,
+    0.28865493445917717
+   ],
+   "interval_without": [
+    -0.19470571722518168,
+    0.28865493445917717
+   ],
+   "metric": "headroom",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/headroom/gbm_funding -> reachable gbm",
+   "with": 0.12468603689541682,
+   "without": 0.12468603689541682
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.29466585894667585,
+    0.3011153671942493
+   ],
+   "interval_without": [
+    -0.29466585894667585,
+    0.3011153671942493
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B1 -> c_two_part_new",
+   "with": 0.10442231847860806,
+   "without": 0.10442231847860806
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.36095109616220744,
+    0.2527348028600642
+   ],
+   "interval_without": [
+    -0.36095109616220744,
+    0.2527348028600642
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B1 -> ceiling gbm",
+   "with": 0.029382972614764996,
+   "without": 0.029382972614764996
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2476777811338752,
+    -0.10508501520509078
+   ],
+   "interval_without": [
+    -0.2476777811338752,
+    -0.10508501520509078
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B1 -> gbm_funding",
+   "with": -0.17367033969014395,
+   "without": -0.17367033969014395
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.41047820611148667,
+    0.15536868085899397
+   ],
+   "interval_without": [
+    -0.41047820611148667,
+    0.15536868085899397
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B1 -> reachable gbm",
+   "with": -0.04898430279472727,
+   "without": -0.04898430279472727
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1126314004766911,
+    0.5099198173790983
+   ],
+   "interval_without": [
+    0.1126314004766911,
+    0.5099198173790983
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B2 -> c_two_part_new",
+   "with": 0.3293472320194906,
+   "without": 0.3293472320194906
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0024727348014208506,
+    0.5043455239366675
+   ],
+   "interval_without": [
+    -0.0024727348014208506,
+    0.5043455239366675
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B2 -> ceiling gbm",
+   "with": 0.2731540663685319,
+   "without": 0.2731540663685319
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3474197964364407,
+    0.5047043943617718
+   ],
+   "interval_without": [
+    -0.3474197964364407,
+    0.5047043943617718
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B2 -> gbm_funding",
+   "with": 0.12109772468574122,
+   "without": 0.12109772468574122
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05278692930966006,
+    0.4393909847648507
+   ],
+   "interval_without": [
+    -0.05278692930966006,
+    0.4393909847648507
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/B2 -> reachable gbm",
+   "with": 0.21446878282821016,
+   "without": 0.21446878282821016
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15441483088503413,
+    0.023314134779022846
+   ],
+   "interval_without": [
+    -0.15441483088503413,
+    0.023314134779022846
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.08378876273062916,
+   "without": -0.08378876273062916
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2395859783093862,
+    -0.06222714336591173
+   ],
+   "interval_without": [
+    -0.2395859783093862,
+    -0.06222714336591173
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/c_two_part_new -> reachable gbm",
+   "with": -0.17129348401439706,
+   "without": -0.17129348401439706
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10034610411146272,
+    0.336176646254636
+   ],
+   "interval_without": [
+    -0.10034610411146272,
+    0.336176646254636
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/gbm_funding -> ceiling gbm",
+   "with": 0.1730071089284887,
+   "without": 0.1730071089284887
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1620647134299921,
+    0.2532456698075512
+   ],
+   "interval_without": [
+    -0.1620647134299921,
+    0.2532456698075512
+   ],
+   "metric": "skill",
+   "n": 126,
+   "n_without": 126,
+   "path": "/cells/crps/day type: quarter_end/tests/gbm_funding -> reachable gbm",
+   "with": 0.10623599547410774,
+   "without": 0.10623599547410774
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.20288859846479468,
+    -0.020047369069129132
+   ],
+   "interval_without": [
+    -0.20288859846479468,
+    -0.020047369069129132
+   ],
+   "metric": "headroom",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.06581431423779405,
+   "without": -0.06581431423779405
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11622130510463768,
+    0.014868393958650966
+   ],
+   "interval_without": [
+    -0.11622130510463768,
+    0.014868393958650966
+   ],
+   "metric": "headroom",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.030373357562932385,
+   "without": -0.030373357562932385
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3992793125175447,
+    -0.03373223234169669
+   ],
+   "interval_without": [
+    -0.3992793125175447,
+    -0.03373223234169669
+   ],
+   "metric": "headroom",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.07917178123398687,
+   "without": -0.07917178123398687
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.31340750711161197,
+    -0.00312724329733052
+   ],
+   "interval_without": [
+    -0.31340750711161197,
+    -0.00312724329733052
+   ],
+   "metric": "headroom",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/headroom/gbm_funding -> reachable gbm",
+   "with": -0.04373082455912521,
+   "without": -0.04373082455912521
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3570542984067104,
+    0.07492837098442887
+   ],
+   "interval_without": [
+    -0.3570542984067104,
+    0.07492837098442887
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B1 -> c_two_part_new",
+   "with": -0.0422546306219303,
+   "without": -0.0422546306219303
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5054956951872083,
+    -0.014534420269957368
+   ],
+   "interval_without": [
+    -0.5054956951872083,
+    -0.014534420269957368
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B1 -> ceiling gbm",
+   "with": -0.10806894485972415,
+   "without": -0.10806894485972415
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.14662176259413456,
+    0.1098740810238334
+   ],
+   "interval_without": [
+    -0.14662176259413456,
+    0.1098740810238334
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B1 -> gbm_funding",
+   "with": -0.028897163625736834,
+   "without": -0.028897163625736834
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.40325710887735017,
+    0.019731529835286775
+   ],
+   "interval_without": [
+    -0.40325710887735017,
+    0.019731529835286775
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B1 -> reachable gbm",
+   "with": -0.07262798818486327,
+   "without": -0.07262798818486327
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15204804959832913,
+    0.6279709522252658
+   ],
+   "interval_without": [
+    0.15204804959832913,
+    0.6279709522252658
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B2 -> c_two_part_new",
+   "with": 0.2750376131341455,
+   "without": 0.2750376131341455
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1034981736742021,
+    0.5927238048324295
+   ],
+   "interval_without": [
+    0.1034981736742021,
+    0.5927238048324295
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B2 -> ceiling gbm",
+   "with": 0.22925906637796625,
+   "without": 0.22925906637796625
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.14342175379683653,
+    0.6855500370749151
+   ],
+   "interval_without": [
+    0.14342175379683653,
+    0.6855500370749151
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B2 -> gbm_funding",
+   "with": 0.28432868354202073,
+   "without": 0.28432868354202073
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.13319934004047668,
+    0.6031605826194187
+   ],
+   "interval_without": [
+    0.13319934004047668,
+    0.6031605826194187
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/B2 -> reachable gbm",
+   "with": 0.2539107779549011,
+   "without": 0.2539107779549011
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.17855995007422917,
+    -0.019115317003873367
+   ],
+   "interval_without": [
+    -0.17855995007422917,
+    -0.019115317003873367
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.06314609914327869,
+   "without": -0.06314609914327869
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10716114288839824,
+    0.012109223259149803
+   ],
+   "interval_without": [
+    -0.10716114288839824,
+    0.012109223259149803
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/c_two_part_new -> reachable gbm",
+   "with": -0.029141974207213317,
+   "without": -0.029141974207213317
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3735658129097692,
+    -0.032954014377189485
+   ],
+   "interval_without": [
+    -0.3735658129097692,
+    -0.032954014377189485
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/gbm_funding -> ceiling gbm",
+   "with": -0.07694819660595935,
+   "without": -0.07694819660595935
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2980528288113646,
+    -0.0030396154715534463
+   ],
+   "interval_without": [
+    -0.2980528288113646,
+    -0.0030396154715534463
+   ],
+   "metric": "skill",
+   "n": 185,
+   "n_without": 185,
+   "path": "/cells/crps/day type: tax_date/tests/gbm_funding -> reachable gbm",
+   "with": -0.04250261941147069,
+   "without": -0.04250261941147069
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11275417005262763,
+    0.005721639603638662
+   ],
+   "interval_without": [
+    -0.12108416555956711,
+    0.005227467040100839
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.056961540602298806,
+   "without": -0.06183900302953293
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06957580570574722,
+    0.005778684252934614
+   ],
+   "interval_without": [
+    -0.074439647831049,
+    0.005243607410140765
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.031892755489056,
+   "without": -0.03523469246598569
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12121034493698306,
+    0.000995017223474296
+   ],
+   "interval_without": [
+    -0.12717976060532993,
+    0.0017521616602119855
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.05823687749958795,
+   "without": -0.06269331161323011
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.09014786299009282,
+    0.0114800639626849
+   ],
+   "interval_without": [
+    -0.0951941155331081,
+    0.012426150936372633
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/headroom/gbm_funding -> reachable gbm",
+   "with": -0.03316809238634514,
+   "without": -0.036089001049682864
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06635309097276408,
+    0.3161242564976718
+   ],
+   "interval_without": [
+    0.04925024008084367,
+    0.19598802620345798
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B1 -> c_two_part_new",
+   "with": 0.20634903691444773,
+   "without": 0.12777894159894534
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.010907646027003304,
+    0.26187591992363246
+   ],
+   "interval_without": [
+    -0.01392945031749616,
+    0.14230517728383626
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B1 -> ceiling gbm",
+   "with": 0.14938749631214907,
+   "without": 0.06593993856941208
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09652786126371556,
+    0.30701836082185596
+   ],
+   "interval_without": [
+    0.08157836883967395,
+    0.1748875987854188
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B1 -> gbm_funding",
+   "with": 0.20762437381173898,
+   "without": 0.12863325018264524
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.028289971497548274,
+    0.290771912893159
+   ],
+   "interval_without": [
+    0.005071768869348881,
+    0.16783230606758914
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B1 -> reachable gbm",
+   "with": 0.17445628142539188,
+   "without": 0.09254424913295971
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.230662139302976,
+    0.400401381107113
+   ],
+   "interval_without": [
+    0.22920038977525636,
+    0.40030603246545804
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B2 -> c_two_part_new",
+   "with": 0.31526864183874515,
+   "without": 0.31540166346953796
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17348477099559997,
+    0.36295284362975827
+   ],
+   "interval_without": [
+    0.1729375457704094,
+    0.3634319673491345
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B2 -> ceiling gbm",
+   "with": 0.2661244274753775,
+   "without": 0.26686479520780587
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22426733998320367,
+    0.4100433435981747
+   ],
+   "interval_without": [
+    0.2227614747479696,
+    0.4114431769018061
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B2 -> gbm_funding",
+   "with": 0.3163689531927453,
+   "without": 0.31607220246839823
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21223678522296438,
+    0.3650205694764772
+   ],
+   "interval_without": [
+    0.21051715924900055,
+    0.36512073282319873
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/B2 -> reachable gbm",
+   "with": 0.2877528057883179,
+   "without": 0.28774627540244013
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1450955050278225,
+    0.006758839882991362
+   ],
+   "interval_without": [
+    -0.14347917714203315,
+    0.005891799018188608
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.07177152583655225,
+   "without": -0.07089831463470515
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08583161862130426,
+    0.006892777143591621
+   ],
+   "interval_without": [
+    -0.08634468446714974,
+    0.0058557200208299385
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/c_two_part_new -> reachable gbm",
+   "with": -0.04018486333723257,
+   "without": -0.04039651660162579
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.14901404676921315,
+    0.0012379879212123233
+   ],
+   "interval_without": [
+    -0.1471584204352305,
+    0.0019826130050684043
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/gbm_funding -> ceiling gbm",
+   "with": -0.07349655337045151,
+   "without": -0.07194824868676002
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1077901951407933,
+    0.014640651288780804
+   ],
+   "interval_without": [
+    -0.1074612236285646,
+    0.014350309833312543
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, all targets/tests/gbm_funding -> reachable gbm",
+   "with": -0.0418590518059006,
+   "without": -0.04141654596901919
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1319455732495623,
+    0.012206007830399764
+   ],
+   "interval_without": [
+    -0.15020816529490436,
+    0.014075828994342367
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.06412581895584492,
+   "without": -0.07085209279983881
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07926753133944044,
+    0.01862242615772418
+   ],
+   "interval_without": [
+    -0.08826456213161768,
+    0.019553735852308622
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.03103343610733469,
+   "without": -0.03494102533498038
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16971273604432804,
+    -0.025745545207759655
+   ],
+   "interval_without": [
+    -0.18925381565843288,
+    -0.027005842421926628
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.09728413735490846,
+   "without": -0.1073803289386212
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12336235859783022,
+    -0.015398215838408603
+   ],
+   "interval_without": [
+    -0.1331997235011228,
+    -0.017346476184299797
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/headroom/gbm_funding -> reachable gbm",
+   "with": -0.06419175450639822,
+   "without": -0.07146926147376277
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.05178642889574127,
+    0.3803785632419552
+   ],
+   "interval_without": [
+    0.03666181002567774,
+    0.21344167817796794
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B1 -> c_two_part_new",
+   "with": 0.2242797093291166,
+   "without": 0.1321347455878754
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.006315358454333159,
+    0.3096382019226235
+   ],
+   "interval_without": [
+    -0.0348853570639208,
+    0.14708918046128394
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B1 -> ceiling gbm",
+   "with": 0.16015389037327135,
+   "without": 0.061282652788035685
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.11449749566469869,
+    0.39997675324809523
+   ],
+   "interval_without": [
+    0.10570630034205478,
+    0.22884624584105145
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B1 -> gbm_funding",
+   "with": 0.2574380277281791,
+   "without": 0.16866298172665664
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.014645757729176208,
+    0.3516395953625561
+   ],
+   "interval_without": [
+    -0.008205155036470579,
+    0.1858546380719517
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B1 -> reachable gbm",
+   "with": 0.19324627322177998,
+   "without": 0.09719372025289291
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.23373588115475988,
+    0.3934966140359225
+   ],
+   "interval_without": [
+    0.23399799136334914,
+    0.3927891587955398
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B2 -> c_two_part_new",
+   "with": 0.3177893569772558,
+   "without": 0.31795486723817734
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17407654945926165,
+    0.34498470910434653
+   ],
+   "interval_without": [
+    0.1729138825481364,
+    0.3457463040195787
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B2 -> ceiling gbm",
+   "with": 0.2613936216711794,
+   "without": 0.2622730378361538
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.26663209409929534,
+    0.4213284274002441
+   ],
+   "interval_without": [
+    0.2659861790616007,
+    0.4214378883912905
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B2 -> gbm_funding",
+   "with": 0.3469505868543468,
+   "without": 0.34666197993818604
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2271366125894635,
+    0.35040798482947155
+   ],
+   "interval_without": [
+    0.2266311313888996,
+    0.3516304314661841
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/B2 -> reachable gbm",
+   "with": 0.29049686423650056,
+   "without": 0.2904951249080442
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.18272742217293156,
+    0.013983124460694609
+   ],
+   "interval_without": [
+    -0.1807671024900218,
+    0.015651026269645527
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.08266616166554885,
+   "without": -0.08163950848318442
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10175325333949502,
+    0.022358973695065492
+   ],
+   "interval_without": [
+    -0.10238376622008599,
+    0.02208788764699074
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/c_two_part_new -> reachable gbm",
+   "with": -0.04000596153092434,
+   "without": -0.04026088745614181
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.23305469817274815,
+    -0.03286495017127587
+   ],
+   "interval_without": [
+    -0.23063478007705568,
+    -0.03183605368242341
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/gbm_funding -> ceiling gbm",
+   "with": -0.1310114724260302,
+   "without": -0.12916582153606745
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15810315024309105,
+    -0.020550072725971084
+   ],
+   "interval_without": [
+    -0.15711308919122643,
+    -0.021157553106130392
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/crps/pooled, ordinary targets/tests/gbm_funding -> reachable gbm",
+   "with": -0.08644632623726829,
+   "without": -0.08596905936199362
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.32943469927934454,
+    -0.05644596136349172
+   ],
+   "interval_without": [
+    -0.4279577405321626,
+    -0.07877074830581864
+   ],
+   "metric": "headroom",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.1635381098252281,
+   "without": -0.28591687757330636
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3105688458231915,
+    -0.03834164120244421
+   ],
+   "interval_without": [
+    -0.33134727517786355,
+    -0.07849822183081268
+   ],
+   "metric": "headroom",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.09285574393823043,
+   "without": -0.1671690557858558
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2812296182083488,
+    0.029521186523130634
+   ],
+   "interval_without": [
+    -0.3848786927587561,
+    0.04249241342410663
+   ],
+   "metric": "headroom",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.1270419592804473,
+   "without": -0.21626190169544351
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.18370129540450267,
+    -0.023301055564346855
+   ],
+   "interval_without": [
+    -0.20019353496431547,
+    -0.04031922911650091
+   ],
+   "metric": "headroom",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/headroom/gbm_funding -> reachable gbm",
+   "with": -0.05635959339344962,
+   "without": -0.09751407990799296
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.3388964181719859,
+    0.8208696646299667
+   ],
+   "interval_without": [
+    0.32843107700518437,
+    0.5714673240763081
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B1 -> c_two_part_new",
+   "with": 0.6968525844448098,
+   "without": 0.47106533406833095
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.04455161764883153,
+    0.7092514661663459
+   ],
+   "interval_without": [
+    -0.03908143469690384,
+    0.4005971066189441
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B1 -> ceiling gbm",
+   "with": 0.5333144746195813,
+   "without": 0.1851484564950238
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2404421905117558,
+    0.7988975151081075
+   ],
+   "interval_without": [
+    0.22431375698610573,
+    0.5125264671307713
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B1 -> gbm_funding",
+   "with": 0.6603564339000287,
+   "without": 0.4014103581904678
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06678529589963615,
+    0.7700344154195329
+   ],
+   "interval_without": [
+    0.052495760310101044,
+    0.45550931585378684
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B1 -> reachable gbm",
+   "with": 0.6039968405065793,
+   "without": 0.30389627828247495
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08369363988526496,
+    0.3751604976301725
+   ],
+   "interval_without": [
+    0.08355063436596076,
+    0.3766227763584687
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B2 -> c_two_part_new",
+   "with": 0.2258180448428518,
+   "without": 0.2253416584707278
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5274321930625956,
+    0.23623384970185954
+   ],
+   "interval_without": [
+    -0.5440784956812483,
+    0.24246458778804825
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B2 -> ceiling gbm",
+   "with": -0.19182778392110827,
+   "without": -0.19340172981908188
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.020394392605367274,
+    0.2332748150479228
+   ],
+   "interval_without": [
+    0.007993159827651227,
+    0.23085276366365573
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B2 -> gbm_funding",
+   "with": 0.13261368374769947,
+   "without": 0.12332753164513345
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12608544237191507,
+    0.06481973854136563
+   ],
+   "interval_without": [
+    -0.12985577024263714,
+    0.056797425006736846
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/B2 -> reachable gbm",
+   "with": -0.011318205380542996,
+   "without": -0.01948801871064066
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.8083529782683007,
+    -0.1495005455649794
+   ],
+   "interval_without": [
+    -0.8184267822620885,
+    -0.1418591200534395
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.5394672737873146,
+   "without": -0.5405523517156708
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5741984464336428,
+    -0.1391341085772432
+   ],
+   "interval_without": [
+    -0.5897463516220586,
+    -0.14885414296289343
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/c_two_part_new -> reachable gbm",
+   "with": -0.3063055766719069,
+   "without": -0.31604859078654474
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.6847327308177618,
+    0.061681948072043524
+   ],
+   "interval_without": [
+    -0.672236347752315,
+    0.06372684877540513
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/gbm_funding -> ceiling gbm",
+   "with": -0.3740449458213909,
+   "without": -0.3612857399965787
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.28072262238633205,
+    -0.08546625935777237
+   ],
+   "interval_without": [
+    -0.28422407478432454,
+    -0.07433545148533555
+   ],
+   "metric": "skill",
+   "n": 101,
+   "n_without": 100,
+   "path": "/cells/crps/regime: 2018-19/tests/gbm_funding -> reachable gbm",
+   "with": -0.16593746803630266,
+   "without": -0.1629063937912603
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.027424184135680298,
+    0.3607963638224561
+   ],
+   "interval_without": [
+    0.027424184135680298,
+    0.3607963638224561
+   ],
+   "metric": "headroom",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/headroom/c_two_part_new -> ceiling gbm",
+   "with": 0.15280071215393554,
+   "without": 0.15280071215393554
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1660634278068211,
+    0.22888992345563489
+   ],
+   "interval_without": [
+    -0.1660634278068211,
+    0.22888992345563489
+   ],
+   "metric": "headroom",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/headroom/c_two_part_new -> reachable gbm",
+   "with": 0.01865854461460979,
+   "without": 0.01865854461460979
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06004252645694445,
+    0.1038214358605817
+   ],
+   "interval_without": [
+    -0.06004252645694445,
+    0.1038214358605817
+   ],
+   "metric": "headroom",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/headroom/gbm_funding -> ceiling gbm",
+   "with": 0.03339406340005149,
+   "without": 0.03339406340005149
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2855304384131772,
+    0.03430353989120885
+   ],
+   "interval_without": [
+    -0.2855304384131772,
+    0.03430353989120885
+   ],
+   "metric": "headroom",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/headroom/gbm_funding -> reachable gbm",
+   "with": -0.10074810413927426,
+   "without": -0.10074810413927426
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.21432282495573596,
+    0.19603158062703374
+   ],
+   "interval_without": [
+    -0.21432282495573596,
+    0.19603158062703374
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B1 -> c_two_part_new",
+   "with": 0.028123497293341845,
+   "without": 0.028123497293341845
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.030130375565431855,
+    0.3069100118953143
+   ],
+   "interval_without": [
+    0.030130375565431855,
+    0.3069100118953143
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B1 -> ceiling gbm",
+   "with": 0.18092420944727663,
+   "without": 0.18092420944727663
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0330717316081127,
+    0.2579089107153192
+   ],
+   "interval_without": [
+    0.0330717316081127,
+    0.2579089107153192
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B1 -> gbm_funding",
+   "with": 0.1475301460472257,
+   "without": 0.1475301460472257
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2125838900833255,
+    0.23999126429348025
+   ],
+   "interval_without": [
+    -0.2125838900833255,
+    0.23999126429348025
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B1 -> reachable gbm",
+   "with": 0.04678204190795008,
+   "without": 0.04678204190795008
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15111338459565704,
+    0.5355196251929334
+   ],
+   "interval_without": [
+    0.15111338459565704,
+    0.5355196251929334
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B2 -> c_two_part_new",
+   "with": 0.3587369608515573,
+   "without": 0.3587369608515573
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.32299875200946837,
+    0.5788573355697467
+   ],
+   "interval_without": [
+    0.32299875200946837,
+    0.5788573355697467
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B2 -> ceiling gbm",
+   "with": 0.4595578457962917,
+   "without": 0.4595578457962917
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.26242032799771564,
+    0.5824183575646957
+   ],
+   "interval_without": [
+    0.26242032799771564,
+    0.5824183575646957
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B2 -> gbm_funding",
+   "with": 0.43752379257472046,
+   "without": 0.43752379257472046
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.25051762933395194,
+    0.4929100379013519
+   ],
+   "interval_without": [
+    0.25051762933395194,
+    0.4929100379013519
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/B2 -> reachable gbm",
+   "with": 0.3710482318744995,
+   "without": 0.3710482318744995
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.031778820272258465,
+    0.3098248885987591
+   ],
+   "interval_without": [
+    0.031778820272258465,
+    0.3098248885987591
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/c_two_part_new -> ceiling gbm",
+   "with": 0.15722235461850093,
+   "without": 0.15722235461850093
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1812734361213023,
+    0.21502138373740465
+   ],
+   "interval_without": [
+    -0.1812734361213023,
+    0.21502138373740465
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/c_two_part_new -> reachable gbm",
+   "with": 0.019198472812795127,
+   "without": 0.019198472812795127
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06925119602467489,
+    0.12174766555809305
+   ],
+   "interval_without": [
+    -0.06925119602467489,
+    0.12174766555809305
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/gbm_funding -> ceiling gbm",
+   "with": 0.03917330712072418,
+   "without": 0.03917330712072418
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.32406813012039815,
+    0.04118508690711806
+   ],
+   "interval_without": [
+    -0.32406813012039815,
+    0.04118508690711806
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/cells/crps/regime: 2020/tests/gbm_funding -> reachable gbm",
+   "with": -0.11818377350485973,
+   "without": -0.11818377350485973
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16618880807504857,
+    0.16282234864140963
+   ],
+   "interval_without": [
+    -0.16618880807504857,
+    0.16282234864140963
+   ],
+   "metric": "headroom",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.005646587380515621,
+   "without": -0.005646587380515621
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.18140379062615153,
+    0.06469661392243044
+   ],
+   "interval_without": [
+    -0.18140379062615153,
+    0.06469661392243044
+   ],
+   "metric": "headroom",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.059206820348342265,
+   "without": -0.059206820348342265
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4655740722614194,
+    -0.07499077486335538
+   ],
+   "interval_without": [
+    -0.4655740722614194,
+    -0.07499077486335538
+   ],
+   "metric": "headroom",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.25297777970756635,
+   "without": -0.25297777970756635
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4559068138226714,
+    -0.18277845423511055
+   ],
+   "interval_without": [
+    -0.4559068138226714,
+    -0.18277845423511055
+   ],
+   "metric": "headroom",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/headroom/gbm_funding -> reachable gbm",
+   "with": -0.306538012675393,
+   "without": -0.306538012675393
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4349975726718073,
+    -0.09727198219909015
+   ],
+   "interval_without": [
+    -0.4349975726718073,
+    -0.09727198219909015
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B1 -> c_two_part_new",
+   "with": -0.25474357228164013,
+   "without": -0.25474357228164013
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5027696226648596,
+    -0.06047155168756267
+   ],
+   "interval_without": [
+    -0.5027696226648596,
+    -0.06047155168756267
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B1 -> ceiling gbm",
+   "with": -0.26039015966215656,
+   "without": -0.26039015966215656
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12932568527869998,
+    0.1086981988753674
+   ],
+   "interval_without": [
+    -0.12932568527869998,
+    0.1086981988753674
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B1 -> gbm_funding",
+   "with": -0.007412379954589635,
+   "without": -0.007412379954589635
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5207038023559095,
+    -0.13006932152286846
+   ],
+   "interval_without": [
+    -0.5207038023559095,
+    -0.13006932152286846
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B1 -> reachable gbm",
+   "with": -0.31395039262998214,
+   "without": -0.31395039262998214
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22837008358355823,
+    0.4998445027631415
+   ],
+   "interval_without": [
+    0.22837008358355823,
+    0.4998445027631415
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B2 -> c_two_part_new",
+   "with": 0.37276522696608555,
+   "without": 0.37276522696608555
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.19900073777336588,
+    0.5174474554243246
+   ],
+   "interval_without": [
+    0.19900073777336588,
+    0.5174474554243246
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B2 -> ceiling gbm",
+   "with": 0.3699425498611577,
+   "without": 0.3699425498611577
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.37392954213646845,
+    0.6046358363512407
+   ],
+   "interval_without": [
+    0.37392954213646845,
+    0.6046358363512407
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B2 -> gbm_funding",
+   "with": 0.4964038155275438,
+   "without": 0.4964038155275438
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22747601958329386,
+    0.4532204274863614
+   ],
+   "interval_without": [
+    0.22747601958329386,
+    0.4532204274863614
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/B2 -> reachable gbm",
+   "with": 0.3431682819458994,
+   "without": 0.3431682819458994
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.13303719133711234,
+    0.1264974003126329
+   ],
+   "interval_without": [
+    -0.13303719133711234,
+    0.1264974003126329
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.004500192314393182,
+   "without": -0.004500192314393182
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1514414040344011,
+    0.04957836385110824
+   ],
+   "interval_without": [
+    -0.1514414040344011,
+    0.04957836385110824
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/c_two_part_new -> reachable gbm",
+   "with": -0.04718639063492405,
+   "without": -0.04718639063492405
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4704416704711666,
+    -0.07362169678742288
+   ],
+   "interval_without": [
+    -0.4704416704711666,
+    -0.07362169678742288
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/gbm_funding -> ceiling gbm",
+   "with": -0.2511164094677593,
+   "without": -0.2511164094677593
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4586975369376891,
+    -0.18099799652434856
+   ],
+   "interval_without": [
+    -0.4586975369376891,
+    -0.18099799652434856
+   ],
+   "metric": "skill",
+   "n": 751,
+   "n_without": 751,
+   "path": "/cells/crps/regime: 2021-23/tests/gbm_funding -> reachable gbm",
+   "with": -0.30428255476591365,
+   "without": -0.30428255476591365
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.03623770596157824,
+    0.15118238684907387
+   ],
+   "interval_without": [
+    0.03623770596157824,
+    0.15118238684907387
+   ],
+   "metric": "headroom",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/headroom/c_two_part_new -> ceiling gbm",
+   "with": 0.0948615566712795,
+   "without": 0.0948615566712795
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06852946716402504,
+    0.17140521648606927
+   ],
+   "interval_without": [
+    0.06852946716402504,
+    0.17140521648606927
+   ],
+   "metric": "headroom",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/headroom/c_two_part_new -> reachable gbm",
+   "with": 0.11180342628456368,
+   "without": 0.11180342628456368
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.02084232681635884,
+    0.14628097708881413
+   ],
+   "interval_without": [
+    -0.02084232681635884,
+    0.14628097708881413
+   ],
+   "metric": "headroom",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/headroom/gbm_funding -> ceiling gbm",
+   "with": 0.08716574549293586,
+   "without": 0.08716574549293586
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.031805799525426046,
+    0.1508836782576522
+   ],
+   "interval_without": [
+    0.031805799525426046,
+    0.1508836782576522
+   ],
+   "metric": "headroom",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/headroom/gbm_funding -> reachable gbm",
+   "with": 0.10410761510622003,
+   "without": 0.10410761510622003
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.022620416515208155,
+    0.25448716564849333
+   ],
+   "interval_without": [
+    0.022620416515208155,
+    0.25448716564849333
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B1 -> c_two_part_new",
+   "with": 0.15384454816027535,
+   "without": 0.15384454816027535
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10897624392540425,
+    0.3484457848978258
+   ],
+   "interval_without": [
+    0.10897624392540425,
+    0.3484457848978258
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B1 -> ceiling gbm",
+   "with": 0.24870610483155434,
+   "without": 0.24870610483155434
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10036173634022928,
+    0.22510200877080155
+   ],
+   "interval_without": [
+    0.10036173634022928,
+    0.22510200877080155
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B1 -> gbm_funding",
+   "with": 0.161540359338619,
+   "without": 0.161540359338619
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15344583227899256,
+    0.3576415859386802
+   ],
+   "interval_without": [
+    0.15344583227899256,
+    0.3576415859386802
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B1 -> reachable gbm",
+   "with": 0.26564797444483856,
+   "without": 0.26564797444483856
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1077809059958272,
+    0.10461052536396911
+   ],
+   "interval_without": [
+    -0.1077809059958272,
+    0.10461052536396911
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B2 -> c_two_part_new",
+   "with": 0.005578464809398813,
+   "without": 0.005578464809398813
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0008644230204530496,
+    0.21986094550879404
+   ],
+   "interval_without": [
+    -0.0008644230204530496,
+    0.21986094550879404
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B2 -> ceiling gbm",
+   "with": 0.1170619689462859,
+   "without": 0.1170619689462859
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11707895534108091,
+    0.1678897389625352
+   ],
+   "interval_without": [
+    -0.11707895534108091,
+    0.1678897389625352
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B2 -> gbm_funding",
+   "with": 0.01462276080709804,
+   "without": 0.01462276080709804
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.01739346372905212,
+    0.25361240144588987
+   ],
+   "interval_without": [
+    0.01739346372905212,
+    0.25361240144588987
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/B2 -> reachable gbm",
+   "with": 0.1369724475152195,
+   "without": 0.1369724475152195
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.04137679741991479,
+    0.17207843142155893
+   ],
+   "interval_without": [
+    0.04137679741991479,
+    0.17207843142155893
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/c_two_part_new -> ceiling gbm",
+   "with": 0.11210889968862041,
+   "without": 0.11210889968862041
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08344827796203057,
+    0.18708934632612692
+   ],
+   "interval_without": [
+    0.08344827796203057,
+    0.18708934632612692
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/c_two_part_new -> reachable gbm",
+   "with": 0.13213107123694404,
+   "without": 0.13213107123694404
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.02449098514361714,
+    0.18033557219786067
+   ],
+   "interval_without": [
+    -0.02449098514361714,
+    0.18033557219786067
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/gbm_funding -> ceiling gbm",
+   "with": 0.10395938130567454,
+   "without": 0.10395938130567454
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.036675282117885455,
+    0.18755986073294603
+   ],
+   "interval_without": [
+    0.036675282117885455,
+    0.18755986073294603
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/cells/crps/regime: 2024/tests/gbm_funding -> reachable gbm",
+   "with": 0.12416532657922454,
+   "without": 0.12416532657922454
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3499478432901973,
+    -0.07704640281905245
+   ],
+   "interval_without": [
+    -0.3499478432901973,
+    -0.07704640281905245
+   ],
+   "metric": "headroom",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.21356367266885742,
+   "without": -0.21356367266885742
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.13136916925154368,
+    0.01582667863416206
+   ],
+   "interval_without": [
+    -0.13136916925154368,
+    0.01582667863416206
+   ],
+   "metric": "headroom",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.0543952037814032,
+   "without": -0.0543952037814032
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.26974892239611115,
+    0.02527675395688938
+   ],
+   "interval_without": [
+    -0.26974892239611115,
+    0.02527675395688938
+   ],
+   "metric": "headroom",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.1213736972175711,
+   "without": -0.1213736972175711
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05221594995374568,
+    0.12302299203326188
+   ],
+   "interval_without": [
+    -0.05221594995374568,
+    0.12302299203326188
+   ],
+   "metric": "headroom",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/headroom/gbm_funding -> reachable gbm",
+   "with": 0.037794771669883126,
+   "without": 0.037794771669883126
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17916414678425538,
+    0.3719501969190465
+   ],
+   "interval_without": [
+    0.17916414678425538,
+    0.3719501969190465
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B1 -> c_two_part_new",
+   "with": 0.27809351894017814,
+   "without": 0.27809351894017814
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0943248568388466,
+    0.21203061004336726
+   ],
+   "interval_without": [
+    -0.0943248568388466,
+    0.21203061004336726
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B1 -> ceiling gbm",
+   "with": 0.0645298462713214,
+   "without": 0.0645298462713214
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0993582131974115,
+    0.2647681789908626
+   ],
+   "interval_without": [
+    0.0993582131974115,
+    0.2647681789908626
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B1 -> gbm_funding",
+   "with": 0.18590354348889213,
+   "without": 0.18590354348889213
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08315744623102589,
+    0.34950610727044773
+   ],
+   "interval_without": [
+    0.08315744623102589,
+    0.34950610727044773
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B1 -> reachable gbm",
+   "with": 0.2236983151587755,
+   "without": 0.2236983151587755
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.19630576976297442,
+    0.4723361654706652
+   ],
+   "interval_without": [
+    0.19630576976297442,
+    0.4723361654706652
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B2 -> c_two_part_new",
+   "with": 0.3622942692691311,
+   "without": 0.3622942692691311
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09064355775180437,
+    0.2286772380008071
+   ],
+   "interval_without": [
+    0.09064355775180437,
+    0.2286772380008071
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B2 -> ceiling gbm",
+   "with": 0.1736399469850012,
+   "without": 0.1736399469850012
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07805651366876995,
+    0.41429915356448277
+   ],
+   "interval_without": [
+    0.07805651366876995,
+    0.41429915356448277
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B2 -> gbm_funding",
+   "with": 0.2808570233049247,
+   "without": 0.2808570233049247
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.18080016046218567,
+    0.40584215144983793
+   ],
+   "interval_without": [
+    0.18080016046218567,
+    0.40584215144983793
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/B2 -> reachable gbm",
+   "with": 0.31424353958909135,
+   "without": 0.31424353958909135
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.49185778064609,
+    -0.10415941901981138
+   ],
+   "interval_without": [
+    -0.49185778064609,
+    -0.10415941901981138
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.2958328790113188,
+   "without": -0.2958328790113188
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.17800761090902179,
+    0.022318520724678104
+   ],
+   "interval_without": [
+    -0.17800761090902179,
+    0.022318520724678104
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/c_two_part_new -> reachable gbm",
+   "with": -0.0753493772511169,
+   "without": -0.0753493772511169
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3329132901353678,
+    0.030711491454143303
+   ],
+   "interval_without": [
+    -0.3329132901353678,
+    0.030711491454143303
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/gbm_funding -> ceiling gbm",
+   "with": -0.14909006942215416,
+   "without": -0.14909006942215416
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06373936338528756,
+    0.15338221652363815
+   ],
+   "interval_without": [
+    -0.06373936338528756,
+    0.15338221652363815
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/cells/crps/regime: 2025-26/tests/gbm_funding -> reachable gbm",
+   "with": 0.046425422156800365,
+   "without": 0.046425422156800365
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.13769650525740607,
+    -0.04201274443886363
+   ],
+   "interval_without": [
+    -0.14853858502607087,
+    -0.04674422202633719
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.08470947391564335,
+   "without": -0.10101601554745449
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11983686535880365,
+    -0.034200642302647306
+   ],
+   "interval_without": [
+    -0.12574875681640046,
+    -0.0452900795897862
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.060003128436255,
+   "without": -0.07296477109098694
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0709640156106636,
+    0.027890795873601774
+   ],
+   "interval_without": [
+    -0.0826783527362092,
+    0.03044484521438539
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.028195946897381606,
+   "without": -0.03136764027407786
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05330541942842357,
+    0.03545815408727374
+   ],
+   "interval_without": [
+    -0.06398942422005821,
+    0.038770620125498166
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/headroom/gbm_funding -> reachable gbm",
+   "with": -0.003489601417993255,
+   "without": -0.0033163958176103173
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2722734929923625,
+    0.5367140533015788
+   ],
+   "interval_without": [
+    0.20719914521855284,
+    0.4290836920405563
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B1 -> c_two_part_new",
+   "with": 0.4182918420513864,
+   "without": 0.29803996866466054
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17186251375091616,
+    0.4600984990410733
+   ],
+   "interval_without": [
+    0.1005825536386432,
+    0.34889213669183744
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B1 -> ceiling gbm",
+   "with": 0.3335823681357421,
+   "without": 0.19702395311720505
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.20059130117456841,
+    0.486194204215753
+   ],
+   "interval_without": [
+    0.15014231552767476,
+    0.345978333143352
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B1 -> gbm_funding",
+   "with": 0.361778315033123,
+   "without": 0.2283915933912822
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.18150327384185796,
+    0.48624147357539915
+   ],
+   "interval_without": [
+    0.12996409711712592,
+    0.3474605548701221
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B1 -> reachable gbm",
+   "with": 0.35828871361513087,
+   "without": 0.22507519757367203
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16216850503297056,
+    0.4600759923430742
+   ],
+   "interval_without": [
+    0.15839117796011437,
+    0.46515406539835463
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B2 -> c_two_part_new",
+   "with": 0.2874404816652619,
+   "without": 0.2876299456205316
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.043745560707880125,
+    0.38425024463219537
+   ],
+   "interval_without": [
+    0.04190834619285034,
+    0.3942176354825995
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B2 -> ceiling gbm",
+   "with": 0.18367617802444527,
+   "without": 0.1851158689260988
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09270324907615612,
+    0.391681336703577
+   ],
+   "interval_without": [
+    0.08674232917263258,
+    0.40594622121881874
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B2 -> gbm_funding",
+   "with": 0.21821461463678554,
+   "without": 0.21694868932940878
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10027185092839386,
+    0.36586253678825215
+   ],
+   "interval_without": [
+    0.09584062815326619,
+    0.3729289339547765
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/B2 -> reachable gbm",
+   "with": 0.2139400507139513,
+   "without": 0.21358311157074278
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.23265602136654928,
+    -0.07248748431150777
+   ],
+   "interval_without": [
+    -0.23188059468108146,
+    -0.06814780933916408
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.14562194591592229,
+   "without": -0.14390565137347186
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.19359369562304252,
+    -0.06073359706369183
+   ],
+   "interval_without": [
+    -0.19724639085246828,
+    -0.06325943163726666
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/c_two_part_new -> reachable gbm",
+   "with": -0.10314988300637977,
+   "without": -0.1039443384720734
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11083802335178862,
+    0.04094770637558447
+   ],
+   "interval_without": [
+    -0.11112332597111557,
+    0.04160053371620172
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/gbm_funding -> ceiling gbm",
+   "with": -0.04417892334517654,
+   "without": -0.04065227906463669
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08035034352133981,
+    0.05263754162393796
+   ],
+   "interval_without": [
+    -0.08945563799603767,
+    0.05113675616557103
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, all targets/tests/gbm_funding -> reachable gbm",
+   "with": -0.005467694846774729,
+   "without": -0.00429802966013019
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16136628826132232,
+    -0.04002176095777157
+   ],
+   "interval_without": [
+    -0.21988831293695918,
+    -0.03959898130401119
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/headroom/c_two_part_new -> ceiling gbm",
+   "with": -0.10533237227386655,
+   "without": -0.13591278771186832
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.14410037010765248,
+    -0.03422383503886127
+   ],
+   "interval_without": [
+    -0.17019463099967586,
+    -0.04548878009050688
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/headroom/c_two_part_new -> reachable gbm",
+   "with": -0.07320641140128731,
+   "without": -0.09651011227269209
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12764787978907496,
+    0.02389749462180217
+   ],
+   "interval_without": [
+    -0.17535242470363316,
+    0.02946258017364044
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/headroom/gbm_funding -> ceiling gbm",
+   "with": -0.06261921951031824,
+   "without": -0.07813973512004485
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08834018290675348,
+    0.012840610537978837
+   ],
+   "interval_without": [
+    -0.10796673202865202,
+    0.015201659597245329
+   ],
+   "metric": "headroom",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/headroom/gbm_funding -> reachable gbm",
+   "with": -0.030493258637738992,
+   "without": -0.03873705968086862
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.34725022986991616,
+    0.6982683034205598
+   ],
+   "interval_without": [
+    0.3292663958711054,
+    0.5150692040774053
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B1 -> c_two_part_new",
+   "with": 0.558775129178867,
+   "without": 0.4253492709458561
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2241905317094534,
+    0.6082719708029635
+   ],
+   "interval_without": [
+    0.17249092858167595,
+    0.4143008034120907
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B1 -> ceiling gbm",
+   "with": 0.4534427569049988,
+   "without": 0.28943648323398774
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2914426791476836,
+    0.6651702073311992
+   ],
+   "interval_without": [
+    0.2822591821690086,
+    0.4499666554483928
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B1 -> gbm_funding",
+   "with": 0.5160619764153166,
+   "without": 0.36757621835403137
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2361444070144872,
+    0.6428939404220583
+   ],
+   "interval_without": [
+    0.2109861298774551,
+    0.4221718887075072
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B1 -> reachable gbm",
+   "with": 0.48556871777757743,
+   "without": 0.3288391586731606
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2215263780114393,
+    0.4372928981799309
+   ],
+   "interval_without": [
+    0.22377770644920783,
+    0.44076818975639276
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B2 -> c_two_part_new",
+   "with": 0.3296706190441642,
+   "without": 0.33034964169336606
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.000982089549174783,
+    0.3418006507299448
+   ],
+   "interval_without": [
+    0.0018260505726100191,
+    0.3533145556275303
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B2 -> ceiling gbm",
+   "with": 0.16964477152213464,
+   "without": 0.17196813726282043
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1385465179409527,
+    0.38258881952105483
+   ],
+   "interval_without": [
+    0.14122111683016692,
+    0.38024362341643514
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B2 -> gbm_funding",
+   "with": 0.2647788073079456,
+   "without": 0.2630257118477316
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12446532044558774,
+    0.30268887830790236
+   ],
+   "interval_without": [
+    0.12236880769517534,
+    0.303390757232243
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/B2 -> reachable gbm",
+   "with": 0.21845202806741645,
+   "without": 0.2178847512894186
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.39708803741067233,
+    -0.07806476427735977
+   ],
+   "interval_without": [
+    -0.4081099103639593,
+    -0.06829208206790502
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/c_two_part_new -> ceiling gbm",
+   "with": -0.23872718706413826,
+   "without": -0.23651373058479683
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.30060770438740675,
+    -0.07309741472951788
+   ],
+   "interval_without": [
+    -0.30644275712890173,
+    -0.07428092074463066
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/c_two_part_new -> reachable gbm",
+   "with": -0.16591633029445998,
+   "without": -0.16794568838631355
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2905103002872601,
+    0.0402366618906389
+   ],
+   "interval_without": [
+    -0.28801199102047076,
+    0.04597866806049174
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/gbm_funding -> ceiling gbm",
+   "with": -0.1293951218101797,
+   "without": -0.12355597209939644
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16822430802284907,
+    0.022332446858701338
+   ],
+   "interval_without": [
+    -0.17111871146123162,
+    0.02379670810664799
+   ],
+   "metric": "skill",
+   "n": 1598,
+   "n_without": 1597,
+   "path": "/cells/twcrps/pooled, ordinary targets/tests/gbm_funding -> reachable gbm",
+   "with": -0.0630106690354006,
+   "without": -0.0612517441707393
+  }
+ ]
+}

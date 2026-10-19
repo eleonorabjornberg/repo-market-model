@@ -1,0 +1,127 @@
+{
+ "amended": {
+  "125": 2.5476176053580666,
+  "250": 1.3467953558970605
+ },
+ "cells": {
+  "B1 (walk days)|full|125": {
+   "amended": 0.03685,
+   "earlier": 0.0054,
+   "mean_d": 0.21190960199236475,
+   "series_days": 1868
+  },
+  "B1 (walk days)|full|250": {
+   "amended": 0.255,
+   "earlier": 0.0547,
+   "mean_d": 0.21190960199236475,
+   "series_days": 1868
+  },
+  "B1 (walk days)|post-2020-04|125": {
+   "amended": 0.00745,
+   "earlier": 0.00065,
+   "mean_d": 0.5729583107676368,
+   "series_days": 1429
+  },
+  "B1 (walk days)|post-2020-04|250": {
+   "amended": 0.09835,
+   "earlier": 0.00855,
+   "mean_d": 0.5729583107676368,
+   "series_days": 1429
+  },
+  "B1 (walk days)|without 2019-09-18|125": {
+   "amended": 0.01445,
+   "earlier": 0.0014,
+   "mean_d": 0.3677140821126652,
+   "series_days": 1867
+  },
+  "B1 (walk days)|without 2019-09-18|250": {
+   "amended": 0.13195,
+   "earlier": 0.01675,
+   "mean_d": 0.3677140821126652,
+   "series_days": 1867
+  },
+  "B1|full|125": {
+   "amended": 0.0345,
+   "earlier": 0.0056,
+   "mean_d": 0.19905238927664237,
+   "series_days": 2037
+  },
+  "B1|full|250": {
+   "amended": 0.24555,
+   "earlier": 0.04825,
+   "mean_d": 0.19905238927664237,
+   "series_days": 2037
+  },
+  "B1|post-2020-04|125": {
+   "amended": 0.008,
+   "earlier": 0.00055,
+   "mean_d": 0.5183854859335023,
+   "series_days": 1598
+  },
+  "B1|post-2020-04|250": {
+   "amended": 0.0992,
+   "earlier": 0.00745,
+   "mean_d": 0.5183854859335023,
+   "series_days": 1598
+  },
+  "B1|without 2019-09-18|125": {
+   "amended": 0.0139,
+   "earlier": 0.002,
+   "mean_d": 0.34191786431194965,
+   "series_days": 2036
+  },
+  "B1|without 2019-09-18|250": {
+   "amended": 0.1359,
+   "earlier": 0.01685,
+   "mean_d": 0.34191786431194965,
+   "series_days": 2036
+  },
+  "gbm_funding|full|125": {
+   "amended": 0.00635,
+   "earlier": 0.0008,
+   "mean_d": 0.688214666887948,
+   "series_days": 1868
+  },
+  "gbm_funding|full|250": {
+   "amended": 0.09585,
+   "earlier": 0.0085,
+   "mean_d": 0.688214666887948,
+   "series_days": 1868
+  },
+  "gbm_funding|post-2020-04|125": {
+   "amended": 0.0057,
+   "earlier": 0.0004,
+   "mean_d": 0.7249751412061376,
+   "series_days": 1429
+  },
+  "gbm_funding|post-2020-04|250": {
+   "amended": 0.0916,
+   "earlier": 0.0076,
+   "mean_d": 0.7249751412061376,
+   "series_days": 1429
+  },
+  "gbm_funding|without 2019-09-18|125": {
+   "amended": 0.006,
+   "earlier": 0.0005,
+   "mean_d": 0.6868124155878566,
+   "series_days": 1867
+  },
+  "gbm_funding|without 2019-09-18|250": {
+   "amended": 0.09585,
+   "earlier": 0.0071,
+   "mean_d": 0.6868124155878566,
+   "series_days": 1867
+  }
+ },
+ "earlier": {
+  "125": 3.419438620805254,
+  "250": 2.425730476113518
+ },
+ "gbm_funding_missing": {
+  "missing_days": 0,
+  "missing_share": 0.0
+ },
+ "post_2020_first_decision_day": "2020-04-03",
+ "seed": 1,
+ "windows": 20000
+}
