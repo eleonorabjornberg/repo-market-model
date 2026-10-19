@@ -1276,3 +1276,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H5] step 4 · eleonorabjornberg/repo-market-model#977
+- Directive: #964
+- Step: 4 (input attribution for `gbm_funding`: permutation importance, partial dependence and one-sigma shocks, by regime and lead; scopes #951's follow-up)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `fb8acae5`; seed 964; declaration `metadata/gbm_attribution_964.json` (committed before any score); `gbm_funding` as declared in `metadata/spread_distribution_634.json`, unchanged
+- Tried: the script, tests and declaration are in; the walks are long and run on Eleonora's Mac (#46). Variants: 0 (a measurement, no candidate).
+- Result: not yet run (needs-mac); no figure exists. The Mac results commit replaces this line.
+- Against kill: not assessed until the walks have run; development data gives no verdict.
+- Next: the results commit on this branch fills the page and this entry; whether the inputs are regime-coded decides whether the relative encodings of Lens D become the next declared variant.
