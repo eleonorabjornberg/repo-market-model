@@ -27,6 +27,8 @@ from repo_model.dvp_segment import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+#: `contract.FEATURE_FIELDS` before any test switches a column on.
+PUBLISHED_FEATURES = frozenset(contract.FEATURE_FIELDS)
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text())
 
 
@@ -447,3 +449,149 @@ class ClassifyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OfrClearedLagTests(unittest.TestCase):
+    """DVP and GCF are read one business day after their date, at 15:00 (#968, of #958 Lens E).
+
+    The OFR's data-release page states: "The preliminary release is published daily at 3 p.m.",
+    "Data for centrally cleared repo markets are generally made available with a one-day lag" and
+    "Data for tri-party repo are generally made available with a two-day lag". #187 declared all three
+    at 16:00 two business days after the date, because the API states no publication time; for the
+    cleared segments that read them a day staler than SOFR (no leak: the conservative side). The
+    measurement source `ofr_stfm_repo_cleared` (`metadata/sources_measurement.json`) declares the
+    preliminary DVP and GCF rates at 15:00 one business day after; tri-party stays two days, in
+    `ofr_stfm_repo_segments`. At the 16:00 decision on Wednesday 21 January 2026, Tuesday's rate is the
+    latest public one, as SOFR's is; at a 14:00 decision it is not.
+
+    Written red first: before the source was declared, `InformationRule` raised `RegistryContractError`
+    (the registry declares no source 'ofr_stfm_repo_cleared') and every test but the registry one errored.
+
+    Recorded mutation (CLAUDE.md), 19 October 2026, in a disposable copy: `metadata/sources_measurement.json`,
+    `ofr_stfm_repo_cleared.release_lag`, `"available_time": "15:00"` mutated to `"13:00"` (a rate public two
+    hours before the page's stated release). `test_a_rate_is_refused_before_the_page_releases_it` then fails
+    with `AssertionError` (`datetime.date(2026, 1, 20) != datetime.date(2026, 1, 19)`): the 14:00 decision
+    reads Tuesday's rate, a day the declared 15:00 does not let it see, and the other three timing tests
+    and the declaration test fail with it.
+    """
+
+    FEATURES = ("spread_bps", "ofr_dvp_rate_1d")
+
+    def setUp(self):
+        from repo_model import measurement_fields
+
+        self.registry = measurement_fields.load_registry()
+        fields = {**dvp_segment.COLUMN_FIELDS, **dvp_segment.CLEARED_COLUMN_FIELDS}
+        switch = mock.patch.multiple(
+            contract,
+            FEATURE_FIELDS=MappingProxyType({**contract.FEATURE_FIELDS, **fields}),
+            FEATURE_SOURCES=MappingProxyType(
+                {
+                    **contract.FEATURE_SOURCES,
+                    **{c: tuple(sorted({s for s, _f in pairs})) for c, pairs in fields.items()},
+                }
+            ),
+        )
+        switch.start()
+        self.addCleanup(switch.stop)
+        self.dates = weekdays(date(2026, 1, 5), 20)
+
+    def rule(self, hour=16, features=None):
+        return InformationRule(
+            self.registry, features or self.FEATURES, decision_time=time(hour, 0), horizon=1
+        )
+
+    def read(self, rule, feature):
+        thursday = self.dates.index(date(2026, 1, 22))  # decision Wed 21st
+        info = rule.information_set(self.dates, thursday)
+        (read,) = [r for r in info.reads if r.feature == feature]
+        return rule, info, read
+
+    def test_the_declaration_is_one_day_at_3_pm_and_the_tri_party_stays_two_days(self):
+        cleared = self.registry[dvp_segment.OFR_CLEARED_SOURCE_ID]
+        lag = cleared["release_lag"]
+        self.assertEqual((lag["days"], lag["available_time"], lag["unit"]), (1, "15:00", "business_days"))
+        self.assertEqual(
+            sorted(cleared["fields"]), ["REPO-DVP_AR_OO-P", "REPO-GCF_AR_OO-P"],
+            "only the preliminary rates: the final series and the volumes are not declared at the page's release",
+        )
+        self.assertEqual(contract.validate_release_lag(dvp_segment.OFR_CLEARED_SOURCE_ID, lag), [])
+        for sentence in (
+            "The preliminary release is published daily at 3 p.m.",
+            "generally made available with a one-day lag",
+            "generally made available with a two-day lag",
+        ):
+            self.assertIn(sentence, json.dumps(cleared["availability_provenance"]))
+        tri = self.registry["ofr_stfm_repo_segments"]["release_lag"]
+        self.assertEqual((tri["days"], tri["available_time"]), (2, "16:00"))
+        self.assertEqual(self.registry["ofr_stfm_repo"]["release_lag"]["days"], 2)
+
+    def test_the_cleared_source_stays_out_of_the_frozen_registry(self):
+        self.assertNotIn(dvp_segment.OFR_CLEARED_SOURCE_ID, REGISTRY)
+        self.assertNotIn(dvp_segment.OFR_CLEARED_SOURCE_ID, contract.UNMODELLED_SOURCES)
+
+    def test_tuesdays_rate_is_the_latest_read_at_wednesdays_decision(self):
+        rule, info, read = self.read(self.rule(), "ofr_dvp_rate_1d")
+        self.assertEqual(self.dates[read.row], date(2026, 1, 20))
+        self.assertEqual(read.available_at, datetime(2026, 1, 21, 15, 0))
+        rule.check(self.dates, info)
+
+    def test_the_spread_column_is_read_with_its_bgcr_leg(self):
+        """`ofr_dvp_minus_bgcr_bp_1d` is available when its later leg is: the rate at 15:00, BGCR at its own instant."""
+
+        rule, info, read = self.read(
+            self.rule(features=("spread_bps", "ofr_dvp_minus_bgcr_bp_1d")), "ofr_dvp_minus_bgcr_bp_1d"
+        )
+        rate = rule.availability(self.dates, dvp_segment.CLEARED_COLUMN_FIELDS["ofr_dvp_rate_1d"], read.row)
+        self.assertEqual(rate, datetime(2026, 1, 21, 15, 0))
+        self.assertGreaterEqual(read.available_at, rate)
+        self.assertLessEqual(read.available_at, info.decision_instant)
+        rule.check(self.dates, info)
+
+    def test_the_declared_two_day_column_still_reads_a_day_earlier(self):
+        _rule, _info, read = self.read(self.rule(features=("spread_bps", "ofr_dvp_minus_bgcr_bp")), "ofr_dvp_minus_bgcr_bp")
+        self.assertEqual(self.dates[read.row], date(2026, 1, 19))
+
+    def test_a_rate_is_refused_before_the_page_releases_it(self):
+        """The leakage test: at a 14:00 decision Tuesday's rate (public at 15:00 on Wednesday) is not read."""
+
+        rule, info, read = self.read(self.rule(hour=14), "ofr_dvp_rate_1d")
+        self.assertEqual(self.dates[read.row], date(2026, 1, 19))
+        tuesday = self.dates.index(date(2026, 1, 20))
+        self.assertGreater(
+            rule.availability(self.dates, dvp_segment.CLEARED_COLUMN_FIELDS["ofr_dvp_rate_1d"], tuesday),
+            info.decision_instant,
+        )
+        forced = info._replace(
+            reads=tuple(
+                r._replace(row=tuesday) if r.feature == "ofr_dvp_rate_1d" else r for r in info.reads
+            )
+        )
+        with self.assertRaises(LookAheadError):
+            rule.check(self.dates, forced)
+
+    def test_the_gcf_and_rate_columns_are_declared_on_the_cleared_source(self):
+        for column, pairs in dvp_segment.CLEARED_COLUMN_FIELDS.items():
+            self.assertTrue(column.startswith("ofr_"), column)
+            for source, field in pairs:
+                self.assertIn(field, self.registry[source]["fields"], column)
+            self.assertNotIn(column, PUBLISHED_FEATURES)
+        self.assertEqual(
+            dvp_segment.CLEARED_COLUMN_FIELDS["ofr_gcf_rate_1d"],
+            ((dvp_segment.OFR_CLEARED_SOURCE_ID, "REPO-GCF_AR_OO-P"),),
+        )
+
+    def test_the_one_day_columns_copy_the_two_day_values_and_stay_blank_before_real_time(self):
+        rows = [
+            DailyObservation(date(2020, 9, 8), {"ofr_dvp_rate": None, "ofr_gcf_rate": None, "bgcr": 0.1}),
+            DailyObservation(date(2020, 9, 9), {"ofr_dvp_rate": 0.12, "ofr_gcf_rate": 0.13, "bgcr": 0.1}),
+        ]
+        out = dvp_segment.add_cleared_columns(dvp_segment.build_columns(rows))
+        self.assertIsNone(out[0].values["ofr_dvp_minus_bgcr_bp_1d"])
+        self.assertEqual(out[1].values["ofr_dvp_minus_bgcr_bp_1d"], out[1].values["ofr_dvp_minus_bgcr_bp"])
+        self.assertEqual(out[1].values["ofr_dvp_rate_1d"], 0.12)
+        self.assertEqual(out[1].values["ofr_gcf_rate_1d"], 0.13)
+        tainted = [DailyObservation(date(2020, 9, 8), {"ofr_dvp_rate": 0.12, "ofr_gcf_rate": 0.13, "bgcr": 0.1})]
+        blanked = dvp_segment.add_cleared_columns(dvp_segment.build_columns(tainted))
+        self.assertIsNone(blanked[0].values["ofr_dvp_rate_1d"])
+        self.assertIsNone(blanked[0].values["ofr_gcf_rate_1d"])
