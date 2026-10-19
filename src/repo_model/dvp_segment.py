@@ -90,6 +90,8 @@ from .splits import LookAheadError
 
 __all__ = [
     "CANDIDATES",
+    "CLEARED_COLUMN_FIELDS",
+    "CORRECTED_LAG_RUNS",
     "COLUMN_FIELDS",
     "Candidate",
     "FAMILY_LEVEL",
@@ -97,6 +99,7 @@ __all__ = [
     "Group",
     "MIN_SURVIVING_HORIZONS",
     "OFR_DVP_RATE_FIELD",
+    "OFR_CLEARED_SOURCE_ID",
     "OFR_REAL_TIME_START",
     "OFR_SOURCE_ID",
     "OFR_WINDOW",
@@ -105,6 +108,7 @@ __all__ = [
     "SENSITIVITIES",
     "STRESS_REGIMES",
     "VOLUME_CHANGE_ROWS",
+    "add_cleared_columns",
     "blank_ofr_before_real_time",
     "build_columns",
     "classify",
@@ -268,6 +272,38 @@ COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
     "ofr_dvp_minus_bgcr_bp_backfill": (_OFR_RATE, _BGCR),
 }
 
+#: The measurement source that declares the OFR's cleared-repo preliminary rates at the data-release page's
+#: stated lag, one business day at 15:00 (#968, `metadata/sources_measurement.json`). `OFR_SOURCE_ID` and
+#: `ofr_stfm_repo_segments` keep #187's conservative two days, so no record already scored changes.
+OFR_CLEARED_SOURCE_ID = "ofr_stfm_repo_cleared"
+_CLEARED_RATE = (OFR_CLEARED_SOURCE_ID, OFR_DVP_RATE_FIELD)
+_CLEARED_GCF_RATE = (OFR_CLEARED_SOURCE_ID, "REPO-GCF_AR_OO-P")
+
+#: Corrected-lag copies (suffix `_1d`) of the three cleared-repo columns, each with the same values as its
+#: two-day original and read a day earlier. **Off**, like `COLUMN_FIELDS`; a source screen or a scoring
+#: script switches them on, and they are built by `add_cleared_columns`.
+CLEARED_COLUMN_FIELDS: Mapping[str, Tuple[Tuple[str, str], ...]] = {
+    "ofr_dvp_rate_1d": (_CLEARED_RATE,),
+    "ofr_dvp_minus_bgcr_bp_1d": (_CLEARED_RATE, _BGCR),
+    "ofr_gcf_rate_1d": (_CLEARED_GCF_RATE,),
+}
+#: The two-day column each corrected-lag column copies.
+_CLEARED_FROM = {
+    "ofr_dvp_rate_1d": "ofr_dvp_rate",
+    "ofr_dvp_minus_bgcr_bp_1d": "ofr_dvp_minus_bgcr_bp",
+    "ofr_gcf_rate_1d": "ofr_gcf_rate",
+}
+
+
+#: Runs of #968: a group read at the corrected lag, `{run name: (group, ((group column, corrected column), ...))}`.
+#: Information only, like a sensitivity: outside the family above, and the two-day group is its control.
+CORRECTED_LAG_RUNS: Mapping[str, Tuple[str, Tuple[Tuple[str, str], ...]]] = {
+    "ofr_dvp_minus_bgcr_bp@1d": (
+        "ofr_dvp_minus_bgcr_bp",
+        (("ofr_dvp_minus_bgcr_bp", "ofr_dvp_minus_bgcr_bp_1d"),),
+    ),
+}
+
 
 def _get(row: DailyObservation, column: str) -> Optional[float]:
     value = row.values.get(column)
@@ -306,6 +342,25 @@ def build_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
         spread = None if rate is None or bgcr is None else float(round((rate - bgcr) * 100.0))
         values["ofr_dvp_minus_bgcr_bp_backfill"] = spread
         values["ofr_dvp_minus_bgcr_bp"] = None if row.date < OFR_REAL_TIME_START else spread
+        out.append(DailyObservation(row.date, values))
+    return out
+
+
+def add_cleared_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
+    """`rows` with each `CLEARED_COLUMN_FIELDS` column copied from its two-day original (#968).
+
+    The value is the original's, so the only difference between the two readings is when the as-of rule
+    lets a forecast see it. A column is `None` on every row dated before `OFR_REAL_TIME_START`, whatever
+    the original holds. A column whose original is not on the rows is not added. Run it after
+    `build_columns`. The input rows are not changed.
+    """
+
+    out: List[DailyObservation] = []
+    for row in rows:
+        values: Dict[str, Optional[float]] = dict(row.values)
+        for column, original in _CLEARED_FROM.items():
+            if original in row.values:
+                values[column] = None if row.date < OFR_REAL_TIME_START else _get(row, original)
         out.append(DailyObservation(row.date, values))
     return out
 

@@ -1356,3 +1356,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: month-end 114 events (20.4 a year), tax date 71 (12.5), coupon settlement 186 (32.8); quarter-end 22 (4.2), too few to test. `gbm_funding` and `spread_mr_ctx` beat B2 on all three tested strata with the one-sided 95% bounds above zero, and neither is clear of B1 on any. The ACF of d between consecutive events is 0.5 to 0.7 at lag 1 against B2 and 0.0 to 0.5 against B1. Detail in `docs/research/contiguous-calibration-963-result.md`.
 - Against kill: no CRPS or MAE skill against as-of persistence and a risk-date calendar benchmark on those days is not tested here (B1 is the persistence-type benchmark; the calendar benchmark is B2, which both candidates beat); development data, never a verdict.
 - Next: whether H6 is registered ahead of H5 is Eleonora's decision; nothing published or registered moves.
+
+### 2026-10-19 [H3] step 1 · eleonorabjornberg/repo-market-model#988
+- Directive: #968
+- Step: 1 (screening; the lag at which the OFR's cleared-repo series are readable, Lens E of #958)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `f46cfc57…`; base `b008b564`
+- Tried: the OFR's DVP and GCF preliminary rates declared at one business day, 15:00 (the page's statement), beside #187's two days, 16:00, in a new measurement source; the #478 source screen with each column at both lags in one run, and #187's paired Brier and CRPS test for `ofr_dvp_minus_bgcr_bp` at both lags. Variants: 1 (the lag).
+- Result: no change. The DVP rate minus BGCR keeps its pooled Spearman with the +5 bp indicator at lead 1 (+0.175 declared, +0.177 stated; rank 16 and 20 of 62; pre-onset AUC 0.784 and 0.762), and the paired test is "no effect" at both lags with no paired Brier difference moving by more than 0.00011.
+- Against kill: not applicable (no verdict; development data); the directive's kill, a change in the screen's verdict, did not occur.
+- Next: whether any OFR series joins a published declaration, and whether the records' columns move to the stated lag, are Eleonora's; the #629 matrix needs re-declaring on main's panel.
