@@ -595,3 +595,17 @@ class OfrClearedLagTests(unittest.TestCase):
         blanked = dvp_segment.add_cleared_columns(dvp_segment.build_columns(tainted))
         self.assertIsNone(blanked[0].values["ofr_dvp_rate_1d"])
         self.assertIsNone(blanked[0].values["ofr_gcf_rate_1d"])
+
+    def test_a_column_whose_original_is_not_on_the_rows_is_not_added(self):
+        rows = [DailyObservation(date(2020, 9, 9), {"ofr_dvp_rate": 0.12, "bgcr": 0.1})]
+        out = dvp_segment.add_cleared_columns(dvp_segment.build_columns(rows))
+        self.assertIn("ofr_dvp_rate_1d", out[0].values)
+        self.assertNotIn("ofr_gcf_rate_1d", out[0].values)
+
+    def test_the_corrected_lag_run_swaps_only_the_ofr_column(self):
+        (name, (group, replaces)), = dvp_segment.CORRECTED_LAG_RUNS.items()
+        self.assertEqual(name, group + "@1d")
+        self.assertIn(group, [g.name for g in GROUPS])
+        self.assertEqual(replaces, ((group, group + "_1d"),))
+        self.assertIn(group + "_1d", dvp_segment.CLEARED_COLUMN_FIELDS)
+        self.assertNotIn(name, [s.name for s in dvp_segment.SENSITIVITIES], "outside #187's declared sensitivities")

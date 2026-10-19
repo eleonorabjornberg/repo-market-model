@@ -91,6 +91,7 @@ from .splits import LookAheadError
 __all__ = [
     "CANDIDATES",
     "CLEARED_COLUMN_FIELDS",
+    "CORRECTED_LAG_RUNS",
     "COLUMN_FIELDS",
     "Candidate",
     "FAMILY_LEVEL",
@@ -294,6 +295,16 @@ _CLEARED_FROM = {
 }
 
 
+#: Runs of #968: a group read at the corrected lag, `{run name: (group, ((group column, corrected column), ...))}`.
+#: Information only, like a sensitivity: outside the family above, and the two-day group is its control.
+CORRECTED_LAG_RUNS: Mapping[str, Tuple[str, Tuple[Tuple[str, str], ...]]] = {
+    "ofr_dvp_minus_bgcr_bp@1d": (
+        "ofr_dvp_minus_bgcr_bp",
+        (("ofr_dvp_minus_bgcr_bp", "ofr_dvp_minus_bgcr_bp_1d"),),
+    ),
+}
+
+
 def _get(row: DailyObservation, column: str) -> Optional[float]:
     value = row.values.get(column)
     return None if value is None else float(value)
@@ -340,15 +351,16 @@ def add_cleared_columns(rows: Sequence[DailyObservation]) -> List[DailyObservati
 
     The value is the original's, so the only difference between the two readings is when the as-of rule
     lets a forecast see it. A column is `None` on every row dated before `OFR_REAL_TIME_START`, whatever
-    the original holds, and where the original is absent. Run it after `build_columns`. The input rows
-    are not changed.
+    the original holds. A column whose original is not on the rows is not added. Run it after
+    `build_columns`. The input rows are not changed.
     """
 
     out: List[DailyObservation] = []
     for row in rows:
         values: Dict[str, Optional[float]] = dict(row.values)
         for column, original in _CLEARED_FROM.items():
-            values[column] = None if row.date < OFR_REAL_TIME_START else _get(row, original)
+            if original in row.values:
+                values[column] = None if row.date < OFR_REAL_TIME_START else _get(row, original)
         out.append(DailyObservation(row.date, values))
     return out
 

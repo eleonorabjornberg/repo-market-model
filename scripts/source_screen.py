@@ -177,6 +177,7 @@ def switched_on_fields() -> Dict[str, Tuple[Tuple[str, str], ...]]:
         fed_liquidity.ALL_COLUMN_FIELDS,
         nowcast.COLUMN_FIELDS,
         dvp_segment.COLUMN_FIELDS,
+        dvp_segment.CLEARED_COLUMN_FIELDS,
         early_warning.COLUMN_FIELDS,
     ):
         for column, fields in module_fields.items():
@@ -300,17 +301,23 @@ def panel_command(args) -> int:
                     raise ValueError(f"{column!r} differs between the panels on {row.date}")
         elif column not in columns:
             columns.append(column)
+    merged: List[DailyObservation] = []
+    for row in keep:
+        values: Dict[str, Optional[float]] = {}
+        for column in columns:
+            value = row.values[column] if column in row.values else extra_values[column].get(row.date)
+            if column.startswith("ofr_") and row.date < dvp_segment.OFR_REAL_TIME_START:
+                value = None  # filled in after the OFR published in real time (#508, #522)
+            values[column] = value
+        merged.append(DailyObservation(row.date, values))
+    # The corrected-lag copies of the cleared-repo columns (#968), identical in value to their two-day originals.
+    merged = dvp_segment.add_cleared_columns(merged)
+    columns += [c for c in dvp_segment.CLEARED_COLUMN_FIELDS if c not in columns]
     with args.output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["date"] + columns)
-        for row in keep:
-            out = []
-            for column in columns:
-                value = row.values[column] if column in row.values else extra_values[column].get(row.date)
-                if column.startswith("ofr_") and row.date < dvp_segment.OFR_REAL_TIME_START:
-                    value = None  # filled in after the OFR published in real time (#508, #522)
-                out.append(_cell(value))
-            writer.writerow([row.date.isoformat()] + out)
+        for row in merged:
+            writer.writerow([row.date.isoformat()] + [_cell(row.values[column]) for column in columns])
     print(json.dumps({"rows": len(keep), "columns": len(columns), "last": keep[-1].date.isoformat()}))
     return 0
 
