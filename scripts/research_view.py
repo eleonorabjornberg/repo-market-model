@@ -9,6 +9,7 @@ Read by `scripts/emit_visual.py`. Everything shown is parsed from tracked source
 - `docs/research/milestones.json`: the two facts no other source holds, which milestones are done (each with the
   tracked file that shows it and the merged pull request) and each hypothesis's phase on the plan's six-step scale.
   A log entry's step is the step of the hypothesis's own manual, so it never sets the phase.
+- `docs/research/taglines.json`: each hypothesis's one plain-language line, the only part of it shown unfolded (#893).
 
 Nothing is typed into the page. A figure with no source reads "not measured"; a figure from development days
 carries the label `DEV_LABEL`. Standard library only.
@@ -29,7 +30,8 @@ PLAN = "docs/research/plan.md"
 LOG = "docs/research/log.md"
 PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
-INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES)
+TAGLINES = "docs/research/taglines.json"
+INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES)
 
 DEV_LABEL = "development, not a verdict"
 NOT_MEASURED = "not measured"
@@ -164,12 +166,19 @@ def load(repo):
     progress = json.loads(read(repo, PROGRESS))
     log = parse_log_entries(read(repo, LOG))
     done = progress.get("milestones", {})
+    taglines = json.loads(read(repo, TAGLINES)).get("taglines", {})
+    stray = sorted(set(taglines) - {entry["id"] for entry in plan})
+    if stray:
+        raise ResearchError(f"{TAGLINES}: {stray} are not hypotheses of the plan")
     for key, item in done.items():
         if not (Path(repo) / item["evidence"]).exists():
             raise ResearchError(f"{PROGRESS}: {key} cites {item['evidence']}, which is not tracked")
     hypotheses = []
     for entry in plan:
         hid = entry["id"]
+        tagline = str(taglines.get(hid, "")).strip()
+        if not tagline or not lay(tagline) or lay(tagline) != tagline:
+            raise ResearchError(f"{TAGLINES}: {hid} has no tagline, or its tagline cites an issue")
         manual = parse_manual(hid, read(repo, f"{HYPOTHESES}/{hid}.md"))
         known = {f"{hid}.{mid}" for mid, _ in manual["milestones"]}
         stray = sorted(k for k in done if k.startswith(hid + ".") and k not in known)
@@ -183,7 +192,7 @@ def load(repo):
         status_text = (bullet(entry, "status") or "").split(".")[0].strip().lower()
         status = status_text.split(",")[0]
         hypotheses.append({
-            "id": hid, "role": entry["role"], "title": entry["title"], "plan": entry["bullets"], "status_text": status_text,
+            "id": hid, "role": entry["role"], "title": entry["title"], "tagline": tagline, "plan": entry["bullets"], "status_text": status_text,
             "manual": manual, "log": entries, "step": step, "manual_step": manual_step, "status": status,
             "done": {mid for mid, _ in manual["milestones"] if f"{hid}.{mid}" in done},
             "evidence": {mid: done[f"{hid}.{mid}"]["evidence"] for mid, _ in manual["milestones"]
@@ -250,60 +259,91 @@ def first_open(h):
     return None
 
 
+def joined(items):
+    """"a", "a and b", "a, b and c"."""
+    items = list(items)
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def ref(h):
+    return f'<a href="#{h["id"].lower()}">{h["id"]}</a>'
+
+
+def lowered(tagline):
+    """A tagline as a clause inside a sentence: no closing stop, a lower-case first word unless it is a name."""
+    text = tagline.rstrip(".")
+    first = text.split(" ", 1)[0]
+    return text if (first.isupper() and len(first) > 1) or any(c.isdigit() for c in first) else text[:1].lower() + text[1:]
+
+
 def summary_html(hypotheses, links):
-    goals = [h for h in hypotheses if h["role"]]
-    goal_items = "".join(
-        f'<li><b>{esc(h["role"].capitalize())} goal, {h["id"]}.</b> {inline(h["title"])}</li>'
-        for h in sorted(goals, key=lambda h: h["role"] != "primary"))
-    rows = "".join(
-        f'<tr><th scope="row"><a href="#{h["id"].lower()}">{h["id"]}</a></th>'
-        f'<td data-label="Step">{h["step"]} of {len(STEPS)}: {STEPS[h["step"] - 1]}</td>'
-        f'<td data-label="Status">{esc(h["status_text"] or "open")}</td></tr>'
-        for h in hypotheses)
+    """The executive summary as an abstract (#893): prose, the goals and every hypothesis named in running text.
+
+    No table and no list: where each hypothesis stands is in its own fold in section 2.
+    """
+    goals = sorted((h for h in hypotheses if h["role"]), key=lambda h: h["role"] != "primary")
+    others = [h for h in hypotheses if not h["role"]]
+    goal_text = " ".join(
+        f'<b>{esc(h["role"].capitalize())} goal</b> ({ref(h)}): {inline(lowered(h["tagline"]))}.' for h in goals)
     reached = verdicts(hypotheses)
-    verdict_text = ("none yet" if not reached else "; ".join(f'{h["id"]}: {esc(h["status"])}' for h in reached))
-    next_items = []
-    for h in sorted(goals, key=lambda h: h["role"] != "primary"):
+    verdict_text = ("none yet" if not reached else "; ".join(f'{ref(h)}, {esc(h["status"])}' for h in reached))
+    nexts = {}
+    for h in goals:
         opened = next((l for l in links if h["id"] in l["gates"] and not l["done"]), None)
         if opened:
-            next_items.append(
-                f'<li><b>{h["id"]}</b>, {opened["id"]} ({opened["milestone"]}): {inline(opened["text"])} '
-                f'Waits on: {inline(opened["waits"])}</li>')
+            nexts.setdefault(opened["id"], (opened, []))[1].append(h["id"])
+    next_text = " ".join(
+        f'For {"both goals" if len(gated) == len(goals) > 1 else joined(gated)} it is {link["id"]} '
+        f'({link["milestone"]}), {inline(lowered(link["text"]))}, which waits on {inline(link["waits"].rstrip("."))}.'
+        for link, gated in nexts.values())
     return (
-        '<div class="rs-box"><h3>The two goals</h3><ul>' + goal_items + '</ul></div>'
-        '<div class="rs-box"><h3>Where each hypothesis stands</h3>'
-        '<table class="rs-table" aria-label="Hypotheses by step"><thead><tr><th scope="col">Hypothesis</th>'
-        '<th scope="col">Step</th><th scope="col">Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        f'<div class="rs-box"><h3>Verdicts reached</h3><p>{verdict_text}. A verdict needs prospective confirmation '
-        'days; development data never gives one '
+        '<div class="abstract">'
+        '<p>This study forecasts the overnight cost of borrowing cash against U.S. Treasuries, measured as SOFR '
+        f'minus the Fed&rsquo;s rate on reserves, and asks what drives it. It has two goals. {goal_text} '
+        f'{joined([ref(h) for h in others])} support those goals or follow from them; section 2 gives each one '
+        'line, with its step, tests and milestones folded beneath it.</p>'
+        f'<p><b>Verdicts reached:</b> {verdict_text}. A verdict needs prospective confirmation days; development '
+        'data never gives one '
         '(<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/scoring-protocol.md">'
-        'scoring protocol v1</a>).</p></div>'
-        '<div class="rs-box"><h3>Next on the critical path</h3><ul>' + "".join(next_items) + '</ul>'
-        '<p class="rs-note">Each line is the first link of the plan&rsquo;s &ldquo;Critical path&rdquo; section that '
-        'gates the goal and whose milestone is not marked done in <code>docs/research/milestones.json</code>.</p></div>')
+        'scoring protocol v1</a>). Every figure from development days below is marked '
+        f'&ldquo;{esc(DEV_LABEL)}&rdquo;. <b>Next on the critical path.</b> {next_text}</p>'
+        '<p class="rs-note">The next link is the first in the plan&rsquo;s &ldquo;Critical path&rdquo; section that '
+        'gates the goal and whose milestone is not marked done in <code>docs/research/milestones.json</code>.</p>'
+        '</div>')
 
 
 def best_html(final):
     """The incumbent and the development leader (#645 §2). `final` is the page's final-test payload."""
     figs = (f'On the {final["days"]} days {final["first"]} to {final["last"]} the published declaration scored '
-            f'{final["published"]:.2f} bp mean CRPS at h = 1, as that record scores it (not the protocol\u2019s '
+            f'{final["published"]:.2f} bp mean CRPS at h = 1, as that record scores it (not the protocol’s '
             f'grid CRPS), against {final["persistence"]:.2f} bp for as-of persistence '
             f'(edge {final["mean"]:+.2f} bp, {final["level"]}% interval {final["lower"]:+.2f} to '
             f'{final["upper"]:+.2f}).')
+    callouts = (
+        f'<div class="callouts side"><aside class="callout" aria-label="Key figure: the incumbent&rsquo;s edge">'
+        f'<span class="big">{final["mean"]:+.2f}<small>bp</small></span>'
+        f'<span class="cap">The published declaration&rsquo;s edge in mean CRPS over as-of persistence at h = 1, on '
+        f'{final["days"]} days; {final["level"]}% interval {final["lower"]:+.2f} to {final["upper"]:+.2f}.</span>'
+        f'<span class="rs-tag">{esc(DEV_LABEL)}</span></aside>'
+        f'<aside class="callout" aria-label="Key figure: the incumbent&rsquo;s score">'
+        f'<span class="big">{final["published"]:.2f}<small>bp against {final["persistence"]:.2f}</small></span>'
+        f'<span class="cap">Mean CRPS at h = 1 of the published declaration and of as-of persistence, as that record '
+        f'scores it; lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span></aside></div>')
     return (
-        '<p class="rs-lede">No candidate is registered under the scoring protocol yet, so the incumbent stands: '
+        '<p class="lede">No candidate is registered under the scoring protocol yet, so the incumbent stands: '
         'the published v1 funding declaration, which the protocol uses as its benchmark B3.</p>'
-        '<div class="rs-box"><h3>Incumbent: published v1 funding declaration</h3>'
-        f'<p>{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span></p>'
-        f'<p class="rs-note">From the published record <code>{esc(final["record"])}</code>, read by the final-test '
-        'chapter below; this page scores nothing itself.</p></div>'
-        '<div class="rs-box"><h3>Development leader</h3>'
-        f'<p>{NOT_MEASURED}: no committed evidence names one by the protocol&rsquo;s primary score (grid CRPS over '
-        f'h = 1&ndash;5). When one does, it appears here beside the incumbent, labelled '
-        f'&ldquo;{esc(DEV_LABEL)}&rdquo;.</p></div>'
-        '<p class="rs-note rs-q"><b>Question for Eleonora.</b> The default rule shown here is the best registered '
+        + callouts +
+        '<p><span class="runin">The incumbent.</span> '
+        f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span></p>'
+        '<p><span class="runin">The development leader.</span> '
+        f'<span class="rs-nm">{NOT_MEASURED}</span>: no committed evidence names one by the protocol&rsquo;s primary '
+        'score (grid CRPS over h = 1&ndash;5). When one does, it appears here beside the incumbent, labelled '
+        f'&ldquo;{esc(DEV_LABEL)}&rdquo;.</p>'
+        f'<p class="rs-note">The incumbent&rsquo;s figures are from the published record <code>{esc(final["record"])}</code>, '
+        'read by the final-test section below; this page scores nothing itself.</p>'
+        '<aside class="rs-q"><b>Question for Eleonora.</b> The default rule shown here is the best registered '
         'candidate under the protocol, else the incumbent, with the development leader beside it. It stands until '
-        'she rules.</p>')
+        'she rules.</aside>')
 
 
 def log_html(h):
@@ -326,6 +366,7 @@ def row(label, text):
 
 
 def hypothesis_html(h):
+    """One hypothesis (#893): one line, its id and tagline, over a native <details> fold holding all the rest."""
     m, p = h["manual"], h["plan"]
     goal = p.get("target") or p.get("targets")
     open_questions = p.get("open questions")
@@ -339,9 +380,12 @@ def hypothesis_html(h):
     markers = "".join(f'<li>{inline(x)}: <span class="rs-nm">{NOT_MEASURED}</span></li>' for x in m["markers"]) \
         or f'<li>{NOT_MEASURED}</li>'
     role = f' <span class="rs-tag">{esc(h["role"])} goal</span>' if h["role"] else ""
+    hid = h["id"].lower()
     return (
-        f'<article class="rs-h" id="{h["id"].lower()}" aria-labelledby="{h["id"].lower()}-t">'
-        f'<h3 id="{h["id"].lower()}-t">{h["id"]}. {inline(h["title"])}{role}</h3>'
+        f'<article class="rs-h" id="{hid}" aria-labelledby="{hid}-t">'
+        f'<details class="rs-fold"><summary><span class="rs-id" id="{hid}-t">{h["id"]}</span> '
+        f'<span class="rs-line">{inline(h["tagline"])}</span></summary>'
+        f'<div class="rs-body"><p class="rs-title"><span class="runin">In the plan.</span> {inline(h["title"])}.{role}</p>'
         f'<dl><dt>Question</dt><dd>{inline(m["question"])}</dd>'
         + row("Goal", goal) + row("Open questions", open_questions) + row("Test", tests)
         + f'<dt>Kill criterion</dt><dd>{inline(kill[:1].upper() + kill[1:])}</dd>'
@@ -352,10 +396,19 @@ def hypothesis_html(h):
         f'<dt>Progress markers</dt><dd><ul>{markers}</ul></dd>'
         f'<dt>Development variants</dt><dd><span class="rs-nm">{NOT_MEASURED}</span> '
         f'(the running count belongs to the progress page, which is not built yet)</dd>'
-        f'</dl><details><summary>Research log for {h["id"]}</summary>{log_html(h)}</details></article>')
+        f'</dl><details class="rs-logfold"><summary>Research log for {h["id"]}</summary>{log_html(h)}</details>'
+        f'</div></details></article>')
 
 
 BLOB = f"https://github.com/{REPOSITORY}/blob/main/"
+
+
+def steps_html():
+    """The plan's six steps, for the margin beside the hypotheses (#893)."""
+    return ('<aside class="side sidenote" aria-label="The six steps"><p class="label">The six steps</p><ol>'
+            + "".join(f"<li>{esc(step)}</li>" for step in STEPS)
+            + '</ol><p>Development is on past days and never gives a verdict; confirmation is on days still to come.</p>'
+            '</aside>')
 
 
 def hypotheses_html(hypotheses):
@@ -364,7 +417,7 @@ def hypotheses_html(hypotheses):
 
 def payload(hypotheses):
     """The page's research data, for `docs/visual/data/research.json`."""
-    return [{"id": h["id"], "role": h["role"], "title": h["title"], "step": h["step"], "status": h["status"],
+    return [{"id": h["id"], "role": h["role"], "title": h["title"], "tagline": h["tagline"], "step": h["step"], "status": h["status"],
              "question": h["manual"]["question"], "owner": h["manual"]["owner"],
              "milestones": [{"id": mid, "text": text, "done": mid in h["done"],
                              "evidence": h["evidence"].get(mid)} for mid, text in h["manual"]["milestones"]],
@@ -377,4 +430,5 @@ def fills(repo, final):
     hypotheses = load(repo)
     links = load_critical_path(repo, hypotheses)
     return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final),
+            "research_steps": steps_html(),
             "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)
