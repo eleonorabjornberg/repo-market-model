@@ -1212,3 +1212,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: every commit rebuilds identically twice, so there is no nondeterminism and the digests differ by code drift: the first step that moves is `net_settlement` (#679, #738). `92bf10a4…` is the chain at `2c9bd283` and `400372d6…` the chain at `38a00d81`; H2's `08df8d19…` is not reproduced at its own commit, which gives `1e5b748a…`.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
+
+### 2026-10-18 [H5] step 3 · eleonorabjornberg/repo-market-model#920
+- Directive: #912
+- Step: 3 (correction to #844's result page; no new run)
+- Tier: development
+- Pins: published panel unchanged; base `41eed02e`
+- Tried: the result page of #844 pointed at `docs/pivot/evidence/ordinary-day-p5-844/`, which does not exist; it now points at `docs/pivot/ordinary-day-p5-844/`, which holds `report.md` and `score.json`. The recorded mutation of `require_scored_days` now carries the import it needs. Variants: 0.
+- Result: one path changes on the page; no figure moves and nothing is scored. The result is development data, not a verdict.
+- Against kill: not applicable (no verdict; development data).
+- Next: H5 step 3, as queued.
