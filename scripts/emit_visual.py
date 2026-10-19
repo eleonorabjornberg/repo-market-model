@@ -188,6 +188,7 @@ INPUTS = (
     "docs/research/log.md",
     "docs/research/milestones.json",
     "docs/research/hypotheses",
+    "docs/research/taglines.json",
     USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",
@@ -3452,7 +3453,7 @@ def generate(repo, commit=None):
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
     research_provenance = dict(provenance, inputs={
         rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.LOG, research_view.PROGRESS,
-                                            *sorted(str(p.relative_to(repo)) for p in
+                                            research_view.TAGLINES, *sorted(str(p.relative_to(repo)) for p in
                                                     (repo / research_view.HYPOTHESES).glob("H*.md")))},
         incumbent_from=f"{DATA_DIR}/final_test.json")
     daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})

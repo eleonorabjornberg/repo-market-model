@@ -1,0 +1,15 @@
+{
+  "about": "One plain-language line per hypothesis, shown on the results page above its folded details (#893). Each restates the hypothesis heading in docs/research/plan.md and adds nothing to it; the plan decides. Draft by the orchestrating session for Eleonora's review. scripts/research_view.py refuses a plan hypothesis without a line here, and a line for a hypothesis the plan does not have.",
+  "taglines": {
+    "H1": "The scorer puts forecasts of known quality in the right order.",
+    "H2": "The data already held carries signal for the spread and for pressure on ordinary days.",
+    "H3": "New public data adds signal.",
+    "H4": "A longer history fixes part of the 2018–19 misses.",
+    "H5": "A forecast of the whole range of the SOFR − IORB spread, in basis points, beats the phase 2 models and the yes-or-no pressure forecasts.",
+    "H6": "The spread on known risk dates, such as settlements, tax days and month- and quarter-ends, can be forecast.",
+    "H7": "Reserve scarcity can be tracked directly, as a slow-moving state.",
+    "H8": "For desks, ranking the next 20 business days by risk beats calibrating probabilities.",
+    "H9": "Richer targets, such as the SOFR tail, other repo rates and take-up at the Fed's facilities, hold more signal a model can learn.",
+    "H10": "Each pressure episode can be traced to its drivers."
+  }
+}
