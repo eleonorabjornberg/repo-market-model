@@ -182,8 +182,12 @@ class TestTradeTests(unittest.TestCase):
     (the old floor back). `test_the_dates_the_finding_lists_keep_their_take_up` then fails with
     `AssertionError` (`0.0 != 0.015`: 2024-09-23 reads as no take-up).
 
-    The Standing Repo Facility total `srf_total_accepted` (`ingest._nyfed_srf_rows`) feeds the results page
-    and is not changed here (#787 applies whichever rule lands).
+    The Standing Repo Facility total `srf_total_accepted` (`ingest._nyfed_srf_rows`) reads the same rule per
+    operation (#787, Eleonora's ruling of 15 October 2026): a test trade adds nothing, and its date keeps a row
+    at zero. Recorded mutation (CLAUDE.md), 17 October 2026, in a disposable copy: `src/repo_model/ingest.py`,
+    `_nyfed_srf_rows`, `totals.get(ref_date, 0) + _effective_accepted(accepted)` mutated to
+    `totals.get(ref_date, 0) + accepted` (the $1 mn test trade counted again).
+    `test_the_srf_total_reads_the_test_trade_rule` then fails with `AssertionError` (`0.001 != 0.0`).
     """
 
     def test_a_test_trade_is_at_most_seven_million_dollars(self):
@@ -228,6 +232,36 @@ class TestTradeTests(unittest.TestCase):
         self.assertAlmostEqual(rows["repo_accepted"][date(2025, 9, 10)].value, 0.009)
         self.assertEqual(rows["repo_ops_accepting"][date(2025, 9, 10)].value, 1.0)
         self.assertAlmostEqual(rows["repo_rate"][date(2025, 9, 10)].value, 4.20)
+
+    def test_the_srf_total_reads_the_test_trade_rule(self):
+        operations = [
+            operation("2025-10-08", 1_000_000),
+            operation("2025-10-09", 7_000_000),
+            operation("2025-10-10", 8_000_000),
+            operation("2025-10-14", 7_500_000),
+            operation("2025-10-15", 1_000_000),
+            operation("2025-10-15", 2 * BN),
+            operation("2025-10-16", 61_000_000, note="Small Value Exercise (SVE)"),
+        ]
+        payload = json.dumps({"repo": {"operations": operations}}).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "srf.json"
+            path.write_bytes(payload)
+            artifact = SnapshotArtifact(
+                source_id=ingest.NYFED_SRF_SOURCE_ID,
+                path=path,
+                retrieved_at="2026-10-08T20:51:05+00:00",
+                sha256=hashlib.sha256(payload).hexdigest(),
+                url=ingest.NYFED_RP_RESULTS_URL,
+                byte_count=len(payload),
+            )
+            rows = {row.ref_date: row.value for row in ingest._nyfed_srf_rows(artifact, payload)}
+        self.assertEqual(rows[date(2025, 10, 8)], 0.0)
+        self.assertEqual(rows[date(2025, 10, 9)], 0.0)
+        self.assertAlmostEqual(rows[date(2025, 10, 10)], 0.008)
+        self.assertAlmostEqual(rows[date(2025, 10, 14)], 0.0075)
+        self.assertAlmostEqual(rows[date(2025, 10, 15)], 2.0)
+        self.assertNotIn(date(2025, 10, 16), rows)
 
     def test_the_dates_the_finding_lists_keep_their_take_up(self):
         series = fed_liquidity.series_from_snapshots(SNAPSHOTS, datetime(2026, 9, 8, 21, 31, 42, tzinfo=ZoneInfo("UTC")))

@@ -1,0 +1,29 @@
+{
+  "status": "declared before any diagnostic score was computed (#865, H5, the candidate's construction): a scratch measurement, not a record. Nothing is published, nothing is registered, no rule changes, the declared candidate stays one-step gbm_funding (Eleonora's ruling on #825), no published model and no published figure moves, no day after 2025-12-31 is read, and no day of a locked tier is scored (docs/decisions/lockbox.md). Development days give a score and an interval, never a verdict (scoring protocol v1, #46).",
+  "issue": 865,
+  "hypothesis": "H5 (primary goal), the candidate's construction: why does gbm_funding fitted on direct pairs (the twin of #449) score below the same model fitted on one-step pairs?",
+  "rulings": [
+    "Eleonora, 17 October 2026 (#865, written by the orchestrating session): triage, diagnose and, where it is a defect, remedy; add no variant to any published declaration; the declared candidate stays one-step gbm_funding",
+    "Eleonora, 17 October 2026 (comment on #825, relayed by the orchestrating session): the declared candidate stays one-step gbm_funding; the twin's shortfall is to be triaged, diagnosed and, if it is a defect, remedied in a separate directive"
+  ],
+  "reference": "the walks of metadata/direct_twin_449.json, re-walked here with that script's commands on the same published panel: gbm_funding (one-step pairs) and gbm_funding_direct (direct pairs at the lead of the walk), leads 1 to 5. They are re-run so that the half-year table is computed on them; their pooled and per-lead skill must reproduce docs/research/direct-twin-449/score.json to the digit, and the score refuses to run otherwise",
+  "triage": "the arms are compared in the report by reading code: inputs and their lags, the as-of rule per lead, the training window, the refit grid, the target alignment, hyper-parameters, seeds and the quantile grid; each difference is reported as intended, unintended or unclear, with the file and line it is read from",
+  "arms": {
+    "train_k": "gbm_funding_direct_k: direct pairs, as the twin, but the training pairs are paired by an as-of rule of horizon k (a training target is paired with the read k + 1 business days before it, not h + 1), served at the lead h exactly as the control and the twin are. k = h is the twin; k < h trains on fresher pairs than it serves. The point is the training lag alone: nothing else changes (same features, same fit, same seed, same fold grid, same serving rule). Arms: lead 3 with k = 1 and k = 2; lead 5 with k = 1 and k = 3",
+    "control_trim": "gbm_funding_trim: the control (one-step pairs, training_pairs unset) fitted on the frame without its first h + 3 rows, so that its training targets are exactly the twin's (the twin trains no pair for the first h + 3 targets, which have no as-of read; read from ml._direct_pairs). Lead 5 only. Tests the training-sample difference alone"
+  },
+  "scale": {
+    "metric": "grid CRPS in bp (twice the mean pinball loss over the 23 levels of protocol v1), one number per decision day and lead (repo_model.scoring_protocol.grid_crps)",
+    "difference": "d = S(reference) - S(arm); skill = mean(d) / mean(S(reference)); positive favours the arm. Every arm is paired against the control and against the twin at its lead; the gap closed is mean(S(twin) - S(arm)) / mean(S(twin) - S(control)), reported only where the twin scores worse than the control (1 means the arm is the control)",
+    "interval": "the protocol's studentized stationary bootstrap (scoring_protocol.paired_tests): mean block 10, seed 865, one-sided 95%, 10,000 draws on pooled and per-lead figures, 2,000 on the regime, day-type and half-year splits; Diebold-Mariano with Newey-West lag 10 beside it",
+    "missing": "a missing lead takes B1's law (scoring_protocol.fill_missing), the share reported"
+  },
+  "locate": "the shortfall of the twin against the control, by lead, by regime of the decision day (evaluation_splits.json), by pressure-day type of the target day and by calendar half-year of the decision day, on all decision days and without decision day 2019-09-18 (#798); a split with fewer than 30 decision days is too thin and carries no interval",
+  "alignment_check": "named decision days (2019-09-17, 2020-03-16, 2021-12-31, 2023-03-13, 2025-12-12) at every lead: the twin's lead-h training pair for target d + h reads only what was public at d (asof.InformationRule.check), the anchor is h + 1 business days before the target, and the control's serving read is the same read",
+  "remedy_rule": "a defect is a difference that is unintended and whose removal closes the gap with a whole interval above 0 of its skill over the twin. If none is found, the shortfall is reported as real, with the evidence. Whether a fix changes which model is the better candidate is Eleonora's, asked as a marked question in the pull request",
+  "reading_rule": "none: nothing here is a verdict and nothing registers",
+  "checks": {
+    "lookahead": "a day after 2025-12-31 raises LookAheadError (twin_diagnosis_865.require_study_window) and the scorer's lockbox guard (require_unlocked) refuses a locked day",
+    "variant_count": "four train_k arms and one control_trim arm; nothing tuned, nothing else changed; none joins a published declaration"
+  }
+}

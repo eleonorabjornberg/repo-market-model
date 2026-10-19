@@ -5,8 +5,9 @@ Decided by Eleonora on 12 October 2026 and taken from the top block of the queue
 made. A change to it after the pull request that adds it is hers, or is a ruling she has relayed (cite the
 ruling).
 
-The log is [`log.md`](log.md). Each hypothesis has a manual in [`hypotheses/`](hypotheses/). The check that keeps
-the plan, the log and the result pages in step is `scripts/check_research_log.py` (run in CI).
+The log is [`log.md`](log.md), a generated page assembled from one file per entry under [`log/`](log/) (#866; to
+add an entry, add a file, as that page's header says). Each hypothesis has a manual in [`hypotheses/`](hypotheses/).
+The check that keeps the plan, the log and the result pages in step is `scripts/check_research_log.py` (run in CI).
 
 ## Order
 
@@ -89,7 +90,7 @@ queued" have no first directive yet.
 ## H8. Ranking beats calibrating for desk use
 
 - **Target:** rank the next 20 business days by risk, scored on top-k precision and recall against climatology and persistence.
-- **Test:** [#694](https://github.com/eleonorabjornberg/repo-market-model/issues/694) (step 1, development).
+- **Test:** [#694](https://github.com/eleonorabjornberg/repo-market-model/issues/694) (step 1, development) and [#765](https://github.com/eleonorabjornberg/repo-market-model/issues/765) (step 2, development: tail probability combined with the day type).
 - **Kill:** no ranking skill beyond the calendar of known risk dates.
 - **Status:** open. Manual: [`hypotheses/H8.md`](hypotheses/H8.md).
 

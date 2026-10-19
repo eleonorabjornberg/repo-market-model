@@ -926,6 +926,10 @@ class DecisionInstantGuardTests(unittest.TestCase):
     `test_a_later_day_is_refused` and `test_an_earlier_day_is_refused` then raise
     `DecisionInstantGuardTests.Past` (the run went on to its first git call)
     instead of the `ValueError`. Restored, all green.
+
+    **Recorded mutation** (#806), 15 October 2026: the cut-off guard added beside it, `if now >= cutoff_at:`,
+    replaced by `if False:` (confirmed applied by grep). `test_the_last_minute_of_the_day_is_refused_up_front`
+    then errored on both subtests with `DecisionInstantGuardTests.Past` instead of the `ValueError`. Restored, all green.
     """
 
     DAY = date(2026, 10, 7)
@@ -969,8 +973,16 @@ class DecisionInstantGuardTests(unittest.TestCase):
     def test_the_instant_and_after_pass_the_guard(self):
         with tempfile.TemporaryDirectory() as tmp:
             for at in (datetime(2026, 10, 7, 16, 0, tzinfo=live.EASTERN),
-                       datetime(2026, 10, 7, 23, 59, tzinfo=live.EASTERN)):
+                       datetime(2026, 10, 7, 23, 58, 59, tzinfo=live.EASTERN)):
                 with self.subTest(at=at), self.assertRaises(self.Past):
+                    self._run(at, tmp)
+
+    def test_the_last_minute_of_the_day_is_refused_up_front(self):
+        """#806: the protocol block refuses from 23:59 ET (#740), so the run must not start in that minute."""
+        with tempfile.TemporaryDirectory() as tmp:
+            for at in (datetime(2026, 10, 7, 23, 59, tzinfo=live.EASTERN),
+                       datetime(2026, 10, 7, 23, 59, 59, tzinfo=live.EASTERN)):
+                with self.subTest(at=at), self.assertRaisesRegex(ValueError, "cut-off"):
                     self._run(at, tmp)
 
     def test_a_dry_run_is_not_held_to_the_clock(self):

@@ -1,0 +1,7169 @@
+{
+ "name": "761",
+ "reproduction": {
+  "max_abs_difference": 6.106226635438361e-16,
+  "max_abs_difference_words": 0.0,
+  "not_in_the_tracked_file": 0,
+  "records_compared": 421,
+  "words": []
+ },
+ "rows": [
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2339374473607234,
+    0.5301751014912597
+   ],
+   "interval_without": [
+    0.2339374473607234,
+    0.5301751014912597
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/B1_recentred/B1",
+   "with": 0.361986588867138,
+   "without": 0.361986588867138
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.14923488385780592,
+    0.3972498388245195
+   ],
+   "interval_without": [
+    0.14923488385780592,
+    0.3972498388245195
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/B1_recentred/B2",
+   "with": 0.27890598509116504,
+   "without": 0.27890598509116504
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24585327946613694,
+    0.552251620251973
+   ],
+   "interval_without": [
+    0.24585327946613694,
+    0.552251620251973
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.36084486529413545,
+   "without": 0.36084486529413545
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15897311446211862,
+    0.4085793318067319
+   ],
+   "interval_without": [
+    0.15897311446211862,
+    0.4085793318067319
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.27761558896342414,
+   "without": 0.27761558896342414
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.017812366315267274,
+    0.09067694679240981
+   ],
+   "interval_without": [
+    -0.017812366315267274,
+    0.09067694679240981
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.028965045238063397,
+   "without": 0.028965045238063397
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2436004884592996,
+    0.5303000561482576
+   ],
+   "interval_without": [
+    0.2436004884592996,
+    0.5303000561482576
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.35563447986693125,
+   "without": 0.35563447986693125
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15693708499202533,
+    0.39189286300951803
+   ],
+   "interval_without": [
+    0.15693708499202533,
+    0.39189286300951803
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.271726719417165,
+   "without": 0.271726719417165
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0010925563637828907,
+    0.035235719249545314
+   ],
+   "interval_without": [
+    0.0010925563637828907,
+    0.035235719249545314
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.021049179272399413,
+   "without": 0.021049179272399413
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.25607613453694844,
+    0.563627751505966
+   ],
+   "interval_without": [
+    0.25607613453694844,
+    0.563627751505966
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.372401437210093,
+   "without": 0.372401437210093
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17372613285448707,
+    0.41951766545375
+   ],
+   "interval_without": [
+    0.17372613285448707,
+    0.41951766545375
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2906770304567369,
+   "without": 0.2906770304567369
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0075635412687486275,
+    0.11624392047412554
+   ],
+   "interval_without": [
+    -0.0075635412687486275,
+    0.11624392047412554
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.046522340295669935,
+   "without": 0.046522340295669935
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22902424029989377,
+    0.528944553011105
+   ],
+   "interval_without": [
+    0.22902424029989377,
+    0.528944553011105
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.3417794781007006,
+   "without": 0.3417794781007006
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.13336368187584619,
+    0.37892502399888894
+   ],
+   "interval_without": [
+    0.13336368187584619,
+    0.37892502399888894
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.25606755195164016,
+   "without": 0.25606755195164016
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.32168783511791643,
+    0.6097546992289321
+   ],
+   "interval_without": [
+    0.32168783511791643,
+    0.6097546992289321
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.49121570309443596,
+   "without": 0.49121570309443596
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0027690720792675205,
+    0.392981663723197
+   ],
+   "interval_without": [
+    0.0027690720792675205,
+    0.392981663723197
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.19175796273285164,
+   "without": 0.19175796273285164
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.3283125714604328,
+    0.6671995356592746
+   ],
+   "interval_without": [
+    0.3283125714604328,
+    0.6671995356592746
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.49393082059180066,
+   "without": 0.49393082059180066
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08107398937560548,
+    0.29080120051419095
+   ],
+   "interval_without": [
+    0.08107398937560548,
+    0.29080120051419095
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.19607113063295528,
+   "without": 0.19607113063295528
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07055417298570679,
+    0.41083921788555067
+   ],
+   "interval_without": [
+    -0.07055417298570679,
+    0.41083921788555067
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.07452374686247895,
+   "without": 0.07452374686247895
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.34415038679433135,
+    0.5965541812598864
+   ],
+   "interval_without": [
+    0.34415038679433135,
+    0.5965541812598864
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.4684199780017607,
+   "without": 0.4684199780017607
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.053439100754332045,
+    0.3194920013798328
+   ],
+   "interval_without": [
+    0.053439100754332045,
+    0.3194920013798328
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.15554524272175196,
+   "without": 0.15554524272175196
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.02091652146102559,
+    0.05851311258186178
+   ],
+   "interval_without": [
+    -0.02091652146102559,
+    0.05851311258186178
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.027870680492737863,
+   "without": 0.027870680492737863
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.3309060699680014,
+    0.6808336438484811
+   ],
+   "interval_without": [
+    0.3309060699680014,
+    0.6808336438484811
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.5087165841421178,
+   "without": 0.5087165841421178
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09123897017335794,
+    0.32566218632473865
+   ],
+   "interval_without": [
+    0.09123897017335794,
+    0.32566218632473865
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2195594256277926,
+   "without": 0.2195594256277926
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06489726776064401,
+    0.4172701757085019
+   ],
+   "interval_without": [
+    -0.06489726776064401,
+    0.4172701757085019
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.10156327743876699,
+   "without": 0.10156327743876699
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.3403099665700161,
+    0.5905849402135283
+   ],
+   "interval_without": [
+    0.3403099665700161,
+    0.5905849402135283
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.45317972482541885,
+   "without": 0.45317972482541885
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.011772038499850215,
+    0.2907200697040644
+   ],
+   "interval_without": [
+    0.011772038499850215,
+    0.2907200697040644
+   ],
+   "metric": "skill",
+   "n": 149,
+   "n_without": 149,
+   "path": "/groups/anchor_day_type/month_end/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.13133495684887678,
+   "without": 0.13133495684887678
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.04847821321871426,
+    0.16876726732669434
+   ],
+   "interval_without": [
+    0.04847821321871426,
+    0.16876726732669434
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.10381122745153941,
+   "without": 0.10381122745153941
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.19258083963570494,
+    0.3749405330574349
+   ],
+   "interval_without": [
+    0.19258083963570494,
+    0.3749405330574349
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.2927953025942812,
+   "without": 0.2927953025942812
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06139079572849576,
+    0.025000802540244702
+   ],
+   "interval_without": [
+    -0.06139079572849576,
+    0.025000802540244702
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.00943386523546998,
+   "without": -0.00943386523546998
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0879872719271944,
+    0.1840594931063264
+   ],
+   "interval_without": [
+    0.0879872719271944,
+    0.1840594931063264
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.12774024582089247,
+   "without": 0.12774024582089247
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21185104036031285,
+    0.4006135545396292
+   ],
+   "interval_without": [
+    0.21185104036031285,
+    0.4006135545396292
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.31167828206633197,
+   "without": 0.31167828206633197
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0021674912297805753,
+    0.0330846482485723
+   ],
+   "interval_without": [
+    0.0021674912297805753,
+    0.0330846482485723
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.017518895437014986,
+   "without": 0.017518895437014986
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.061040170767479335,
+    0.17715390124502442
+   ],
+   "interval_without": [
+    0.061040170767479335,
+    0.17715390124502442
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.11490034131386205,
+   "without": 0.11490034131386205
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2097699436408133,
+    0.3792428241898308
+   ],
+   "interval_without": [
+    0.2097699436408133,
+    0.3792428241898308
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.3015459962580739,
+   "without": 0.3015459962580739
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05093029521688841,
+    0.03945048248011183
+   ],
+   "interval_without": [
+    -0.05093029521688841,
+    0.03945048248011183
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.00305650220826544,
+   "without": 0.00305650220826544
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07189382752095669,
+    0.17074475536750916
+   ],
+   "interval_without": [
+    0.07189382752095669,
+    0.17074475536750916
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.1121867381183933,
+   "without": 0.1121867381183933
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.18979569107371597,
+    0.39398149717915887
+   ],
+   "interval_without": [
+    0.18979569107371597,
+    0.39398149717915887
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.2994046249471244,
+   "without": 0.2994046249471244
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.051793175966036956,
+    0.2593925488880559
+   ],
+   "interval_without": [
+    0.051793175966036956,
+    0.2593925488880559
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.14463185698680225,
+   "without": 0.14463185698680225
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.050773686752585215,
+    0.2904957929041305
+   ],
+   "interval_without": [
+    0.050773686752585215,
+    0.2904957929041305
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.1757034942180333,
+   "without": 0.1757034942180333
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08140492045893481,
+    0.022179823557032276
+   ],
+   "interval_without": [
+    -0.08140492045893481,
+    0.022179823557032276
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.014707125460444283,
+   "without": -0.014707125460444283
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10789162319066622,
+    0.2817113367901895
+   ],
+   "interval_without": [
+    0.10789162319066622,
+    0.2817113367901895
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.17767565306332142,
+   "without": 0.17767565306332142
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08215024434567611,
+    0.33825905963339276
+   ],
+   "interval_without": [
+    0.08215024434567611,
+    0.33825905963339276
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.20754695935772918,
+   "without": 0.20754695935772918
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0010705282000447285,
+    0.046154882781341375
+   ],
+   "interval_without": [
+    0.0010705282000447285,
+    0.046154882781341375
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.024492107764434768,
+   "without": 0.024492107764434768
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07588968632167667,
+    0.26629184041802023
+   ],
+   "interval_without": [
+    0.07588968632167667,
+    0.26629184041802023
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.16020427972955723,
+   "without": 0.16020427972955723
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08190995878875786,
+    0.30078333124527745
+   ],
+   "interval_without": [
+    0.08190995878875786,
+    0.30078333124527745
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.19071024161476702,
+   "without": 0.19071024161476702
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06849497511175062,
+    0.04907935075381448
+   ],
+   "interval_without": [
+    -0.06849497511175062,
+    0.04907935075381448
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.003766146483132398,
+   "without": 0.003766146483132398
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07431434612383463,
+    0.27378385090659324
+   ],
+   "interval_without": [
+    0.07431434612383463,
+    0.27378385090659324
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.157029529456535,
+   "without": 0.157029529456535
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.04538167443046051,
+    0.3276114259375832
+   ],
+   "interval_without": [
+    0.04538167443046051,
+    0.3276114259375832
+   ],
+   "metric": "skill",
+   "n": 1588,
+   "n_without": 1588,
+   "path": "/groups/anchor_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.18765081559082905,
+   "without": 0.18765081559082905
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.34838848864854505,
+    1.4736892967519177
+   ],
+   "interval_without": [
+    0.34838848864854505,
+    1.4736892967519177
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/B1_recentred/B1",
+   "with": 0.6503059177950836,
+   "without": 0.6503059177950836
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.9542757311997694,
+    0.7324017715309685
+   ],
+   "interval_without": [
+    -0.9542757311997694,
+    0.7324017715309685
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/B1_recentred/B2",
+   "with": 0.08329603287839876,
+   "without": 0.08329603287839876
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.4163898592158116,
+    0.9460671587971285
+   ],
+   "interval_without": [
+    0.4163898592158116,
+    0.9460671587971285
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.6737647545934226,
+   "without": 0.6737647545934226
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.38554252904357467,
+    0.4926473199604281
+   ],
+   "interval_without": [
+    -0.38554252904357467,
+    0.4926473199604281
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.14479209429728748,
+   "without": 0.14479209429728748
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05051758099378645,
+    0.1584949319448824
+   ],
+   "interval_without": [
+    -0.05051758099378645,
+    0.1584949319448824
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.044612298149717164,
+   "without": 0.044612298149717164
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.36019406085566547,
+    1.0400530552159406
+   ],
+   "interval_without": [
+    0.36019406085566547,
+    1.0400530552159406
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.6518975194131635,
+   "without": 0.6518975194131635
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5250482303905445,
+    0.5361829243997162
+   ],
+   "interval_without": [
+    -0.5250482303905445,
+    0.5361829243997162
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.08746832972760833,
+   "without": 0.08746832972760833
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.044321841767249515,
+    0.0018535994853066777
+   ],
+   "interval_without": [
+    -0.044321841767249515,
+    0.0018535994853066777
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.019426421942131865,
+   "without": -0.019426421942131865
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.40178721760583475,
+    0.9241780780350993
+   ],
+   "interval_without": [
+    0.40178721760583475,
+    0.9241780780350993
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.6678980518051415,
+   "without": 0.6678980518051415
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.4087401173488354,
+    0.46899651873648784
+   ],
+   "interval_without": [
+    -0.4087401173488354,
+    0.46899651873648784
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.1294128528585106,
+   "without": 0.1294128528585106
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07693079571536922,
+    0.180614110595148
+   ],
+   "interval_without": [
+    -0.07693079571536922,
+    0.180614110595148
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.027431519024060578,
+   "without": 0.027431519024060578
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.36320182760596814,
+    1.0716417301208954
+   ],
+   "interval_without": [
+    0.36320182760596814,
+    1.0716417301208954
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.6585310395195969,
+   "without": 0.6585310395195969
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5360082987992851,
+    0.5695522875497906
+   ],
+   "interval_without": [
+    -0.5360082987992851,
+    0.5695522875497906
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.10485774095014397,
+   "without": 0.10485774095014397
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.7630397354807822,
+    0.9579010084570472
+   ],
+   "interval_without": [
+    0.7630397354807822,
+    0.9579010084570472
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.8256433336755447,
+   "without": 0.8256433336755447
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.9940588628442235,
+    0.6290963380411928
+   ],
+   "interval_without": [
+    -0.9940588628442235,
+    0.6290963380411928
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.22337524563329067,
+   "without": 0.22337524563329067
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.5893657248393838,
+    0.8930111012640829
+   ],
+   "interval_without": [
+    0.5893657248393838,
+    0.8930111012640829
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.8433217696828736,
+   "without": 0.8433217696828736
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1872942447366897,
+    0.413799417125572
+   ],
+   "interval_without": [
+    0.1872942447366897,
+    0.413799417125572
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.30211907178692093,
+   "without": 0.30211907178692093
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10049104646374564,
+    0.08667709171931011
+   ],
+   "interval_without": [
+    -0.10049104646374564,
+    0.08667709171931011
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.02372777915991991,
+   "without": -0.02372777915991991
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.4348294493030041,
+    0.90085614638656
+   ],
+   "interval_without": [
+    0.4348294493030041,
+    0.90085614638656
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.844651496026653,
+   "without": 0.844651496026653
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.015064998468859447,
+    0.39469485397449233
+   ],
+   "interval_without": [
+    0.015064998468859447,
+    0.39469485397449233
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.30804197922076115,
+   "without": 0.30804197922076115
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.21011818208142466,
+    0.04158093680889782
+   ],
+   "interval_without": [
+    -0.21011818208142466,
+    0.04158093680889782
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.015039413239188512,
+   "without": -0.015039413239188512
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.5370662115714269,
+    0.8888441136016237
+   ],
+   "interval_without": [
+    0.5370662115714269,
+    0.8888441136016237
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.8406313230577411,
+   "without": 0.8406313230577411
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.13904632629902058,
+    0.44264746048947445
+   ],
+   "interval_without": [
+    0.13904632629902058,
+    0.44264746048947445
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2901352027819242,
+   "without": 0.2901352027819242
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.329250021398215,
+    0.10998600268845296
+   ],
+   "interval_without": [
+    -0.329250021398215,
+    0.10998600268845296
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.041307023850904116,
+   "without": -0.041307023850904116
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.5014892127962065,
+    0.9043817916456318
+   ],
+   "interval_without": [
+    0.5014892127962065,
+    0.9043817916456318
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.8469532296508574,
+   "without": 0.8469532296508574
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.11823957871075147,
+    0.41127500579894877
+   ],
+   "interval_without": [
+    0.11823957871075147,
+    0.41127500579894877
+   ],
+   "metric": "skill",
+   "n": 29,
+   "n_without": 29,
+   "path": "/groups/anchor_day_type/quarter_end/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.31829443098069843,
+   "without": 0.31829443098069843
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.4106582663986943,
+    2.090263918634208
+   ],
+   "interval_without": [
+    0.24060021135528523,
+    0.6245333614667031
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/B1_recentred/B1",
+   "with": 0.7444262795715954,
+   "without": 0.3860378672525742
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2039047958354444,
+    0.6422324198755363
+   ],
+   "interval_without": [
+    0.19995400431400162,
+    0.639864234936707
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/B1_recentred/B2",
+   "with": 0.4566316656864872,
+   "without": 0.4563261547714071
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.3865280338269636,
+    1.7374103068118
+   ],
+   "interval_without": [
+    0.19629963723349306,
+    0.6831041125391537
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.7030371902735918,
+   "without": 0.38657681155344076
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.017921300119864758,
+    0.5533389056196589
+   ],
+   "interval_without": [
+    0.19255668884958638,
+    0.613549505099439
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.36863544888880057,
+   "without": 0.45680339905861617
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.02943475524221508,
+    0.1340029631281619
+   ],
+   "interval_without": [
+    -0.07901037108093789,
+    0.1956293111210251
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.08571042077553925,
+   "without": 0.05227500856311479
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.29425543515581404,
+    2.156329648823146
+   ],
+   "interval_without": [
+    0.055073696871045574,
+    0.9559166108414789
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.6722848822059538,
+   "without": 0.3462336436175439
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16674472125990203,
+    0.5373107132514845
+   ],
+   "interval_without": [
+    -0.07970472914318438,
+    0.6375626387617954
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.3032538032994233,
+   "without": 0.421078842004484
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.037502480815463604,
+    0.036202464121850714
+   ],
+   "interval_without": [
+    -0.04373551682863555,
+    0.045977330801204724
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.008969835076180044,
+   "without": -0.010054276026549337
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.3832810673780351,
+    1.7270198256900204
+   ],
+   "interval_without": [
+    0.18178626982385182,
+    0.7177742926220969
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.7045505414892326,
+   "without": 0.39107554091799374
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.00739463037011312,
+    0.5547823672594832
+   ],
+   "interval_without": [
+    0.16737478859574512,
+    0.6175739807981055
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.3718529437388008,
+   "without": 0.46078709994473455
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.04036231375095853,
+    0.14037831357733904
+   ],
+   "interval_without": [
+    -0.036974193908390095,
+    0.18647281906314533
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.09036972894763504,
+   "without": 0.05922544397018661
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.31411493600040974,
+    2.1156049039457248
+   ],
+   "interval_without": [
+    0.09183784627187491,
+    0.8845972599631042
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.6751982998884181,
+   "without": 0.35274136063825556
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16835550891926948,
+    0.5378806698779317
+   ],
+   "interval_without": [
+    -0.004736675821773839,
+    0.6338111505546637
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 88,
+   "path": "/groups/anchor_day_type/tax_date/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.3094479413767904,
+   "without": 0.42684153541438136
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.025498381330151698,
+    1.3154356332510462
+   ],
+   "interval_without": [
+    0.028464376547580834,
+    0.07138026915471692
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/B1_recentred/B1",
+   "with": 0.15928141483528727,
+   "without": 0.04774567403903884
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.20657483220139644,
+    0.4388518782761066
+   ],
+   "interval_without": [
+    0.20651161759778958,
+    0.4387811165936051
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/B1_recentred/B2",
+   "with": 0.32573019286586113,
+   "without": 0.32560933637020645
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06465017119016024,
+    0.43671585228112386
+   ],
+   "interval_without": [
+    -0.11689768301791162,
+    0.03286542089507205
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.07808680468240277,
+   "without": -0.01902959347636549
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16451790409802236,
+    0.3655557334571419
+   ],
+   "interval_without": [
+    0.18241462842843548,
+    0.38218540664826084
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.2606108115482815,
+   "without": 0.2783188009049817
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.14767348905698036,
+    -0.0011231231351567297
+   ],
+   "interval_without": [
+    -0.1663715734694704,
+    -0.011455388242948589
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.04343050393599334,
+   "without": -0.054108570389157444
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.00716245367260053,
+    0.48695553313074574
+   ],
+   "interval_without": [
+    -0.008223204773972898,
+    0.07100286976300035
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.11576233905780943,
+   "without": 0.03328591954151559
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17599202489846621,
+    0.4038625350106157
+   ],
+   "interval_without": [
+    0.20610524204877556,
+    0.4211704356884881
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.29082719518158023,
+   "without": 0.3153688752185411
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.025394584331942974,
+    0.026282993401697954
+   ],
+   "interval_without": [
+    -0.025141800794511438,
+    0.026958365886614214
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.0007889602211910155,
+   "without": 7.846827270519678e-06
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04760097784659238,
+    0.4307504069224747
+   ],
+   "interval_without": [
+    -0.08963762972105781,
+    0.037132169688208976
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.08398720503718408,
+   "without": -0.011686631935150826
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16851990986434373,
+    0.36357141752099714
+   ],
+   "interval_without": [
+    0.1889129421861751,
+    0.37933387967352317
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.26534302739248494,
+   "without": 0.2835191182695582
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.10237388807633843,
+    0.004355602861550956
+   ],
+   "interval_without": [
+    -0.11479498904662061,
+    -0.0003678211842854731
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.03675237225626115,
+   "without": -0.04651283544467285
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.00037331957010912353,
+    0.5759355167935533
+   ],
+   "interval_without": [
+    -0.0054005865820929005,
+    0.07504734974992575
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.1164594174312641,
+   "without": 0.033278333843582614
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17557921319352982,
+    0.4027838893240909
+   ],
+   "interval_without": [
+    0.2026688175017024,
+    0.4222360257775516
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.2913862632320797,
+   "without": 0.31536350299420596
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.0031106738077728846,
+    2.0656057899988847
+   ],
+   "interval_without": [
+    0.03021220948687228,
+    0.0880532848130895
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.22688765879334985,
+   "without": 0.053671065648830486
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1078044276777261,
+    0.36962738985581844
+   ],
+   "interval_without": [
+    0.10792881902138107,
+    0.36928888460814285
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.23562158151041765,
+   "without": 0.2354080946000831
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08400657636996642,
+    0.7666769940015632
+   ],
+   "interval_without": [
+    -0.10992599336708601,
+    0.03875327673870986
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.1310464059946959,
+   "without": -0.021121077247625086
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08259738871622782,
+    0.22345945511525966
+   ],
+   "interval_without": [
+    0.09703942743972604,
+    0.28553565763705946
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.14086305634452143,
+   "without": 0.17497935257355746
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1684372474985356,
+    -0.0014517875997739418
+   ],
+   "interval_without": [
+    -0.22788031661265037,
+    -0.020511435012559497
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.04760885805561137,
+   "without": -0.06605522357260507
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.021804043225240016,
+    0.8210092038598797
+   ],
+   "interval_without": [
+    -0.03285683553408068,
+    0.07567146665542637
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.150207045423081,
+   "without": 0.018618958740508618
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0644563163520134,
+    0.3012878039865574
+   ],
+   "interval_without": [
+    0.10604786121885897,
+    0.362463252492893
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.15980723623002055,
+   "without": 0.2070875432183476
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.052857981156034996,
+    0.004220833434728413
+   ],
+   "interval_without": [
+    -0.054958895582649395,
+    0.006529895671329836
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.02450882632818257,
+   "without": -0.024566438457811538
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08331031151811721,
+    0.7521969540550286
+   ],
+   "interval_without": [
+    -0.11446940780480637,
+    0.035492068082406125
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.12128310202171272,
+   "without": -0.031952241314213994
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06787779438796607,
+    0.2246902455394723
+   ],
+   "interval_without": [
+    0.09150564477535389,
+    0.2803056379745315
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.1312100493333359,
+   "without": 0.16622825126960086
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1240864868190485,
+    -0.014583607090810573
+   ],
+   "interval_without": [
+    -0.1451696257356416,
+    -0.026246179655300413
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.0593794794058744,
+   "without": -0.07736300997309956
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.0077824144826073305,
+    0.9699396089546961
+   ],
+   "interval_without": [
+    0.006564287597584838,
+    0.09280033568888532
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.17053622893366524,
+   "without": 0.04214992369194068
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0872935279135669,
+    0.2984569890061164
+   ],
+   "interval_without": [
+    0.11675863413541758,
+    0.3601410859313103
+   ],
+   "metric": "skill",
+   "n": 200,
+   "n_without": 200,
+   "path": "/groups/context/ordinary after a risk day/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.17990675904549103,
+   "without": 0.2260995216911919
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08743250976605729,
+    0.8064742547220317
+   ],
+   "interval_without": [
+    0.09048495565753392,
+    0.22619718135222505
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/B1_recentred/B1",
+   "with": 0.21853071130217186,
+   "without": 0.14101762470314683
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.02337013596875745,
+    0.3008497507320245
+   ],
+   "interval_without": [
+    0.023132784803054446,
+    0.3006774618215873
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/B1_recentred/B2",
+   "with": 0.17979667631743398,
+   "without": 0.17953608477331004
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22103641640163396,
+    0.6255964921876722
+   ],
+   "interval_without": [
+    0.2060182704239376,
+    0.4119181998653539
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.35253565646433666,
+   "without": 0.29226076812644125
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2366052919808633,
+    0.4051423277386319
+   ],
+   "interval_without": [
+    0.2418008747206526,
+    0.4081347269117471
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.32044366398735796,
+   "without": 0.3239971880193271
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.032830490474445154,
+    0.06789777579038991
+   ],
+   "interval_without": [
+    -0.03445655052861865,
+    0.06595408592423666
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.02466742549748551,
+   "without": 0.022853500226321443
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22742440099944639,
+    0.6489645027629843
+   ],
+   "interval_without": [
+    0.21303082500403875,
+    0.40699352751422135
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.34824690874290326,
+   "without": 0.2887927366333344
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2122297905456659,
+    0.41223068116475675
+   ],
+   "interval_without": [
+    0.2200855752320256,
+    0.41466395741919604
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.31594234168790103,
+   "without": 0.3206846698829911
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.003070893189976656,
+    0.03300318676797183
+   ],
+   "interval_without": [
+    0.0028495262257702964,
+    0.03292853347023435
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.01820690701750762,
+   "without": 0.018065331530877
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.23340797259244173,
+    0.6224599392272431
+   ],
+   "interval_without": [
+    0.2190896975240105,
+    0.41788803007035924
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.3628649154722518,
+   "without": 0.3034500839470699
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24668334975074446,
+    0.4163133912313665
+   ],
+   "interval_without": [
+    0.25185502647060565,
+    0.41842113865762576
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.33128489945495576,
+   "without": 0.3346847528994892
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.017376126600937895,
+    0.08210108915007996
+   ],
+   "interval_without": [
+    -0.019153476617825183,
+    0.08026794258696396
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.04022729822480452,
+   "without": 0.03830212917973592
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21406195562148017,
+    0.6623001684117582
+   ],
+   "interval_without": [
+    0.1999630516634643,
+    0.4004681774961816
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.33616044366618963,
+   "without": 0.27570816449991703
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1995371843763552,
+    0.39963253577839875
+   ],
+   "interval_without": [
+    0.20667665868648705,
+    0.40283889954830443
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.30325680308661745,
+   "without": 0.30818683571271566
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1593361717468618,
+    1.1408298500129093
+   ],
+   "interval_without": [
+    0.1628450606602841,
+    0.35640036640778194
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.3657636044132354,
+   "without": 0.24124183067339003
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5549472779910298,
+    0.061389179054197524
+   ],
+   "interval_without": [
+    -0.5560338109885016,
+    0.06031931858204914
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": -0.1724323337261923,
+   "without": -0.17328387603114703
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.41981027499138623,
+    0.7906009977020266
+   ],
+   "interval_without": [
+    0.38519283984835956,
+    0.6125261782346908
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.5735817004377678,
+   "without": 0.4975866789037955
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.11082896704683035,
+    0.31391794396919637
+   ],
+   "interval_without": [
+    0.13128732932246218,
+    0.3201986403777133
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.21173460624759843,
+   "without": 0.2231076084906121
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.0019831659368056836,
+    0.13166722278916076
+   ],
+   "interval_without": [
+    -0.002152412795801431,
+    0.12925309877905294
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.0684951444769224,
+   "without": 0.06449234335225795
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.4236212263198369,
+    0.7827542549779921
+   ],
+   "interval_without": [
+    0.38958878051807605,
+    0.6078355249928256
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.5715508254046127,
+   "without": 0.497620125047496
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07655151461460441,
+    0.3402486502814498
+   ],
+   "interval_without": [
+    0.10485143409330619,
+    0.34816376218909706
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.20798038531168983,
+   "without": 0.22315932697313315
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.02080647318964101,
+    0.10382622877453412
+   ],
+   "interval_without": [
+    0.020128072330531245,
+    0.10472868478424185
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.06405872616118495,
+   "without": 0.06455462100733307
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.4376692439063779,
+    0.7779975860507535
+   ],
+   "interval_without": [
+    0.40352389688815066,
+    0.6257251926991001
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.5926933599560748,
+   "without": 0.5201166794860818
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.14614003520896882,
+    0.3635457941396783
+   ],
+   "interval_without": [
+    0.16467308025362204,
+    0.37045136955394986
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2470639057427806,
+   "without": 0.257946227010698
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.026752717903890944,
+    0.17658883583029042
+   ],
+   "interval_without": [
+    0.022100986070845263,
+    0.1740350750612635
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.1102442993717371,
+   "without": 0.10644383461252001
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.38852063390976116,
+    0.802747781364096
+   ],
+   "interval_without": [
+    0.3575688216025707,
+    0.5905632915304371
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.5422264338892985,
+   "without": 0.4629511393882855
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.014909302194078433,
+    0.2821100338870599
+   ],
+   "interval_without": [
+    0.04427154638127284,
+    0.2890333710343302
+   ],
+   "metric": "skill",
+   "n": 1276,
+   "n_without": 1276,
+   "path": "/groups/context/ordinary after an ordinary day/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.15377210426910906,
+   "without": 0.1695499379521159
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.010476681434589883,
+    0.008309048439120935
+   ],
+   "interval_without": [
+    -0.010476681434589883,
+    0.008309048439120935
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/B1_recentred/B1",
+   "with": -0.0010303257945949989,
+   "without": -0.0010303257945949989
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.03214712138733761,
+    0.4625556047539245
+   ],
+   "interval_without": [
+    -0.03214712138733761,
+    0.4625556047539245
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/B1_recentred/B2",
+   "with": 0.25613829297222573,
+   "without": 0.25613829297222573
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.051700002922232605,
+    0.0632419903524224
+   ],
+   "interval_without": [
+    -0.051700002922232605,
+    0.0632419903524224
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.009992734866846879,
+   "without": 0.009992734866846879
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.004908082180433371,
+    0.4266016046739505
+   ],
+   "interval_without": [
+    -0.004908082180433371,
+    0.4266016046739505
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.26432948609495394,
+   "without": 0.26432948609495394
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0903494673302107,
+    0.025681565872394212
+   ],
+   "interval_without": [
+    -0.0903494673302107,
+    0.025681565872394212
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.0225564311280891,
+   "without": -0.0225564311280891
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.024237610963462858,
+    0.10451587784587196
+   ],
+   "interval_without": [
+    -0.024237610963462858,
+    0.10451587784587196
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.05172622433688827,
+   "without": 0.05172622433688827
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.042366373891090214,
+    0.44797075987514934
+   ],
+   "interval_without": [
+    0.042366373891090214,
+    0.44797075987514934
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.29534147835679525,
+   "without": 0.29534147835679525
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0509262907145655,
+    0.06858864473063304
+   ],
+   "interval_without": [
+    -0.0509262907145655,
+    0.06858864473063304
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.02054915966297192,
+   "without": 0.02054915966297192
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08329097000637356,
+    0.09210164826757875
+   ],
+   "interval_without": [
+    -0.08329097000637356,
+    0.09210164826757875
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.020189903845948837,
+   "without": 0.020189903845948837
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.04145698613586846,
+    0.4007725343939637
+   ],
+   "interval_without": [
+    0.04145698613586846,
+    0.4007725343939637
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2719069623493566,
+   "without": 0.2719069623493566
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11188209827459612,
+    0.06888382323977617
+   ],
+   "interval_without": [
+    -0.11188209827459612,
+    0.06888382323977617
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.012024002643861635,
+   "without": -0.012024002643861635
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.007618882880307563,
+    0.06043798720510303
+   ],
+   "interval_without": [
+    -0.007618882880307563,
+    0.06043798720510303
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.03183116843637431,
+   "without": 0.03183116843637431
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.023705199311329972,
+    0.46397352655135415
+   ],
+   "interval_without": [
+    -0.023705199311329972,
+    0.46397352655135415
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.2805575403858635,
+   "without": 0.2805575403858635
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.012348995488720042,
+    0.004515904095293225
+   ],
+   "interval_without": [
+    -0.012348995488720042,
+    0.004515904095293225
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": -0.0038940185063199477,
+   "without": -0.0038940185063199477
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1304504103651422,
+    0.44292094696663814
+   ],
+   "interval_without": [
+    -0.1304504103651422,
+    0.44292094696663814
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.17338637814073565,
+   "without": 0.17338637814073565
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10433605569606497,
+    0.03531919911407408
+   ],
+   "interval_without": [
+    -0.10433605569606497,
+    0.03531919911407408
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": -0.021490095456664367,
+   "without": -0.021490095456664367
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06374180463052784,
+    0.36196442773347337
+   ],
+   "interval_without": [
+    -0.06374180463052784,
+    0.36196442773347337
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.15889764065420292,
+   "without": 0.15889764065420292
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.16309519110336174,
+    0.0320154211254939
+   ],
+   "interval_without": [
+    -0.16309519110336174,
+    0.0320154211254939
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.04304474045623508,
+   "without": -0.04304474045623508
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.057341029419839956,
+    0.08531137929222672
+   ],
+   "interval_without": [
+    -0.057341029419839956,
+    0.08531137929222672
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.031161571769609032,
+   "without": 0.031161571769609032
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04076988872465037,
+    0.400937094386692
+   ],
+   "interval_without": [
+    -0.04076988872465037,
+    0.400937094386692
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.20225140563389182,
+   "without": 0.20225140563389182
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.09689099025918027,
+    0.07119597710367484
+   ],
+   "interval_without": [
+    -0.09689099025918027,
+    0.07119597710367484
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.010717939006716472,
+   "without": 0.010717939006716472
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15462809929720747,
+    0.08332643069040287
+   ],
+   "interval_without": [
+    -0.15462809929720747,
+    0.08332643069040287
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": -0.009338646404086574,
+   "without": -0.009338646404086574
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.013608450925517351,
+    0.3220388233157299
+   ],
+   "interval_without": [
+    -0.013608450925517351,
+    0.3220388233157299
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.16890323200849242,
+   "without": 0.16890323200849242
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.19067312073739395,
+    0.08602968380523685
+   ],
+   "interval_without": [
+    -0.19067312073739395,
+    0.08602968380523685
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.0306368815062695,
+   "without": -0.0306368815062695
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0071671565439018585,
+    0.04731488205789518
+   ],
+   "interval_without": [
+    -0.0071671565439018585,
+    0.04731488205789518
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.02066512026142096,
+   "without": 0.02066512026142096
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1274909016171777,
+    0.4434802515898544
+   ],
+   "interval_without": [
+    -0.1274909016171777,
+    0.4434802515898544
+   ],
+   "metric": "skill",
+   "n": 383,
+   "n_without": 383,
+   "path": "/groups/context/risk day/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.19360855127087556,
+   "without": 0.19360855127087556
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06949881352638759,
+    0.515086638792488
+   ],
+   "interval_without": [
+    0.06101778491792176,
+    0.11894518104455959
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/B1_recentred/B1",
+   "with": 0.148397516285,
+   "without": 0.08514232807213909
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.11260335428040774,
+    0.3255520775574593
+   ],
+   "interval_without": [
+    0.11142533948161484,
+    0.32715565118116763
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/B1_recentred/B2",
+   "with": 0.22600778986143844,
+   "without": 0.22564985221487946
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1468754672426747,
+    0.3821280656420398
+   ],
+   "interval_without": [
+    0.11605253830620765,
+    0.23957719854488035
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.22236611267644982,
+   "without": 0.16995053906063426
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.19462898211022214,
+    0.37442839862487204
+   ],
+   "interval_without": [
+    0.20614888096325013,
+    0.3768232103404756
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.2932353032807456,
+   "without": 0.29743287675239655
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04500952805047636,
+    0.030929634332353437
+   ],
+   "interval_without": [
+    -0.046501291786521244,
+    0.028760056408779135
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.0008515090057604102,
+   "without": -0.003024918258173027
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1639553551986392,
+    0.40669052659005017
+   ],
+   "interval_without": [
+    0.14011968710624603,
+    0.2501131537114019
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.23526139831045798,
+   "without": 0.18564543978939196
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.20395971567742835,
+    0.39328749604907065
+   ],
+   "interval_without": [
+    0.218215215249138,
+    0.39667968531801406
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.30495538491401447,
+   "without": 0.3107172914452044
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.002035160331324299,
+    0.02901022940393555
+   ],
+   "interval_without": [
+    0.0018243046812804111,
+    0.030017641861808976
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.01574533212506864,
+   "without": 0.015940670253524563
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15254465457632443,
+    0.39468099491952935
+   ],
+   "interval_without": [
+    0.12542087010228703,
+    0.24992543525662994
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.23160569531118602,
+   "without": 0.17992518048265563
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21087939195879907,
+    0.3803192230573062
+   ],
+   "interval_without": [
+    0.2210284101324802,
+    0.38163035424703495
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.30163284218060954,
+   "without": 0.30587557259050374
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0343848917615925,
+    0.04450257688246542
+   ],
+   "interval_without": [
+    -0.03539336648620259,
+    0.041429879325191404
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.011040269854838457,
+   "without": 0.009028356116169848
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1570045794779129,
+    0.3947801943902034
+   ],
+   "interval_without": [
+    0.12821546163397798,
+    0.23754271870622728
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.2230277115772675,
+   "without": 0.1724537986745054
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1843004293138235,
+    0.38692269433202103
+   ],
+   "interval_without": [
+    0.19876029170788245,
+    0.3916185738971035
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.29383660776876874,
+   "without": 0.29955167567754637
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1159215503824977,
+    0.6683736007107786
+   ],
+   "interval_without": [
+    0.0860582790275086,
+    0.17470080476478234
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.22630708507187117,
+   "without": 0.12574123906572462
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.09044971559597156,
+    0.17617250037271975
+   ],
+   "interval_without": [
+    -0.09290266720278183,
+    0.17587884834265477
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.05975518794845596,
+   "without": 0.05842570528757106
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.23107447138791415,
+    0.4871845821206561
+   ],
+   "interval_without": [
+    0.15057630522900833,
+    0.346853816267939
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.32204645270155263,
+   "without": 0.24336078496800784
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.04651151326823505,
+    0.29141969251474037
+   ],
+   "interval_without": [
+    0.07266067393571429,
+    0.29247797987882246
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.17610424839095043,
+   "without": 0.1851016345730714
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05336175074988543,
+    0.03036076772304249
+   ],
+   "interval_without": [
+    -0.05584859116440899,
+    0.025445848839048987
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.0026300568956298402,
+   "without": -0.0068573605321396065
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.26006139242126525,
+    0.5026873335528166
+   ],
+   "interval_without": [
+    0.18933305268231182,
+    0.35881386066128773
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.3398548812447435,
+   "without": 0.26672422778079563
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06872309843931035,
+    0.3233406259001984
+   ],
+   "interval_without": [
+    0.10192642824306858,
+    0.33001803571778615
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.19774627486612334,
+   "without": 0.21026399859101555
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.002110758480229666,
+    0.04260343328291796
+   ],
+   "interval_without": [
+    0.0016823125410563508,
+    0.04481689514135785
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.023706947748175076,
+   "without": 0.02423229738683574
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24166773968682653,
+    0.5027085814858765
+   ],
+   "interval_without": [
+    0.1696936268795705,
+    0.3574030237102199
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.33451594731451345,
+   "without": 0.2575450380821357
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07683902391137716,
+    0.30372644518587066
+   ],
+   "interval_without": [
+    0.10198496670913479,
+    0.30638709709332745
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.1912580353683478,
+   "without": 0.20037803638766066
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04153786240040895,
+    0.056389212024310326
+   ],
+   "interval_without": [
+    -0.0429682468502931,
+    0.05044488763108457
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.015811162481528657,
+   "without": 0.012017579291069747
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2450827980697839,
+    0.48727789033985897
+   ],
+   "interval_without": [
+    0.16314347815135838,
+    0.3458695475959418
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.323824831865159,
+   "without": 0.24851399543615996
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.03130870363751609,
+    0.3111603722127676
+   ],
+   "interval_without": [
+    0.06822071641252428,
+    0.31835252537932635
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/groups/pooled/all decision days/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.17826545699216587,
+   "without": 0.19065162815491385
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07391045698471699,
+    0.15337004854609365
+   ],
+   "interval_without": [
+    -0.07391045698471699,
+    0.15337004854609365
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.04758300647208923,
+   "without": 0.04758300647208923
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.14469587974416565,
+    0.44513706737602626
+   ],
+   "interval_without": [
+    0.14469587974416565,
+    0.44513706737602626
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.2685754118027302,
+   "without": 0.2685754118027302
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12926893253469215,
+    0.06269913689638465
+   ],
+   "interval_without": [
+    -0.12926893253469215,
+    0.06269913689638465
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.02015004407843134,
+   "without": -0.02015004407843134
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.24769017492096318,
+    0.19364963857011042
+   ],
+   "interval_without": [
+    -0.24769017492096318,
+    0.19364963857011042
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.057026684424046285,
+   "without": 0.057026684424046285
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15570660414761878,
+    0.39932141455053016
+   ],
+   "interval_without": [
+    0.15570660414761878,
+    0.39932141455053016
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.2758278425174446,
+   "without": 0.2758278425174446
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3070112125046456,
+    0.12735563224841784
+   ],
+   "interval_without": [
+    -0.3070112125046456,
+    0.12735563224841784
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.01003475997029536,
+   "without": -0.01003475997029536
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.19560950782035946,
+    0.18417980176642515
+   ],
+   "interval_without": [
+    -0.19560950782035946,
+    0.18417980176642515
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.02207591199498245,
+   "without": 0.02207591199498245
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15950267239829696,
+    0.32804486838740093
+   ],
+   "interval_without": [
+    0.15950267239829696,
+    0.32804486838740093
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.24898681122041585,
+   "without": 0.24898681122041585
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2350586211487845,
+    0.10575011622341209
+   ],
+   "interval_without": [
+    -0.2350586211487845,
+    0.10575011622341209
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.04747112689400236,
+   "without": -0.04747112689400236
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.025841545979736154,
+    0.1079615177022637
+   ],
+   "interval_without": [
+    0.025841545979736154,
+    0.1079615177022637
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.06639518465316376,
+   "without": 0.06639518465316376
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1091812055059743,
+    0.42923254075226946
+   ],
+   "interval_without": [
+    0.1091812055059743,
+    0.42923254075226946
+   ],
+   "metric": "skill",
+   "n": 150,
+   "n_without": 150,
+   "path": "/groups/pressure_day_type/month_end/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.2830225392402802,
+   "without": 0.2830225392402802
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07472655113706289,
+    0.8005992835787316
+   ],
+   "interval_without": [
+    0.07706337147187611,
+    0.1801673845679117
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/B1_recentred/B1",
+   "with": 0.1950507034946658,
+   "without": 0.11680904946792461
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10031745590963839,
+    0.32292827726396367
+   ],
+   "interval_without": [
+    0.09992047868912006,
+    0.3227813066345889
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/B1_recentred/B2",
+   "with": 0.22221894771400133,
+   "without": 0.22200943276963694
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17008604001033137,
+    0.551153987030899
+   ],
+   "interval_without": [
+    0.1522798758740121,
+    0.3140044547731791
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.28493261714598633,
+   "without": 0.22226298603276035
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2356086424292933,
+    0.3824789501256863
+   ],
+   "interval_without": [
+    0.24392391823900325,
+    0.3867237983304226
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.3090672121757624,
+   "without": 0.3149023319499621
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.055829649417818095,
+    0.03753236799262004
+   ],
+   "interval_without": [
+    -0.05953200328545108,
+    0.03351817473488874
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.0012815855490474178,
+   "without": -0.004450916626486806
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1901615868725453,
+    0.570252150956915
+   ],
+   "interval_without": [
+    0.17749991842997853,
+    0.3220882980407118
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.2963330229358745,
+   "without": 0.23717549006794736
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.23283226361793116,
+    0.4013480198551822
+   ],
+   "interval_without": [
+    0.24480985819334816,
+    0.40670268410548416
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.3200828371974154,
+   "without": 0.32803854837764507
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0037502776864724793,
+    0.024629139930705667
+   ],
+   "interval_without": [
+    0.0037450286398785903,
+    0.024882821924606773
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.014681967899077214,
+   "without": 0.014808650654401782
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.18285090207223678,
+    0.5472036837605471
+   ],
+   "interval_without": [
+    0.16536642396093013,
+    0.3212240693093609
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.2958648696304158,
+   "without": 0.2342272432305741
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2457156081127559,
+    0.39270545392186573
+   ],
+   "interval_without": [
+    0.25358089949857043,
+    0.3965453945309799
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.3196304847671053,
+   "without": 0.3254414789353442
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.03786432952789374,
+    0.05122400991893346
+   ],
+   "interval_without": [
+    -0.0414767527332616,
+    0.0480806886936185
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.014026430679496325,
+   "without": 0.01100097635697455
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.17910808637220016,
+    0.5921053452155629
+   ],
+   "interval_without": [
+    0.16695033855235464,
+    0.3158320842522153
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.28584786420304575,
+   "without": 0.22570928943016974
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22325832943356239,
+    0.3917143613648081
+   ],
+   "interval_without": [
+    0.23538087223371587,
+    0.39740060924382486
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.3099515682740054,
+   "without": 0.3179381324565041
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12126786107402732,
+    1.1766126337971046
+   ],
+   "interval_without": [
+    0.12779351415788098,
+    0.2857439380930074
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.3189935377717012,
+   "without": 0.1916270948483394
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.24413981830099363,
+    0.13664927514242814
+   ],
+   "interval_without": [
+    -0.24412558420733652,
+    0.13590531325440766
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": -0.014872132179525972,
+   "without": -0.01544830873531342
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.3103600831279095,
+    0.734022095291056
+   ],
+   "interval_without": [
+    0.28260499388315546,
+    0.4700552668118255
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.4589591270955552,
+   "without": 0.3708709893606489
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10811315006252091,
+    0.28196264523090736
+   ],
+   "interval_without": [
+    0.13405063354156715,
+    0.29262234189305114
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.19371205012628298,
+   "without": 0.2097112783484564
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04037642879606676,
+    0.0629796807992002
+   ],
+   "interval_without": [
+    -0.04650276537398044,
+    0.05559276673227393
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.016161062214883674,
+   "without": 0.009209142095738669
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.33364265285151473,
+    0.7260063628362043
+   ],
+   "interval_without": [
+    0.31259411637563644,
+    0.47355322692319834
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.4683386747768864,
+   "without": 0.3866275320719519
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09965088847853504,
+    0.3122946112314715
+   ],
+   "interval_without": [
+    0.1377438450477873,
+    0.32726173876468145
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.20768995207318364,
+   "without": 0.22950406772294143
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.009055070403352163,
+    0.056080632166498355
+   ],
+   "interval_without": [
+    0.009162741081529105,
+    0.05707958305421325
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.033217008798306226,
+   "without": 0.0340235095887766
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.32627075652633797,
+    0.7172276785656082
+   ],
+   "interval_without": [
+    0.2982361930639519,
+    0.4808094820846568
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.47322312483939566,
+   "without": 0.38774076448310224
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1254890064384211,
+    0.3094295160553472
+   ],
+   "interval_without": [
+    0.15127668217398826,
+    0.3205050551379535
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.21496901992996,
+   "without": 0.23090246932933942
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.021011777087995925,
+    0.092841558266488
+   ],
+   "interval_without": [
+    -0.026838739344597247,
+    0.08713802374129193
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.04209898500717557,
+   "without": 0.035776696100665674
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.31279986807903953,
+    0.7544095837086657
+   ],
+   "interval_without": [
+    0.29232745176116787,
+    0.4632432619856288
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.45007170165223165,
+   "without": 0.3650233996202827
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07177592823636114,
+    0.28358321900121025
+   ],
+   "interval_without": [
+    0.10941184475470746,
+    0.29768095581221765
+   ],
+   "metric": "skill",
+   "n": 1590,
+   "n_without": 1590,
+   "path": "/groups/pressure_day_type/ordinary/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.18046753497184576,
+   "without": 0.2023657512109298
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05159073731926819,
+    0.20571714560271068
+   ],
+   "interval_without": [
+    -0.05159073731926819,
+    0.20571714560271068
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.09760479577463327,
+   "without": 0.09760479577463327
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15084600745633228,
+    0.44454941094781153
+   ],
+   "interval_without": [
+    -0.15084600745633228,
+    0.44454941094781153
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.1697364126986032,
+   "without": 0.1697364126986032
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.016444305364541806,
+    0.27962812474576754
+   ],
+   "interval_without": [
+    0.016444305364541806,
+    0.27962812474576754
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.12589411578253307,
+   "without": 0.12589411578253307
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.012540287758814689,
+    0.10756405369308022
+   ],
+   "interval_without": [
+    -0.012540287758814689,
+    0.10756405369308022
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.06732309735788379,
+   "without": 0.06732309735788379
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.344863075308005,
+    0.45782766048853196
+   ],
+   "interval_without": [
+    -0.344863075308005,
+    0.45782766048853196
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.14187523675335684,
+   "without": 0.14187523675335684
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.03895064170615388,
+    0.14075298828276345
+   ],
+   "interval_without": [
+    0.03895064170615388,
+    0.14075298828276345
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.0965617227841668,
+   "without": 0.0965617227841668
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.040023509668659335,
+    0.2489837824696311
+   ],
+   "interval_without": [
+    -0.040023509668659335,
+    0.2489837824696311
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.1429275380010209,
+   "without": 0.1429275380010209
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.09900113471191851,
+    0.43294614347025695
+   ],
+   "interval_without": [
+    -0.09900113471191851,
+    0.43294614347025695
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2114363490136673,
+   "without": 0.2114363490136673
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.033824517508283025,
+    0.2862212184488827
+   ],
+   "interval_without": [
+    0.033824517508283025,
+    0.2862212184488827
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.1697960286954732,
+   "without": 0.1697960286954732
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07250361684572192,
+    -0.004125849119552709
+   ],
+   "interval_without": [
+    -0.07250361684572192,
+    -0.004125849119552709
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_level10/B1",
+   "with": -0.03236372219736914,
+   "without": -0.03236372219736914
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5130184774868073,
+    0.4528221218932803
+   ],
+   "interval_without": [
+    -0.5130184774868073,
+    0.4528221218932803
+   ],
+   "metric": "skill",
+   "n": 30,
+   "n_without": 30,
+   "path": "/groups/pressure_day_type/quarter_end/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.05015673467902498,
+   "without": 0.05015673467902498
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04503754298194751,
+    0.03813935090640774
+   ],
+   "interval_without": [
+    -0.04503754298194751,
+    0.03813935090640774
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/B1_recentred/B1",
+   "with": 0.0019552464269298846,
+   "without": 0.0019552464269298846
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.6370017235268761,
+    0.5604704399166425
+   ],
+   "interval_without": [
+    -0.6370017235268761,
+    0.5604704399166425
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/B1_recentred/B2",
+   "with": 0.29108482458999835,
+   "without": 0.29108482458999835
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.060610525040344365,
+    0.006123912490511359
+   ],
+   "interval_without": [
+    -0.060610525040344365,
+    0.006123912490511359
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_b2/B1",
+   "with": -0.029846731553350988,
+   "without": -0.029846731553350988
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.504606008549292,
+    0.5183155879254661
+   ],
+   "interval_without": [
+    -0.504606008549292,
+    0.5183155879254661
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.26849575258940556,
+   "without": 0.26849575258940556
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11416783622527982,
+    0.035708045284743306
+   ],
+   "interval_without": [
+    -0.11416783622527982,
+    0.035708045284743306
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.04692691642033717,
+   "without": -0.04692691642033717
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.03149073683018598,
+    0.07172007877626921
+   ],
+   "interval_without": [
+    -0.03149073683018598,
+    0.07172007877626921
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.023270284005195478,
+   "without": 0.023270284005195478
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5996406653938146,
+    0.5219079291810849
+   ],
+   "interval_without": [
+    -0.5996406653938146,
+    0.5219079291810849
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.30622498093025285,
+   "without": 0.30622498093025285
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07062965317587458,
+    0.07545039624587427
+   ],
+   "interval_without": [
+    -0.07062965317587458,
+    0.07545039624587427
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.007071053961413047,
+   "without": 0.007071053961413047
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12058419045497218,
+    0.06143173205278385
+   ],
+   "interval_without": [
+    -0.12058419045497218,
+    0.06143173205278385
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": -0.018530903347374773,
+   "without": -0.018530903347374773
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.5160971889966705,
+    0.48440231803041034
+   ],
+   "interval_without": [
+    -0.5160971889966705,
+    0.48440231803041034
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2765334305681034,
+   "without": 0.2765334305681034
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1398512523187657,
+    0.09919660187983062
+   ],
+   "interval_without": [
+    -0.1398512523187657,
+    0.09919660187983062
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.03542341326064274,
+   "without": -0.03542341326064274
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04690066305098535,
+    0.07332553942711988
+   ],
+   "interval_without": [
+    -0.04690066305098535,
+    0.07332553942711988
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.016314591399929742,
+   "without": 0.016314591399929742
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.69287236006074,
+    0.5570510633141722
+   ],
+   "interval_without": [
+    -0.69287236006074,
+    0.5570510633141722
+   ],
+   "metric": "skill",
+   "n": 89,
+   "n_without": 89,
+   "path": "/groups/pressure_day_type/tax_date/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.3012843246864254,
+   "without": 0.3012843246864254
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1246711963054732,
+    0.7491916166817274
+   ],
+   "interval_without": [
+    0.07706526810792716,
+    0.19149273450670745
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/B1_recentred/B1",
+   "with": 0.24818819448520246,
+   "without": 0.1289659720288141
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.12545952137649835,
+    0.14299938670638554
+   ],
+   "interval_without": [
+    -0.12616430943489748,
+    0.14283649683651253
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/B1_recentred/B2",
+   "with": 0.024223339764516242,
+   "without": 0.02378429147625933
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.25316145952291713,
+    0.5407395958678424
+   ],
+   "interval_without": [
+    0.1275003041974497,
+    0.37745272853798095
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.3497799272237304,
+   "without": 0.2578088452163717
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.010009189894945453,
+    0.2920168319867221
+   ],
+   "interval_without": [
+    0.030757427125959913,
+    0.29098281339172366
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.15607926561188676,
+   "without": 0.16818558086100277
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.012523064881308315,
+    0.04471810994770856
+   ],
+   "interval_without": [
+    -0.017329535729383595,
+    0.040171340691021254
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.01606758469376127,
+   "without": 0.011076313636110719
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.27056467471497386,
+    0.5376236365140189
+   ],
+   "interval_without": [
+    0.16074734922650302,
+    0.38645793563416325
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.3620881095899224,
+   "without": 0.27598922462550296
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.02764677512294647,
+    0.32555306473387524
+   ],
+   "interval_without": [
+    0.07334535125870807,
+    0.32810644631928965
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.17205405743445998,
+   "without": 0.18856133128656777
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.016863432051477924,
+    0.05224693247805752
+   ],
+   "interval_without": [
+    0.01659744726442687,
+    0.05371507796656588
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.0346926935002124,
+   "without": 0.03530054173273043
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2711998549763168,
+    0.5476162464954044
+   ],
+   "interval_without": [
+    0.1556277609283267,
+    0.39334897494470644
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.36802449267286713,
+   "without": 0.2788927025302392
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.03181294202871052,
+    0.31588754333949576
+   ],
+   "interval_without": [
+    0.06829681401578803,
+    0.31630763931963946
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.17975888996843145,
+   "without": 0.1918154185540391
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.012436841323002532,
+    0.07828513388642258
+   ],
+   "interval_without": [
+    0.009171438746290825,
+    0.0722149261765982
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.043675805510343654,
+   "without": 0.03916924598004125
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2489503593462659,
+    0.5289265463092546
+   ],
+   "interval_without": [
+    0.12630330696715075,
+    0.3663239904268843
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.339161854349625,
+   "without": 0.24949602783553115
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.018060626844832478,
+    0.30076699029172127
+   ],
+   "interval_without": [
+    0.029791858898645607,
+    0.3014098140362796
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.14229806716404234,
+   "without": 0.15886894953700345
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.14791635337738662,
+    0.7554775355283814
+   ],
+   "interval_without": [
+    0.07975020801800448,
+    0.21183626214848983
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.27295293513909963,
+   "without": 0.14450080904440418
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1889153536967181,
+    0.1164034436426336
+   ],
+   "interval_without": [
+    -0.1895680328023617,
+    0.11581490477256344
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": -0.006542785119285024,
+   "without": -0.007052741933512101
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2570616605481844,
+    0.5579749741875044
+   ],
+   "interval_without": [
+    0.10793200832443267,
+    0.39550747413413057
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.361643680836122,
+   "without": 0.2612741743009177
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.033915630634877306,
+    0.2598527642292751
+   ],
+   "interval_without": [
+    0.005218438705026973,
+    0.2597200280791137
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.11624298007084967,
+   "without": 0.13040728013269168
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.002735763030039591,
+    0.05343927936068915
+   ],
+   "interval_without": [
+    -0.009998835369416238,
+    0.05041415927454863
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.02380778705578684,
+   "without": 0.018433300911791267
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2732267507936882,
+    0.550338059311966
+   ],
+   "interval_without": [
+    0.14290715209433555,
+    0.40396286474764975
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.3726396488817805,
+   "without": 0.2785802005179152
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.0037293755657044625,
+    0.29033499389633005
+   ],
+   "interval_without": [
+    0.04128206960484891,
+    0.2925055338083858
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.13146608299868714,
+   "without": 0.15077910670839312
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.022184959089987338,
+    0.058583980804733496
+   ],
+   "interval_without": [
+    0.022071934613542458,
+    0.06019126387169606
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.04062312679271423,
+   "without": 0.04142832617989608
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.27679774262503565,
+    0.562841962797982
+   ],
+   "interval_without": [
+    0.13841575624859564,
+    0.4129577951547932
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.3816498780434949,
+   "without": 0.2847537350697632
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.005232576079457318,
+    0.29104219539342335
+   ],
+   "interval_without": [
+    0.04169502815989684,
+    0.29186090380577145
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.14394007759039923,
+   "without": 0.1580462963955222
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.024873430370018865,
+    0.09007284350524514
+   ],
+   "interval_without": [
+    0.020602416712768176,
+    0.0856208485702037
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.05440181947649479,
+   "without": 0.04963128283980411
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.247130661578577,
+    0.541203746467569
+   ],
+   "interval_without": [
+    0.10755491185020777,
+    0.38133926202438706
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.3460751779215859,
+   "without": 0.24740129592283952
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05078249891671453,
+    0.254943325323947
+   ],
+   "interval_without": [
+    -0.0023546065619567125,
+    0.25574059149698203
+   ],
+   "metric": "skill",
+   "n": 361,
+   "n_without": 361,
+   "path": "/groups/regime/2018-19/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.0946895414544197,
+   "without": 0.11407679103713947
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.02582393103447994,
+    0.0007324362246003899
+   ],
+   "interval_without": [
+    -0.02582393103447994,
+    0.0007324362246003899
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/B1_recentred/B1",
+   "with": -0.011029019500618098,
+   "without": -0.011029019500618098
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.041375060348828485,
+    0.6713890477739473
+   ],
+   "interval_without": [
+    0.041375060348828485,
+    0.6713890477739473
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/B1_recentred/B2",
+   "with": 0.4042190265783115,
+   "without": 0.4042190265783115
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10896550270695878,
+    0.15981557119884762
+   ],
+   "interval_without": [
+    -0.10896550270695878,
+    0.15981557119884762
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.02666297324001442,
+   "without": 0.02666297324001442
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.19275825475442576,
+    0.6686054429787827
+   ],
+   "interval_without": [
+    0.19275825475442576,
+    0.6686054429787827
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.4264302308979556,
+   "without": 0.4264302308979556
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11616994107448697,
+    0.009093481568663998
+   ],
+   "interval_without": [
+    -0.11616994107448697,
+    0.009093481568663998
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.03531828944216404,
+   "without": -0.03531828944216404
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10863422654089426,
+    0.15689440538459365
+   ],
+   "interval_without": [
+    -0.10863422654089426,
+    0.15689440538459365
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_ctx/B1",
+   "with": -0.0035085855272268558,
+   "without": -0.0035085855272268558
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16056259758011748,
+    0.6634440386779643
+   ],
+   "interval_without": [
+    0.16056259758011748,
+    0.6634440386779643
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.4086506812457853,
+   "without": 0.4086506812457853
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.09783545804058837,
+    -0.03703637398226481
+   ],
+   "interval_without": [
+    -0.09783545804058837,
+    -0.03703637398226481
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.06741114705869311,
+   "without": -0.06741114705869311
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.17151513460990253,
+    0.13747180324915756
+   ],
+   "interval_without": [
+    -0.17151513460990253,
+    0.13747180324915756
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": -0.021498631792714863,
+   "without": -0.021498631792714863
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16369105147743437,
+    0.6378157949174177
+   ],
+   "interval_without": [
+    0.16369105147743437,
+    0.6378157949174177
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.39804947488155223,
+   "without": 0.39804947488155223
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.17815694756598405,
+    -0.029102399627950984
+   ],
+   "interval_without": [
+    -0.17815694756598405,
+    -0.029102399627950984
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.08654678395989086,
+   "without": -0.08654678395989086
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.025187354601171608,
+    0.18677242489786677
+   ],
+   "interval_without": [
+    -0.025187354601171608,
+    0.18677242489786677
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.05986686733369152,
+   "without": 0.05986686733369152
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.19906207574014273,
+    0.6912179507463189
+   ],
+   "interval_without": [
+    0.19906207574014273,
+    0.6912179507463189
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.4459966804883861,
+   "without": 0.4459966804883861
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0075457083961041425,
+    0.027711717800722818
+   ],
+   "interval_without": [
+    -0.0075457083961041425,
+    0.027711717800722818
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.008755126659929188,
+   "without": 0.008755126659929188
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.9962381447628826,
+    0.7660519151711319
+   ],
+   "interval_without": [
+    -0.9962381447628826,
+    0.7660519151711319
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.39820700699931655,
+   "without": 0.39820700699931655
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15573661141832415,
+    0.9698279546130224
+   ],
+   "interval_without": [
+    -0.15573661141832415,
+    0.9698279546130224
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.13185808173039662,
+   "without": 0.13185808173039662
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.002795856843721245,
+    0.7060137641660891
+   ],
+   "interval_without": [
+    0.002795856843721245,
+    0.7060137641660891
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.4729438331575785,
+   "without": 0.4729438331575785
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.23826948789703473,
+    0.04276287986859789
+   ],
+   "interval_without": [
+    -0.23826948789703473,
+    0.04276287986859789
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.09486476757660497,
+   "without": -0.09486476757660497
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.1913592319667188,
+    0.7497904745126669
+   ],
+   "interval_without": [
+    -0.1913592319667188,
+    0.7497904745126669
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.10433550387092203,
+   "without": 0.10433550387092203
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.030458085469605267,
+    0.7118049913854771
+   ],
+   "interval_without": [
+    -0.030458085469605267,
+    0.7118049913854771
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.4562346476166356,
+   "without": 0.4562346476166356
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.24620489437524828,
+    -0.02034963716026994
+   ],
+   "interval_without": [
+    -0.24620489437524828,
+    -0.02034963716026994
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.12957510718477083,
+   "without": -0.12957510718477083
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2894560639885959,
+    0.7897030762322228
+   ],
+   "interval_without": [
+    -0.2894560639885959,
+    0.7897030762322228
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.059150976453894576,
+   "without": 0.059150976453894576
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0030091168108964395,
+    0.6661080365771079
+   ],
+   "interval_without": [
+    -0.0030091168108964395,
+    0.6661080365771079
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.4288027458505364,
+   "without": 0.4288027458505364
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3816314120733158,
+    0.010980237773842272
+   ],
+   "interval_without": [
+    -0.3816314120733158,
+    0.010980237773842272
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.18655996883862247,
+   "without": -0.18655996883862247
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.001040516522710283,
+    1.011613844724152
+   ],
+   "interval_without": [
+    -0.001040516522710283,
+    1.011613844724152
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.2070784045858327,
+   "without": 0.2070784045858327
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.04734815985237817,
+    0.7650793244717806
+   ],
+   "interval_without": [
+    -0.04734815985237817,
+    0.7650793244717806
+   ],
+   "metric": "skill",
+   "n": 251,
+   "n_without": 251,
+   "path": "/groups/regime/2020/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.5186107157242641,
+   "without": 0.5186107157242641
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.008343710331209314,
+    0.049088646865287355
+   ],
+   "interval_without": [
+    0.008343710331209314,
+    0.049088646865287355
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/B1_recentred/B1",
+   "with": 0.026940554851299956,
+   "without": 0.026940554851299956
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.41145884286167195,
+    0.6425386310937299
+   ],
+   "interval_without": [
+    0.41145884286167195,
+    0.6425386310937299
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/B1_recentred/B2",
+   "with": 0.5368429965647775,
+   "without": 0.5368429965647775
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08252092730753735,
+    0.019121971230090323
+   ],
+   "interval_without": [
+    -0.08252092730753735,
+    0.019121971230090323
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_b2/B1",
+   "with": -0.03030795963092134,
+   "without": -0.03030795963092134
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.38644819473595937,
+    0.6100326245557695
+   ],
+   "interval_without": [
+    0.38644819473595937,
+    0.6100326245557695
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.5095938387143549,
+   "without": 0.5095938387143549
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.018832470509029392,
+    0.009376941306483559
+   ],
+   "interval_without": [
+    -0.018832470509029392,
+    0.009376941306483559
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.004227743043594363,
+   "without": -0.004227743043594363
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08541207347373947,
+    0.02079776156791548
+   ],
+   "interval_without": [
+    -0.08541207347373947,
+    0.02079776156791548
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_ctx/B1",
+   "with": -0.029424199012687034,
+   "without": -0.029424199012687034
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.38830452374888513,
+    0.6088918820871173
+   ],
+   "interval_without": [
+    0.38830452374888513,
+    0.6088918820871173
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.5100144912466698,
+   "without": 0.5100144912466698
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.01778854679034104,
+    0.008211197132693448
+   ],
+   "interval_without": [
+    -0.01778854679034104,
+    0.008211197132693448
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.0033663530846560247,
+   "without": -0.0033663530846560247
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0990156382147876,
+    0.019051962778373323
+   ],
+   "interval_without": [
+    -0.0990156382147876,
+    0.019051962778373323
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": -0.0381546169975861,
+   "without": -0.0381546169975861
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.38696457213708096,
+    0.6018691861638593
+   ],
+   "interval_without": [
+    0.38696457213708096,
+    0.6018691861638593
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.505858985380319,
+   "without": 0.505858985380319
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.03550129119892961,
+    0.008201838747949362
+   ],
+   "interval_without": [
+    -0.03550129119892961,
+    0.008201838747949362
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.011875777734683023,
+   "without": -0.011875777734683023
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07305970053341386,
+    0.016928583722770056
+   ],
+   "interval_without": [
+    -0.07305970053341386,
+    0.016928583722770056
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_level10/B1",
+   "with": -0.025970420323465283,
+   "without": -0.025970420323465283
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.38648112346975605,
+    0.6139605116846685
+   ],
+   "interval_without": [
+    0.38648112346975605,
+    0.6139605116846685
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.5116584214260682,
+   "without": 0.5116584214260682
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -1.9328367834359519,
+    0.42340280713835354
+   ],
+   "interval_without": [
+    -1.9328367834359519,
+    0.42340280713835354
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": -0.9216108369560325,
+   "without": -0.9216108369560325
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -7.98459341955282,
+    -0.1637799127780486
+   ],
+   "interval_without": [
+    -7.98459341955282,
+    -0.1637799127780486
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": -4.613799413535882,
+   "without": -4.613799413535882
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.8633677488833853,
+    0.09107121994221057
+   ],
+   "interval_without": [
+    -0.8633677488833853,
+    0.09107121994221057
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.3768575974164419,
+   "without": -0.3768575974164419
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -1.8062391164179015,
+    0.47083590714409795
+   ],
+   "interval_without": [
+    -1.8062391164179015,
+    0.47083590714409795
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": -0.8184672090839196,
+   "without": -0.8184672090839196
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -7.576006147018652,
+    -0.16923366163878306
+   ],
+   "interval_without": [
+    -7.576006147018652,
+    -0.16923366163878306
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": -4.312475323078708,
+   "without": -4.312475323078708
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.7955745471689115,
+    0.1715656151166326
+   ],
+   "interval_without": [
+    -0.7955745471689115,
+    0.1715656151166326
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.3029539302796698,
+   "without": -0.3029539302796698
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.749277264325581,
+    0.3333831000097101
+   ],
+   "interval_without": [
+    -0.749277264325581,
+    0.3333831000097101
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": -0.39564965945772085,
+   "without": -0.39564965945772085
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -5.046900559720502,
+    0.021813848115918244
+   ],
+   "interval_without": [
+    -5.046900559720502,
+    0.021813848115918244
+   ],
+   "metric": "skill",
+   "n": 748,
+   "n_without": 748,
+   "path": "/groups/regime/2021-23/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": -3.0772549202399104,
+   "without": -3.0772549202399104
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0468919910877437,
+    0.12604403725083202
+   ],
+   "interval_without": [
+    0.0468919910877437,
+    0.12604403725083202
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/B1_recentred/B1",
+   "with": 0.07976402286317975,
+   "without": 0.07976402286317975
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3150485826119388,
+    0.10192443240478881
+   ],
+   "interval_without": [
+    -0.3150485826119388,
+    0.10192443240478881
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/B1_recentred/B2",
+   "with": -0.06460557141595068,
+   "without": -0.06460557141595068
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.14786571765150486,
+    0.3480277045880651
+   ],
+   "interval_without": [
+    0.14786571765150486,
+    0.3480277045880651
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.23383913885923147,
+   "without": 0.23383913885923147
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0009474235818126842,
+    0.22003355807439204
+   ],
+   "interval_without": [
+    -0.0009474235818126842,
+    0.22003355807439204
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.11364134674552849,
+   "without": 0.11364134674552849
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.005577309807897134,
+    0.07608232716310687
+   ],
+   "interval_without": [
+    0.005577309807897134,
+    0.07608232716310687
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.041687927042178365,
+   "without": 0.041687927042178365
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1299957230349582,
+    0.31844727038980264
+   ],
+   "interval_without": [
+    0.1299957230349582,
+    0.31844727038980264
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.22161522977152956,
+   "without": 0.22161522977152956
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.049348480498495675,
+    0.22691463486212488
+   ],
+   "interval_without": [
+    -0.049348480498495675,
+    0.22691463486212488
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.09949971129269645,
+   "without": 0.09949971129269645
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.00029921456373401337,
+    0.04828472218898172
+   ],
+   "interval_without": [
+    0.00029921456373401337,
+    0.04828472218898172
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.026398292382373893,
+   "without": 0.026398292382373893
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15835931258526176,
+    0.36556295534171895
+   ],
+   "interval_without": [
+    0.15835931258526176,
+    0.36556295534171895
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.2501542703178675,
+   "without": 0.2501542703178675
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.012713055587320499,
+    0.23640908506247993
+   ],
+   "interval_without": [
+    0.012713055587320499,
+    0.23640908506247993
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.13251604875760295,
+   "without": 0.13251604875760295
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.018577944386353865,
+    0.10007811320551402
+   ],
+   "interval_without": [
+    0.018577944386353865,
+    0.10007811320551402
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.06209485232602186,
+   "without": 0.06209485232602186
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12648239699967828,
+    0.2950870680661718
+   ],
+   "interval_without": [
+    0.12648239699967828,
+    0.2950870680661718
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.20051006059433238,
+   "without": 0.20051006059433238
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06493311684902048,
+    0.20358731687611353
+   ],
+   "interval_without": [
+    -0.06493311684902048,
+    0.20358731687611353
+   ],
+   "metric": "skill",
+   "n": 250,
+   "n_without": 250,
+   "path": "/groups/regime/2024/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.07508349496345854,
+   "without": 0.07508349496345854
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.048775153348015486,
+    0.12662437670840415
+   ],
+   "interval_without": [
+    0.048775153348015486,
+    0.12662437670840415
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/B1_recentred/B1",
+   "with": 0.08314080231791582,
+   "without": 0.08314080231791582
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.06871878550590144,
+    0.40483058485426804
+   ],
+   "interval_without": [
+    -0.06871878550590144,
+    0.40483058485426804
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/B1_recentred/B2",
+   "with": 0.18480866578713184,
+   "without": 0.18480866578713184
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.033523489226952696,
+    0.2732259805505525
+   ],
+   "interval_without": [
+    -0.033523489226952696,
+    0.2732259805505525
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.14518059683884793,
+   "without": 0.14518059683884793
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.10560895577156007,
+    0.3968007628819472
+   ],
+   "interval_without": [
+    0.10560895577156007,
+    0.3968007628819472
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.23996904700779031,
+   "without": 0.23996904700779031
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.26032385931322183,
+    0.10836573388128748
+   ],
+   "interval_without": [
+    -0.26032385931322183,
+    0.10836573388128748
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.03535810057368463,
+   "without": -0.03535810057368463
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12025006263493358,
+    0.29166308471171376
+   ],
+   "interval_without": [
+    0.12025006263493358,
+    0.29166308471171376
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.20606169612772676,
+   "without": 0.20606169612772676
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.054461099481546066,
+    0.4853716518901603
+   ],
+   "interval_without": [
+    0.054461099481546066,
+    0.4853716518901603
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.2940992173579557,
+   "without": 0.2940992173579557
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.013834691277860953,
+    0.06344026878936851
+   ],
+   "interval_without": [
+    0.013834691277860953,
+    0.06344026878936851
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.038381146672541264,
+   "without": 0.038381146672541264
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.013691829770882624,
+    0.2986033606168552
+   ],
+   "interval_without": [
+    -0.013691829770882624,
+    0.2986033606168552
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.1702935147749784,
+   "without": 0.1702935147749784
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12166236236800423,
+    0.42242626058775534
+   ],
+   "interval_without": [
+    0.12166236236800423,
+    0.42242626058775534
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2622972661390237,
+   "without": 0.2622972661390237
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.24256553367151093,
+    0.12996113441594356
+   ],
+   "interval_without": [
+    -0.24256553367151093,
+    0.12996113441594356
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.004941309707611,
+   "without": -0.004941309707611
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.09709726066309156,
+    0.24995741545066175
+   ],
+   "interval_without": [
+    0.09709726066309156,
+    0.24995741545066175
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.174373192533576,
+   "without": 0.174373192533576
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.02099096826209218,
+    0.45864424908222956
+   ],
+   "interval_without": [
+    0.02099096826209218,
+    0.45864424908222956
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.26592456023565003,
+   "without": 0.26592456023565003
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.07736914928499035,
+    0.1832281577930601
+   ],
+   "interval_without": [
+    0.07736914928499035,
+    0.1832281577930601
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.12791130772967518,
+   "without": 0.12791130772967518
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.14439622547669884,
+    0.3705023192402884
+   ],
+   "interval_without": [
+    -0.14439622547669884,
+    0.3705023192402884
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.0920523354759259,
+   "without": 0.0920523354759259
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0870744437827117,
+    0.40203083818673907
+   ],
+   "interval_without": [
+    -0.0870744437827117,
+    0.40203083818673907
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.22244591857930038,
+   "without": 0.22244591857930038
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12418221126430365,
+    0.2681771069827944
+   ],
+   "interval_without": [
+    0.12418221126430365,
+    0.2681771069827944
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.19047406700206213,
+   "without": 0.19047406700206213
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.32267447877856037,
+    0.07134308392846739
+   ],
+   "interval_without": [
+    -0.32267447877856037,
+    0.07134308392846739
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.07841673427285781,
+   "without": -0.07841673427285781
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.18496081256929192,
+    0.4255678735461775
+   ],
+   "interval_without": [
+    0.18496081256929192,
+    0.4255678735461775
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.316798103866513,
+   "without": 0.316798103866513
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.19166315386423022,
+    0.42408766384335816
+   ],
+   "interval_without": [
+    0.19166315386423022,
+    0.42408766384335816
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.2887058719016871,
+   "without": 0.2887058719016871
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.007097458549279734,
+    0.09556910861978307
+   ],
+   "interval_without": [
+    0.007097458549279734,
+    0.09556910861978307
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.05244358523447504,
+   "without": 0.05244358523447504
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.10354949081123849,
+    0.4441955036135028
+   ],
+   "interval_without": [
+    -0.10354949081123849,
+    0.4441955036135028
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.2526508159784077,
+   "without": 0.2526508159784077
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.13416645485507508,
+    0.33562972472046704
+   ],
+   "interval_without": [
+    0.13416645485507508,
+    0.33562972472046704
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.22192094424491945,
+   "without": 0.22192094424491945
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.3825458398248174,
+    0.1386078931772544
+   ],
+   "interval_without": [
+    -0.3825458398248174,
+    0.1386078931772544
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.036524514052399565,
+   "without": -0.036524514052399565
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.16445796866707907,
+    0.3745184382339765
+   ],
+   "interval_without": [
+    0.16445796866707907,
+    0.3745184382339765
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.27898551950329326,
+   "without": 0.27898551950329326
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1426828959988033,
+    0.39123165280767797
+   ],
+   "interval_without": [
+    0.1426828959988033,
+    0.39123165280767797
+   ],
+   "metric": "skill",
+   "n": 249,
+   "n_without": 249,
+   "path": "/groups/regime/2025-26/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.24933849107620218,
+   "without": 0.24933849107620218
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.02408066561571247,
+    0.05898756302818948
+   ],
+   "interval_without": [
+    0.024080665615712493,
+    0.05898756302818947
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/B1_recentred/B1",
+   "with": 0.040494045921588784,
+   "without": 0.040494045921588784
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.15068540090027396,
+    0.43327078556972487
+   ],
+   "interval_without": [
+    0.15068540090027396,
+    0.43327078556972487
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/B1_recentred/B2",
+   "with": 0.30367482138620766,
+   "without": 0.30367482138620766
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.056491726178726234,
+    0.17537923203305072
+   ],
+   "interval_without": [
+    0.056491726178726206,
+    0.17537923203305075
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.11279710354416697,
+   "without": 0.11279710354416697
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2518287306484603,
+    0.4644149142097258
+   ],
+   "interval_without": [
+    0.25182873064846056,
+    0.46441491420972597
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.3561460325333258,
+   "without": 0.35614603253332583
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0037548207746216644,
+    0.07369979176794049
+   ],
+   "interval_without": [
+    0.003754820774621602,
+    0.07369979176794045
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": 0.037511906333440814,
+   "without": 0.03751190633344079
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0271912353686789,
+    0.13530118663816834
+   ],
+   "interval_without": [
+    0.027191235368678762,
+    0.13530118663816834
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.07876968283493242,
+   "without": 0.07876968283493241
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.21151968488105646,
+    0.44513052152639354
+   ],
+   "interval_without": [
+    0.21151968488105674,
+    0.44513052152639376
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.33145191812745817,
+   "without": 0.3314519181274583
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.014133345511415332,
+    0.014280831441643282
+   ],
+   "interval_without": [
+    -0.014133345511415315,
+    0.014280831441643292
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.0005970276493725695,
+   "without": 0.0005970276493725832
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.040581377379263914,
+    0.17170224017668106
+   ],
+   "interval_without": [
+    0.0405813773792639,
+    0.1717022401766811
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.10355303338683391,
+   "without": 0.10355303338683391
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24793371212819199,
+    0.4529916306188664
+   ],
+   "interval_without": [
+    0.24793371212819212,
+    0.4529916306188666
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.3494374980254757,
+   "without": 0.34943749802547575
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.012349529838023392,
+    0.06553915148334886
+   ],
+   "interval_without": [
+    -0.012349529838023374,
+    0.06553915148334882
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.02748341397955658,
+   "without": 0.02748341397955657
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.03319966989467065,
+    0.12782139529375033
+   ],
+   "interval_without": [
+    0.033199669894670616,
+    0.12782139529375036
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.07821935430279474,
+   "without": 0.07821935430279474
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.20670679173820591,
+    0.45036492311389975
+   ],
+   "interval_without": [
+    0.20670679173820591,
+    0.45036492311389975
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.33105253799666445,
+   "without": 0.33105253799666445
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.011333418087208579,
+    0.1263185921777629
+   ],
+   "interval_without": [
+    -0.011333418087208537,
+    0.12631859217776292
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.051162804426742044,
+   "without": 0.05116280442674204
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.39117105533380414,
+    0.6620025652321062
+   ],
+   "interval_without": [
+    -0.39117105533380414,
+    0.6620025652321061
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.2212769482606747,
+   "without": 0.2212769482606747
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.01659057998594876,
+    0.5338135547848926
+   ],
+   "interval_without": [
+    0.016590579985948678,
+    0.5338135547848925
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.203858034665329,
+   "without": 0.203858034665329
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.028862512916119243,
+    0.7170836117947579
+   ],
+   "interval_without": [
+    0.028862512916119187,
+    0.717083611794758
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.34659591365556564,
+   "without": 0.3465959136555657
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.051575983363441186,
+    0.037956604478931746
+   ],
+   "interval_without": [
+    -0.051575983363441165,
+    0.03795660447893176
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.003624767635501964,
+   "without": -0.0036247676355019654
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15253454179542,
+    0.4563932403138923
+   ],
+   "interval_without": [
+    -0.15253454179541978,
+    0.4563932403138924
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.10163215267219186,
+   "without": 0.10163215267219192
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.07704235681838095,
+    0.6573084655496974
+   ],
+   "interval_without": [
+    -0.07704235681838095,
+    0.6573084655496972
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.26269780008683696,
+   "without": 0.26269780008683696
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.25017263473034734,
+    -0.04665176597441939
+   ],
+   "interval_without": [
+    -0.2501726347303473,
+    -0.046651765974419335
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": -0.13249176815665706,
+   "without": -0.132491768156657
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.17271872355700651,
+    0.48070432918569583
+   ],
+   "interval_without": [
+    -0.17271872355700638,
+    0.48070432918569594
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.10416822561861055,
+   "without": 0.10416822561861058
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.0496648443161814,
+    0.6284495219975802
+   ],
+   "interval_without": [
+    -0.04966484431618129,
+    0.6284495219975803
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.2647791882042949,
+   "without": 0.26477918820429497
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.2860867336239503,
+    -0.01796178524773316
+   ],
+   "interval_without": [
+    -0.28608673362395054,
+    -0.01796178524773326
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.12929476846014398,
+   "without": -0.12929476846014404
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.04157044475681104,
+    0.5143488584301219
+   ],
+   "interval_without": [
+    0.04157044475681085,
+    0.5143488584301218
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.20673344161249815,
+   "without": 0.20673344161249815
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.004492309329550248,
+    0.7395097325348521
+   ],
+   "interval_without": [
+    0.004492309329550914,
+    0.7395097325348525
+   ],
+   "metric": "skill",
+   "n": 1354,
+   "n_without": 1354,
+   "path": "/groups/scarcity_state/ample/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.3489557976096723,
+   "without": 0.34895579760967255
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1021970138949435,
+    0.6725149975397381
+   ],
+   "interval_without": [
+    0.07659725408115195,
+    0.16511533683532936
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/B1_recentred/B1",
+   "with": 0.2125733328205807,
+   "without": 0.11503893924304413
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    0.001076335170934306,
+    0.29596114887193137
+   ],
+   "interval_without": [
+    -0.0027640581330817815,
+    0.29662097532956255
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/B1_recentred/B2",
+   "with": 0.15794007818010947,
+   "without": 0.15707735779838902
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1839345369254468,
+    0.48608199275509834
+   ],
+   "interval_without": [
+    0.11695278827661404,
+    0.3131252563281141
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_b2/B1",
+   "with": 0.2875325119069518,
+   "without": 0.20822063493925402
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08724777925686211,
+    0.3510005685073742
+   ],
+   "interval_without": [
+    0.1135749164716097,
+    0.3508956035202367
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_b2/B2",
+   "with": 0.23810007670702057,
+   "without": 0.24583263147550669
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11575692849824244,
+    0.017974520259996928
+   ],
+   "interval_without": [
+    -0.11985336042294159,
+    0.011632755368505318
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.03129530687009775,
+   "without": -0.035755022516577466
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24587243345724338,
+    0.502380059713822
+   ],
+   "interval_without": [
+    0.1833472211618276,
+    0.34583171806432517
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_ctx/B1",
+   "with": 0.3283351760849039,
+   "without": 0.25720973734712554
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.11856317579782014,
+    0.4171898133322358
+   ],
+   "interval_without": [
+    0.15305581435623544,
+    0.419584263086208
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_ctx/B2",
+   "with": 0.28173371224390403,
+   "without": 0.2924945982804725
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.008267179932391538,
+    0.04538402911248314
+   ],
+   "interval_without": [
+    0.007534499257978552,
+    0.047481290980284
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.02776647037274394,
+   "without": 0.02832938168311895
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2033463313823105,
+    0.49859121242637133
+   ],
+   "interval_without": [
+    0.14202745271795938,
+    0.3318128079775884
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.3077652860164034,
+   "without": 0.23106417790952102
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.12146827950815184,
+    0.37129596057828657
+   ],
+   "interval_without": [
+    0.1461276032940647,
+    0.3717130278753633
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.25973664160243126,
+   "without": 0.26759103469979467
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.08504219923558322,
+    0.04976453300003401
+   ],
+   "interval_without": [
+    -0.08797249391554574,
+    0.04423645455032303
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": -0.0020084055970460857,
+   "without": -0.005872563579658978
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.22999696703169825,
+    0.49075201681845004
+   ],
+   "interval_without": [
+    0.15808986699421884,
+    0.3269045397568152
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_level10/B1",
+   "with": 0.3091527874248429,
+   "without": 0.23555343894258227
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.08151871670682598,
+    0.4049302542772281
+   ],
+   "interval_without": [
+    0.11695262302922599,
+    0.40552539016751254
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/grid_crps/vs/spread_mr_level10/B2",
+   "with": 0.2612204106646355,
+   "without": 0.27186704179132
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.1240121529283404,
+    0.6912009572549099
+   ],
+   "interval_without": [
+    0.0874644597397065,
+    0.18431415678019447
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/B1_recentred/B1",
+   "with": 0.23832590897147107,
+   "without": 0.1315880055259848
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.11278814529498653,
+    0.15922331764262462
+   ],
+   "interval_without": [
+    -0.11552739554777691,
+    0.15850599019025396
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/B1_recentred/B2",
+   "with": 0.04278263759368857,
+   "without": 0.041251320173023576
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2324907008508837,
+    0.5047276270700606
+   ],
+   "interval_without": [
+    0.14362121250322685,
+    0.35517169585052477
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_b2/B1",
+   "with": 0.33015682763425,
+   "without": 0.24645770375794834
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.02952940161609191,
+    0.2692989128291488
+   ],
+   "interval_without": [
+    0.05637971824160054,
+    0.27287975768221695
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_b2/B2",
+   "with": 0.15818914909919943,
+   "without": 0.16807035564560857
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.05701324527355196,
+    0.033351999028315524
+   ],
+   "interval_without": [
+    -0.05939343262434575,
+    0.027393948676997952
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_b2/spread_mr_level10",
+   "with": -0.00254901409430851,
+   "without": -0.007126048883554385
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.2733913629114449,
+    0.5156490288750152
+   ],
+   "interval_without": [
+    0.1913261058298131,
+    0.3775545530657324
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_ctx/B1",
+   "with": 0.3562023007154207,
+   "without": 0.27966704177618656
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.0578910827067447,
+    0.3221807763260983
+   ],
+   "interval_without": [
+    0.09294120548695388,
+    0.326402070472929
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_ctx/B2",
+   "with": 0.19092123141503228,
+   "without": 0.20473429993186673
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.01815306803334244,
+    0.052779954349930866
+   ],
+   "interval_without": [
+    0.017459760057583148,
+    0.05499014913148236
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_ctx/spread_mr_level10",
+   "with": 0.036433040864803555,
+   "without": 0.037258970446008205
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.25249763387207935,
+    0.5200846415425615
+   ],
+   "interval_without": [
+    0.1702988249043501,
+    0.37381593413674596
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_ctx_b2/B1",
+   "with": 0.3503229647777135,
+   "without": 0.2695694042039821
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.06620132027204038,
+    0.29481461813334064
+   ],
+   "interval_without": [
+    0.09370472280862785,
+    0.2972061110940064
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_ctx_b2/B2",
+   "with": 0.18353250373572602,
+   "without": 0.19358625412719527
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.029388643005973852,
+    0.06751937454683923
+   ],
+   "interval_without": [
+    -0.031210171762529895,
+    0.06319324165393256
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_ctx_b2/spread_mr_level10",
+   "with": 0.0276334849522454,
+   "without": 0.023763253109544677
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.24827390862329923,
+    0.5012154924134944
+   ],
+   "interval_without": [
+    0.1570517100643905,
+    0.35612740086838723
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_level10/B1",
+   "with": 0.33185992609959447,
+   "without": 0.2517894884385245
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    0.016087550366335357,
+    0.2971116298097035
+   ],
+   "interval_without": [
+    0.05251228181303516,
+    0.3039039281356747
+   ],
+   "metric": "skill",
+   "n": 501,
+   "n_without": 500,
+   "path": "/groups/scarcity_state/scarce/upper_tail_twcrps/vs/spread_mr_level10/B2",
+   "with": 0.16032948108648548,
+   "without": 0.17395678001117773
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.15478967236344388,
+    -0.03682167990889618
+   ],
+   "interval_without": [
+    -0.15584874265533932,
+    -0.0365883477720988
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/published/candidate_vs/B1_recentred",
+   "with": -0.0823019997291335,
+   "without": -0.08239088729217066
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.03449419469596997,
+    0.05662137679151098
+   ],
+   "interval_without": [
+    -0.026800538578089096,
+    0.06142467966195134
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/published/candidate_vs/spread_mr_b2",
+   "with": 0.013731040384524038,
+   "without": 0.019960924318569065
+  },
+  {
+   "bound_sign_change": true,
+   "interval_with": [
+    -0.008165431221259959,
+    0.06788668687964342
+   ],
+   "interval_without": [
+    0.0009631526105962004,
+    0.0755611767866095
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/published/candidate_vs/spread_mr_ctx",
+   "with": 0.031185294652987496,
+   "without": 0.039567660093768685
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.021156955476970513,
+    0.06976627119977498
+   ],
+   "interval_without": [
+    -0.0168667777377714,
+    0.07530995939420843
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/published/candidate_vs/spread_mr_ctx_b2",
+   "with": 0.02702566683439515,
+   "without": 0.033309871962283646
+  },
+  {
+   "bound_sign_change": false,
+   "interval_with": [
+    -0.029233319307745455,
+    0.04864265061173027
+   ],
+   "interval_without": [
+    -0.014014982912160506,
+    0.05402258150234307
+   ],
+   "metric": "skill",
+   "n": 1855,
+   "n_without": 1854,
+   "path": "/published/candidate_vs/spread_mr_level10",
+   "with": 0.011913756417764628,
+   "without": 0.020257340312087462
+  }
+ ]
+}

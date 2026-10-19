@@ -338,6 +338,10 @@ NON_SCORING_COMMANDS = {
 
 #: Functions that read an as-of information set but score nothing, and why.
 NOT_ENTRY_POINTS = {
+    "scripts/twin_diagnosis_865.alignment_row": (
+        "reads one training pair's information set for a named decision day and checks both guards (#865); scores "
+        "nothing; the named days (`ALIGNMENT_DAYS`) all end on or before 2025-12-31"
+    ),
     "scripts/backfill_spread_633.features": (
         "reads one forecast's declared inputs through InformationRule and checks both guards (#633); scores "
         "nothing"
@@ -519,6 +523,11 @@ NOT_ENTRY_POINTS = {
         "the pre-onset AUC of a modelled target's lead-1 median and of its as-of value (H9 step 2, #706); walks the lead-1 "
         "fold grid, calls refuse_locked on every scored day before it reads one, and fits and selects nothing "
         "(tests/test_richer_targets_706_script.py, LockedDayTests)"
+    ),
+    "scripts/h9_nested_842.decision_forecasts": (
+        "rebuilds the fold grid and the fit instants #706's walks used, from dates and the registry alone, to key a target's laws by "
+        "decision day (H9 step 3, #842); fits and scores nothing, and `walk_command` calls require_unlocked, with `target_forecasts.attach` "
+        "refusing a locked decision or target day, before any fit (tests/test_h9_nested_842_script.py, LockedDayTests)"
     ),
     "scripts/emit_visual.newcomer_n2": (
         "draws the scored grid on the explorer's N2 (#143); scores and compares "
