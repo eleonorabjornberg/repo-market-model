@@ -1346,3 +1346,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
 - Against kill: not applicable (a check on the interval, not a model).
 - Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
+
+### 2026-10-19 [H3] step 1 · eleonorabjornberg/repo-market-model#988
+- Directive: #968
+- Step: 1 (screening; the lag at which the OFR's cleared-repo series are readable, Lens E of #958)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `f46cfc57…`; base `b008b564`
+- Tried: the OFR's DVP and GCF preliminary rates declared at one business day, 15:00 (the page's statement), beside #187's two days, 16:00, in a new measurement source; the #478 source screen with each column at both lags in one run, and #187's paired Brier and CRPS test for `ofr_dvp_minus_bgcr_bp` at both lags. Variants: 1 (the lag).
+- Result: no change. The DVP rate minus BGCR keeps its pooled Spearman with the +5 bp indicator at lead 1 (+0.175 declared, +0.177 stated; rank 16 and 20 of 62; pre-onset AUC 0.784 and 0.762), and the paired test is "no effect" at both lags with no paired Brier difference moving by more than 0.00011.
+- Against kill: not applicable (no verdict; development data); the directive's kill, a change in the screen's verdict, did not occur.
+- Next: whether any OFR series joins a published declaration, and whether the records' columns move to the stated lag, are Eleonora's; the #629 matrix needs re-declaring on main's panel.
