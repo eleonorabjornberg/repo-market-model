@@ -95,8 +95,9 @@ class Sources(unittest.TestCase):
                 if path.is_file():
                     (out / path.relative_to(ROOT)).parent.mkdir(parents=True, exist_ok=True)
                     (out / path.relative_to(ROOT)).write_bytes(path.read_bytes())
-        for rel in ("tests/test_scoring_protocol_synthetic.py", "src/repo_model/scoring_protocol.py",
-                    "tests/test_scoring_protocol_coverage.py"):
+        cited = {item["evidence"] for item in json.loads(
+            (ROOT / "docs/research/milestones.json").read_text(encoding="utf-8"))["milestones"].values()}
+        for rel in sorted(cited | {"tests/test_scoring_protocol_coverage.py"}):
             (out / rel).parent.mkdir(parents=True, exist_ok=True)
             (out / rel).write_bytes((ROOT / rel).read_bytes())
         return out
@@ -143,9 +144,45 @@ class Sources(unittest.TestCase):
             with self.assertRaisesRegex(research_view.ResearchError, "not milestones"):
                 research_view.load(out)
 
-    def test_the_step_is_never_below_the_log(self):
+    def test_the_phase_is_the_plans_six_step_scale_and_comes_from_milestones_json(self):
+        """A log entry's step is the manual's own step (H5 has six); the phase shown is one of the plan's six."""
+        steps = json.loads((ROOT / "docs/research/milestones.json").read_text(encoding="utf-8"))["steps"]
         for h in research_view.load(ROOT):
-            self.assertGreaterEqual(h["step"], max([1] + [e["step"] for e in h["log"] if e["step"] is not None]))
+            self.assertIn(h["id"], steps, h["id"])
+            self.assertEqual(h["step"], steps[h["id"]])
+            self.assertIn(h["step"], range(1, len(research_view.STEPS) + 1))
+            logged = [e["step"] for e in h["log"] if e["step"] is not None]
+            self.assertEqual(h["manual_step"], max(logged) if logged else None)
+
+    def test_a_log_entry_with_a_high_manual_step_does_not_move_the_phase(self):
+        """Mutation: `step = max([floor] + log steps)` in `load` (the old rule): this failed, AssertionError (H1 read 6)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.copy_tree(tmp)
+            log = out / "docs/research/log.md"
+            log.write_text(log.read_text(encoding="utf-8") + "\n### 2026-10-17 [H1] step 6 · o/r#9\n- Directive: #9\n",
+                           encoding="utf-8")
+            before = {h["id"]: h["step"] for h in research_view.load(ROOT)}
+            after = {h["id"]: h["step"] for h in research_view.load(out)}
+            self.assertEqual(before, after)
+
+    def test_a_hypothesis_without_a_phase_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.copy_tree(tmp)
+            path = out / "docs/research/milestones.json"
+            data = json.loads(path.read_text(encoding="utf-8"))
+            del data["steps"]["H5"]
+            path.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(research_view.ResearchError, "H5"):
+                research_view.load(out)
+
+    def test_a_lettered_milestone_such_as_h5_m5a_is_read(self):
+        h5 = next(h for h in research_view.load(ROOT) if h["id"] == "H5")
+        self.assertIn("M5a", [mid for mid, _ in h5["manual"]["milestones"]])
+
+    def test_every_done_milestone_cites_a_pull_request(self):
+        done = json.loads((ROOT / "docs/research/milestones.json").read_text(encoding="utf-8"))["milestones"]
+        for key, item in done.items():
+            self.assertRegex(item.get("pr", ""), r"^eleonorabjornberg/repo-market-(model|liquidity)#\d+$", key)
 
     def test_a_groundwork_entry_is_listed_and_moves_no_step(self):
         text = ("### 2026-10-13 [H5] groundwork G3 · o/r#1\n- Directive: #1\n\n"
