@@ -1232,3 +1232,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the "with" run equals the tracked file (6e-16). Records whose bound changes sign: 16 (12 before; 4 in both). Against B2 the tax-date and 2018-19 cells move from covering zero to excluding it (`spread_mr_ctx_b2`, tax dates: +0.372 [-0.007, +0.555] to +0.461 [+0.167, +0.618]); the published-distribution gap goes from +0.031 [-0.008, +0.068] to +0.040 [+0.001, +0.076]. Pooled skills are unchanged. Development data, not a verdict.
 - Against kill: not applicable (a correction of a sensitivity table).
 - Next: Eleonora's reading of what the corrected B2 and tax-date cells mean for context pooling.
+
+### 2026-10-19 [H1] step 4 · eleonorabjornberg/repo-market-model#923
+- Directive: #922
+- Step: 4 (sizing of the B2 leg of "Supported", finding #913; measurement only, no decided value moves)
+- Tier: development
+- Pins: base `93a80200`; published panel `4ddc3882…`; `scripts/b2_leg_size_922.py`, 20,000 windows, seed 1; `gbm_funding` walks by `scripts/spread_distribution_634.py walk`
+- Tried: the share of windows in which `against_b2.lower_bound(critical) > 0` when the candidate has no skill against B2 (centred S(B2) − S(candidate), `window_t_statistics`), for B1 and `gbm_funding`, at the amended (1.347 / 2.548) and earlier (2.426 / 3.419) values, on the full, without-2019-09-18 and post-2020-04 histories. Variants: 0 new.
+- Result: B1 reproduces #913 within the Monte Carlo error of two independent draws (full, 250 days: 24.6% amended, 4.8% earlier). `gbm_funding`, full history, 250 days: 9.6% amended, 0.9% earlier; post-2020-04: 9.2% and 0.8%. At 125 days: 0.6% and 0.1% (full). Development data, not a verdict. Detail in `docs/research/b2-leg-size-922-result.md`.
+- Against kill: not applicable (a sizing of a rule, not a model).
+- Next: Eleonora's decision on #913 with these sizes in hand.
