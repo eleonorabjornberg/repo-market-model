@@ -1262,3 +1262,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H1] step 4 · eleonorabjornberg/repo-market-model#953
+- Directive: #929
+- Step: 4 (each leg of "Supported" calibrated in its own orientation on post-2020-04 history, finding #913; a draft amendment for Eleonora, nothing decided moves)
+- Tier: development
+- Pins: base `ddaf391e`; published panel `4ddc3882…`; `scripts/per_leg_calibration_929.py`, 20,000 windows, seed 1, circular blocks; `gbm_funding` walks by `scripts/spread_distribution_634.py walk`
+- Tried: the `1 - level` quantile of `window_t_statistics` of the centred d in each leg's orientation (leg against B1: S(B1) − S(B2); leg against B2: S(B2) − S(B1)) on the decision days from 2020-04-03, and each leg's size under those, the amended (1.347 / 2.548) and the earlier (2.426 / 3.419) values for B1's stand-in and `gbm_funding`. Variants: 0 new.
+- Result: leg against B1 2.438 (250 days) and 4.727 (125); leg against B2 1.701 and 2.682. At 250 days the B2 leg's size for `gbm_funding` is 4.5% (9.2% at the amended value) and the B1 leg's 0.1% (6.4%); the stand-ins sit at the nominal 4.8%. #913's post-2020-04 values (2.427 / 4.808) come from a cut at 2020-04-01 and are reproduced by it. Development data, not a verdict. Detail in `docs/research/per-leg-calibration-929-result.md`.
+- Against kill: not applicable (a calibration of a rule, not a model).
+- Next: Eleonora's decision on draft amendment 3 (and the cut); a follow-up directive then sets the values in code.
