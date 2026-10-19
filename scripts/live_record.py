@@ -325,9 +325,10 @@ def validate_record(record) -> None:
         raise ValueError(f"record_version must be one of {list(READABLE_VERSIONS)}")
     if (record["record_version"] == RECORD_VERSION_V3) != ("protocol" in record):
         raise ValueError("a version 3 file carries `protocol`, and no other version does")
-    if "protocol" in record:
-        prospective_log.validate_protocol_block(record["protocol"])
     day = date.fromisoformat(record["decision_day"])
+    if "protocol" in record:
+        # Read back against the record's own decision day (#806): a stored `written_at` past the cut-off is refused.
+        prospective_log.validate_protocol_block(record["protocol"], decision_day=day)
     require_loggable(day)
     datetime.fromisoformat(record["decision_instant"])
     for key in ("sha", "pinned_sha"):
@@ -1200,6 +1201,12 @@ def run_command(args) -> int:
             raise ValueError(
                 f"a record for {day} is made on that day after {instant.isoformat()}, "
                 f"not at {now.isoformat()}: a missed day is never backfilled"
+            )
+        cutoff_at = datetime.combine(day, prospective_log.DECISION_DAY_CUTOFF, tzinfo=EASTERN)
+        if now >= cutoff_at:
+            raise ValueError(
+                f"a record for {day} is made before the {cutoff_at.isoformat()} cut-off of its decision day "
+                f"(#740), not at {now.isoformat()}: a missed day is never backfilled"
             )
     head = _git("rev-parse", "HEAD")
     pinned = args.pinned_sha or head
