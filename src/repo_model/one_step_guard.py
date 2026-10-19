@@ -48,8 +48,31 @@ class FrozenDeclaration(NamedTuple):
     reason: str
 
 
+#: The published distribution's inputs at h = 1 (`scripts/live_record.py`, `published_features(1)`): `CRPS_FEATURES` of
+#: `scripts/final_test_preregistration.py` less the target. `treasury_settlement` is a scheduled field. At h > 1 the
+#: declaration drops it, so the guard never meets it there.
+_PUBLISHED_AT_H1 = (
+    "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "tbill_13w", "tbill_4w", "tga",
+    "treasury_settlement",
+)
+
 #: The exemptions, by name. Pinned by `tests/test_one_step_guard.py`.
-ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType({})
+ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
+    {
+        "published_distribution_crps": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H1,
+            "the published distribution: the final test's frozen CRPS_COMMAND (scripts/final_test_preregistration.py) "
+            "and the live record fit it on one-step pairs, and its bytes and records must reproduce",
+        ),
+        "gbm_funding_634": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H1,
+            "gbm_funding, the control of metadata/spread_distribution_634.json: the phase 2 gbm on the published "
+            "features at the 23 levels, a declaration whose figures must reproduce",
+        ),
+    }
+)
 
 
 def _registry() -> Dict[str, Mapping[str, object]]:

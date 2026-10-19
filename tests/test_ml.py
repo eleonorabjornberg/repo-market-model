@@ -9286,6 +9286,62 @@ class RecordingQuantile(ConstantQuantile):
         return super().fit(design, targets)
 
 
+class OneStepGuardGradientBoostedTests(unittest.TestCase):
+    """#947: a one-step gbm fit given a calendar column or a scheduled field raises `ValueError`.
+
+    Rule 2 of `asof` serves these columns from the scored row; a one-step pair trains row `p` against the spread of
+    `p + 1`, so the column would be learned one row off (#914). `training_pairs="direct"` is unchanged.
+
+    Mutation record (#947)
+    ----------------------
+
+    Run on CPython 3.11, numpy 2.4.6, scikit-learn 1.9.1 (`/opt/rmm-venv`), `PYTHONDONTWRITEBYTECODE=1`, `-B`, in a
+    disposable copy of the branch; each mutation confirmed applied by diff and reverted.
+
+    1. **The guard skipped in the gbm** -- in `fit_gradient_boosted_quantiles`, `if not direct:` -> `if False:`.
+       Killed by `test_a_calendar_column_is_refused_on_one_step_pairs`, `AssertionError: ValueError not raised`.
+    """
+
+    ROWS = 60
+
+    def setUp(self):
+        require_extra(self)
+        self.rows = with_column(
+            business_day_frame(self.ROWS), "quarter_end", [1.0 if i % 21 == 20 else 0.0 for i in range(self.ROWS)]
+        )
+        RecordingQuantile.fits = []
+        patcher = mock.patch.object(ml, "_estimator_class", return_value=RecordingQuantile)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_a_calendar_column_is_refused_on_one_step_pairs(self):
+        with self.assertRaisesRegex(ValueError, "one-step.*quarter_end.*direct"):
+            ml.fit_gradient_boosted_quantiles(self.rows, ("on_rrp", "quarter_end"), minimum_history=20)
+        self.assertEqual(RecordingQuantile.fits, [])
+
+    def test_the_depth_limited_fitter_passes_the_refusal_through(self):
+        with self.assertRaisesRegex(ValueError, "quarter_end"):
+            ml.fit_depth_limited_quantiles(self.rows, ("on_rrp", "quarter_end"), max_depth=2, minimum_history=20)
+
+    def test_a_fit_without_such_a_column_is_unchanged(self):
+        fitted = ml.fit_gradient_boosted_quantiles(self.rows, ("on_rrp", "sofr_volume"), minimum_history=20)
+        self.assertEqual(fitted.regressors, ("on_rrp", "sofr_volume"))
+
+    def test_direct_pairs_take_a_calendar_column(self):
+        from repo_model.asof import InformationRule
+        from repo_model.contract import sources_for_features
+
+        features = ("on_rrp", "quarter_end", "spread_bps")
+        lag = {"basis": "record_date", "unit": "calendar_days", "days": 1, "available_time": "00:00",
+               "timezone": "America/New_York"}
+        registry = {source: {"release_lag": dict(lag)} for source in sources_for_features(features)}
+        rule = InformationRule(registry, features, decision_time=time(16, 0))
+        fitted = ml.fit_gradient_boosted_quantiles(
+            self.rows, ("on_rrp", "quarter_end"), minimum_history=20, information=rule, training_pairs="direct"
+        )
+        self.assertEqual(fitted.training_pairs, "direct")
+
+
 class DirectTrainingPairsTests(unittest.TestCase):
     """`training_pairs="direct"` (#37): horizon-matched training pairs, opt-in.
 

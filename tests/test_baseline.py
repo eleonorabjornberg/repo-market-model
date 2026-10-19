@@ -1443,15 +1443,16 @@ class FittedArxTests(unittest.TestCase):
 
         Both refusals are live on the checked-in sample panel, which is why they
         are tested against it rather than against a constructed case:
-        `quarter_end` is constant throughout and so is collinear with the
-        intercept, and `mmf_assets` is one of three columns that are empty in
+        `iorb` is constant throughout and so is collinear with the
+        intercept (`quarter_end` was this test's column until #947 refused a
+        calendar column in a one-step fit), and `mmf_assets` is one of three columns that are empty in
         every row, so no imputation can be fitted from it. Filling either with a
         number would be inventing one.
         """
 
         rows = load_daily_panel(SAMPLE_PANEL)
         with self.assertRaises(SingularDesignError):
-            fit_arx(rows, ("quarter_end",), minimum_history=10)
+            fit_arx(rows, ("iorb",), minimum_history=10)
         with self.assertRaisesRegex(ValueError, "unobserved on every row"):
             fit_arx(rows, ("mmf_assets",), minimum_history=10)
         with self.assertRaisesRegex(ValueError, "more than once"):
