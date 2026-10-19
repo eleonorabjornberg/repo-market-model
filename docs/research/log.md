@@ -1306,3 +1306,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: over 1,868 decision days to 2025-12-23, the arm's skill over `gbm_funding` is +2.8% [+1.7%, +3.8%] pooled; on month-end targets +13.8% [+11.1%, +16.6%] (149 days); on mid-month coupon dates +13.8% [+8.6%, +21.5%] (115 days); on ordinary days -0.2% [-1.9%, +1.3%] (1,486 days); on tax dates +2.4% [-1.0%, +7.4%]; quarter-ends too thin. The direct-pairs twin's skill over the arm is -4.9% [-7.3%, -2.6%] pooled. Against B1 +21.6% [+13.8%, +39.2%], against B2 +35.9% [+24.2%, +44.4%]. By regime the arm is ahead of `gbm_funding` in every regime, the interval clear of zero in 2018-19 only. Detail in `docs/research/aligned-pairs-931-result.md`.
 - Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
 - Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
+
+### 2026-10-19 [H1] step 3 · eleonorabjornberg/repo-market-model#980
+- Directive: #949
+- Step: 3 (does the protocol's mean block of 10 suit H5's paired CRPS loss differentials; a report that changes nothing, Eleonora's ruling of 19 October 2026)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `eec10573`; `scripts/block_length_949.py`, seed 1, 10,000 draws pooled and 4,000 per split; `gbm_funding` walks by `scripts/spread_distribution_634.py walk`
+- Tried: the ACF at lags 1 to 10, the Politis-White automatic block and the studentized stationary-bootstrap interval at mean block 5, 10 and 20, for d = S(B) − S(`gbm_funding`) with B = B1 and B2, at each lead and lead-averaged, over 1,868 decision days to 2025-12-23, pooled and by regime and day type. Variants: 0 new.
+- Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
+- Against kill: not applicable (a check on the interval, not a model).
+- Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
