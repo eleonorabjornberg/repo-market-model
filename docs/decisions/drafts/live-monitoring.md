@@ -8,9 +8,9 @@ outcome, and `repo_model.live_monitor.require_decision_record` refuses to until 
 ## Why
 
 The live record is frozen, chained and anchored, and written before any outcome. Its only reader,
-`scripts/live_score.py`, runs on 2027-04-01, 2027-10-01 and each 1 October after, refuses every locked day, and
+`scripts/live_score.py`, runs only on its pre-registered scoring dates (`FIRST_SCORING_DATES` in the script, then each 1 October), refuses every locked day, and
 computes CRPS and Brier cells. The earliest anyone could learn that the live model is mis-calibrated is therefore
-2027-04-01. A bank's model-risk standard (SR 11-7) separates *monitoring*, which reads outcomes as they print, from
+the first of those dates. A bank's model-risk standard (SR 11-7) separates *monitoring*, which reads outcomes as they print, from
 *evidence*, which the lockbox protects. This record makes the first possible without touching the second.
 
 ## The rule, as drafted
