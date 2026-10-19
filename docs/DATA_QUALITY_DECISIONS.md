@@ -812,3 +812,23 @@ borrow. If the Desk publishes a test note, the note should be read first.
 
 **Consequence for earlier evidence.** #743's figures read the $0.1 bn floor. The Fed repo columns are re-read under this rule, with an arm that removes the whole group, in
 `docs/pivot/test-trade-802-result.md`: the ordinary-day AUROC gain of `fed_repo_days_since_positive` is 0.60 [0.42, 0.76] at lead 1 (interval contains 0.5), and the 2018 warnings survive with every `fed_repo_*` column zeroed.
+
+## A Fed repo operation marked as a Desk test is no take-up
+
+*Draft for Eleonora's review (PR for #933); in force once she has merged it.* Decided by Eleonora on 19 October 2026 (ruling on #916; data meaning is hers, #735).
+
+**The rule.** A `Repo` operation is a Desk test (a small-value exercise) if any of these holds, and it is then dropped before the test-trade rule above is read:
+
+* its `note` names a small value exercise (as before);
+* its `operationId` ends in " 99";
+* its `operationLimit` is present and at most USD 250 million (`ingest.DESK_TEST_LIMIT_MAX`); a normal operation's limit is $500 bn, and the labelled exercises are $75-250 mn.
+
+It is judged per operation, in every era, by `ingest._is_small_value_exercise`. A `Repo` operation whose `operationLimit` is present and not a number raises `ValueError`. `fed_repo_accepted`, `srf_total_accepted` and the other columns that read the helper follow.
+
+**What it changes in the tracked snapshots.** Six repo operations carried the marks and not the note: 2020-06-17, 2020-10-07, 2021-05-26, 2023-03-08 (term, limit $75 mn), 2023-05-23 and 2024-09-24 (term, limit $75 mn). They are no longer take-up; their dates keep any other operations' take-up and otherwise a row at zero. `docs/pivot/desk-test-marks-933-result.md` has the figures.
+
+**What does not change.** A reverse repo is read by its note alone: an id ending " 99" is not a test mark there (the ON RRP operation of 2023-07-17 took $1.7 trillion). The recurring $10 mn / $0 / $10 mn split pattern (and the even three-way splits) is **not ruled** and is counted as take-up exactly as before; it stays with Eleonora (#916). The columns stay off `FEATURE_FIELDS` and out of every published declaration.
+
+**Limit.** The marks are structural, not the Desk's own label. In the tracked snapshots every operation they drop has a note or is one of the six; a later operation placed with a limit of $250 mn or less and no note would be read as a test whatever it was.
+
+**Consequence for earlier evidence.** `docs/pivot/test-trade-802-result.md` (which lists 2024-09-24 at $57 mn as take-up) and #908's `srf_total_accepted` counts stand as published records; the figures are published anew in `docs/pivot/desk-test-marks-933-result.md`.
