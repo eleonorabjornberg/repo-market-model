@@ -1272,3 +1272,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H8] step 2 · eleonorabjornberg/repo-market-model#956
+- Directive: #930
+- Step: 2 (a second re-score, after #924: the blend (c) takes the declared default weight 0.5 when its trailing windows hold no pressure day, Eleonora's ruling on #925; the entry for #926 stands as written and is not superseded for (a) and (b), which are unchanged)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `f06899da`; seed 765; declaration `metadata/ranking_765.json` with the rule text for (c) carrying the exception, no declared value changed
+- Tried: the same three rankers, script, days and 10,000 draws as #926; only `choose_weight` changed. Variants: 0 (a correction of the weight rule, no new candidate).
+- Result: 46 of 87 refits take the default weight 0.5 (4 for want of 60 windows, 42 with no pressure day in the trailing windows), mean weight in force 0.36 to 0.60. (c) top-5 precision 9.5%, gain over the calendar +0.0 pp [-1.1 pp, +1.1 pp] (was -0.1 pp [-1.2 pp, +1.0 pp]); 2024: 3.4% against the calendar's 4.2%, -0.8 pp [-1.9 pp, +0.0 pp] (was -1.8 pp [-3.6 pp, -0.3 pp]); 2018-19 and 2025-26 unchanged. (a) and (b) are identical to #926 to the digit. Detail in `docs/pivot/ranking-930-result.md`.
+- Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict.
+- Next: no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
