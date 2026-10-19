@@ -621,8 +621,8 @@ def ceiling_fit_command(args) -> int:
     with d631.switched():
         scored, series, anchors = ub.read_inputs(rows, registry, read_columns)
     d631.add_interactions(series)
-    candidate = [c for c in json.loads((REPO / "metadata" / "spread_distribution_634.json").read_text(encoding="utf-8"))["inputs"]["base"]["columns"] if c in inputs]
-    candidate = [ub.SPREAD_ASOF if c == "spread_bps" else c for c in candidate]
+    base = json.loads((REPO / "metadata" / "spread_distribution_634.json").read_text(encoding="utf-8"))["inputs"]["base"]["columns"]
+    candidate = [c for c in (ub.SPREAD_ASOF if c == "spread_bps" else c for c in base) if c in inputs]
     lineup = ceiling_lineup(inputs, candidate)
     x = {}
     for entry, spec in lineup.items():
@@ -630,6 +630,8 @@ def ceiling_fit_command(args) -> int:
     spreads = [rows[i].spread_bps for i in scored]
     _STATE.update(ub=ub, x=x, y=[float(s) if s is not None else None for s in spreads], valid=[s is not None for s in spreads], rows=scored, anchors=anchors)
     tasks = [(entry, lead, a, b) for entry in lineup for lead in ub.LEADS for a, b in ub.folds(len(scored))]
+    if args.limit:
+        tasks = tasks[: args.limit]  # a smoke run of the code path; its output is not read
     results = []
     with multiprocessing.get_context("fork").Pool(args.workers) as pool:
         for done, (task, result) in enumerate(pool.imap_unordered(_ceiling_task, tasks, chunksize=1), 1):
@@ -773,6 +775,7 @@ def main(argv=None) -> int:
     p.add_argument("--panel", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--limit", type=int, default=0, help="fit only the first N tasks (a smoke run)")
     p.set_defaults(run=ceiling_fit_command)
     p = sub.add_parser("ceiling-score")
     p.add_argument("--published", type=Path, required=True)
