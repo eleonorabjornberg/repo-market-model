@@ -115,7 +115,7 @@ def build_base(panel, splits, registry, declaration, row_flags):
     ]
     s686.require_scored_days(candidate_days, LAST_DAY)
     # the flag is as-of at every row the pools and the anchors read, before any forecast is used
-    last_anchor = max(pb._anchor(panel, frame.position[d], registry, DECISION_TIME) for d in candidate_days)
+    last_anchor = pb._anchor(panel, frame.position[candidate_days[-1]], registry, DECISION_TIME)
     ff.check_no_future(panel, row_flags, load_register(), DECISION_TIME, indices=range(last_anchor + 1))
     walk = ff.walk(panel, candidate_days, row_flags, registry=registry, decision_time=DECISION_TIME, splits=splits)
     b1, b2, dropped = {}, {}, []
@@ -242,6 +242,8 @@ def score(args) -> int:
     on_share = {}
     for regime in splits.regime_labels:
         members = [d for d in days if frame.regime(d) == regime]
+        if not members:
+            continue
         on_share[regime] = {"days": len(members), **{FLAG_LABEL[s]: sum(1 for d in members if flag_of[d] == FLAG_LABEL[s]) for s in (True, False, None)}}
     result: dict = {
         "issue": 966, "declaration": str(DECLARATION.relative_to(REPO)), "panel_sha256": panel_sha256(panel_path),
