@@ -1286,3 +1286,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: by regime and lead, `gbm_funding` has 1 cell above zero and 1 below of 15; the pooled difference exceeds every regime's in 13 of 20 model-by-lead rows, which comes from ranking across regimes (61 of 81 pressure days are in 2018-19, 5 in 2020-24). No pooled gain is claimed. Development data, not a verdict. Detail in `docs/pivot/ordinary-day-p5-844/correction-934.md`.
 - Against kill: not applicable (no verdict; what counts as a ranking gain is Eleonora's).
 - Next: Eleonora reads the correction with the registration decision (hers).
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#990
+- Directive: #947
+- Step: 3 onward (a guard, not a score: a one-step fit given a calendar column or a scheduled field raises `ValueError`; nothing scored)
+- Tier: development
+- Pins: base `875949ec`; no panel built; no published record or page edited
+- Tried: the guard on `fit_arx`, `fit_threshold` and the gradient-boosted fitter (and its depth-limited wrapper), with a pinned allow-list of the published distribution's `CRPS_COMMAND` fit and `gbm_funding` of #634. Variants: 0 new.
+- Result: the guard refuses `quarter_end`, `tax_date` and the scheduled fields in a one-step fit and leaves direct-pair fits and fits without such columns unchanged. Committed arms it would refuse are listed in `docs/pivot/one-step-guard-947.md` (the #634 variants a and b, and scripts that reuse their lists). Development data, not a verdict.
+- Against kill: not applicable (no verdict).
+- Next: Eleonora decides whether any refused arm is re-run on direct pairs or without the column.
