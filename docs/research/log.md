@@ -1326,3 +1326,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
 - Against kill: not applicable (a check on the interval, not a model).
 - Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
+
+### 2026-10-19 [H5] step 4 · eleonorabjornberg/repo-market-model#983
+- Directive: #904
+- Step: 4 (the ceiling and reachable line of #758 on the two panels Eleonora named: H2's record commit `ec534758`, digest `1e5b748a…`, and main's `69f22bc6…`; her rulings of 19 October 2026 on #904 and #900)
+- Tier: development
+- Pins: published panel `4ddc3882…`; `AUG2D` `73534301…`; seed 758; declaration `metadata/h5_step4_758.json` (unchanged)
+- Tried: not yet run. The plan and the digest check are committed (`scripts/h5_step4_904.py`); both `DERIV.csv` digests were reproduced by building each chain at its commit. The fits and walks are a `needs-mac` run. Variants: 0.
+- Result: none yet. Finding: the head of main gives `eaf24b55…`, not `69f22bc6…` (reproduced at `71cf91d2` only). Detail in `docs/pivot/h5-step4-904-result.md`.
+- Against kill: not touched; nothing is scored.
+- Next: the Mac run, then whether #758's "continue in 2024" stands is Eleonora's; nothing published or registered moves.
