@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-
-import desk_test_marks_933 as script  # noqa: E402
+spec = importlib.util.spec_from_file_location("desk_test_marks_933_script", ROOT / "scripts" / "desk_test_marks_933.py")
+script = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = script
+spec.loader.exec_module(script)
 
 
 class MarkedWithoutNoteTests(unittest.TestCase):
