@@ -737,6 +737,15 @@ def rare_section(rare: Mapping) -> List[str]:
     return lines + [""]
 
 
+def ceiling_section(ceiling: Mapping) -> List[str]:
+    lines = ["## 3. The nested ceiling (suspect 1)", "",
+             f"Cross-fitted as H2's ceiling is (10 contiguous blocks per lead, the walk-forward embargo), spread gbm at the reachable settings, scored on the ordinary-day targets of {ceiling['decision_days']} decision days against B1. The ceiling read is the best of the lineup, so it cannot score below the candidate's own inputs (best: {ceiling['best_of_lineup']}; at least the candidate's inputs: {ceiling['ceiling_is_at_least_the_candidate']}).", "",
+             "| lineup entry | mean CRPS | skill against B1 [90%] |", "|---|---|---|"]
+    for name, cell in ceiling["cells"].items():
+        lines.append(f"| {name} | {_f(cell['candidate_mean'], 3, False)} | {_f(cell['skill'])} {_iv(cell['skill_interval_90'])} |")
+    return lines + [""]
+
+
 def report_command(args) -> int:
     document = json.loads(args.score.read_text(encoding="utf-8"))
     lines = []
@@ -744,8 +753,10 @@ def report_command(args) -> int:
         lines += audit_section(json.loads(args.audit.read_text(encoding="utf-8")))
     if args.rare:
         lines += rare_section(json.loads(args.rare.read_text(encoding="utf-8")))
+    if args.ceiling:
+        lines += ceiling_section(json.loads(args.ceiling.read_text(encoding="utf-8")))
     lines += [
-        "## 3. The declared re-run: tables",
+        "## 4. The declared re-run: tables",
         "",
         "Development data, not a verdict. Skill = (mean S(first) - mean S(second)) / mean S(first) of the grid CRPS; positive favours the second arm; 90% interval of the stationary bootstrap (5th to 95th percentile).",
         f"Decision days: {document['decision_days']['n']} ({document['decision_days']['first']} to {document['decision_days']['last']}). `n` below is the number of decision days with at least one target in the cut.",
@@ -800,6 +811,7 @@ def main(argv=None) -> int:
     p.add_argument("score", type=Path)
     p.add_argument("--audit", type=Path, default=None)
     p.add_argument("--rare", type=Path, default=None)
+    p.add_argument("--ceiling", type=Path, default=None)
     p.add_argument("--output", type=Path, required=True)
     p.set_defaults(run=report_command)
     p = sub.add_parser("ceiling-fit")
