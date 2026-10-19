@@ -6,7 +6,13 @@
   "why": "the repo's month-end label is the month's last two business days (data.MONTH_END_BUSINESS_DAYS) and the balance-sheet run-up is the last three. On the published panel the penultimate day is ordinary and the turn is the last business day (#959's table, recomputed by the orchestrating session)",
   "labels": {
     "module": "repo_model.turn_days; each label is a function of the date and metadata/market_holidays.json, with the tax_date calendar column for the tax_date label alone",
-    "precedence": ["year_end", "quarter_end_turn", "turn", "tax_date", "ordinary"],
+    "precedence": [
+      "year_end",
+      "quarter_end_turn",
+      "turn",
+      "tax_date",
+      "ordinary"
+    ],
     "turn": "the last business day of a month that is not a quarter's last month, and the first business day of the next month",
     "quarter_end_turn": "the last business day of March, June or September (data.last_business_day_of_quarter) and the first business day after it",
     "year_end": "the last business day of December (31 December or its last business day) and the first business day of January",
@@ -59,6 +65,28 @@
     "b": "read the same way against the model as is",
     "c": "a counts table, and the calendar benchmark's pooled and per-type skill against B1 under each set, read the same way",
     "no_verdict": "every sentence on the page says development data, not a verdict"
+  },
+  "variants": {
+    "b2_turn_labels": {
+      "label": "B2 pooled by the turn labels in place of the month-end label",
+      "comparison": "a",
+      "run": true
+    },
+    "mr_level_turn_days_only": {
+      "label": "the #686 mean-reversion level over ordinary days excluding only turn days (tax dates ordinary)",
+      "comparison": "b",
+      "run": true
+    },
+    "mr_level_turn_and_tax": {
+      "label": "the same level excluding turn days and tax dates: the sensitivity that separates the turn labels from returning the tax dates",
+      "comparison": "b",
+      "run": true
+    },
+    "risk_date_calendar_turn_set": {
+      "label": "H6's risk-date calendar benchmark with the quarter-end and month-end types replaced by the turn labels",
+      "comparison": "c",
+      "run": true
+    }
   },
   "limits": {
     "published": "no published declaration and no docs/runs/ record changes; the B2 of scoring protocol v1, the mean-reversion declaration of #686 and #693's declaration are only read",
