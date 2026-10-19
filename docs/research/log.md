@@ -1307,7 +1307,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
 - Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
 
-### 2026-10-19 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#980
+### 2026-10-19 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#982
 - Directive: #969
 - Step: groundwork G3 (the live record): a monitoring read decoupled from verdict scoring
 - Tier: development
