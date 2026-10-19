@@ -45,7 +45,7 @@ class DeclarationTests(unittest.TestCase):
             "base": {"share_of_windows_with_a_pressure_day": 0.2, "pressure_days_per_window": 1.0,
                      "share_of_window_days_on_a_scheduled_risk_date": 0.1, "share_of_pressure_days_on_a_scheduled_risk_date": 0.3},
             "tail_by_type": {"share_of_target_leads_on_the_fallback": 0.0},
-            "blend": {"refits": 1, "refits_on_the_default": 1, "weights_chosen": {"0.5": 1}, "mean_weight_in_force": 0.5},
+            "blend": {"refits": 1, "refits_on_the_default": 1, "refits_on_the_default_for_want_of_windows": 1, "weights_chosen": {"0.5": 1}, "mean_weight_in_force": 0.5},
             "means": means, "composition": {r: {"5": {"share_of_top_k_on_a_scheduled_risk_date": 0.5}} for r in script.rd.RANKERS},
             "paired": {"all": paired, "pressure_windows_precision": {c: {"precision@3": cell, "precision@5": cell} for c in script.rd.CANDIDATES}},
             "sensitivity_block": {"block_length": 10.0, "paired": paired},
