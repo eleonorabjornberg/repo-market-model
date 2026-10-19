@@ -93,7 +93,7 @@ class WorkflowFileTests(unittest.TestCase):
                     )
 
     def test_jobs_are_found(self):
-        self.assertEqual(set(jobs(next(p for p in WORKFLOWS if p.name == "tests.yml"))), {"suite", "offline", "ml", "owner-attested", "research-log"})
+        self.assertEqual(set(jobs(next(p for p in WORKFLOWS if p.name == "tests.yml"))), {"suite-shard", "pages", "suite", "offline-shard", "offline", "ml-shard", "ml", "owner-attested", "research-log"})
 
     def test_tests_yml_checks_out_the_whole_history(self):
         path = next(p for p in WORKFLOWS if p.name == "tests.yml")
@@ -105,8 +105,23 @@ class WorkflowFileTests(unittest.TestCase):
 
     def test_tests_yml_runs_the_results_page_check(self):
         path = next(p for p in WORKFLOWS if p.name == "tests.yml")
-        text = "\n".join(jobs(path)["suite"])
+        text = "\n".join(jobs(path)["pages"])
         self.assertIn("scripts/emit_visual.py --check", text)
+
+    def test_the_required_check_names_are_kept_by_the_aggregating_jobs(self):
+        """The ruleset requires these three names; each is now a job that waits on its shards (#927)."""
+        path = next(p for p in WORKFLOWS if p.name == "tests.yml")
+        for job, name, needs in (
+            ("suite", "unit tests: suite (3.11)", ("suite-shard", "pages")),
+            ("offline", "unit tests: networking off (3.11)", ("offline-shard",)),
+            ("ml", "unit tests: ml extra (3.11)", ("ml-shard",)),
+        ):
+            with self.subTest(job=job):
+                text = "\n".join(jobs(path)[job])
+                self.assertIn(f'name: "{name}"', text)
+                self.assertIn("needs: [" + ", ".join(needs) + "]", text)
+                self.assertIn("if: ${{ always() }}", text)
+                self.assertIn('[ "$result" = "success" ] || exit 1', text)
 
 
 if __name__ == "__main__":
