@@ -467,9 +467,9 @@ def settings_of(document: Mapping) -> Mapping:
 
 
 def comparison_pairs(arms: Sequence[str]) -> List[Tuple[str, str]]:
-    """Every declared arm against B1, B2 and the control, then the declared arm-against-arm comparisons."""
+    """The control and every declared arm against B1 and B2, every arm against the control (the control against B1 and B2 was added after the first scoring pass), then the declared arm-against-arm comparisons."""
 
-    pairs = [(b, a) for a in arms for b in ("B1", "B2", CONTROL)]
+    pairs = [(b, a) for a in (CONTROL, *arms) for b in ("B1", "B2", CONTROL) if b != a]
     return pairs + [pair for pair in KEY_COMPARISONS if pair not in pairs]
 
 
@@ -716,24 +716,53 @@ def _iv(interval) -> str:
     return "n/a" if interval is None else f"[{_f(interval[0])}, {_f(interval[1])}]"
 
 
+def audit_section(audit: Mapping) -> List[str]:
+    lines = ["## 1. Which fits train a calendar or scheduled column one day off (suspect 2)", "",
+             "Rule 2 of `src/repo_model/asof.py` serves calendar columns and scheduled fields from the target row. A one-step fit pairs the target of row p + 1 with row p, so it learns such a column one day off. `net_settlement*` are observed columns (dated at their own day), not scheduled.", "",
+             "| result | fit | pairing | calendar or scheduled columns in it | trained one day off |", "|---|---|---|---|---|"]
+    for fit in audit["fits"]:
+        lines.append(f"| {fit['result']} | {fit['fit']} | {fit['pairing']} | {', '.join(fit['calendar_and_scheduled_columns']) or 'none'} | {', '.join(fit['trained_one_day_off']) or 'no'} |")
+    return lines + [""]
+
+
+def rare_section(rare: Mapping) -> List[str]:
+    lines = ["## 2. Rare days in each refit's training window (suspect 3)", "",
+             "Refits of the walk-forward (every 21 scored days, minimum history 61). A tree can put only the days of a group on one side of a split when the training window holds at least `min_samples_leaf` of them; below that the group is always mixed with ordinary days. Cells: refits whose window holds at least that many.", "",
+             "| lead | group | refits | days at first / median / last refit | with at least 20 | with at least 10 | with at least 5 |", "|---|---|---|---|---|---|---|"]
+    for h, block in rare["leads"].items():
+        if h not in ("1", "5"):
+            continue
+        for group, row in block["summary"].items():
+            lines.append(f"| {h} | {group} | {block['refits']} | {row['first_refit']} / {row['median_refit']} / {row['last_refit']} | {row['refits_with_a_leaf_of_20']} | {row['refits_with_a_leaf_of_10']} | {row['refits_with_a_leaf_of_5']} |")
+    return lines + [""]
+
+
 def report_command(args) -> int:
     document = json.loads(args.score.read_text(encoding="utf-8"))
-    lines = [
-        "# Why do known repo-market drivers add nothing? The re-run of #951, tables",
+    lines = []
+    if args.audit:
+        lines += audit_section(json.loads(args.audit.read_text(encoding="utf-8")))
+    if args.rare:
+        lines += rare_section(json.loads(args.rare.read_text(encoding="utf-8")))
+    lines += [
+        "## 3. The declared re-run: tables",
         "",
-        "Development data, not a verdict. Skill = (mean S(first) - mean S(second)) / mean S(first) of the grid CRPS; positive favours the second arm; 90% interval of the stationary bootstrap.",
-        f"Decision days: {document['decision_days']['n']} ({document['decision_days']['first']} to {document['decision_days']['last']}).",
+        "Development data, not a verdict. Skill = (mean S(first) - mean S(second)) / mean S(first) of the grid CRPS; positive favours the second arm; 90% interval of the stationary bootstrap (5th to 95th percentile).",
+        f"Decision days: {document['decision_days']['n']} ({document['decision_days']['first']} to {document['decision_days']['last']}). `n` below is the number of decision days with at least one target in the cut.",
         "",
     ]
+    key = {f"{b} -> {c}" for b, c in KEY_COMPARISONS} | {f"{b} -> {CONTROL}" for b in ("B1", "B2")}
     for group, cells in document["tables"].items():
         for label, entry in cells.items():
-            lines += [f"## {group}: {label}", ""]
+            lines += [f"### {group}: {label}", ""]
             if "tests" not in entry:
                 lines += [f"n = {entry['n']}: fewer than {MINIMUM_DAYS} decision days.", ""]
                 continue
+            full = (group, label) in (("pooled", "all"), ("day type", CALENDAR_DAYS))
             lines += [f"n = {entry['n']} decision days.", "", "| first -> second | mean first | mean second | skill [90%] | interval width |", "|---|---|---|---|---|"]
-            for key, row in entry["tests"].items():
-                lines.append(f"| {key} | {_f(row['benchmark_mean'], 3, False)} | {_f(row['candidate_mean'], 3, False)} | {_f(row['skill'])} {_iv(row['skill_interval_90'])} | {_f(row['interval_width'], 3, False)} |")
+            for pair, row in entry["tests"].items():
+                if full or pair in key or pair.startswith("B1 -> direct_cal_leaf5"):
+                    lines.append(f"| {pair} | {_f(row['benchmark_mean'], 3, False)} | {_f(row['candidate_mean'], 3, False)} | {_f(row['skill'])} {_iv(row['skill_interval_90'])} | {_f(row['interval_width'], 3, False)} |")
             lines.append("")
     args.output.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return 0
@@ -769,6 +798,8 @@ def main(argv=None) -> int:
     p.set_defaults(run=score_command)
     p = sub.add_parser("report")
     p.add_argument("score", type=Path)
+    p.add_argument("--audit", type=Path, default=None)
+    p.add_argument("--rare", type=Path, default=None)
     p.add_argument("--output", type=Path, required=True)
     p.set_defaults(run=report_command)
     p = sub.add_parser("ceiling-fit")
