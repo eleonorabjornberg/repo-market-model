@@ -193,6 +193,7 @@ INPUTS = (
     "docs/research/log",
     "docs/research/milestones.json",
     "docs/research/hypotheses",
+    "docs/research/taglines.json",
     USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",
@@ -3456,7 +3457,7 @@ def generate(repo, commit=None):
                                 **on_rrp_snapshots, **n5_digests}}
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
     research_provenance = dict(provenance, inputs={
-        rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.PROGRESS,
+        rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.PROGRESS, research_view.TAGLINES,
                                             *sorted(str(p.relative_to(repo)) for p in
                                                     (repo / research_view.HYPOTHESES).glob("H*.md")))}
         # The log is built from its entry files (#928): its digest is that of the assembly, not of a tracked file.
