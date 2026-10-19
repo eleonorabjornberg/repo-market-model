@@ -18,6 +18,9 @@ second entry with the same heading takes `-2` before `.md`. Then run `python3 sc
 assemble`, which rewrites this page, and commit it with the regeneration commit like the other generated pages.
 Two pull requests that add different files never conflict; a conflict in this page alone is resolved by running
 `assemble` again. An entry file already on `main` is never edited, renamed or deleted: the check refuses it.
+A wrong pull request number in a frozen entry's heading is corrected in
+[`log/_corrections.md`](log/_corrections.md) (#867): `assemble` applies it and keeps the original heading in a
+`- Correction:` line.
 
 Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
 hypothesis manual, kept apart from the six steps) has its own heading,
@@ -963,7 +966,8 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no candidate scored); docs/decisions/measurement-protocol.md unchanged
 - Next: the G6 power study re-run on the extended labels (next directive)
 
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#837
+- Correction: the heading named eleonorabjornberg/repo-market-model#830; corrected to eleonorabjornberg/repo-market-model#837 (docs/research/log/_corrections.md).
 - Directive: #785
 - Step: 3
 - Tier: development
@@ -1272,3 +1276,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#945
+- Directive: #934
+- Step: 3 (a dated correction of #853's ordinary-day page, on Eleonora's ruling on #917: reported within each regime, no pooled gain claimed; nothing scored again)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ddaf391e`; figures read from `docs/pivot/ordinary-day-p5-844/score.json`, unchanged
+- Tried: the paired AUROC difference from persistence-logistic in each regime at leads 1 to 5 for the four models, read from the committed score. Variants: 0 new.
+- Result: by regime and lead, `gbm_funding` has 1 cell above zero and 1 below of 15; the pooled difference exceeds every regime's in 13 of 20 model-by-lead rows, which comes from ranking across regimes (61 of 81 pressure days are in 2018-19, 5 in 2020-24). No pooled gain is claimed. Development data, not a verdict. Detail in `docs/pivot/ordinary-day-p5-844/correction-934.md`.
+- Against kill: not applicable (no verdict; what counts as a ranking gain is Eleonora's).
+- Next: Eleonora reads the correction with the registration decision (hers).
+
+### 2026-10-19 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#952
+- Directive: #937
+- Step: groundwork G3 (prospective logging)
+- Tier: development
+- Pins: no panel built; base `ddaf391e`
+- Tried: a run of the live-log workflow that starts before the 16:00 ET decision instant ends green with a log line and no comment on #237. Variants: n/a.
+- Result: no figure; nothing is scored. The false "Failed: <day>, at step record" comments of 10-13 to 10-16 came from the 01:15 UTC fallback slot starting after midnight ET.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's ruling on whether a record may ever be written after midnight ET (marked question in the PR).
