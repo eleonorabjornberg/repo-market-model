@@ -1,0 +1,74 @@
+{
+  "status": "declared by the pull request that closes #708 before any score was computed; a measurement, not a record. This file replaces, for the nested test, the earlier plan in metadata/h3_nested_708.json (candidate: #634's variant (b)), which is left untouched as the record of that plan. Nothing is published: no column joins any published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #640): every figure here is exploration.",
+  "issue": 708,
+  "hypothesis": "H3 (new public data adds signal), step 3: the development nested test against H5's candidate, gbm_funding. Milestone M3.",
+  "supersedes_plan": "metadata/h3_nested_708.json (candidate: variant (b) of #634). The result tables of the pull request read this file, not that one.",
+  "rulings": [
+    "Eleonora, directive #708 (13 October 2026): add each usable source family of #630 to #634's candidate one family at a time and score the nested difference (candidate + family minus candidate) under scoring protocol v1",
+    "Eleonora, 12 October 2026 (scoring protocol v1, #640): development data gives a score and an interval, never a verdict; the +5 bp judge is retired",
+    "Orchestrating session, 14 October 2026: #708 starts stacked on #634, from the head of PR #711 with the five-level B3 fix (branch wip/634-b3-five-levels) merged in",
+    "Eleonora, 15 October 2026 (ruling on PR #763, relayed by the orchestrating session): the H5 candidate that #708 reads is gbm_funding, the same as #759 and #775",
+    "Eleonora, 17 October 2026 (ruling on PR #763, relayed by the orchestrating session): a new declaration file, metadata/h3_nested_708_gbm.json, for the nested test against gbm_funding, committed before any walk; metadata/h3_nested_708.json stays untouched"
+  ],
+  "candidate": {
+    "name": "base",
+    "is": "#634's gbm_funding: gradient-boosted quantile regression at the protocol's 23 levels on the published funding features alone (repo_model live_record.published_features(h)), no calibration, every day, directly at each lead",
+    "why_this_one": "Eleonora's ruling of 15 October 2026 names gbm_funding as the H5 candidate that #708 reads (the same as #759 and #775). The earlier plan read variant (b) of #634 (the same model with #634's new inputs); that plan stays in metadata/h3_nested_708.json and is not scored.",
+    "source": "metadata/spread_distribution_634.json, control gbm_funding; scripts/spread_distribution_634.py walk, variant gbm_funding",
+    "new_inputs_of_634": "off: none of #634's new inputs (announcement-dated settlements, per-release H.4.1, scarcity state, announced IORB change, satiation distance, tail-spread level, tax-date window) is a feature of the candidate or of any family run"
+  },
+  "families": {
+    "nyfed_pd_financing": {
+      "columns": ["pd_repo_ust", "pd_reverse_repo_ust", "pd_repo_mbs", "pd_fails_deliver_ust", "pd_fails_receive_ust"],
+      "reading": "weekly, six business days after the Wednesday as-of date; carried at most 13 days from the value's own date (docs/decisions/weekly-carry.md, #680); a withheld week is a hole"
+    },
+    "treasury_auction_results": {
+      "columns": ["auc_accepted_bn", "auc_dealer_share", "auc_indirect_share", "auc_cover"],
+      "reading": "public at 15:00 on the auction day, with #690's corrected shares and cover (shares of the accepted amount outside SOMA; Treasury's bid-to-cover); empty on a day with no auction"
+    },
+    "nyfed_on_rrp_counterparties": {
+      "columns": ["rrp_counterparties"],
+      "reading": "next business day 16:00; a record the Desk rewrote on a later day is a hole"
+    },
+    "treasury_dts_debt_cash": {
+      "columns": ["dts_debt_issues_bn", "dts_debt_net_bn"],
+      "reading": "next business day 16:30"
+    },
+    "source": "repo_model.new_sources.COLUMN_FIELDS, as built on main (including #680's carry cap and #690's corrections); registered in metadata/sources_measurement.json; panel built by scripts/new_sources.py panel on #634's scratch panel"
+  },
+  "variants": {
+    "base": "the candidate (gbm_funding), unchanged",
+    "plus_nyfed_pd_financing": "the candidate and the five columns of nyfed_pd_financing",
+    "plus_treasury_auction_results": "the candidate and the four columns of treasury_auction_results",
+    "plus_nyfed_on_rrp_counterparties": "the candidate and rrp_counterparties",
+    "plus_treasury_dts_debt_cash": "the candidate and the two columns of treasury_dts_debt_cash",
+    "count": "four families added one at a time, on top of the one candidate; the base is re-walked on the new panel (its walk equals #634's gbm_funding, whose features it shares). No family is combined with another, no column is dropped or tuned, and no hyperparameter differs from the candidate's"
+  },
+  "protocol": {
+    "record": "docs/decisions/scoring-protocol.md (version 1)",
+    "scorer": "repo_model.scoring_protocol and repo_model.protocol_benchmarks, through scripts/spread_distribution_634.py",
+    "primary_score": "grid CRPS over the protocol's 23 levels, equal weight over h = 1 to 5, one number per decision day",
+    "key_secondary": "upper-tail twCRPS with weight 1{y > 0 bp}",
+    "nested_difference": "d = S(base) - S(base + family); positive favours the family; skill = mean(d) / mean(S(base))",
+    "versus_benchmarks": "each of base and the four families against B1 (as-of persistence) and B2 (calendar climatology), d = S(benchmark) - S(model)",
+    "interval": "studentized stationary bootstrap (Newey-West lag 10), mean block 10, 10,000 draws, seed 708, one-sided 95%",
+    "critical_value": "#695's calibrated critical values (scoring_protocol.CRITICAL_VALUES) are for the confirmation checkpoints of 125 and 250 days; this is a development window of about 1,900 days, so the scorer's own studentized bound is used. No inner-draw calibration is run.",
+    "multiplicity": "four families are tested on the primary score; the table reports Holm-adjusted bootstrap p-values beside the unadjusted bounds (section 8 asks Holm for secondaries; nothing here is a claim)",
+    "splits": "by the as-of scarcity state of the decision day (low = states 0 and 1, high = 2 and 3, unknown; risk_date_spread.state_group at lead 1), by the pressure-day type of the target day, by the provisional regimes (reported only, drawn after the fact), and by lead. No split is a pass requirement."
+  },
+  "horizons": [1, 2, 3, 4, 5],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_target_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "outcome": "the panel's spread_bps on the target day, not re-derived from first-published vintages"
+  },
+  "reading_rule": {
+    "per_family": "a family IMPROVES the candidate when the one-sided 95% lower bound of mean(d) on the primary score is above zero; otherwise it does not (reported as 'no improvement beyond its interval', with the point skill beside it). A family whose lower bound is above zero is flagged for a separate needs-eleonora 'Publish?' issue; none is added to any declaration",
+    "h3_overall": "the H3 kill reading: no family improves the candidate beyond its interval. One line per family and one for H3 overall, labelled development, not a verdict",
+    "variant_count": "recorded in the result: variants scored in development before this directive plus the four families (and the re-walked base)"
+  },
+  "not_included": "the ON RRP offering rate, the SRF rate, the H.8 bank groups and SLR headroom (liquidity repository); any 2026 day; combinations of families; #634's new inputs as part of the base; the two-part and published-declaration forms as a base"
+}

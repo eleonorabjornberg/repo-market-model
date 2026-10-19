@@ -1,0 +1,77 @@
+{
+  "title": "Scratch declaration for the ordinary-day P(spread > +5 bp) of H5's spread models against persistence-logistic (#844)",
+  "status": "exploration on development data; nothing here is a verdict under scoring protocol v1 (#640). Declared by the pull request that closes #844 before any number was computed. No variant is added to a published declaration, no rule changes, and the live record and pin do not move.",
+  "issue": 844,
+  "hypothesis": "H5 (primary goal), step 3 (evaluation): the 'no ordinary-day ranking gain' half of H5's kill rule, for the current spread models. Avenue #807.",
+  "span": {
+    "first_day": "2018-04-03",
+    "last_day": "2025-12-31",
+    "note": "A target day after 2025-12-31 is refused (LookAheadError) and so is a locked day (docs/decisions/lockbox.md). The directive (#844 criterion 4) fixes this end; the 2026 development days that metadata/exploration_684.json admits for other re-runs are not read here. The third regime, labelled 2025-26 by repo_model.reliability_regimes.REGIMES, therefore holds the days of 2025 only."
+  },
+  "event": "the target day's spread_bps exceeds +5 bp as repo_model.data.exceeds_bp reads it (the whole-basis-point event)",
+  "unit": "one cell is a target day at one lead h = 1..5. Each row's forecast of target day s at lead h is the probability made h business days earlier (the decision day), exactly as the walk of its own script made it.",
+  "variants": {
+    "spread_mr_level10": {
+      "label": "mean reversion (#686)",
+      "source": "repo_model.spread_mean_reversion.walk on the published panel, via scripts/spread_mean_reversion_686.py build_frame; P(> 5 bp) is repo_model.spread_mean_reversion.exceedance of the lead's 23 quantiles"
+    },
+    "spread_mr_ctx": {
+      "label": "(i) context-pooled residuals (#761)",
+      "source": "repo_model.spread_mr_variants.walk via scripts/spread_mr_variants_761.py build_frame; the same reading of the 23 quantiles"
+    },
+    "c_two_part_new": {
+      "label": "(c) two-part, #634",
+      "source": "the walk of scripts/spread_distribution_634.py walk --variant c_two_part_new on the scratch panel built by the commands in that script's docstring; P(> 5 bp) is that script's exceedance() of the 23 quantiles"
+    },
+    "gbm_funding": {
+      "label": "gbm_funding, #634",
+      "source": "the walk of scripts/spread_distribution_634.py walk --variant gbm_funding; the same reading"
+    }
+  },
+  "references": {
+    "persistence_logistic": {
+      "label": "the project's persistence-logistic",
+      "source": "repo_model.baseline.persistence_logistic_exceedance through rolling_exceedance_backtest, as scripts/spread_distribution_634.py exceedance builds it at tau = 5 bp, one walk per lead; the project's own, not an approximation. The paired comparisons are against it."
+    },
+    "as_of_spread": {
+      "label": "the raw as-of spread",
+      "source": "spread_bps of the anchor row of the decision day (protocol_benchmarks._anchor: the last row public at the decision instant). It is a score, not a probability: only its AUROC is reported, and its pairing with persistence-logistic is on AUROC alone."
+    }
+  },
+  "ordinary_days": {
+    "definition": "the target day is not a risk date under repo_model.risk_dates.NON_ORDINARY, read with reporting_on = the target day (the reading of H5's context rule and of the pressure-day type of #632's page)",
+    "sensitivity": "repo_model.risk_dates.SCHEDULED, the judge's risk_date grouping, on the same cells. Which definition H2 and H5 read is Eleonora's open ruling (#800); both are shown and neither is preferred.",
+    "grain": "the target day"
+  },
+  "days": "per lead, the target days on which every row, persistence-logistic and the raw as-of spread have a value, with the target on or before 2025-12-31",
+  "splits": {
+    "regime": ["2018-19", "2020-24", "2025-26"],
+    "pooled": "shown beside the regimes, never alone (#670)",
+    "lead": [1, 2, 3, 4, 5]
+  },
+  "metrics": {
+    "auroc": "the probability that a pressure day outranks an ordinary non-pressure day, ties counted half",
+    "brier": "mean squared error of the probability",
+    "reliability": "the slope and intercept of logit P(y = 1) = intercept + slope * logit(p), fitted by repo_model.reliability_regimes.fit (#683's helper, unchanged); 1 and 0 for a reliable forecast"
+  },
+  "interval": {
+    "kind": "stationary bootstrap of the cell's days in date order",
+    "level": 0.9,
+    "block_length": 10,
+    "replications": 2000,
+    "seed": "844 * 1000 + 100 * lead + 10 * regime index (pooled 0, then the regimes in order) + 5 * (1 if the SCHEDULED sensitivity else 0)",
+    "paired": "each resample draws one index set and scores every row on it, so a difference from persistence-logistic (row minus persistence-logistic, for AUROC, Brier, slope and intercept) is paired. Positive AUROC difference and negative Brier difference favour the row.",
+    "undefined": "a resample on which a metric is undefined (it drew no pressure day, or the fit has no maximum) is counted; a metric undefined on more than 5% of its resamples reports no interval"
+  },
+  "minimum_pressure_days": {
+    "value": 3,
+    "rule": "Eleonora's #710 minimum: a cell with fewer than 3 pressure days reports no AUROC, slope or intercept (event-based metrics); its Brier and counts are shown. A slope without an interval where the cell has fewer than 5 pressure days, as repo_model.reliability_regimes does."
+  },
+  "counts": "every cell reports its days and its pressure days",
+  "closing_lines": "the page ends with one line per row against H5's ordinary-day kill clause ('no ordinary-day ranking gain'), labelled development. A line only counts the regime-by-lead cells with at least 3 pressure days in which the row's paired AUROC difference from persistence-logistic has an interval above zero, covering zero, or below zero. It sets no threshold and gives no verdict: what counts as a gain is Eleonora's.",
+  "not_done": [
+    "no variant is added; no new fit is made beyond the walks of the scripts named above",
+    "no day after 2025-12-31 is read; no locked day is scored",
+    "no judge, registration or published figure is changed"
+  ]
+}
