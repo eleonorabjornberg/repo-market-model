@@ -251,7 +251,8 @@ def build(published: Path, walks: Path):
     models = {"B1": b1, "B2": b2, "spread_mr_ctx": ctx, "gbm_funding": gbm}
     cells = {name: sd.cell_scores({d: f[d] for d in days}, outcomes, calendar, sp.grid_crps) for name, f in models.items()}
     day_score = {name: sp.day_scores({d: f[d] for d in days}, outcomes, calendar) for name, f in models.items()}
-    return {"rows": rows, "calendar": calendar, "position": position, "row_of": row_of, "splits": splits, "days": days,
+    repro = {name: sp.day_scores(f, outcomes, calendar) for name, f in (("B2", b2), ("gbm_funding", gbm))}
+    return {"repro": repro, "rows": rows, "calendar": calendar, "position": position, "row_of": row_of, "splits": splits, "days": days,
             "cells": cells, "day_score": day_score, "outcomes": outcomes, "gbm_days": gbm_days}
 
 
@@ -321,8 +322,8 @@ def run_command(args) -> int:
     }
     # the reproduction of #922: S(B2) - S(gbm_funding) over the walk's days equals its recorded mean
     recorded = json.loads(B2_LEG_RECORD.read_text(encoding="utf-8"))["cells"]["gbm_funding|full|250"]
-    both = [d for d in data["gbm_days"] if d in data["days"]]
-    b2s, gs = data["day_score"]["B2"], data["day_score"]["gbm_funding"]
+    b2s, gs = data["repro"]["B2"], data["repro"]["gbm_funding"]
+    both = [d for d in data["gbm_days"] if d in b2s and d in gs]
     mean = sum(b2s[d] - gs[d] for d in both) / len(both)
     record["reproduces_922"] = {"recomputed": mean, "recorded": recorded["mean_d"], "days": len(both), "recorded_days": recorded["series_days"]}
     if len(both) != recorded["series_days"] or abs(mean - recorded["mean_d"]) > REPRODUCTION_TOLERANCE:
