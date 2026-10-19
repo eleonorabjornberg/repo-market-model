@@ -6575,6 +6575,241 @@
  ],
  "hypotheses": {
   "H5": {
+   "candidate": {
+    "crps": {
+     "day type: month_end": {
+      "days": 433,
+      "skill_vs_B1": {
+       "interval": [
+        -0.0072528384442223865,
+        0.15298129187305443
+       ],
+       "skill": 0.07460791453620164
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.15330839620317263,
+        0.4650067436905111
+       ],
+       "skill": 0.32880314776813
+      }
+     },
+     "day type: ordinary": {
+      "days": 1598,
+      "skill_vs_B1": {
+       "interval": [
+        0.1139431015922315,
+        0.39012796675631384
+       ],
+       "skill": 0.25207451785039264
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.2665221069792323,
+        0.4161770735446745
+       ],
+       "skill": 0.34487562774668873
+      }
+     },
+     "day type: quarter_end": {
+      "days": 126,
+      "skill_vs_B1": {
+       "interval": [
+        -0.2476777811338752,
+        -0.10508501520509078
+       ],
+       "skill": -0.17367033969014395
+      },
+      "skill_vs_B2": {
+       "interval": [
+        -0.3474197964364407,
+        0.5047043943617718
+       ],
+       "skill": 0.12109772468574122
+      }
+     },
+     "day type: tax_date": {
+      "days": 185,
+      "skill_vs_B1": {
+       "interval": [
+        -0.14662176259413456,
+        0.1098740810238334
+       ],
+       "skill": -0.028897163625736834
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.14342175379683653,
+        0.6855500370749151
+       ],
+       "skill": 0.28432868354202073
+      }
+     },
+     "pooled, all targets": {
+      "days": 1598,
+      "skill_vs_B1": {
+       "interval": [
+        0.09652786126371556,
+        0.30701836082185596
+       ],
+       "skill": 0.20762437381173898
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.22426733998320367,
+        0.4100433435981747
+       ],
+       "skill": 0.3163689531927453
+      }
+     },
+     "pooled, ordinary targets": {
+      "days": 1598,
+      "skill_vs_B1": {
+       "interval": [
+        0.11449749566469869,
+        0.39997675324809523
+       ],
+       "skill": 0.2574380277281791
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.26663209409929534,
+        0.4213284274002441
+       ],
+       "skill": 0.3469505868543468
+      }
+     },
+     "regime: 2018-19": {
+      "days": 101,
+      "skill_vs_B1": {
+       "interval": [
+        0.2404421905117558,
+        0.7988975151081075
+       ],
+       "skill": 0.6603564339000287
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.020394392605367274,
+        0.2332748150479228
+       ],
+       "skill": 0.13261368374769947
+      }
+     },
+     "regime: 2020": {
+      "days": 251,
+      "skill_vs_B1": {
+       "interval": [
+        0.0330717316081127,
+        0.2579089107153192
+       ],
+       "skill": 0.1475301460472257
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.26242032799771564,
+        0.5824183575646957
+       ],
+       "skill": 0.43752379257472046
+      }
+     },
+     "regime: 2021-23": {
+      "days": 751,
+      "skill_vs_B1": {
+       "interval": [
+        -0.12932568527869998,
+        0.1086981988753674
+       ],
+       "skill": -0.007412379954589635
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.37392954213646845,
+        0.6046358363512407
+       ],
+       "skill": 0.4964038155275438
+      }
+     },
+     "regime: 2024": {
+      "days": 250,
+      "skill_vs_B1": {
+       "interval": [
+        0.10036173634022928,
+        0.22510200877080155
+       ],
+       "skill": 0.161540359338619
+      },
+      "skill_vs_B2": {
+       "interval": [
+        -0.11707895534108091,
+        0.1678897389625352
+       ],
+       "skill": 0.01462276080709804
+      }
+     },
+     "regime: 2025-26": {
+      "days": 249,
+      "skill_vs_B1": {
+       "interval": [
+        0.0993582131974115,
+        0.2647681789908626
+       ],
+       "skill": 0.18590354348889213
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.07805651366876995,
+        0.41429915356448277
+       ],
+       "skill": 0.2808570233049247
+      }
+     }
+    },
+    "label": "development, not a verdict",
+    "name": "gbm_funding",
+    "source": "docs/pivot/evidence/h5-step4/score.json",
+    "twcrps": {
+     "pooled, all targets": {
+      "days": 1598,
+      "skill_vs_B1": {
+       "interval": [
+        0.20059130117456841,
+        0.486194204215753
+       ],
+       "skill": 0.361778315033123
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.09270324907615612,
+        0.391681336703577
+       ],
+       "skill": 0.21821461463678554
+      }
+     },
+     "pooled, ordinary targets": {
+      "days": 1598,
+      "skill_vs_B1": {
+       "interval": [
+        0.2914426791476836,
+        0.6651702073311992
+       ],
+       "skill": 0.5160619764153166
+      },
+      "skill_vs_B2": {
+       "interval": [
+        0.1385465179409527,
+        0.38258881952105483
+       ],
+       "skill": 0.2647788073079456
+      }
+     }
+    },
+    "window": {
+     "first": "2019-07-31",
+     "last": "2025-12-23",
+     "n": 1598
+    }
+   },
    "label": "development, not a verdict",
    "spread": {
     "spread_q_gbm+settle+h41+dist_roll": {
@@ -8295,13 +8530,14 @@
  "sources": {
   "brier": "docs/pivot/evidence/*/compare*.json and docs/pivot/evidence/*/paired*.json (those with a `brier` block)",
   "calibration": "docs/pivot/evidence/spread-distribution/compare.json",
+  "candidate": "docs/pivot/evidence/h5-step4/score.json",
   "ordinary": "docs/pivot/evidence/spread-distribution/ordinary.json",
   "spread": "docs/pivot/evidence/spread-distribution/distribution.json",
   "tiers": "docs/pivot/evidence/weighted-miss/tier1.json"
  },
  "variant_count": {
-  "arm_declarations": 23,
-  "arms": 84,
+  "arm_declarations": 24,
+  "arms": 85,
   "candidate_files": 358,
   "declarations": 29,
   "unread": [
