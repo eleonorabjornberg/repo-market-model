@@ -1276,3 +1276,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H1] step 1 · eleonorabjornberg/repo-market-model#973
+- Directive: #939
+- Step: 1 (the scorer; applies Eleonora's ruling of 19 October 2026 on #768, option a)
+- Tier: development
+- Pins: no panel built; base `fb8acae5`; no declaration changed
+- Tried: `scoring_protocol.report` prints the candidate against B3 on its five levels, with its bound at `CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]`, beside the verdict, labelled "reported comparison, no rule". Variants: n/a.
+- Result: no figure; nothing is scored. The verdict is unchanged on every fixture whatever B3 shows.
+- Against kill: not applicable (the output of the scorer; no hypothesis result).
+- Next: Eleonora's merge of the drafted amendment to `docs/decisions/scoring-protocol.md` §4.
