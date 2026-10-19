@@ -1326,3 +1326,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
 - Against kill: not applicable (a check on the interval, not a model).
 - Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#984
+- Directive: #970
+- Step: 3 (documentation and diagnostics: the H.4.1 reserve input read as a Wednesday level, finding #485 item 5)
+- Tier: development
+- Pins: published panel `4ddc3882…`; snapshot `tests/fixtures/snapshots/h41_wednesday_levels/` (FRED `WRBWFRBL` `199ce3ef…` and `WDTGAL` `ae6934f9…`, latest vintage of 19 October 2026); declaration `metadata/h41_wednesday_levels_970.json`
+- Tried: replace the week averages `WRESBAL` and `WTREGEN` by the Wednesday levels of the same weeks in the measurement panel's long rows (same release, same declared instant), re-form the own-leg scarcity state (#586) at horizons 1 to 5 over the scored days 2018-06-29 to 2025-12-31, and read the state at the 27 pressure onsets. Variants: 0 (off in every published declaration).
+- Result: 34 of 1,873 scored days change state at horizon 1 (19 up, 15 down; 33 days at horizons 2 to 5), none enter the risky set and five leave it; the changed days fall in 2020, 2023 and 2025. No onset changes state. The Wednesday level differs from the average by 24 bn on average in absolute terms for reserves and 16 bn for the TGA. Detail in `docs/research/h41-wednesday-levels-970-result.md`. The never-revised status was not re-verified (ALFRED refused).
+- Against kill: the kill condition (no movement) is not met on the scored days and is met at the onsets. Development data, never a verdict.
+- Next: which read the scarcity state uses is Eleonora's; the never-revised check needs ALFRED access.
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#984
+- Directive: #970
+- Step: 3 (documentation and diagnostics: a correction to the PIT diagnostic of #707)
+- Tier: development
+- Pins: published panel `4ddc3882…`; the 25 walks of #634 re-walked; seed 970 (20 further seeds 971 to 990); declaration `metadata/randomised_pit_970.json`
+- Tried: the Czado-Gneiting-Held randomised PIT beside the midpoint PIT of #707 on the same cells (decision days 2018-06-29 to 2025-12-23, leads 1 to 5, a missing lead filled by B1), for `gbm_funding` and `c_two_part_new`. Variants: 0 (a diagnostic, no forecast changes).
+- Result: the midpoint bins reproduce #707's report to the digit. In 2021-23 (3,740 cells) the share of PIT at or below 0.10 is 0.438 midpoint and 0.421 randomised for `c_two_part_new`, 0.364 and 0.343 for `gbm_funding`; under 20 further seeds 0.419 to 0.425 and 0.333 to 0.347. Detail in `docs/research/randomised-pit-970-result.md`.
+- Against kill: not a kill test. The declared reading rule says the #707 reading of the 2021-23 low-PIT share stands; the ties moved the share by 0.02 at most. Development data, never a verdict.
+- Next: nothing follows from this alone; the old page stands.
