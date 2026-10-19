@@ -1,3 +1,5 @@
+> **Archived on 19 October 2026 (#924). Superseded by `docs/pivot/ranking-924-result.md`; do not cite the figures below.** This page (#765, PR #771) was scored on 14 October 2026 with the `calendar` ranker as it stood before the #770 fix (6d8b8262, 15 October), which counts a coupon settlement only where it had been announced at the decision instant. The PR merged without a re-score. The text below is as published; only this note is added. Its research-log entry (`docs/research/log/2026-10-14-model-00771-H8-step2.md`) stays, because the log is append-only; the entry for #924 corrects it. The score it was written from is `score.json` in this directory.
+
 # Ranking the next 20 business days by tail probability and day type: development result (#765)
 
 **Hypothesis and step.** H8 (ranking beats calibrating for desk use), step 2: rank by tail probability combined with the day type. Development data, exploration: not a verdict (scoring protocol v1, #640). Declaration: `metadata/ranking_765.json`, committed before any score. The +5 bp level is only the ranking quantity carried over from step 1; nothing is fitted to the +5 bp event.

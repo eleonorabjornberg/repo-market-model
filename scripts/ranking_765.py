@@ -11,9 +11,10 @@ v1, #640): the result is exploration on development data.
         --output /tmp/funding_panel.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
     PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv --manifest metadata/funding_panel_manifest.json
     PYTHONPATH=src python3 scripts/ranking_765.py score --panel /tmp/funding_panel.csv \\
-        --output docs/pivot/evidence/ranking_daytype/score.json
+        --output docs/pivot/evidence/ranking-924/score.json
     PYTHONPATH=src python3 scripts/ranking_765.py page \\
-        --score docs/pivot/evidence/ranking_daytype/score.json --output docs/pivot/ranking-daytype-result.md
+        --score docs/pivot/evidence/ranking-924/score.json --output docs/pivot/ranking-924-result.md \\
+        --title "H8 step 2 re-scored with the calendar read as announced (#924)" --note docs/pivot/evidence/ranking-924/note.md
 
 The scarcity state is read from the measurement panel (`scripts/pressure_judge.py::_scarcity_states`), which builds it from the
 tracked fixtures. Stdlib only.
