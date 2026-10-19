@@ -103,5 +103,8 @@ Nothing here is changed without her review.
 
 ## Delegated review
 
-Until Eleonora revokes it in writing, queued pull requests are reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), under "Delegated review" in `docs/decisions/workflow.md`. Everything else in
-this file still applies.
+Until Eleonora revokes it in writing, queued pull requests are reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), under "Delegated review" in `docs/decisions/workflow.md`. Once she has ruled on the judgement call a
+`needs-eleonora` pull request waits on (her own GitHub comment, or a ruling the orchestrating session relays from
+chat), the reviewer may merge a pull request that implements exactly that ruling. Decision records, registrations, the
+lockbox, the live record and its pin, and changes to this file or `.claude/` still need her own GitHub action (#256).
+Everything else in this file still applies.
