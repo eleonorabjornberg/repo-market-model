@@ -7,7 +7,7 @@
   ],
   "finding": "#914: gbm_funding's published_features(1) includes treasury_settlement; served, the as-of rule reads it from the target's own row (announced a day ahead); trained on one-step pairs it is read from row p for spread(p + 1), one day early",
   "reference": "the walks of metadata/direct_twin_449.json at lead 1, re-walked here with that script's commands on the same published panel: gbm_funding (one-step pairs) and gbm_funding_direct (direct pairs, which also read every other field at the as-of read); the score reproduces docs/research/direct-twin-449/score.json at lead 1 to the digit and refuses to run otherwise",
-  "arm": {
+  "arms": {
     "gbm_funding_aligned": "gbm_funding (ml.fit_gradient_boosted_quantiles, training_pairs unset, one-step pairs) fitted on the training frame in which treasury_settlement of row p is replaced by row p + 1's, so the pair (p, p + 1) trains the field from the target's own row, where serving reads it. Every other field is one-step. The last row of the frame has no successor and is no origin: its settlement is a hole. Same features (live_record.published_features(1)), fit, seed, hyper-parameters, fold grid (61 rows, refit every 21 days) and quantile grid. Lead 1 only: at the other leads the field is not an input"
   },
   "scale": {

@@ -113,7 +113,7 @@ class DeclarationTests(unittest.TestCase):
     def test_the_declaration_names_the_arm_and_the_ruled_exclusion(self):
         document = json.loads(script.DECLARATION.read_text(encoding="utf-8"))
         self.assertEqual(document["issue"], 931)
-        self.assertEqual(set(document["arm"]), {"gbm_funding_aligned"})
+        self.assertEqual(set(document["arms"]), {"gbm_funding_aligned"})
         self.assertIn("2019-09-18", json.dumps(document["locate"]))
         self.assertEqual(script.EXCLUDED_DAY, date(2019, 9, 18))
 
