@@ -3,6 +3,8 @@
   "issue": 963,
   "hypothesis": "H1 step 3 (the confirmation design) and H6 step 1 (event strata); it bears on H5's registration (five-lens review, Lens C, #958)",
   "ruling": "Eleonora, 19 October 2026, relayed on #958; the series is the one #949 measured (its walks re-run by scripts/block_length_949.py's recipe)",
+  "variants": {},
+  "variants_note": "no model and no variant is added: the critical values in force are only read, and the candidates scored are existing ones (B2, spread_mr_ctx of #761, gbm_funding of #634)",
   "series": {
     "d": "d_t = S(B1) - S(candidate), the lead-averaged grid CRPS of the decision day (scoring_protocol.day_scores), positive favours the candidate: the orientation of #873 and #886",
     "candidates": {
