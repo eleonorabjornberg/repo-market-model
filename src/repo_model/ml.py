@@ -589,6 +589,7 @@ from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .metrics import _validate_levels
 from .pressure import ONSET_QUIET_DAYS
 from .asof import InformationRule
+from .one_step_guard import check_one_step_regressors
 from .splits import (
     LookAheadError,
     SplitError,
@@ -3297,6 +3298,8 @@ def fit_gradient_boosted_quantiles(
             f"to the ensemble twice splits on itself and its importance is "
             f"meaningless individually"
         )
+    if not direct:
+        check_one_step_regressors("fit_gradient_boosted_quantiles", names)
 
     rows = list(train_frame)
     if len(rows) < minimum_history:
