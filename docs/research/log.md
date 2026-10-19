@@ -1326,3 +1326,23 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
 - Against kill: not applicable (a check on the interval, not a model).
 - Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
+
+### 2026-10-19 [H1] step 3 · eleonorabjornberg/repo-market-model#985
+- Directive: #963
+- Step: 3 (the confirmation design: critical values on contiguous post-2020 windows; Eleonora's ruling of 19 October 2026, relayed on #958; a report that changes nothing)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `b008b564`; declaration `metadata/contiguous_calibration_963.json`; `scripts/contiguous_calibration_963.py`, seed 1, 20,000 windows per random cell; `gbm_funding` walks by `scripts/spread_distribution_634.py walk`
+- Tried: the critical value c at 125, 250 and 500 days on every contiguous window (no wrap), on stationary-10 and on circular-10 windows, for d = S(B1) − S(candidate) with the candidate B2, `spread_mr_ctx` and `gbm_funding`, over 1,429 decision days from 2020-04-03 to 2025-12-23; a fixed-b statistic (b = 0.1) on the last 500 days beside the Newey-West (lag 10) one. B1′ not run (#960 unmerged). Variants: 0 new.
+- Result: at 250 days the contiguous c is 7.19 for B2, 1.92 for `spread_mr_ctx` and 2.07 for `gbm_funding`, against 3.10, 1.49, 1.57 (stationary-10) and 2.44, 1.38, 1.45 (circular-10); the series hold 5.7 non-overlapping 250-day windows. By the declared reading rules the 250-day design survives on the candidates' own d and fails on B2's. Last 2 years, NW(10) t against fixed-b t: 4.13 / 3.53 (`spread_mr_ctx`), 3.66 / 3.21 (`gbm_funding`). Detail in `docs/research/contiguous-calibration-963-result.md`.
+- Against kill: not applicable (a check on the confirmation design, not a model).
+- Next: whether the 250-day window stays or lengthens is Eleonora's decision (a section 13 matter); the questions are marked on the page and in the pull request.
+
+### 2026-10-19 [H6] step 1 · eleonorabjornberg/repo-market-model#985
+- Directive: #963
+- Step: 1 (event strata: the H5 metric restricted to declared risk-date targets; Eleonora's ruling of 19 October 2026, relayed on #958)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `b008b564`; declaration `metadata/contiguous_calibration_963.json`; seed 1, 10,000 draws, mean block 3 events
+- Tried: grid CRPS on month-end (the month's last two business days, which holds the turn; #959's label unmerged), quarter-end, tax-date and coupon-settlement targets, d = S(benchmark) − S(candidate) for B2, `spread_mr_ctx` and `gbm_funding` against B1 and B2, with the ACF of d between consecutive events and the events per year. Variants: 0 new.
+- Result: month-end 114 events (20.4 a year), tax date 71 (12.5), coupon settlement 186 (32.8); quarter-end 22 (4.2), too few to test. `gbm_funding` and `spread_mr_ctx` beat B2 on all three tested strata with the one-sided 95% bounds above zero, and neither is clear of B1 on any. The ACF of d between consecutive events is 0.5 to 0.7 at lag 1 against B2 and 0.0 to 0.5 against B1. Detail in `docs/research/contiguous-calibration-963-result.md`.
+- Against kill: no CRPS or MAE skill against as-of persistence and a risk-date calendar benchmark on those days is not tested here (B1 is the persistence-type benchmark; the calendar benchmark is B2, which both candidates beat); development data, never a verdict.
+- Next: whether H6 is registered ahead of H5 is Eleonora's decision; nothing published or registered moves.
