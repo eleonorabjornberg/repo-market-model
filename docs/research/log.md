@@ -1317,12 +1317,12 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
 - Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
 
-### 2026-10-19 [H5] step 2 · eleonorabjornberg/repo-market-model#979
-- Directive: #965
-- Step: 2 (B2's day-type pools; also H6 step 1 and H8's calendar ranker): 15 October as a tax date, a declared alternative `tax_date` measured against a coupon-settlement control
+### 2026-10-19 [H1] step 3 · eleonorabjornberg/repo-market-model#980
+- Directive: #949
+- Step: 3 (does the protocol's mean block of 10 suit H5's paired CRPS loss differentials; a report that changes nothing, Eleonora's ruling of 19 October 2026)
 - Tier: development
-- Pins: published panel `4ddc3882…`; base `4d85e9f3`; declaration `metadata/tax_date_october_965.json` committed before any score
-- Tried: B2 with 15 October (rolled, plus two market days) added to the tax_date type, and with the 15th of the months the published column leaves alone as a control, against B2 as is on grid CRPS and upper-tail twCRPS; H8's calendar ranker with the same days flagged, against the ranker as is on precision and recall at 3 and 5. Variants: 2 (the October label and its control).
-- Result: pooled, B2 with October is +0.3% [-0.2, +1.1] on grid CRPS (no difference) and the ranker's precision@5 gains +0.006 [+0.000, +0.014]. In the October window B2 improves by +16.7% [+2.8, +36.6] and the ranker by +0.068 [+0.011, +0.128] precision@5; the control's own window shows no gain (-3.8% [-17.5, +9.5]). The October window holds a pressure day in 2 of its 8 years (2019, 2025), so the gain rests on them. Development data, not a verdict. Detail in `docs/research/tax-date-october-965-result.md`.
-- Against kill: not applicable (no verdict; the tax-date definition is Eleonora's).
-- Next: Eleonora decides whether 15 October joins the tax_date definition (marked question in the PR).
+- Pins: published panel `4ddc3882…`; base `eec10573`; `scripts/block_length_949.py`, seed 1, 10,000 draws pooled and 4,000 per split; `gbm_funding` walks by `scripts/spread_distribution_634.py walk`
+- Tried: the ACF at lags 1 to 10, the Politis-White automatic block and the studentized stationary-bootstrap interval at mean block 5, 10 and 20, for d = S(B) − S(`gbm_funding`) with B = B1 and B2, at each lead and lead-averaged, over 1,868 decision days to 2025-12-23, pooled and by regime and day type. Variants: 0 new.
+- Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
+- Against kill: not applicable (a check on the interval, not a model).
+- Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
