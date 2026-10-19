@@ -156,6 +156,43 @@ class FrameTests(unittest.TestCase):
         self.assertFalse(script.aligns(("a", "b", "spread_bps")))
 
 
+class ServedRowTests(unittest.TestCase):
+    """The fit takes the last observed spread as an input, so the row it is served is re-expressed like the training rows."""
+
+    class Recorder:
+        levels = (0.5,)
+
+        def __init__(self):
+            self.rows = []
+
+        def predict(self, row):
+            self.rows.append(row)
+            return (row.spread_bps,)
+
+        def with_history(self, history):
+            self.history = list(history)
+            return self
+
+    def test_the_served_feature_row_carries_the_distance_not_the_spread(self):
+        recorder = self.Recorder()
+        model = script.DistanceModel(recorder, REGISTER)
+        row = DailyObservation(date(2018, 6, 14), {"sofr": 1.90, "iorb": 1.95})
+        # IORB - ON RRP is 20 bp that day: SOFR - IORB = -5 bp, SOFR - ON RRP = +15 bp
+        self.assertAlmostEqual(model.predict(row)[0], 15.0, places=9)
+        self.assertAlmostEqual(row.spread_bps, -5.0, places=9)
+
+    def test_history_handed_to_the_model_is_re_expressed_too(self):
+        recorder = self.Recorder()
+        model = script.DistanceModel(recorder, REGISTER)
+        row = DailyObservation(date(2018, 6, 13), {"sofr": 1.80, "iorb": 1.75})
+        view = model.with_history([row])
+        self.assertIsInstance(view, script.DistanceModel)
+        self.assertAlmostEqual(recorder.history[0].spread_bps, 100 * (1.80 - 1.50), places=9)
+
+    def test_the_wrapped_fits_attributes_are_still_read(self):
+        self.assertEqual(script.DistanceModel(self.Recorder(), REGISTER).levels, (0.5,))
+
+
 class MapBackTests(unittest.TestCase):
     def test_the_mapped_back_quantiles_are_the_fitted_ones_shifted_by_the_width(self):
         z = [1.0, 2.5, 4.0, 4.0, 9.25]

@@ -205,6 +205,28 @@ def map_back(quantiles: Optional[Sequence[float]], width: float) -> Optional[Lis
 # -- the arm --------------------------------------------------------------------------------------------------------
 
 
+class DistanceModel:
+    """A fitted model that reads and forecasts the distance: the feature row it is served is re-expressed like its training rows.
+
+    `ml.fit_gradient_boosted_quantiles` takes the last observed spread as an input beside the regressors, so a fit on the distance
+    target must be served the last observed distance, SOFR - ON RRP on the anchor day, and not the spread. The rate is the one in force
+    on the anchor day. Everything else is the wrapped fit's own.
+    """
+
+    def __init__(self, fitted, register: Sequence[policy_events.PolicyEntry]):
+        self._fitted = fitted
+        self._register = register
+
+    def __getattr__(self, name: str):
+        return getattr(self._fitted, name)
+
+    def predict(self, feature_row: DailyObservation):
+        return self._fitted.predict(distance_frame([feature_row], self._register)[0])
+
+    def with_history(self, history: Sequence[DailyObservation]) -> "DistanceModel":
+        return DistanceModel(self._fitted.with_history(distance_frame(history, self._register)), self._register)
+
+
 def regressors(features: Sequence[str]) -> Tuple[str, ...]:
     return tuple(name for name in features if name != "spread_bps")
 
@@ -229,8 +251,11 @@ def arm_fit(features: Sequence[str], register: Sequence[policy_events.PolicyEntr
     align = aligns(features)
 
     def fit(train_frame, minimum_history):
-        return ml.fit_gradient_boosted_quantiles(
-            training_frame(train_frame, register, align), regressors=names, levels=GRID, minimum_history=minimum_history
+        return DistanceModel(
+            ml.fit_gradient_boosted_quantiles(
+                training_frame(train_frame, register, align), regressors=names, levels=GRID, minimum_history=minimum_history
+            ),
+            register,
         )
 
     return fit
