@@ -1,0 +1,53 @@
+{
+  "status": "declared by the pull request that closes #963 before any score was computed; a measurement, not a record. Nothing is published, no critical value in force moves, no day after 2025-12-31 and no lockbox day is scored, and nothing here is a verdict (scoring protocol v1, #640). The series are development data seen before this declaration (#949, #922, #886), so a result is exploration only. Whether the confirmation design changes is Eleonora's",
+  "issue": 963,
+  "hypothesis": "H1 step 3 (the confirmation design) and H6 step 1 (event strata); it bears on H5's registration (five-lens review, Lens C, #958)",
+  "ruling": "Eleonora, 19 October 2026, relayed on #958; the series is the one #949 measured (its walks re-run by scripts/block_length_949.py's recipe)",
+  "series": {
+    "d": "d_t = S(B1) - S(candidate), the lead-averaged grid CRPS of the decision day (scoring_protocol.day_scores), positive favours the candidate: the orientation of #873 and #886",
+    "candidates": {
+      "B2": "protocol_benchmarks.b2_forecast",
+      "spread_mr_ctx": "repo_model.spread_mr_variants.walk (#761), unchanged",
+      "gbm_funding": "scripts/spread_distribution_634.py walks, one per lead, its missing forecasts filled by B1 as the protocol does (#949, #922)"
+    },
+    "b1_prime": "B1' (#960) replaces B1 once #960 has merged; it has not, so this declaration runs B1 only and the PR says so",
+    "days": "decision days from 2020-04-03 (the post-2020 history of #886) whose fifth target is on or before 2025-12-31, on the days every candidate has a forecast (their intersection), so the three series are the same days; lockbox.require_unlocked on every decision and target day"
+  },
+  "calibration": {
+    "window_days": [125, 250, 500],
+    "statistic": "(mean_w - mean(series)) / se_w, with se_w the window's Newey-West (Bartlett) standard error at lag 10 (scoring_protocol.HAC_LAG), as scoring_protocol.window_t_statistics",
+    "generators": {
+      "contiguous": "every start day in [0, n - days], no wrap: the windows the series itself contains, in order",
+      "stationary_10": "stationary bootstrap, mean block scoring_protocol.BLOCK_LENGTH (10), as #886",
+      "circular_10": "circular blocks of scoring_protocol.WINDOW_BLOCK (10) days, as scoring_protocol.window_t_statistics"
+    },
+    "windows": "20000 per cell for the two random generators, seed 1; the contiguous generator is exhaustive",
+    "critical_value": "c = the 0.95 quantile of a generator's window statistics (one-sided level 0.05, whatever the look), so that mean - c * se covers the series' mean on 95% of that generator's windows; it is not the nominal level of scoring_protocol.nominal_levels",
+    "size": "the share of a generator's window statistics above the critical value in force (scoring_protocol.CRITICAL_VALUES, grid comparison: 125 days 3.419438620805254, 250 days 2.425730476113518; 500 days has none in force and is read at the 250-day value)",
+    "effective_windows": "n / days, the number of non-overlapping windows of that length the series holds (a count of independent windows at most, as the windows of a persistent series overlap in information)",
+    "reading_rules": {
+      "survives": "the contiguous-window c at 250 days on the candidate's own d is below 3.0: the 250-day design survives",
+      "fails": "that c is above 4: no 250-day pooled test can confirm anything short of a 20-30% skill",
+      "between": "between 3.0 and 4.0 neither rule applies and the page says so"
+    }
+  },
+  "event_strata": {
+    "metric": "the H5 metric: grid CRPS, restricted to targets on declared risk dates; a target day's score is the mean over leads 1-5 of the cells that target, and d is S(benchmark) - S(candidate) on those target days",
+    "strata": {
+      "month_end": "SplitDeclaration.reporting_day_type(target) == 'month_end' (one of the month's last two business days, which holds the turn of the month); #959's turn label has not merged, so the current one is used and the page says so",
+      "quarter_end": "reporting_day_type == 'quarter_end'",
+      "tax_date": "reporting_day_type == 'tax_date'",
+      "coupon_settlement": "the target row has treasury_settlement_coupons > 0 (may overlap the others)"
+    },
+    "pairing": "each candidate against B1 and against B2 (B2 as a candidate against B1 only), scoring_protocol.paired_tests on the target days of the stratum: stationary bootstrap, mean block 3 events, HAC lag 3, seed 1, 10000 draws",
+    "minimum_events": 30,
+    "between_event_acf": "the sample autocorrelation of d at lags 1-3 across consecutive events of the stratum, in date order",
+    "events_per_year": "events / (days spanned / 365.25)"
+  },
+  "fixed_b": {
+    "statistic": "the mean of d over a 2-year window of 500 decision days, divided by its Bartlett long-run standard error with bandwidth M = b * T, b = 0.1, T = 500 (M = 50, lag 49)",
+    "critical_value": "the 0.95 quantile of that statistic on 20000 iid N(0,1) series of 500 days, seed 1 (the fixed-b limit does not depend on the series' dependence)",
+    "report": "for each candidate: the statistic on the last 500 days of the series, beside the NW(10) statistic and the normal 1.645, and the share of contiguous 500-day windows of the series, centred at its mean, above each critical value (their size)"
+  },
+  "limits": "no published record, declaration or critical value changes; the protocol's constants are only read"
+}
