@@ -1273,7 +1273,7 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
 
-### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#940
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#957
 - Directive: #931
 - Step: 3 (the candidate's construction: finding #914; Eleonora's ruling of 19 October 2026 to run aligned training pairs for `treasury_settlement` at lead 1 as a development step)
 - Tier: development
