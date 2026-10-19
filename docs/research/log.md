@@ -1306,3 +1306,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: over 1,868 decision days to 2025-12-23, the arm's skill over `gbm_funding` is +2.8% [+1.7%, +3.8%] pooled; on month-end targets +13.8% [+11.1%, +16.6%] (149 days); on mid-month coupon dates +13.8% [+8.6%, +21.5%] (115 days); on ordinary days -0.2% [-1.9%, +1.3%] (1,486 days); on tax dates +2.4% [-1.0%, +7.4%]; quarter-ends too thin. The direct-pairs twin's skill over the arm is -4.9% [-7.3%, -2.6%] pooled. Against B1 +21.6% [+13.8%, +39.2%], against B2 +35.9% [+24.2%, +44.4%]. By regime the arm is ahead of `gbm_funding` in every regime, the interval clear of zero in 2018-19 only. Detail in `docs/research/aligned-pairs-931-result.md`.
 - Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
 - Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
+
+### 2026-10-19 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#980
+- Directive: #969
+- Step: groundwork G3 (the live record): a monitoring read decoupled from verdict scoring
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `eec10573`; declaration `metadata/live_monitoring_969.json` committed before any number; the read of live outcomes is gated on a decision record that is a draft only
+- Tried: rolling 90%-band coverage, Kupiec and Christoffersen at q95, 6-bin PIT, CRPS ratio to B1 and B2, replayed on the published model's daily forecasts at lead 1 to 2025-12-31 under proposed thresholds. Variants: 0.
+- Result: reported only, nothing decided. The CRPS ratio to B1 is 1.266 in 2021-23 (above 1.1 from 2021-07-09; below 1 in 2018-19, 2024 and 2025) and the q95 miss rate is 0.116 in 2024 with the Kupiec and Christoffersen stop set from 2024-09-04. The proposed thresholds do not discriminate: a flag is set on most days (the Christoffersen test in every regime). Detail in `docs/research/live-monitoring-969-result.md`.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's rulings on the draft record `docs/decisions/drafts/live-monitoring.md` (marked questions: is a monitoring read of blind-tier outcomes a comparison, the cadence, the thresholds); nothing reads a locked outcome until she merges it.
