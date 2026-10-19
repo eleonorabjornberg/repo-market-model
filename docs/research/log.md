@@ -18,6 +18,9 @@ second entry with the same heading takes `-2` before `.md`. Then run `python3 sc
 assemble`, which rewrites this page, and commit it with the regeneration commit like the other generated pages.
 Two pull requests that add different files never conflict; a conflict in this page alone is resolved by running
 `assemble` again. An entry file already on `main` is never edited, renamed or deleted: the check refuses it.
+A wrong pull request number in a frozen entry's heading is corrected in
+[`log/_corrections.md`](log/_corrections.md) (#867): `assemble` applies it and keeps the original heading in a
+`- Correction:` line.
 
 Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
 hypothesis manual, kept apart from the six steps) has its own heading,
@@ -963,7 +966,8 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no candidate scored); docs/decisions/measurement-protocol.md unchanged
 - Next: the G6 power study re-run on the extended labels (next directive)
 
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#837
+- Correction: the heading named eleonorabjornberg/repo-market-model#830; corrected to eleonorabjornberg/repo-market-model#837 (docs/research/log/_corrections.md).
 - Directive: #785
 - Step: 3
 - Tier: development
@@ -1282,3 +1286,33 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: `fed_repo_days_since_positive` longest gap moves in 2020 (66 to 124), 2021 (156 to 250), and 2023 (39 to 63); take-up days drop by 1 in 2020, 1 in 2021, 2 in 2023 and 1 in 2024. `srf_total_accepted` moves on one date, 2023-05-23 (0.076 to 0.0 USD bn). Nothing is scored. Detail in `docs/pivot/desk-test-marks-933-result.md`.
 - Against kill: not applicable (no verdict; development data).
 - Next: H5 step 2 inputs; the $10 mn / $0 / $10 mn split pattern waits for Eleonora.
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#945
+- Directive: #934
+- Step: 3 (a dated correction of #853's ordinary-day page, on Eleonora's ruling on #917: reported within each regime, no pooled gain claimed; nothing scored again)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ddaf391e`; figures read from `docs/pivot/ordinary-day-p5-844/score.json`, unchanged
+- Tried: the paired AUROC difference from persistence-logistic in each regime at leads 1 to 5 for the four models, read from the committed score. Variants: 0 new.
+- Result: by regime and lead, `gbm_funding` has 1 cell above zero and 1 below of 15; the pooled difference exceeds every regime's in 13 of 20 model-by-lead rows, which comes from ranking across regimes (61 of 81 pressure days are in 2018-19, 5 in 2020-24). No pooled gain is claimed. Development data, not a verdict. Detail in `docs/pivot/ordinary-day-p5-844/correction-934.md`.
+- Against kill: not applicable (no verdict; what counts as a ranking gain is Eleonora's).
+- Next: Eleonora reads the correction with the registration decision (hers).
+
+### 2026-10-19 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#952
+- Directive: #937
+- Step: groundwork G3 (prospective logging)
+- Tier: development
+- Pins: no panel built; base `ddaf391e`
+- Tried: a run of the live-log workflow that starts before the 16:00 ET decision instant ends green with a log line and no comment on #237. Variants: n/a.
+- Result: no figure; nothing is scored. The false "Failed: <day>, at step record" comments of 10-13 to 10-16 came from the 01:15 UTC fallback slot starting after midnight ET.
+- Against kill: not applicable (groundwork).
+- Next: Eleonora's ruling on whether a record may ever be written after midnight ET (marked question in the PR).
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#957
+- Directive: #931
+- Step: 3 (the candidate's construction: finding #914; Eleonora's ruling of 19 October 2026 to run aligned training pairs for `treasury_settlement` at lead 1 as a development step)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `362df847`; seed 931; declaration `metadata/aligned_pairs_931.json`
+- Tried: `gbm_funding` with `treasury_settlement` alone trained from the target's own row (the row serving reads it from), every other field one-step, same fit, seed and folds, lead 1. Reference: `gbm_funding` and the direct-pairs twin, re-walked and reproduced to the digit against #449. Variants: 1 (not in any published declaration).
+- Result: over 1,868 decision days to 2025-12-23, the arm's skill over `gbm_funding` is +2.8% [+1.7%, +3.8%] pooled; on month-end targets +13.8% [+11.1%, +16.6%] (149 days); on mid-month coupon dates +13.8% [+8.6%, +21.5%] (115 days); on ordinary days -0.2% [-1.9%, +1.3%] (1,486 days); on tax dates +2.4% [-1.0%, +7.4%]; quarter-ends too thin. The direct-pairs twin's skill over the arm is -4.9% [-7.3%, -2.6%] pooled. Against B1 +21.6% [+13.8%, +39.2%], against B2 +35.9% [+24.2%, +44.4%]. By regime the arm is ahead of `gbm_funding` in every regime, the interval clear of zero in 2018-19 only. Detail in `docs/research/aligned-pairs-931-result.md`.
+- Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
+- Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
