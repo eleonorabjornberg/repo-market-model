@@ -26,7 +26,7 @@ def ensure():
         return
     log = _load("check_research_log", "check_research_log.py")
     header, files = log.read_entry_files()
-    log.LOG.write_text(log.assemble(header, files), encoding="utf-8")
+    log.LOG.write_text(log.assemble(header, files, log.read_corrections()), encoding="utf-8")
     visual = _load("emit_visual", "emit_visual.py")
     for rel, data in visual.generate(ROOT).items():
         (ROOT / rel).parent.mkdir(parents=True, exist_ok=True)

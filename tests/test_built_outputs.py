@@ -67,7 +67,7 @@ class RepositoryTests(unittest.TestCase):
     def test_the_built_log_is_the_assembly_of_the_entry_files(self):
         built_outputs.ensure()
         header, files = crl.read_entry_files()
-        self.assertEqual(crl.assemble(header, files), crl.LOG.read_text(encoding="utf-8"))
+        self.assertEqual(crl.assemble(header, files, crl.read_corrections()), crl.LOG.read_text(encoding="utf-8"))
 
     def test_a_tracked_log_is_an_error(self):
         self.assertTrue(crl.tracked_errors(["docs/research/log.md"]))

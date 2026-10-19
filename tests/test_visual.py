@@ -23,6 +23,10 @@ from pathlib import Path
 from repo_model import lockbox
 
 import built_outputs
+
+# The page and its data are built on main and never committed (#928): build this tree's copy before any class
+# body below reads them at import.
+built_outputs.ensure()
 from lockbox_support import PRE_OPENING_LOCKBOX
 from repo_model.splits import LookAheadError
 
