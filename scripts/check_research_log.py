@@ -9,7 +9,10 @@ This check fails when
 1. a log entry breaks the format (`ENTRY_FORMAT`);
 2. a log entry names a hypothesis the plan does not have;
 3. an entry file is badly named, holds more than one entry, or disagrees with its own heading;
-4. `log.md` is not the assembly of the entry files and the header;
+4. `log.md` is not the assembly of the entry files, the header and the corrections;
+   `docs/research/log/_corrections.md` (#867) corrects only the pull request number in an entry's heading, for an
+   entry that exists, once; `assemble` applies it and the entry file stays frozen. A correction line that is
+   malformed, names a missing entry, repeats the old reference wrongly or changes more than the number fails;
 5. a change edits, renames or deletes an entry file already on the base (the log is append-only);
 6. a change adds or changes a result page (`docs/pivot/*-result.md`) or a declaration or candidate under
    `metadata/` and adds no new log entry whose Directive line names the pull request's directive.
@@ -45,6 +48,7 @@ PLAN = ROOT / "docs" / "research" / "plan.md"
 LOG = ROOT / "docs" / "research" / "log.md"
 LOG_DIR = ROOT / "docs" / "research" / "log"
 HEADER_NAME = "_header.md"
+CORRECTIONS_NAME = "_corrections.md"
 
 # The log format, in one place. A heading `### YYYY-MM-DD [H#] step N · owner/repo#PR`, or for groundwork (G1 to G5
 # in a hypothesis manual, kept apart from the six steps) `### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR`, then
@@ -164,9 +168,72 @@ def entry_name(heading, sequence=None, taken=()):
     return name
 
 
-def assemble(header, entries):
-    """`log.md`: the header, then every entry in file-name order, each after one blank line."""
-    return header + "".join("\n" + entries[name] for name in sorted(entries))
+CORRECTION = re.compile(r"^- (?P<file>\S+\.md): (?P<old>[\w.-]+/[\w.-]+#\d+) -> (?P<new>[\w.-]+/[\w.-]+#\d+)\s*$")
+
+
+def parse_corrections(text):
+    """The corrections in `_corrections.md` as (line number, file name or None, old ref, new ref, raw line).
+
+    A correction line is `- <entry file name>: <owner/repo#PR> -> <owner/repo#PR>`; any other line starting with
+    `- ` is returned with None so that `correction_errors` can refuse it. Headings and prose are ignored.
+    """
+    found = []
+    for number, line in enumerate((text or "").splitlines(), 1):
+        if not line.startswith("- "):
+            continue
+        match = CORRECTION.match(line)
+        found.append((number, match.group("file") if match else None,
+                      match.group("old") if match else None, match.group("new") if match else None, line))
+    return found
+
+
+def correction_errors(corrections, files):
+    """Every way the corrections break the rule (#867): each names an existing entry file, states that entry's own
+    heading reference as the old one, changes nothing but the pull request number, and appears once."""
+    errors, seen = [], set()
+    for number, target, old, new, raw in parse_corrections(corrections):
+        where = "%s line %d" % (CORRECTIONS_NAME, number)
+        if target is None:
+            errors.append("%s: not `- <entry file>: <owner/repo#PR> -> <owner/repo#PR>`: %r" % (where, raw))
+            continue
+        if target not in files:
+            errors.append("%s: %s is not an entry file" % (where, target))
+            continue
+        if target in seen:
+            errors.append("%s: %s is corrected twice" % (where, target))
+        seen.add(target)
+        heading = HEADING.match(files[target].splitlines()[0]) if files[target].strip() else None
+        if heading is None:
+            errors.append("%s: the heading of %s is not a valid entry heading" % (where, target))
+            continue
+        if old != heading.group("ref"):
+            errors.append("%s: the heading of %s names %s, not %s" % (where, target, heading.group("ref"), old))
+        old_repo, new_repo = old.split("#")[0], new.split("#")[0]
+        if old_repo != new_repo:
+            errors.append("%s: a correction changes only the pull request number, not the repository (%s -> %s)"
+                          % (where, old_repo, new_repo))
+        if old == new:
+            errors.append("%s: %s is not a correction (old and new are the same)" % (where, old))
+    return errors
+
+
+def apply_correction(text, old, new):
+    """An entry with its heading's reference replaced, and a `- Correction:` line that keeps the original visible."""
+    head, _, rest = text.partition("\n")
+    note = ("- Correction: the heading named %s; corrected to %s (docs/research/log/%s).\n"
+            % (old, new, CORRECTIONS_NAME))
+    return head.replace("· " + old, "· " + new, 1) + "\n" + note + rest
+
+
+def assemble(header, entries, corrections=None):
+    """`log.md`: the header, then every entry in file-name order, each after one blank line.
+
+    `corrections` is the text of `_corrections.md`: an entry named there is assembled with its heading corrected.
+    The entry file itself is never edited."""
+    fixes = {target: (old, new) for _, target, old, new, _ in parse_corrections(corrections) if target}
+    return header + "".join(
+        "\n" + (apply_correction(entries[name], *fixes[name]) if name in fixes else entries[name])
+        for name in sorted(entries))
 
 
 def split_log(text):
@@ -191,8 +258,15 @@ def read_entry_files(directory=None):
     """(header text, {file name: text}) of the entry directory."""
     directory = Path(directory) if directory else LOG_DIR
     header = (directory / HEADER_NAME).read_text(encoding="utf-8")
-    files = {p.name: p.read_text(encoding="utf-8") for p in sorted(directory.glob("*.md")) if p.name != HEADER_NAME}
+    files = {p.name: p.read_text(encoding="utf-8") for p in sorted(directory.glob("*.md"))
+             if p.name not in (HEADER_NAME, CORRECTIONS_NAME)}
     return header, files
+
+
+def read_corrections(directory=None):
+    """The text of `_corrections.md`, or "" when there is none."""
+    path = (Path(directory) if directory else LOG_DIR) / CORRECTIONS_NAME
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
 def validate_entry_files(files, hypotheses):
@@ -229,6 +303,8 @@ def tree_entries(rev):
         if not path:
             continue
         name = path.rsplit("/", 1)[-1]
+        if name == CORRECTIONS_NAME:
+            continue
         if name == HEADER_NAME:
             header = _git("show", "%s:%s" % (rev, path))
         elif name.endswith(".md"):
@@ -313,13 +389,20 @@ def main(argv=None):
     if args.command == "assemble":
         header, files = read_entry_files()
         if args.check:
-            errors = tracked_errors(_git("ls-files", "docs/research/log.md").split())
+            corrections = read_corrections()
+            errors = correction_errors(corrections, files)
+            errors += tracked_errors(_git("ls-files", "docs/research/log.md").split())
             for error in errors:
                 print(error)
             if not errors:
                 print("research log: the entry files assemble; log.md is not tracked")
             return 1 if errors else 0
-        LOG.write_text(assemble(header, files), encoding="utf-8")
+        errors = correction_errors(read_corrections(), files)
+        if errors:
+            for error in errors:
+                print(error)
+            return 1
+        LOG.write_text(assemble(header, files, read_corrections()), encoding="utf-8")
         print("wrote %s from %d entry files" % (LOG.relative_to(ROOT), len(files)))
         return 0
     if args.command == "check-block":
@@ -328,6 +411,7 @@ def main(argv=None):
         header, files = read_entry_files()
         errors = validate_log(assemble(header, files), hypotheses)
         errors += validate_entry_files(files, hypotheses)
+        errors += correction_errors(read_corrections(), files)
         errors += tracked_errors(_git("ls-files", "docs/research/log.md").split())
         for name in _git("ls-files", "*.md").split("\n"):
             if name:

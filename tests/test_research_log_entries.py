@@ -15,6 +15,20 @@ Recorded mutations, each killing the named test:
   `test_a_file_name_that_disagrees_with_its_heading_is_refused` (`AssertionError: [] is not true`);
 * `for name in sorted(entries)` replaced by `for name in list(entries)` in `assemble` fails
   `test_entries_are_assembled_in_file_name_order` (`AssertionError: '...' != '...'`).
+
+Corrections (#867, option (a), Eleonora 19 October 2026): `docs/research/log/_corrections.md` corrects the PR number in
+an entry's heading without touching the frozen entry file; `assemble` applies it and keeps the original heading in a
+`- Correction:` line. Written before the code: the `CorrectionTests` failed first on the missing `parse_corrections`
+and `correction_errors` (`AttributeError`). Recorded mutations:
+
+* `if target not in files:` replaced by `if False:` in `correction_errors` fails
+  `test_a_correction_for_a_missing_entry_is_refused` (`KeyError: '2026-10-12-model-00999-H5-step3.md'`);
+* `if old != heading.group("ref"):` replaced by `if False:` in `correction_errors` fails
+  `test_a_correction_whose_old_reference_is_not_the_headings_is_refused` (`AssertionError: [] is not true`);
+* `if old_repo != new_repo:` replaced by `if False:` in `correction_errors` fails
+  `test_a_correction_that_changes_more_than_the_pull_request_number_is_refused` (`AssertionError: [] is not true`);
+* `if target in seen:` replaced by `if False:` in `correction_errors` fails `test_two_corrections_of_one_entry_are_refused`
+  (`AssertionError: [] is not true`).
 """
 import importlib.util
 import subprocess
@@ -136,6 +150,57 @@ class FrozenTests(unittest.TestCase):
         self.assertTrue(crl.frozen_errors({NAME: entry()}, {"2026-10-13-model-00700-H5-step3.md": entry()}))
 
 
+REPO = "eleonorabjornberg/repo-market-model"
+
+
+def correction(name=NAME, old=700, new=737, repo=REPO, new_repo=None):
+    return "- %s: %s#%d -> %s#%d\n" % (name, repo, old, new_repo or repo, new)
+
+
+class CorrectionTests(unittest.TestCase):
+    """The heading of a frozen entry is corrected by a line in `_corrections.md`, never by editing the entry (#867)."""
+
+    def test_a_correction_changes_the_assembled_heading_and_keeps_the_original_visible(self):
+        text = crl.assemble(HEADER, {NAME: entry(pr=700)}, correction())
+        self.assertIn("### 2026-10-12 [H5] step 3 · %s#737\n" % REPO, text)
+        self.assertNotIn("### 2026-10-12 [H5] step 3 · %s#700\n" % REPO, text)
+        self.assertIn("- Correction: the heading named %s#700; corrected to %s#737 "
+                      "(docs/research/log/_corrections.md).\n" % (REPO, REPO), text)
+
+    def test_the_corrected_assembly_still_passes_the_log_format(self):
+        text = crl.assemble(HEADER, {NAME: entry(pr=700)}, correction())
+        self.assertEqual(crl.validate_log(text, {"H5"}), [])
+
+    def test_without_corrections_the_assembly_is_unchanged(self):
+        self.assertEqual(crl.assemble(HEADER, {NAME: entry()}, ""), crl.assemble(HEADER, {NAME: entry()}))
+
+    def test_a_sound_correction_passes(self):
+        self.assertEqual(crl.correction_errors(correction(), {NAME: entry(pr=700)}), [])
+
+    def test_a_correction_for_a_missing_entry_is_refused(self):
+        self.assertTrue(crl.correction_errors(correction(name="2026-10-12-model-00999-H5-step3.md"), {NAME: entry()}))
+
+    def test_a_correction_whose_old_reference_is_not_the_headings_is_refused(self):
+        self.assertTrue(crl.correction_errors(correction(old=701), {NAME: entry(pr=700)}))
+
+    def test_a_correction_that_changes_more_than_the_pull_request_number_is_refused(self):
+        self.assertTrue(crl.correction_errors(correction(new_repo="eleonorabjornberg/repo-market-liquidity"),
+                                              {NAME: entry(pr=700)}))
+
+    def test_two_corrections_of_one_entry_are_refused(self):
+        self.assertTrue(crl.correction_errors(correction() + correction(new=738), {NAME: entry(pr=700)}))
+
+    def test_a_malformed_correction_line_is_refused(self):
+        self.assertTrue(crl.correction_errors("- not a correction\n", {NAME: entry()}))
+
+    def test_the_corrections_file_is_not_an_entry_file(self):
+        header, files = crl.read_entry_files()
+        self.assertNotIn(crl.CORRECTIONS_NAME, files)
+
+    def test_the_corrections_file_is_not_frozen_as_an_entry(self):
+        self.assertEqual(crl.frozen_errors({NAME: entry()}, {NAME: entry()}), [])
+
+
 class RepositoryTests(unittest.TestCase):
 
     def test_there_are_entry_files_and_log_md_is_not_tracked(self):
@@ -145,6 +210,17 @@ class RepositoryTests(unittest.TestCase):
         tracked = subprocess.run(["git", "ls-files", "docs/research/log.md"], cwd=ROOT, capture_output=True,
                                  text=True, check=True).stdout.split()
         self.assertEqual(crl.tracked_errors(tracked), [])
+
+    def test_every_correction_in_the_repository_is_sound(self):
+        header, files = crl.read_entry_files()
+        self.assertEqual(crl.correction_errors(crl.read_corrections(), files), [])
+
+    def test_the_heading_of_the_785_entry_names_837_and_its_file_is_untouched(self):
+        header, files = crl.read_entry_files()
+        name = "0094-2026-10-16-model-00830-H5-step3.md"
+        self.assertIn("model#830\n", files[name].splitlines()[0] + "\n")
+        self.assertIn("### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#837\n",
+                      crl.assemble(header, files, crl.read_corrections()))
 
     def test_every_entry_file_passes(self):
         header, files = crl.read_entry_files()
