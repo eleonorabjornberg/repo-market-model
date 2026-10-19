@@ -1262,3 +1262,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H5] step 2 · eleonorabjornberg/repo-market-model#942
+- Directive: #933
+- Step: 2 (inputs; data meaning of the Desk's test operations, groundwork; also serves H9 step 1)
+- Tier: development
+- Pins: published panel `4ddc3882…` unchanged; base `ddaf391e`
+- Tried: a Repo operation whose id ends in " 99" or whose operationLimit is at most $250 mn is a Desk test, as Eleonora ruled on #916 (19 October 2026); six repo operations are dropped that the note alone missed. Variants: 1 rule.
+- Result: `fed_repo_days_since_positive` longest gap moves in 2020 (66 to 124), 2021 (156 to 250), and 2023 (39 to 63); take-up days drop by 1 in 2020, 1 in 2021, 2 in 2023 and 1 in 2024. `srf_total_accepted` moves on one date, 2023-05-23 (0.076 to 0.0 USD bn). Nothing is scored. Detail in `docs/pivot/desk-test-marks-933-result.md`.
+- Against kill: not applicable (no verdict; development data).
+- Next: H5 step 2 inputs; the $10 mn / $0 / $10 mn split pattern waits for Eleonora.
