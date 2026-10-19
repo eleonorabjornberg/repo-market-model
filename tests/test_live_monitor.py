@@ -255,5 +255,43 @@ class RecordTests(unittest.TestCase):
             lm.rows_from_records([record], outcomes, lead=7)
 
 
+class ScriptTests(unittest.TestCase):
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def _script(self):
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("live_monitor_script", self.ROOT / "scripts" / "live_monitor.py")
+        module = module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_the_live_read_refuses_before_it_touches_the_log(self):
+        module = self._script()
+        if (self.ROOT / "docs" / "decisions" / lm.DECISION_RECORD).exists():
+            self.skipTest("the decision record is merged")
+        with self.assertRaises(LookAheadError):
+            module.live_run(Path("/nonexistent"), [], Path("/nonexistent"))
+
+    def test_the_declaration_and_the_replay_record_agree(self):
+        module = self._script()
+        declaration = module.load_declaration()
+        self.assertEqual(declaration["replay"]["last_day"], "2025-12-31")
+        record = json.loads((self.ROOT / "docs/research/live-monitoring-969/replay.json").read_text())
+        self.assertEqual(record["decides"], "nothing")
+        self.assertLessEqual(date.fromisoformat(record["last_day"]), lm.DEV_LAST)
+        self.assertEqual(len(record["series"]), record["days"])
+        self.assertLessEqual(max(point["date"] for point in record["series"]), "2025-12-31")
+        thresholds = declaration["proposed_thresholds"]
+        self.assertIn("amber_below", thresholds["band_coverage_60d"])
+
+    def test_the_draft_stays_a_draft_until_she_moves_it(self):
+        decisions = self.ROOT / "docs" / "decisions"
+        draft, merged = decisions / "drafts" / lm.DECISION_RECORD, decisions / lm.DECISION_RECORD
+        self.assertTrue(draft.is_file() or merged.is_file())
+        if draft.is_file() and not merged.is_file():
+            self.assertIn("not in force", draft.read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
