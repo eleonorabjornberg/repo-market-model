@@ -3,7 +3,7 @@
 
 Two documents keep the research honest. The plan names the hypotheses H1 to H10; the log has one dated entry per
 scored experiment. Since #866 each entry is its own file under `docs/research/log/`, so pull requests that add
-entries never conflict, and `docs/research/log.md` is generated from the files by `assemble` (never hand-edited).
+entries never conflict, and `docs/research/log.md` is generated from the files by `assemble`. It is built on main (#928) and not tracked.
 This check fails when
 
 1. a log entry breaks the format (`ENTRY_FORMAT`);
@@ -23,10 +23,11 @@ verbatim from its pull request body: `check-block` validates such a block the sa
     python3 scripts/check_research_log.py check-block FILE
     python3 scripts/check_research_log.py assemble [--check]
 
-`check --base` compares the log at REF with the log in the working tree and looks at the paths changed since the
-merge base; the directive comes from the `Closes #N` lines of the pull request body in the environment variable
+`check --base` compares the entries at REF with the entries at --head (default HEAD) and looks at the paths changed
+since the merge base; the directive comes from the `Closes #N` lines of the pull request body in the environment variable
 named by `--body-env`. `assemble` writes `docs/research/log.md` from `docs/research/log/_header.md` and the entry
-files, in file-name order; with `--check` it writes nothing and exits 1 when `log.md` is stale. Standard library only.
+files, in file-name order; with `--check` it writes nothing and exits 1 when the files do not assemble or git tracks
+`log.md`. Standard library only.
 """
 from __future__ import annotations
 
@@ -213,12 +214,26 @@ def validate_entry_files(files, hypotheses):
     return errors
 
 
-def stale_errors(log_text, header, files):
-    """`log.md` against the assembly of the header and the entry files."""
-    if log_text == assemble(header, files):
+def tracked_errors(tracked):
+    """`log.md` is built on main (#928), never committed: an error when git tracks it."""
+    if LOG.relative_to(ROOT).as_posix() not in tracked:
         return []
-    return ["docs/research/log.md is not the assembly of docs/research/log/: run "
-            "`python3 scripts/check_research_log.py assemble` (never edit log.md by hand)"]
+    return ["docs/research/log.md is tracked, but it is built from docs/research/log/ on main (#928): "
+            "change the entry files instead and `git rm --cached docs/research/log.md`"]
+
+
+def tree_entries(rev):
+    """(header text, {file name: text}) of the entry directory at the git revision `rev`."""
+    header, files = "", {}
+    for path in _git("ls-tree", "-r", "--name-only", rev, "--", "docs/research/log/").split("\n"):
+        if not path:
+            continue
+        name = path.rsplit("/", 1)[-1]
+        if name == HEADER_NAME:
+            header = _git("show", "%s:%s" % (rev, path))
+        elif name.endswith(".md"):
+            files[name] = _git("show", "%s:%s" % (rev, path))
+    return header, files
 
 
 def frozen_errors(base, head):
@@ -298,11 +313,11 @@ def main(argv=None):
     if args.command == "assemble":
         header, files = read_entry_files()
         if args.check:
-            errors = stale_errors(LOG.read_text(encoding="utf-8"), header, files)
+            errors = tracked_errors(_git("ls-files", "docs/research/log.md").split())
             for error in errors:
                 print(error)
             if not errors:
-                print("research log: log.md is the assembly of the entry files")
+                print("research log: the entry files assemble; log.md is not tracked")
             return 1 if errors else 0
         LOG.write_text(assemble(header, files), encoding="utf-8")
         print("wrote %s from %d entry files" % (LOG.relative_to(ROOT), len(files)))
@@ -310,28 +325,20 @@ def main(argv=None):
     if args.command == "check-block":
         errors = validate_log(Path(args.file).read_text(), hypotheses)
     else:
-        errors = validate_log(LOG.read_text(), hypotheses)
         header, files = read_entry_files()
+        errors = validate_log(assemble(header, files), hypotheses)
         errors += validate_entry_files(files, hypotheses)
-        errors += stale_errors(LOG.read_text(encoding="utf-8"), header, files)
+        errors += tracked_errors(_git("ls-files", "docs/research/log.md").split())
         for name in _git("ls-files", "*.md").split("\n"):
-            if name and name != "docs/research/log.md":
+            if name:
                 errors += conflict_markers((ROOT / name).read_text(), name)
         if args.base:
             merge_base = _git("merge-base", args.base, args.head).strip()
             changed = _git("diff", "--name-only", "--diff-filter=AMR", merge_base, args.head).split()
-            try:
-                base_text = _git("show", "%s:docs/research/log.md" % merge_base)
-            except subprocess.CalledProcessError:
-                base_text = ""
-            head_text = _git("show", "%s:docs/research/log.md" % args.head)
-            base_files = {}
-            for path in _git("ls-tree", "-r", "--name-only", merge_base, "--", "docs/research/log/").split("\n"):
-                name = path.rsplit("/", 1)[-1]
-                if path and name != HEADER_NAME:
-                    base_files[name] = _git("show", "%s:%s" % (merge_base, path))
+            base_header, base_files = tree_entries(merge_base)
+            head_header, head_files = tree_entries(args.head)
             errors += frozen_errors(base_files, files)
-            errors += check_change(changed, base_text, head_text,
+            errors += check_change(changed, assemble(base_header, base_files), assemble(head_header, head_files),
                                    closed_issues(os.environ.get(args.body_env, "")))
     for error in errors:
         print(error)

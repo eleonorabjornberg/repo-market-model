@@ -14,6 +14,7 @@ carries the label `DEV_LABEL`. Standard library only.
 """
 from __future__ import annotations
 
+import hashlib
 import html
 import importlib.util
 import json
@@ -25,7 +26,7 @@ check_research_log = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(check_research_log)
 
 PLAN = "docs/research/plan.md"
-LOG = "docs/research/log.md"
+LOG = "docs/research/log"
 PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES)
@@ -145,15 +146,21 @@ def parse_manual(hid, text):
     return {"question": question, "owner": owner, "milestones": milestones, "markers": markers}
 
 
-def parse_log_entries(text):
-    """Log entries as dicts, keyed by hypothesis."""
-    by_h = {}
+def log_digest(repo):
+    """SHA-256 of the log as `check_research_log.py assemble` builds it from the entry files (#928)."""
+    header, files = check_research_log.read_entry_files(Path(repo) / LOG)
+    return hashlib.sha256(check_research_log.assemble(header, files).encode("utf-8")).hexdigest()
+
+
+def parse_log_entries(text, file=None, by_h=None):
+    """Log entries as dicts, keyed by hypothesis; `file` names the entry file the text came from (#928)."""
+    by_h = {} if by_h is None else by_h
     for number, match, heading, fields in check_research_log.parse_log(text):
         if not match:
-            raise ResearchError(f"{LOG} line {number}: malformed heading {heading!r}")
+            raise ResearchError(f"{file or LOG} line {number}: malformed heading {heading!r}")
         date, hid, step, groundwork, ref = match.group("date", "hyp", "step", "groundwork", "ref")
         by_h.setdefault(hid, []).append({"date": date, "step": int(step) if step else None, "groundwork": groundwork,
-                                         "ref": ref, "line": number, "fields": fields})
+                                         "ref": ref, "line": number, "fields": fields, "file": file})
     return by_h
 
 
@@ -161,7 +168,9 @@ def load(repo):
     """Everything the page shows, as plain data."""
     plan = parse_plan(read(repo, PLAN))
     progress = json.loads(read(repo, PROGRESS))
-    log = parse_log_entries(read(repo, LOG))
+    log = {}
+    for name, text in check_research_log.read_entry_files(Path(repo) / LOG)[1].items():
+        parse_log_entries(text, name, log)
     done = progress.get("milestones", {})
     for key, item in done.items():
         if not (Path(repo) / item["evidence"]).exists():
@@ -308,7 +317,7 @@ def log_html(h):
         return '<p class="rs-note">No log entry yet.</p>'
     items = []
     for e in h["log"]:
-        link = f'<a href="{BLOB}{LOG}#L{e["line"]}">log entry</a>'
+        link = f'<a href="{BLOB}{LOG}/{e["file"]}">log entry</a>'
         f = e["fields"]
         items.append(
             f'<li><b>{e["date"]}</b>, {"groundwork " + e["groundwork"] if e["step"] is None else "step " + str(e["step"])}, {link}, tier {esc(f.get("Tier", ""))}'

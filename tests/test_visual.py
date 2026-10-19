@@ -22,6 +22,7 @@ from pathlib import Path
 
 from repo_model import lockbox
 
+import built_outputs
 from lockbox_support import PRE_OPENING_LOCKBOX
 from repo_model.splits import LookAheadError
 
@@ -35,22 +36,34 @@ AS_OF = ROOT / "docs/runs/persistence_funding.json"
 
 
 class RegenerationTests(unittest.TestCase):
-    """The committed page and data are exactly what the generator produces."""
+    """The page and data are built from the tree on main and never committed (#928)."""
 
     @classmethod
     def setUpClass(cls):
         cls.outputs = emit_visual.generate(ROOT)
 
-    def test_regeneration_reproduces_committed_files_byte_for_byte(self):
+    def test_generation_is_deterministic_and_nothing_built_is_tracked(self):
+        """Two builds are byte-identical, and git tracks none of the files they write (#928).
+
+        A pull request carries no copy of the page; `scripts/check_built_outputs.py` refuses one that does.
+        """
+        again = emit_visual.generate(ROOT)
+        self.assertEqual(again, self.outputs)
+        tracked = subprocess.run(["git", "-C", str(ROOT), "ls-files", emit_visual.PAGE, emit_visual.DATA_DIR],
+                                 capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(tracked, [], "built on main, not committed: change the inputs instead")
+
+    def test_the_built_files_on_disk_match_the_generator(self):
+        """`tests/built_outputs.py` wrote them from this tree, so a test that reads them reads this tree's page."""
+        built_outputs.ensure()
         for rel, data in self.outputs.items():
             with self.subTest(path=rel):
-                self.assertTrue((ROOT / rel).exists(), f"{rel} is not committed")
-                self.assertEqual((ROOT / rel).read_bytes(), data,
-                                 f"{rel} is stale: run `python3 scripts/emit_visual.py`")
+                self.assertEqual((ROOT / rel).read_bytes(), data)
 
     def test_no_stray_data_files(self):
-        committed = {f"{emit_visual.DATA_DIR}/{p.name}" for p in (ROOT / emit_visual.DATA_DIR).glob("*.json")}
-        self.assertEqual(committed, {rel for rel in self.outputs if rel.startswith(emit_visual.DATA_DIR)})
+        built_outputs.ensure()
+        built = {f"{emit_visual.DATA_DIR}/{p.name}" for p in (ROOT / emit_visual.DATA_DIR).glob("*.json")}
+        self.assertEqual(built, {rel for rel in self.outputs if rel.startswith(emit_visual.DATA_DIR)})
 
     def test_every_data_file_carries_provenance(self):
         for rel, data in self.outputs.items():
@@ -94,18 +107,17 @@ class RegenerationTests(unittest.TestCase):
                 self.assertLessEqual(set(kept), {"declaration", "derived", "comparison"})
                 self.assertLessEqual(set(kept.get("comparison", {})), {"loss", "mean_difference_interval"})
 
-    def test_committed_files_carry_no_commit_stamp(self):
-        """The committed page and data carry no commit, so a merge to main cannot make them stale (#789).
+    def test_unstamped_files_carry_no_commit_stamp(self):
+        """The generated page and data carry no commit unless asked (#789).
 
         The stamp is written on main when the page is published (`--stamp`, run by the pages job), not
-        in a pull request.
+        in a pull request or a test.
         """
         for rel, data in self.outputs.items():
             with self.subTest(path=rel):
                 if rel.endswith(".json"):
                     self.assertIsNone(json.loads(data)["provenance"]["commit"])
                 self.assertNotRegex(data.decode("utf-8"), r"commit <code>[0-9a-f]{12,40}")
-                self.assertEqual((ROOT / rel).read_bytes(), data)
 
     def test_generation_without_a_stamp_never_reads_git_history(self):
         """Regeneration for `--check` and the tests does not depend on where main is.
@@ -2833,6 +2845,7 @@ class FindingProseTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        built_outputs.ensure()
         cls.page = (ROOT / "site/index.html").read_text(encoding="utf-8")
 
     def test_the_break_is_not_said_to_be_untuned_without_its_provenance(self):

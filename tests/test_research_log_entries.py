@@ -138,20 +138,22 @@ class FrozenTests(unittest.TestCase):
 
 class RepositoryTests(unittest.TestCase):
 
-    def test_log_md_is_the_assembly_of_the_entry_files(self):
+    def test_there_are_entry_files_and_log_md_is_not_tracked(self):
+        """`log.md` is built on main and never committed (#928): the entry files are the log."""
         header, files = crl.read_entry_files()
         self.assertTrue(files)
-        self.assertEqual(crl.assemble(header, files), crl.LOG.read_text(encoding="utf-8"))
+        tracked = subprocess.run(["git", "ls-files", "docs/research/log.md"], cwd=ROOT, capture_output=True,
+                                 text=True, check=True).stdout.split()
+        self.assertEqual(crl.tracked_errors(tracked), [])
 
     def test_every_entry_file_passes(self):
         header, files = crl.read_entry_files()
         plan = (ROOT / "docs" / "research" / "plan.md").read_text()
         self.assertEqual(crl.validate_entry_files(files, crl.plan_hypotheses(plan)), [])
 
-    def test_the_assembled_check_fails_on_a_stale_log(self):
-        header, files = crl.read_entry_files()
-        self.assertTrue(crl.stale_errors(crl.assemble(header, files) + "x\n", header, files))
-        self.assertEqual(crl.stale_errors(crl.assemble(header, files), header, files), [])
+    def test_the_assembled_check_fails_on_a_tracked_log(self):
+        self.assertTrue(crl.tracked_errors(["docs/research/log.md"]))
+        self.assertEqual(crl.tracked_errors([]), [])
 
 
 if __name__ == "__main__":
