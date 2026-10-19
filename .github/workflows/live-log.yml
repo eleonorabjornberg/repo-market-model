@@ -42,7 +42,8 @@ name: live-log
 #
 # Three slots a day (#275): the primary and two fallbacks. A first job reads live-log
 # and, when the day's record is already there, ends the run green with nothing
-# written. Each record's commit also carries the panel it was made from.
+# written. A run that starts before the 16:00 ET decision instant, a fallback GitHub started
+# hours late, ends green the same way (#937). Each record's commit also carries the panel it was made from.
 #
 # Python 3.11 comes from the runner's own tool cache at the pinned patch. If the
 # runner image no longer carries that patch, `actions/setup-python`, pinned by commit
@@ -82,6 +83,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       recorded: ${{ steps.exists.outputs.recorded }}
+      early: ${{ steps.instant.outputs.early }}
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -101,10 +103,25 @@ jobs:
             echo "recorded=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # GitHub has started the 01:15 UTC fallback slot hours late (#937), after midnight ET, when
+      # `date +%F` names the next ET day, which has no record yet. A run that starts before the
+      # 16:00 ET decision instant has nothing to do: the record job is skipped, the run is green
+      # and nothing reaches the failed-runs issue. It never writes the previous ET day's record.
+      - name: Skip before the decision instant
+        id: instant
+        run: |
+          hour=$(TZ=America/New_York date +%H)
+          if [ "$((10#$hour))" -lt 16 ]; then
+            echo "early=true" >> "$GITHUB_OUTPUT"
+            echo "It is $hour:xx ET, before the decision instant; nothing to do."
+          else
+            echo "early=false" >> "$GITHUB_OUTPUT"
+          fi
+
   log:
     name: log the day's forecast
     needs: check
-    if: ${{ !cancelled() && needs.check.outputs.recorded != 'true' }}
+    if: ${{ !cancelled() && needs.check.outputs.recorded != 'true' && needs.check.outputs.early != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
