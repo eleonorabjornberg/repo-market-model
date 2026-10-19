@@ -1177,6 +1177,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a re-read of step 3's measurement; whether H4's kill is read is Eleonora's).
 - Next: the share threshold and the orientation of c (#830) are Eleonora's (marked in the pull request).
 
+### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#896
+- Directive: #891
+- Step: 3 (progress tracking for H1 to H10; scores nothing)
+- Tier: development
+- Pins: no panel read; base `f70bf93d`
+- Tried: recorded merged work on the results page: eleven milestones done with their merged pull requests, each hypothesis's phase on the plan's six-step scale (a log entry's step no longer sets it), `gbm_funding` and its development figures in `progress.json`, and the factual status lines of the plan. Variants: 0 new models.
+- Result: H5 reads step 3 of 6 (development done on merged records, registration not yet), not step 6. Every figure is copied from a merged record; nothing is a verdict.
+- Against kill: not applicable (no verdict; development data).
+- Next: the milestones left open in the pull request are Eleonora's to match; the layout redesign is #893.
+
 ### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
 - Directive: #882
 - Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
@@ -1297,12 +1307,12 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's ruling on whether a record may ever be written after midnight ET (marked question in the PR).
 
-### 2026-10-19 [H5] step 2 · eleonorabjornberg/repo-market-model#979
-- Directive: #965
-- Step: 2 (B2's day-type pools; also H6 step 1 and H8's calendar ranker): 15 October as a tax date, a declared alternative `tax_date` measured against a coupon-settlement control
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#957
+- Directive: #931
+- Step: 3 (the candidate's construction: finding #914; Eleonora's ruling of 19 October 2026 to run aligned training pairs for `treasury_settlement` at lead 1 as a development step)
 - Tier: development
-- Pins: published panel `4ddc3882…`; base `4d85e9f3`; declaration `metadata/tax_date_october_965.json` committed before any score
-- Tried: B2 with 15 October (rolled, plus two market days) added to the tax_date type, and with the 15th of the months the published column leaves alone as a control, against B2 as is on grid CRPS and upper-tail twCRPS; H8's calendar ranker with the same days flagged, against the ranker as is on precision and recall at 3 and 5. Variants: 2 (the October label and its control).
-- Result: pooled, B2 with October is +0.3% [-0.2, +1.1] on grid CRPS (no difference) and the ranker's precision@5 gains +0.006 [+0.000, +0.014]. In the October window B2 improves by +16.7% [+2.8, +36.6] and the ranker by +0.068 [+0.011, +0.128] precision@5; the control's own window shows no gain (-3.8% [-17.5, +9.5]). The October window holds a pressure day in 2 of its 8 years (2019, 2025), so the gain rests on them. Development data, not a verdict. Detail in `docs/research/tax-date-october-965-result.md`.
-- Against kill: not applicable (no verdict; the tax-date definition is Eleonora's).
-- Next: Eleonora decides whether 15 October joins the tax_date definition (marked question in the PR).
+- Pins: published panel `4ddc3882…`; base `362df847`; seed 931; declaration `metadata/aligned_pairs_931.json`
+- Tried: `gbm_funding` with `treasury_settlement` alone trained from the target's own row (the row serving reads it from), every other field one-step, same fit, seed and folds, lead 1. Reference: `gbm_funding` and the direct-pairs twin, re-walked and reproduced to the digit against #449. Variants: 1 (not in any published declaration).
+- Result: over 1,868 decision days to 2025-12-23, the arm's skill over `gbm_funding` is +2.8% [+1.7%, +3.8%] pooled; on month-end targets +13.8% [+11.1%, +16.6%] (149 days); on mid-month coupon dates +13.8% [+8.6%, +21.5%] (115 days); on ordinary days -0.2% [-1.9%, +1.3%] (1,486 days); on tax dates +2.4% [-1.0%, +7.4%]; quarter-ends too thin. The direct-pairs twin's skill over the arm is -4.9% [-7.3%, -2.6%] pooled. Against B1 +21.6% [+13.8%, +39.2%], against B2 +35.9% [+24.2%, +44.4%]. By regime the arm is ahead of `gbm_funding` in every regime, the interval clear of zero in 2018-19 only. Detail in `docs/research/aligned-pairs-931-result.md`.
+- Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
+- Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.

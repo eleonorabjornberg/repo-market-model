@@ -33,7 +33,8 @@ queue. Changing a hypothesis's question or target creates a new hypothesis; its 
 ## Hypotheses
 
 Status is one of `open`, `supported`, `killed`. All are `open` on 12 October 2026. Directives marked "not yet
-queued" have no first directive yet.
+queued" have no first directive yet. Status lines, test lists and "queued" and "done" notes were brought up to date
+on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo-market-model/issues/891), which changes no step, kill criterion, target or priority.
 
 ## H1. The scorer ranks forecasts of known quality correctly
 
@@ -51,7 +52,7 @@ queued" have no first directive yet.
 
 ## H3. New public data adds signal
 
-- **Test:** [#630](https://github.com/eleonorabjornberg/repo-market-model/issues/630).
+- **Tests:** [#630](https://github.com/eleonorabjornberg/repo-market-model/issues/630), then [#708](https://github.com/eleonorabjornberg/repo-market-model/issues/708) (step 3; the nested development run against H5's candidate; queued).
 - **Kill:** no new series ranks above the held ones on ordinary days.
 - **Next:** on kill, the held data is the data. Otherwise register the sources that pass as nested tests on H5.
 - **Status:** open. Manual: [`hypotheses/H3.md`](hypotheses/H3.md).
@@ -66,18 +67,18 @@ queued" have no first directive yet.
 ## H5 (primary goal). The SOFR − IORB spread distribution in bp improves on phase 2 and beats classification
 
 - **Open questions:** 2021–23 and the tails.
-- **Tests:** [#634](https://github.com/eleonorabjornberg/repo-market-model/issues/634), [#632](https://github.com/eleonorabjornberg/repo-market-model/issues/632).
+- **Tests:** [#634](https://github.com/eleonorabjornberg/repo-market-model/issues/634), [#632](https://github.com/eleonorabjornberg/repo-market-model/issues/632), [#707](https://github.com/eleonorabjornberg/repo-market-model/issues/707) (step 3, done), [#758](https://github.com/eleonorabjornberg/repo-market-model/issues/758) (step 4, done), and [#841](https://github.com/eleonorabjornberg/repo-market-model/issues/841) (step 6, the validation report; done).
 - **Kill:** no CRPS gain over the phase 2 models, and no ordinary-day ranking gain.
 - **Next:** on kill, the phase 2 models stand and effort goes to H9. Otherwise register one primary candidate.
-- **Status:** open. Manual: [`hypotheses/H5.md`](hypotheses/H5.md).
+- **Status:** open. Development steps 1 to 6 are done on merged records (all development data, none a verdict); registration is her attested act and has not happened. Manual: [`hypotheses/H5.md`](hypotheses/H5.md).
 
 ## H6. The spread on known risk dates is forecastable
 
 - **Target:** the spread in bp on announced settlement, tax, quarter-end and month-end days, which number in the hundreds rather than 26 onsets.
-- **Test:** not yet queued.
+- **Tests:** [#693](https://github.com/eleonorabjornberg/repo-market-model/issues/693) (step 1), [#739](https://github.com/eleonorabjornberg/repo-market-model/issues/739) (step 1 re-read on the studentized bootstrap) and [#849](https://github.com/eleonorabjornberg/repo-market-model/issues/849) (step 1 re-read by lead); done.
 - **Kill:** no CRPS or MAE skill against as-of persistence and a risk-date calendar benchmark on those days.
 - **Next:** on support, a risk-date severity calendar for desks.
-- **Status:** open, not yet queued. Manual: [`hypotheses/H6.md`](hypotheses/H6.md).
+- **Status:** open. Manual: [`hypotheses/H6.md`](hypotheses/H6.md).
 
 ## H7. Reserve scarcity can be tracked
 
@@ -90,14 +91,14 @@ queued" have no first directive yet.
 ## H8. Ranking beats calibrating for desk use
 
 - **Target:** rank the next 20 business days by risk, scored on top-k precision and recall against climatology and persistence.
-- **Test:** [#694](https://github.com/eleonorabjornberg/repo-market-model/issues/694) (step 1, development) and [#765](https://github.com/eleonorabjornberg/repo-market-model/issues/765) (step 2, development: tail probability combined with the day type).
+- **Tests:** [#694](https://github.com/eleonorabjornberg/repo-market-model/issues/694) (step 1, development; done) and [#765](https://github.com/eleonorabjornberg/repo-market-model/issues/765) (step 2, development: tail probability combined with the day type; done, re-scored on the as-of calendar in [#926](https://github.com/eleonorabjornberg/repo-market-model/pull/926)).
 - **Kill:** no ranking skill beyond the calendar of known risk dates.
 - **Status:** open. Manual: [`hypotheses/H8.md`](hypotheses/H8.md).
 
 ## H9 (secondary goal). Richer targets carry more learnable signal
 
 - **Targets:** the SOFR tail (99th percentile minus IORB, and dispersion), TGCR, BGCR and EFFR each minus IORB, ON RRP take-up, and standing repo facility take-up. Not SOFR − IORB itself, which is H5.
-- **Test:** [#639](https://github.com/eleonorabjornberg/repo-market-model/issues/639) (uses #629 and #630).
+- **Tests:** [#639](https://github.com/eleonorabjornberg/repo-market-model/issues/639) (step 1, the screen; uses #629 and #630; done) and [#706](https://github.com/eleonorabjornberg/repo-market-model/issues/706) (step 2, the models; done).
 - **Kill:** no forecast skill over persistence, or no lead on the +5 bp episodes.
 - **Status:** open. Manual: [`hypotheses/H9.md`](hypotheses/H9.md).
 
@@ -117,7 +118,7 @@ and the queue's top block. The results page reads it, and `scripts/research_view
 manual has. A link is done only when `milestones.json` says so; this section marks nothing done. Link format:
 `- CP<n>. H<k>.M<j> (gates H5, H9). Waits on: ...`; a link waits only on links before it.
 
-- CP1. H1.M3 (gates H5, H9). Waits on: the ruling on the scorer's marked questions (#695), whose check 2 is the coverage check.
+- CP1. H1.M3 (gates H5, H9). Waits on: the corrected test's decisions (#768), the recalibrated critical values (#878) and the corrected test's size on post-2020 resampled history (#886). The ruling on the scorer's marked questions (#695), whose check 2 is the coverage check, has merged.
 - CP2. H1.M4 (gates H5, H9). Waits on: CP1.
 - CP3. H5.M1 (gates H5, H9). Waits on: CP2; prospective logging and the live pin (#699); the power study and the MME (#656, #700); the construction fixes (#623).
 - CP4. H5.M2 (gates H5, H9). Waits on: CP1; the scorer and its synthetic suite (#655).

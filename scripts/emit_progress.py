@@ -39,6 +39,7 @@ SOURCES = {
     "ordinary": EVIDENCE + "/spread-distribution/ordinary.json",
     "calibration": EVIDENCE + "/spread-distribution/compare.json",
     "tiers": EVIDENCE + "/weighted-miss/tier1.json",
+    "candidate": EVIDENCE + "/h5-step4/score.json",
     "brier": EVIDENCE + "/*/compare*.json and " + EVIDENCE + "/*/paired*.json (those with a `brier` block)",
 }
 NOT_MEASURED = "not measured"
@@ -95,6 +96,30 @@ def read_spread(root):
                 "crps_difference_vs_persistence": groups(paired.get("as_of_persistence")),
                 "mae_median_difference_vs_persistence": groups(mae.get("as_of_persistence")),
             }
+    return out
+
+
+def read_candidate(root):
+    """H5's current candidate and its skill against B1 and B2 (grid CRPS and upper-tail twCRPS), or None.
+
+    The candidate is the one the step 4 record names as best (#758); each cell is copied from that record, none
+    is computed. A cell the record holds no test for reads None, and a cell with no days is left out.
+    """
+    doc = load(root, SOURCES["candidate"])
+    if not doc or not doc.get("best_candidate"):
+        return None
+    name = doc["best_candidate"]
+
+    def skill(cell, benchmark):
+        test = (cell.get("tests") or {}).get("%s -> %s" % (benchmark, name))
+        if not test or test.get("skill") is None:
+            return None
+        return {"skill": test["skill"], "interval": interval(test.get("skill_interval_90"))}
+
+    out = {"name": name, "label": LABEL, "source": SOURCES["candidate"], "window": doc.get("decision_days")}
+    for metric in ("crps", "twcrps"):
+        out[metric] = {label: {"days": cell.get("n"), "skill_vs_B1": skill(cell, "B1"), "skill_vs_B2": skill(cell, "B2")}
+                       for label, cell in sorted((doc.get("cells") or {}).get(metric, {}).items()) if cell.get("n")}
     return out
 
 
@@ -253,6 +278,7 @@ def build(root, order=None):
         "variant_count": count,
         "candidates": rows,
         "hypotheses": {"H5": {"label": LABEL, "target": "the SOFR - IORB spread distribution in bp",
+                              "candidate": read_candidate(root),
                               "spread": {r["name"]: r["spread"] for r in rows if r["spread"]}}},
     }
 
@@ -273,6 +299,27 @@ def with_interval(figure, places=3, signed=True):
 
 def verdict(x):
     return NOT_MEASURED if x is None else ("yes" if x else "no")
+
+
+def render_candidate(cand):
+    if not cand:
+        return ["The current candidate is %s: no committed record names one (`%s`)." % (NOT_MEASURED, SOURCES["candidate"]), ""]
+    w = cand.get("window") or {}
+    out = ["`%s`, the best candidate of the step 4 record (`%s`), %s days %s to %s. Skill is the share of "
+           "the benchmark's mean score removed; 90%% paired-bootstrap intervals. Every figure is %s." % (
+               cand["name"], cand["source"], w.get("n", NOT_MEASURED), w.get("first", NOT_MEASURED),
+               w.get("last", NOT_MEASURED), cand["label"]), ""]
+    for metric, title in (("crps", "Grid CRPS"), ("twcrps", "Upper-tail twCRPS")):
+        out += ["| %s cell | days | skill vs B1 (as-of persistence) | skill vs B2 |" % title, "|---|---|---|---|"]
+        for label, cell in cand[metric].items():
+            out.append("| %s | %s | %s | %s |" % (label, cell["days"] if cell["days"] is not None else NOT_MEASURED,
+                                                 skill_text(cell["skill_vs_B1"]), skill_text(cell["skill_vs_B2"])))
+        out.append("")
+    return out
+
+
+def skill_text(figure):
+    return NOT_MEASURED if not figure else with_interval({"mean": figure["skill"], "interval": figure["interval"]})
 
 
 def render(model):
@@ -297,6 +344,7 @@ def render(model):
            "- Candidates with evidence in this page: %d. Candidate files with no committed evidence this page reads: "
            "%d (listed at the end)." % (len(rows), len(c["without_evidence"])),
            "", "Position is the order in which the candidate file was added.", "",
+           "## Current H5 candidate", ""] + render_candidate(model["hypotheses"]["H5"]["candidate"]) + [
            "## Spread forecast (H5, primary)", "",
            "CRPS in bp on the contract's levels, over the days the variant has a law (`%s`). The difference is "
            "as-of persistence minus the variant, as the evidence records it: positive favours the variant. 90%% "
