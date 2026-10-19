@@ -1286,3 +1286,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#945
+- Directive: #934
+- Step: 3 (a dated correction of #853's ordinary-day page, on Eleonora's ruling on #917: reported within each regime, no pooled gain claimed; nothing scored again)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ddaf391e`; figures read from `docs/pivot/ordinary-day-p5-844/score.json`, unchanged
+- Tried: the paired AUROC difference from persistence-logistic in each regime at leads 1 to 5 for the four models, read from the committed score. Variants: 0 new.
+- Result: by regime and lead, `gbm_funding` has 1 cell above zero and 1 below of 15; the pooled difference exceeds every regime's in 13 of 20 model-by-lead rows, which comes from ranking across regimes (61 of 81 pressure days are in 2018-19, 5 in 2020-24). No pooled gain is claimed. Development data, not a verdict. Detail in `docs/pivot/ordinary-day-p5-844/correction-934.md`.
+- Against kill: not applicable (no verdict; what counts as a ranking gain is Eleonora's).
+- Next: Eleonora reads the correction with the registration decision (hers).
