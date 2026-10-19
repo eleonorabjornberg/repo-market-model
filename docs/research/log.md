@@ -1276,3 +1276,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H5] step 5 · eleonorabjornberg/repo-market-model#976
+- Directive: #960
+- Step: 5 (which candidate a registration can claim; also H1 step 3, benchmarks)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `fb8acae5`; seed 960; declaration `metadata/b1_calendar_960.json`
+- Tried: B1′, a zero-parameter persistence centred on the last ordinary-day spread, with changes taken from last ordinary spreads and pooled by the target's day type, against B1, B2 and `spread_mr_ctx` (#761) on the 1,855 development days to 2025-12-31. Variants: 1 (B1′). The `gbm_funding` pairs and the two declared reading rules wait for #634's walks (needs-mac); nothing of them is scored.
+- Result: grid CRPS skill of B1′ over B1 is +15.8% [+8.1%, +49.2%] pooled and +19.7% [+7.6%, +75.9%] on ordinary targets, but +1.1% [+0.2%, +1.8%] when the anchor is an ordinary day; over B2 +23.4% [+12.1%, +33.7%]. `spread_mr_ctx` over B1′ is +9.2% [+4.9%, +15.3%] pooled and −7.8% [−13.6%, −2.4%] in 2021-23. Detail in `docs/research/b1-calendar-960-result.md`.
+- Against kill: not evaluated (the gbm candidate's skill over B1′ and over `spread_mr_ctx` is not scored); development data, not a verdict.
+- Next: the Mac run of the five `gbm_funding` walks and the `score` command in the pull request; whether B1′ replaces B1 or re-sets the MME is Eleonora's.
