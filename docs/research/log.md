@@ -18,6 +18,9 @@ second entry with the same heading takes `-2` before `.md`. Then run `python3 sc
 assemble`, which rewrites this page, and commit it with the regeneration commit like the other generated pages.
 Two pull requests that add different files never conflict; a conflict in this page alone is resolved by running
 `assemble` again. An entry file already on `main` is never edited, renamed or deleted: the check refuses it.
+A wrong pull request number in a frozen entry's heading is corrected in
+[`log/_corrections.md`](log/_corrections.md) (#867): `assemble` applies it and keeps the original heading in a
+`- Correction:` line.
 
 Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
 hypothesis manual, kept apart from the six steps) has its own heading,
@@ -963,7 +966,8 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no candidate scored); docs/decisions/measurement-protocol.md unchanged
 - Next: the G6 power study re-run on the extended labels (next directive)
 
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#830
+### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#837
+- Correction: the heading named eleonorabjornberg/repo-market-model#830; corrected to eleonorabjornberg/repo-market-model#837 (docs/research/log/_corrections.md).
 - Directive: #785
 - Step: 3
 - Tier: development
@@ -1072,16 +1076,6 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the six dates of the finding keep their take-up; the ordinary-day pressure AUROC of `fed_repo_days_since_positive` at lead 1 is 0.60 [0.42, 0.76] (counted 0.64, floor 0.50), and the 2018 warnings are 3 of 5 in every arm, including with all `fed_repo_*` columns zeroed.
 - Against kill: not applicable (no verdict; development data).
 - Next: #787 applies the rule to `srf_total_accepted` and publishes; H5 step 2 inputs.
-
-### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#837
-- Directive: #785
-- Step: 3
-- Tier: development
-- Pins: published panel `4ddc3882…`; base `dfbbc03`
-- Tried: #631's two every-day rows (`+every_day` and `+every_day+lagpress`) rebuilt at h = 1 to 5 and tabulated for the reliability slope on the ordinary days inside 2018-19, 2020-24 and 2025-26 and inside each as-of scarcity state, 90% bootstrap intervals (2,000 replications). Variants: 0 new models.
-- Result: inside 2018-19 (62 of 82 pressure days) the parent reads 0.32 to 0.61 at h = 1 to 5 and lagged pressure 0.21 to 0.51, intervals below 1 from h = 2; the pooled 0.85 to 1.00 is not calibration by regime. In 2025-26 the rows read 0.62 to 0.94 with intervals including 1. Two pooled cells differ from Table M2 (parent h = 3: 0.91 against 0.98; lagpress h = 4: 0.71 against 0.73), the fit definition being #725's.
-- Against kill: not applicable (a correction to how step 3 figures are read; development data, not a verdict).
-- Next: any reliability-shape test (#628) is read within regimes; the two moved cells are not traced to the fit or to `ml.py`.
 
 ### 2026-10-16 [H5] step 6 · eleonorabjornberg/repo-market-model#846
 - Directive: #841
@@ -1222,6 +1216,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: every commit rebuilds identically twice, so there is no nondeterminism and the digests differ by code drift: the first step that moves is `net_settlement` (#679, #738). `92bf10a4…` is the chain at `2c9bd283` and `400372d6…` the chain at `38a00d81`; H2's `08df8d19…` is not reproduced at its own commit, which gives `1e5b748a…`.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
+
+### 2026-10-17 [H1] step 5 · eleonorabjornberg/repo-market-model#911
+- Directive: #886
+- Step: 5 (the corrected test's size on post-2020 resampled history; #878's values recalibrated on post-2020 stationary-bootstrap windows)
+- Tier: development
+- Pins: base `89b256c2`; published panel `4ddc3882…`; orientation d = S(B1) - S(candidate); windows, level and seed of #873; power-study paths and seeds of #769; designs and seeds of #733
+- Tried: the efficacy and futility values recalibrated on post-2020 stationary-bootstrap windows; the power study of #769, the replay of #754 and #792, and #733's six designs re-run at the new values. Variants: 0 new models.
+- Result: at the new values the size by 250 days is 5.0% on post-2020 stationary paths (26.6% at #878's values) and below 5% on the other three readings; power at 3% by 250 days falls to 6.1% (30.8%), at 10% to 9.6% (39.8%). #733's rule recommends D4 (250 days, standardized) where it recommended D3; at the full-history circular values no design is admissible. Development and simulated data, not a verdict.
+- Against kill: not applicable (a design and calibration measurement; development data gives no verdict).
+- Next: Eleonora's decision on the second draft amendment and on what gives way if it is adopted (the MME, the look, or the design), marked in the pull request.
 
 ### 2026-10-18 [H5] step 3 · eleonorabjornberg/repo-market-model#920
 - Directive: #912

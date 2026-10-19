@@ -1,0 +1,46 @@
+{
+ "compared_with": {
+  "protocol_calibration_873_sha256": "e09cb0d14ecdf52515daf9c6107478a7814823a793924c19eff6b36dd598d382"
+ },
+ "comparison_critical_values": {
+  "B2-B1": {
+   "125": 5.710146528236312,
+   "250": 3.011625482860888,
+   "60": null
+  },
+  "B3-B1 (five levels)": {
+   "125": 2.267044948325363,
+   "250": 1.5829139433016062,
+   "60": null
+  }
+ },
+ "directive": "https://github.com/eleonorabjornberg/repo-market-model/issues/886",
+ "futility_critical_values": {
+  "B2-B1": {
+   "125": 2.0261102372506183,
+   "250": 1.9871820720695368,
+   "60": 2.2560254806540754
+  }
+ },
+ "futility_level": 0.05,
+ "futility_windows": 20000,
+ "generator": "stationary bootstrap, mean block length scoring_protocol.BLOCK_LENGTH, on the post-2020 days",
+ "history_first_decision_day": "2020-04-03",
+ "nominal_levels": {
+  "125": 0.005552272301342587,
+  "250": 0.0482414793805519,
+  "60": 6.313944260094573e-05
+ },
+ "note": "same looks, windows, level and seed as the records of #695 and #873; only the history (post-2020 decision days) and the window generator (stationary bootstrap, as the power study's readings (c) and (d)) change. Look 1 has no efficacy value (Q-B). Nothing here is in force.",
+ "orientation": "d = S(benchmark) - S(candidate), benchmark B1",
+ "seed": 1,
+ "series_days": {
+  "B2-B1": 1598,
+  "B3-B1 (five levels)": 1429
+ },
+ "window_block": 10,
+ "windows": {
+  "125": 20000,
+  "250": 20000
+ }
+}
