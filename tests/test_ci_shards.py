@@ -8,19 +8,19 @@ workflow job that runs a shard without the module list.
 **Recorded mutation**, 19 October 2026: in `scripts/ci_shards.py`, `assign` made to `continue` past the
 module `test_workflows` (a module dropped from every shard): `test_every_module_is_in_exactly_one_shard`
 fails with `ValueError: modules in no shard: ['test_workflows']`. The same function with
-`out[n].append(module)` run twice for the first module: the same test fails with
-`ValueError: test_alarm_cooldown is in shards 1 and 1`.
+`out[n].append(module)` run twice for `test_alarm_cooldown`: the same test fails with
+`ValueError: test_alarm_cooldown is in shards 6 and 6`.
 """
 
+import importlib.util
 import re
-import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-
-import ci_shards  # noqa: E402
+_spec = importlib.util.spec_from_file_location("ci_shards", ROOT / "scripts" / "ci_shards.py")
+ci_shards = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(ci_shards)
 
 
 class ShardTests(unittest.TestCase):
