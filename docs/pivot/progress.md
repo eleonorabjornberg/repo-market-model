@@ -14,6 +14,29 @@ Primary goal H5: the SOFR - IORB spread distribution in bp. Secondary goal H9: r
 
 Position is the order in which the candidate file was added.
 
+## Current H5 candidate
+
+`gbm_funding`, the best candidate of the step 4 record (`docs/pivot/evidence/h5-step4/score.json`), 1598 days 2019-07-31 to 2025-12-23. Skill is the share of the benchmark's mean score removed; 90% paired-bootstrap intervals. Every figure is development, not a verdict.
+
+| Grid CRPS cell | days | skill vs B1 (as-of persistence) | skill vs B2 |
+|---|---|---|---|
+| day type: month_end | 433 | +0.075 [-0.007, +0.153] | +0.329 [+0.153, +0.465] |
+| day type: ordinary | 1598 | +0.252 [+0.114, +0.390] | +0.345 [+0.267, +0.416] |
+| day type: quarter_end | 126 | -0.174 [-0.248, -0.105] | +0.121 [-0.347, +0.505] |
+| day type: tax_date | 185 | -0.029 [-0.147, +0.110] | +0.284 [+0.143, +0.686] |
+| pooled, all targets | 1598 | +0.208 [+0.097, +0.307] | +0.316 [+0.224, +0.410] |
+| pooled, ordinary targets | 1598 | +0.257 [+0.114, +0.400] | +0.347 [+0.267, +0.421] |
+| regime: 2018-19 | 101 | +0.660 [+0.240, +0.799] | +0.133 [+0.020, +0.233] |
+| regime: 2020 | 251 | +0.148 [+0.033, +0.258] | +0.438 [+0.262, +0.582] |
+| regime: 2021-23 | 751 | -0.007 [-0.129, +0.109] | +0.496 [+0.374, +0.605] |
+| regime: 2024 | 250 | +0.162 [+0.100, +0.225] | +0.015 [-0.117, +0.168] |
+| regime: 2025-26 | 249 | +0.186 [+0.099, +0.265] | +0.281 [+0.078, +0.414] |
+
+| Upper-tail twCRPS cell | days | skill vs B1 (as-of persistence) | skill vs B2 |
+|---|---|---|---|
+| pooled, all targets | 1598 | +0.362 [+0.201, +0.486] | +0.218 [+0.093, +0.392] |
+| pooled, ordinary targets | 1598 | +0.516 [+0.291, +0.665] | +0.265 [+0.139, +0.383] |
+
 ## Spread forecast (H5, primary)
 
 CRPS in bp on the contract's levels, over the days the variant has a law (`docs/pivot/evidence/spread-distribution/distribution.json`). The difference is as-of persistence minus the variant, as the evidence records it: positive favours the variant. 90% intervals where the evidence has them; the MAE column is the same difference for the median forecast.

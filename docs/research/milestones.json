@@ -1,10 +1,28 @@
 {
-  "_about": "What no other tracked source holds (#645): which milestones are done, each with the tracked file that shows it, and a step floor for a hypothesis whose work predates the log. A step is one of the six in docs/research/plan.md. A change to this file is a statement about progress and is reviewed like the plan.",
+  "_about": "What no other tracked source holds (#645): which milestones are done, each with the tracked file that shows it and the merged pull request that put it there, and each hypothesis's phase. A phase is one of the six steps in docs/research/plan.md (1 Question, 2 Groundwork, 3 Development, 4 Registration, 5 Confirmation, 6 Verdict); a log entry's own step is the step of that hypothesis's manual and never sets the phase. A milestone is marked done only when the pull request's result meets the milestone's wording in its manual. A change to this file is a statement about progress and is reviewed like the plan.",
   "steps": {
-    "H1": 2
+    "H1": 3,
+    "H2": 3,
+    "H3": 3,
+    "H4": 3,
+    "H5": 3,
+    "H6": 3,
+    "H7": 2,
+    "H8": 3,
+    "H9": 3,
+    "H10": 3
   },
   "milestones": {
-    "H1.M1": {"evidence": "tests/test_scoring_protocol_synthetic.py"},
-    "H1.M2": {"evidence": "src/repo_model/scoring_protocol.py"}
+    "H1.M1": {"evidence": "tests/test_scoring_protocol_synthetic.py", "pr": "eleonorabjornberg/repo-market-model#660"},
+    "H1.M2": {"evidence": "src/repo_model/scoring_protocol.py", "pr": "eleonorabjornberg/repo-market-model#660"},
+    "H2.M3": {"evidence": "docs/pivot/upper-bound-result.md", "pr": "eleonorabjornberg/repo-market-model#703"},
+    "H5.M2": {"evidence": "docs/pivot/spread-distribution-protocol-result.md", "pr": "eleonorabjornberg/repo-market-model#711"},
+    "H5.M4": {"evidence": "docs/pivot/h5-step3-diagnoses-result.md", "pr": "eleonorabjornberg/repo-market-model#756"},
+    "H5.M5a": {"evidence": "docs/model/validation.md", "pr": "eleonorabjornberg/repo-market-model#846"},
+    "H8.M2": {"evidence": "docs/pivot/ranking-result.md", "pr": "eleonorabjornberg/repo-market-model#722"},
+    "H9.M2": {"evidence": "docs/pivot/richer-targets-639-result.md", "pr": "eleonorabjornberg/repo-market-model#702"},
+    "H9.M3": {"evidence": "docs/pivot/richer-targets-706-result.md", "pr": "eleonorabjornberg/repo-market-model#774"},
+    "H10.M1": {"evidence": "docs/research/log.md", "pr": "eleonorabjornberg/repo-market-liquidity#33"},
+    "H10.M2": {"evidence": "docs/research/log.md", "pr": "eleonorabjornberg/repo-market-liquidity#78"}
   }
 }
