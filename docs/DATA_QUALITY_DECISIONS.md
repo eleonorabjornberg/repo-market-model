@@ -812,3 +812,20 @@ borrow. If the Desk publishes a test note, the note should be read first.
 
 **Consequence for earlier evidence.** #743's figures read the $0.1 bn floor. The Fed repo columns are re-read under this rule, with an arm that removes the whole group, in
 `docs/pivot/test-trade-802-result.md`: the ordinary-day AUROC gain of `fed_repo_days_since_positive` is 0.60 [0.42, 0.76] at lead 1 (interval contains 0.5), and the 2018 warnings survive with every `fed_repo_*` column zeroed.
+
+## DRAFT for Eleonora: the recurring ~$0.1 bn afternoon repo operation
+
+*Draft for Eleonora's review (PR for #872); not in force until she has merged it. It changes no code, no declaration and no published figure.* Ruling of 17 October 2026 on #860 (relayed): the recurring ~$0.1 bn calm-day operation is a test trade and is not take-up. Data meaning is hers (#735).
+
+**What the evidence shows** (`docs/pivot/repo-test-trades-872-result.md`). The tracked snapshots hold 40 Repo operations with $0.09 to $0.13 bn accepted. Five are Desk-announced morning small value exercises, each already dropped by its `note`. The other 35 (31 released at 13:30, 2 at 13:29, 2 at 08:15) carry no note and no public statement; 27 of 35 are one line at one rate. No field in the snapshot separates them from a real borrow of the same size except the amount and the time of day.
+
+**The rule cannot be stated without a cutoff or a list.** A rule that classifies the 35 as no take-up must name one of these, and each has a cost:
+
+* **(A) A size band** (for example, accepted of USD 90 to 130 million with no note): a new size cutoff. It would also zero real take-up inside the band that has no test note, which is what the #802 ruling kept when it replaced the $0.1 bn floor with the whole-million $7 mn rule.
+* **(B) An operation list** (the 35 operations by id, as the evidence applies the ruling): known only after the fact, so it cannot be point in time. A list drawn at a later date has no availability instant for the operations it names. It is usable for a development column and not for a forecast input.
+* **(C) A pattern** (one afternoon operation of a single line and rate within the band, at the 13:30 release): a regime-style rule that differs by operation shape and may move if the Desk changes its schedule.
+* **(D) Keep the rule in force** (#826) and treat the ruling as an evidence column only.
+
+**Question for Eleonora (marked):** which of (A) to (D), and the exact definition (bounds, fields and any date) if (A) or (C). If she chooses (A) or (C), a directive puts it in `ingest._effective_accepted` test first, with an availability guard and one recorded mutation if the rule reads a public time.
+
+**What the draft does not do.** `ingest.TEST_TRADE_MAX` and `_is_test_trade` stay as #802 left them; the `fed_repo_*` columns of the published panel are unchanged; the columns stay off `FEATURE_FIELDS` and out of every published declaration. The ruling's effect is shown as a fourth column in the evidence, computed by operation id in `scripts/repo_test_trades_872.py` (`_rule_ruling`): longest gap of `fed_repo_days_since_positive` in 2024, 2025 and 2026 is 134, 62 and 27 days under it, against 50, 32 and 17 under the rule in force.

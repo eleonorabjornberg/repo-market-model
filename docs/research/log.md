@@ -1133,6 +1133,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (a re-score of an exploratory page; development data, not a verdict).
 - Next: whether the old page and evidence get a superseding note, and whether #598's hinge rows and #631's model rows are re-scored, is Eleonora's (marked questions in the pull request).
 
+### 2026-10-17 [H3] groundwork G1 · eleonorabjornberg/repo-market-model#884
+- Directive: #872 (finding #860)
+- Step: groundwork G1 (data quality of the Fed repo take-up recency input)
+- Tier: development
+- Pins: tracked repo-operation snapshots to 2026-09-03; published panel `4ddc3882…`; base `80b5ef0a`; Fed statement pages saved with checksums
+- Tried: listed the 40 Repo operations with $0.09 to $0.13 bn accepted and matched them to the ten small value exercises the Desk announced from 2024 to May 2026; recomputed `fed_repo_days_since_positive` under the rule in force (#826, merged), the superseded $0.1 bn floor, an announcement-keyed rule, and Eleonora's ruling of 17 October 2026 on #860 (the recurring afternoon operation is a test trade, not take-up) applied by operation id to the 35 listed operations with no note and no announcement. Variants: 0 new models; nothing scored.
+- Result: no announcement exists for the recurring afternoon trade of $100 to $113 mn (35 of 40 operations); the 5 announced exercises in that band are morning operations already dropped by their note. Figures are under the rule now in force (#826) unless named. Longest gap / take-up days: 2024 50 / 24 in force, 50 / 23 announcement-keyed, 134 / 11 under the ruling; 2025 32 / 55, 32 / 55, 62 / 43; 2026 17 / 27, 17 / 27, 27 / 17. The announcement-keyed rule changes one operation, the announced $57 mn term repo of 2024-09-24 (`fed_repo_*` columns differ on 2024-09-24 to 2024-09-27 only). The ruling changes the `fed_repo_*` columns on the days of the 35 operations and after. No H5 declaration reads a `fed_repo` column. A rule that selects the 35 without a size cutoff or an after-the-fact list cannot be stated; it is drafted for Eleonora in `docs/DATA_QUALITY_DECISIONS.md` with the definition as a question, and `src/` is unchanged. Development data, not a verdict.
+- Against kill: not applicable (data quality of an input; no kill criterion assessed).
+- Next: Eleonora decides the exact definition of the test trade (draft section in `docs/DATA_QUALITY_DECISIONS.md`); then a directive puts it in `src/` test first.
+
 ### 2026-10-17 [H5] step 2 · eleonorabjornberg/repo-market-model#885
 - Directive: #865 (why the direct-pairs twin of #449 scores below gbm_funding)
 - Step: 2
@@ -1212,6 +1222,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: every commit rebuilds identically twice, so there is no nondeterminism and the digests differ by code drift: the first step that moves is `net_settlement` (#679, #738). `92bf10a4…` is the chain at `2c9bd283` and `400372d6…` the chain at `38a00d81`; H2's `08df8d19…` is not reproduced at its own commit, which gives `1e5b748a…`.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
+
+### 2026-10-17 [H1] step 5 · eleonorabjornberg/repo-market-model#911
+- Directive: #886
+- Step: 5 (the corrected test's size on post-2020 resampled history; #878's values recalibrated on post-2020 stationary-bootstrap windows)
+- Tier: development
+- Pins: base `89b256c2`; published panel `4ddc3882…`; orientation d = S(B1) - S(candidate); windows, level and seed of #873; power-study paths and seeds of #769; designs and seeds of #733
+- Tried: the efficacy and futility values recalibrated on post-2020 stationary-bootstrap windows; the power study of #769, the replay of #754 and #792, and #733's six designs re-run at the new values. Variants: 0 new models.
+- Result: at the new values the size by 250 days is 5.0% on post-2020 stationary paths (26.6% at #878's values) and below 5% on the other three readings; power at 3% by 250 days falls to 6.1% (30.8%), at 10% to 9.6% (39.8%). #733's rule recommends D4 (250 days, standardized) where it recommended D3; at the full-history circular values no design is admissible. Development and simulated data, not a verdict.
+- Against kill: not applicable (a design and calibration measurement; development data gives no verdict).
+- Next: Eleonora's decision on the second draft amendment and on what gives way if it is adopted (the MME, the look, or the design), marked in the pull request.
 
 ### 2026-10-18 [H5] step 3 · eleonorabjornberg/repo-market-model#920
 - Directive: #912
