@@ -1,0 +1,156 @@
+{
+ "cuts": {
+  "interval": "scoring_protocol.paired_tests, seed 964, 2000 draws, stationary bootstrap, mean block 10, studentized; the one-sided lower 95% bound of mean(shuffled score - score)",
+  "leads": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "minimum_days_per_cell": 30,
+  "regime_of_a_day": "the regime of its target day",
+  "regimes": [
+   {
+    "first": "2018-01-01",
+    "last": "2019-12-31",
+    "name": "2018-19"
+   },
+   {
+    "first": "2020-01-01",
+    "last": "2020-12-31",
+    "name": "2020"
+   },
+   {
+    "first": "2021-01-01",
+    "last": "2023-12-31",
+    "name": "2021-23"
+   },
+   {
+    "first": "2024-01-01",
+    "last": "2024-12-31",
+    "name": "2024"
+   },
+   {
+    "first": "2025-01-01",
+    "last": "2025-12-31",
+    "name": "2025"
+   }
+  ]
+ },
+ "estimators": {
+  "decision_time": "16:00",
+  "horizons": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "inputs": "the design columns of the fitted model at each lead (spread_bps and the published regressors; treasury_settlement is not read at h >= 2)",
+  "last_target_day": "2025-12-31",
+  "minimum_history": 61,
+  "model": "gbm_funding of metadata/spread_distribution_634.json, refitted exactly as declared there (spread_distribution_634.py walk): ml.fit_gradient_boosted_quantiles on the protocol grid, default settings, regressors live_record.published_features(h) without spread_bps (which the design adds), the shared fold grid",
+  "refit_every": 21
+ },
+ "hypothesis": "H5 (primary goal), step 4 (why the known drivers add nothing; scopes #951's follow-up) and the validation report (docs/model/validation.md, sensitivity analysis)",
+ "issue": 964,
+ "limits": "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed; no published record changes; nothing after 2025-12-31 and no lockbox day is scored",
+ "protocol": {
+  "grid": [
+   0.01,
+   0.025,
+   0.05,
+   0.1,
+   0.15,
+   0.2,
+   0.25,
+   0.3,
+   0.35,
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6,
+   0.65,
+   0.7,
+   0.75,
+   0.8,
+   0.85,
+   0.9,
+   0.95,
+   0.975,
+   0.99
+  ],
+  "record": "docs/decisions/scoring-protocol.md (version 1)",
+  "score": "grid CRPS, scoring_protocol.grid_crps"
+ },
+ "reading": {
+  "choice_marked_for_eleonora": "the floor of 0.5 bp and the sign rule are the author's choice, marked in the pull request",
+  "consequence_if_regime_coded": "the pull request names the relative encodings (tbill - iorb, sofr_p75 - sofr and sofr - sofr_p25 in bp, volume over its trailing 60-row median, reserves as the as-of ratio) as the next declared variant",
+  "consequence_if_stable": "the pull request says the dependence is stable across regimes and the encoding avenue is dead",
+  "reading_floor_bp": 0.5,
+  "regime_coded_dependence": "for each of the five inputs, in each regime: the median's partial dependence 'reads' the input when it moves by at least 0.5 bp across the five points; its sign is that of the move from the first to the last point; the dependence is regime-coded when the regimes that read it do not all share one sign",
+  "reserves_split": "for reserve_balances, whether the median's dependence moves only across the segments between points that start at or below 1700 ($ bn) and is flat (under the floor) across the later segments, in each regime (the directive's example)"
+ },
+ "rulings": [
+  "Eleonora, 19 October 2026 (relayed on #958): the five-lens review, Lens D; directive #964"
+ ],
+ "statistics": {
+  "partial_dependence": {
+   "grid": {
+    "reserve_balances": [
+     1621.876,
+     2855.5166,
+     3188.634,
+     3331.425,
+     3834.183
+    ],
+    "sofr_volume": [
+     865.0,
+     943.0,
+     1066.0,
+     1482.0,
+     2505.0
+    ],
+    "spread_bps": [
+     -10.0,
+     -9.0,
+     -7.0,
+     -2.0,
+     4.0
+    ],
+    "tbill_4w": [
+     0.05,
+     1.184,
+     2.27,
+     4.3,
+     5.38
+    ],
+    "tga": [
+     247.777,
+     362.576,
+     575.065,
+     765.417,
+     1360.064
+    ]
+   },
+   "inputs": [
+    "reserve_balances",
+    "tbill_4w",
+    "tga",
+    "sofr_volume",
+    "spread_bps"
+   ],
+   "levels": [
+    0.5,
+    0.95
+   ],
+   "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "points": "the 10, 30, 50, 70, 90th percentiles of the input over the panel's rows up to 2025-12-31 (computed by `declare`, in the panel's units: $ bn for reserve_balances, tga; percent for tbill_4w; the volume's own unit; bp for spread_bps)"
+  },
+  "permutation_importance": "per refit block, per design column: the column's values are shuffled among the block's scored days (5 shuffles, random.Random of '964/<lead>/<block's first target day>/<input>/<repeat>'); importance = mean grid CRPS of the shuffled forecasts less the grid CRPS of the forecast, each against its own day's outcome; blocks shorter than 5 days are not shuffled",
+  "shock": "q50 and q95 with each of the five inputs moved by plus and minus one standard deviation of the input over the block's training frame (as-of), the others as read"
+ },
+ "status": "declared by the pull request that closes #964 before any score was computed; a measurement, not a record. Nothing is published: no published declaration, model, record, pin or figure moves, no day after 2025-12-31 is read (docs/decisions/lockbox.md). Development data gives no verdict (scoring protocol v1, #640): every figure here is exploration"
+}
