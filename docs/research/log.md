@@ -1286,3 +1286,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: by regime and lead, `gbm_funding` has 1 cell above zero and 1 below of 15; the pooled difference exceeds every regime's in 13 of 20 model-by-lead rows, which comes from ranking across regimes (61 of 81 pressure days are in 2018-19, 5 in 2020-24). No pooled gain is claimed. Development data, not a verdict. Detail in `docs/pivot/ordinary-day-p5-844/correction-934.md`.
 - Against kill: not applicable (no verdict; what counts as a ranking gain is Eleonora's).
 - Next: Eleonora reads the correction with the registration decision (hers).
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#957
+- Directive: #931
+- Step: 3 (the candidate's construction: finding #914; Eleonora's ruling of 19 October 2026 to run aligned training pairs for `treasury_settlement` at lead 1 as a development step)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `362df847`; seed 931; declaration `metadata/aligned_pairs_931.json`
+- Tried: `gbm_funding` with `treasury_settlement` alone trained from the target's own row (the row serving reads it from), every other field one-step, same fit, seed and folds, lead 1. Reference: `gbm_funding` and the direct-pairs twin, re-walked and reproduced to the digit against #449. Variants: 1 (not in any published declaration).
+- Result: over 1,868 decision days to 2025-12-23, the arm's skill over `gbm_funding` is +2.8% [+1.7%, +3.8%] pooled; on month-end targets +13.8% [+11.1%, +16.6%] (149 days); on mid-month coupon dates +13.8% [+8.6%, +21.5%] (115 days); on ordinary days -0.2% [-1.9%, +1.3%] (1,486 days); on tax dates +2.4% [-1.0%, +7.4%]; quarter-ends too thin. The direct-pairs twin's skill over the arm is -4.9% [-7.3%, -2.6%] pooled. Against B1 +21.6% [+13.8%, +39.2%], against B2 +35.9% [+24.2%, +44.4%]. By regime the arm is ahead of `gbm_funding` in every regime, the interval clear of zero in 2018-19 only. Detail in `docs/research/aligned-pairs-931-result.md`.
+- Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
+- Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
