@@ -558,6 +558,11 @@ def render(record: dict) -> str:
     lines += ["", f"### Turn set against as is, on the {c['cross']['cells']} cells both call a risk date", ""] + table(
         c["cross"]["groups"], "as is -> turn set", "target_days", "group")
     lines += ["", "## What the tables show", "", reading(record), "",
+              "B2 samples the trailing year, so by construction the relabelled pools are small: a year holds two `year_end` days "
+              "and six `quarter_end_turn` days, against about 16 `turn` days (the as-is pools: four `quarter_end` days and about "
+              "24 `month_end` days). The `year_end` rows above are scored on those two days' spreads; read them with that in mind. "
+              "Whether a pooled alternative (for example `year_end` with `quarter_end_turn`) is worth a variant is Eleonora's; "
+              "it is not run here.", "",
               f"Nothing here is a verdict for a hypothesis; adopting the label is Eleonora's (#959). {LABEL.capitalize()}.", ""]
     return "\n".join(lines)
 
