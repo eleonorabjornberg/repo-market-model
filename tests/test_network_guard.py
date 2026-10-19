@@ -55,7 +55,8 @@ class NetworkGuardTests(unittest.TestCase):
         ci = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "tests.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn("unshare --net python3 -B -m unittest discover -s tests", ci)
+        # Each of the offline shards (#927) runs its modules under `unshare --net`; together they are the suite.
+        self.assertIn("unshare --net python3 -B -m unittest $(python3 scripts/ci_shards.py modules", ci)
 
 
 if __name__ == "__main__":
