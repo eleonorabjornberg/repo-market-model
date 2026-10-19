@@ -1277,6 +1277,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
 
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#945
+- Directive: #934
+- Step: 3 (a dated correction of #853's ordinary-day page, on Eleonora's ruling on #917: reported within each regime, no pooled gain claimed; nothing scored again)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `ddaf391e`; figures read from `docs/pivot/ordinary-day-p5-844/score.json`, unchanged
+- Tried: the paired AUROC difference from persistence-logistic in each regime at leads 1 to 5 for the four models, read from the committed score. Variants: 0 new.
+- Result: by regime and lead, `gbm_funding` has 1 cell above zero and 1 below of 15; the pooled difference exceeds every regime's in 13 of 20 model-by-lead rows, which comes from ranking across regimes (61 of 81 pressure days are in 2018-19, 5 in 2020-24). No pooled gain is claimed. Development data, not a verdict. Detail in `docs/pivot/ordinary-day-p5-844/correction-934.md`.
+- Against kill: not applicable (no verdict; what counts as a ranking gain is Eleonora's).
+- Next: Eleonora reads the correction with the registration decision (hers).
+
 ### 2026-10-19 [H5] groundwork G3 · eleonorabjornberg/repo-market-model#952
 - Directive: #937
 - Step: groundwork G3 (prospective logging)
