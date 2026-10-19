@@ -481,6 +481,13 @@ def report_command(args) -> int:
     absent = ", ".join("{} {} ({:.1f}%)".format(n, v["days"], 100 * v["share"]) for n, v in score["missing"].items())
     out.append(f"Missing laws (the day takes B1's law): {absent}.")
     out.append("")
+    pair = f"{CONTROL} -> {ALIGNED}"
+    headline = score["tables"][SCENARIOS[0]]["all"]
+    out += ["## The aligned arm against gbm_funding, in one place", ""]
+    for label, kind in (("pooled", "all"), *((k, k) for k in score["kinds"])):
+        entry = headline[kind]
+        out.append(f"- {label} ({entry['n']} days): {pair_cell(entry, pair)}" + (" over gbm_funding's mean grid CRPS of " + fmt(entry["mean"][CONTROL], 2) + " bp" if not entry.get("thin") else ""))
+    out += ["", "Skills above are all days; the same table without 2019-09-18 follows. Intervals are one-sided 95% bounds `[lower, upper]`.", ""]
     for scenario in SCENARIOS:
         entries = score["tables"][scenario]
         out += [f"## {scenario}", "", *TABLE_HEAD]
