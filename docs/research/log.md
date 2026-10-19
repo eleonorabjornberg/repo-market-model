@@ -1296,3 +1296,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: no figure; nothing is scored. The false "Failed: <day>, at step record" comments of 10-13 to 10-16 came from the 01:15 UTC fallback slot starting after midnight ET.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's ruling on whether a record may ever be written after midnight ET (marked question in the PR).
+
+### 2026-10-19 [H5] step 4 · eleonorabjornberg/repo-market-model#978
+- Directive: #951
+- Step: 4 (why the "no gain" results of #775/#758 found no headroom; also H2's ceiling, #703/#635)
+- Tier: development
+- Pins: base `4d85e9f3`; published panel `4ddc3882…`; `scripts/drivers_audit_951.py`, declaration `metadata/drivers_audit_951.json` committed before any number; bootstrap seed 951
+- Tried: an audit of which fits train a calendar or scheduled column one day off; rare-day counts per refit; a nested cross-fitted ceiling lineup at the reachable settings; and the re-run of `gbm_funding` with and without the calendar and net-settlement inputs on direct (aligned) pairs, leaf 20 and 5, paired against `gbm_funding`, B1 and B2. Variants: 4 new arms.
+- Result: H2's ceiling and reachable fits are aligned; `gbm_funding` at lead 1 and #634 variants a and b are one day off. Quarter-ends reach 20 in the training window in about a third of refits. On direct pairs the inputs add skill (+0.075 [+0.054, +0.098] pooled, +0.104 on calendar days), but against `gbm_funding` the arm is flat pooled (+0.001 [−0.042, +0.043]) because direct pairs cost skill alone (−0.054), with a calendar-day gain (+0.068 [+0.002, +0.141] at leaf 5). Development data, not a verdict. Detail in `docs/research/drivers-audit-951-result.md`.
+- Against kill: not reached; H5's kill (no CRPS gain over phase 2 and no ordinary-day ranking gain) is not decided by development data.
+- Next: Eleonora's decision on reopening the 15 October ruling; a walk-forward ceiling with a paired headroom, if she wants one.
