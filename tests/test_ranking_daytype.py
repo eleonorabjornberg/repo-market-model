@@ -92,6 +92,32 @@ class WeightTests(unittest.TestCase):
         windows = [self.window(False) for _ in range(rd.MIN_TRAILING)]
         self.assertEqual(rd.choose_weight(windows)[0], 0.0)
 
+    def quiet_window(self):
+        flags = [0] * 20
+        return [0.0] * 20, [1.0 - 0.01 * i for i in range(20)], flags
+
+    def test_windows_that_hold_no_pressure_day_take_the_default_not_the_tie_break(self):
+        """#930, ruling on #925: every grid weight ties at zero precision, which the tie-break sent to w = 0.0.
+
+        Failed on main with `AssertionError: (0.0, 60) != (0.5, 60)`; the tie-break line is the one under test.
+        """
+        windows = [self.quiet_window() for _ in range(rd.MIN_TRAILING)]
+        self.assertEqual(rd.choose_weight(windows), (rd.DEFAULT_WEIGHT, rd.MIN_TRAILING))
+
+    def test_one_pressure_day_among_the_trailing_windows_restores_the_choice(self):
+        windows = [self.quiet_window() for _ in range(rd.MIN_TRAILING - 1)] + [self.window(False)]
+        self.assertEqual(rd.choose_weight(windows)[0], 0.0)
+
+    def test_a_pressure_day_older_than_the_trailing_windows_does_not_count(self):
+        windows = [self.window(False)] + [self.quiet_window() for _ in range(rd.TRAILING)]
+        self.assertEqual(rd.choose_weight(windows), (rd.DEFAULT_WEIGHT, rd.TRAILING))
+
+    def test_a_tie_among_windows_that_hold_a_pressure_day_still_goes_to_the_smaller_weight(self):
+        flags = [1] + [0] * 19
+        flat = ([0.5] * 20, [0.5] * 20, flags)
+        windows = [flat for _ in range(rd.MIN_TRAILING)]
+        self.assertEqual(rd.choose_weight(windows)[0], 0.0)
+
     def test_only_the_latest_trailing_windows_are_weighed(self):
         old = [self.window(True) for _ in range(40)]
         recent = [self.window(False) for _ in range(rd.TRAILING)]

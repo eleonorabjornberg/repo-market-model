@@ -123,7 +123,8 @@ def score(args) -> int:
                         "max": max(f.phi for f in walk.fits.values())}},
         "blend": {"weights_chosen": {str(w): n for w, n in sorted(weights.items())},
                   "refits": len(walk.weights),
-                  "refits_on_the_default": sum(1 for _, used in walk.weights.values() if used < rd.MIN_TRAILING),
+                  "refits_on_the_default": sum(1 for v in walk.weight_is_default.values() if v),
+                  "refits_on_the_default_for_want_of_windows": sum(1 for _, used in walk.weights.values() if used < rd.MIN_TRAILING),
                   "mean_weight_in_force": statistics.fmean(walk.weight_used.values())},
         "tail_by_type": {"share_of_target_leads_on_the_fallback": walk.fallback_share()},
         "base": {
@@ -242,8 +243,8 @@ def render(r: dict, title: Optional[str] = None, note: Optional[str] = None) -> 
         f"- Scheduled risk dates are {pct(b['share_of_window_days_on_a_scheduled_risk_date'])} of window days and "
         f"{pct(b['share_of_pressure_days_on_a_scheduled_risk_date'])} of the pressure days.",
         f"- (b) took the all-type fallback on {pct(r['tail_by_type']['share_of_target_leads_on_the_fallback'])} of target leads (pool under {rd.MIN_POOL}).",
-        f"- (c) weights chosen at {r['blend']['refits']} refits ({r['blend']['refits_on_the_default']} on the default 0.5 for want of "
-        f"{rd.MIN_TRAILING} trailing windows): " + ", ".join(f"w = {w}: {c}" for w, c in r["blend"]["weights_chosen"].items())
+        f"- (c) weights chosen at {r['blend']['refits']} refits ({r['blend']['refits_on_the_default']} on the default 0.5: "
+        f"{r['blend']['refits_on_the_default_for_want_of_windows']} for want of {rd.MIN_TRAILING} trailing windows, the rest with no pressure day among them): " + ", ".join(f"w = {w}: {c}" for w, c in r["blend"]["weights_chosen"].items())
         + f"; mean weight in force {r['blend']['mean_weight_in_force']:.2f}.", "",
         "## Top-k precision and recall (all decision days; recall on windows with a pressure day)", "",
         "| Ranker | P@3 | P@5 | R@3 | R@5 | share of top 5 on a risk date |", "|---|---|---|---|---|---|",
