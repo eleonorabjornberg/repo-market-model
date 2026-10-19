@@ -7,7 +7,7 @@ Primary goal H5: the SOFR - IORB spread distribution in bp. Secondary goal H9: r
 ## Variant count
 
 - Candidate files under `metadata/pressure_judge/candidates/`: 358.
-- Declarations with a `variants` block (`metadata/*.json`, by content): 28, declaring 86 variants.
+- Declarations with a `variants` block (`metadata/*.json`, by content): 29, declaring 92 variants.
 - Files with no `variants` block that name their arms `candidates` or `arms` (by content): 24, naming 85 arms. They are not added to the variants above: what counts as a variant under protocol section 2 is Eleonora's.
 - Declarations whose arms this count cannot read (35): `alarm_cooldown.json`, `always_flag_588.json`, `always_flag_685.json`, `direct_pairs_twin.json`, `every_day_separation_601.json`, `every_day_steps_687.json`, `iorb_every_day_579.json`, `judge_readings.json`, `judge_rulings_rescore.json`, `latent_factor.json`, `ngboost_laplace_check.json`, `nowcast.json`, `off_risk_day_624_step1.json`, `off_risk_day_681.json`, `onset_diagnostics.json`, `pressure_audit.json`, `pressure_hazard.json`, `pressure_judge.json`, `pressure_stack.json`, `pressure_tail.json`, `projected_reserves.json`, `ranking_694.json`, `recency_adaptive_training.json`, `regime_recalibration.json`, `regime_thresholds.json`, `richer_targets_639.json`, `richer_targets_706.json`, `risk_date_false_alarm_controls.json`, `satiation_587.json`, `setup_diagnostic.json`, `setup_sensitivity.json`, `setup_sensitivity_refit.json`, `startup_cutoff_584.json`, `structural_liquidity.json`, `upper_bound_635.json`.
 - Candidates with evidence in this page: 127. Candidate files with no committed evidence this page reads: 231 (listed at the end).
