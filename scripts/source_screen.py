@@ -312,7 +312,7 @@ def panel_command(args) -> int:
         merged.append(DailyObservation(row.date, values))
     # The corrected-lag copies of the cleared-repo columns (#968), identical in value to their two-day originals.
     merged = dvp_segment.add_cleared_columns(merged)
-    columns += [c for c in dvp_segment.CLEARED_COLUMN_FIELDS if c not in columns]
+    columns += [c for c in dvp_segment.CLEARED_COLUMN_FIELDS if c not in columns and c in merged[0].values]
     with args.output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["date"] + columns)

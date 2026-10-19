@@ -21,7 +21,7 @@ Whether any OFR series joins a published declaration is Eleonora's decision, and
 
 ## The screen, each column at both lags
 
-Both lags are read in one screen of the scratch panel (sha256 `3cad385a9a51…`, 2,042 scored days from 2018-06-29 to 2026-09-03, 145 above +5 bp), so the data, the days and the reading rules are the same and only the lag differs. A copy read at lead L equals its original at lead L - 1 in every cell, and the 63 other series are identical to the same screen without the copies; the script refuses to write if either fails.
+Both lags are read in one screen of the scratch panel (sha256 `f46cfc571940…`, 2,042 scored days from 2018-06-29 to 2026-09-03, 145 above +5 bp), so the data, the days and the reading rules are the same and only the lag differs. A copy read at lead L equals its original at lead L - 1 in every cell, and the 63 other series are identical to the same screen without the copies; the script refuses to write if either fails.
 
 ### Table 1. Spearman correlation with the +5 bp indicator, pooled, by lead
 
@@ -110,7 +110,7 @@ Paired Brier difference, benchmark minus candidate (positive favours the input),
 * **The 15:00 instant is the page's statement, not a measured first print.** The API keeps no vintages and states no publication time. The page says "generally": a day the release slips would be read a few hours early. The stale text in `ofr_stfm_repo` and `ofr_stfm_repo_segments` ("a one-business-day reading is reported as a sensitivity only") is left as it is.
 * **#187's own outcome is not reproduced.** The win rule's Holm family covers every group and sensitivity of #187, whose runs are not repeated here. The two readings are compared under one narrower family.
 * **The final series and the volumes** are not declared at the page's lag; only the two preliminary rates are.
-* **The matrix of #629** (ordinary-day AUROC with intervals) is not re-run: its declaration is bound to panel `6a8388fb…`, which no longer rebuilds on main because merged directives changed three columns (`net_settlement_due_5d` by #738, `srf_take_up` and `srf_take_up_positive` by the test-trade rule). The panel used here is `8bc473d6…` without the copies, `3cad385a…` with them; none of the three changed columns is an OFR column.
+* **The matrix of #629** (ordinary-day AUROC with intervals) is not re-run: its declaration is bound to panel `6a8388fb…`, which no longer rebuilds on main because merged directives changed three columns (`net_settlement_due_5d` by #738, `srf_take_up` and `srf_take_up_positive` by the test-trade rule). The panel used here is `8bc473d6…` without the copies, `f46cfc57…` with them; none of the three changed columns is an OFR column.
 
 ## Reproduce
 
@@ -126,7 +126,7 @@ PYTHONPATH=src python3 scripts/nowcast.py panel --panel AUG4.csv --output AUG6.c
 PYTHONPATH=src python3 scripts/dvp_segment_inputs.py panel --panel PUB.csv --output DVP.csv --end 2026-09-03
 PYTHONPATH=src python3 scripts/early_warning_inputs.py panel --panel PUB.csv --output EW.csv --end 2026-09-03
 PYTHONPATH=src python3 scripts/satiation_distance_598.py panel --panel AUG6.csv --output AUG2D.csv --end 2026-09-03
-PYTHONPATH=src python3 scripts/source_screen.py panel --panel AUG6.csv --extra DVP.csv EW.csv AUG2D.csv --output SCREEN.csv     # sha256 3cad385a…
+PYTHONPATH=src python3 scripts/source_screen.py panel --panel AUG6.csv --extra DVP.csv EW.csv AUG2D.csv --output SCREEN.csv     # sha256 f46cfc57…
 PYTHONPATH=src python3 scripts/source_screen.py run --panel SCREEN.csv --output OUT/screen.json
 PYTHONPATH=src python3 scripts/ofr_cleared_lag_968.py compare OUT/screen.json --output OUT/screen_compare.json --markdown OUT/screen_compare.md
 # the paired test: the scoring panel is dvp_segment_inputs.py's, to 2025-12-31 (sha256 608f872d…)
