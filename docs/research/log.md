@@ -1326,3 +1326,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
 - Against kill: not applicable (a check on the interval, not a model).
 - Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
+
+### 2026-10-19 [H9] step 3 · eleonorabjornberg/repo-market-model#986
+- Directive: #932
+- Step: 3 (the nested test re-run with the forecast column aligned to its label day, finding #915; Eleonora's ruling of 19 October 2026)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `26c51093…`; `metadata/h9_nested_932.json`, seed 932; walks by `scripts/h9_nested_932.py walk` on `training_pairs="direct"`
+- Tried: declaration, script and tests only; the walks are a needs-mac run and nothing is scored yet. Variants: 4 new (`base_direct` and three `plus_direct_<target>`); the one-step `base` re-walk adds none.
+- Result: none yet. The test shows #842's design held the forecast of day p + h against the label of day p + 1 (lead − 1 days apart), and that the direct-pair design holds the forecast of the label day at every lead.
+- Against kill: not read here; reading H9's kill clause is Eleonora's.
+- Next: the Mac run, then the page and this entry's figures.
