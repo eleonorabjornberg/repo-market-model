@@ -202,7 +202,7 @@ jobs:
 
   owner-attested:
     # A binding change (a lockbox tier, the live pin, a model joining the live
-    # record) counts only with Eleonora's own GitHub comment, not one posted
+    # record, CLAUDE.md or .claude/, a registration record) counts only with Eleonora's own GitHub comment, not one posted
     # through an app (#256; draft rule docs/decisions/drafts/owner-attestation.md).
     # The pull request cites it in metadata/owner_attestations.json, and this
     # job fetches it. With no binding change and no new citation it fetches
