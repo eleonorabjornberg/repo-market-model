@@ -549,6 +549,11 @@ NOT_ENTRY_POINTS = {
         "diagnostic of the unwarned onsets (#560); compares nothing, and walks "
         "_as_of_folds, which refuses a locked day (tests/test_unwarned_onsets.py)"
     ),
+    "scripts/gbm_attribution_964.attribution_walk": (
+        "the #964 attribution's walk of gbm_funding at one lead, as spread_distribution_634.walk is; it scores nothing "
+        "but re-forecasts days of the same fold grid, and it refuses a day after 2025-12-31 (require_study_window, "
+        "tests/test_gbm_attribution_964.py) and a locked scored day (require_unlocked) before any fit"
+    ),
     "scripts/spread_distribution_634.walk": (
         "the #634 measurement's walk of a variant at one lead, as distribution_walk is; it refuses a locked "
         "scored day itself (refuse_locked, tests/test_spread_distribution_634_script.py, LockboxTests) before any fit"

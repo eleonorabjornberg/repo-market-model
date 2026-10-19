@@ -280,6 +280,7 @@ def declaration_document(published_rows) -> dict:
         "hypothesis": "H5 (primary goal), step 4 (why the known drivers add nothing; scopes #951's follow-up) and the validation report (docs/model/validation.md, sensitivity analysis)",
         "rulings": ["Eleonora, 19 October 2026 (relayed on #958): the five-lens review, Lens D; directive #964"],
         "protocol": {"record": "docs/decisions/scoring-protocol.md (version 1)", "grid": list(GRID), "score": "grid CRPS, scoring_protocol.grid_crps"},
+        "arms": {"gbm_funding": "the attributed model, refitted as metadata/spread_distribution_634.json declares it; a measurement of an existing model, not a new variant"},
         "estimators": {
             "model": "gbm_funding of metadata/spread_distribution_634.json, refitted exactly as declared there (spread_distribution_634.py walk): ml.fit_gradient_boosted_quantiles on the protocol grid, default settings, regressors live_record.published_features(h) without spread_bps (which the design adds), the shared fold grid",
             "minimum_history": MINIMUM_HISTORY,

@@ -1,4 +1,7 @@
 {
+ "arms": {
+  "gbm_funding": "the attributed model, refitted as metadata/spread_distribution_634.json declares it; a measurement of an existing model, not a new variant"
+ },
  "cuts": {
   "interval": "scoring_protocol.paired_tests, seed 964, 2000 draws, stationary bootstrap, mean block 10, studentized; the one-sided lower 95% bound of mean(shuffled score - score)",
   "leads": [
