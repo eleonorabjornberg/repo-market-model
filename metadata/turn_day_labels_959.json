@@ -1,0 +1,71 @@
+{
+  "status": "declared by the pull request that closes #959 before any number was computed; a measurement, not a record. Nothing is published: no published declaration, no record in docs/runs/ and no decided value changes, nothing after 2025-12-31 is scored, and no lockbox day is read. Adopting the label for B2 is a section 13 change and the definition is a data meaning: both are Eleonora's (#959, criterion 4). Development data, never a verdict (scoring protocol v1, #640)",
+  "issue": 959,
+  "hypothesis": "H5 step 2 (B2's day-type pools and the mean-reversion candidate's level); also H6 step 1 (the risk-date set) and H8 (the calendar ranker)",
+  "ruling": "Eleonora, 19 October 2026, relayed on #958 (five-lens review, item 1, Lens A)",
+  "why": "the repo's month-end label is the month's last two business days (data.MONTH_END_BUSINESS_DAYS) and the balance-sheet run-up is the last three. On the published panel the penultimate day is ordinary and the turn is the last business day (#959's table, recomputed by the orchestrating session)",
+  "labels": {
+    "module": "repo_model.turn_days; each label is a function of the date and metadata/market_holidays.json, with the tax_date calendar column for the tax_date label alone",
+    "precedence": ["year_end", "quarter_end_turn", "turn", "tax_date", "ordinary"],
+    "turn": "the last business day of a month that is not a quarter's last month, and the first business day of the next month",
+    "quarter_end_turn": "the last business day of March, June or September (data.last_business_day_of_quarter) and the first business day after it",
+    "year_end": "the last business day of December (31 December or its last business day) and the first business day of January",
+    "tax_date": "the calendar column tax_date == 1.0, on a day that is none of the three turn labels",
+    "ordinary": "every other day: the penultimate day, the run-up days and every day the old month_end label held beyond the last business day return to ordinary",
+    "december_26": "26 December is its own flag (turn_days.december_26). It is reported as its own row and is pooled as ordinary in B2 and in the level set, so that no B2 pool is empty for want of one day a year",
+    "penultimate_day": "the month's second-last business day (turn_days.penultimate_day), the group #959 asks to be reported alone"
+  },
+  "scored_days": {
+    "decision_days": "every business day of the published panel on which every forecast of the comparison builds and whose five targets (h = 1..5 business days later on the panel's calendar) all fall on or before 2025-12-31. A decision day on which B2 relabelled has no sample of a lead's type in the trailing year is dropped from every model of the comparison and counted",
+    "last_day": "2025-12-31",
+    "lockbox": "scoring_protocol.day_scores calls lockbox.require_unlocked on every decision and target day; the script refuses a day after 2025-12-31",
+    "panel": "the published panel (tests/fixtures/snapshots/funding_inputs built at cutoff 2026-09-08T21:31:42+00:00, digest in metadata/funding_panel_manifest.json)"
+  },
+  "comparisons": {
+    "a": {
+      "label": "B2 relabelled against B2 as is",
+      "candidate": "protocol_benchmarks.b2_forecast with splits = TurnLabels(declared splits), pools by turn, quarter_end_turn, year_end, tax_date, ordinary",
+      "benchmark": "protocol_benchmarks.b2_forecast with the declared splits (reporting_day_type: quarter_end, month_end, tax_date, ordinary), unchanged",
+      "reference": "B1 (protocol_benchmarks.b1_forecast) is added as a second benchmark of the relabelled B2, to put the size of the change beside the gap B2 has to B1"
+    },
+    "b": {
+      "label": "the mean-reversion candidate with its ordinary set excluding only turn days, against itself as is",
+      "candidate": "spread_mean_reversion (#686, metadata/spread_distribution_686.json: level = median of the last 10 ordinary days, phi on its grid, refit every 21 decision days) with ordinary_levels read on TurnLabels(declared splits, keep_tax_date=False): tax dates are ordinary, the three turn labels are not",
+      "benchmark": "the same model with the declared splits, unchanged",
+      "sensitivity": "b2: the same, but tax dates stay excluded from the level (TurnLabels with keep_tax_date=True), which separates the effect of the turn labels from the effect of returning the tax dates",
+      "scope": "the #686 base model, not the #761 variants: the directive names (#686/#761) and the base model is the one whose level #686 declared; the #761 variants pool by the same ordinary set and inherit any change, but they are not re-walked here"
+    },
+    "c": {
+      "label": "H6's risk-date set re-read",
+      "reading": "the risk-date calendar benchmark of #693 (repo_model.risk_date_spread.calendar_forecast), whose types are the quarter-end, month-end, tax-date and settlement days, is re-run with the quarter_end and month_end types replaced by the turn labels (turn, quarter_end_turn, year_end), the tax-date and settlement types as declared in #693. It is scored on the cells whose target is a risk date under each set, against B1, and each set against the other on the cells both sets call a risk date. The risk-date counts per type are tabulated for both sets",
+      "not_done": "the #693 type x scarcity-state model is not re-run: it reads the own-leg scarcity states, which this directive does not change and which cost about ten seconds a lead. The mean-reversion candidate of #693 is the (b) model, read on its own cells"
+    }
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "metric": "grid_crps of the 23 quantiles, the mean over a decision day's leads (day_scores); by day type, the mean over the leads whose target is of that type",
+    "pairing": "each candidate against its benchmark on the same decision days, skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate): positive favours the candidate",
+    "interval": "scoring_protocol.paired_tests, the studentized stationary bootstrap of ruling 1 (#739): mean block 10, 10,000 draws, seed 959; the 90% two-sided interval is the 5th to 95th studentized bound, for mean(d) and for skill",
+    "outcomes": "the panel's spread_bps at the target day, as #686, #693 and #761 read it"
+  },
+  "splits": {
+    "pooled": "all scored decision days",
+    "regime": "SplitDeclaration.regime of the decision day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024 and 2025-26 (the last is scored to 2025-12-31 only)",
+    "day_type": "the relabelled type of the target day: turn, quarter_end_turn, year_end, tax_date, ordinary; and the rows 'turn days (all three labels)', 'penultimate days' and 'december_26' alone, each with its count of target cells, its decision days and the width of its interval",
+    "minimum": "a group of fewer than 20 decision days is listed with its means and is not tested"
+  },
+  "reading_rules": {
+    "a": "the relabelled B2 is better than B2 as is on a group when the 90% interval of its skill against B2 as is lies above zero, worse when it lies below; otherwise the group shows no difference. A gain that appears only on the turn days and the penultimate days is the expected place for it and is not a gain elsewhere",
+    "b": "read the same way against the model as is",
+    "c": "a counts table, and the calendar benchmark's pooled and per-type skill against B1 under each set, read the same way",
+    "no_verdict": "every sentence on the page says development data, not a verdict"
+  },
+  "limits": {
+    "published": "no published declaration and no docs/runs/ record changes; the B2 of scoring protocol v1, the mean-reversion declaration of #686 and #693's declaration are only read",
+    "walk_time": "the (b) walks refit about 100 times on a stdlib model; if either is expected to take more than about two hours, the run follows the needs-mac rule on #46",
+    "questions_for_eleonora": [
+      "adopt the turn label for B2 (and so for scoring protocol v1's B2 and its section 13)? The definition of the labels is a data meaning",
+      "how the turn label relates to the open #800 ruling (the two readings of B2's day types)"
+    ]
+  }
+}
