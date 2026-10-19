@@ -1223,6 +1223,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: whether #758's reading stands, and which chain a re-score uses, are Eleonora's (marked question on the PR).
 
+### 2026-10-17 [H1] step 5 · eleonorabjornberg/repo-market-model#911
+- Directive: #886
+- Step: 5 (the corrected test's size on post-2020 resampled history; #878's values recalibrated on post-2020 stationary-bootstrap windows)
+- Tier: development
+- Pins: base `89b256c2`; published panel `4ddc3882…`; orientation d = S(B1) - S(candidate); windows, level and seed of #873; power-study paths and seeds of #769; designs and seeds of #733
+- Tried: the efficacy and futility values recalibrated on post-2020 stationary-bootstrap windows; the power study of #769, the replay of #754 and #792, and #733's six designs re-run at the new values. Variants: 0 new models.
+- Result: at the new values the size by 250 days is 5.0% on post-2020 stationary paths (26.6% at #878's values) and below 5% on the other three readings; power at 3% by 250 days falls to 6.1% (30.8%), at 10% to 9.6% (39.8%). #733's rule recommends D4 (250 days, standardized) where it recommended D3; at the full-history circular values no design is admissible. Development and simulated data, not a verdict.
+- Against kill: not applicable (a design and calibration measurement; development data gives no verdict).
+- Next: Eleonora's decision on the second draft amendment and on what gives way if it is adopted (the MME, the look, or the design), marked in the pull request.
+
 ### 2026-10-18 [H5] step 3 · eleonorabjornberg/repo-market-model#920
 - Directive: #912
 - Step: 3 (correction to #844's result page; no new run)
