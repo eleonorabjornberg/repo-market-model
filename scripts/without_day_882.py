@@ -50,13 +50,18 @@ def headline(record: Mapping) -> Tuple[str, float]:
 def bounds(record: Mapping) -> Optional[Tuple[float, float]]:
     """The record's interval for its headline, whichever way the source stored it, or None.
 
-    A one-sided pair (lower and upper) is the headline's own when both keys start with the headline's name.
+    The interval is the headline's own: a key that starts with the headline's name and contains "interval" (#761 stores
+    `difference_interval`, the interval of mean d in bp, before `skill_interval`). A record with no such key falls back to
+    its first interval. A one-sided pair (lower and upper) is the headline's own when both keys start with the headline's name.
     """
 
-    for key, value in record.items():
-        if "interval" in key and isinstance(value, list) and len(value) == 2 and all(_is_number(v) for v in value):
-            return float(value[0]), float(value[1])
     name = next((k for k in HEADLINES if _is_number(record.get(k))), "")
+    pairs = [(key, value) for key, value in record.items()
+             if "interval" in key and isinstance(value, list) and len(value) == 2 and all(_is_number(v) for v in value)]
+    own = [value for key, value in pairs if name and key.startswith(name)]
+    if own or pairs:
+        value = (own or [pairs[0][1]])[0]
+        return float(value[0]), float(value[1])
     lower = [v for k, v in record.items() if k.startswith(name) and "lower" in k and "one_sided" in k and _is_number(v)]
     upper = [v for k, v in record.items() if k.startswith(name) and "upper" in k and "one_sided" in k and _is_number(v)]
     if lower and upper:
