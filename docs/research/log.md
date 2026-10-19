@@ -1252,3 +1252,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the calendar's top-5 precision is 9.4% (was 13.0%). Top-5 precision: (a) 9.9%, gain over the calendar +0.5 pp [-0.4 pp, +1.5 pp]; (b) 9.7%, +0.2 pp [-0.8 pp, +1.4 pp]; (c) 9.3%, -0.1 pp [-1.2 pp, +1.0 pp], over 1,825 decision days to 2025-12-31. No interval lies wholly below or above zero (the published page had (b) and (c) wholly below). By regime, 2018-19: calendar 37.2%, (a) 38.7%, (b) 37.2%, (c) 36.6%; 2025-26: calendar 12.7%, (a) 14.4%, (b) 16.2%, (c) 14.4%. Detail in `docs/pivot/ranking-924-result.md`; the earlier page and score are in `docs/archive/ranking-daytype-771/`.
 - Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict. Every other reading of the 2026-10-14 entry is superseded.
 - Next: this makes no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
+### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#940
+- Directive: #931
+- Step: 3 (the candidate's construction: finding #914; Eleonora's ruling of 19 October 2026 to run aligned training pairs for `treasury_settlement` at lead 1 as a development step)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `362df847`; seed 931; declaration `metadata/aligned_pairs_931.json`
+- Tried: `gbm_funding` with `treasury_settlement` alone trained from the target's own row (the row serving reads it from), every other field one-step, same fit, seed and folds, lead 1. Reference: `gbm_funding` and the direct-pairs twin, re-walked and reproduced to the digit against #449. Variants: 1 (not in any published declaration).
+- Result: over 1,868 decision days to 2025-12-23, the arm's skill over `gbm_funding` is +2.8% [+1.7%, +3.8%] pooled; on month-end targets +13.8% [+11.1%, +16.6%] (149 days); on mid-month coupon dates +13.8% [+8.6%, +21.5%] (115 days); on ordinary days -0.2% [-1.9%, +1.3%] (1,486 days); on tax dates +2.4% [-1.0%, +7.4%]; quarter-ends too thin. The direct-pairs twin's skill over the arm is -4.9% [-7.3%, -2.6%] pooled. Against B1 +21.6% [+13.8%, +39.2%], against B2 +35.9% [+24.2%, +44.4%]. By regime the arm is ahead of `gbm_funding` in every regime, the interval clear of zero in 2018-19 only. Detail in `docs/research/aligned-pairs-931-result.md`.
+- Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
+- Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
