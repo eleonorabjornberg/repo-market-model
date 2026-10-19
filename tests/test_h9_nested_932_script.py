@@ -90,10 +90,7 @@ def _rule(column: str, lead: int):
 
 
 def _skip_without_ml(test: unittest.TestCase) -> None:
-    try:
-        import numpy  # noqa: F401
-        import sklearn  # noqa: F401
-    except ImportError:
+    if importlib.util.find_spec("numpy") is None or importlib.util.find_spec("sklearn") is None:
         test.skipTest("the ml extra is not installed")
 
 
