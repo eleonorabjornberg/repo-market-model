@@ -53,12 +53,21 @@ class DeclarationTests(unittest.TestCase):
             "fit": {"phi": {"min": 0.1, "median": 0.5, "max": 0.9}},
             "primary": primary,
         }
+        self.result = result
         lines = script.render(result).rstrip().splitlines()
         tail = [line for line in lines[-3:]]
         self.assertEqual(len(tail), 3)
         for line, cand in zip(tail, script.rd.CANDIDATES):
             self.assertIn(script.NAMES[cand], line)
             self.assertIn("lies wholly above zero", line)
+
+    def test_a_rescore_page_carries_its_own_title_and_note_before_the_figures(self):
+        self.test_the_page_ends_with_one_line_per_ranker()
+        lines = script.render(self.result, title="Re-scored (#924)", note="NOTE-LINE").splitlines()
+        self.assertEqual(lines[0], "# Re-scored (#924)")
+        self.assertEqual(lines[2], "NOTE-LINE")
+        self.assertNotIn("(#765)", lines[0])
+        self.assertEqual(script.render(self.result).splitlines()[0], script.render(self.result, title=None).splitlines()[0])
 
 
 if __name__ == "__main__":

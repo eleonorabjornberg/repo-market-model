@@ -11,9 +11,10 @@ v1, #640): the result is exploration on development data.
         --output /tmp/funding_panel.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
     PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv --manifest metadata/funding_panel_manifest.json
     PYTHONPATH=src python3 scripts/ranking_765.py score --panel /tmp/funding_panel.csv \\
-        --output docs/pivot/evidence/ranking_daytype/score.json
+        --output docs/pivot/evidence/ranking-924/score.json
     PYTHONPATH=src python3 scripts/ranking_765.py page \\
-        --score docs/pivot/evidence/ranking_daytype/score.json --output docs/pivot/ranking-daytype-result.md
+        --score docs/pivot/evidence/ranking-924/score.json --output docs/pivot/ranking-924-result.md \\
+        --title "H8 step 2 re-scored with the calendar read as announced (#924)" --note docs/pivot/evidence/ranking-924/note.md
 
 The scarcity state is read from the measurement panel (`scripts/pressure_judge.py::_scarcity_states`), which builds it from the
 tracked fixtures. Stdlib only.
@@ -223,10 +224,11 @@ def row(cand: str, metric: str, cell: dict) -> str:
     return f"| {NAMES[cand]} | {metric} | " + " | ".join(gain_text(cell[b]) for b in COMPARED) + " |"
 
 
-def render(r: dict) -> str:
+def render(r: dict, title: Optional[str] = None, note: Optional[str] = None) -> str:
     n, b = r["notes"], r["base"]
     lines = [
-        "# Ranking the next 20 business days by tail probability and day type: development result (#765)", "",
+        "# " + (title or "Ranking the next 20 business days by tail probability and day type: development result (#765)"), "",
+    ] + ([note, ""] if note else []) + [
         "**Hypothesis and step.** H8 (ranking beats calibrating for desk use), step 2: rank by tail probability combined with the day type. "
         "Development data, exploration: not a verdict (scoring protocol v1, #640). Declaration: `metadata/ranking_765.json`, committed before any score. "
         "The +5 bp level is only the ranking quantity carried over from step 1; nothing is fitted to the +5 bp event.", "",
@@ -317,7 +319,8 @@ def render(r: dict) -> str:
 
 def page(args) -> int:
     result = json.loads(Path(args.score).read_text(encoding="utf-8"))
-    Path(args.output).write_text(render(result), encoding="utf-8")
+    note = Path(args.note).read_text(encoding="utf-8").strip() if args.note else None
+    Path(args.output).write_text(render(result, title=args.title, note=note), encoding="utf-8")
     return 0
 
 
@@ -332,6 +335,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     two = sub.add_parser("page")
     two.add_argument("--score", required=True)
     two.add_argument("--output", required=True)
+    two.add_argument("--title")
+    two.add_argument("--note", help="a file whose text goes under the title (a re-score says what it replaces)")
     two.set_defaults(func=page)
     args = parser.parse_args(argv)
     return args.func(args)
