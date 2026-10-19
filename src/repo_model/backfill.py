@@ -295,10 +295,12 @@ def load_admitted_series(path: Path) -> Dict[str, datetime]:
     return out
 
 
-#: Panel columns the New York Fed's workbook feeds, by the back-fill series each is drawn from. SOFR's volume and
-#: percentiles are the same series as its rate (the workbook publishes none of them, so they are blank).
-WORKBOOK_SERIES = {"sofr": "sofr", "sofr_volume": "sofr", "sofr_p25": "sofr", "sofr_p75": "sofr",
-                   "tgcr": "tgcr", "bgcr": "bgcr"}
+#: Panel columns the New York Fed's workbook feeds, by the back-fill series each is drawn from. SOFR's percentiles are
+#: the same series as its rate (the workbook publishes none of them, so they are blank). The SOFR volume is not mapped
+#: onto `sofr`: workbook volumes are not admitted (`docs/decisions/information-set.md`, the back-fill amendment; whether
+#: the SOFR volume joins is Eleonora's open question on #742), so it stands for itself and is blank on a back-filled
+#: row (#887).
+WORKBOOK_SERIES = {"sofr": "sofr", "sofr_p25": "sofr", "sofr_p75": "sofr", "tgcr": "tgcr", "bgcr": "bgcr"}
 
 #: Features that are not a back-fill series: the calendar, and IORB, an administered rate that defines the
 #: spread (whether it needs its own `admitted` entry is a marked question on #742's pull request, not settled here).
