@@ -1,0 +1,4650 @@
+{
+  "base": {
+    "pressure_days_per_window": 1.4695890410958905,
+    "share_of_pressure_days_on_a_scheduled_risk_date": 0.15734526472781507,
+    "share_of_window_days_on_a_scheduled_risk_date": 0.0689041095890411,
+    "share_of_windows_with_a_pressure_day": 0.2389041095890411,
+    "windows": 1825,
+    "windows_with_a_pressure_day": 436
+  },
+  "block_length": 20.0,
+  "composition": {
+    "calendar": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.4025570776255714
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.2756164383561647
+      }
+    },
+    "climatology": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.1664834339407472
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.12339626126826596
+      }
+    },
+    "model_median": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.06826546024671469
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.06685895935355224
+      }
+    },
+    "model_prob": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.07007172421159456
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.06929663401048974
+      }
+    },
+    "persistence": {
+      "3": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.06705671713530409
+      },
+      "5": {
+        "share_of_top_k_on_a_scheduled_risk_date": 0.06649969787482424
+      }
+    }
+  },
+  "declaration": "metadata/ranking_694.json",
+  "draws": 10000,
+  "fit": {
+    "phi": {
+      "max": 0.96,
+      "median": 0.57,
+      "min": 0.25
+    }
+  },
+  "issue": 694,
+  "label": "development, not a verdict",
+  "means": {
+    "calendar": {
+      "3": {
+        "precision_all_windows": 0.1052054794520551,
+        "precision_windows_with_a_pressure_day": 0.4403669724770655,
+        "recall_windows_with_a_pressure_day": 0.26276716533900835
+      },
+      "5": {
+        "precision_all_windows": 0.09435616438356123,
+        "precision_windows_with_a_pressure_day": 0.39495412844036526,
+        "recall_windows_with_a_pressure_day": 0.37660836850832813
+      }
+    },
+    "climatology": {
+      "3": {
+        "precision_all_windows": 0.1024491088272206,
+        "precision_windows_with_a_pressure_day": 0.4288294119488018,
+        "recall_windows_with_a_pressure_day": 0.26935607857518584
+      },
+      "5": {
+        "precision_all_windows": 0.09088305810187564,
+        "precision_windows_with_a_pressure_day": 0.3804164702658785,
+        "recall_windows_with_a_pressure_day": 0.36757448205385596
+      }
+    },
+    "model_median": {
+      "3": {
+        "precision_all_windows": 0.0688058273537725,
+        "precision_windows_with_a_pressure_day": 0.2880060433959514,
+        "recall_windows_with_a_pressure_day": 0.144586595571485
+      },
+      "5": {
+        "precision_all_windows": 0.06895182747237548,
+        "precision_windows_with_a_pressure_day": 0.28861716774560836,
+        "recall_windows_with_a_pressure_day": 0.2383533781233457
+      }
+    },
+    "model_prob": {
+      "3": {
+        "precision_all_windows": 0.08027685652487375,
+        "precision_windows_with_a_pressure_day": 0.3360212457749876,
+        "recall_windows_with_a_pressure_day": 0.16709377457586258
+      },
+      "5": {
+        "precision_all_windows": 0.0786445565969719,
+        "precision_windows_with_a_pressure_day": 0.3291887976822792,
+        "recall_windows_with_a_pressure_day": 0.2759395847802452
+      }
+    },
+    "persistence": {
+      "3": {
+        "precision_all_windows": 0.07982567685992335,
+        "precision_windows_with_a_pressure_day": 0.3341327070398168,
+        "recall_windows_with_a_pressure_day": 0.16083013312010924
+      },
+      "5": {
+        "precision_all_windows": 0.07725995572159955,
+        "precision_windows_with_a_pressure_day": 0.3233931632842183,
+        "recall_windows_with_a_pressure_day": 0.26257755533593213
+      }
+    }
+  },
+  "notes": {
+    "decision_days_offered": 1915,
+    "first": "2018-08-09",
+    "last": "2025-12-02",
+    "last_target": "2025-12-31",
+    "refits": 87,
+    "scored_decision_days": 1825,
+    "skipped_for_history_or_type": 90
+  },
+  "paired": {
+    "all": {
+      "model_median": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.10520547945205294,
+            "candidate_mean": 0.06880582735377067,
+            "days": 1825,
+            "gain": -0.03639965209828228,
+            "gain_interval": [
+              -0.05672804957599462,
+              -0.01819569471624266
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.10244910882721936,
+            "candidate_mean": 0.06880582735377114,
+            "days": 1825,
+            "gain": -0.033643281473448215,
+            "gain_interval": [
+              -0.05296275200939942,
+              -0.016244428938762885
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07982567685992292,
+            "candidate_mean": 0.06880582735377204,
+            "days": 1825,
+            "gain": -0.01101984950615088,
+            "gain_interval": [
+              -0.01966320132176297,
+              -0.0031317379601626164
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.09435616438356353,
+            "candidate_mean": 0.06895182747237727,
+            "days": 1825,
+            "gain": -0.02540433691118627,
+            "gain_interval": [
+              -0.03948156318567279,
+              -0.012478647532072193
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.09088305810187403,
+            "candidate_mean": 0.06895182747237374,
+            "days": 1825,
+            "gain": -0.021931230629500274,
+            "gain_interval": [
+              -0.03515401800046231,
+              -0.010138986530925756
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07725995572159927,
+            "candidate_mean": 0.06895182747237513,
+            "days": 1825,
+            "gain": -0.008308128249224138,
+            "gain_interval": [
+              -0.01594836071082646,
+              -0.001500196188894818
+            ]
+          }
+        },
+        "recall@3": {
+          "calendar": {
+            "benchmark_mean": 0.26276716533900835,
+            "candidate_mean": 0.14458659557148495,
+            "days": 436,
+            "gain": -0.11818056976752339,
+            "gain_interval": [
+              -0.1811568383515057,
+              -0.062042739819992865
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.2693560785751846,
+            "candidate_mean": 0.14458659557148434,
+            "days": 436,
+            "gain": -0.12476948300370028,
+            "gain_interval": [
+              -0.18136759459818444,
+              -0.07279919912687811
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.16083013312010808,
+            "candidate_mean": 0.14458659557148368,
+            "days": 436,
+            "gain": -0.016243537548624398,
+            "gain_interval": [
+              -0.038602713311979994,
+              0.005995690730741516
+            ]
+          }
+        },
+        "recall@5": {
+          "calendar": {
+            "benchmark_mean": 0.37660836850832924,
+            "candidate_mean": 0.23835337812334684,
+            "days": 436,
+            "gain": -0.1382549903849824,
+            "gain_interval": [
+              -0.21592607792646587,
+              -0.06666412783115433
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.36757448205385534,
+            "candidate_mean": 0.23835337812334628,
+            "days": 436,
+            "gain": -0.12922110393050906,
+            "gain_interval": [
+              -0.1917762532104806,
+              -0.07280503929599727
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.2625775553359331,
+            "candidate_mean": 0.23835337812334664,
+            "days": 436,
+            "gain": -0.024224177212586444,
+            "gain_interval": [
+              -0.05106371669991053,
+              0.003538489017700434
+            ]
+          }
+        }
+      },
+      "model_prob": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.10520547945205294,
+            "candidate_mean": 0.08027685652487192,
+            "days": 1825,
+            "gain": -0.024928622927181024,
+            "gain_interval": [
+              -0.04392420091324199,
+              -0.007737755347272304
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.10244910882721936,
+            "candidate_mean": 0.08027685652487246,
+            "days": 1825,
+            "gain": -0.022172252302346894,
+            "gain_interval": [
+              -0.039720863550899835,
+              -0.006178544546072867
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07982567685992292,
+            "candidate_mean": 0.0802768565248733,
+            "days": 1825,
+            "gain": 0.00045117966495038914,
+            "gain_interval": [
+              -0.00433835083245682,
+              0.00529615907937825
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.09435616438356353,
+            "candidate_mean": 0.07864455659697378,
+            "days": 1825,
+            "gain": -0.01571160778658976,
+            "gain_interval": [
+              -0.029794520547945243,
+              -0.0025205479452054796
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.09088305810187403,
+            "candidate_mean": 0.07864455659697023,
+            "days": 1825,
+            "gain": -0.012238501504903791,
+            "gain_interval": [
+              -0.023905511421583776,
+              -0.0015028731882082349
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07725995572159927,
+            "candidate_mean": 0.0786445565969716,
+            "days": 1825,
+            "gain": 0.0013846008753723258,
+            "gain_interval": [
+              -0.002572003894127183,
+              0.005653374074455543
+            ]
+          }
+        },
+        "recall@3": {
+          "calendar": {
+            "benchmark_mean": 0.26276716533900835,
+            "candidate_mean": 0.1670937745758626,
+            "days": 436,
+            "gain": -0.09567339076314574,
+            "gain_interval": [
+              -0.15346548952711275,
+              -0.042694501243644566
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.2693560785751846,
+            "candidate_mean": 0.16709377457586194,
+            "days": 436,
+            "gain": -0.10226230399932269,
+            "gain_interval": [
+              -0.16694878614350736,
+              -0.044560732897496805
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.16083013312010808,
+            "candidate_mean": 0.16709377457586141,
+            "days": 436,
+            "gain": 0.006263641455753336,
+            "gain_interval": [
+              -0.011982586978708706,
+              0.02687569433984585
+            ]
+          }
+        },
+        "recall@5": {
+          "calendar": {
+            "benchmark_mean": 0.37660836850832924,
+            "candidate_mean": 0.27593958478024627,
+            "days": 436,
+            "gain": -0.10066878372808297,
+            "gain_interval": [
+              -0.17482927161494727,
+              -0.030064544067343605
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.36757448205385534,
+            "candidate_mean": 0.2759395847802456,
+            "days": 436,
+            "gain": -0.09163489727360973,
+            "gain_interval": [
+              -0.16041602525279203,
+              -0.029993797967488366
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.2625775553359331,
+            "candidate_mean": 0.2759395847802459,
+            "days": 436,
+            "gain": 0.013362029444312824,
+            "gain_interval": [
+              -0.008435972770306872,
+              0.03929823763338085
+            ]
+          }
+        }
+      }
+    },
+    "pressure_windows_precision": {
+      "model_median": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.4403669724770656,
+            "candidate_mean": 0.2880060433959528,
+            "days": 436,
+            "gain": -0.15236092908111276,
+            "gain_interval": [
+              -0.2089096403087229,
+              -0.09782100990243198
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.42882941194880175,
+            "candidate_mean": 0.2880060433959508,
+            "days": 436,
+            "gain": -0.1408233685528509,
+            "gain_interval": [
+              -0.191359844349511,
+              -0.08849207297866304
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.33413270703981723,
+            "candidate_mean": 0.28800604339595176,
+            "days": 436,
+            "gain": -0.046126663643865494,
+            "gain_interval": [
+              -0.0751937281839805,
+              -0.016609940189355334
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.39495412844036504,
+            "candidate_mean": 0.288617167745606,
+            "days": 436,
+            "gain": -0.10633696069475904,
+            "gain_interval": [
+              -0.14670557144181026,
+              -0.0665764459801157
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.38041647026587755,
+            "candidate_mean": 0.2886171677456069,
+            "days": 436,
+            "gain": -0.09179930252027063,
+            "gain_interval": [
+              -0.12721626642276404,
+              -0.05729670261777066
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.3233931632842173,
+            "candidate_mean": 0.2886171677456071,
+            "days": 436,
+            "gain": -0.03477599553861021,
+            "gain_interval": [
+              -0.06137223934959024,
+              -0.00853640144895881
+            ]
+          }
+        }
+      },
+      "model_prob": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.4403669724770656,
+            "candidate_mean": 0.33602124577498904,
+            "days": 436,
+            "gain": -0.10434572670207654,
+            "gain_interval": [
+              -0.16899022211492026,
+              -0.04371760824078539
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.42882941194880175,
+            "candidate_mean": 0.3360212457749874,
+            "days": 436,
+            "gain": -0.0928081661738144,
+            "gain_interval": [
+              -0.14880796077484632,
+              -0.035391555919540456
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.33413270703981723,
+            "candidate_mean": 0.336021245774988,
+            "days": 436,
+            "gain": 0.0018885387351707803,
+            "gain_interval": [
+              -0.018220540237455375,
+              0.02140987749932701
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.39495412844036504,
+            "candidate_mean": 0.32918879768227716,
+            "days": 436,
+            "gain": -0.06576533075808787,
+            "gain_interval": [
+              -0.1176545147271848,
+              -0.01490825688073395
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.38041647026587755,
+            "candidate_mean": 0.32918879768227793,
+            "days": 436,
+            "gain": -0.05122767258359959,
+            "gain_interval": [
+              -0.09128014449180616,
+              -0.011204508054630129
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.3233931632842173,
+            "candidate_mean": 0.32918879768227804,
+            "days": 436,
+            "gain": 0.0057956343980607675,
+            "gain_interval": [
+              -0.010599138196826514,
+              0.02229179574248377
+            ]
+          }
+        }
+      }
+    }
+  },
+  "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "primary": {
+    "benchmark_mean": 0.09435616438356353,
+    "candidate_mean": 0.07864455659697378,
+    "comparison": "model_prob precision@5 minus calendar precision@5",
+    "days": 1825,
+    "gain": -0.01571160778658976,
+    "gain_interval": [
+      -0.029794520547945243,
+      -0.0025205479452054796
+    ],
+    "interval_wholly_above_zero": false,
+    "kill_condition_met": true
+  },
+  "seed": 694,
+  "sensitivity_block": {
+    "block_length": 10.0,
+    "label": "sensitivity, not the declared block",
+    "paired": {
+      "model_median": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.10520547945205294,
+            "candidate_mean": 0.06880582735377067,
+            "days": 1825,
+            "gain": -0.03639965209828228,
+            "gain_interval": [
+              -0.054989802130897956,
+              -0.01952474450967602
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.10244910882721936,
+            "candidate_mean": 0.06880582735377114,
+            "days": 1825,
+            "gain": -0.033643281473448215,
+            "gain_interval": [
+              -0.05037280313551346,
+              -0.01832727782052497
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07982567685992292,
+            "candidate_mean": 0.06880582735377204,
+            "days": 1825,
+            "gain": -0.01101984950615088,
+            "gain_interval": [
+              -0.019804892862084627,
+              -0.002934611114405642
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.09435616438356353,
+            "candidate_mean": 0.06895182747237727,
+            "days": 1825,
+            "gain": -0.02540433691118627,
+            "gain_interval": [
+              -0.03897119729585486,
+              -0.012952052817806248
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.09088305810187403,
+            "candidate_mean": 0.06895182747237374,
+            "days": 1825,
+            "gain": -0.021931230629500274,
+            "gain_interval": [
+              -0.03344801875332734,
+              -0.011626989129356488
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07725995572159927,
+            "candidate_mean": 0.06895182747237513,
+            "days": 1825,
+            "gain": -0.008308128249224138,
+            "gain_interval": [
+              -0.01584697315621973,
+              -0.001386813240032425
+            ]
+          }
+        },
+        "recall@3": {
+          "calendar": {
+            "benchmark_mean": 0.26276716533900835,
+            "candidate_mean": 0.14458659557148495,
+            "days": 436,
+            "gain": -0.11818056976752339,
+            "gain_interval": [
+              -0.17942332457485263,
+              -0.06478253476600755
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.2693560785751846,
+            "candidate_mean": 0.14458659557148434,
+            "days": 436,
+            "gain": -0.12476948300370028,
+            "gain_interval": [
+              -0.17774159752991964,
+              -0.07547301996799802
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.16083013312010808,
+            "candidate_mean": 0.14458659557148368,
+            "days": 436,
+            "gain": -0.016243537548624398,
+            "gain_interval": [
+              -0.04056653097306103,
+              0.0080869541500974
+            ]
+          }
+        },
+        "recall@5": {
+          "calendar": {
+            "benchmark_mean": 0.37660836850832924,
+            "candidate_mean": 0.23835337812334684,
+            "days": 436,
+            "gain": -0.1382549903849824,
+            "gain_interval": [
+              -0.21183796444868022,
+              -0.07294266630301098
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.36757448205385534,
+            "candidate_mean": 0.23835337812334628,
+            "days": 436,
+            "gain": -0.12922110393050906,
+            "gain_interval": [
+              -0.1878751432401321,
+              -0.07506203546391312
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.2625775553359331,
+            "candidate_mean": 0.23835337812334664,
+            "days": 436,
+            "gain": -0.024224177212586444,
+            "gain_interval": [
+              -0.05470671457589809,
+              0.0077125021103210435
+            ]
+          }
+        }
+      },
+      "model_prob": {
+        "precision@3": {
+          "calendar": {
+            "benchmark_mean": 0.10520547945205294,
+            "candidate_mean": 0.08027685652487192,
+            "days": 1825,
+            "gain": -0.024928622927181024,
+            "gain_interval": [
+              -0.04271324200913237,
+              -0.008739726027397254
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.10244910882721936,
+            "candidate_mean": 0.08027685652487246,
+            "days": 1825,
+            "gain": -0.022172252302346894,
+            "gain_interval": [
+              -0.03769703663649238,
+              -0.00787843180450904
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07982567685992292,
+            "candidate_mean": 0.0802768565248733,
+            "days": 1825,
+            "gain": 0.00045117966495038914,
+            "gain_interval": [
+              -0.005248223202603162,
+              0.006009021949504991
+            ]
+          }
+        },
+        "precision@5": {
+          "calendar": {
+            "benchmark_mean": 0.09435616438356353,
+            "candidate_mean": 0.07864455659697378,
+            "days": 1825,
+            "gain": -0.01571160778658976,
+            "gain_interval": [
+              -0.02971290555155013,
+              -0.002547945205479461
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.09088305810187403,
+            "candidate_mean": 0.07864455659697023,
+            "days": 1825,
+            "gain": -0.012238501504903791,
+            "gain_interval": [
+              -0.022890495544528787,
+              -0.0021973230551533343
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.07725995572159927,
+            "candidate_mean": 0.0786445565969716,
+            "days": 1825,
+            "gain": 0.0013846008753723258,
+            "gain_interval": [
+              -0.0030869345374644557,
+              0.00614472335883294
+            ]
+          }
+        },
+        "recall@3": {
+          "calendar": {
+            "benchmark_mean": 0.26276716533900835,
+            "candidate_mean": 0.1670937745758626,
+            "days": 436,
+            "gain": -0.09567339076314574,
+            "gain_interval": [
+              -0.15235272205395328,
+              -0.04407546902457361
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.2693560785751846,
+            "candidate_mean": 0.16709377457586194,
+            "days": 436,
+            "gain": -0.10226230399932269,
+            "gain_interval": [
+              -0.1629667879214507,
+              -0.04802198456636113
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.16083013312010808,
+            "candidate_mean": 0.16709377457586141,
+            "days": 436,
+            "gain": 0.006263641455753336,
+            "gain_interval": [
+              -0.01404262940030405,
+              0.02861985625094859
+            ]
+          }
+        },
+        "recall@5": {
+          "calendar": {
+            "benchmark_mean": 0.37660836850832924,
+            "candidate_mean": 0.27593958478024627,
+            "days": 436,
+            "gain": -0.10066878372808297,
+            "gain_interval": [
+              -0.1719780593050292,
+              -0.03360017275414959
+            ]
+          },
+          "climatology": {
+            "benchmark_mean": 0.36757448205385534,
+            "candidate_mean": 0.2759395847802456,
+            "days": 436,
+            "gain": -0.09163489727360973,
+            "gain_interval": [
+              -0.15635015433583022,
+              -0.03275313107482937
+            ]
+          },
+          "persistence": {
+            "benchmark_mean": 0.2625775553359331,
+            "candidate_mean": 0.2759395847802459,
+            "days": 436,
+            "gain": 0.013362029444312824,
+            "gain_interval": [
+              -0.010676059612574217,
+              0.041213050288421114
+            ]
+          }
+        }
+      }
+    }
+  },
+  "splits": {
+    "regime": {
+      "2018-19": {
+        "days": 347,
+        "days_with_a_pressure_day": 289,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.4293948126801154,
+              "recall": 0.2476242635284975
+            },
+            "5": {
+              "precision": 0.3723342939481266,
+              "recall": 0.3395710687869247
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.4069085370467855,
+              "recall": 0.29311671898199465
+            },
+            "5": {
+              "precision": 0.3636806724813389,
+              "recall": 0.39976205818387284
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.2771373679154657,
+              "recall": 0.14379166923946088
+            },
+            "5": {
+              "precision": 0.2784685055578429,
+              "recall": 0.2430813628554317
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.3173871277617673,
+              "recall": 0.15450001041543895
+            },
+            "5": {
+              "precision": 0.314121037463977,
+              "recall": 0.26792618608973207
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.3124246790673304,
+              "recall": 0.1566707130138333
+            },
+            "5": {
+              "precision": 0.3036418944488109,
+              "recall": 0.26084510878526757
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.4293948126801156,
+                "candidate_mean": 0.27713736791546606,
+                "days": 347,
+                "gain": -0.1522574447646495,
+                "gain_interval": [
+                  -0.22286263208453413,
+                  -0.08357348703170035
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4069085370467854,
+                "candidate_mean": 0.27713736791546595,
+                "days": 347,
+                "gain": -0.1297711691313195,
+                "gain_interval": [
+                  -0.19146575087725912,
+                  -0.06532537315109739
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3124246790673304,
+                "candidate_mean": 0.27713736791546595,
+                "days": 347,
+                "gain": -0.035287311151864474,
+                "gain_interval": [
+                  -0.06699708072906922,
+                  -0.0033244289332185852
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.3723342939481261,
+                "candidate_mean": 0.2784685055578421,
+                "days": 347,
+                "gain": -0.09386578839028406,
+                "gain_interval": [
+                  -0.14236311239193095,
+                  -0.04421160971593248
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3636806724813383,
+                "candidate_mean": 0.27846850555784214,
+                "days": 347,
+                "gain": -0.08521216692349616,
+                "gain_interval": [
+                  -0.1288593040811047,
+                  -0.040960164332682875
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.30364189444881096,
+                "candidate_mean": 0.2784685055578428,
+                "days": 347,
+                "gain": -0.025173388890968148,
+                "gain_interval": [
+                  -0.05522338764341649,
+                  0.003737536958718518
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.24762426352849753,
+                "candidate_mean": 0.14379166923946116,
+                "days": 289,
+                "gain": -0.10383259428903638,
+                "gain_interval": [
+                  -0.16247852582487735,
+                  -0.051220851456705345
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.29311671898199454,
+                "candidate_mean": 0.1437916692394613,
+                "days": 289,
+                "gain": -0.14932504974253324,
+                "gain_interval": [
+                  -0.22059074710634904,
+                  -0.08217378472505404
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.15667071301383373,
+                "candidate_mean": 0.14379166923946124,
+                "days": 289,
+                "gain": -0.012879043774372495,
+                "gain_interval": [
+                  -0.036800496528653984,
+                  0.012525295350554843
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.33957106878692556,
+                "candidate_mean": 0.24308136285543253,
+                "days": 289,
+                "gain": -0.09648970593149303,
+                "gain_interval": [
+                  -0.15849235179468743,
+                  -0.03654083107904603
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.39976205818387356,
+                "candidate_mean": 0.2430813628554326,
+                "days": 289,
+                "gain": -0.15668069532844095,
+                "gain_interval": [
+                  -0.23404745966194113,
+                  -0.08537438885155481
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26084510878526834,
+                "candidate_mean": 0.24308136285543244,
+                "days": 289,
+                "gain": -0.017763745929835904,
+                "gain_interval": [
+                  -0.05007650997919163,
+                  0.015865814962980635
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.4293948126801156,
+                "candidate_mean": 0.31738712776176775,
+                "days": 347,
+                "gain": -0.11200768491834785,
+                "gain_interval": [
+                  -0.18885686839577334,
+                  -0.0393852065321806
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4069085370467854,
+                "candidate_mean": 0.3173871277617677,
+                "days": 347,
+                "gain": -0.08952140928501773,
+                "gain_interval": [
+                  -0.15734406821191177,
+                  -0.017646051367612107
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3124246790673304,
+                "candidate_mean": 0.3173871277617676,
+                "days": 347,
+                "gain": 0.004962448694437156,
+                "gain_interval": [
+                  -0.015232273330256053,
+                  0.02564202648136362
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.3723342939481261,
+                "candidate_mean": 0.3141210374639763,
+                "days": 347,
+                "gain": -0.05821325648414984,
+                "gain_interval": [
+                  -0.12046109510086463,
+                  0.001152737752161395
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3636806724813383,
+                "candidate_mean": 0.3141210374639763,
+                "days": 347,
+                "gain": -0.049559635017362,
+                "gain_interval": [
+                  -0.09803678732982642,
+                  0.0021769914169216843
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.30364189444881096,
+                "candidate_mean": 0.314121037463977,
+                "days": 347,
+                "gain": 0.01047914301516607,
+                "gain_interval": [
+                  -0.006232481255535996,
+                  0.028408023212778227
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.24762426352849753,
+                "candidate_mean": 0.15450001041543918,
+                "days": 289,
+                "gain": -0.09312425311305836,
+                "gain_interval": [
+                  -0.1603925386021356,
+                  -0.03444910154074621
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.29311671898199454,
+                "candidate_mean": 0.15450001041543934,
+                "days": 289,
+                "gain": -0.1386167085665552,
+                "gain_interval": [
+                  -0.22777413079298364,
+                  -0.055171545746608826
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.15667071301383373,
+                "candidate_mean": 0.1545000104154393,
+                "days": 289,
+                "gain": -0.00217070259839444,
+                "gain_interval": [
+                  -0.02059070495056654,
+                  0.014156142865434523
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.33957106878692556,
+                "candidate_mean": 0.2679261860897327,
+                "days": 289,
+                "gain": -0.07164488269719288,
+                "gain_interval": [
+                  -0.14246169062917993,
+                  -0.004425080708919499
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.39976205818387356,
+                "candidate_mean": 0.26792618608973273,
+                "days": 289,
+                "gain": -0.1318358720941408,
+                "gain_interval": [
+                  -0.22225706287009778,
+                  -0.04835196876518803
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26084510878526834,
+                "candidate_mean": 0.26792618608973257,
+                "days": 289,
+                "gain": 0.007081077304464248,
+                "gain_interval": [
+                  -0.012688764569743605,
+                  0.025972025833210413
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2020": {
+        "days": 251,
+        "days_with_a_pressure_day": 29,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.01195219123505976,
+              "recall": 0.13505747126436782
+            },
+            "5": {
+              "precision": 0.013545816733067729,
+              "recall": 0.22701149425287356
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0069321155922120485,
+              "recall": 0.06224037104254891
+            },
+            "5": {
+              "precision": 0.011169357657090937,
+              "recall": 0.17256503327283726
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.014608233731739705,
+              "recall": 0.14942528735632182
+            },
+            "5": {
+              "precision": 0.016950380296993844,
+              "recall": 0.2818704284221526
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.018592297476759626,
+              "recall": 0.20977011494252876
+            },
+            "5": {
+              "precision": 0.01593625498007968,
+              "recall": 0.2959770114942528
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.018592297476759626,
+              "recall": 0.21839080459770116
+            },
+            "5": {
+              "precision": 0.017264276228419657,
+              "recall": 0.33045977011494254
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.01195219123505976,
+                "candidate_mean": 0.014608233731739705,
+                "days": 251,
+                "gain": 0.002656042496679947,
+                "gain_interval": [
+                  -0.0013280212483399731,
+                  0.00796812749003984
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0069321155922120485,
+                "candidate_mean": 0.014608233731739705,
+                "days": 251,
+                "gain": 0.007676118139527658,
+                "gain_interval": [
+                  -0.0005902316659288762,
+                  0.02029558180533228
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.018592297476759626,
+                "candidate_mean": 0.014608233731739705,
+                "days": 251,
+                "gain": -0.00398406374501992,
+                "gain_interval": [
+                  -0.019920318725099598,
+                  0.009296148738379813
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.013545816733067729,
+                "candidate_mean": 0.016950380296993844,
+                "days": 251,
+                "gain": 0.0034045635639261135,
+                "gain_interval": [
+                  -0.0018109380659181449,
+                  0.010648315827598693
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657090937,
+                "candidate_mean": 0.016950380296993844,
+                "days": 251,
+                "gain": 0.0057810226399029096,
+                "gain_interval": [
+                  -0.0008107919200391402,
+                  0.015413402212521535
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.017264276228419657,
+                "candidate_mean": 0.016950380296993844,
+                "days": 251,
+                "gain": -0.00031389593142581215,
+                "gain_interval": [
+                  -0.013062899915489555,
+                  0.012266087166485572
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.13505747126436773,
+                "candidate_mean": 0.14942528735632174,
+                "days": 29,
+                "gain": 0.014367816091954018,
+                "gain_interval": [
+                  -0.034482758620689655,
+                  0.0660919540229885
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.14942528735632232,
+                "days": 29,
+                "gain": 0.08718491631377291,
+                "gain_interval": [
+                  -0.0008973583383746956,
+                  0.17432950191570892
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.14942528735632177,
+                "days": 29,
+                "gain": -0.06896551724137932,
+                "gain_interval": [
+                  -0.20689655172413793,
+                  0.06336206896551515
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.22701149425287348,
+                "candidate_mean": 0.2818704284221525,
+                "days": 29,
+                "gain": 0.05485893416927901,
+                "gain_interval": [
+                  -0.024033437826541267,
+                  0.13296760710553812
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.281870428422153,
+                "days": 29,
+                "gain": 0.10930539514931532,
+                "gain_interval": [
+                  -0.0003024803387779689,
+                  0.21588846724962873
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.28187042842215265,
+                "days": 29,
+                "gain": -0.04858934169279,
+                "gain_interval": [
+                  -0.24973876698014635,
+                  0.1538662486938349
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.01195219123505976,
+                "candidate_mean": 0.018592297476759626,
+                "days": 251,
+                "gain": 0.006640106241699864,
+                "gain_interval": [
+                  -0.01328021248339973,
+                  0.029216467463479414
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0069321155922120485,
+                "candidate_mean": 0.018592297476759626,
+                "days": 251,
+                "gain": 0.011660181884547583,
+                "gain_interval": [
+                  -0.0022102622647810315,
+                  0.031068552301515177
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.018592297476759626,
+                "candidate_mean": 0.018592297476759626,
+                "days": 251,
+                "gain": 0.0,
+                "gain_interval": [
+                  -0.005312084993359893,
+                  0.0053120849933598925
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.013545816733067729,
+                "candidate_mean": 0.01593625498007968,
+                "days": 251,
+                "gain": 0.0023904382470119473,
+                "gain_interval": [
+                  -0.01593625498007968,
+                  0.021513944223107574
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657090937,
+                "candidate_mean": 0.01593625498007968,
+                "days": 251,
+                "gain": 0.004766897322988745,
+                "gain_interval": [
+                  -0.0049136786188579,
+                  0.016453484308380513
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.017264276228419657,
+                "candidate_mean": 0.01593625498007968,
+                "days": 251,
+                "gain": -0.0013280212483399733,
+                "gain_interval": [
+                  -0.004780876494023905,
+                  0.0015936254980079678
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.13505747126436773,
+                "candidate_mean": 0.20977011494252867,
+                "days": 29,
+                "gain": 0.07471264367816093,
+                "gain_interval": [
+                  -0.07183908045977011,
+                  0.22413793103448276
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.20977011494252937,
+                "days": 29,
+                "gain": 0.14752974389997994,
+                "gain_interval": [
+                  0.04314377898769912,
+                  0.2509780197620489
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.2097701149425287,
+                "days": 29,
+                "gain": -0.008620689655172414,
+                "gain_interval": [
+                  -0.06896551724137931,
+                  0.05172413793103448
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.22701149425287348,
+                "candidate_mean": 0.29597701149425276,
+                "days": 29,
+                "gain": 0.06896551724137928,
+                "gain_interval": [
+                  -0.18390804597701146,
+                  0.32183908045977005
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.2959770114942532,
+                "days": 29,
+                "gain": 0.12341197822141552,
+                "gain_interval": [
+                  -0.014670296430731922,
+                  0.26149425287356315
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.295977011494253,
+                "days": 29,
+                "gain": -0.034482758620689655,
+                "gain_interval": [
+                  -0.09770114942528735,
+                  0.025862068965517248
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2021-23": {
+        "days": 748,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 748,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2024": {
+        "days": 250,
+        "days_with_a_pressure_day": 44,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.036,
+              "recall": 0.303030303030303
+            },
+            "5": {
+              "precision": 0.04240000000000001,
+              "recall": 0.5568181818181818
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.04174891067538128,
+              "recall": 0.30353968607645093
+            },
+            "5": {
+              "precision": 0.032248692810457516,
+              "recall": 0.3933483115468409
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.016933333333333335,
+              "recall": 0.17500000000000002
+            },
+            "5": {
+              "precision": 0.0124,
+              "recall": 0.20454545454545456
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.02148771929824561,
+              "recall": 0.19064992025518343
+            },
+            "5": {
+              "precision": 0.02050526315789474,
+              "recall": 0.2831937799043062
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.020533333333333334,
+              "recall": 0.16401515151515153
+            },
+            "5": {
+              "precision": 0.019066666666666673,
+              "recall": 0.2518939393939394
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.036,
+                "candidate_mean": 0.016933333333333335,
+                "days": 250,
+                "gain": -0.019066666666666666,
+                "gain_interval": [
+                  -0.04133333333333331,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.04174891067538128,
+                "candidate_mean": 0.016933333333333335,
+                "days": 250,
+                "gain": -0.02481557734204793,
+                "gain_interval": [
+                  -0.06371362200435733,
+                  0.0031999999999999997
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333334,
+                "candidate_mean": 0.016933333333333335,
+                "days": 250,
+                "gain": -0.0035999999999999986,
+                "gain_interval": [
+                  -0.013999999999999997,
+                  0.005266666666666666
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.04240000000000001,
+                "candidate_mean": 0.0124,
+                "days": 250,
+                "gain": -0.03,
+                "gain_interval": [
+                  -0.056809999999999986,
+                  -0.0063999999999999994
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.032248692810457516,
+                "candidate_mean": 0.0124,
+                "days": 250,
+                "gain": -0.01984869281045751,
+                "gain_interval": [
+                  -0.04754631045751636,
+                  4.440892098500626e-19
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666673,
+                "candidate_mean": 0.0124,
+                "days": 250,
+                "gain": -0.006666666666666666,
+                "gain_interval": [
+                  -0.01679999999999999,
+                  0.0012000000000000005
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.30303030303030287,
+                "candidate_mean": 0.17499999999999982,
+                "days": 44,
+                "gain": -0.12803030303030305,
+                "gain_interval": [
+                  -0.2037878787878787,
+                  -0.052272727272727255
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.30353968607645065,
+                "candidate_mean": 0.17499999999999982,
+                "days": 44,
+                "gain": -0.12853968607645083,
+                "gain_interval": [
+                  -0.23994605986333936,
+                  -0.017452651515151556
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515111,
+                "candidate_mean": 0.1749999999999996,
+                "days": 44,
+                "gain": 0.010984848484848486,
+                "gain_interval": [
+                  -0.054545454545454536,
+                  0.0791666666666667
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5568181818181819,
+                "candidate_mean": 0.20454545454545442,
+                "days": 44,
+                "gain": -0.35227272727272746,
+                "gain_interval": [
+                  -0.41666666666666674,
+                  -0.28787878787878785
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.39334831154684136,
+                "candidate_mean": 0.20454545454545503,
+                "days": 44,
+                "gain": -0.18880285700138633,
+                "gain_interval": [
+                  -0.3072798140720934,
+                  -0.07054450757575764
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.25189393939393945,
+                "candidate_mean": 0.2045454545454546,
+                "days": 44,
+                "gain": -0.04734848484848484,
+                "gain_interval": [
+                  -0.11553030303030302,
+                  0.024621212121212124
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.036,
+                "candidate_mean": 0.02148771929824561,
+                "days": 250,
+                "gain": -0.014512280701754386,
+                "gain_interval": [
+                  -0.034866666666666664,
+                  0.0030210526315789473
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.04174891067538128,
+                "candidate_mean": 0.02148771929824561,
+                "days": 250,
+                "gain": -0.020261191377135647,
+                "gain_interval": [
+                  -0.04990712676298592,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333334,
+                "candidate_mean": 0.02148771929824561,
+                "days": 250,
+                "gain": 0.0009543859649122804,
+                "gain_interval": [
+                  -0.003333333333333333,
+                  0.005663157894736841
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.04240000000000001,
+                "candidate_mean": 0.02050526315789474,
+                "days": 250,
+                "gain": -0.02189473684210527,
+                "gain_interval": [
+                  -0.041789473684210515,
+                  -0.0046
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.032248692810457516,
+                "candidate_mean": 0.02050526315789474,
+                "days": 250,
+                "gain": -0.01174342965256278,
+                "gain_interval": [
+                  -0.029107076539387673,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666673,
+                "candidate_mean": 0.02050526315789474,
+                "days": 250,
+                "gain": 0.0014385964912280703,
+                "gain_interval": [
+                  -0.0012947368421052637,
+                  0.004705263157894736
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.303030303030303,
+                "candidate_mean": 0.19064992025518343,
+                "days": 44,
+                "gain": -0.11238038277511965,
+                "gain_interval": [
+                  -0.20518341307814977,
+                  -0.021092503987240836
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.30353968607645093,
+                "candidate_mean": 0.19064992025518343,
+                "days": 44,
+                "gain": -0.11288976582126735,
+                "gain_interval": [
+                  -0.2008324733402133,
+                  -0.024237163299663377
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515153,
+                "candidate_mean": 0.19064992025518343,
+                "days": 44,
+                "gain": 0.0266347687400319,
+                "gain_interval": [
+                  -0.01881977671451355,
+                  0.0766347687400319
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5568181818181818,
+                "candidate_mean": 0.2831937799043062,
+                "days": 44,
+                "gain": -0.2736244019138756,
+                "gain_interval": [
+                  -0.33702153110047844,
+                  -0.21098484848484902
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.3933483115468409,
+                "candidate_mean": 0.2831937799043062,
+                "days": 44,
+                "gain": -0.11015453164253473,
+                "gain_interval": [
+                  -0.19750450193368152,
+                  -0.02118055555555555
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.2518939393939394,
+                "candidate_mean": 0.2831937799043062,
+                "days": 44,
+                "gain": 0.03129984051036683,
+                "gain_interval": [
+                  -0.008472886762360445,
+                  0.07575757575757575
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            }
+          }
+        }
+      },
+      "2025-26": {
+        "days": 229,
+        "days_with_a_pressure_day": 74,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.1353711790393013,
+              "recall": 0.34801448551448544
+            },
+            "5": {
+              "precision": 0.12663755458515283,
+              "recall": 0.47272806022806
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.14670381035787233,
+              "recall": 0.23740272331603593
+            },
+            "5": {
+              "precision": 0.1257585402198878,
+              "recall": 0.3029665903698411
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.09390379150204477,
+              "recall": 0.12771121521121517
+            },
+            "5": {
+              "precision": 0.09543217578152072,
+              "recall": 0.22293671043671032
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.1149927219796215,
+              "recall": 0.18554666054666052
+            },
+            "5": {
+              "precision": 0.11091703056768555,
+              "recall": 0.29506934506934496
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.11995850058077132,
+              "recall": 0.15262299972121401
+            },
+            "5": {
+              "precision": 0.11587633981738785,
+              "recall": 0.24909339217374923
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.1353711790393013,
+                "candidate_mean": 0.09390379150204477,
+                "days": 229,
+                "gain": -0.04146738753725654,
+                "gain_interval": [
+                  -0.08172263810910098,
+                  -0.004366812227074235
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.14670381035787233,
+                "candidate_mean": 0.09390379150204477,
+                "days": 229,
+                "gain": -0.05280001885582752,
+                "gain_interval": [
+                  -0.10342662997934939,
+                  -0.009122702938526257
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11995850058077132,
+                "candidate_mean": 0.09390379150204477,
+                "days": 229,
+                "gain": -0.02605470907872655,
+                "gain_interval": [
+                  -0.05948489626983077,
+                  0.00041890494674336084
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.12663755458515283,
+                "candidate_mean": 0.09543217578152072,
+                "days": 229,
+                "gain": -0.031205378803632083,
+                "gain_interval": [
+                  -0.06439315172939625,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.1257585402198878,
+                "candidate_mean": 0.09543217578152072,
+                "days": 229,
+                "gain": -0.03032636443836709,
+                "gain_interval": [
+                  -0.06414526971058093,
+                  -0.0023350315380883065
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738785,
+                "candidate_mean": 0.09543217578152072,
+                "days": 229,
+                "gain": -0.020444164035867095,
+                "gain_interval": [
+                  -0.04707450203847583,
+                  0.0011264122825258148
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3480144855144859,
+                "candidate_mean": 0.12771121521121562,
+                "days": 74,
+                "gain": -0.22030327030327027,
+                "gain_interval": [
+                  -0.4089052651552651,
+                  -0.039062180312180436
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.23740272331603585,
+                "candidate_mean": 0.12771121521121503,
+                "days": 74,
+                "gain": -0.10969150810482083,
+                "gain_interval": [
+                  -0.17527069043129415,
+                  -0.04820275479911701
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.12771121521121548,
+                "days": 74,
+                "gain": -0.024911784509998803,
+                "gain_interval": [
+                  -0.057466382153882146,
+                  0.009025302473963171
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.47272806022806024,
+                "candidate_mean": 0.22293671043671048,
+                "days": 74,
+                "gain": -0.24979134979134976,
+                "gain_interval": [
+                  -0.4629945917445915,
+                  -0.044156560406560505
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3029665903698412,
+                "candidate_mean": 0.22293671043671048,
+                "days": 74,
+                "gain": -0.08002987993313071,
+                "gain_interval": [
+                  -0.13306824248000718,
+                  -0.029062893392421275
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.2229367104367106,
+                "days": 74,
+                "gain": -0.02615668173703888,
+                "gain_interval": [
+                  -0.06406084226396729,
+                  0.011357127930788611
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.1353711790393013,
+                "candidate_mean": 0.1149927219796215,
+                "days": 229,
+                "gain": -0.02037845705967976,
+                "gain_interval": [
+                  -0.05240174672489085,
+                  0.011644832605531294
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.14670381035787233,
+                "candidate_mean": 0.1149927219796215,
+                "days": 229,
+                "gain": -0.03171108837825076,
+                "gain_interval": [
+                  -0.06977235594051204,
+                  0.00017764428481368535
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11995850058077132,
+                "candidate_mean": 0.1149927219796215,
+                "days": 229,
+                "gain": -0.004965778601149782,
+                "gain_interval": [
+                  -0.027816624080270372,
+                  0.015099640877479288
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.12663755458515283,
+                "candidate_mean": 0.11091703056768555,
+                "days": 229,
+                "gain": -0.015720524017467246,
+                "gain_interval": [
+                  -0.048034934497816595,
+                  0.017467248908296942
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.1257585402198878,
+                "candidate_mean": 0.11091703056768555,
+                "days": 229,
+                "gain": -0.014841509652202253,
+                "gain_interval": [
+                  -0.044497555591607674,
+                  0.008493171879952471
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738785,
+                "candidate_mean": 0.11091703056768555,
+                "days": 229,
+                "gain": -0.004959309249702263,
+                "gain_interval": [
+                  -0.02316750237874692,
+                  0.011963120758426432
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3480144855144859,
+                "candidate_mean": 0.18554666054666097,
+                "days": 74,
+                "gain": -0.16246782496782491,
+                "gain_interval": [
+                  -0.32675087862587865,
+                  -0.009939465564465563
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.23740272331603585,
+                "candidate_mean": 0.18554666054666036,
+                "days": 74,
+                "gain": -0.051856062769375474,
+                "gain_interval": [
+                  -0.12420145348744423,
+                  0.017957185559739713
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.18554666054666083,
+                "days": 74,
+                "gain": 0.032923660825446545,
+                "gain_interval": [
+                  -0.015496756668631668,
+                  0.08504468936388578
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.47272806022806024,
+                "candidate_mean": 0.2950693450693451,
+                "days": 74,
+                "gain": -0.1776587151587151,
+                "gain_interval": [
+                  -0.3625519413019414,
+                  -0.004406308781308875
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3029665903698412,
+                "candidate_mean": 0.2950693450693451,
+                "days": 74,
+                "gain": -0.007897245300496075,
+                "gain_interval": [
+                  -0.08464313629464561,
+                  0.07195975118672482
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.29506934506934523,
+                "days": 74,
+                "gain": 0.04597595289559572,
+                "gain_interval": [
+                  -0.01825840329188543,
+                  0.1152874071958893
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "year": {
+      "2018": {
+        "days": 97,
+        "days_with_a_pressure_day": 50,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.281786941580756,
+              "recall": 0.2523571428571428
+            },
+            "5": {
+              "precision": 0.22268041237113403,
+              "recall": 0.3290873015873016
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.17168657358644912,
+              "recall": 0.16487043589365563
+            },
+            "5": {
+              "precision": 0.14544479756091258,
+              "recall": 0.2487694165385452
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.10996563573883163,
+              "recall": 0.1355952380952381
+            },
+            "5": {
+              "precision": 0.13225331369661264,
+              "recall": 0.2718412698412699
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.11683848797250858,
+              "recall": 0.13403174603174606
+            },
+            "5": {
+              "precision": 0.1298969072164948,
+              "recall": 0.2691190476190476
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.1020332187857961,
+              "recall": 0.12255555555555558
+            },
+            "5": {
+              "precision": 0.11218213058419241,
+              "recall": 0.22525396825396826
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.281786941580756,
+                "candidate_mean": 0.10996563573883163,
+                "days": 97,
+                "gain": -0.17182130584192445,
+                "gain_interval": [
+                  -0.35051546391752575,
+                  -0.00687285223367698
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.17168657358644912,
+                "candidate_mean": 0.10996563573883163,
+                "days": 97,
+                "gain": -0.06172093784761751,
+                "gain_interval": [
+                  -0.1243480823631074,
+                  -0.0025938234762163184
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.1020332187857961,
+                "candidate_mean": 0.10996563573883163,
+                "days": 97,
+                "gain": 0.0079324169530355,
+                "gain_interval": [
+                  -0.04496134020618557,
+                  0.061626575028636874
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.22268041237113403,
+                "candidate_mean": 0.13225331369661264,
+                "days": 97,
+                "gain": -0.09042709867452137,
+                "gain_interval": [
+                  -0.20618556701030927,
+                  0.01914580265095729
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.14544479756091258,
+                "candidate_mean": 0.13225331369661264,
+                "days": 97,
+                "gain": -0.013191483864299927,
+                "gain_interval": [
+                  -0.038512844421545074,
+                  0.0121813220133414
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11218213058419241,
+                "candidate_mean": 0.13225331369661264,
+                "days": 97,
+                "gain": 0.020071183112420225,
+                "gain_interval": [
+                  -0.018061487481590574,
+                  0.06193114874815901
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.2523571428571425,
+                "candidate_mean": 0.1355952380952377,
+                "days": 50,
+                "gain": -0.11676190476190479,
+                "gain_interval": [
+                  -0.23190555555555561,
+                  -0.0011571428571428828
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.16487043589365602,
+                "candidate_mean": 0.1355952380952384,
+                "days": 50,
+                "gain": -0.029275197798417602,
+                "gain_interval": [
+                  -0.09209024214949135,
+                  0.03919437892115911
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.12255555555555542,
+                "candidate_mean": 0.13559523809523796,
+                "days": 50,
+                "gain": 0.013039682539682542,
+                "gain_interval": [
+                  -0.04084206349206349,
+                  0.06846031746031744
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.32908730158730126,
+                "candidate_mean": 0.2718412698412695,
+                "days": 50,
+                "gain": -0.05724603174603177,
+                "gain_interval": [
+                  -0.22037301587301583,
+                  0.10922976190476168
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.24876941653854556,
+                "candidate_mean": 0.2718412698412701,
+                "days": 50,
+                "gain": 0.023071853302724547,
+                "gain_interval": [
+                  -0.043123987665241545,
+                  0.09445888881868533
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.22525396825396815,
+                "candidate_mean": 0.2718412698412697,
+                "days": 50,
+                "gain": 0.04658730158730158,
+                "gain_interval": [
+                  -0.019407341269841283,
+                  0.1155003968253968
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.281786941580756,
+                "candidate_mean": 0.11683848797250858,
+                "days": 97,
+                "gain": -0.16494845360824745,
+                "gain_interval": [
+                  -0.3573883161512028,
+                  0.017182130584192403
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.17168657358644912,
+                "candidate_mean": 0.11683848797250858,
+                "days": 97,
+                "gain": -0.05484808561394053,
+                "gain_interval": [
+                  -0.14363349161935224,
+                  0.025441610900102482
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.1020332187857961,
+                "candidate_mean": 0.11683848797250858,
+                "days": 97,
+                "gain": 0.014805269186712478,
+                "gain_interval": [
+                  -0.004868270332187858,
+                  0.03762886597938142
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.22268041237113403,
+                "candidate_mean": 0.1298969072164948,
+                "days": 97,
+                "gain": -0.09278350515463919,
+                "gain_interval": [
+                  -0.23917525773195872,
+                  0.045360824742268026
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.14544479756091258,
+                "candidate_mean": 0.1298969072164948,
+                "days": 97,
+                "gain": -0.015547890344417744,
+                "gain_interval": [
+                  -0.08395692156406784,
+                  0.0480017326518236
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11218213058419241,
+                "candidate_mean": 0.1298969072164948,
+                "days": 97,
+                "gain": 0.017714776632302413,
+                "gain_interval": [
+                  -0.004467353951890034,
+                  0.043350515463917515
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.2523571428571425,
+                "candidate_mean": 0.13403174603174567,
+                "days": 50,
+                "gain": -0.11832539682539683,
+                "gain_interval": [
+                  -0.24990476190476188,
+                  0.013343253968253813
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.16487043589365602,
+                "candidate_mean": 0.13403174603174633,
+                "days": 50,
+                "gain": -0.030838689861909675,
+                "gain_interval": [
+                  -0.10846881357806275,
+                  0.045740445066915644
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.12255555555555542,
+                "candidate_mean": 0.1340317460317459,
+                "days": 50,
+                "gain": 0.011476190476190466,
+                "gain_interval": [
+                  -0.01388134920634922,
+                  0.0373968253968254
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.32908730158730126,
+                "candidate_mean": 0.26911904761904726,
+                "days": 50,
+                "gain": -0.059968253968254,
+                "gain_interval": [
+                  -0.2545246031746031,
+                  0.13560079365079356
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.24876941653854556,
+                "candidate_mean": 0.2691190476190479,
+                "days": 50,
+                "gain": 0.020349631080502348,
+                "gain_interval": [
+                  -0.08619292225662199,
+                  0.1260832968275029
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.22525396825396815,
+                "candidate_mean": 0.26911904761904754,
+                "days": 50,
+                "gain": 0.043865079365079385,
+                "gain_interval": [
+                  0.012174603174603171,
+                  0.07598492063492063
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2019": {
+        "days": 250,
+        "days_with_a_pressure_day": 239,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.4866666666666665,
+              "recall": 0.24663412140953378
+            },
+            "5": {
+              "precision": 0.43040000000000006,
+              "recall": 0.34176432552324765
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.4981746588693952,
+              "recall": 0.3199464853184671
+            },
+            "5": {
+              "precision": 0.44835619195046433,
+              "recall": 0.4313504769381255
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.3420000000000001,
+              "recall": 0.14550640378846127
+            },
+            "5": {
+              "precision": 0.3352000000000002,
+              "recall": 0.2370646459127878
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.3951999999999997,
+              "recall": 0.15878207409403572
+            },
+            "5": {
+              "precision": 0.3856000000000004,
+              "recall": 0.2676766334685362
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.39405656565656566,
+              "recall": 0.16380777524359844
+            },
+            "5": {
+              "precision": 0.37792828282828295,
+              "recall": 0.2682909540847026
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.4866666666666666,
+                "candidate_mean": 0.34199999999999986,
+                "days": 250,
+                "gain": -0.1446666666666667,
+                "gain_interval": [
+                  -0.21400000000000013,
+                  -0.0746666666666668
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4981746588693956,
+                "candidate_mean": 0.34199999999999997,
+                "days": 250,
+                "gain": -0.15617465886939566,
+                "gain_interval": [
+                  -0.2291254580896686,
+                  -0.07437204678362577
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.39405656565656566,
+                "candidate_mean": 0.34199999999999997,
+                "days": 250,
+                "gain": -0.05205656565656567,
+                "gain_interval": [
+                  -0.08788512265512269,
+                  -0.01819965367965369
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.4303999999999999,
+                "candidate_mean": 0.33519999999999994,
+                "days": 250,
+                "gain": -0.09519999999999998,
+                "gain_interval": [
+                  -0.14800000000000008,
+                  -0.04159999999999997
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.44835619195046406,
+                "candidate_mean": 0.3351999999999997,
+                "days": 250,
+                "gain": -0.11315619195046432,
+                "gain_interval": [
+                  -0.16337932662538704,
+                  -0.05913867905056756
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3779282828282827,
+                "candidate_mean": 0.33519999999999994,
+                "days": 250,
+                "gain": -0.04272828282828281,
+                "gain_interval": [
+                  -0.07720303174603174,
+                  -0.01046650505050505
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.24663412140953445,
+                "candidate_mean": 0.14550640378846216,
+                "days": 239,
+                "gain": -0.10112771762107228,
+                "gain_interval": [
+                  -0.1732410882933896,
+                  -0.04311932205268411
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3199464853184665,
+                "candidate_mean": 0.1455064037884613,
+                "days": 239,
+                "gain": -0.17444008153000518,
+                "gain_interval": [
+                  -0.27631611336839557,
+                  -0.08080261392933577
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1638077752435988,
+                "candidate_mean": 0.14550640378846164,
+                "days": 239,
+                "gain": -0.018301371455137147,
+                "gain_interval": [
+                  -0.043201977909352395,
+                  0.008032793682375253
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.3417643255232474,
+                "candidate_mean": 0.2370646459127876,
+                "days": 239,
+                "gain": -0.10469967961045981,
+                "gain_interval": [
+                  -0.1828142265308461,
+                  -0.03576612564152563
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4313504769381258,
+                "candidate_mean": 0.23706464591278828,
+                "days": 239,
+                "gain": -0.1942858310253375,
+                "gain_interval": [
+                  -0.3066144391464312,
+                  -0.09396146250233633
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26829095408470294,
+                "candidate_mean": 0.23706464591278806,
+                "days": 239,
+                "gain": -0.031226308171914883,
+                "gain_interval": [
+                  -0.062483171739109444,
+                  0.00209142585634708
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.4866666666666666,
+                "candidate_mean": 0.3952,
+                "days": 250,
+                "gain": -0.0914666666666666,
+                "gain_interval": [
+                  -0.1610666666666667,
+                  -0.01999999999999998
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4981746588693956,
+                "candidate_mean": 0.3952,
+                "days": 250,
+                "gain": -0.10297465886939561,
+                "gain_interval": [
+                  -0.185446881091618,
+                  -0.010838518518518503
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.39405656565656566,
+                "candidate_mean": 0.3952,
+                "days": 250,
+                "gain": 0.0011434343434343335,
+                "gain_interval": [
+                  -0.026847518037518038,
+                  0.028946075036075016
+                ]
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.4303999999999999,
+                "candidate_mean": 0.38559999999999994,
+                "days": 250,
+                "gain": -0.044799999999999965,
+                "gain_interval": [
+                  -0.10719999999999999,
+                  0.016799999999999995
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.44835619195046406,
+                "candidate_mean": 0.3855999999999997,
+                "days": 250,
+                "gain": -0.06275619195046435,
+                "gain_interval": [
+                  -0.1224433978328171,
+                  0.001672422600619183
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.3779282828282827,
+                "candidate_mean": 0.3855999999999999,
+                "days": 250,
+                "gain": 0.0076717171717171784,
+                "gain_interval": [
+                  -0.01403432034632035,
+                  0.031076634920634894
+                ]
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.24663412140953445,
+                "candidate_mean": 0.1587820740940365,
+                "days": 239,
+                "gain": -0.08785204731549796,
+                "gain_interval": [
+                  -0.17373240038327406,
+                  -0.020575660392606
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3199464853184665,
+                "candidate_mean": 0.15878207409403566,
+                "days": 239,
+                "gain": -0.16116441122443081,
+                "gain_interval": [
+                  -0.2857446813936217,
+                  -0.049169997996342196
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1638077752435988,
+                "candidate_mean": 0.15878207409403597,
+                "days": 239,
+                "gain": -0.00502570114956283,
+                "gain_interval": [
+                  -0.02735258981214865,
+                  0.014816175143873268
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.3417643255232474,
+                "candidate_mean": 0.26767663346853593,
+                "days": 239,
+                "gain": -0.07408769205471148,
+                "gain_interval": [
+                  -0.16706289384652037,
+                  0.003193692741748372
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.4313504769381258,
+                "candidate_mean": 0.2676766334685366,
+                "days": 239,
+                "gain": -0.1636738434695892,
+                "gain_interval": [
+                  -0.29856351460281105,
+                  -0.04464506108768929
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.26829095408470294,
+                "candidate_mean": 0.2676766334685364,
+                "days": 239,
+                "gain": -0.0006143206161665436,
+                "gain_interval": [
+                  -0.02172461757051346,
+                  0.01983642946032187
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2020": {
+        "days": 251,
+        "days_with_a_pressure_day": 29,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.01195219123505976,
+              "recall": 0.13505747126436782
+            },
+            "5": {
+              "precision": 0.013545816733067729,
+              "recall": 0.22701149425287356
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0069321155922120485,
+              "recall": 0.06224037104254891
+            },
+            "5": {
+              "precision": 0.011169357657090937,
+              "recall": 0.17256503327283726
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.014608233731739705,
+              "recall": 0.14942528735632182
+            },
+            "5": {
+              "precision": 0.016950380296993844,
+              "recall": 0.2818704284221526
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.018592297476759626,
+              "recall": 0.20977011494252876
+            },
+            "5": {
+              "precision": 0.01593625498007968,
+              "recall": 0.2959770114942528
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.018592297476759626,
+              "recall": 0.21839080459770116
+            },
+            "5": {
+              "precision": 0.017264276228419657,
+              "recall": 0.33045977011494254
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.01195219123505976,
+                "candidate_mean": 0.014608233731739705,
+                "days": 251,
+                "gain": 0.002656042496679947,
+                "gain_interval": [
+                  -0.0013280212483399731,
+                  0.00796812749003984
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0069321155922120485,
+                "candidate_mean": 0.014608233731739705,
+                "days": 251,
+                "gain": 0.007676118139527658,
+                "gain_interval": [
+                  -0.0005902316659288762,
+                  0.02029558180533228
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.018592297476759626,
+                "candidate_mean": 0.014608233731739705,
+                "days": 251,
+                "gain": -0.00398406374501992,
+                "gain_interval": [
+                  -0.019920318725099598,
+                  0.009296148738379813
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.013545816733067729,
+                "candidate_mean": 0.016950380296993844,
+                "days": 251,
+                "gain": 0.0034045635639261135,
+                "gain_interval": [
+                  -0.0018109380659181449,
+                  0.010648315827598693
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657090937,
+                "candidate_mean": 0.016950380296993844,
+                "days": 251,
+                "gain": 0.0057810226399029096,
+                "gain_interval": [
+                  -0.0008107919200391402,
+                  0.015413402212521535
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.017264276228419657,
+                "candidate_mean": 0.016950380296993844,
+                "days": 251,
+                "gain": -0.00031389593142581215,
+                "gain_interval": [
+                  -0.013062899915489555,
+                  0.012266087166485572
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.13505747126436773,
+                "candidate_mean": 0.14942528735632174,
+                "days": 29,
+                "gain": 0.014367816091954018,
+                "gain_interval": [
+                  -0.034482758620689655,
+                  0.0660919540229885
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.14942528735632232,
+                "days": 29,
+                "gain": 0.08718491631377291,
+                "gain_interval": [
+                  -0.0008973583383746956,
+                  0.17432950191570892
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.14942528735632177,
+                "days": 29,
+                "gain": -0.06896551724137932,
+                "gain_interval": [
+                  -0.20689655172413793,
+                  0.06336206896551515
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.22701149425287348,
+                "candidate_mean": 0.2818704284221525,
+                "days": 29,
+                "gain": 0.05485893416927901,
+                "gain_interval": [
+                  -0.024033437826541267,
+                  0.13296760710553812
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.281870428422153,
+                "days": 29,
+                "gain": 0.10930539514931532,
+                "gain_interval": [
+                  -0.0003024803387779689,
+                  0.21588846724962873
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.28187042842215265,
+                "days": 29,
+                "gain": -0.04858934169279,
+                "gain_interval": [
+                  -0.24973876698014635,
+                  0.1538662486938349
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.01195219123505976,
+                "candidate_mean": 0.018592297476759626,
+                "days": 251,
+                "gain": 0.006640106241699864,
+                "gain_interval": [
+                  -0.01328021248339973,
+                  0.029216467463479414
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0069321155922120485,
+                "candidate_mean": 0.018592297476759626,
+                "days": 251,
+                "gain": 0.011660181884547583,
+                "gain_interval": [
+                  -0.0022102622647810315,
+                  0.031068552301515177
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.018592297476759626,
+                "candidate_mean": 0.018592297476759626,
+                "days": 251,
+                "gain": 0.0,
+                "gain_interval": [
+                  -0.005312084993359893,
+                  0.0053120849933598925
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.013545816733067729,
+                "candidate_mean": 0.01593625498007968,
+                "days": 251,
+                "gain": 0.0023904382470119473,
+                "gain_interval": [
+                  -0.01593625498007968,
+                  0.021513944223107574
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.011169357657090937,
+                "candidate_mean": 0.01593625498007968,
+                "days": 251,
+                "gain": 0.004766897322988745,
+                "gain_interval": [
+                  -0.0049136786188579,
+                  0.016453484308380513
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.017264276228419657,
+                "candidate_mean": 0.01593625498007968,
+                "days": 251,
+                "gain": -0.0013280212483399733,
+                "gain_interval": [
+                  -0.004780876494023905,
+                  0.0015936254980079678
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.13505747126436773,
+                "candidate_mean": 0.20977011494252867,
+                "days": 29,
+                "gain": 0.07471264367816093,
+                "gain_interval": [
+                  -0.07183908045977011,
+                  0.22413793103448276
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.062240371042549425,
+                "candidate_mean": 0.20977011494252937,
+                "days": 29,
+                "gain": 0.14752974389997994,
+                "gain_interval": [
+                  0.04314377898769912,
+                  0.2509780197620489
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.2183908045977011,
+                "candidate_mean": 0.2097701149425287,
+                "days": 29,
+                "gain": -0.008620689655172414,
+                "gain_interval": [
+                  -0.06896551724137931,
+                  0.05172413793103448
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.22701149425287348,
+                "candidate_mean": 0.29597701149425276,
+                "days": 29,
+                "gain": 0.06896551724137928,
+                "gain_interval": [
+                  -0.18390804597701146,
+                  0.32183908045977005
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.17256503327283768,
+                "candidate_mean": 0.2959770114942532,
+                "days": 29,
+                "gain": 0.12341197822141552,
+                "gain_interval": [
+                  -0.014670296430731922,
+                  0.26149425287356315
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.33045977011494265,
+                "candidate_mean": 0.295977011494253,
+                "days": 29,
+                "gain": -0.034482758620689655,
+                "gain_interval": [
+                  -0.09770114942528735,
+                  0.025862068965517248
+                ]
+              }
+            }
+          }
+        }
+      },
+      "2021": {
+        "days": 250,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 250,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2022": {
+        "days": 249,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2023": {
+        "days": 249,
+        "days_with_a_pressure_day": 0,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.0,
+              "recall": null
+            },
+            "5": {
+              "precision": 0.0,
+              "recall": null
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.0,
+                "candidate_mean": 0.0,
+                "days": 249,
+                "gain": 0.0,
+                "gain_interval": [
+                  0.0,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            },
+            "recall@5": {
+              "days": 0,
+              "note": "fewer than 20 days; not tested"
+            }
+          }
+        }
+      },
+      "2024": {
+        "days": 250,
+        "days_with_a_pressure_day": 44,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.036,
+              "recall": 0.303030303030303
+            },
+            "5": {
+              "precision": 0.04240000000000001,
+              "recall": 0.5568181818181818
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.04174891067538128,
+              "recall": 0.30353968607645093
+            },
+            "5": {
+              "precision": 0.032248692810457516,
+              "recall": 0.3933483115468409
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.016933333333333335,
+              "recall": 0.17500000000000002
+            },
+            "5": {
+              "precision": 0.0124,
+              "recall": 0.20454545454545456
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.02148771929824561,
+              "recall": 0.19064992025518343
+            },
+            "5": {
+              "precision": 0.02050526315789474,
+              "recall": 0.2831937799043062
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.020533333333333334,
+              "recall": 0.16401515151515153
+            },
+            "5": {
+              "precision": 0.019066666666666673,
+              "recall": 0.2518939393939394
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.036,
+                "candidate_mean": 0.016933333333333335,
+                "days": 250,
+                "gain": -0.019066666666666666,
+                "gain_interval": [
+                  -0.04133333333333331,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.04174891067538128,
+                "candidate_mean": 0.016933333333333335,
+                "days": 250,
+                "gain": -0.02481557734204793,
+                "gain_interval": [
+                  -0.06371362200435733,
+                  0.0031999999999999997
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333334,
+                "candidate_mean": 0.016933333333333335,
+                "days": 250,
+                "gain": -0.0035999999999999986,
+                "gain_interval": [
+                  -0.013999999999999997,
+                  0.005266666666666666
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.04240000000000001,
+                "candidate_mean": 0.0124,
+                "days": 250,
+                "gain": -0.03,
+                "gain_interval": [
+                  -0.056809999999999986,
+                  -0.0063999999999999994
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.032248692810457516,
+                "candidate_mean": 0.0124,
+                "days": 250,
+                "gain": -0.01984869281045751,
+                "gain_interval": [
+                  -0.04754631045751636,
+                  4.440892098500626e-19
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666673,
+                "candidate_mean": 0.0124,
+                "days": 250,
+                "gain": -0.006666666666666666,
+                "gain_interval": [
+                  -0.01679999999999999,
+                  0.0012000000000000005
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.30303030303030287,
+                "candidate_mean": 0.17499999999999982,
+                "days": 44,
+                "gain": -0.12803030303030305,
+                "gain_interval": [
+                  -0.2037878787878787,
+                  -0.052272727272727255
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.30353968607645065,
+                "candidate_mean": 0.17499999999999982,
+                "days": 44,
+                "gain": -0.12853968607645083,
+                "gain_interval": [
+                  -0.23994605986333936,
+                  -0.017452651515151556
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515111,
+                "candidate_mean": 0.1749999999999996,
+                "days": 44,
+                "gain": 0.010984848484848486,
+                "gain_interval": [
+                  -0.054545454545454536,
+                  0.0791666666666667
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5568181818181819,
+                "candidate_mean": 0.20454545454545442,
+                "days": 44,
+                "gain": -0.35227272727272746,
+                "gain_interval": [
+                  -0.41666666666666674,
+                  -0.28787878787878785
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.39334831154684136,
+                "candidate_mean": 0.20454545454545503,
+                "days": 44,
+                "gain": -0.18880285700138633,
+                "gain_interval": [
+                  -0.3072798140720934,
+                  -0.07054450757575764
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.25189393939393945,
+                "candidate_mean": 0.2045454545454546,
+                "days": 44,
+                "gain": -0.04734848484848484,
+                "gain_interval": [
+                  -0.11553030303030302,
+                  0.024621212121212124
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.036,
+                "candidate_mean": 0.02148771929824561,
+                "days": 250,
+                "gain": -0.014512280701754386,
+                "gain_interval": [
+                  -0.034866666666666664,
+                  0.0030210526315789473
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.04174891067538128,
+                "candidate_mean": 0.02148771929824561,
+                "days": 250,
+                "gain": -0.020261191377135647,
+                "gain_interval": [
+                  -0.04990712676298592,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.020533333333333334,
+                "candidate_mean": 0.02148771929824561,
+                "days": 250,
+                "gain": 0.0009543859649122804,
+                "gain_interval": [
+                  -0.003333333333333333,
+                  0.005663157894736841
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.04240000000000001,
+                "candidate_mean": 0.02050526315789474,
+                "days": 250,
+                "gain": -0.02189473684210527,
+                "gain_interval": [
+                  -0.041789473684210515,
+                  -0.0046
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.032248692810457516,
+                "candidate_mean": 0.02050526315789474,
+                "days": 250,
+                "gain": -0.01174342965256278,
+                "gain_interval": [
+                  -0.029107076539387673,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.019066666666666673,
+                "candidate_mean": 0.02050526315789474,
+                "days": 250,
+                "gain": 0.0014385964912280703,
+                "gain_interval": [
+                  -0.0012947368421052637,
+                  0.004705263157894736
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.303030303030303,
+                "candidate_mean": 0.19064992025518343,
+                "days": 44,
+                "gain": -0.11238038277511965,
+                "gain_interval": [
+                  -0.20518341307814977,
+                  -0.021092503987240836
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.30353968607645093,
+                "candidate_mean": 0.19064992025518343,
+                "days": 44,
+                "gain": -0.11288976582126735,
+                "gain_interval": [
+                  -0.2008324733402133,
+                  -0.024237163299663377
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.16401515151515153,
+                "candidate_mean": 0.19064992025518343,
+                "days": 44,
+                "gain": 0.0266347687400319,
+                "gain_interval": [
+                  -0.01881977671451355,
+                  0.0766347687400319
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.5568181818181818,
+                "candidate_mean": 0.2831937799043062,
+                "days": 44,
+                "gain": -0.2736244019138756,
+                "gain_interval": [
+                  -0.33702153110047844,
+                  -0.21098484848484902
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.3933483115468409,
+                "candidate_mean": 0.2831937799043062,
+                "days": 44,
+                "gain": -0.11015453164253473,
+                "gain_interval": [
+                  -0.19750450193368152,
+                  -0.02118055555555555
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.2518939393939394,
+                "candidate_mean": 0.2831937799043062,
+                "days": 44,
+                "gain": 0.03129984051036683,
+                "gain_interval": [
+                  -0.008472886762360445,
+                  0.07575757575757575
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            }
+          }
+        }
+      },
+      "2025": {
+        "days": 229,
+        "days_with_a_pressure_day": 74,
+        "means": {
+          "calendar": {
+            "3": {
+              "precision": 0.1353711790393013,
+              "recall": 0.34801448551448544
+            },
+            "5": {
+              "precision": 0.12663755458515283,
+              "recall": 0.47272806022806
+            }
+          },
+          "climatology": {
+            "3": {
+              "precision": 0.14670381035787233,
+              "recall": 0.23740272331603593
+            },
+            "5": {
+              "precision": 0.1257585402198878,
+              "recall": 0.3029665903698411
+            }
+          },
+          "model_median": {
+            "3": {
+              "precision": 0.09390379150204477,
+              "recall": 0.12771121521121517
+            },
+            "5": {
+              "precision": 0.09543217578152072,
+              "recall": 0.22293671043671032
+            }
+          },
+          "model_prob": {
+            "3": {
+              "precision": 0.1149927219796215,
+              "recall": 0.18554666054666052
+            },
+            "5": {
+              "precision": 0.11091703056768555,
+              "recall": 0.29506934506934496
+            }
+          },
+          "persistence": {
+            "3": {
+              "precision": 0.11995850058077132,
+              "recall": 0.15262299972121401
+            },
+            "5": {
+              "precision": 0.11587633981738785,
+              "recall": 0.24909339217374923
+            }
+          }
+        },
+        "paired": {
+          "model_median": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.1353711790393013,
+                "candidate_mean": 0.09390379150204477,
+                "days": 229,
+                "gain": -0.04146738753725654,
+                "gain_interval": [
+                  -0.08172263810910098,
+                  -0.004366812227074235
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.14670381035787233,
+                "candidate_mean": 0.09390379150204477,
+                "days": 229,
+                "gain": -0.05280001885582752,
+                "gain_interval": [
+                  -0.10342662997934939,
+                  -0.009122702938526257
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11995850058077132,
+                "candidate_mean": 0.09390379150204477,
+                "days": 229,
+                "gain": -0.02605470907872655,
+                "gain_interval": [
+                  -0.05948489626983077,
+                  0.00041890494674336084
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.12663755458515283,
+                "candidate_mean": 0.09543217578152072,
+                "days": 229,
+                "gain": -0.031205378803632083,
+                "gain_interval": [
+                  -0.06439315172939625,
+                  0.0
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.1257585402198878,
+                "candidate_mean": 0.09543217578152072,
+                "days": 229,
+                "gain": -0.03032636443836709,
+                "gain_interval": [
+                  -0.06414526971058093,
+                  -0.0023350315380883065
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738785,
+                "candidate_mean": 0.09543217578152072,
+                "days": 229,
+                "gain": -0.020444164035867095,
+                "gain_interval": [
+                  -0.04707450203847583,
+                  0.0011264122825258148
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3480144855144859,
+                "candidate_mean": 0.12771121521121562,
+                "days": 74,
+                "gain": -0.22030327030327027,
+                "gain_interval": [
+                  -0.4089052651552651,
+                  -0.039062180312180436
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.23740272331603585,
+                "candidate_mean": 0.12771121521121503,
+                "days": 74,
+                "gain": -0.10969150810482083,
+                "gain_interval": [
+                  -0.17527069043129415,
+                  -0.04820275479911701
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.12771121521121548,
+                "days": 74,
+                "gain": -0.024911784509998803,
+                "gain_interval": [
+                  -0.057466382153882146,
+                  0.009025302473963171
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.47272806022806024,
+                "candidate_mean": 0.22293671043671048,
+                "days": 74,
+                "gain": -0.24979134979134976,
+                "gain_interval": [
+                  -0.4629945917445915,
+                  -0.044156560406560505
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3029665903698412,
+                "candidate_mean": 0.22293671043671048,
+                "days": 74,
+                "gain": -0.08002987993313071,
+                "gain_interval": [
+                  -0.13306824248000718,
+                  -0.029062893392421275
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.2229367104367106,
+                "days": 74,
+                "gain": -0.02615668173703888,
+                "gain_interval": [
+                  -0.06406084226396729,
+                  0.011357127930788611
+                ]
+              }
+            }
+          },
+          "model_prob": {
+            "precision@3": {
+              "calendar": {
+                "benchmark_mean": 0.1353711790393013,
+                "candidate_mean": 0.1149927219796215,
+                "days": 229,
+                "gain": -0.02037845705967976,
+                "gain_interval": [
+                  -0.05240174672489085,
+                  0.011644832605531294
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.14670381035787233,
+                "candidate_mean": 0.1149927219796215,
+                "days": 229,
+                "gain": -0.03171108837825076,
+                "gain_interval": [
+                  -0.06977235594051204,
+                  0.00017764428481368535
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11995850058077132,
+                "candidate_mean": 0.1149927219796215,
+                "days": 229,
+                "gain": -0.004965778601149782,
+                "gain_interval": [
+                  -0.027816624080270372,
+                  0.015099640877479288
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "precision@5": {
+              "calendar": {
+                "benchmark_mean": 0.12663755458515283,
+                "candidate_mean": 0.11091703056768555,
+                "days": 229,
+                "gain": -0.015720524017467246,
+                "gain_interval": [
+                  -0.048034934497816595,
+                  0.017467248908296942
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "climatology": {
+                "benchmark_mean": 0.1257585402198878,
+                "candidate_mean": 0.11091703056768555,
+                "days": 229,
+                "gain": -0.014841509652202253,
+                "gain_interval": [
+                  -0.044497555591607674,
+                  0.008493171879952471
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              },
+              "persistence": {
+                "benchmark_mean": 0.11587633981738785,
+                "candidate_mean": 0.11091703056768555,
+                "days": 229,
+                "gain": -0.004959309249702263,
+                "gain_interval": [
+                  -0.02316750237874692,
+                  0.011963120758426432
+                ],
+                "method": "percentile interval of the same draws, unstudentized"
+              }
+            },
+            "recall@3": {
+              "calendar": {
+                "benchmark_mean": 0.3480144855144859,
+                "candidate_mean": 0.18554666054666097,
+                "days": 74,
+                "gain": -0.16246782496782491,
+                "gain_interval": [
+                  -0.32675087862587865,
+                  -0.009939465564465563
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.23740272331603585,
+                "candidate_mean": 0.18554666054666036,
+                "days": 74,
+                "gain": -0.051856062769375474,
+                "gain_interval": [
+                  -0.12420145348744423,
+                  0.017957185559739713
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.1526229997212143,
+                "candidate_mean": 0.18554666054666083,
+                "days": 74,
+                "gain": 0.032923660825446545,
+                "gain_interval": [
+                  -0.015496756668631668,
+                  0.08504468936388578
+                ]
+              }
+            },
+            "recall@5": {
+              "calendar": {
+                "benchmark_mean": 0.47272806022806024,
+                "candidate_mean": 0.2950693450693451,
+                "days": 74,
+                "gain": -0.1776587151587151,
+                "gain_interval": [
+                  -0.3625519413019414,
+                  -0.004406308781308875
+                ]
+              },
+              "climatology": {
+                "benchmark_mean": 0.3029665903698412,
+                "candidate_mean": 0.2950693450693451,
+                "days": 74,
+                "gain": -0.007897245300496075,
+                "gain_interval": [
+                  -0.08464313629464561,
+                  0.07195975118672482
+                ]
+              },
+              "persistence": {
+                "benchmark_mean": 0.24909339217374948,
+                "candidate_mean": 0.29506934506934523,
+                "days": 74,
+                "gain": 0.04597595289559572,
+                "gain_interval": [
+                  -0.01825840329188543,
+                  0.1152874071958893
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

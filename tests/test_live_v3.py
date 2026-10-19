@@ -14,6 +14,10 @@ The block's own guards are in `tests/test_prospective_log.py`.
 2. `live_record.protocol_for`: the argument `written_at=written_at` changed to
    `written_at=written_at.replace(year=1999)`. `ProtocolForTests.test_a_record_made_after_its_outcome_is_refused`
    failed with `AssertionError: LookAheadError not raised`.
+3. `live_record.validate_record` (#806), 15 October 2026, same method: the call
+   `validate_protocol_block(record["protocol"], decision_day=day)` changed to `validate_protocol_block(record["protocol"])`.
+   `RecordSchemaTests.test_a_block_written_after_its_decision_day_is_refused_on_read_back` failed with
+   `AssertionError: LookAheadError not raised` (the only failure).
 """
 
 import copy
@@ -58,6 +62,21 @@ class RecordSchemaTests(unittest.TestCase):
     def test_the_versions(self):
         self.assertEqual((live.RECORD_VERSION, live.RECORD_VERSION_V2, live.RECORD_VERSION_V3), (1, 2, 3))
         self.assertEqual(live.READABLE_VERSIONS, (1, 2, 3))
+
+    def test_a_block_written_after_its_decision_day_is_refused_on_read_back(self):
+        """#806: reading a record back checks its stored `written_at` against the record's own decision day."""
+        record = _record_v3()
+        day = date.fromisoformat(record["decision_day"])
+        record["protocol"]["written_at"] = datetime.combine(
+            day + timedelta(days=1), time(9, 0), tzinfo=EASTERN
+        ).isoformat()
+        with self.assertRaises(LookAheadError):
+            live.validate_record(record)
+        record["protocol"]["written_at"] = datetime.combine(day, time(23, 59), tzinfo=EASTERN).isoformat()
+        with self.assertRaises(LookAheadError):
+            live.validate_record(record)
+        record["protocol"]["written_at"] = datetime.combine(day, time(23, 58), tzinfo=EASTERN).isoformat()
+        live.validate_record(record)
 
     def test_a_version_3_file_without_the_block_is_refused(self):
         record = _record_v3()

@@ -57,6 +57,7 @@ import unittest
 from datetime import date, timedelta
 from statistics import NormalDist
 
+from nightly import nightly
 from repo_model import scoring_protocol as sp
 
 PHI = 0.9
@@ -291,6 +292,7 @@ class StatedOrderTests(unittest.TestCase):
         self.assertAlmostEqual(simulated, expected_grid_crps(quantiles, mean, var), delta=0.03)
 
 
+@nightly
 class RecoveryTests(unittest.TestCase):
     """The scorer recovers the stated order on every pair, at the protocol's settings."""
 
