@@ -48,6 +48,9 @@ from __future__ import annotations
 import pathlib
 import re
 import unittest
+import built_outputs
+
+built_outputs.ensure()  # the page, its data and the log are built, not committed (#928)
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 
