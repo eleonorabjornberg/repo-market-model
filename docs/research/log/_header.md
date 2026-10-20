@@ -4,16 +4,19 @@
 header and the entry files in docs/research/log/. Never edit it by hand. -->
 
 One entry per scored experiment, in the order of the file names under [`log/`](log/) (the entries from before 17
-October 2026 first, in the order they were merged; later ones by date, repository and pull request number). The plan
+October 2026 first, in the order they were merged; later ones by date, repository and the number in the file name). The plan
 is [`plan.md`](plan.md); the format is the constant `ENTRY_FORMAT` in `scripts/check_research_log.py`, which
 `python3 scripts/check_research_log.py check` enforces in CI. The same format serves both repositories
 (`repo-market-liquidity` results arrive as a fenced `research-log` block copied verbatim from that repository's pull
 request body).
 
 **To add an entry (#866), add a file; never edit this page.** Create
-`docs/research/log/<YYYY-MM-DD>-<model|liquidity>-<PR number, five digits>-<H#>-<step<N>|G<n>>.md`, for example
-`2026-10-17-model-00866-H5-step2.md`, holding only the entry: its `### ` heading and its lines. A liquidity entry
-copied from that repository's pull request body is a file in the same way, named `liquidity` and its PR number. A
+`docs/research/log/<YYYY-MM-DD>-<model|liquidity>-<directive issue number, five digits>-<H#>-<step<N>|G<n>>.md`, for
+example `2026-10-20-model-01014-H1-step2.md` for directive #1014, holding only the entry: its `### ` heading and its
+lines. The directive is an issue its `- Directive:` line names; it exists before the branch is pushed, so the file
+never has to be renamed once the pull request is opened. The pull request number in the same place is also accepted
+(older entries use it). A liquidity entry copied from that repository's pull request body is a file in the same way,
+named `liquidity` and its directive or PR number. A
 second entry with the same heading takes `-2` before `.md`. Then run `python3 scripts/check_research_log.py
 assemble`, which rewrites this page, and commit it with the regeneration commit like the other generated pages.
 Two pull requests that add different files never conflict; a conflict in this page alone is resolved by running
