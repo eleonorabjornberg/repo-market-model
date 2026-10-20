@@ -26,3 +26,10 @@ docs/track-*-decisions-*.md
 
 # Scratch written by Cowork sessions; never part of a build.
 Claude outputs/
+
+# Built on main, never committed (#928): the results page, its data and the assembled research log.
+# The pages job builds them (`emit_visual.py --stamp`, `check_research_log.py assemble`); the tests build
+# their own copy (`tests/built_outputs.py`). CI refuses a pull request that tracks any of them.
+site/index.html
+docs/visual/data/
+docs/research/log.md
