@@ -1347,6 +1347,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: the kill condition (no CRPS gain over the phase 2 models and no ordinary-day ranking gain) is not touched: the gain comes on settlement days and ordinary days are level. Development data, never a verdict.
 - Next: whether the declared candidate trains the field aligned is Eleonora's; nothing published or registered moves.
 
+### 2026-10-19 [H1] step 1 · eleonorabjornberg/repo-market-model#973
+- Directive: #939
+- Step: 1 (the scorer; applies Eleonora's ruling of 19 October 2026 on #768, option a)
+- Tier: development
+- Pins: no panel built; base `fb8acae5`; no declaration changed
+- Tried: `scoring_protocol.report` prints the candidate against B3 on its five levels, with its bound at `CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]`, beside the verdict, labelled "reported comparison, no rule". Variants: n/a.
+- Result: no figure; nothing is scored. The verdict is unchanged on every fixture whatever B3 shows.
+- Against kill: not applicable (the output of the scorer; no hypothesis result).
+- Next: Eleonora's merge of the drafted amendment to `docs/decisions/scoring-protocol.md` §4.
+
 ### 2026-10-19 [H1] step 3 · eleonorabjornberg/repo-market-model#980
 - Directive: #949
 - Step: 3 (does the protocol's mean block of 10 suit H5's paired CRPS loss differentials; a report that changes nothing, Eleonora's ruling of 19 October 2026)
