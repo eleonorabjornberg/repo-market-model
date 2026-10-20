@@ -1,0 +1,15 @@
+{
+  "order": 320,
+  "directive": 1013,
+  "pull_request": 1025,
+  "hypothesis": "H1",
+  "result": "The scaled-score study on the series its paths use",
+  "declarations": [],
+  "model": "`gbm_funding` as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-20-model-01025-H1-step2"
+  ],
+  "concluded": "The corrected calibration is set beside #999's."
+}

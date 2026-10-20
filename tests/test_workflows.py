@@ -65,7 +65,7 @@ def jobs(path):
 class WorkflowFileTests(unittest.TestCase):
     def test_there_are_workflows(self):
         self.assertEqual({path.name for path in WORKFLOWS},
-                         {"live-log.yml", "live-score.yml", "pages.yml", "status.yml", "tests.yml"})
+                         {"live-log.yml", "live-score.yml", "long-run.yml", "pages.yml", "sofr-first-print.yml", "status.yml", "tests.yml"})
 
     def test_every_action_is_pinned_to_a_full_commit_sha_or_pending(self):
         found = set()
@@ -93,7 +93,7 @@ class WorkflowFileTests(unittest.TestCase):
                     )
 
     def test_jobs_are_found(self):
-        self.assertEqual(set(jobs(next(p for p in WORKFLOWS if p.name == "tests.yml"))), {"suite-shard", "pages", "suite", "offline-shard", "offline", "ml-shard", "ml", "owner-attested", "research-log"})
+        self.assertEqual(set(jobs(next(p for p in WORKFLOWS if p.name == "tests.yml"))), {"suite-shard", "pages", "suite", "offline", "ml-shard", "ml", "owner-attested", "research-log"})
 
     def test_tests_yml_checks_out_the_whole_history(self):
         path = next(p for p in WORKFLOWS if p.name == "tests.yml")
@@ -113,7 +113,7 @@ class WorkflowFileTests(unittest.TestCase):
         path = next(p for p in WORKFLOWS if p.name == "tests.yml")
         for job, name, needs in (
             ("suite", "unit tests: suite (3.11)", ("suite-shard", "pages")),
-            ("offline", "unit tests: networking off (3.11)", ("offline-shard",)),
+            ("offline", "unit tests: networking off (3.11)", ("suite-shard",)),
             ("ml", "unit tests: ml extra (3.11)", ("ml-shard",)),
         ):
             with self.subTest(job=job):
@@ -122,6 +122,40 @@ class WorkflowFileTests(unittest.TestCase):
                 self.assertIn("needs: [" + ", ".join(needs) + "]", text)
                 self.assertIn("if: ${{ always() }}", text)
                 self.assertIn('[ "$result" = "success" ] || exit 1', text)
+
+    def test_the_suite_shards_run_with_networking_disabled(self):
+        """One pass of the suite, in an empty network namespace: it is both the suite and the networking-off check."""
+        path = next(p for p in WORKFLOWS if p.name == "tests.yml")
+        text = "\n".join(jobs(path)["suite-shard"])
+        self.assertIn("unshare --net python3 -B -m unittest $(python3 scripts/ci_shards.py modules --shard", text)
+
+
+class LongRunWorkflowTests(unittest.TestCase):
+    """The manually started long run (an alternative to running a long step on Eleonora's Mac)."""
+
+    def setUp(self):
+        self.text = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "long-run.yml").read_text(encoding="utf-8")
+
+    def test_it_is_started_by_hand_only(self):
+        on = re.search(r"^on:\n((?:  .*\n|\n)*)", self.text, flags=re.M).group(1)
+        self.assertEqual(re.findall(r"^  (\w+):", on, flags=re.M), ["workflow_dispatch"])
+
+    def test_it_may_write_contents_and_nothing_else(self):
+        self.assertRegex(self.text, r"(?m)^permissions:\n  contents: write\n(?!  )")
+        self.assertEqual(len(re.findall(r"(?m)^\s*permissions:", self.text)), 1)
+
+    def test_it_refuses_main(self):
+        self.assertIn('[ "$branch" = "main" ]', self.text)
+        self.assertIn("refuses to run on main", self.text)
+
+    def test_the_ml_extra_is_the_ci_pin(self):
+        self.assertIn('".[ml]" "numpy==2.4.6" "scikit-learn==1.9.1"', self.text)
+        tests = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        self.assertIn('".[ml]" "numpy==2.4.6" "scikit-learn==1.9.1"', tests)
+
+    def test_its_commits_carry_the_neutral_author(self):
+        self.assertIn('user.name="repo-market-model orchestrator"', self.text)
+        self.assertIn('user.email="orchestrator@users.noreply.github.com"', self.text)
 
 
 if __name__ == "__main__":

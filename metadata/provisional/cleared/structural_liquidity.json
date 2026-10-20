@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/structural_liquidity.json",
+  "script": "scripts/structural_liquidity.py",
+  "pairing": "direct",
+  "why": "the structural model, pressure models on direct pairs"
+}

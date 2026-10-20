@@ -60,6 +60,7 @@ Reads the scratch panels, which are gitignored, so this is not a test (the same 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import hashlib
 import json
@@ -73,7 +74,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import contract, dvp_segment, early_warning, fed_liquidity, measurement_fields  # noqa: E402
+from repo_model import contract, dvp_segment, early_warning, fed_liquidity, government_calendar, measurement_fields  # noqa: E402
 from repo_model import net_settlement, nowcast, policy_features, pressure, scarcity  # noqa: E402
 from repo_model.asof import KIND_OBSERVED, InformationRule, InformationSet, fold_grid  # noqa: E402
 from repo_model.data import DailyObservation, exceeds_bp, load_daily_panel  # noqa: E402
@@ -138,6 +139,7 @@ SNAPSHOT_INVENTORY: Mapping[str, Tuple[str, str]] = {
     "srf_inputs": ("read", "srf_take_up, the standing repo facility take-up"),
     "repo_ops_inputs": ("read", "the Desk's repo operations (fed_repo_* columns, both availability readings)"),
     "fed-iorb-announcements": ("read", "iorb_announced_change_bps, iorb_days_to_announced_change"),
+    "fomc_calendar": ("cannot", "the Board's FOMC calendar pages and the press releases that dated each schedule (#1038): an event calendar read per target day by repo_model.fomc_calendar, not a daily series with a first print per day"),
     "fr2004": ("read", "dealer_treasury_position (FR 2004 weekly)"),
     "new_sources": ("cannot", "snapshots of the new sources of #630 (primary dealer financing and fails, Treasury debt cash flows); read by scripts/new_sources.py, not by this screen"),
     "treasury_bill_rates_page": ("cannot", "the Treasury text-view page as served: evidence for #445 (its 3:30 pm quote time), not a data input; no series is built from it"),
@@ -153,6 +155,7 @@ SNAPSHOT_INVENTORY: Mapping[str, Tuple[str, str]] = {
     "alfred-wlrraol": ("cannot", "ALFRED vintage pulls (H.4.1 reverse repos, other): a revision study, no daily first prints"),
     "alfred-wresbal": ("cannot", "ALFRED vintage pulls: reserve_balances is read from the FRED latest-vintage snapshot under the registry's declared lag"),
     "alfred-wtregen": ("cannot", "ALFRED vintage pulls at four dates: tga is read from the FRED latest-vintage snapshot under the registry's declared lag"),
+    "h41_wednesday_levels": ("cannot", "FRED WRBWFRBL and WDTGAL, the H.4.1 Wednesday levels, as one latest-vintage pull (#970): a measurement of the scarcity state beside the week averages, off in every published declaration; never-revised status not re-verified, so no first print per day"),
     "backfill_2014_2018": ("cannot", "posting date of the back-filled workbook not established; the #431 amendment is not in force (ruling of 9 October 2026)"),
 }
 
@@ -177,6 +180,7 @@ def switched_on_fields() -> Dict[str, Tuple[Tuple[str, str], ...]]:
         fed_liquidity.ALL_COLUMN_FIELDS,
         nowcast.COLUMN_FIELDS,
         dvp_segment.COLUMN_FIELDS,
+        dvp_segment.CLEARED_COLUMN_FIELDS,
         early_warning.COLUMN_FIELDS,
     ):
         for column, fields in module_fields.items():
@@ -300,17 +304,23 @@ def panel_command(args) -> int:
                     raise ValueError(f"{column!r} differs between the panels on {row.date}")
         elif column not in columns:
             columns.append(column)
+    merged: List[DailyObservation] = []
+    for row in keep:
+        values: Dict[str, Optional[float]] = {}
+        for column in columns:
+            value = row.values[column] if column in row.values else extra_values[column].get(row.date)
+            if column.startswith("ofr_") and row.date < dvp_segment.OFR_REAL_TIME_START:
+                value = None  # filled in after the OFR published in real time (#508, #522)
+            values[column] = value
+        merged.append(DailyObservation(row.date, values))
+    # The corrected-lag copies of the cleared-repo columns (#968), identical in value to their two-day originals.
+    merged = dvp_segment.add_cleared_columns(merged)
+    columns += [c for c in dvp_segment.CLEARED_COLUMN_FIELDS if c not in columns and c in merged[0].values]
     with args.output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["date"] + columns)
-        for row in keep:
-            out = []
-            for column in columns:
-                value = row.values[column] if column in row.values else extra_values[column].get(row.date)
-                if column.startswith("ofr_") and row.date < dvp_segment.OFR_REAL_TIME_START:
-                    value = None  # filled in after the OFR published in real time (#508, #522)
-                out.append(_cell(value))
-            writer.writerow([row.date.isoformat()] + out)
+        for row in merged:
+            writer.writerow([row.date.isoformat()] + [_cell(row.values[column]) for column in columns])
     print(json.dumps({"rows": len(keep), "columns": len(columns), "last": keep[-1].date.isoformat()}))
     return 0
 
@@ -747,6 +757,10 @@ def report_command(args) -> int:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument(
+        "--government-open-days", action="store_true",
+        help="date a source that sets government_open_days_only by the days the government is open (#1016)",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     panel = sub.add_parser("panel")
     panel.add_argument("--panel", type=Path, required=True)
@@ -763,7 +777,8 @@ def main(argv=None) -> int:
     report.add_argument("--heatmap", type=Path)
     report.set_defaults(func=report_command)
     args = parser.parse_args(argv)
-    return args.func(args)
+    with government_calendar.government_open_dating() if args.government_open_days else contextlib.nullcontext():
+        return args.func(args)
 
 
 if __name__ == "__main__":

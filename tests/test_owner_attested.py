@@ -372,6 +372,86 @@ class CheckTests(unittest.TestCase):
             oa.check(base, head, self._fetch({GO_RELAY["id"]: GO_RELAY}))
 
 
+class PathKindTests(unittest.TestCase):
+    """#944 (ruling on PR #943): CLAUDE.md, `.claude/` and a registration are binding by their path.
+
+    Tests written first and watched failing: every one raised `AttributeError` (no `path_kinds`) or `TypeError`
+    (no `changed_paths` argument) before the change.
+
+    Recorded mutation (19 October 2026), on the path guard: in `path_kinds`,
+    `if path in CLAUDE_FILES or path.startswith(CLAUDE_DIRS):` -> `if False:`. Run alone with
+    `PYTHONPATH=src:tests python3 -B -m unittest test_owner_attested`, `test_claude_md_is_binding`,
+    `test_a_file_under_dot_claude_is_binding`, `test_binding_kinds_reads_the_changed_paths` failed with
+    `AssertionError` (`Items in the second set but not the first`) and
+    `test_a_claude_md_change_without_a_citation_fails` with `AssertionError` (`NotOwnerAttested not raised`).
+    Restored, all pass.
+    """
+
+    def test_claude_md_is_binding(self):
+        self.assertEqual(oa.path_kinds(["CLAUDE.md"]), {"claude-files"})
+
+    def test_a_file_under_dot_claude_is_binding(self):
+        self.assertEqual(oa.path_kinds([".claude/settings.json"]), {"claude-files"})
+
+    def test_a_registration_record_is_binding(self):
+        self.assertEqual(oa.path_kinds(["metadata/registrations/h5.json"]), {"registration"})
+
+    def test_look_alike_paths_are_not(self):
+        paths = ["docs/CLAUDE.md", "tests/CLAUDE.md", ".claudeignore", "metadata/registrations.json",
+                 "docs/decisions/scoring-protocol.md", "README.md"]
+        self.assertEqual(oa.path_kinds(paths), set())
+
+    def test_binding_kinds_reads_the_changed_paths(self):
+        kinds = oa.binding_kinds(_real, _real, lambda: ["CLAUDE.md", "metadata/registrations/h5.json"])
+        self.assertEqual(kinds, {"claude-files", "registration"})
+
+    def test_no_changed_paths_given_changes_nothing(self):
+        self.assertEqual(oa.binding_kinds(_real, _real), set())
+
+    def test_the_kinds_may_be_cited_in_the_registry(self):
+        for kind in ("claude-files", "registration"):
+            self.assertEqual(oa.load_registry(_registry(_entry(kind=kind)))[0]["kind"], kind)
+
+    def test_a_claude_md_change_without_a_citation_fails(self):
+        tree = _tree(**{REGISTRY: _registry()})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "claude-files"):
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: ["CLAUDE.md"])
+
+    def test_a_dot_claude_change_citing_a_relay_fails(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="claude-files", issue=151, comment_id=GO_RELAY["id"]))})
+        with self.assertRaises(oa.NotOwnerAttested):
+            oa.check(base, head, CheckTests._fetch({GO_RELAY["id"]: GO_RELAY}), lambda: [".claude/settings.json"])
+
+    def test_a_registration_without_a_citation_fails(self):
+        tree = _tree(**{REGISTRY: _registry()})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "registration"):
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: ["metadata/registrations/h5.json"])
+
+    def test_a_registration_citing_her_go_passes(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="registration"))})
+        verified = oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}),
+                            lambda: ["metadata/registrations/h5.json"])
+        self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
+
+    def test_a_citation_of_another_kind_does_not_cover_a_registration(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="claude-files"))})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "registration"):
+            oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}),
+                     lambda: ["metadata/registrations/h5.json"])
+
+
+class GitPathTests(unittest.TestCase):
+    def test_a_commit_against_itself_changes_no_path(self):
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+        if head.returncode != 0:
+            self.skipTest("not a git checkout")
+        sha = head.stdout.strip()
+        self.assertEqual(list(oa.git_changed(sha, sha)()), [])
+
+
 class WiringTests(unittest.TestCase):
     workflow = TESTS_WORKFLOW.read_text(encoding="utf-8")
 

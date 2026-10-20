@@ -1,0 +1,83 @@
+name: sofr-first-print
+
+# SOFR first prints (#940, Eleonora's ruling of 19 October 2026). The scoring protocol's H5 target is "SOFR - IORB as
+# first published", and the New York Fed may replace a day's SOFR at about 14:30 ET on the day it is published
+# (about 08:00 ET on the next business day), after which the first value can no longer be told from the revision.
+# So the capture runs in the morning, not in the live-log run after the 16:00 ET decision instant.
+#
+# `scripts/sofr_first_print.py capture` takes the latest effective date published at that moment and writes
+# `sofr/<date>.json`: the payload as fetched, the retrieval time, its SHA-256, the publication and revision
+# instants and IORB's first-public source. The file is added to the `sofr-first-prints` branch in one add-only
+# commit, checked before the push; a day already on the branch is never fetched or overwritten. A fetch that ends at
+# or after 14:30 ET is refused (`LookAheadError`) and the run goes red: that day is not back-filled.
+#
+# Slots (UTC), each a no-op when it runs before 08:00 ET or when the day is already captured: 12:20 and 13:20 are
+# 08:20 ET in EDT and EST respectively (the other is an hour early or late), and three fallbacks cover GitHub's
+# scheduling delay. 14:30 ET is 18:30 UTC in EDT and 19:30 UTC in EST, after the last slot.
+#
+# The branch is not yet protected by a ruleset like `live-log`; adding one is Eleonora's (see the pull request).
+
+on:
+  schedule:
+    - cron: "20 12 * * 1-5"
+    - cron: "20 13 * * 1-5"
+    - cron: "50 13 * * 1-5"
+    - cron: "20 14 * * 1-5"
+    - cron: "20 15 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sofr-first-print
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: keep the morning's first print
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out main
+        run: git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" main
+
+      - name: Python at the declared version
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          check-latest: false
+
+      - name: Capture the first print on sofr-first-prints
+        run: |
+          set -euo pipefail
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" sofr-first-prints >/dev/null; then
+            git clone --quiet --branch sofr-first-prints --single-branch "$url" prints
+          else
+            git init --quiet -b sofr-first-prints prints
+            git -C prints remote add origin "$url"
+          fi
+          export PYTHONPATH=main/src
+          python3 -B main/scripts/sofr_first_print.py capture --out-dir prints
+          cd prints
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "nothing new to keep."
+            exit 0
+          fi
+          base=$(git rev-parse --verify -q HEAD || true)
+          git add sofr
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "SOFR first print $(date -u +%FT%TZ)"
+          # Add-only: nothing already on the branch is modified, renamed or deleted.
+          if [ -n "$base" ] && git diff --name-status "$base" HEAD | grep -v '^A'; then
+            echo "the commit changes a file already on the branch" >&2
+            exit 1
+          fi
+          git push --quiet origin HEAD:refs/heads/sofr-first-prints
+          python3 -B ../main/scripts/sofr_first_print.py verify --dir .

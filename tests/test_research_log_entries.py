@@ -113,6 +113,26 @@ class EntryFileTests(unittest.TestCase):
             with self.subTest(name=bad):
                 self.assertTrue(crl.validate_entry_files({bad: entry()}, self.HYP))
 
+    def test_a_file_may_be_named_by_its_directive_issue_instead_of_its_pull_request(self):
+        # The directive issue exists before the branch is pushed; the pull request number does not, so naming by it
+        # forced a rename commit and a second CI run once the pull request was opened (02fbde05, 7271509a).
+        self.assertEqual(crl.validate_entry_files({"2026-10-12-model-00640-H5-step3.md": entry()}, self.HYP), [])
+
+    def test_a_directive_named_file_matches_any_issue_its_directive_line_names(self):
+        text = entry().replace("- Directive: #640", "- Directive: #640 (follow-up of #611)")
+        self.assertEqual(crl.validate_entry_files({"2026-10-12-model-00611-H5-step3.md": text}, self.HYP), [])
+
+    def test_a_number_that_is_neither_the_pull_request_nor_the_directive_is_refused(self):
+        for bad in ("2026-10-12-model-00641-H5-step3.md", "2026-10-12-model-00000-H5-step3.md"):
+            with self.subTest(name=bad):
+                self.assertTrue(crl.validate_entry_files({bad: entry()}, self.HYP))
+
+    def test_a_directive_named_file_must_still_agree_on_date_repository_hypothesis_and_step(self):
+        for bad in ("2026-10-13-model-00640-H5-step3.md", "2026-10-12-liquidity-00640-H5-step3.md",
+                    "2026-10-12-model-00640-H7-step3.md", "2026-10-12-model-00640-H5-step2.md"):
+            with self.subTest(name=bad):
+                self.assertTrue(crl.validate_entry_files({bad: entry()}, self.HYP))
+
     def test_a_badly_named_file_is_refused(self):
         self.assertTrue(crl.validate_entry_files({"notes.md": entry()}, self.HYP))
 
@@ -203,10 +223,13 @@ class CorrectionTests(unittest.TestCase):
 
 class RepositoryTests(unittest.TestCase):
 
-    def test_log_md_is_the_assembly_of_the_entry_files(self):
+    def test_there_are_entry_files_and_log_md_is_not_tracked(self):
+        """`log.md` is built on main and never committed (#928): the entry files are the log."""
         header, files = crl.read_entry_files()
         self.assertTrue(files)
-        self.assertEqual(crl.assemble(header, files, crl.read_corrections()), crl.LOG.read_text(encoding="utf-8"))
+        tracked = subprocess.run(["git", "ls-files", "docs/research/log.md"], cwd=ROOT, capture_output=True,
+                                 text=True, check=True).stdout.split()
+        self.assertEqual(crl.tracked_errors(tracked), [])
 
     def test_every_correction_in_the_repository_is_sound(self):
         header, files = crl.read_entry_files()
@@ -217,17 +240,16 @@ class RepositoryTests(unittest.TestCase):
         name = "0094-2026-10-16-model-00830-H5-step3.md"
         self.assertIn("model#830\n", files[name].splitlines()[0] + "\n")
         self.assertIn("### 2026-10-16 [H5] step 3 · eleonorabjornberg/repo-market-model#837\n",
-                      crl.LOG.read_text(encoding="utf-8"))
+                      crl.assemble(header, files, crl.read_corrections()))
 
     def test_every_entry_file_passes(self):
         header, files = crl.read_entry_files()
         plan = (ROOT / "docs" / "research" / "plan.md").read_text()
         self.assertEqual(crl.validate_entry_files(files, crl.plan_hypotheses(plan)), [])
 
-    def test_the_assembled_check_fails_on_a_stale_log(self):
-        header, files = crl.read_entry_files()
-        self.assertTrue(crl.stale_errors(crl.assemble(header, files) + "x\n", header, files))
-        self.assertEqual(crl.stale_errors(crl.assemble(header, files), header, files), [])
+    def test_the_assembled_check_fails_on_a_tracked_log(self):
+        self.assertTrue(crl.tracked_errors(["docs/research/log.md"]))
+        self.assertEqual(crl.tracked_errors([]), [])
 
 
 if __name__ == "__main__":

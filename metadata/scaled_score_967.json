@@ -1,0 +1,49 @@
+{
+  "status": "declared by the pull request that closes #967 before any score was computed; a measurement, not a record. Nothing is published, no critical value in force and no protocol constant moves, no day after 2025-12-31 and no lockbox day is scored, and nothing here is a verdict (scoring protocol v1, #640). The series are development data seen before this declaration (#733, #886, #922, #949, #963), so a result is exploration only. Changing the primary score is a section 13 decision and is Eleonora's",
+  "issue": 967,
+  "hypothesis": "H1 step 2 (a section 13(a) demonstration that a scale-free primary score ranks a candidate differently from raw CRPS) and the H5 primary score (five-lens review, Lens C, #958)",
+  "ruling": "Eleonora, 19 October 2026, relayed on #958; the criteria of #967 are hers",
+  "variants": {},
+  "variants_note": "no model and no variant is added: the scale is a divisor of existing scores, and the candidates are existing ones (B2, spread_mr_ctx of #761, gbm_funding of #634)",
+  "scale": {
+    "definition": "for the cell (decision day u, lead h) whose target day has pressure-day type k, the scale of decision day t is the median of B2's grid CRPS (scoring_protocol.grid_crps) over the cells of the trailing year whose target day has type k; the scaled cell is the cell's score divided by that scale, and a decision day's scaled score is the mean of its five scaled cells",
+    "day_type": "SplitDeclaration.reporting_day_type(target, the target row's values): month_end, quarter_end, tax_date or ordinary",
+    "trailing_year": "the 252 pool positions u with t - 257 <= u <= t - 6, over leads 1 to 5 (up to 1,260 cells)",
+    "as_of": "the last 6 pool positions are excluded, as #733's D4, so that every cell in the window has a target strictly before the decision day t and its outcome was public at the instant; the guard scaled_score_967.require_public raises LookAheadError on a cell whose target day is not before t",
+    "minimum_cells": "20 cells of type k in the window; below that the scale is the median over all cells of the window, whatever their type",
+    "warmup": "pool positions before 257 have no full trailing year and are not in a scaled series (the first scaled decision day is in mid-2019); every raw series is read on the same days so that raw and scaled are compared like for like",
+    "pool": "the decision days of #733 section 2: every business day from 2018-06-29 whose five targets are on or before 2025-12-31 and published, on the published panel built from the tracked fixtures",
+    "companion": "the trapezoid-weighted grid (metrics.crps_trapezoid_from_quantiles on scoring_protocol.GRID, #259): the same scale construction applied to it, reported beside the primary grid CRPS for the 250-day designs only; it decides nothing"
+  },
+  "designs": {
+    "list": "#733's six designs with the scale of D4 and D5 replaced: D0 (250 days, raw), D1 (375, raw), D2 (500, raw), D3 (250, lead 1 alone, raw), D4 (250, new scale), D5 (375, new scale); and, as references, D4old and D5old (#733's scale, the trailing mean of B1 over 60 days), and D0t and D4t (the trapezoid companion on the raw and the scaled 250-day design)",
+    "looks": "24%, 50% and 100% of the days, rounded half up (#733 section 4); look 1 is never read; the nominal level of each look is scoring_protocol.nominal_levels(checkpoints)",
+    "gate": "the MME, 3%: a detection counts when the bound is above zero and mean(x)/mean(b) is at least 0.03, as #733 section 1; the B2 half of Supported and futility stopping are not simulated, so power is an upper bound",
+    "candidate": "x_t = DELTA * b_t + NOISE * (e_t - mean(e)) with b_t the benchmark score on the design's scale and e_t = b_t - (B2's score on that scale), as #733 section 3; NOISE = 1",
+    "history": "the post-2020 history: decision days from 2020-04-03 (the design's series restricted to them); the Full history is not simulated"
+  },
+  "calibration": {
+    "generator": "contiguous (#963): every start in [0, n - N_k], no wrap, on the post-2020 series of the design, for each look k > 1 with N_k days",
+    "statistic": "(mean_w - mean(series)) / se_w with se_w the window's Newey-West (Bartlett) standard error at lag 10 (scoring_protocol.HAC_LAG)",
+    "critical_value": "c_k = the 1 - nominal_level_k quantile of the window statistics (scoring_protocol._bound), calibrated on the single comparison S(B2) - S(B1) (reading (b), Eleonora's ruling on PR #695, Q-E, 13 October 2026); the comparison against B3 is not used, so no B3 score is needed",
+    "also_reported": "the same c on the stationary-10 generator of #886 (20,000 windows, seed 1), to show what the generator changes"
+  },
+  "paths": {
+    "generator": "the first N days of one stationary-bootstrap resample (mean block 10) of the post-2020 pairs (b_t, e_t), in date order; circular blocks of 10 are also run for size",
+    "scenarios": "size (DELTA 0), power at 3% and 10%, and the grid 5%, 7.5%, 15%, 20% and 30%; 2,000 paths per scenario; path i of scenario s uses random.Random(967 * 100003 + s * 1000003 + i)",
+    "size_admissible": "size without the MME gate at the last look at most 5%"
+  },
+  "regime_split": {
+    "candidates": "gbm_funding (scripts/spread_distribution_634.py walks, one per lead, its missing forecasts filled by B1 as the protocol does) and spread_mr_ctx (repo_model.spread_mr_variants.walk, #761), each against B1",
+    "days": "the decision days from the first scaled day to 2025-12-31 on which B1, B2 and both candidates have a forecast, lockbox.require_unlocked on every decision and target day",
+    "regime": "SplitDeclaration.regime(decision day), the declared regimes of metadata/evaluation_splits.json",
+    "report": "per regime, the mean of d = S(B1) - S(candidate) on the raw scale and on the new scale, the candidate that ranks first (higher mean d) under each, and whether the order of the two candidates changes",
+    "misranking": "the demonstration holds when the order of the two candidates differs between the raw and the scaled score in at least one regime with at least 60 decision days"
+  },
+  "kill": {
+    "scale_buys_nothing": "D4's gated power at 10% true skill on the post-2020 history is below 20%, or D4's size without the gate on that history is above 5%: contiguous calibration and size at most 5% together do not give power of 20% at 10% skill",
+    "misranking_fails": "the order of the two candidates is the same under both scores in every regime with at least 60 decision days: then section 13(a) is not met by this demonstration, and the trapezoid companion still stands",
+    "reading": "each rule is read from the record by the page and stated whether it fires; nothing is argued around it"
+  },
+  "limits": "no published record, declaration or critical value changes; the protocol's constants are only read; a result here is a demonstration on development data that was seen before this declaration, not a verdict"
+}

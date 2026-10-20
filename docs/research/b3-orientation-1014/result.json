@@ -1,0 +1,69 @@
+{
+ "block": 10,
+ "calibrated": {
+  "125": 4.3591194763760885,
+  "250": 2.553679142046093
+ },
+ "directive": "https://github.com/eleonorabjornberg/repo-market-model/issues/1014",
+ "first_day": "2020-04-03",
+ "last_day": "2025-12-23",
+ "nominal_levels": {
+  "125": 0.005552272301342587,
+  "250": 0.0482414793805519
+ },
+ "orientation": "d = S(B3) - S(B1), B3 the benchmark, as `scoring_protocol.report` reads its against-B3 test",
+ "paths": 2000,
+ "seed": 1,
+ "series_days": 1429,
+ "values": [
+  {
+   "critical": {
+    "125": 9.50052772574656,
+    "250": 5.454950300123988
+   },
+   "name": "in force",
+   "null_share": {
+    "125": 0.0,
+    "250": 0.0005
+   },
+   "source": "`scoring_protocol.CRITICAL_VALUES`"
+  },
+  {
+   "critical": {
+    "125": 1.4342750488305942,
+    "250": 1.0059739885853967
+   },
+   "name": "#873 draft",
+   "null_share": {
+    "125": 0.2295,
+    "250": 0.3505
+   },
+   "source": "`protocol-calibration-873/result.json` (S(B1) - S(B3), full history)"
+  },
+  {
+   "critical": {
+    "125": 2.267044948325363,
+    "250": 1.5829139433016062
+   },
+   "name": "#886 draft",
+   "null_share": {
+    "125": 0.114,
+    "250": 0.2195
+   },
+   "source": "`protocol-calibration-886/result.json` (S(B1) - S(B3), post-2020 stationary windows)"
+  },
+  {
+   "critical": {
+    "125": 4.3591194763760885,
+    "250": 2.553679142046093
+   },
+   "name": "calibrated here",
+   "null_share": {
+    "125": 0.011,
+    "250": 0.0675
+   },
+   "source": "`scripts/b3_orientation_1014.py` (S(B3) - S(B1), post-2020-04)"
+  }
+ ],
+ "windows": 20000
+}

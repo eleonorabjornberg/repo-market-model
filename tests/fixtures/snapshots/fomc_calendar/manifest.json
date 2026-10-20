@@ -1,0 +1,154 @@
+{
+  "source_id": "fomc_calendar",
+  "built_by": "scripts/build_fomc_calendar.py",
+  "note": "The Board's FOMC calendar pages and the press releases that dated each schedule, unscheduled meeting and notation vote, one plain GET each (the two March 2020 statements were fetched on 2 October 2026 for tests/fixtures/snapshots/fed-iorb-announcements and are the same bytes). retrieved_at is the file's last write, to the second, for the pages fetched on 20 October 2026 for #1038. metadata/fomc_calendar.json is built from these pages and nothing else.",
+  "pages": [
+    {
+      "path": "pages/fomccalendars.htm",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "sha256": "d39500ce9ab8043703b3c5666ca2064248be8c7ade230b909b33e620b0099630",
+      "byte_count": 165751,
+      "retrieved_at": "2026-10-20T17:16:26Z"
+    },
+    {
+      "path": "pages/fomchistorical2018.htm",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomchistorical2018.htm",
+      "sha256": "85a7c95ec0c690a2c566f7f6294a510f442906455bf4e1c1f09bcc1f64631beb",
+      "byte_count": 95705,
+      "retrieved_at": "2026-10-20T17:16:38Z"
+    },
+    {
+      "path": "pages/fomchistorical2019.htm",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomchistorical2019.htm",
+      "sha256": "e525c6cb4e28a896b5ac9b0769bc968a8e04418c7446872a5c8e72f826641c2f",
+      "byte_count": 97344,
+      "retrieved_at": "2026-10-20T17:16:42Z"
+    },
+    {
+      "path": "pages/fomchistorical2020.htm",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm",
+      "sha256": "cf27303d2e1672ab3c116b22d88c10097c78bb38323e604751cb70a6f85834a5",
+      "byte_count": 98555,
+      "retrieved_at": "2026-10-20T17:16:44Z"
+    },
+    {
+      "path": "pages/monetary20170511b.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20170511b.htm",
+      "sha256": "04fc857af41848f921ec601745a91e93451882a6bff511c13ad63b5604f4285b",
+      "byte_count": 80608,
+      "retrieved_at": "2026-10-20T17:17:47Z"
+    },
+    {
+      "path": "pages/monetary20180525a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20180525a.htm",
+      "sha256": "a1a238d0bcafabe7e56b1b7047eef042682c566e6ee807cdde58e3063399e838",
+      "byte_count": 80350,
+      "retrieved_at": "2026-10-20T17:17:49Z"
+    },
+    {
+      "path": "pages/monetary20190517a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20190517a.htm",
+      "sha256": "f5066f3aae90fb931d2e68780683f740ccc51c34a36f4de648f6cad852d46594",
+      "byte_count": 80442,
+      "retrieved_at": "2026-10-20T17:17:53Z"
+    },
+    {
+      "path": "pages/monetary20191011a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20191011a.htm",
+      "sha256": "d2c78e4561fa44f2c68240dd618044cf2d54188cd68877754cae82fbc5c62a73",
+      "byte_count": 85772,
+      "retrieved_at": "2026-10-20T17:19:04Z"
+    },
+    {
+      "path": "pages/monetary20200303a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200303a.htm",
+      "sha256": "497842649ce8743d2d9e48a25fcb363972c3ec6031677467d10b197b59c0744d",
+      "byte_count": 80778,
+      "retrieved_at": "2026-10-02T01:25:57Z"
+    },
+    {
+      "path": "pages/monetary20200315a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm",
+      "sha256": "2eda7a9c86e5bbdb04d6119e78b2c44f801293bbce9f327f8d3d40bf050db901",
+      "byte_count": 85154,
+      "retrieved_at": "2026-10-02T01:26:01Z"
+    },
+    {
+      "path": "pages/monetary20200319b.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200319b.htm",
+      "sha256": "0a50c4e23be43c51a12bab8392e4ac346adabb26d0bdb74281404263979c1d48",
+      "byte_count": 82172,
+      "retrieved_at": "2026-10-20T17:19:07Z"
+    },
+    {
+      "path": "pages/monetary20200323a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200323a.htm",
+      "sha256": "3807638a20680baa110b3ec3fbe952c60a08ffcf6cdfc4420e5b0def4e9cf830",
+      "byte_count": 85027,
+      "retrieved_at": "2026-10-20T17:19:14Z"
+    },
+    {
+      "path": "pages/monetary20200331a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200331a.htm",
+      "sha256": "80468293231e31c7bef862ff1d27e291eef8c2d80a5b4ee71cac6bff4b31798b",
+      "byte_count": 82569,
+      "retrieved_at": "2026-10-20T17:19:23Z"
+    },
+    {
+      "path": "pages/monetary20200702a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200702a.htm",
+      "sha256": "46ea9dfc6cf64effb18eb4ba850144c7da744ce62d5c8092c69e59ef9c7e9e83",
+      "byte_count": 80453,
+      "retrieved_at": "2026-10-20T17:17:59Z"
+    },
+    {
+      "path": "pages/monetary20200827a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200827a.htm",
+      "sha256": "dc88527e03af81b5adb4a267073b8d020e09446b15bb6d00fadb35c0e375aff3",
+      "byte_count": 85930,
+      "retrieved_at": "2026-10-20T17:19:35Z"
+    },
+    {
+      "path": "pages/monetary20210604a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210604a.htm",
+      "sha256": "9927b8621ab974e137d4774ab61a48bda184c28056835eed66ace757979df5f1",
+      "byte_count": 80455,
+      "retrieved_at": "2026-10-20T17:18:04Z"
+    },
+    {
+      "path": "pages/monetary20220624a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220624a.htm",
+      "sha256": "668317001d89264946877ffdf673f36c648d9e5c7a70eecbddcdbb007051f3ea",
+      "byte_count": 80645,
+      "retrieved_at": "2026-10-20T17:18:07Z"
+    },
+    {
+      "path": "pages/monetary20230623a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230623a.htm",
+      "sha256": "7c27e5feb453845bce79a9a86048663e079054fa308cca3550b91292bd7ab38c",
+      "byte_count": 80601,
+      "retrieved_at": "2026-10-20T17:18:14Z"
+    },
+    {
+      "path": "pages/monetary20240809a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240809a.htm",
+      "sha256": "7b7b0e827372e402b5899cc8face8a1f228b0ac8de48d01493089a4f270be232",
+      "byte_count": 81588,
+      "retrieved_at": "2026-10-20T17:18:23Z"
+    },
+    {
+      "path": "pages/monetary20250822a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250822a.htm",
+      "sha256": "9d10c46aaa4ea6050104b56ebd9d7f0861751e157e8735fc464a7794de740e0b",
+      "byte_count": 82837,
+      "retrieved_at": "2026-10-20T17:19:51Z"
+    },
+    {
+      "path": "pages/monetary20250905a.htm",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250905a.htm",
+      "sha256": "cb6715bd25d8bfb0a55faf07c0358cc99ae5a0d049db2b8294bddfaf8bec7ff6",
+      "byte_count": 80987,
+      "retrieved_at": "2026-10-20T17:18:35Z"
+    }
+  ]
+}

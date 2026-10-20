@@ -1,7 +1,8 @@
 """The progress page `scripts/emit_progress.py` builds from committed evidence (#637; H5 and H9 progress).
 
 It reads figures that are already in `docs/pivot/evidence/` and the candidate files; it scores nothing. A figure
-the evidence does not hold is printed as "not measured", never computed here. `--check` refuses a stale page.
+the evidence does not hold is printed as "not measured", never computed here. The page and its data are built on
+main and never committed (#928): `--check` builds them from the tree and refuses a tracked copy.
 
 Recorded mutations (run on the tests below, then restored):
 
@@ -10,8 +11,8 @@ Recorded mutations (run on the tests below, then restored):
 * `build` dropping the `if not any(measured)` skip, so a candidate with no evidence is tabled: `test_candidate_without_evidence_is_counted_not_tabled` failed with AssertionError.
 * `count_variants` skipping the arms branch (`elif declared_arms(decl):` made `elif False:`): `test_arms_named_candidates_or_arms_are_counted_apart`
   failed with AssertionError.
-* `check` looping over only the first output (`list(outputs(...).items())[:1]`), so the data file is not compared: `test_check_fails_on_a_stale_data_file` failed
-  with AssertionError.
+* `tracked_errors` looking at the page only (`for rel in (PAGE,)`), so a tracked data file passes:
+  `test_a_tracked_data_file_is_an_error` failed with AssertionError.
 """
 import importlib.util
 import json
@@ -176,7 +177,8 @@ class ReaderTest(unittest.TestCase):
         self.assertEqual(self.model["label"], "development, not a verdict")
 
 
-class CheckTest(unittest.TestCase):
+class BuiltOutputTest(unittest.TestCase):
+    """The page and its data are built from the tree, never committed (#928)."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -186,33 +188,40 @@ class CheckTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_check_passes_after_write_and_fails_on_a_stale_page(self):
+    def test_write_outputs_writes_what_outputs_builds(self):
         emit_progress.write_outputs(self.root, order=["a", "b", "c"])
-        self.assertEqual(emit_progress.check(self.root, order=["a", "b", "c"]), [])
-        page = self.root / emit_progress.PAGE
-        page.write_text(page.read_text() + "\nhand edit\n")
-        self.assertTrue(emit_progress.check(self.root, order=["a", "b", "c"]))
+        for rel, text in emit_progress.outputs(self.root, order=["a", "b", "c"]).items():
+            self.assertEqual((self.root / rel).read_text(), text)
 
-    def test_check_fails_on_a_stale_data_file(self):
-        emit_progress.write_outputs(self.root, order=["a", "b", "c"])
-        data = self.root / emit_progress.DATA
-        data.write_text(data.read_text().replace('"a"', '"z"', 1))
-        self.assertTrue(emit_progress.check(self.root, order=["a", "b", "c"]))
+    def test_a_tracked_page_is_an_error(self):
+        self.assertTrue(emit_progress.tracked_errors([emit_progress.PAGE]))
 
-    def test_check_fails_when_evidence_changes(self):
-        emit_progress.write_outputs(self.root, order=["a", "b", "c"])
-        write(self.root, "docs/pivot/evidence/weighted-miss/tier1.json", {"weighted": {}})
-        self.assertTrue(emit_progress.check(self.root, order=["a", "b", "c"]))
+    def test_a_tracked_data_file_is_an_error(self):
+        self.assertTrue(emit_progress.tracked_errors([emit_progress.DATA]))
+
+    def test_nothing_tracked_is_clean(self):
+        self.assertEqual(emit_progress.tracked_errors(["scripts/emit_progress.py"]), [])
 
 
 class RepositoryTest(unittest.TestCase):
 
-    def test_committed_page_is_current(self):
+    def test_page_builds_from_the_tree(self):
         import subprocess
         if subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--is-shallow-repository"],
                           capture_output=True, text=True).stdout.strip() != "false":
             self.skipTest("a shallow clone cannot order the candidate files")
-        self.assertEqual(emit_progress.check(ROOT), [])
+        built = emit_progress.outputs(ROOT)
+        self.assertEqual(sorted(built), sorted([emit_progress.PAGE, emit_progress.DATA]))
+        self.assertTrue(built[emit_progress.PAGE].startswith("# Progress"))
+
+    def test_outputs_are_not_tracked_and_are_ignored(self):
+        import subprocess
+        tracked = subprocess.run(["git", "-C", str(ROOT), "ls-files", emit_progress.PAGE, emit_progress.DATA],
+                                 capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(emit_progress.tracked_errors(tracked), [])
+        for rel in (emit_progress.PAGE, emit_progress.DATA):
+            with self.subTest(path=rel):
+                self.assertEqual(subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q", rel]).returncode, 0)
 
     def test_page_is_linked_from_next_session(self):
         text = (ROOT / "docs" / "pivot" / "next-session.md").read_text()

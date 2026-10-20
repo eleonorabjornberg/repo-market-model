@@ -1,0 +1,15 @@
+{
+  "order": 190,
+  "directive": 841,
+  "pull_request": 846,
+  "hypothesis": "H5",
+  "result": "The model-risk validation report (`docs/model/validation.md`)",
+  "declarations": [],
+  "model": "`gbm_funding`; the report is a document and is not edited in place",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-16-model-00846-H5-step6"
+  ],
+  "concluded": "The report cites development results of `gbm_funding` by issue and page; it is re-issued after the re-run."
+}

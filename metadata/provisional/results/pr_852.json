@@ -1,0 +1,17 @@
+{
+  "order": 70,
+  "directive": 845,
+  "pull_request": 852,
+  "hypothesis": "H5",
+  "result": "Calibration after reserve-management purchases",
+  "declarations": [
+    "metadata/exploration_845.json"
+  ],
+  "model": "mean reversion, (i), (c), `gbm_funding` and persistence-logistic",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "0096-2026-10-16-model-00852-H5-step3"
+  ],
+  "concluded": "Every law over-forecasts the +5 bp share; the over-forecast sits in the residual pool."
+}

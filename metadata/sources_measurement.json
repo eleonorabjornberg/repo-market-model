@@ -161,6 +161,41 @@
     "structural_zeros_reviewed": true,
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/policy_events.json"
   },
+  "fomc_calendar": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 20 October 2026 for #1038 (calendar first, #46). Not a fetched series: repo_model.fomc_calendar computes both columns for a target day from metadata/fomc_calendar.json, which scripts/build_fomc_calendar.py builds from the Board's own pages (tests/fixtures/snapshots/fomc_calendar). A scheduled meeting is public from the earliest press release that lists it, at that release's stated 'For release at' time (for example the 2019 schedule at 12:00 EDT on 25 May 2018); an unscheduled meeting is public from the release that first reported it (4 October 2019 on 11 October 2019 at 11:00 EDT; 15 March 2020 at 17:00 EDT); a cancelled meeting stops being counted from the cancellation's instant, declared as 17:00 EDT on 15 March 2020 because the Board dates nothing (marked question in docs/decisions/fomc-calendar.md). The columns are read at the target row (rule 2 of docs/decisions/information-set.md): the value for day T is computed at the decision instant of the panel day h rows before it from meetings public at that instant, and every meeting used passes repo_model.fomc_calendar.require_public, which raises LookAheadError. Each meeting date is tentative until the Committee confirms it at the meeting before it; no date in the tracked schedules was later moved other than the cancelled 17-18 March 2020 meeting.",
+      "publication": "Board of Governors press releases 'Federal Open Market Committee announces its tentative meeting schedule for <year>' (11 May 2017 for 2018, 25 May 2018, 17 May 2019, 2 July 2020, 4 June 2021, 24 June 2022, 23 June 2023, 9 August 2024 for 2025 and 2026, 5 September 2025 for 2027), and the calendar pages https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm and fomchistorical2018.htm to fomchistorical2020.htm, which the build checks the meetings against."
+    },
+    "coverage": [
+      "FOMC meeting days and the wait to the next meeting, one value per panel day, 2018 onwards (the 2018 schedule was public from 11 May 2017)"
+    ],
+    "field_frequencies": {
+      "fomc_days_to_next_meeting": "business_daily",
+      "fomc_meeting_day": "business_daily"
+    },
+    "fields": [
+      "fomc_meeting_day",
+      "fomc_days_to_next_meeting"
+    ],
+    "frequency": "event",
+    "identities": [],
+    "limitation": "Off in every published declaration (#1038), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. Not a panel column and not fetched: a track adds the columns to a scratch panel with repo_model.fomc_calendar.add_columns. Whether they join a published declaration is a publishing question (docs/decisions/workflow.md) and is Eleonora's. Notation votes are not meetings and are not in the columns.",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 20 October 2026 (#1038). The value for a row is computed from meetings public at or before 16:00 ET on the decision day, and each meeting's own first-public instant is its schedule's release, so the value is public at that instant by construction; the decision instant is never later than the row's own day. The target row's value is a scheduled input (rule 2 of asof.py): it refers to T and is admissible because it was announced before the decision.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "No structural zeros: a 0.0 meeting day is a computed value (no meeting that day), not a missing one.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": true,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/fomc_calendar.json"
+  },
   "nyfed_on_rrp_sameday": {
     "access": "public",
     "availability_provenance": {
@@ -706,5 +741,41 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/richer_targets_706.json"
+  },
+  "ofr_stfm_repo_cleared": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 19 October 2026 for #968 (Lens E of #958), from the OFR's data-release page, https://www.financialresearch.gov/short-term-funding-monitor/datasets/repo/, fetched that day (HTTP 200) and read verbatim. It states: \"The preliminary release is published daily at 3 p.m. as an update to the Short-term Funding Monitor. Data for centrally cleared repo markets are generally made available with a one-day lag. Data for tri-party repo are generally made available with a two-day lag. Data are not published for market holidays. Releases are not published on government holidays and data for affected days are instead published on the next day the government is open.\" So a cleared (DVP, GCF) preliminary rate dated D is public at 3 p.m. on the next business day, the same date as SOFR's value for D, and a tri-party rate a day later. #187 declared all three at 16:00 two business days after the date because the API states no publication time (ofr_stfm_repo, ofr_stfm_repo_segments); that was the conservative side, a day staler than the page says, and is left as it was for every record already scored. The government-holiday rule is NOT covered by counting panel rows (#1003): the panel's rows are SOFR publication days, and on a statutory holiday the market opened (2021-06-18, 2021-12-31, 2023-11-10 in metadata/market_holidays.json) the government is closed and the OFR does not release, so the value dated the day before is first public on the next day the government is open. The source therefore sets government_open_days_only (#1016): repo_model.government_calendar.government_open_dating() counts the lag on panel rows the government is open, for the statutory holidays in the table only. The executive-order closures (2020-12-24, 2024-12-24, 2025-01-09, 2025-12-24, 2025-12-26) are not counted: whether they are government holidays is Eleonora's question. Only the two preliminary rates are declared here: the final series are published later and the volumes are read by no column; the tri-party fields stay in ofr_stfm_repo_segments at two days. Values dated before 2020-09-09 were filled in after the OFR began publishing in real time and are not read (#508, #522).",
+      "publication": "OFR U.S. Repo Markets Data Release (Short-term Funding Monitor): preliminary release daily at 3 p.m.; centrally cleared repo (DVP, GCF) one day after its date. 15:00 ET one business day after the reference date is declared."
+    },
+    "coverage": [
+      "DVP Service and GCF overnight/open average rate, preliminary, from 2020-09-09 as read (published in real time from then); the GCF series is mostly empty (disclosure edits)"
+    ],
+    "field_frequencies": {
+      "REPO-DVP_AR_OO-P": "business_daily",
+      "REPO-GCF_AR_OO-P": "business_daily"
+    },
+    "fields": [
+      "REPO-DVP_AR_OO-P",
+      "REPO-GCF_AR_OO-P"
+    ],
+    "frequency": "business daily",
+  "government_open_days_only": true,
+    "identities": [],
+    "limitation": "Off in every published declaration (#968). A separate source from ofr_stfm_repo (frozen with metadata/sources.json by the final-test pre-registration) and from ofr_stfm_repo_segments only so that no record already scored changes its availability: it re-declares the same two preliminary series at the page's stated lag, for the columns ofr_dvp_rate_1d, ofr_dvp_minus_bgcr_bp_1d and ofr_gcf_rate_1d (repo_model.dvp_segment.CLEARED_COLUMN_FIELDS), values identical to the two-day columns and read a day earlier. No published figure moves; whether any OFR series joins a published declaration is Eleonora's decision. The snapshots are those of ofr_stfm_repo and ofr_stfm_repo_segments (REPO-DVP_AR_OO-P and REPO-GCF_AR_OO-P); a re-fetch can differ.",
+    "provider": "Office of Financial Research",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Declared 19 October 2026 (#968) from the OFR's data-release page (availability_provenance): the preliminary release is published daily at 3 p.m. and centrally cleared repo is made available with a one-day lag. 15:00 ET on the next business day, so a 16:00 ET decision on that day reads it and a 14:00 ET decision does not. The API keeps no vintages, so the page's statement is the evidence, not a measured first-print time.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the OFR API's schema; the empty declaration is not a finding. A null value is the OFR's own missing day.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://data.financialresearch.gov/v1/series/timeseries"
   }
 }
