@@ -78,7 +78,7 @@ v1 = _script("pressure_model_v1")
 ew = _script("early_warning_inputs")
 
 from repo_model.exploration import panel_end  # noqa: E402
-from repo_model import contract, dvp_segment, early_warning, pressure  # noqa: E402
+from repo_model import contract, dvp_segment, early_warning, measurement_fields, pressure  # noqa: E402
 from repo_model.baseline import (  # noqa: E402
     benchmark_comparison_document,
     panel_sha256,
@@ -116,6 +116,10 @@ INTERVAL_REPLICATIONS = 2000
 RAW_COLUMNS = ("bgcr_volume", "ofr_dvp_rate")
 EW_COLUMNS = ("sofr_tgcr_bps", "bgcr_tgcr_bps")
 DVP_COLUMNS = tuple(dvp_segment.COLUMN_FIELDS)
+#: The corrected-lag copies the scratch panel carries (#968); the GCF copy needs a panel with the GCF rate.
+CLEARED_PANEL_COLUMNS = ("ofr_dvp_rate_1d", "ofr_dvp_minus_bgcr_bp_1d")
+#: `spec`'s release-lag marker for a run read under `ofr_stfm_repo_cleared` (#968).
+CLEARED_LAG = "cleared"
 #: Each candidate's columns.
 COLUMNS = {candidate.name: candidate.columns for candidate in dvp_segment.CANDIDATES}
 WINDOWS = {"full": FULL_WINDOW, "ofr": OFR_WINDOW}
@@ -135,6 +139,7 @@ def switched_on():
     fields = {
         **{name: early_warning.COLUMN_FIELDS[name] for name in EW_COLUMNS},
         **dvp_segment.COLUMN_FIELDS,
+        **dvp_segment.CLEARED_COLUMN_FIELDS,
     }
     with mock.patch.multiple(
         contract,
@@ -170,6 +175,11 @@ def spec(name):
         group = groups[name]
         columns = tuple(c for item in group.inputs for c in COLUMNS[item])
         return columns, _window_name(group.window), None
+    if name in dvp_segment.CORRECTED_LAG_RUNS:
+        group_name, replaces = dvp_segment.CORRECTED_LAG_RUNS[name]
+        columns, window, _lag = spec(group_name)
+        swap = dict(replaces)
+        return tuple(swap.get(c, c) for c in columns), window, CLEARED_LAG
     sensitivities = {s.name: s for s in SENSITIVITIES}
     if name in sensitivities:
         sensitivity = sensitivities[name]
@@ -185,6 +195,7 @@ def run_names():
         ["control@full", "control@ofr", "persistence_logistic@full", "persistence_logistic@ofr"]
         + [group.name for group in GROUPS]
         + [s.name for s in SENSITIVITIES]
+        + list(dvp_segment.CORRECTED_LAG_RUNS)
     )
 
 
@@ -197,6 +208,9 @@ def _rows(panel, window):
 
 
 def _registry(lag_days):
+    if lag_days == CLEARED_LAG:
+        # the published registry with `ofr_stfm_repo_cleared` added (#968)
+        return json.loads(json.dumps(measurement_fields.load_registry(published=REGISTRY)))
     registry = json.loads(REGISTRY.read_text())
     if lag_days is not None:
         registry[dvp_segment.OFR_SOURCE_ID]["release_lag"]["days"] = lag_days
@@ -347,7 +361,11 @@ def panel_command(args) -> int:
             for i, row in enumerate(with_ew)
         ]
     )
-    header = list(ew.load_header(args.panel)) + list(RAW_COLUMNS) + list(EW_COLUMNS) + list(DVP_COLUMNS)
+    built = dvp_segment.add_cleared_columns(built)
+    header = (
+        list(ew.load_header(args.panel)) + list(RAW_COLUMNS) + list(EW_COLUMNS) + list(DVP_COLUMNS)
+        + list(CLEARED_PANEL_COLUMNS)
+    )
     header = list(dict.fromkeys(header))
     with args.output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle, lineterminator="\n")
@@ -804,13 +822,17 @@ def main(argv=None) -> int:
     three.set_defaults(handler=run_command)
     four = sub.add_parser("crps")
     four.add_argument("--panel", type=Path, required=True)
-    four.add_argument("--run", choices=[n for n in run_names() if "@" not in n or n.split("@")[1] in ("lag1", "backfill")], required=True)
+    four.add_argument("--run", choices=[n for n in run_names() if "@" not in n or n.split("@")[1] in ("lag1", "backfill", "1d")], required=True)
     four.add_argument("--output", type=Path, required=True)
     four.set_defaults(handler=crps_command)
     pair = sub.add_parser("pair", help="one run's paired comparisons at one horizon, into RUNS")
     pair.add_argument("--panel", type=Path, required=True)
     pair.add_argument("--runs", type=Path, required=True)
-    pair.add_argument("--run", choices=[g.name for g in GROUPS] + [s.name for s in SENSITIVITIES], required=True)
+    pair.add_argument(
+        "--run",
+        choices=[g.name for g in GROUPS] + [s.name for s in SENSITIVITIES] + list(dvp_segment.CORRECTED_LAG_RUNS),
+        required=True,
+    )
     pair.add_argument("--horizon", type=int, choices=HORIZONS, required=True)
     pair.set_defaults(handler=pair_command)
     five = sub.add_parser("assemble")
