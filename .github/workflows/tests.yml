@@ -30,10 +30,17 @@ env:
 jobs:
   suite-shard:
     # The suite as parallel shards (#927): `scripts/ci_shards.py` gives each shard its test modules,
-    # every module in exactly one shard, the long walk-forward and simulation modules spread over
-    # shards of their own. `python3 -B -m unittest discover -s tests` still runs everything in one
-    # process for a local run; the shards are how CI finishes in minutes instead of one long job.
-    name: "unit tests: suite shard ${{ matrix.shard }} (3.11)"
+    # every module in exactly one shard, balanced by the seconds each module took in CI
+    # (`tests/ci_shard_weights.json`). `python3 -B -m unittest discover -s tests` still runs everything
+    # in one process for a local run; the shards are how CI finishes in minutes instead of one long job.
+    #
+    # One pass, with the network namespace empty, so a test that reaches a host fails here by name
+    # even if the in-process guard (tests/netguard.py) were bypassed (#262). The suite used to run
+    # twice, once normally and once like this; in the 25 failed runs before the change the
+    # networking-off shard never failed without its normal twin, and the second pass was about 25 of
+    # 55 to 65 runner-minutes per pull request. Both required checks, `unit tests: suite (3.11)` and
+    # `unit tests: networking off (3.11)`, wait on these shards.
+    name: "unit tests: suite shard ${{ matrix.shard }}, networking off (3.11)"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -68,11 +75,14 @@ jobs:
       # failure. That is intended: the suite carries zero expectedFailure, and a
       # placeholder that starts passing is a red build until it is replaced
       # with the real test.
-      - name: Run this shard's test modules
+      #
+      # `sudo` for the namespace; the environment and PATH are passed through so it is this job's
+      # python. The module list is computed by the shell before `sudo`, outside the namespace.
+      - name: Run this shard's test modules with networking disabled
         env:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: src:tests
-        run: python3 -B -m unittest $(python3 scripts/ci_shards.py modules --shard ${{ matrix.shard }}) -v
+        run: sudo --preserve-env=PYTHONDONTWRITEBYTECODE,PYTHONPATH,REPO_MODEL_SKIP_NIGHTLY env "PATH=$PATH" unshare --net python3 -B -m unittest $(python3 scripts/ci_shards.py modules --shard ${{ matrix.shard }}) -v
 
   pages:
     # The generated pages are current. Run once, not per shard. Both need the history.
@@ -138,40 +148,14 @@ jobs:
             [ "$result" = "success" ] || exit 1
           done
 
-  offline-shard:
-    # The same suite again with the network namespace empty, so a test that
-    # reaches a host fails here by name even if the in-process guard
-    # (tests/netguard.py) were bypassed (#262), in the same shards as `suite-shard` (#927).
-    # `sudo` for the namespace; the environment and PATH are passed through so it is this job's python.
-    name: "unit tests: networking off shard ${{ matrix.shard }} (3.11)"
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6]
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.11"
-
-      - name: Run this shard with networking disabled
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-          PYTHONPATH: src:tests
-        run: sudo --preserve-env=PYTHONDONTWRITEBYTECODE,PYTHONPATH,REPO_MODEL_SKIP_NIGHTLY env "PATH=$PATH" unshare --net python3 -B -m unittest $(python3 scripts/ci_shards.py modules --shard ${{ matrix.shard }})
-
   offline:
     # The required check for the networking-off pass.
     # It keeps the name the ruleset requires, and it succeeds only when every job it needs
-    # succeeded; a cancelled or skipped shard fails it (#927).
+    # succeeded; a cancelled or skipped shard fails it (#927). The suite shards above are the
+    # networking-off pass, so it waits on them; there is no second pass.
     name: "unit tests: networking off (3.11)"
     if: ${{ always() }}
-    needs: [offline-shard]
+    needs: [suite-shard]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
