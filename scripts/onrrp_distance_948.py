@@ -598,6 +598,10 @@ def report_command(args) -> int:
         + ". `gbm` (the control) stays on one-step pairs, as declared. Lead 1 therefore also pairs the arm against `gbm_funding_aligned` (#931's arm, re-walked), which "
         "separates the transform from the alignment.",
         "",
+        "**Amendment 1 (declared after a first scoring pass, named as such).** The first pass trained the fit on the distance but served it the plain last spread, an input the fit takes beside "
+        "the regressors; that pass scored the arm at -92.7% against `gbm` and is discarded. The served row now carries the last observed distance, as the training rows do; a constant shift of "
+        "the target leaves the mapped-back predictions unchanged. The figures on this page are from the walks after the amendment.",
+        "",
         "The walks' own settings name no `training_pairs` for either model at any lead. The control reproduces #449's recorded mean grid CRPS of `gbm_funding`, B1 and B2 at "
         "every lead to the digit, and `gbm_funding_aligned` reproduces #931's at lead 1; the score refuses to run otherwise.",
         "",
