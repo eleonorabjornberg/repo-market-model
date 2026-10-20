@@ -301,14 +301,18 @@ def candidate(b: Sequence[float], e: Sequence[float], delta: float, noise: float
 
 
 def calibrate(job) -> Tuple[str, Dict[str, object]]:
-    """The design's critical value at each look after the first: the contiguous windows of S(B2) - S(B1), and, beside it,
-    the stationary-10 windows of #886."""
+    """The design's critical value at each look after the first: the contiguous windows of the series `e` the paths are built
+    on (S(B1) - S(B2), positive where B2 is better), and, beside it, the stationary-10 windows of #886.
 
-    design, e, windows = job
+    `job` is `(design, e, windows)`, or `(design, e, windows, -1.0)` for the orientation #999 used, which calibrated on
+    `-e` while the paths used `e` (finding #1000); only the row check of #1013 asks for it."""
+
+    design, e, windows = job[:3]
+    sign = job[3] if len(job) > 3 else 1.0
     cc = _load("contiguous_calibration_963")
     looks = design.checkpoints
     levels = sp.nominal_levels(looks)
-    series = [-v for v in e]  # S(B2) - S(B1)
+    series = [sign * v for v in e]
     contiguous, stationary, counts = {}, {}, {}
     for k, n in enumerate(looks[1:], start=1):
         ordered = cc.contiguous_window_statistics(series, days=n)
