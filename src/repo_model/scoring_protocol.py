@@ -94,6 +94,11 @@ CRITICAL_VALUES: Dict[str, Dict[int, Optional[float]]] = {
     GRID_COMPARISON: {60: None, 125: 3.419438620805254, 250: 2.425730476113518},
     FIVE_LEVEL_COMPARISON: {60: None, 125: 9.50052772574656, 250: 5.454950300123988},
 }
+#: The critical value of the leg of "Supported" against B2, per comparison and checkpoint, where it differs from the
+#: leg against B1 (finding #913, #929). That leg has d = S(B2) - S(candidate), with B2 the benchmark, so it is
+#: calibrated in its own orientation. Empty until a ruling declares values: a look with no entry here reads the
+#: value of `CRITICAL_VALUES`, so the verdict is unchanged.
+B2_LEG_CRITICAL_VALUES: Dict[str, Dict[int, Optional[float]]] = {}
 #: Futility (Q-C): one-sided at this level at every look, non-binding.
 FUTILITY_LEVEL = 0.05
 #: The critical value of the one-sided upper bound of skill at `FUTILITY_LEVEL`, per checkpoint,
@@ -924,7 +929,8 @@ def verdict(
     6159852603):
 
     - Supported, at looks 2 and 3: the lower bound of mean(d), `mean - c * se` with `c` the
-      checkpoint's `CRITICAL_VALUES[GRID_COMPARISON]`, is above zero against B1 and against B2, and
+      checkpoint's `CRITICAL_VALUES[GRID_COMPARISON]` (against B2: `B2_LEG_CRITICAL_VALUES`, where
+      declared), is above zero against B1 and against B2, and
       the point skill against B1 is at least the MME. Look 1 has no efficacy value and checks
       futility only (Q-B).
     - Killed (futility, Q-C): the upper bound of skill against B1, `skill + c_f * se(skill)` with
@@ -950,10 +956,12 @@ def verdict(
     if against_b1.days != against_b2.days:
         raise ProtocolError("the tests against B1 and B2 must cover the same days")
     critical = CRITICAL_VALUES[GRID_COMPARISON].get(days)
+    b2_critical = B2_LEG_CRITICAL_VALUES.get(GRID_COMPARISON, {}).get(days, critical)
     if (
         critical is not None
+        and b2_critical is not None
         and against_b1.lower_bound(critical) > 0.0
-        and against_b2.lower_bound(critical) > 0.0
+        and against_b2.lower_bound(b2_critical) > 0.0
         and against_b1.skill >= mme
     ):
         return SUPPORTED

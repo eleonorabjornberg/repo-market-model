@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/evaluation_splits.json",
+  "script": null,
+  "pairing": "none",
+  "why": "the regime and day-type splits: a declaration, no model"
+}

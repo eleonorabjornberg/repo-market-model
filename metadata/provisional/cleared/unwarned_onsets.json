@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/unwarned_onsets.json",
+  "script": "scripts/unwarned_onsets.py",
+  "pairing": "direct",
+  "why": "the onset diagnostic: pressure models on direct pairs"
+}

@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/turning_point_variant.json",
+  "script": "scripts/turning_point_variant.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs (`training_pairs=\"direct\"`)"
+}

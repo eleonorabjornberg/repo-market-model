@@ -1,0 +1,177 @@
+name: long run
+
+# A long step (a walk-forward refit, a power study, a long simulation) run on a GitHub runner instead
+# of on Eleonora's Mac (the `needs-mac:` route of docs/decisions/workflow.md). Started by hand only:
+# Actions > long run > Run workflow, naming the branch, the command and a timeout.
+#
+# It checks out the branch with its whole history, installs the ml extra at exactly the versions the
+# `ml` job of tests.yml pins, runs the command with PYTHONPATH=src, keeps the output in a log, and
+# uploads the log as an artifact. If the command succeeds, every changed or new file under docs/ and
+# metadata/ is committed back to the same branch with the neutral author ("Mechanical commits carry
+# a neutral author", workflow.md) and pushed. Nothing else in the tree is committed. It refuses main.
+#
+# A push made with the workflow's token does not start other workflows, so the pull request's checks
+# do not rerun on the results commit by themselves; the next push to the branch runs them.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch to run on and push the results to (never main)"
+        required: true
+        type: string
+      command:
+        description: "Command to run from the repository root, e.g. python3 -B scripts/some_study.py --seeds 500"
+        required: true
+        type: string
+      timeout_minutes:
+        description: "Minutes the command may run, 1 to 360 (GitHub stops the job at 360; the command gets at most 345 so the log and results are kept)"
+        required: true
+        default: 120
+        type: number
+
+permissions:
+  contents: write
+
+# One long run per branch at a time; a second waits rather than racing the first's push.
+concurrency:
+  group: long-run-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: long run
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Refuse main and a timeout out of range
+        id: guard
+        env:
+          REF: ${{ inputs.ref }}
+          TIMEOUT: ${{ inputs.timeout_minutes }}
+        run: |
+          branch="${REF#refs/heads/}"
+          branch="${branch#origin/}"
+          # The push below goes to refs/heads/$branch, so refusing the name refuses main.
+          if [ -z "$branch" ] || [ "$branch" = "main" ]; then
+            echo "::error::long run refuses to run on main: name the pull request's branch"
+            exit 1
+          fi
+          case "$TIMEOUT" in
+            ''|*[!0-9]*) echo "::error::timeout_minutes must be a whole number of minutes, got '$TIMEOUT'"; exit 1 ;;
+          esac
+          if [ "$TIMEOUT" -lt 1 ] || [ "$TIMEOUT" -gt 360 ]; then
+            echo "::error::timeout_minutes must be 1 to 360, got $TIMEOUT"
+            exit 1
+          fi
+          minutes="$TIMEOUT"
+          if [ "$minutes" -gt 345 ]; then
+            echo "::notice::the command gets 345 minutes, not $TIMEOUT, so the job can upload the log and push before GitHub's 360-minute limit"
+            minutes=345
+          fi
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "minutes=$minutes" >> "$GITHUB_OUTPUT"
+
+      # The whole history, not a depth-1 clone: the results page and docs/status.json are stamped
+      # with the latest commit that changed an input (#268).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: refs/heads/${{ steps.guard.outputs.branch }}
+          fetch-depth: 0
+
+      - name: The branch exists on origin and is not main
+        env:
+          BRANCH: ${{ steps.guard.outputs.branch }}
+        run: |
+          git ls-remote --exit-code --heads origin "refs/heads/$BRANCH" > /dev/null || {
+            echo "::error::no branch $BRANCH on origin"
+            exit 1
+          }
+          [ "$(git rev-parse --abbrev-ref HEAD)" = "$BRANCH" ] || { echo "::error::checked out $(git rev-parse --abbrev-ref HEAD), not $BRANCH"; exit 1; }
+          [ "$BRANCH" != "main" ] || { echo "::error::long run refuses to run on main"; exit 1; }
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # The same install and pins as the `ml` job of tests.yml.
+      - name: Install the ml extra
+        run: python3 -m pip install ".[ml]" "numpy==2.4.6" "scikit-learn==1.9.1"
+
+      - name: Run the command
+        env:
+          PYTHONPATH: src
+          PYTHONDONTWRITEBYTECODE: "1"
+          BRANCH: ${{ steps.guard.outputs.branch }}
+          COMMAND: ${{ inputs.command }}
+          MINUTES: ${{ steps.guard.outputs.minutes }}
+          LOG_DIR: ${{ runner.temp }}/long-run
+        run: |
+          set -o pipefail
+          mkdir -p "$LOG_DIR"
+          log="$LOG_DIR/long-run.log"
+          {
+            echo "branch: $BRANCH"
+            echo "commit: $(git rev-parse HEAD)"
+            echo "python: $(python3 --version 2>&1)"
+            python3 -c "import numpy, sklearn; print('numpy:', numpy.__version__); print('scikit-learn:', sklearn.__version__)"
+            echo "command: $COMMAND"
+            echo "timeout: $MINUTES minutes"
+            echo "started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "----"
+          } | tee "$log"
+          status=0
+          timeout --kill-after=60 "${MINUTES}m" bash -c "$COMMAND" 2>&1 | tee -a "$log" || status=$?
+          {
+            echo "----"
+            echo "finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "exit status: $status$([ "$status" = 124 ] && echo ' (timed out)')"
+          } | tee -a "$log"
+          exit "$status"
+
+      - name: Commit and push the results under docs/ and metadata/
+        env:
+          BRANCH: ${{ steps.guard.outputs.branch }}
+          COMMAND: ${{ inputs.command }}
+          LOG_DIR: ${{ runner.temp }}/long-run
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          [ "$BRANCH" != "main" ] || { echo "::error::long run refuses to run on main"; exit 1; }
+          git add -A -- docs/ metadata/
+          if git diff --cached --quiet; then
+            echo "Nothing changed under docs/ or metadata/; nothing to commit."
+            exit 0
+          fi
+          git diff --cached --stat
+          git -c user.name="repo-market-model orchestrator" \
+            -c user.email="orchestrator@users.noreply.github.com" \
+            commit -q -m "Long run results on $BRANCH" -m "Command: $COMMAND" -m "Run: $RUN_URL"
+          # The results as a patch too, so they survive a push that is refused.
+          git format-patch -1 --stdout > "$LOG_DIR/results.patch"
+          if ! git push origin "HEAD:refs/heads/$BRANCH"; then
+            # The branch moved during the run: put the results on top of it once, else stop with the patch kept.
+            git fetch origin "refs/heads/$BRANCH"
+            git -c user.name="repo-market-model orchestrator" \
+              -c user.email="orchestrator@users.noreply.github.com" \
+              rebase FETCH_HEAD
+            git push origin "HEAD:refs/heads/$BRANCH"
+          fi
+
+      - name: Record what else changed
+        if: always()
+        env:
+          LOG_DIR: ${{ runner.temp }}/long-run
+        run: |
+          mkdir -p "$LOG_DIR"
+          git status --porcelain --untracked-files=all > "$LOG_DIR/git-status.txt" || true
+
+      - name: Upload the log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: long-run-${{ github.run_id }}
+          path: ${{ runner.temp }}/long-run/
+          if-no-files-found: warn
+          retention-days: 30

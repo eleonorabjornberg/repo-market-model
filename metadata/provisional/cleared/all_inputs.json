@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/all_inputs.json",
+  "script": "scripts/all_inputs.py",
+  "pairing": "direct",
+  "why": "`ml.pressure_all_inputs_exceedance`, direct pairs"
+}

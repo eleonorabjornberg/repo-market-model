@@ -1,0 +1,8 @@
+{
+  "script": "scripts/final_test_preregistration.py",
+  "declarations": [],
+  "model": "the six candidates of the final-test pre-registration (the gbm on the published features)",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}
