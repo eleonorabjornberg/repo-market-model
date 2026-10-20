@@ -152,7 +152,8 @@ def parse_manual(hid, text):
 def log_digest(repo):
     """SHA-256 of the log as `check_research_log.py assemble` builds it from the entry files (#928)."""
     header, files = check_research_log.read_entry_files(Path(repo) / LOG)
-    return hashlib.sha256(check_research_log.assemble(header, files).encode("utf-8")).hexdigest()
+    corrections = check_research_log.read_corrections(Path(repo) / LOG)
+    return hashlib.sha256(check_research_log.assemble(header, files, corrections).encode("utf-8")).hexdigest()
 
 
 def parse_log_entries(text, file=None, by_h=None):
