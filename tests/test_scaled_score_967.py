@@ -177,6 +177,62 @@ class TestTheReadings(unittest.TestCase):
         self.assertFalse(script.misranking(same)["holds"])
 
 
+class TestTheCalibrationSeries(unittest.TestCase):
+    """#1014: the critical value is calibrated on the series the paths are drawn from, `e = S(B1) - S(B2)`, not on `-e`.
+
+    The windows are studentized about the series mean, so a skewed series has a different upper quantile from its negation.
+    Recorded mutation: `series = list(e)` in `calibrate` changed back to `series = [-v for v in e]` fails
+    `test_the_critical_value_is_the_upper_quantile_of_the_path_series` with `AssertionError` (the contiguous critical value
+    equals the one of `-e`, not the one of `e`).
+    """
+
+    DESIGN = script.Design("T", 40, (1,), "raw")
+
+    @staticmethod
+    def skewed(n=300):
+        # rare large negative differences: S(B1) - S(B2) is left-skewed, so its two tails differ
+        return [(-6.0 if i % 23 == 0 else 0.4) + ((i * 7) % 5) / 10.0 for i in range(n)]
+
+    def upper(self, series):
+        cc = script._load("contiguous_calibration_963")
+        levels = sp.nominal_levels(self.DESIGN.checkpoints)
+        out = {}
+        for k, n in enumerate(self.DESIGN.checkpoints[1:], start=1):
+            ordered = cc.contiguous_window_statistics(series, days=n)
+            out[str(n)] = sp._bound(ordered, 1.0 - levels[k], len(ordered))
+        return out
+
+    def test_the_critical_value_is_the_upper_quantile_of_the_path_series(self):
+        e = self.skewed()
+        _, record = script.calibrate((self.DESIGN, e, 2000))
+        self.assertEqual(record["critical"], self.upper(e))
+        self.assertNotEqual(record["critical"], self.upper([-v for v in e]))
+
+
+class TestTheRowCheck(unittest.TestCase):
+    """#1014 criterion 3: the old orientation, run again, gives the values #999 published."""
+
+    def test_the_row_check_reproduces_a_record_made_on_the_negated_series_and_refuses_one_made_on_the_series(self):
+        import tempfile
+
+        e = TestTheCalibrationSeries.skewed(1500)
+        series = {d: (None, None, e) for d in script.ROW_CHECK_DESIGNS}
+
+        def record(sign):
+            designs = {}
+            for d in script.ROW_CHECK_DESIGNS:
+                _, info = script.calibrate_series(script.DESIGN_BY_ID[d], [sign * v for v in e], 2000)
+                designs[d] = {"critical": info["critical"], "critical_stationary": info["critical_stationary"]}
+            return {"designs": designs}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "result.json"
+            path.write_text(json.dumps(record(-1.0)), encoding="utf-8")
+            self.assertTrue(all(v["matches"] for v in script.row_check(series, 2000, path).values()))
+            path.write_text(json.dumps(record(1.0)), encoding="utf-8")
+            self.assertFalse(any(v["matches"] for v in script.row_check(series, 2000, path).values()))
+
+
 class TestTheDeclaration(unittest.TestCase):
     def test_the_declaration_is_the_one_the_script_runs(self):
         declaration = json.loads((ROOT / "metadata" / "scaled_score_967.json").read_text(encoding="utf-8"))
