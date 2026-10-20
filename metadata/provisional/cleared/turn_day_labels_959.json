@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/turn_day_labels_959.json",
+  "script": "scripts/turn_day_labels_959.py",
+  "pairing": "as_of_read",
+  "why": "B2's pools and the mean-reversion level by the target day's label"
+}

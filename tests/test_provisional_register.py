@@ -1,29 +1,41 @@
-"""The provisional register (#1028): `docs/research/provisional-calendar-register.md`, `scripts/provisional_register.py`.
+"""The provisional register (#1028): `metadata/provisional/`, `docs/research/provisional-calendar-register.md`,
+`scripts/provisional_register.py`.
 
 A model that does not read calendar days at the target day is wrong (Eleonora, 20 October 2026), so every result produced by
 one is provisional until it is re-run (#1027). The register names those results, and the results page marks their figures.
-These tests keep the register complete against the tree:
 
-* every `metadata/*.json` declaration that names a calendar or scheduled column is cited in the register, as a producer, a
+Each row of the register is its own file under `metadata/provisional/` (`producers/<script stem>.json`,
+`results/pr_<pull request>.json`, `cleared/<declaration stem>.json`), so a directive that adds a producer adds a file and does
+not edit a shared page; the page's three tables are generated from the files (`python3 scripts/provisional_register.py`;
+`--check` refuses a stale page). These tests keep the register complete against the tree:
+
+* every `metadata/*.json` declaration that names a calendar or scheduled column is cited by an entry file, as a producer, a
   registered result or a declaration that is read at the target day (or is no model);
-* every script that calls a gradient-boosted quantile fitter, whose default pairs are one-step, is a producer row;
+* every script that calls a gradient-boosted quantile fitter, whose default pairs are one-step, has its own producer file;
 * a declaration cleared as "read at the target day" is never one-step and never calls those fitters;
-* the register lists each result once, in the plan's order (H5, then H9, then the rest), and its marks reach the page.
+* the register lists each result once, in the plan's order (H5, then H9, then the rest), and its marks reach the page;
+* the page's tables are the ones the files generate.
 
 Recorded mutations (each applied to the tree, the named test run, and reverted):
 
-* `TestEveryDeclarationIsClassified.test_every_declaration_naming_a_calendar_column_is_cited`: in the register replace the
-  `metadata/exploration_845.json` cell of result row 7 with `none`; the test failed with AssertionError (the list of uncited
-  declarations was `['metadata/exploration_845.json']`).
-* `TestEveryDeclarationIsClassified.test_every_one_step_fitter_caller_is_a_producer`: delete the `scripts/h9_nested_842.py`
-  producer row; the test failed with AssertionError (`['scripts/h9_nested_842.py']` is a caller and not a producer).
+* `TestEveryDeclarationIsClassified.test_every_declaration_naming_a_calendar_column_is_cited`: delete
+  `metadata/provisional/results/pr_852.json`; the test failed with AssertionError (the list of uncited declarations was
+  `['metadata/exploration_845.json']`).
+* `TestEveryDeclarationIsClassified.test_every_one_step_fitter_caller_has_a_producer_file`: delete
+  `metadata/provisional/producers/h9_nested_842.json`; the test failed with AssertionError (`['scripts/h9_nested_842.py']` is a
+  caller with no producer file).
+* `TestThePageIsGenerated.test_the_page_is_current`: on the page change the class of the `scripts/h9_nested_842.py` row to
+  `b`; the test failed with AssertionError (the producers table is stale).
 * `TestThePageMark.test_a_registered_log_entry_carries_the_mark`: in `scripts/research_view.py` change
   `if e.get("provisional") else ""` in `log_html` to `if False else ""`; the test failed with AssertionError (the mark is not in
   the entry's HTML).
 """
 
 import importlib.util
+import json
 import re
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -37,7 +49,17 @@ research_view = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(research_view)
 
 TEXT = (ROOT / register.REGISTER).read_text(encoding="utf-8")
+ENTRIES = register.entries(ROOT)
 TABLES = register.load(ROOT)
+DECLARATION = re.compile(r"metadata/[A-Za-z0-9_]+\.json")
+
+
+def cited(entries):
+    """The `metadata/*.json` declarations the given entry files name."""
+    return set(DECLARATION.findall(json.dumps([{k: v for k, v in e.items() if k != "_file"} for e in entries])))
+
+
+ALL_ENTRIES = [entry for kind in ENTRIES.values() for entry in kind]
 
 
 class TestTheRegisterIsWellFormed(unittest.TestCase):
@@ -71,12 +93,13 @@ class TestTheRegisterIsWellFormed(unittest.TestCase):
         self.assertEqual(sorted(seen), sorted(set(seen)))
 
     def test_the_rerun_order_follows_the_plan(self):
-        """H5 first, then H9, then the rest; the order numbers rise down the table."""
+        """H5 first, then H9, then the rest. Each result file carries its own order key; the table numbers the rows 1, 2, ...
+        in the order of the keys, so a new result takes a free key and renumbers no other file."""
         rank = {"H5": 0, "H9": 1}
+        keys = [entry["order"] for entry in ENTRIES["results"]]
+        self.assertEqual(len(set(keys)), len(keys), "two result files share an order key")
         rows = TABLES["results"]
-        orders = [int(row["order"]) for row in rows]
-        self.assertEqual(orders, sorted(orders), "the rows are listed in the order of their re-run")
-        self.assertEqual(len(set(orders)), len(orders), "an order number is used once")
+        self.assertEqual([int(row["order"]) for row in rows], list(range(1, len(rows) + 1)))
         ranks = [rank.get(row["hypothesis"], 2) for row in rows]
         self.assertEqual(ranks, sorted(ranks), "H5 before H9 before every other hypothesis")
 
@@ -88,26 +111,106 @@ class TestTheRegisterIsWellFormed(unittest.TestCase):
                 self.assertIn(row["pairing"], register.PRODUCER_PAIRINGS)
 
 
+class TestEachRowIsItsOwnFile(unittest.TestCase):
+    def test_each_file_is_named_after_its_key(self):
+        for kind, rows in ENTRIES.items():
+            for entry in rows:
+                with self.subTest(kind=kind, file=entry["_file"]):
+                    self.assertEqual(entry["_file"], register.entry_path(kind, entry))
+
+    def _copy(self, tmp):
+        repo = Path(tmp)
+        shutil.copytree(ROOT / register.ENTRIES, repo / register.ENTRIES)
+        (repo / register.REGISTER).parent.mkdir(parents=True)
+        shutil.copy(ROOT / register.REGISTER, repo / register.REGISTER)
+        return repo
+
+    def test_a_file_with_a_missing_or_unknown_field_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._copy(tmp)
+            path = repo / register.ENTRIES / "producers" / "h9_nested_842.json"
+            entry = json.loads(path.read_text(encoding="utf-8"))
+            entry["colour"] = "red"
+            path.write_text(json.dumps(entry), encoding="utf-8")
+            with self.assertRaises(register.RegisterError):
+                register.entries(repo)
+            del entry["colour"], entry["class"]
+            path.write_text(json.dumps(entry), encoding="utf-8")
+            with self.assertRaises(register.RegisterError):
+                register.entries(repo)
+
+    def test_a_file_with_an_unknown_class_or_pairing_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._copy(tmp)
+            path = repo / register.ENTRIES / "producers" / "h9_nested_842.json"
+            entry = json.loads(path.read_text(encoding="utf-8"))
+            path.write_text(json.dumps(dict(entry, **{"class": "c"})), encoding="utf-8")
+            with self.assertRaises(register.RegisterError):
+                register.entries(repo)
+            path.write_text(json.dumps(dict(entry, pairing="direct")), encoding="utf-8")
+            with self.assertRaises(register.RegisterError):
+                register.entries(repo)
+
+    def test_a_file_named_after_another_key_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._copy(tmp)
+            folder = repo / register.ENTRIES / "producers"
+            (folder / "h9_nested_842.json").rename(folder / "h9_nested.json")
+            with self.assertRaises(register.RegisterError):
+                register.entries(repo)
+
+    def test_a_new_producer_is_a_new_file_and_reaches_the_page(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._copy(tmp)
+            self.assertEqual(register.stale(repo), [])
+            entry = {"script": "scripts/new_model_9999.py", "declarations": ["metadata/new_model_9999.json"],
+                     "model": "a new model", "calendar_inputs": "none", "pairing": "one_step", "class": "a"}
+            (repo / register.ENTRIES / "producers" / "new_model_9999.json").write_text(json.dumps(entry), encoding="utf-8")
+            self.assertEqual(register.stale(repo), ["producers"])
+            register.write(repo)
+            self.assertEqual(register.stale(repo), [])
+            self.assertIn("scripts/new_model_9999.py", {row["script"] for row in register.load(repo)["producers"]})
+            self.assertIn("| `scripts/new_model_9999.py` | `metadata/new_model_9999.json` | a new model | none | one_step | a |",
+                          (repo / register.REGISTER).read_text(encoding="utf-8"))
+
+
+class TestThePageIsGenerated(unittest.TestCase):
+    def test_the_page_is_current(self):
+        self.assertEqual(register.stale(ROOT), [], "run `python3 scripts/provisional_register.py` and commit the page")
+
+    def test_each_table_is_one_generated_block(self):
+        for name in register.TABLES:
+            with self.subTest(table=name):
+                self.assertEqual(TEXT.count(register.begin(name)), 1)
+                self.assertEqual(TEXT.count(register.end(name)), 1)
+
+    def test_the_page_tables_parse_back_to_the_files(self):
+        self.assertEqual(register.parse_page(TEXT), TABLES)
+
+
 class TestEveryDeclarationIsClassified(unittest.TestCase):
     def test_every_declaration_naming_a_calendar_column_is_cited(self):
-        cited = set(re.findall(r"metadata/[A-Za-z0-9_]+\.json", TEXT))
         named = register.declarations_naming_a_calendar_column(ROOT)
         self.assertTrue(named, "no declaration names a calendar column: the scan is broken")
-        missing = sorted(set(named) - cited)
+        missing = sorted(set(named) - cited(ALL_ENTRIES))
         self.assertEqual(missing, [], f"declarations that name a calendar or scheduled column and are not in the register: {missing}")
 
     def test_every_cited_declaration_exists(self):
-        for path in sorted(set(re.findall(r"metadata/[A-Za-z0-9_]+\.json", TEXT))):
+        for path in sorted(cited(ALL_ENTRIES) | set(DECLARATION.findall(TEXT))):
             with self.subTest(path=path):
                 self.assertTrue((ROOT / path).is_file(), f"{path} is cited and not tracked")
 
-    def test_every_one_step_fitter_caller_is_a_producer(self):
+    def test_every_one_step_fitter_caller_has_a_producer_file(self):
         callers = register.one_step_fitter_callers(ROOT)
         self.assertIn("scripts/spread_distribution_634.py", callers)
-        listed = {row["script"] for row in TABLES["producers"]}
+        listed = {entry["script"] for entry in ENTRIES["producers"]}
         self.assertEqual(sorted(set(callers) - listed), [],
-                         "scripts that call a gradient-boosted quantile fitter and are not a producer row")
-        self.assertEqual(sorted(listed - set(callers)), [], "producer rows whose script no longer calls such a fitter")
+                         f"scripts that call a gradient-boosted quantile fitter and have no file under "
+                         f"{register.ENTRIES}/producers/")
+        self.assertEqual(sorted(listed - set(callers)), [], "producer files whose script no longer calls such a fitter")
+        for script in callers:
+            with self.subTest(script=script):
+                self.assertTrue((ROOT / register.ENTRIES / "producers" / f"{Path(script).stem}.json").is_file())
 
     def test_the_frozen_exemptions_of_the_one_step_guard_are_named_in_the_register(self):
         """#947's guard refuses a calendar or scheduled regressor in a one-step fit, except two frozen declarations: both are
@@ -136,8 +239,7 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
 
     def test_a_declaration_is_in_one_table_only_as_cleared(self):
         cleared = {row["declaration"] for row in TABLES["cleared"]}
-        elsewhere = set(re.findall(r"metadata/[A-Za-z0-9_]+\.json",
-                                   "\n".join("|".join(row.values()) for name in ("producers", "results") for row in TABLES[name])))
+        elsewhere = cited(ENTRIES["producers"] + ENTRIES["results"])
         self.assertEqual(sorted(cleared & elsewhere), [], "a declaration is either in the class or cleared, not both")
 
 

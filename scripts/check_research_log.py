@@ -58,8 +58,9 @@ GROUNDWORK_FORMAT = "### YYYY-MM-DD [H#] groundwork G<n> · owner/repo#PR"
 HEADING = re.compile(r"^### (?P<date>\d{4}-\d{2}-\d{2}) \[(?P<hyp>H\d+)\] "
                      r"(?:step (?P<step>\d+)|groundwork (?P<groundwork>G[1-9]\d*)) · "
                      r"(?P<ref>[\w.-]+/[\w.-]+#\d+)\s*$")
-# An entry file is `<date>-<model|liquidity>-<PR, five digits>-<H#>-<step N | G n>.md`, so that a plain sort of the
-# names is date, then repository, then pull request number. The entries migrated from the single file (#866) keep
+# An entry file is `<date>-<model|liquidity>-<number, five digits>-<H#>-<step N | G n>.md`, so that a plain sort of
+# the names is date, then repository, then number. The number is the pull request in the heading or, since the pull
+# request does not exist before the branch is pushed, an issue the entry's Directive line names (its directive). The entries migrated from the single file (#866) keep
 # their old order under a four-digit prefix, `0001-` to `0099-`, which sorts before every date. A second entry for
 # the same heading takes `-2`, `-3`, ... before `.md`.
 ENTRY_NAME = re.compile(r"^(?:\d{4}-(?=\d{4}-\d{2}-\d{2}-))?(?P<date>\d{4}-\d{2}-\d{2})-(?P<repo>model|liquidity)-"
@@ -145,14 +146,17 @@ def name_parts(heading):
             "pr": "%05d" % int(heading.group("ref").split("#")[1]), "hyp": heading.group("hyp"), "what": what}
 
 
-def heading_matches_name(name, heading):
-    """True when the file name `name` says what the entry heading says (date, repository, PR, hypothesis, step)."""
+def heading_matches_name(name, heading, directive=""):
+    """True when the file name `name` says what the entry heading says (date, repository, PR, hypothesis, step).
+
+    The number in the name may instead be any issue that `directive`, the entry's Directive line, names."""
     named = ENTRY_NAME.match(name)
     expected = name_parts(heading)
     if named is None or expected is None:
         return False
-    mismatch = [key for key in expected if named.group(key) != expected[key]]
-    return not mismatch
+    numbers = {expected["pr"]} | {"%05d" % int(n) for n in re.findall(r"#(\d+)", directive or "")}
+    mismatch = [key for key in expected if key != "pr" and named.group(key) != expected[key]]
+    return not mismatch and named.group("pr") in numbers
 
 
 def entry_name(heading, sequence=None, taken=()):
@@ -276,13 +280,15 @@ def validate_entry_files(files, hypotheses):
         text = files[name]
         lines = text.splitlines()
         if ENTRY_NAME.match(name) is None:
-            errors.append("%s: not named `<date>-<model|liquidity>-<PR, 5 digits>-<H#>-<step N|G n>.md`" % name)
+            errors.append("%s: not named `<date>-<model|liquidity>-<PR or directive, 5 digits>-<H#>-<step N|G n>.md`"
+                          % name)
             continue
         if sum(1 for line in lines if line.startswith("### ")) != 1 or not lines or not lines[0].startswith("### "):
             errors.append("%s: must hold exactly one entry, starting with its `### ` heading" % name)
             continue
         heading = HEADING.match(lines[0])
-        if heading is not None and not heading_matches_name(name, heading):
+        directive = parse_log(text)[0][3].get("Directive", "")
+        if heading is not None and not heading_matches_name(name, heading, directive):
             errors.append("%s: the file name disagrees with its heading %r" % (name, lines[0]))
         errors += ["%s: %s" % (name, e) for e in validate_log(text, hypotheses)]
     return errors

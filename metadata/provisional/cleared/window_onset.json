@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/window_onset.json",
+  "script": "scripts/window_onset.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

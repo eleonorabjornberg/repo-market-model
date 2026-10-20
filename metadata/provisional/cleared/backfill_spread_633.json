@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/backfill_spread_633.json",
+  "script": "scripts/backfill_spread_633.py",
+  "pairing": "direct",
+  "why": "its own quantile estimator on pairs read through `InformationRule.observation` at each target's decision instant"
+}

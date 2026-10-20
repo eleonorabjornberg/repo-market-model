@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/onset_classifier.json",
+  "script": "scripts/onset_classifier.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/tax_date_october_965.json",
+  "script": "scripts/tax_date_october_965.py",
+  "pairing": "as_of_read",
+  "why": "B2 and the calendar ranker with an alternative label read at the target day"
+}

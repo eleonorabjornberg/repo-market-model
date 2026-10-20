@@ -113,6 +113,26 @@ class EntryFileTests(unittest.TestCase):
             with self.subTest(name=bad):
                 self.assertTrue(crl.validate_entry_files({bad: entry()}, self.HYP))
 
+    def test_a_file_may_be_named_by_its_directive_issue_instead_of_its_pull_request(self):
+        # The directive issue exists before the branch is pushed; the pull request number does not, so naming by it
+        # forced a rename commit and a second CI run once the pull request was opened (02fbde05, 7271509a).
+        self.assertEqual(crl.validate_entry_files({"2026-10-12-model-00640-H5-step3.md": entry()}, self.HYP), [])
+
+    def test_a_directive_named_file_matches_any_issue_its_directive_line_names(self):
+        text = entry().replace("- Directive: #640", "- Directive: #640 (follow-up of #611)")
+        self.assertEqual(crl.validate_entry_files({"2026-10-12-model-00611-H5-step3.md": text}, self.HYP), [])
+
+    def test_a_number_that_is_neither_the_pull_request_nor_the_directive_is_refused(self):
+        for bad in ("2026-10-12-model-00641-H5-step3.md", "2026-10-12-model-00000-H5-step3.md"):
+            with self.subTest(name=bad):
+                self.assertTrue(crl.validate_entry_files({bad: entry()}, self.HYP))
+
+    def test_a_directive_named_file_must_still_agree_on_date_repository_hypothesis_and_step(self):
+        for bad in ("2026-10-13-model-00640-H5-step3.md", "2026-10-12-liquidity-00640-H5-step3.md",
+                    "2026-10-12-model-00640-H7-step3.md", "2026-10-12-model-00640-H5-step2.md"):
+            with self.subTest(name=bad):
+                self.assertTrue(crl.validate_entry_files({bad: entry()}, self.HYP))
+
     def test_a_badly_named_file_is_refused(self):
         self.assertTrue(crl.validate_entry_files({"notes.md": entry()}, self.HYP))
 
