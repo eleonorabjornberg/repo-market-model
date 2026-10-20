@@ -1187,6 +1187,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: the milestones left open in the pull request are Eleonora's to match; the layout redesign is #893.
 
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#897
+- Directive: #893
+- Step: groundwork G1 (the layout of the results page for H1 to H10; as in #816, the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: `site/index.html` re-set as a paper: title, dek, an executive summary in prose (no table), one contents list in place of the tile grids, numbered sections, numbered figure and table captions, a serif text column of about 66 characters with a margin column on wide screens for notes, a table and key figures (each key figure marked "development, not a verdict"), folding into the flow on a phone. Each hypothesis is one line, its id and a tagline from the new `docs/research/taglines.json`, over a native `<details>` fold holding its step, status, tests, kill criterion, milestones and log. Variants: n/a (presentation, no model).
+- Result: every chapter, view, figure and record of the page is still on it, folded or in the contents list; no figure, record or rule moves. The taglines are drafted from the plan's headings for Eleonora's review.
+- Against kill: not applicable (groundwork).
+- Next: #891 refreshes the milestones and status data the folds show; whichever merges second merges main and regenerates.
+
 ### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
 - Directive: #882
 - Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
@@ -1356,3 +1366,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: the midpoint bins reproduce #707's report to the digit. In 2021-23 (3,740 cells) the share of PIT at or below 0.10 is 0.438 midpoint and 0.421 randomised for `c_two_part_new`, 0.364 and 0.343 for `gbm_funding`; under 20 further seeds 0.419 to 0.425 and 0.333 to 0.347. Detail in `docs/research/randomised-pit-970-result.md`.
 - Against kill: not a kill test. The declared reading rule says the #707 reading of the 2021-23 low-PIT share stands; the ties moved the share by 0.02 at most. Development data, never a verdict.
 - Next: nothing follows from this alone; the old page stands.
+
+### 2026-10-19 [H3] step 1 · eleonorabjornberg/repo-market-model#988
+- Directive: #968
+- Step: 1 (screening; the lag at which the OFR's cleared-repo series are readable, Lens E of #958)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `f46cfc57…`; base `b008b564`
+- Tried: the OFR's DVP and GCF preliminary rates declared at one business day, 15:00 (the page's statement), beside #187's two days, 16:00, in a new measurement source; the #478 source screen with each column at both lags in one run, and #187's paired Brier and CRPS test for `ofr_dvp_minus_bgcr_bp` at both lags. Variants: 1 (the lag).
+- Result: no change. The DVP rate minus BGCR keeps its pooled Spearman with the +5 bp indicator at lead 1 (+0.175 declared, +0.177 stated; rank 16 and 20 of 62; pre-onset AUC 0.784 and 0.762), and the paired test is "no effect" at both lags with no paired Brier difference moving by more than 0.00011.
+- Against kill: not applicable (no verdict; development data); the directive's kill, a change in the screen's verdict, did not occur.
+- Next: whether any OFR series joins a published declaration, and whether the records' columns move to the stated lag, are Eleonora's; the #629 matrix needs re-declaring on main's panel.
