@@ -63,10 +63,15 @@ half); and how the project was built. Nothing on the page is typed:
   written by `--refresh-issues`, the one command here that uses the network;
   generation reads the file and stays byte-reproducible.
 
+The page and its data are built on main and never committed (#928): every merge
+to main changed them, so every open pull request that carried its own copy
+conflicted again. They are gitignored; the pages job builds them (`--stamp`), the
+tests build their own copy (`tests/built_outputs.py`), and `scripts/check_built_outputs.py`
+refuses a pull request that carries one.
+
 Every data file carries a provenance block: the commit, the panel's SHA-256 and
-the SHA-256 of each input file read. The committed files carry no commit (#789):
-a stamp that changed with every merge to main made every open pull request
-conflict with main on those files. The commit is written on main, when the
+the SHA-256 of each input file read. The files carry no commit unless stamped (#789).
+The commit is written on main, when the
 pages job publishes the page (`--stamp`): the latest commit that changed one of
 `INPUTS`, never the commit that records the output. `--check` and the tests
 regenerate without a stamp, so they do not depend on where main is. `--stamp`
@@ -76,7 +81,7 @@ with `--commit`.
 Standard library only, plus this repository's own `src/`.
 
     python3 scripts/emit_visual.py            # writes docs/visual/data/ and site/index.html
-    python3 scripts/emit_visual.py --check    # writes nothing; fails if either is stale
+    python3 scripts/emit_visual.py --check    # writes nothing; fails if the page does not build or an output is tracked
     python3 scripts/emit_visual.py --stamp    # as above, stamped with the latest input commit (the pages job)
     python3 scripts/emit_visual.py --refresh-issues   # rewrites docs/visual/issues.json from GitHub
 """
@@ -185,7 +190,7 @@ INPUTS = (
     "scripts/research_view.py",
     "scripts/check_research_log.py",
     "docs/research/plan.md",
-    "docs/research/log.md",
+    "docs/research/log",
     "docs/research/milestones.json",
     "docs/research/hypotheses",
     "docs/research/taglines.json",
@@ -3452,9 +3457,11 @@ def generate(repo, commit=None):
                                 **on_rrp_snapshots, **n5_digests}}
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
     research_provenance = dict(provenance, inputs={
-        rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.LOG, research_view.PROGRESS,
-                                            research_view.TAGLINES, *sorted(str(p.relative_to(repo)) for p in
-                                                    (repo / research_view.HYPOTHESES).glob("H*.md")))},
+        rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.PROGRESS, research_view.TAGLINES,
+                                            *sorted(str(p.relative_to(repo)) for p in
+                                                    (repo / research_view.HYPOTHESES).glob("H*.md")))}
+        # The log is built from its entry files (#928): its digest is that of the assembly, not of a tracked file.
+        | {"docs/research/log.md": research_view.log_digest(repo)},
         incumbent_from=f"{DATA_DIR}/final_test.json")
     daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})
     own = {"research": research_provenance, "model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
@@ -3504,12 +3511,12 @@ def main(argv=None):
         outputs = generate(repo, commit)
     except (VisualError, LookAheadError) as exc:
         sys.exit(f"emit_visual: {exc}")
-    stale = [rel for rel, data in outputs.items()
-             if not (repo / rel).exists() or (repo / rel).read_bytes() != data]
     if args.check:
-        if stale:
-            sys.exit("emit_visual: stale, regenerate with `python3 scripts/emit_visual.py`: " + ", ".join(stale))
-        print("emit_visual: up to date")
+        tracked = git(repo, "ls-files", PAGE, DATA_DIR).split()
+        if tracked:
+            sys.exit("emit_visual: built on main (#928), not committed; change the inputs instead and "
+                     "`git rm --cached` these: " + ", ".join(tracked))
+        print("emit_visual: builds cleanly; no output is tracked")
         return
     for rel, data in outputs.items():
         (repo / rel).parent.mkdir(parents=True, exist_ok=True)

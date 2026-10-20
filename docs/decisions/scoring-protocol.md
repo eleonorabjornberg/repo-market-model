@@ -155,6 +155,15 @@ reports size and power at the MME and at 10% under both drafts, the replay of #7
 design, which the page reports changes under them. The page reports (section 2), as a question and not as part of this draft, that the
 test then detects a true 3% skill within 250 days on a small share of paths.
 
+## Ruling on "improves on what we have" (19 October 2026, #768, option a) — a draft amendment, in force only when she merges it
+
+Eleonora ruled on #768, option (a), relayed by the orchestrating session (the ruling is recorded on #768 and #939). This
+amendment is drafted by the pull request that closes #939; **merging it is her own GitHub action**, and a relayed ruling does
+not authorise it. It amends §4's Rule and changes nothing else: a win over B3 ("improves on what we have") is **a reported
+comparison only**. The comparison of the candidate against B3 on B3's own five levels, and its bound at
+`CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]`, are printed beside the verdict (`scoring_protocol.report`), labelled "reported
+comparison, no rule". There is no efficacy rule and no futility rule for it for now, and the verdict (§6) never reads it.
+
 ---
 
 **Draft scoring protocol, v1 (orchestrating session, 12 Oct 2026, for Eleonora's decision). Designed from first principles; current rules are kept only where they survive scrutiny.**
@@ -202,7 +211,7 @@ Each hypothesis (H1–H10) gets exactly one of four verdicts: **supported**, **k
   *Replaces:* the one-step residual law, which does not widen with horizon. That flatters long leads.
 - **B2, calendar climatology.** The empirical distribution of the spread over the trailing year on days of the same type (quarter-end, month-end, tax date, ordinary).
 - **B3, incumbent.** The best registered model at the time. Initially, the published v1 funding declaration.
-- **Rule.** "Supported" needs a win over both B1 and B2. "Improves on what we have" also needs a win over B3.
+- **Rule.** "Supported" needs a win over both B1 and B2. "Improves on what we have", a win over B3, is a reported comparison only: it is printed beside the verdict with its bound, labelled "reported comparison, no rule", and has no efficacy or futility rule for now (Eleonora's ruling of 19 October 2026 on #768, option a; a draft amendment until she merges it).
 
 ## 5. The test
 - **Daily difference.** d_t = S(benchmark) − S(candidate). Positive always favours the candidate, and this is the one sign convention everywhere.
