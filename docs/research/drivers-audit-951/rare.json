@@ -1,0 +1,3308 @@
+{
+ "leads": {
+  "1": {
+   "refits": 90,
+   "summary": {
+    "month_end": {
+     "first_refit": 2,
+     "last_refit": 65,
+     "median_refit": 34,
+     "refits_with_a_leaf_of_10": 80,
+     "refits_with_a_leaf_of_20": 65,
+     "refits_with_a_leaf_of_5": 85
+    },
+    "quarter_end": {
+     "first_refit": 0,
+     "last_refit": 30,
+     "median_refit": 16,
+     "refits_with_a_leaf_of_10": 63,
+     "refits_with_a_leaf_of_20": 33,
+     "refits_with_a_leaf_of_5": 78
+    },
+    "tax_date": {
+     "first_refit": 6,
+     "last_refit": 96,
+     "median_refit": 48,
+     "refits_with_a_leaf_of_10": 84,
+     "refits_with_a_leaf_of_20": 75,
+     "refits_with_a_leaf_of_5": 90
+    }
+   },
+   "windows": [
+    {
+     "first_scored": "2018-06-29",
+     "month_end": 2,
+     "quarter_end": 0,
+     "tax_date": 6,
+     "training_rows": 61
+    },
+    {
+     "first_scored": "2018-07-31",
+     "month_end": 2,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 82
+    },
+    {
+     "first_scored": "2018-08-29",
+     "month_end": 3,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 103
+    },
+    {
+     "first_scored": "2018-09-28",
+     "month_end": 4,
+     "quarter_end": 1,
+     "tax_date": 9,
+     "training_rows": 124
+    },
+    {
+     "first_scored": "2018-10-30",
+     "month_end": 4,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 145
+    },
+    {
+     "first_scored": "2018-11-30",
+     "month_end": 5,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 166
+    },
+    {
+     "first_scored": "2019-01-03",
+     "month_end": 7,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 187
+    },
+    {
+     "first_scored": "2019-02-04",
+     "month_end": 8,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 208
+    },
+    {
+     "first_scored": "2019-03-06",
+     "month_end": 9,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 229
+    },
+    {
+     "first_scored": "2019-04-04",
+     "month_end": 9,
+     "quarter_end": 4,
+     "tax_date": 12,
+     "training_rows": 250
+    },
+    {
+     "first_scored": "2019-05-06",
+     "month_end": 10,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 271
+    },
+    {
+     "first_scored": "2019-06-05",
+     "month_end": 11,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 292
+    },
+    {
+     "first_scored": "2019-07-05",
+     "month_end": 11,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 313
+    },
+    {
+     "first_scored": "2019-08-05",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 334
+    },
+    {
+     "first_scored": "2019-09-04",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 355
+    },
+    {
+     "first_scored": "2019-10-03",
+     "month_end": 13,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 376
+    },
+    {
+     "first_scored": "2019-11-04",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 397
+    },
+    {
+     "first_scored": "2019-12-05",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 418
+    },
+    {
+     "first_scored": "2020-01-07",
+     "month_end": 15,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 439
+    },
+    {
+     "first_scored": "2020-02-06",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 460
+    },
+    {
+     "first_scored": "2020-03-09",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 481
+    },
+    {
+     "first_scored": "2020-04-07",
+     "month_end": 17,
+     "quarter_end": 8,
+     "tax_date": 24,
+     "training_rows": 502
+    },
+    {
+     "first_scored": "2020-05-07",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 523
+    },
+    {
+     "first_scored": "2020-06-08",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 544
+    },
+    {
+     "first_scored": "2020-07-08",
+     "month_end": 19,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 565
+    },
+    {
+     "first_scored": "2020-08-06",
+     "month_end": 20,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 586
+    },
+    {
+     "first_scored": "2020-09-04",
+     "month_end": 21,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 607
+    },
+    {
+     "first_scored": "2020-10-06",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 628
+    },
+    {
+     "first_scored": "2020-11-05",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 649
+    },
+    {
+     "first_scored": "2020-12-08",
+     "month_end": 23,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 670
+    },
+    {
+     "first_scored": "2021-01-08",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 691
+    },
+    {
+     "first_scored": "2021-02-09",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 712
+    },
+    {
+     "first_scored": "2021-03-11",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 733
+    },
+    {
+     "first_scored": "2021-04-12",
+     "month_end": 25,
+     "quarter_end": 12,
+     "tax_date": 36,
+     "training_rows": 754
+    },
+    {
+     "first_scored": "2021-05-11",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 775
+    },
+    {
+     "first_scored": "2021-06-10",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 796
+    },
+    {
+     "first_scored": "2021-07-12",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 817
+    },
+    {
+     "first_scored": "2021-08-10",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 838
+    },
+    {
+     "first_scored": "2021-09-09",
+     "month_end": 28,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 859
+    },
+    {
+     "first_scored": "2021-10-08",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 880
+    },
+    {
+     "first_scored": "2021-11-09",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 901
+    },
+    {
+     "first_scored": "2021-12-10",
+     "month_end": 30,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 922
+    },
+    {
+     "first_scored": "2022-01-11",
+     "month_end": 31,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 943
+    },
+    {
+     "first_scored": "2022-02-10",
+     "month_end": 32,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 964
+    },
+    {
+     "first_scored": "2022-03-14",
+     "month_end": 33,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 985
+    },
+    {
+     "first_scored": "2022-04-12",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 48,
+     "training_rows": 1006
+    },
+    {
+     "first_scored": "2022-05-12",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1027
+    },
+    {
+     "first_scored": "2022-06-13",
+     "month_end": 35,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1048
+    },
+    {
+     "first_scored": "2022-07-14",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1069
+    },
+    {
+     "first_scored": "2022-08-12",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1090
+    },
+    {
+     "first_scored": "2022-09-13",
+     "month_end": 37,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1111
+    },
+    {
+     "first_scored": "2022-10-13",
+     "month_end": 38,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1132
+    },
+    {
+     "first_scored": "2022-11-14",
+     "month_end": 39,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1153
+    },
+    {
+     "first_scored": "2022-12-14",
+     "month_end": 40,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1174
+    },
+    {
+     "first_scored": "2023-01-17",
+     "month_end": 40,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1195
+    },
+    {
+     "first_scored": "2023-02-15",
+     "month_end": 41,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1216
+    },
+    {
+     "first_scored": "2023-03-17",
+     "month_end": 42,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1237
+    },
+    {
+     "first_scored": "2023-04-18",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 60,
+     "training_rows": 1258
+    },
+    {
+     "first_scored": "2023-05-17",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1279
+    },
+    {
+     "first_scored": "2023-06-16",
+     "month_end": 44,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1300
+    },
+    {
+     "first_scored": "2023-07-19",
+     "month_end": 45,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1321
+    },
+    {
+     "first_scored": "2023-08-17",
+     "month_end": 46,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1342
+    },
+    {
+     "first_scored": "2023-09-18",
+     "month_end": 47,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1363
+    },
+    {
+     "first_scored": "2023-10-18",
+     "month_end": 47,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1384
+    },
+    {
+     "first_scored": "2023-11-16",
+     "month_end": 48,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1405
+    },
+    {
+     "first_scored": "2023-12-18",
+     "month_end": 49,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1426
+    },
+    {
+     "first_scored": "2024-01-19",
+     "month_end": 49,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1447
+    },
+    {
+     "first_scored": "2024-02-20",
+     "month_end": 50,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1468
+    },
+    {
+     "first_scored": "2024-03-20",
+     "month_end": 51,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1489
+    },
+    {
+     "first_scored": "2024-04-19",
+     "month_end": 51,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1510
+    },
+    {
+     "first_scored": "2024-05-20",
+     "month_end": 52,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1531
+    },
+    {
+     "first_scored": "2024-06-20",
+     "month_end": 53,
+     "quarter_end": 24,
+     "tax_date": 76,
+     "training_rows": 1552
+    },
+    {
+     "first_scored": "2024-07-22",
+     "month_end": 53,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1573
+    },
+    {
+     "first_scored": "2024-08-20",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1594
+    },
+    {
+     "first_scored": "2024-09-19",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 80,
+     "training_rows": 1615
+    },
+    {
+     "first_scored": "2024-10-21",
+     "month_end": 55,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1636
+    },
+    {
+     "first_scored": "2024-11-20",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1657
+    },
+    {
+     "first_scored": "2024-12-20",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 84,
+     "training_rows": 1678
+    },
+    {
+     "first_scored": "2025-01-23",
+     "month_end": 57,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1699
+    },
+    {
+     "first_scored": "2025-02-24",
+     "month_end": 58,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1720
+    },
+    {
+     "first_scored": "2025-03-25",
+     "month_end": 59,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1741
+    },
+    {
+     "first_scored": "2025-04-24",
+     "month_end": 60,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1762
+    },
+    {
+     "first_scored": "2025-05-23",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1783
+    },
+    {
+     "first_scored": "2025-06-25",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 90,
+     "training_rows": 1804
+    },
+    {
+     "first_scored": "2025-07-25",
+     "month_end": 62,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1825
+    },
+    {
+     "first_scored": "2025-08-25",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1846
+    },
+    {
+     "first_scored": "2025-09-24",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 93,
+     "training_rows": 1867
+    },
+    {
+     "first_scored": "2025-10-24",
+     "month_end": 64,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1888
+    },
+    {
+     "first_scored": "2025-11-25",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1909
+    },
+    {
+     "first_scored": "2025-12-26",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 96,
+     "training_rows": 1930
+    }
+   ]
+  },
+  "2": {
+   "refits": 90,
+   "summary": {
+    "month_end": {
+     "first_refit": 2,
+     "last_refit": 65,
+     "median_refit": 34,
+     "refits_with_a_leaf_of_10": 80,
+     "refits_with_a_leaf_of_20": 65,
+     "refits_with_a_leaf_of_5": 85
+    },
+    "quarter_end": {
+     "first_refit": 0,
+     "last_refit": 30,
+     "median_refit": 16,
+     "refits_with_a_leaf_of_10": 63,
+     "refits_with_a_leaf_of_20": 33,
+     "refits_with_a_leaf_of_5": 78
+    },
+    "tax_date": {
+     "first_refit": 6,
+     "last_refit": 96,
+     "median_refit": 48,
+     "refits_with_a_leaf_of_10": 84,
+     "refits_with_a_leaf_of_20": 75,
+     "refits_with_a_leaf_of_5": 90
+    }
+   },
+   "windows": [
+    {
+     "first_scored": "2018-07-02",
+     "month_end": 2,
+     "quarter_end": 0,
+     "tax_date": 6,
+     "training_rows": 61
+    },
+    {
+     "first_scored": "2018-08-01",
+     "month_end": 2,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 82
+    },
+    {
+     "first_scored": "2018-08-30",
+     "month_end": 3,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 103
+    },
+    {
+     "first_scored": "2018-10-01",
+     "month_end": 4,
+     "quarter_end": 1,
+     "tax_date": 9,
+     "training_rows": 124
+    },
+    {
+     "first_scored": "2018-10-31",
+     "month_end": 4,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 145
+    },
+    {
+     "first_scored": "2018-12-03",
+     "month_end": 5,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 166
+    },
+    {
+     "first_scored": "2019-01-04",
+     "month_end": 7,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 187
+    },
+    {
+     "first_scored": "2019-02-05",
+     "month_end": 8,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 208
+    },
+    {
+     "first_scored": "2019-03-07",
+     "month_end": 9,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 229
+    },
+    {
+     "first_scored": "2019-04-05",
+     "month_end": 9,
+     "quarter_end": 4,
+     "tax_date": 12,
+     "training_rows": 250
+    },
+    {
+     "first_scored": "2019-05-07",
+     "month_end": 10,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 271
+    },
+    {
+     "first_scored": "2019-06-06",
+     "month_end": 11,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 292
+    },
+    {
+     "first_scored": "2019-07-08",
+     "month_end": 11,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 313
+    },
+    {
+     "first_scored": "2019-08-06",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 334
+    },
+    {
+     "first_scored": "2019-09-05",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 355
+    },
+    {
+     "first_scored": "2019-10-04",
+     "month_end": 13,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 376
+    },
+    {
+     "first_scored": "2019-11-05",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 397
+    },
+    {
+     "first_scored": "2019-12-06",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 418
+    },
+    {
+     "first_scored": "2020-01-08",
+     "month_end": 15,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 439
+    },
+    {
+     "first_scored": "2020-02-07",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 460
+    },
+    {
+     "first_scored": "2020-03-10",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 481
+    },
+    {
+     "first_scored": "2020-04-08",
+     "month_end": 17,
+     "quarter_end": 8,
+     "tax_date": 24,
+     "training_rows": 502
+    },
+    {
+     "first_scored": "2020-05-08",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 523
+    },
+    {
+     "first_scored": "2020-06-09",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 544
+    },
+    {
+     "first_scored": "2020-07-09",
+     "month_end": 19,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 565
+    },
+    {
+     "first_scored": "2020-08-07",
+     "month_end": 20,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 586
+    },
+    {
+     "first_scored": "2020-09-08",
+     "month_end": 21,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 607
+    },
+    {
+     "first_scored": "2020-10-07",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 628
+    },
+    {
+     "first_scored": "2020-11-06",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 649
+    },
+    {
+     "first_scored": "2020-12-09",
+     "month_end": 23,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 670
+    },
+    {
+     "first_scored": "2021-01-11",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 691
+    },
+    {
+     "first_scored": "2021-02-10",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 712
+    },
+    {
+     "first_scored": "2021-03-12",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 733
+    },
+    {
+     "first_scored": "2021-04-13",
+     "month_end": 25,
+     "quarter_end": 12,
+     "tax_date": 36,
+     "training_rows": 754
+    },
+    {
+     "first_scored": "2021-05-12",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 775
+    },
+    {
+     "first_scored": "2021-06-11",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 796
+    },
+    {
+     "first_scored": "2021-07-13",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 817
+    },
+    {
+     "first_scored": "2021-08-11",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 838
+    },
+    {
+     "first_scored": "2021-09-10",
+     "month_end": 28,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 859
+    },
+    {
+     "first_scored": "2021-10-12",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 880
+    },
+    {
+     "first_scored": "2021-11-10",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 901
+    },
+    {
+     "first_scored": "2021-12-13",
+     "month_end": 30,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 922
+    },
+    {
+     "first_scored": "2022-01-12",
+     "month_end": 31,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 943
+    },
+    {
+     "first_scored": "2022-02-11",
+     "month_end": 32,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 964
+    },
+    {
+     "first_scored": "2022-03-15",
+     "month_end": 33,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 985
+    },
+    {
+     "first_scored": "2022-04-13",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 48,
+     "training_rows": 1006
+    },
+    {
+     "first_scored": "2022-05-13",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1027
+    },
+    {
+     "first_scored": "2022-06-14",
+     "month_end": 35,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1048
+    },
+    {
+     "first_scored": "2022-07-15",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1069
+    },
+    {
+     "first_scored": "2022-08-15",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1090
+    },
+    {
+     "first_scored": "2022-09-14",
+     "month_end": 37,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1111
+    },
+    {
+     "first_scored": "2022-10-14",
+     "month_end": 38,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1132
+    },
+    {
+     "first_scored": "2022-11-15",
+     "month_end": 39,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1153
+    },
+    {
+     "first_scored": "2022-12-15",
+     "month_end": 40,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1174
+    },
+    {
+     "first_scored": "2023-01-18",
+     "month_end": 40,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1195
+    },
+    {
+     "first_scored": "2023-02-16",
+     "month_end": 41,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1216
+    },
+    {
+     "first_scored": "2023-03-20",
+     "month_end": 42,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1237
+    },
+    {
+     "first_scored": "2023-04-19",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 60,
+     "training_rows": 1258
+    },
+    {
+     "first_scored": "2023-05-18",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1279
+    },
+    {
+     "first_scored": "2023-06-20",
+     "month_end": 44,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1300
+    },
+    {
+     "first_scored": "2023-07-20",
+     "month_end": 45,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1321
+    },
+    {
+     "first_scored": "2023-08-18",
+     "month_end": 46,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1342
+    },
+    {
+     "first_scored": "2023-09-19",
+     "month_end": 47,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1363
+    },
+    {
+     "first_scored": "2023-10-19",
+     "month_end": 47,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1384
+    },
+    {
+     "first_scored": "2023-11-17",
+     "month_end": 48,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1405
+    },
+    {
+     "first_scored": "2023-12-19",
+     "month_end": 49,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1426
+    },
+    {
+     "first_scored": "2024-01-22",
+     "month_end": 49,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1447
+    },
+    {
+     "first_scored": "2024-02-21",
+     "month_end": 50,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1468
+    },
+    {
+     "first_scored": "2024-03-21",
+     "month_end": 51,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1489
+    },
+    {
+     "first_scored": "2024-04-22",
+     "month_end": 51,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1510
+    },
+    {
+     "first_scored": "2024-05-21",
+     "month_end": 52,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1531
+    },
+    {
+     "first_scored": "2024-06-21",
+     "month_end": 53,
+     "quarter_end": 24,
+     "tax_date": 76,
+     "training_rows": 1552
+    },
+    {
+     "first_scored": "2024-07-23",
+     "month_end": 53,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1573
+    },
+    {
+     "first_scored": "2024-08-21",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1594
+    },
+    {
+     "first_scored": "2024-09-20",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 80,
+     "training_rows": 1615
+    },
+    {
+     "first_scored": "2024-10-22",
+     "month_end": 55,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1636
+    },
+    {
+     "first_scored": "2024-11-21",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1657
+    },
+    {
+     "first_scored": "2024-12-23",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 84,
+     "training_rows": 1678
+    },
+    {
+     "first_scored": "2025-01-24",
+     "month_end": 57,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1699
+    },
+    {
+     "first_scored": "2025-02-25",
+     "month_end": 58,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1720
+    },
+    {
+     "first_scored": "2025-03-26",
+     "month_end": 59,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1741
+    },
+    {
+     "first_scored": "2025-04-25",
+     "month_end": 60,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1762
+    },
+    {
+     "first_scored": "2025-05-27",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1783
+    },
+    {
+     "first_scored": "2025-06-26",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 90,
+     "training_rows": 1804
+    },
+    {
+     "first_scored": "2025-07-28",
+     "month_end": 62,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1825
+    },
+    {
+     "first_scored": "2025-08-26",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1846
+    },
+    {
+     "first_scored": "2025-09-25",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 93,
+     "training_rows": 1867
+    },
+    {
+     "first_scored": "2025-10-27",
+     "month_end": 64,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1888
+    },
+    {
+     "first_scored": "2025-11-26",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1909
+    },
+    {
+     "first_scored": "2025-12-29",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 96,
+     "training_rows": 1930
+    }
+   ]
+  },
+  "3": {
+   "refits": 90,
+   "summary": {
+    "month_end": {
+     "first_refit": 2,
+     "last_refit": 65,
+     "median_refit": 34,
+     "refits_with_a_leaf_of_10": 80,
+     "refits_with_a_leaf_of_20": 65,
+     "refits_with_a_leaf_of_5": 85
+    },
+    "quarter_end": {
+     "first_refit": 0,
+     "last_refit": 30,
+     "median_refit": 16,
+     "refits_with_a_leaf_of_10": 63,
+     "refits_with_a_leaf_of_20": 33,
+     "refits_with_a_leaf_of_5": 78
+    },
+    "tax_date": {
+     "first_refit": 6,
+     "last_refit": 96,
+     "median_refit": 48,
+     "refits_with_a_leaf_of_10": 84,
+     "refits_with_a_leaf_of_20": 75,
+     "refits_with_a_leaf_of_5": 90
+    }
+   },
+   "windows": [
+    {
+     "first_scored": "2018-07-03",
+     "month_end": 2,
+     "quarter_end": 0,
+     "tax_date": 6,
+     "training_rows": 61
+    },
+    {
+     "first_scored": "2018-08-02",
+     "month_end": 2,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 82
+    },
+    {
+     "first_scored": "2018-08-31",
+     "month_end": 3,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 103
+    },
+    {
+     "first_scored": "2018-10-02",
+     "month_end": 4,
+     "quarter_end": 1,
+     "tax_date": 9,
+     "training_rows": 124
+    },
+    {
+     "first_scored": "2018-11-01",
+     "month_end": 4,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 145
+    },
+    {
+     "first_scored": "2018-12-04",
+     "month_end": 5,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 166
+    },
+    {
+     "first_scored": "2019-01-07",
+     "month_end": 7,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 187
+    },
+    {
+     "first_scored": "2019-02-06",
+     "month_end": 8,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 208
+    },
+    {
+     "first_scored": "2019-03-08",
+     "month_end": 9,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 229
+    },
+    {
+     "first_scored": "2019-04-08",
+     "month_end": 9,
+     "quarter_end": 4,
+     "tax_date": 12,
+     "training_rows": 250
+    },
+    {
+     "first_scored": "2019-05-08",
+     "month_end": 10,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 271
+    },
+    {
+     "first_scored": "2019-06-07",
+     "month_end": 11,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 292
+    },
+    {
+     "first_scored": "2019-07-09",
+     "month_end": 11,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 313
+    },
+    {
+     "first_scored": "2019-08-07",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 334
+    },
+    {
+     "first_scored": "2019-09-06",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 355
+    },
+    {
+     "first_scored": "2019-10-07",
+     "month_end": 13,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 376
+    },
+    {
+     "first_scored": "2019-11-06",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 397
+    },
+    {
+     "first_scored": "2019-12-09",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 418
+    },
+    {
+     "first_scored": "2020-01-09",
+     "month_end": 15,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 439
+    },
+    {
+     "first_scored": "2020-02-10",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 460
+    },
+    {
+     "first_scored": "2020-03-11",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 481
+    },
+    {
+     "first_scored": "2020-04-09",
+     "month_end": 17,
+     "quarter_end": 8,
+     "tax_date": 24,
+     "training_rows": 502
+    },
+    {
+     "first_scored": "2020-05-11",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 523
+    },
+    {
+     "first_scored": "2020-06-10",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 544
+    },
+    {
+     "first_scored": "2020-07-10",
+     "month_end": 19,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 565
+    },
+    {
+     "first_scored": "2020-08-10",
+     "month_end": 20,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 586
+    },
+    {
+     "first_scored": "2020-09-09",
+     "month_end": 21,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 607
+    },
+    {
+     "first_scored": "2020-10-08",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 628
+    },
+    {
+     "first_scored": "2020-11-09",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 649
+    },
+    {
+     "first_scored": "2020-12-10",
+     "month_end": 23,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 670
+    },
+    {
+     "first_scored": "2021-01-12",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 691
+    },
+    {
+     "first_scored": "2021-02-11",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 712
+    },
+    {
+     "first_scored": "2021-03-15",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 733
+    },
+    {
+     "first_scored": "2021-04-14",
+     "month_end": 25,
+     "quarter_end": 12,
+     "tax_date": 36,
+     "training_rows": 754
+    },
+    {
+     "first_scored": "2021-05-13",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 775
+    },
+    {
+     "first_scored": "2021-06-14",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 796
+    },
+    {
+     "first_scored": "2021-07-14",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 817
+    },
+    {
+     "first_scored": "2021-08-12",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 838
+    },
+    {
+     "first_scored": "2021-09-13",
+     "month_end": 28,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 859
+    },
+    {
+     "first_scored": "2021-10-13",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 880
+    },
+    {
+     "first_scored": "2021-11-12",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 901
+    },
+    {
+     "first_scored": "2021-12-14",
+     "month_end": 30,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 922
+    },
+    {
+     "first_scored": "2022-01-13",
+     "month_end": 31,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 943
+    },
+    {
+     "first_scored": "2022-02-14",
+     "month_end": 32,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 964
+    },
+    {
+     "first_scored": "2022-03-16",
+     "month_end": 33,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 985
+    },
+    {
+     "first_scored": "2022-04-14",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 48,
+     "training_rows": 1006
+    },
+    {
+     "first_scored": "2022-05-16",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1027
+    },
+    {
+     "first_scored": "2022-06-15",
+     "month_end": 35,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1048
+    },
+    {
+     "first_scored": "2022-07-18",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1069
+    },
+    {
+     "first_scored": "2022-08-16",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1090
+    },
+    {
+     "first_scored": "2022-09-15",
+     "month_end": 37,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1111
+    },
+    {
+     "first_scored": "2022-10-17",
+     "month_end": 38,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1132
+    },
+    {
+     "first_scored": "2022-11-16",
+     "month_end": 39,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1153
+    },
+    {
+     "first_scored": "2022-12-16",
+     "month_end": 40,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1174
+    },
+    {
+     "first_scored": "2023-01-19",
+     "month_end": 40,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1195
+    },
+    {
+     "first_scored": "2023-02-17",
+     "month_end": 41,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1216
+    },
+    {
+     "first_scored": "2023-03-21",
+     "month_end": 42,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1237
+    },
+    {
+     "first_scored": "2023-04-20",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 60,
+     "training_rows": 1258
+    },
+    {
+     "first_scored": "2023-05-19",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1279
+    },
+    {
+     "first_scored": "2023-06-21",
+     "month_end": 44,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1300
+    },
+    {
+     "first_scored": "2023-07-21",
+     "month_end": 45,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1321
+    },
+    {
+     "first_scored": "2023-08-21",
+     "month_end": 46,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1342
+    },
+    {
+     "first_scored": "2023-09-20",
+     "month_end": 47,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1363
+    },
+    {
+     "first_scored": "2023-10-20",
+     "month_end": 47,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1384
+    },
+    {
+     "first_scored": "2023-11-20",
+     "month_end": 48,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1405
+    },
+    {
+     "first_scored": "2023-12-20",
+     "month_end": 49,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1426
+    },
+    {
+     "first_scored": "2024-01-23",
+     "month_end": 49,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1447
+    },
+    {
+     "first_scored": "2024-02-22",
+     "month_end": 50,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1468
+    },
+    {
+     "first_scored": "2024-03-22",
+     "month_end": 51,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1489
+    },
+    {
+     "first_scored": "2024-04-23",
+     "month_end": 51,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1510
+    },
+    {
+     "first_scored": "2024-05-22",
+     "month_end": 52,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1531
+    },
+    {
+     "first_scored": "2024-06-24",
+     "month_end": 53,
+     "quarter_end": 24,
+     "tax_date": 76,
+     "training_rows": 1552
+    },
+    {
+     "first_scored": "2024-07-24",
+     "month_end": 53,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1573
+    },
+    {
+     "first_scored": "2024-08-22",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1594
+    },
+    {
+     "first_scored": "2024-09-23",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 80,
+     "training_rows": 1615
+    },
+    {
+     "first_scored": "2024-10-23",
+     "month_end": 55,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1636
+    },
+    {
+     "first_scored": "2024-11-22",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1657
+    },
+    {
+     "first_scored": "2024-12-24",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 84,
+     "training_rows": 1678
+    },
+    {
+     "first_scored": "2025-01-27",
+     "month_end": 57,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1699
+    },
+    {
+     "first_scored": "2025-02-26",
+     "month_end": 58,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1720
+    },
+    {
+     "first_scored": "2025-03-27",
+     "month_end": 59,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1741
+    },
+    {
+     "first_scored": "2025-04-28",
+     "month_end": 60,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1762
+    },
+    {
+     "first_scored": "2025-05-28",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1783
+    },
+    {
+     "first_scored": "2025-06-27",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 90,
+     "training_rows": 1804
+    },
+    {
+     "first_scored": "2025-07-29",
+     "month_end": 62,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1825
+    },
+    {
+     "first_scored": "2025-08-27",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1846
+    },
+    {
+     "first_scored": "2025-09-26",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 93,
+     "training_rows": 1867
+    },
+    {
+     "first_scored": "2025-10-28",
+     "month_end": 64,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1888
+    },
+    {
+     "first_scored": "2025-11-28",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1909
+    },
+    {
+     "first_scored": "2025-12-30",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 96,
+     "training_rows": 1930
+    }
+   ]
+  },
+  "4": {
+   "refits": 90,
+   "summary": {
+    "month_end": {
+     "first_refit": 2,
+     "last_refit": 65,
+     "median_refit": 34,
+     "refits_with_a_leaf_of_10": 80,
+     "refits_with_a_leaf_of_20": 65,
+     "refits_with_a_leaf_of_5": 85
+    },
+    "quarter_end": {
+     "first_refit": 0,
+     "last_refit": 30,
+     "median_refit": 16,
+     "refits_with_a_leaf_of_10": 63,
+     "refits_with_a_leaf_of_20": 33,
+     "refits_with_a_leaf_of_5": 78
+    },
+    "tax_date": {
+     "first_refit": 6,
+     "last_refit": 96,
+     "median_refit": 48,
+     "refits_with_a_leaf_of_10": 84,
+     "refits_with_a_leaf_of_20": 75,
+     "refits_with_a_leaf_of_5": 90
+    }
+   },
+   "windows": [
+    {
+     "first_scored": "2018-07-05",
+     "month_end": 2,
+     "quarter_end": 0,
+     "tax_date": 6,
+     "training_rows": 61
+    },
+    {
+     "first_scored": "2018-08-03",
+     "month_end": 2,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 82
+    },
+    {
+     "first_scored": "2018-09-04",
+     "month_end": 3,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 103
+    },
+    {
+     "first_scored": "2018-10-03",
+     "month_end": 4,
+     "quarter_end": 1,
+     "tax_date": 9,
+     "training_rows": 124
+    },
+    {
+     "first_scored": "2018-11-02",
+     "month_end": 4,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 145
+    },
+    {
+     "first_scored": "2018-12-06",
+     "month_end": 5,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 166
+    },
+    {
+     "first_scored": "2019-01-08",
+     "month_end": 7,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 187
+    },
+    {
+     "first_scored": "2019-02-07",
+     "month_end": 8,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 208
+    },
+    {
+     "first_scored": "2019-03-11",
+     "month_end": 9,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 229
+    },
+    {
+     "first_scored": "2019-04-09",
+     "month_end": 9,
+     "quarter_end": 4,
+     "tax_date": 12,
+     "training_rows": 250
+    },
+    {
+     "first_scored": "2019-05-09",
+     "month_end": 10,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 271
+    },
+    {
+     "first_scored": "2019-06-10",
+     "month_end": 11,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 292
+    },
+    {
+     "first_scored": "2019-07-10",
+     "month_end": 11,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 313
+    },
+    {
+     "first_scored": "2019-08-08",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 334
+    },
+    {
+     "first_scored": "2019-09-09",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 355
+    },
+    {
+     "first_scored": "2019-10-08",
+     "month_end": 13,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 376
+    },
+    {
+     "first_scored": "2019-11-07",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 397
+    },
+    {
+     "first_scored": "2019-12-10",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 418
+    },
+    {
+     "first_scored": "2020-01-10",
+     "month_end": 15,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 439
+    },
+    {
+     "first_scored": "2020-02-11",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 460
+    },
+    {
+     "first_scored": "2020-03-12",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 481
+    },
+    {
+     "first_scored": "2020-04-13",
+     "month_end": 17,
+     "quarter_end": 8,
+     "tax_date": 24,
+     "training_rows": 502
+    },
+    {
+     "first_scored": "2020-05-12",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 523
+    },
+    {
+     "first_scored": "2020-06-11",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 544
+    },
+    {
+     "first_scored": "2020-07-13",
+     "month_end": 19,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 565
+    },
+    {
+     "first_scored": "2020-08-11",
+     "month_end": 20,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 586
+    },
+    {
+     "first_scored": "2020-09-10",
+     "month_end": 21,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 607
+    },
+    {
+     "first_scored": "2020-10-09",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 628
+    },
+    {
+     "first_scored": "2020-11-10",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 649
+    },
+    {
+     "first_scored": "2020-12-11",
+     "month_end": 23,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 670
+    },
+    {
+     "first_scored": "2021-01-13",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 691
+    },
+    {
+     "first_scored": "2021-02-12",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 712
+    },
+    {
+     "first_scored": "2021-03-16",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 733
+    },
+    {
+     "first_scored": "2021-04-15",
+     "month_end": 25,
+     "quarter_end": 12,
+     "tax_date": 36,
+     "training_rows": 754
+    },
+    {
+     "first_scored": "2021-05-14",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 775
+    },
+    {
+     "first_scored": "2021-06-15",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 796
+    },
+    {
+     "first_scored": "2021-07-15",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 817
+    },
+    {
+     "first_scored": "2021-08-13",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 838
+    },
+    {
+     "first_scored": "2021-09-14",
+     "month_end": 28,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 859
+    },
+    {
+     "first_scored": "2021-10-14",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 880
+    },
+    {
+     "first_scored": "2021-11-15",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 901
+    },
+    {
+     "first_scored": "2021-12-15",
+     "month_end": 30,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 922
+    },
+    {
+     "first_scored": "2022-01-14",
+     "month_end": 31,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 943
+    },
+    {
+     "first_scored": "2022-02-15",
+     "month_end": 32,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 964
+    },
+    {
+     "first_scored": "2022-03-17",
+     "month_end": 33,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 985
+    },
+    {
+     "first_scored": "2022-04-18",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 48,
+     "training_rows": 1006
+    },
+    {
+     "first_scored": "2022-05-17",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1027
+    },
+    {
+     "first_scored": "2022-06-16",
+     "month_end": 35,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1048
+    },
+    {
+     "first_scored": "2022-07-19",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1069
+    },
+    {
+     "first_scored": "2022-08-17",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1090
+    },
+    {
+     "first_scored": "2022-09-16",
+     "month_end": 37,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1111
+    },
+    {
+     "first_scored": "2022-10-18",
+     "month_end": 38,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1132
+    },
+    {
+     "first_scored": "2022-11-17",
+     "month_end": 39,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1153
+    },
+    {
+     "first_scored": "2022-12-19",
+     "month_end": 40,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1174
+    },
+    {
+     "first_scored": "2023-01-20",
+     "month_end": 40,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1195
+    },
+    {
+     "first_scored": "2023-02-21",
+     "month_end": 41,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1216
+    },
+    {
+     "first_scored": "2023-03-22",
+     "month_end": 42,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1237
+    },
+    {
+     "first_scored": "2023-04-21",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 60,
+     "training_rows": 1258
+    },
+    {
+     "first_scored": "2023-05-22",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1279
+    },
+    {
+     "first_scored": "2023-06-22",
+     "month_end": 44,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1300
+    },
+    {
+     "first_scored": "2023-07-24",
+     "month_end": 45,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1321
+    },
+    {
+     "first_scored": "2023-08-22",
+     "month_end": 46,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1342
+    },
+    {
+     "first_scored": "2023-09-21",
+     "month_end": 47,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1363
+    },
+    {
+     "first_scored": "2023-10-23",
+     "month_end": 47,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1384
+    },
+    {
+     "first_scored": "2023-11-21",
+     "month_end": 48,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1405
+    },
+    {
+     "first_scored": "2023-12-21",
+     "month_end": 49,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1426
+    },
+    {
+     "first_scored": "2024-01-24",
+     "month_end": 49,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1447
+    },
+    {
+     "first_scored": "2024-02-23",
+     "month_end": 50,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1468
+    },
+    {
+     "first_scored": "2024-03-25",
+     "month_end": 51,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1489
+    },
+    {
+     "first_scored": "2024-04-24",
+     "month_end": 51,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1510
+    },
+    {
+     "first_scored": "2024-05-23",
+     "month_end": 52,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1531
+    },
+    {
+     "first_scored": "2024-06-25",
+     "month_end": 53,
+     "quarter_end": 24,
+     "tax_date": 76,
+     "training_rows": 1552
+    },
+    {
+     "first_scored": "2024-07-25",
+     "month_end": 53,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1573
+    },
+    {
+     "first_scored": "2024-08-23",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1594
+    },
+    {
+     "first_scored": "2024-09-24",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 80,
+     "training_rows": 1615
+    },
+    {
+     "first_scored": "2024-10-24",
+     "month_end": 55,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1636
+    },
+    {
+     "first_scored": "2024-11-25",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1657
+    },
+    {
+     "first_scored": "2024-12-26",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 84,
+     "training_rows": 1678
+    },
+    {
+     "first_scored": "2025-01-28",
+     "month_end": 57,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1699
+    },
+    {
+     "first_scored": "2025-02-27",
+     "month_end": 58,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1720
+    },
+    {
+     "first_scored": "2025-03-28",
+     "month_end": 59,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1741
+    },
+    {
+     "first_scored": "2025-04-29",
+     "month_end": 60,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1762
+    },
+    {
+     "first_scored": "2025-05-29",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1783
+    },
+    {
+     "first_scored": "2025-06-30",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 90,
+     "training_rows": 1804
+    },
+    {
+     "first_scored": "2025-07-30",
+     "month_end": 62,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1825
+    },
+    {
+     "first_scored": "2025-08-28",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1846
+    },
+    {
+     "first_scored": "2025-09-29",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 93,
+     "training_rows": 1867
+    },
+    {
+     "first_scored": "2025-10-29",
+     "month_end": 64,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1888
+    },
+    {
+     "first_scored": "2025-12-01",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1909
+    },
+    {
+     "first_scored": "2025-12-31",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 96,
+     "training_rows": 1930
+    }
+   ]
+  },
+  "5": {
+   "refits": 89,
+   "summary": {
+    "month_end": {
+     "first_refit": 2,
+     "last_refit": 65,
+     "median_refit": 33,
+     "refits_with_a_leaf_of_10": 79,
+     "refits_with_a_leaf_of_20": 64,
+     "refits_with_a_leaf_of_5": 84
+    },
+    "quarter_end": {
+     "first_refit": 0,
+     "last_refit": 30,
+     "median_refit": 15,
+     "refits_with_a_leaf_of_10": 62,
+     "refits_with_a_leaf_of_20": 32,
+     "refits_with_a_leaf_of_5": 77
+    },
+    "tax_date": {
+     "first_refit": 6,
+     "last_refit": 93,
+     "median_refit": 48,
+     "refits_with_a_leaf_of_10": 83,
+     "refits_with_a_leaf_of_20": 74,
+     "refits_with_a_leaf_of_5": 89
+    }
+   },
+   "windows": [
+    {
+     "first_scored": "2018-07-06",
+     "month_end": 2,
+     "quarter_end": 0,
+     "tax_date": 6,
+     "training_rows": 61
+    },
+    {
+     "first_scored": "2018-08-06",
+     "month_end": 2,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 82
+    },
+    {
+     "first_scored": "2018-09-05",
+     "month_end": 3,
+     "quarter_end": 1,
+     "tax_date": 6,
+     "training_rows": 103
+    },
+    {
+     "first_scored": "2018-10-04",
+     "month_end": 4,
+     "quarter_end": 1,
+     "tax_date": 9,
+     "training_rows": 124
+    },
+    {
+     "first_scored": "2018-11-05",
+     "month_end": 4,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 145
+    },
+    {
+     "first_scored": "2018-12-07",
+     "month_end": 5,
+     "quarter_end": 2,
+     "tax_date": 9,
+     "training_rows": 166
+    },
+    {
+     "first_scored": "2019-01-09",
+     "month_end": 7,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 187
+    },
+    {
+     "first_scored": "2019-02-08",
+     "month_end": 8,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 208
+    },
+    {
+     "first_scored": "2019-03-12",
+     "month_end": 9,
+     "quarter_end": 3,
+     "tax_date": 12,
+     "training_rows": 229
+    },
+    {
+     "first_scored": "2019-04-10",
+     "month_end": 9,
+     "quarter_end": 4,
+     "tax_date": 12,
+     "training_rows": 250
+    },
+    {
+     "first_scored": "2019-05-10",
+     "month_end": 10,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 271
+    },
+    {
+     "first_scored": "2019-06-11",
+     "month_end": 11,
+     "quarter_end": 4,
+     "tax_date": 15,
+     "training_rows": 292
+    },
+    {
+     "first_scored": "2019-07-11",
+     "month_end": 11,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 313
+    },
+    {
+     "first_scored": "2019-08-09",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 334
+    },
+    {
+     "first_scored": "2019-09-10",
+     "month_end": 12,
+     "quarter_end": 5,
+     "tax_date": 18,
+     "training_rows": 355
+    },
+    {
+     "first_scored": "2019-10-09",
+     "month_end": 13,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 376
+    },
+    {
+     "first_scored": "2019-11-08",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 397
+    },
+    {
+     "first_scored": "2019-12-11",
+     "month_end": 14,
+     "quarter_end": 6,
+     "tax_date": 21,
+     "training_rows": 418
+    },
+    {
+     "first_scored": "2020-01-13",
+     "month_end": 15,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 439
+    },
+    {
+     "first_scored": "2020-02-12",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 460
+    },
+    {
+     "first_scored": "2020-03-13",
+     "month_end": 16,
+     "quarter_end": 7,
+     "tax_date": 24,
+     "training_rows": 481
+    },
+    {
+     "first_scored": "2020-04-14",
+     "month_end": 17,
+     "quarter_end": 8,
+     "tax_date": 24,
+     "training_rows": 502
+    },
+    {
+     "first_scored": "2020-05-13",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 523
+    },
+    {
+     "first_scored": "2020-06-12",
+     "month_end": 18,
+     "quarter_end": 8,
+     "tax_date": 27,
+     "training_rows": 544
+    },
+    {
+     "first_scored": "2020-07-14",
+     "month_end": 19,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 565
+    },
+    {
+     "first_scored": "2020-08-12",
+     "month_end": 20,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 586
+    },
+    {
+     "first_scored": "2020-09-11",
+     "month_end": 21,
+     "quarter_end": 9,
+     "tax_date": 30,
+     "training_rows": 607
+    },
+    {
+     "first_scored": "2020-10-13",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 628
+    },
+    {
+     "first_scored": "2020-11-12",
+     "month_end": 22,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 649
+    },
+    {
+     "first_scored": "2020-12-14",
+     "month_end": 23,
+     "quarter_end": 10,
+     "tax_date": 33,
+     "training_rows": 670
+    },
+    {
+     "first_scored": "2021-01-14",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 691
+    },
+    {
+     "first_scored": "2021-02-16",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 712
+    },
+    {
+     "first_scored": "2021-03-17",
+     "month_end": 24,
+     "quarter_end": 11,
+     "tax_date": 36,
+     "training_rows": 733
+    },
+    {
+     "first_scored": "2021-04-16",
+     "month_end": 25,
+     "quarter_end": 12,
+     "tax_date": 36,
+     "training_rows": 754
+    },
+    {
+     "first_scored": "2021-05-17",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 775
+    },
+    {
+     "first_scored": "2021-06-16",
+     "month_end": 26,
+     "quarter_end": 12,
+     "tax_date": 39,
+     "training_rows": 796
+    },
+    {
+     "first_scored": "2021-07-16",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 817
+    },
+    {
+     "first_scored": "2021-08-16",
+     "month_end": 27,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 838
+    },
+    {
+     "first_scored": "2021-09-15",
+     "month_end": 28,
+     "quarter_end": 13,
+     "tax_date": 42,
+     "training_rows": 859
+    },
+    {
+     "first_scored": "2021-10-15",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 880
+    },
+    {
+     "first_scored": "2021-11-16",
+     "month_end": 29,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 901
+    },
+    {
+     "first_scored": "2021-12-16",
+     "month_end": 30,
+     "quarter_end": 14,
+     "tax_date": 45,
+     "training_rows": 922
+    },
+    {
+     "first_scored": "2022-01-18",
+     "month_end": 31,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 943
+    },
+    {
+     "first_scored": "2022-02-16",
+     "month_end": 32,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 964
+    },
+    {
+     "first_scored": "2022-03-18",
+     "month_end": 33,
+     "quarter_end": 15,
+     "tax_date": 48,
+     "training_rows": 985
+    },
+    {
+     "first_scored": "2022-04-19",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 48,
+     "training_rows": 1006
+    },
+    {
+     "first_scored": "2022-05-18",
+     "month_end": 34,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1027
+    },
+    {
+     "first_scored": "2022-06-17",
+     "month_end": 35,
+     "quarter_end": 16,
+     "tax_date": 51,
+     "training_rows": 1048
+    },
+    {
+     "first_scored": "2022-07-20",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1069
+    },
+    {
+     "first_scored": "2022-08-18",
+     "month_end": 36,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1090
+    },
+    {
+     "first_scored": "2022-09-19",
+     "month_end": 37,
+     "quarter_end": 17,
+     "tax_date": 54,
+     "training_rows": 1111
+    },
+    {
+     "first_scored": "2022-10-19",
+     "month_end": 38,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1132
+    },
+    {
+     "first_scored": "2022-11-18",
+     "month_end": 39,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1153
+    },
+    {
+     "first_scored": "2022-12-20",
+     "month_end": 40,
+     "quarter_end": 18,
+     "tax_date": 57,
+     "training_rows": 1174
+    },
+    {
+     "first_scored": "2023-01-23",
+     "month_end": 40,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1195
+    },
+    {
+     "first_scored": "2023-02-22",
+     "month_end": 41,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1216
+    },
+    {
+     "first_scored": "2023-03-23",
+     "month_end": 42,
+     "quarter_end": 19,
+     "tax_date": 60,
+     "training_rows": 1237
+    },
+    {
+     "first_scored": "2023-04-24",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 60,
+     "training_rows": 1258
+    },
+    {
+     "first_scored": "2023-05-23",
+     "month_end": 43,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1279
+    },
+    {
+     "first_scored": "2023-06-23",
+     "month_end": 44,
+     "quarter_end": 20,
+     "tax_date": 63,
+     "training_rows": 1300
+    },
+    {
+     "first_scored": "2023-07-25",
+     "month_end": 45,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1321
+    },
+    {
+     "first_scored": "2023-08-23",
+     "month_end": 46,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1342
+    },
+    {
+     "first_scored": "2023-09-22",
+     "month_end": 47,
+     "quarter_end": 21,
+     "tax_date": 66,
+     "training_rows": 1363
+    },
+    {
+     "first_scored": "2023-10-24",
+     "month_end": 47,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1384
+    },
+    {
+     "first_scored": "2023-11-22",
+     "month_end": 48,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1405
+    },
+    {
+     "first_scored": "2023-12-22",
+     "month_end": 49,
+     "quarter_end": 22,
+     "tax_date": 69,
+     "training_rows": 1426
+    },
+    {
+     "first_scored": "2024-01-25",
+     "month_end": 49,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1447
+    },
+    {
+     "first_scored": "2024-02-26",
+     "month_end": 50,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1468
+    },
+    {
+     "first_scored": "2024-03-26",
+     "month_end": 51,
+     "quarter_end": 23,
+     "tax_date": 72,
+     "training_rows": 1489
+    },
+    {
+     "first_scored": "2024-04-25",
+     "month_end": 51,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1510
+    },
+    {
+     "first_scored": "2024-05-24",
+     "month_end": 52,
+     "quarter_end": 24,
+     "tax_date": 75,
+     "training_rows": 1531
+    },
+    {
+     "first_scored": "2024-06-26",
+     "month_end": 53,
+     "quarter_end": 24,
+     "tax_date": 76,
+     "training_rows": 1552
+    },
+    {
+     "first_scored": "2024-07-26",
+     "month_end": 53,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1573
+    },
+    {
+     "first_scored": "2024-08-26",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 78,
+     "training_rows": 1594
+    },
+    {
+     "first_scored": "2024-09-25",
+     "month_end": 54,
+     "quarter_end": 25,
+     "tax_date": 80,
+     "training_rows": 1615
+    },
+    {
+     "first_scored": "2024-10-25",
+     "month_end": 55,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1636
+    },
+    {
+     "first_scored": "2024-11-26",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 81,
+     "training_rows": 1657
+    },
+    {
+     "first_scored": "2024-12-27",
+     "month_end": 56,
+     "quarter_end": 26,
+     "tax_date": 84,
+     "training_rows": 1678
+    },
+    {
+     "first_scored": "2025-01-29",
+     "month_end": 57,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1699
+    },
+    {
+     "first_scored": "2025-02-28",
+     "month_end": 58,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1720
+    },
+    {
+     "first_scored": "2025-03-31",
+     "month_end": 59,
+     "quarter_end": 27,
+     "tax_date": 84,
+     "training_rows": 1741
+    },
+    {
+     "first_scored": "2025-04-30",
+     "month_end": 60,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1762
+    },
+    {
+     "first_scored": "2025-05-30",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 87,
+     "training_rows": 1783
+    },
+    {
+     "first_scored": "2025-07-01",
+     "month_end": 61,
+     "quarter_end": 28,
+     "tax_date": 90,
+     "training_rows": 1804
+    },
+    {
+     "first_scored": "2025-07-31",
+     "month_end": 62,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1825
+    },
+    {
+     "first_scored": "2025-08-29",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 90,
+     "training_rows": 1846
+    },
+    {
+     "first_scored": "2025-09-30",
+     "month_end": 63,
+     "quarter_end": 29,
+     "tax_date": 93,
+     "training_rows": 1867
+    },
+    {
+     "first_scored": "2025-10-30",
+     "month_end": 64,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1888
+    },
+    {
+     "first_scored": "2025-12-02",
+     "month_end": 65,
+     "quarter_end": 30,
+     "tax_date": 93,
+     "training_rows": 1909
+    }
+   ]
+  }
+ },
+ "leaf_sizes": [
+  20,
+  10,
+  5
+ ],
+ "panel_sha256": "d6dca7edabd0d12b2746d7c3d8298c4a08c49a99b2afd101aa412f331acda91e"
+}

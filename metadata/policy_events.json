@@ -1658,6 +1658,26 @@
       "note": null
     },
     {
+      "id": "rate_methodology-20241125",
+      "kind": "rate_methodology",
+      "action": "sofr_calculation_change",
+      "title": "SOFR calculation changes: affiliated-institution transactions excluded and a fixed 20% of the lowest-rate centrally-cleared DVP volume trimmed",
+      "announced_date": "2024-11-25",
+      "announced_time": null,
+      "time_basis": "not_stated",
+      "effective_date": "2024-11-25",
+      "effective_precision": "day",
+      "source_url": "https://www.newyorkfed.org/markets/opolicy/operating_policy_241125",
+      "read_at_source": true,
+      "details": {
+        "dvp_trim_share": 0.2,
+        "affiliate_exclusion": true,
+        "first_publication_date": "2024-11-25",
+        "first_publication_reflects_transactions_of": "2024-11-22"
+      },
+      "note": "Read at the Operating Policy Statement, dated 25 November 2024, which says the New York Fed 'began publishing SOFR' with both modifications that day and that earlier publications are not revised. The page states no release time. It does not date any earlier advance notice of the change, so none is used."
+    },
+    {
       "id": "iorb-20241218",
       "kind": "iorb_rate",
       "action": "set_rate",
