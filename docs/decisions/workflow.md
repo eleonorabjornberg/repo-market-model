@@ -92,7 +92,7 @@ The ownership gate, its CI job and its Claude Code hook are retired, by directiv
 ## Delegated review (in force until Eleonora revokes it)
 
 Decided by Eleonora, 30 September 2026, and extended on 2 October 2026 (#112). Until Eleonora revokes it in writing (a comment on the "Directive queue" issue, or a change to this record), a pull request that closes an
-issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), not by her. The review session is a separate Claude Code session from the one that implemented the change, and does not change code. It merges only when CI is green and the directive's acceptance criteria are met. It
+issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive loop" routine (a Claude Code cloud session in the `rmm` environment, hourly; since 1 October it both reviews and implements, and its instructions are in `.claude/routines/directive-loop.md`), not by her. The review session is a separate Claude Code session from the one that implemented the change, never reviews a pull request its own session opened, and does not change code in the pull request it reviews. It merges only when CI is green and the directive's acceptance criteria are met. It
 escalates instead of merging (the pull request labelled `needs-eleonora`) when the pull request:
 
 - asks her a question, or its session opened a `needs-eleonora` issue (other than a publishing question under the rule
