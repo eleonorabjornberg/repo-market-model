@@ -157,6 +157,10 @@ def guard_one_step_fit(function):
     Eleonora's ruling of 20 October 2026). The fitter still refuses a calendar or scheduled regressor on every
     one-step fit, with the same `ValueError`; a direct fit is not checked. A call whose `regressors` cannot be read
     as names goes through, for the fitter's own validation to refuse.
+
+    A fitter that wraps a guarded one (`ml.fit_depth_limited_quantiles`) is decorated too, so it is checked under
+    its own name: the inner check alone sees the inner name and would match that fitter's allow-list entries.
+    `training_pairs` is read whether it is a named parameter or passed through `**settings`.
     """
 
     signature = inspect.signature(function)
@@ -168,7 +172,11 @@ def guard_one_step_fit(function):
             names = tuple(str(name) for name in bound.arguments["regressors"])
         except (TypeError, KeyError):
             return function(*args, **kwargs)
-        if bound.arguments.get("training_pairs") != "direct":
+        pairs = bound.arguments.get("training_pairs")
+        for parameter in signature.parameters.values():
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+                pairs = bound.arguments.get(parameter.name, {}).get("training_pairs", pairs)
+        if pairs != "direct":
             check_one_step_regressors(function.__name__, names)
         return function(*args, **kwargs)
 

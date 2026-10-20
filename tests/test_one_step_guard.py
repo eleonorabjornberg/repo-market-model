@@ -17,6 +17,12 @@ mutation confirmed applied by diff and reverted; unmutated control green before 
    `test_a_scheduled_field_is_refused`, `AssertionError: ValueError not raised`.
 3. **The threshold variable left unchecked** -- in `baseline.fit_threshold`, `names + (selector_name,)` -> `names`.
    Killed by `test_a_calendar_threshold_variable_is_refused`, `AssertionError: ValueError not raised`.
+4. **The wrapping fitter left undecorated** -- `@guard_one_step_fit` removed from `ml.fit_depth_limited_quantiles`
+   (the code before the fix). Killed by `test_a_depth_limited_one_step_fit_of_the_exempt_inputs_is_refused`:
+   `AssertionError`, the fit passed the guard as `fit_gradient_boosted_quantiles` and failed later with
+   `MissingRegressorError`. Run on CPython 3.11.17, numpy 2.4.6, scikit-learn 1.9.1.
+5. **`training_pairs` read only as a named parameter** -- the `VAR_KEYWORD` loop in `guard_one_step_fit` removed.
+   Killed by `test_training_pairs_passed_through_settings_is_read`: `ValueError` raised for a direct fit.
 """
 
 from __future__ import annotations
@@ -121,6 +127,27 @@ class AllowListTests(unittest.TestCase):
             one_step_guard.check_one_step_regressors(
                 "fit_gradient_boosted_quantiles", tuple(reversed(PUBLISHED_AT_H1))
             )
+
+
+class WrappedFitterTests(unittest.TestCase):
+    """A fitter that calls a guarded fitter is checked under its own name, not the inner one's.
+
+    `fit_depth_limited_quantiles` calls `fit_gradient_boosted_quantiles`, whose guard saw only the inner name, so a
+    one-step depth-limited fit of exactly the exempt inputs matched `published_distribution_crps` and went through.
+    """
+
+    def test_a_depth_limited_one_step_fit_of_the_exempt_inputs_is_refused(self):
+        from repo_model import ml
+
+        with self.assertRaisesRegex(ValueError, "fit_depth_limited_quantiles trains on one-step pairs"):
+            ml.fit_depth_limited_quantiles(frame(), PUBLISHED_AT_H1, date(2026, 2, 9), 20, max_depth=3)
+
+    def test_training_pairs_passed_through_settings_is_read(self):
+        guarded = one_step_guard.guard_one_step_fit(lambda train_frame, regressors, **settings: "fitted")
+
+        self.assertEqual(guarded([], ("quarter_end",), training_pairs="direct"), "fitted")
+        with self.assertRaises(ValueError):
+            guarded([], ("quarter_end",))
 
 
 if __name__ == "__main__":

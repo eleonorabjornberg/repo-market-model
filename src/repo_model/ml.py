@@ -3782,6 +3782,7 @@ def fit_gradient_boosted_quantiles(
 V2_TREE_SETTINGS = MappingProxyType({"max_depth": 3})
 
 
+@guard_one_step_fit
 def fit_depth_limited_quantiles(
     train_frame: Sequence[DailyObservation],
     regressors: Sequence[str],
