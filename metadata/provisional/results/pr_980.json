@@ -1,0 +1,15 @@
+{
+  "order": 290,
+  "directive": 949,
+  "pull_request": 980,
+  "hypothesis": "H1",
+  "result": "The block-length report",
+  "declarations": [],
+  "model": "`gbm_funding` as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-19-model-00980-H1-step3"
+  ],
+  "concluded": "The block stays 10: against B1 the automatic block is 4.8 days and against B2 it is 73.2."
+}

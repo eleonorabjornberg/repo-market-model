@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/pooled_gate_595.json",
+  "script": "scripts/pooled_gate_595.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

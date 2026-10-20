@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/iorb_every_day_579.json",
+  "script": "scripts/iorb_every_day_579.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

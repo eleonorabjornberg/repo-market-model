@@ -1,0 +1,15 @@
+{
+  "order": 50,
+  "directive": 805,
+  "pull_request": 820,
+  "hypothesis": "H5",
+  "result": "Scores by anchor type and without 2019-09-18",
+  "declarations": [],
+  "model": "the phase 2 gbm and (c)",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "0078-2026-10-15-model-00820-H5-step3"
+  ],
+  "concluded": "The gain concentrates on days after a calendar spike."
+}

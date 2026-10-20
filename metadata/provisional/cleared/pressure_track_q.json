@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/pressure_track_q.json",
+  "script": "scripts/pressure_track_q.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}
