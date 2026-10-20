@@ -67,7 +67,8 @@ day is provisional (`docs/research/provisional-calendar-register.md`). A session
   (`contract.CALENDAR_FEATURES`) or a `scheduled_availability` field from the target row. A one-step fitter (row `p`
   against the spread of `p + 1`) would learn it a day off, so `repo_model.one_step_guard` makes such a fit raise
   `ValueError`. Train on direct pairs (`training_pairs="direct"`) or drop the column.
-  `one_step_guard.ONE_STEP_ALLOW_LIST` is the only exemption (two frozen declarations); adding to it is her decision.
+  `one_step_guard.ONE_STEP_ALLOW_LIST` holds the only exemptions (frozen declarations, some with an end date); adding
+  to it is her decision.
   See `docs/pivot/one-step-guard-947.md`.
 - **Scoring protocol v1** (`docs/decisions/scoring-protocol.md`, `repo_model.scoring_protocol`,
   `repo_model.protocol_benchmarks`) gates all new scoring. Only prospective confirmation days give a verdict;
@@ -160,6 +161,12 @@ without her review. `AGENTS.md` only points here. CI's `owner-attested` job (`sc
 change to either as binding, like the lockbox, the live pin and registrations: the PR appends an entry to
 `metadata/owner_attestations.json` citing a `GO #<issue>` comment she posted herself. A session never posts that
 comment for her.
+
+`.claude/` holds the hooks that enforce some of these rules before an action (`hooks/`: no push to `main`, no
+`GO #<n>` comment, no commit of a built file, the documentation guards after a Markdown edit, the pre-review checks
+before stopping), the subagents (`agents/`: implementer, reviewer, auditor), the skills (`skills/`: `new-study`,
+`publish-record`, `register-producer`, `long-run`, `directive-orchestrator`) and the Directive loop's instructions
+(`routines/`).
 
 ## Delegated review
 
