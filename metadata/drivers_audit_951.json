@@ -1,0 +1,199 @@
+{
+ "amendments": [
+  {
+   "added_comparisons": [
+    [
+     "gbm_funding",
+     "onestep_cal_leaf20"
+    ],
+    [
+     "onestep_cal_leaf20",
+     "direct_cal_leaf20"
+    ]
+   ],
+   "after": "0189ba27 (the declaration as first committed)",
+   "arm": "onestep_cal_leaf20",
+   "before": "any score of the arm",
+   "reading": "under the declaration's existing reading rules, cuts and protocol",
+   "ruling": "Eleonora, 19 October 2026 (relayed on #951, comment 6275151940): the published inputs plus the calendar inputs exactly as inputs.calendar declares them, on one-step pairs, min_samples_leaf 20; otherwise identical to direct_cal_leaf20"
+  }
+ ],
+ "arms": {
+  "direct_base_leaf20": {
+   "inputs": "base",
+   "min_samples_leaf": 20,
+   "training_pairs": "direct"
+  },
+  "direct_base_leaf5": {
+   "inputs": "base",
+   "min_samples_leaf": 5,
+   "training_pairs": "direct"
+  },
+  "direct_cal_leaf20": {
+   "inputs": "calendar",
+   "min_samples_leaf": 20,
+   "training_pairs": "direct"
+  },
+  "direct_cal_leaf5": {
+   "inputs": "calendar",
+   "min_samples_leaf": 5,
+   "training_pairs": "direct"
+  },
+  "onestep_cal_leaf20": {
+   "inputs": "calendar",
+   "min_samples_leaf": 20,
+   "training_pairs": "one_step"
+  }
+ },
+ "benchmarks": [
+  "B1",
+  "B2",
+  "gbm_funding"
+ ],
+ "ceiling": {
+  "candidate_inputs": "the published funding declaration's inputs as H2's scratch panel names them",
+  "design": "H2's cross-fit (scripts/upper_bound_635.py, 10 contiguous blocks per lead, the walk-forward embargo), spread gbm only, with the lineup below; the ceiling read is the best of the lineup by CRPS on the walk-forward ordinary days, so it cannot score below the candidate's own inputs",
+  "families": {
+   "calendar": [
+    "quarter_end",
+    "tax_date",
+    "days_to_month_end"
+   ],
+   "net settlement": [
+    "net_settlement",
+    "treasury_settlement"
+   ],
+   "policy and facilities": [
+    "policy_",
+    "iorb",
+    "fed_repo",
+    "on_rrp",
+    "srf_"
+   ],
+   "rates and volumes": [
+    "sofr",
+    "tgcr",
+    "bgcr",
+    "effr",
+    "tbill",
+    "ofr_",
+    "dealer"
+   ],
+   "reserves and TGA": [
+    "reserve",
+    "tga",
+    "satiation",
+    "bank_total_assets"
+   ]
+  },
+  "other_family": "other",
+  "reading": "the best-of-lineup ceiling's skill against B1 minus the reachable model's, in points of skill, with the paired 90% interval; stop reading 'no headroom' when it is positive with the lower end above 0",
+  "settings": {
+   "reachable": "ml.UPPER_BOUND_SETTINGS['reachable']"
+  }
+ },
+ "comparisons": [
+  [
+   "direct_base_leaf5",
+   "direct_cal_leaf5"
+  ],
+  [
+   "direct_base_leaf20",
+   "direct_cal_leaf20"
+  ],
+  [
+   "direct_base_leaf20",
+   "direct_base_leaf5"
+  ],
+  [
+   "direct_cal_leaf20",
+   "direct_cal_leaf5"
+  ],
+  [
+   "gbm_funding",
+   "direct_base_leaf20"
+  ],
+  [
+   "gbm_funding",
+   "direct_cal_leaf5"
+  ],
+  [
+   "gbm_funding",
+   "onestep_cal_leaf20"
+  ],
+  [
+   "onestep_cal_leaf20",
+   "direct_cal_leaf20"
+  ]
+ ],
+ "control": "gbm_funding",
+ "cuts": {
+  "calendar_days": "target days whose reporting day type is quarter_end, month_end or tax_date, and the coupon-settlement days (treasury_settlement_coupons > 0 on the target day), reported with their number of days and the width of the skill interval",
+  "day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "ordinary"
+  ],
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ]
+ },
+ "hypothesis": "H5 step 4 (re-examining #775/#758) and H2 (the ceiling, #703/#635)",
+ "inputs": {
+  "base": "the published funding declaration's features at the lead (scripts/live_record.py published_features), spread_bps among them as the as-of spread",
+  "calendar": "base plus quarter_end, tax_date, days_to_month_end, net_settlement, net_settlement_due_5d",
+  "panel": "the scratch panel AUG3.csv of scripts/spread_distribution_634.py's docstring plus scripts/net_settlement.py panel; the base columns are the published panel's, read with the plain registry"
+ },
+ "issue": 951,
+ "key_comparison": [
+  "direct_base_leaf5",
+  "direct_cal_leaf5"
+ ],
+ "leaf_rule": "20 is ml.fit_gradient_boosted_quantiles' default; 5 is the smaller leaf, declared as the setting that can put a rare-day group alone on one side of a split once the training window holds 5 of them",
+ "leaf_sizes": [
+  20,
+  10,
+  5
+ ],
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed"
+ ],
+ "protocol": {
+  "difference": "d = S(first) - S(second); positive favours the second; skill = mean(d) / mean(S(first))",
+  "first_day_rule": "a decision day is scored when every one of its five target days is on or before 2025-12-31 and has a published outcome",
+  "interval": "stationary bootstrap, 10000 draws for pooled cells and 2000 for the others, seed 951; the 90% interval is the 5th to 95th percentile of the skill draws",
+  "primary_score": "grid CRPS averaged with equal weight over h = 1 to 5, one number per decision day",
+  "scorer": "repo_model.scoring_protocol (grid_crps, day_scores, fill_missing, paired_tests) and repo_model.protocol_benchmarks (b1_forecast, b2_forecast)"
+ },
+ "rare_days": {
+  "groups": [
+   "quarter_end",
+   "tax_date",
+   "month_end"
+  ],
+  "leaf_sizes": [
+   20,
+   10,
+   5
+  ],
+  "minimum_history": 61,
+  "refit_every": 21
+ },
+ "reading_rules": {
+  "dilution": "the calendar-day cell is read beside the pooled cell with its number of days and interval width; a gain visible on calendar days and not in the pooled cell is dilution",
+  "key": "the second arm of the key comparison is read as carrying signal in a cut when the lower end of the 90% skill interval of its CRPS against the first is above 0 on at least 30 decision days; it is read as not seen otherwise, which is not 'no signal'",
+  "no_verdict": "development data gives no verdict; whether the ruling of 15 October 2026 is reopened is Eleonora's"
+ },
+ "ruling": "Eleonora, 19 October 2026, on the fixed-income reviews of main at 362df84 (relayed on #951)",
+ "status": "declared by the pull request that closes #951 before any number was computed; a measurement, not a record. Nothing is published: no arm joins any published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
+ "training_pairs": "direct (ml.TRAINING_PAIRS): each target is paired with its own as-of read, so a calendar or scheduled column is trained from the row it is served from; the one exception is the ruled arm onestep_cal_leaf20, which is trained on the current one-step pairs (training_pairs unset), as gbm_funding is"
+}
