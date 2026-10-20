@@ -88,10 +88,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      # The results page is generated, never hand-edited; this refuses a stale
-      # one (the same check tests/test_visual.py makes, run as the command a
-      # contributor runs).
-      - name: Check the results page is current
+      # The results page is built on main and never committed (#928); this
+      # builds it from the tree, which refuses a page the inputs cannot produce,
+      # and refuses a tracked copy.
+      - name: Check the results page builds and is not committed
         env:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: src
@@ -187,16 +187,15 @@ jobs:
     # fit with the same numpy and scikit-learn; pyproject.toml's bounds admit
     # them.
     #
-    # On a pull request, the modules whose tests change with the extra
-    # installed, and nothing else: test_ml.py, test_tail_diagnostics.py (which
-    # imports test_ml) and test_cli_eval.py (whose gbm cases skip without the
-    # extra). Every other module runs identically with or without it and is
-    # proven by the core job above in the same run. The two conformance-
-    # coverage checks in test_baseline and test_contract import the modules
-    # that define conformance cases themselves (#29), so they no longer need
-    # this job to load test_ml beside them. Pushes and the nightly schedule run
-    # the whole suite here too, in the same shards as `suite-shard` (#927), so a
-    # merge is never under-tested on the way in.
+    # On a pull request, the modules that skip without the extra, and nothing else:
+    # `scripts/ci_shards.py ml-modules` finds them by reading the test sources (a call
+    # to `require_extra`, a `find_spec` probe for numpy or sklearn, or a helper
+    # imported from such a module), so a new module that skips for want of the
+    # extra joins the list without anyone editing it, and a skip that nothing runs
+    # cannot hide a guard (#1018). Every other module runs identically with or
+    # without the extra and is proven by the core job above in the same run.
+    # Pushes and the nightly schedule run the whole suite here too, in the same
+    # shards as `suite-shard` (#927), so a merge is never under-tested on the way in.
     name: "unit tests: ml extra shard ${{ matrix.shard }} (3.11)"
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -233,7 +232,7 @@ jobs:
             # Subtests marked `skip_if_fast` in test_ml (refit sweeps, never a
             # leakage, availability or staleness guard) skip here and run on
             # every push and on the schedule (directive 05, Do 4).
-            REPO_MODEL_SKIP_SLOW=1 python3 -B -m unittest test_ml test_tail_diagnostics test_cli_eval -v
+            REPO_MODEL_SKIP_SLOW=1 python3 -B -m unittest $(python3 scripts/ci_shards.py ml-modules) -v
           else
             python3 -B -m unittest $(python3 scripts/ci_shards.py modules --shard ${{ matrix.shard }}) -v
           fi
@@ -274,8 +273,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      # `log.md` is generated from the entry files under `docs/research/log/` (#866); this refuses a stale one.
-      - name: Check the log page is current
+      # `log.md` is generated from the entry files under `docs/research/log/` (#866) and built on main, never
+      # committed (#928); this refuses a tracked copy.
+      - name: Check the log page is not committed
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -B scripts/check_research_log.py assemble --check
@@ -294,9 +294,24 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: python3 -B scripts/check_research_log.py check --base "$BASE_SHA"
 
+      # The page, its data and the assembled log are built on main (#928). A pull request that carries one fails
+      # here with a message that says to change the inputs instead.
+      - name: No built output is committed
+        if: github.event_name != 'pull_request'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -B scripts/check_built_outputs.py
+
+      - name: No built output is committed or changed by this pull request
+        if: github.event_name == 'pull_request'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 -B scripts/check_built_outputs.py --base "$BASE_SHA"
+
   owner-attested:
     # A binding change (a lockbox tier, the live pin, a model joining the live
-    # record) counts only with Eleonora's own GitHub comment, not one posted
+    # record, CLAUDE.md or .claude/, a registration record) counts only with Eleonora's own GitHub comment, not one posted
     # through an app (#256; draft rule docs/decisions/drafts/owner-attestation.md).
     # The pull request cites it in metadata/owner_attestations.json, and this
     # job fetches it. With no binding change and no new citation it fetches

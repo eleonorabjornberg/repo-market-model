@@ -1,0 +1,89 @@
+{
+ "status": "declared by the pull request that closes #960 before any score was computed; a measurement, not a record. Nothing is published: B1' joins no published declaration and is not a benchmark of the protocol, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. B1' was designed by a review that had seen 2018-2025 (five-lens review, #958, Lens C), so a result here is exploration, never a verdict (scoring protocol v1, #640). Whether B1' replaces B1 as a benchmark, and whether the MME is re-set against it, are section-13 decisions and Eleonora's (her #741 ruling kept B1 and the MME unchanged)",
+ "issue": 960,
+ "hypothesis": "H5 (primary goal) step 5 (which candidate a registration can claim) and H1 step 3 (benchmarks). Development tier",
+ "ruling": "Eleonora, directive #960 (19 October 2026, relayed on #958)",
+ "target": "spread_bps at the scored day, as the 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "b1_prime": {
+  "module": "repo_model.b1_calendar.b1_calendar_forecast",
+  "anchor": "the spread of the last ordinary day at or before the as-of anchor (the last public row, protocol_benchmarks._anchor); ordinary is SplitDeclaration.reporting_day_type == 'ordinary'",
+  "changes": "for every row e from max(first, h) to the anchor, where first is the first row after the decision day less two years (B1's window), with an ordinary row at or before e - h: spread[e] - spread[last ordinary at or before e - h]",
+  "pool": "the changes whose end row e has the same SplitDeclaration.reporting_day_type as the target day (decision row + h; known in advance from the calendar); fewer than 30 (spread_mr_variants.POOL_MIN) fall back to the changes of every type",
+  "forecast": "the anchor plus protocol_benchmarks.empirical_quantiles of the pooled changes, per lead",
+  "reads": "every row read is at or before the anchor; protocol_benchmarks._require_public restates it for the rows read (LookAheadError otherwise). No parameter is fitted",
+  "difference_from_b1_recentred": "b1_recentred (#741; spread_mr_variants.b1_recentred_forecast) keeps B1's own changes, taken from the anchor, and shifts them; B1' takes the changes from last ordinary spreads and pools them by the target's type. The directive's file reference scripts/spread_mr_variants.py does not exist; the code is src/repo_model/spread_mr_variants.py and scripts/spread_mr_variants_761.py"
+ },
+ "arms": {
+  "B1": "protocol_benchmarks.b1_forecast",
+  "B2": "protocol_benchmarks.b2_forecast",
+  "B1_prime": "as above",
+  "spread_mr_ctx": "#761's variant (i), repo_model.spread_mr_variants, unchanged, walked as scripts/spread_mr_variants_761.py walks it (its context pools, its refits)",
+  "gbm_funding": "#634's walk of gbm_funding, read through scripts/h5_splits_805.prepare from the walks directory (a needs-mac input: the walks take hours); a missing forecast is B1's, as #634 and #805 fill it"
+ },
+ "pairs": [
+  [
+   "gbm_funding",
+   "spread_mr_ctx"
+  ],
+  [
+   "gbm_funding",
+   "B1_prime"
+  ],
+  [
+   "spread_mr_ctx",
+   "B1_prime"
+  ],
+  [
+   "gbm_funding",
+   "B1"
+  ],
+  [
+   "gbm_funding",
+   "B2"
+  ],
+  [
+   "spread_mr_ctx",
+   "B1"
+  ],
+  [
+   "spread_mr_ctx",
+   "B2"
+  ],
+  [
+   "B1_prime",
+   "B1"
+  ],
+  [
+   "B1_prime",
+   "B2"
+  ]
+ ],
+ "pairs_reading": "[candidate, benchmark]: skill = mean(d) / mean(S(benchmark)), d = S(benchmark) - S(candidate); positive favours the candidate. B1_prime against B1 and B2 is the benchmark's own table, not a candidate's",
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), development tier: no verdict, no registration",
+  "days": "decision days with a forecast of every arm whose five targets fall on or before 2025-12-31; every pair is scored on the same days. The arms that need no walks (B1, B2, B1', spread_mr_ctx) are scored on their own days when the gbm walks are absent, and again on the days common to all arms when they are present; the report says which",
+  "primary": "grid CRPS (23 levels), the mean over leads 1..5 per decision day (pooled) or per target day (target splits)",
+  "key_secondary": "upper-tail twCRPS, weight 1{z > 0 bp} (scoring_protocol.upper_tail_twcrps)",
+  "interval": "scoring_protocol.paired_tests, studentized stationary bootstrap (ruling 1): block 10, 10,000 draws, seed 960; the two-sided 90% interval, whose lower end is the one-sided 95% lower bound",
+  "headline": "ordinary targets (reporting day type 'ordinary' of the target day)",
+  "outcomes": "the panel's spread_bps at the target day, not the first-published vintage of protocol section 11"
+ },
+ "splits": {
+  "pooled": "one number per decision day",
+  "regime": "SplitDeclaration.regime of the target day: 2018-19, 2020, 2021-23, 2024, 2025-26",
+  "target_type": "SplitDeclaration.reporting_day_type of the target day",
+  "anchor_type": "SplitDeclaration.reporting_day_type of the anchor row of the decision",
+  "min_days": "a group of fewer than 20 days is listed and not tested"
+ },
+ "reading_rules": {
+  "gbm_beyond_transparent": "if gbm_funding's skill over spread_mr_ctx on ordinary targets, grid CRPS, has a one-sided 95% lower bound below 0, the page says the gbm is not shown to carry anything beyond the transparent model",
+  "mme_reachable": "if gbm_funding's pooled grid-CRPS skill over B1_prime is below 3%, the page says the MME as set (3% against B1) is not reachable by this candidate against B1_prime. Stated as declared (Lens C's kill conditions); it re-sets nothing"
+ },
+ "limits": {
+  "last_day": "2025-12-31",
+  "lockbox": "the scored days pass lockbox.require_unlocked",
+  "no_record": "no published record or declaration changes; nothing is written into docs/runs/",
+  "max_new_arms": 1,
+  "long_run": "the gbm walks are not re-run in the cloud (needs-mac, #46)"
+ }
+}

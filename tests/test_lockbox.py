@@ -338,6 +338,10 @@ NON_SCORING_COMMANDS = {
 
 #: Functions that read an as-of information set but score nothing, and why.
 NOT_ENTRY_POINTS = {
+    "scripts/drivers_audit_951.rare_command": (
+        "counts the rare days (quarter-end, tax date, month-end) in each walk-forward refit's training window (#951) and "
+        "scores nothing; it calls require_study_window (no day after 2025-12-31) before it reads the panel"
+    ),
     "scripts/twin_diagnosis_865.alignment_row": (
         "reads one training pair's information set for a named decision day and checks both guards (#865); scores "
         "nothing; the named days (`ALIGNMENT_DAYS`) all end on or before 2025-12-31"
@@ -1050,11 +1054,13 @@ CRPS_SCORERS = {
     "scoring_protocol.upper_tail_twcrps": ("delegates", "the key secondary's loss of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any (#655)"),
     "scripts/spread_mean_reversion_686.five_level_cells": ("guard", "the five-level CRPS of the mean-reversion walk's cells: `require_unlocked` on every decision and target day before any cell is computed (#686)"),
     "scripts/spread_mean_reversion_686.published_cells": ("guard", "the five-level CRPS of the published distribution's cells on the same days: `require_unlocked` on every target day before any cell is computed (#686)"),
+    "scripts/scaled_score_967.build_pool": ("guard", "B1's and B2's grid and trapezoid CRPS cells of the scaled-score study: `require_unlocked` on every decision and target day, and `require_study_window` on every target, before any cell is computed (#967)"),
     "scripts/live_score.score_crps": ("guard", "the live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "scripts/live_score.score": ("guard", "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
     "baseline.rolling_persistence_backtest": ("guard", "the CRPS fold loop: `_as_of_folds` refuses a locked scored day"),
     "scripts/live_score.score_v2": ("guard", "v2's live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#245)"),
     "scripts/nowcast.score_command": ("guard", "scores the nowcast walks' CRPS after `require_unlocked` on the last scored day (2025-12-31), and refuses a walk or panel that runs past it (#445)"),
+    "live_monitor.crps_ratio": ("delegates", "a pure metric of rows the caller supplies; the replay refuses a day after 2025-12-31 and a locked day before it builds rows, and the read of live outcomes refuses until the monitoring decision record is merged (#969)"),
     "scripts/live_score.v2_crps": ("delegates", "one v2 record's loss at an outcome `score_v2` supplies, after its guard"),
     "scripts/live_score.crps_from_record": ("delegates", "one record's loss at an outcome `score_crps` supplies, after its guard"),
     "scripts/live_score.integral_crps_from_record": ("delegates", "one record's integral loss at an outcome `score_crps` supplies, after its guard"),
