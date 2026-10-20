@@ -706,5 +706,40 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/richer_targets_706.json"
+  },
+  "ofr_stfm_repo_cleared": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 19 October 2026 for #968 (Lens E of #958), from the OFR's data-release page, https://www.financialresearch.gov/short-term-funding-monitor/datasets/repo/, fetched that day (HTTP 200) and read verbatim. It states: \"The preliminary release is published daily at 3 p.m. as an update to the Short-term Funding Monitor. Data for centrally cleared repo markets are generally made available with a one-day lag. Data for tri-party repo are generally made available with a two-day lag. Data are not published for market holidays. Releases are not published on government holidays and data for affected days are instead published on the next day the government is open.\" So a cleared (DVP, GCF) preliminary rate dated D is public at 3 p.m. on the next business day, the same date as SOFR's value for D, and a tri-party rate a day later. #187 declared all three at 16:00 two business days after the date because the API states no publication time (ofr_stfm_repo, ofr_stfm_repo_segments); that was the conservative side, a day staler than the page says, and is left as it was for every record already scored. The government-holiday rule is covered by counting business days: a date's value waits for the next day the government is open, which is the business day after. Only the two preliminary rates are declared here: the final series are published later and the volumes are read by no column; the tri-party fields stay in ofr_stfm_repo_segments at two days. Values dated before 2020-09-09 were filled in after the OFR began publishing in real time and are not read (#508, #522).",
+      "publication": "OFR U.S. Repo Markets Data Release (Short-term Funding Monitor): preliminary release daily at 3 p.m.; centrally cleared repo (DVP, GCF) one day after its date. 15:00 ET one business day after the reference date is declared."
+    },
+    "coverage": [
+      "DVP Service and GCF overnight/open average rate, preliminary, from 2020-09-09 as read (published in real time from then); the GCF series is mostly empty (disclosure edits)"
+    ],
+    "field_frequencies": {
+      "REPO-DVP_AR_OO-P": "business_daily",
+      "REPO-GCF_AR_OO-P": "business_daily"
+    },
+    "fields": [
+      "REPO-DVP_AR_OO-P",
+      "REPO-GCF_AR_OO-P"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#968). A separate source from ofr_stfm_repo (frozen with metadata/sources.json by the final-test pre-registration) and from ofr_stfm_repo_segments only so that no record already scored changes its availability: it re-declares the same two preliminary series at the page's stated lag, for the columns ofr_dvp_rate_1d, ofr_dvp_minus_bgcr_bp_1d and ofr_gcf_rate_1d (repo_model.dvp_segment.CLEARED_COLUMN_FIELDS), values identical to the two-day columns and read a day earlier. No published figure moves; whether any OFR series joins a published declaration is Eleonora's decision. The snapshots are those of ofr_stfm_repo and ofr_stfm_repo_segments (REPO-DVP_AR_OO-P and REPO-GCF_AR_OO-P); a re-fetch can differ.",
+    "provider": "Office of Financial Research",
+    "release_lag": {
+      "available_time": "15:00",
+      "basis": "ref_date",
+      "days": 1,
+      "note": "Declared 19 October 2026 (#968) from the OFR's data-release page (availability_provenance): the preliminary release is published daily at 3 p.m. and centrally cleared repo is made available with a one-day lag. 15:00 ET on the next business day, so a 16:00 ET decision on that day reads it and a 14:00 ET decision does not. The API keeps no vintages, so the page's statement is the evidence, not a measured first-print time.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 6
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed against the OFR API's schema; the empty declaration is not a finding. A null value is the OFR's own missing day.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://data.financialresearch.gov/v1/series/timeseries"
   }
 }
