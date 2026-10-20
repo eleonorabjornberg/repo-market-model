@@ -20,6 +20,7 @@ same narrow Holm family as #968; `page` sets it beside #968's two readings, read
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -27,9 +28,12 @@ from typing import List, Mapping, Optional, Sequence
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "scripts"))
 
-import ofr_cleared_lag_968 as lag968  # noqa: E402
+_spec = importlib.util.spec_from_file_location("ofr_cleared_lag_968", REPO / "scripts" / "ofr_cleared_lag_968.py")
+lag968 = importlib.util.module_from_spec(_spec)
+sys.modules[_spec.name] = lag968
+_spec.loader.exec_module(lag968)
+
 from repo_model.dvp_segment import BENCHMARKS, HORIZONS, ONSET, POOLED, THRESHOLDS, comparison_key  # noqa: E402
 
 EVIDENCE_968 = REPO / "docs" / "research" / "ofr-cleared-lag-968"
