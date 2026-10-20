@@ -1,4 +1,23 @@
 {
+ "amendments": [
+  {
+   "added_comparisons": [
+    [
+     "gbm_funding",
+     "onestep_cal_leaf20"
+    ],
+    [
+     "onestep_cal_leaf20",
+     "direct_cal_leaf20"
+    ]
+   ],
+   "after": "0189ba27 (the declaration as first committed)",
+   "arm": "onestep_cal_leaf20",
+   "before": "any score of the arm",
+   "reading": "under the declaration's existing reading rules, cuts and protocol",
+   "ruling": "Eleonora, 19 October 2026 (relayed on #951, comment 6275151940): the published inputs plus the calendar inputs exactly as inputs.calendar declares them, on one-step pairs, min_samples_leaf 20; otherwise identical to direct_cal_leaf20"
+  }
+ ],
  "arms": {
   "direct_base_leaf20": {
    "inputs": "base",
@@ -19,6 +38,11 @@
    "inputs": "calendar",
    "min_samples_leaf": 5,
    "training_pairs": "direct"
+  },
+  "onestep_cal_leaf20": {
+   "inputs": "calendar",
+   "min_samples_leaf": 20,
+   "training_pairs": "one_step"
   }
  },
  "benchmarks": [
@@ -92,6 +116,14 @@
   [
    "gbm_funding",
    "direct_cal_leaf5"
+  ],
+  [
+   "gbm_funding",
+   "onestep_cal_leaf20"
+  ],
+  [
+   "onestep_cal_leaf20",
+   "direct_cal_leaf20"
   ]
  ],
  "control": "gbm_funding",
@@ -163,5 +195,5 @@
  },
  "ruling": "Eleonora, 19 October 2026, on the fixed-income reviews of main at 362df84 (relayed on #951)",
  "status": "declared by the pull request that closes #951 before any number was computed; a measurement, not a record. Nothing is published: no arm joins any published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
- "training_pairs": "direct (ml.TRAINING_PAIRS): each target is paired with its own as-of read, so a calendar or scheduled column is trained from the row it is served from"
+ "training_pairs": "direct (ml.TRAINING_PAIRS): each target is paired with its own as-of read, so a calendar or scheduled column is trained from the row it is served from; the one exception is the ruled arm onestep_cal_leaf20, which is trained on the current one-step pairs (training_pairs unset), as gbm_funding is"
 }
