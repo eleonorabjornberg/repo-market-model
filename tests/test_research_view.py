@@ -1,7 +1,9 @@
 """The research sections of the results page (#645): `scripts/research_view.py`, `site/index.html`.
 
-The page reads, top to bottom: executive summary, current best performer, H1 to H10, then the background and
-detailed records. Every figure is parsed from tracked sources (`docs/research/`), and a figure nobody has measured
+The page reads, top to bottom: executive summary, a contents list, current best performer, H1 to H10, then the
+background and detailed records. The executive summary is prose with no table, and each hypothesis is one line (its
+id and a tagline from `docs/research/taglines.json`) that opens a native <details> fold holding everything else
+(#893). Every figure is parsed from tracked sources (`docs/research/`), and a figure nobody has measured
 says so. These tests fix the order, refuse a hypothesis without a question or a milestone list, and check the
 labels. They read the committed page; `tests/test_visual.py` refuses a stale one.
 
@@ -47,9 +49,20 @@ class PageOrder(unittest.TestCase):
 
     def test_existing_content_is_below(self):
         background = at('id="background"')
-        for marker in ('id="start"', 'aria-label="Chapters"', 'id="n1"', 'id="final-test"', 'id="history"',
-                       'id="built"'):
+        for marker in ('id="start"', 'id="n1"', 'id="final-test"', 'id="history"', 'id="built"'):
             self.assertGreater(at(marker), background, marker)
+
+    def test_a_contents_list_follows_the_summary_and_links_every_part(self):
+        """#893: the tile grids became one contents list, between the executive summary and section 1."""
+        contents = at('<nav aria-label="Contents"')
+        self.assertLess(at('id="research-summary"'), contents)
+        self.assertLess(contents, at('id="best-performer"'))
+        nav = PAGE[contents:PAGE.find("</nav>", contents)]
+        for target in ("best-performer", "hypotheses", "start", "n1", "n2", "n3", "n4", "n5", "final-test",
+                       "forecast-actual", "plumbing", "history", "why", "clock", "forecast", "grading", "built",
+                       "next", "terms"):
+            self.assertIn(f'href="#{target}"', nav, target)
+            self.assertIn(f'id="{target}"', PAGE, target)
 
     def test_each_hypothesis_has_question_milestones_and_owner(self):
         for hid in PLAN_IDS:
@@ -59,6 +72,24 @@ class PageOrder(unittest.TestCase):
                           "Development variants"):
                 self.assertIn(f"<dt>{label}</dt>", block, f"{hid} lacks {label}")
             self.assertRegex(block, r'<li class="(done|open)"><b>M1</b>')
+
+    def test_each_hypothesis_is_one_tagline_line_over_a_fold(self):
+        """#893: the visible line is the id and its tagline; everything else sits inside the native <details>."""
+        taglines = json.loads((ROOT / research_view.TAGLINES).read_text(encoding="utf-8"))["taglines"]
+        for hid in PLAN_IDS:
+            block = PAGE[at(f'<article class="rs-h" id="{hid.lower()}"'):]
+            block = block[:block.find("</article>")]
+            opened = re.match(r'<article class="rs-h"[^>]*>\s*<details class="rs-fold">\s*<summary>(.*?)</summary>(.*)'
+                              r'</details>\s*$', block, re.S)
+            self.assertIsNotNone(opened, f"{hid} is not one <details> fold")
+            line, fold = opened.groups()
+            text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", line)).strip()
+            self.assertEqual(text, f"{hid} {research_view.inline(taglines[hid])}", hid)
+            self.assertNotRegex(line, r"<(?:br|p|div|ul|ol|dl|table)\b", hid)
+            for label in ("Step", "Kill criterion", "Milestones", "Test"):
+                if label == "Test" and "<dt>Test</dt>" not in fold:
+                    continue
+                self.assertIn(f"<dt>{label}</dt>", fold, hid)
 
     def test_owner_repository_of_h7_and_h10(self):
         for hid in ("H7", "H10"):
@@ -74,6 +105,24 @@ class Labels(unittest.TestCase):
         for item in re.findall(r'<li><b>\d{4}-\d{2}-\d{2}</b>.*?</li>', PAGE, re.S):
             if "tier development" in item:
                 self.assertIn(label, item)
+
+    def test_the_executive_summary_is_prose_without_a_table(self):
+        """#893: the summary names the goals and every hypothesis in running text, and holds no table."""
+        summary = PAGE[at('id="research-summary"'):at('<nav aria-label="Contents"')]
+        self.assertNotIn("<table", summary)
+        self.assertNotRegex(summary, r"<(?:ul|ol|dl)\b")
+        for hid in PLAN_IDS:
+            self.assertRegex(summary, rf'href="#{hid.lower()}">{hid}</a>', hid)
+        self.assertIn("development data never gives one", summary)
+        self.assertIn("Primary goal", summary)
+        self.assertIn("Secondary goal", summary)
+
+    def test_every_key_figure_carries_the_label(self):
+        """#893: a pulled-out key number keeps the development marking."""
+        callouts = re.findall(r'<aside class="callout"[^>]*>(.*?)</aside>', PAGE, re.S)
+        self.assertTrue(callouts)
+        for callout in callouts:
+            self.assertIn(research_view.DEV_LABEL, callout)
 
     def test_unmeasured_figures_say_so(self):
         self.assertIn("not measured", PAGE[at('id="h5"'):at('id="h6"')])
@@ -139,6 +188,26 @@ class Sources(unittest.TestCase):
             data["milestones"]["H1.M9"] = {"evidence": "docs/research/plan.md"}
             path.write_text(json.dumps(data), encoding="utf-8")
             with self.assertRaisesRegex(research_view.ResearchError, "not milestones"):
+                research_view.load(out)
+
+    def test_a_hypothesis_without_a_tagline_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.copy_tree(tmp)
+            path = out / research_view.TAGLINES
+            data = json.loads(path.read_text(encoding="utf-8"))
+            del data["taglines"]["H6"]
+            path.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(research_view.ResearchError, "H6 has no tagline"):
+                research_view.load(out)
+
+    def test_a_tagline_for_no_hypothesis_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.copy_tree(tmp)
+            path = out / research_view.TAGLINES
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data["taglines"]["H11"] = "Something new."
+            path.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(research_view.ResearchError, "H11"):
                 research_view.load(out)
 
     def test_the_phase_is_the_plans_six_step_scale_and_comes_from_milestones_json(self):
