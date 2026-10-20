@@ -637,6 +637,36 @@ class VerdictTests(unittest.TestCase):
         with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_stat * 1.1}}):
             self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
 
+    def test_each_leg_reads_its_own_critical_value(self):
+        """#929 (finding #913): the leg against B1 reads `CRITICAL_VALUES`, the leg against B2 reads
+        `B2_LEG_CRITICAL_VALUES` when one is declared for the look, and otherwise the same value (so nothing moves
+        until a ruling declares one). A value that puts the B2 bound below zero stops "Supported" although the B1 leg
+        passes, and the reverse.
+
+        Recorded mutation (2026-10-19): in `scoring_protocol.verdict`, `against_b2.lower_bound(b2_critical)` read
+        `against_b2.lower_bound(critical)` again (the old single value); this test failed with AttributeError on
+        `sp.B2_LEG_CRITICAL_VALUES` on main and, with the attribute present, with AssertionError at the
+        high-B2-value case. Not a leakage guard."""
+
+        tests = sp.paired_tests([(self.b1, self.strong), (self.b2, self.strong)], seed=1, draws=200)
+        t_b1, t_b2 = (t.mean_difference / t.standard_error for t in tests)
+        grid = dict(sp.CRITICAL_VALUES[sp.GRID_COMPARISON])
+        low = {**grid, 250: min(t_b1, t_b2) * 0.9}
+        with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: low}):
+            self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+            with mock.patch.dict(sp.B2_LEG_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**low, 250: t_b2 * 1.1}}):
+                self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+            with mock.patch.dict(sp.B2_LEG_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**low, 250: t_b2 * 0.9}}):
+                self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+        with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_b1 * 1.1}}):
+            with mock.patch.dict(sp.B2_LEG_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_b2 * 0.9}}):
+                self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+
+    def test_no_per_leg_value_is_in_force_yet(self):
+        """#929 draws the amendment; the values are applied only after Eleonora merges the record."""
+
+        self.assertEqual(sp.B2_LEG_CRITICAL_VALUES, {})
+
     def test_the_first_look_checks_futility_only(self):
         days = weekdays(date(2015, 1, 2), 60)
         rng = random.Random(2)
