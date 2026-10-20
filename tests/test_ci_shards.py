@@ -10,6 +10,20 @@ module `test_workflows` (a module dropped from every shard): `test_every_module_
 fails with `ValueError: modules in no shard: ['test_workflows']`. The same function with
 `out[n].append(module)` run twice for `test_alarm_cooldown`: the same test fails with
 `ValueError: test_alarm_cooldown is in shards 6 and 6`.
+
+**The ml pull-request job runs every module that skips without the extra** (#1018, from finding #1007). `ci_shards.py
+ml-modules` finds them by reading the test sources, and the workflow's pull-request branch runs that list. Before it, the
+branch named three modules, and `test_pressure_hazard.PairTests` (whose `setUp` calls `_require_extra`) skipped on every
+pull-request job that had no extra, with its `LookAheadError` guard test among the skipped.
+
+**Recorded mutations**, 20 October 2026 (the killing test run alone, each mutation confirmed applied by `grep`):
+`ml_extra_modules` made to `return set()` fails `test_the_scan_finds_the_modules_that_skip_without_the_extra` with
+`AssertionError: 'test_ml' not found in set()`; the pull-request command of `tests.yml` put back to
+`python3 -B -m unittest test_ml test_tail_diagnostics test_cli_eval -v` fails
+`test_the_pull_request_ml_job_runs_the_modules_that_skip_without_the_extra` with `AssertionError: 'unittest test_ml
+test_tail_diagnostics test_cli_eval' unexpectedly found in ...`. The guard test moved to `test_pressure_hazard.LabelGuardTests`
+is killed, without the extra, by `last_label >= rows` changed to `last_label > rows` in `require_labels_inside`
+(`AssertionError: LookAheadError not raised`).
 """
 
 import importlib.util
@@ -67,6 +81,55 @@ class ShardTests(unittest.TestCase):
     def test_every_shard_job_gets_its_modules_from_the_script(self):
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
         self.assertEqual(len(re.findall(r"scripts/ci_shards\.py modules --shard \$\{\{ matrix\.shard \}\}", text)), 3)
+
+
+class MlModuleTests(unittest.TestCase):
+    """The pull-request ml job runs every module that skips without the extra (#1018)."""
+
+    def test_the_scan_finds_the_modules_that_skip_without_the_extra(self):
+        found = ci_shards.ml_extra_modules()
+        # one of each way a module skips: its own `_require_extra`, `test_ml.require_extra`, a `skipUnless(find_spec(...))`
+        # decorator, an inline `find_spec` call, and a helper imported from another test module
+        for module in (
+            "test_ml",
+            "test_pressure_hazard",
+            "test_satiation",
+            "test_tail_diagnostics",
+            "test_spread_distribution_632",
+            "test_off_risk_day_624",
+            "test_spread_distribution_634_script",
+            "test_live_v2",
+            "test_identified_level_689",
+        ):
+            self.assertIn(module, found)
+        self.assertNotIn("test_ci_shards", found)
+
+    def test_a_module_that_only_names_the_libraries_is_not_one(self):
+        # `test_dependency_boundary` lists "numpy" and "sklearn" to forbid importing them; it never skips for want of them
+        self.assertNotIn("test_dependency_boundary", ci_shards.ml_extra_modules())
+
+    def test_the_scan_reads_code_not_prose(self):
+        import ast
+
+        prose = ast.parse('"""find_spec("numpy") and require_extra(self) in a docstring"""\nx = 1\n')
+        self.assertFalse(ci_shards.skips_without_the_extra(prose))
+        code = ast.parse('import importlib.util\nok = importlib.util.find_spec("numpy") is not None\n')
+        self.assertTrue(ci_shards.skips_without_the_extra(code))
+
+    def test_the_pull_request_ml_job_runs_the_modules_that_skip_without_the_extra(self):
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        self.assertIn("scripts/ci_shards.py ml-modules", text)
+        self.assertNotIn("unittest test_ml test_tail_diagnostics test_cli_eval", text)
+        self.assertNotIn("Every other module runs identically with or without it", text)
+
+    def test_the_command_prints_the_scan(self):
+        import contextlib
+        import io
+
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(ci_shards.main(["ml-modules"]), 0)
+        self.assertEqual(out.getvalue().split(), sorted(ci_shards.ml_extra_modules()))
 
 
 if __name__ == "__main__":
