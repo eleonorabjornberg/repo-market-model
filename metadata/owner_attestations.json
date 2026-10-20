@@ -34,6 +34,13 @@
       "comment_id": 6299407441,
       "phrase": "GO #1039",
       "what": "approve the CLAUDE.md rewrite (calendar first, the pointer to #46, the code map, commands), the orchestrator skill naming the Directive loop, and .claude/routines/directive-loop.md (PR #1039)"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1056,
+      "comment_id": 6299946523,
+      "phrase": "GO #1056",
+      "what": "approve the hooks, subagents and skills in .claude/ and the CLAUDE.md paragraph naming them (PR #1056)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
