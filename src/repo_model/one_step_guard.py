@@ -17,6 +17,7 @@ from __future__ import annotations
 import functools
 import inspect
 import json
+from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
@@ -49,6 +50,9 @@ class FrozenDeclaration(NamedTuple):
     fitter: str
     regressors: Tuple[str, ...]
     reason: str
+    #: The last day the exemption stands, or `None` for a frozen declaration that must reproduce for good. The guard
+    #: does not read it (a fit never depends on the clock); `tests/test_one_step_guard.py` fails once it has passed.
+    expires: Optional[date] = None
 
 
 #: The published distribution's inputs at h = 1 (`scripts/live_record.py`, `published_features(1)`): `CRPS_FEATURES` of
@@ -73,6 +77,15 @@ ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
             _PUBLISHED_AT_H1,
             "gbm_funding, the control of metadata/spread_distribution_634.json: the phase 2 gbm on the published "
             "features at the 23 levels, a declaration whose figures must reproduce",
+        ),
+        "pressure_model_v2": FrozenDeclaration(
+            "fit_depth_limited_quantiles",
+            _PUBLISHED_AT_H1,
+            "pressure model v2 (scripts/pressure_model_v2.py, CHOSEN_FOURTH 'base'): depth-3 trees on the published h = 1 "
+            "inputs, logged in the live record, whose agreement must reproduce until it is scored. Already provisional "
+            "(class a+b) in docs/research/provisional-calendar-register.md. Allowed by Eleonora on 20 October 2026, in "
+            "chat, on PR #1042: option (a), with an end date, the live record's first scoring date",
+            expires=date(2027, 4, 1),
         ),
     }
 )

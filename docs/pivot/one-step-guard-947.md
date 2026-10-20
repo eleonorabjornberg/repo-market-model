@@ -34,6 +34,7 @@ regressors; a test pins the exact contents. There is no switch.
 |---|---|---|---|
 | `published_distribution_crps` | `fit_gradient_boosted_quantiles` | the published distribution's h = 1 inputs, `treasury_settlement` among them | the final test's frozen `CRPS_COMMAND` (hashed by the pre-registration) and the live record fit it on one-step pairs; their bytes and records must reproduce |
 | `gbm_funding_634` | `fit_gradient_boosted_quantiles` | the same inputs | `gbm_funding` of `metadata/spread_distribution_634.json` is the phase 2 gbm on the published features; its figures must reproduce |
+| `pressure_model_v2` | `fit_depth_limited_quantiles` | the same inputs | pressure model v2, logged in the live record; its agreement must reproduce until the record is scored. **Ends on the live record's first scoring date** (`scripts/live_score.py`) (Eleonora, 20 October 2026, on PR #1042); a test fails after it, so it is then removed or renewed by her ruling. Already provisional (class a+b) |
 
 Pressure model v1 fits no guarded fitter (a logistic on its own design), so it needs no entry. At h > 1 the published
 declaration drops `treasury_settlement`, so the guard never meets it there.

@@ -18,7 +18,7 @@ mutation confirmed applied by diff and reverted; unmutated control green before 
 3. **The threshold variable left unchecked** -- in `baseline.fit_threshold`, `names + (selector_name,)` -> `names`.
    Killed by `test_a_calendar_threshold_variable_is_refused`, `AssertionError: ValueError not raised`.
 4. **The wrapping fitter left undecorated** -- `@guard_one_step_fit` removed from `ml.fit_depth_limited_quantiles`
-   (the code before the fix). Killed by `test_a_depth_limited_one_step_fit_of_the_exempt_inputs_is_refused`:
+   (the code before the fix). Killed by `test_a_depth_limited_one_step_fit_is_checked_under_its_own_name` (then on the exempt inputs; the test now adds `quarter_end`, since v2's inputs are exempt by her ruling):
    `AssertionError`, the fit passed the guard as `fit_gradient_boosted_quantiles` and failed later with
    `MissingRegressorError`. Run on CPython 3.11.17, numpy 2.4.6, scikit-learn 1.9.1.
 5. **`training_pairs` read only as a named parameter** -- the `VAR_KEYWORD` loop in `guard_one_step_fit` removed.
@@ -97,11 +97,26 @@ class OneStepGuardTests(unittest.TestCase):
 class AllowListTests(unittest.TestCase):
     def test_the_allow_list_is_exactly_these_declarations(self):
         entries = one_step_guard.ONE_STEP_ALLOW_LIST
-        self.assertEqual(set(entries), {"published_distribution_crps", "gbm_funding_634"})
-        for entry in entries.values():
-            self.assertEqual(entry.fitter, "fit_gradient_boosted_quantiles")
+        self.assertEqual(set(entries), {"published_distribution_crps", "gbm_funding_634", "pressure_model_v2"})
+        for name, entry in entries.items():
+            fitter = "fit_depth_limited_quantiles" if name == "pressure_model_v2" else "fit_gradient_boosted_quantiles"
+            self.assertEqual(entry.fitter, fitter)
             self.assertEqual(entry.regressors, PUBLISHED_AT_H1)
             self.assertTrue(entry.reason)
+
+    def test_pressure_model_v2_is_exempt_until_the_first_live_scoring_date(self):
+        entry = one_step_guard.ONE_STEP_ALLOW_LIST["pressure_model_v2"]
+        self.assertEqual(entry.expires, date(2027, 4, 1))
+        one_step_guard.check_one_step_regressors("fit_depth_limited_quantiles", PUBLISHED_AT_H1)
+
+    def test_no_exemption_has_outlived_its_end_date(self):
+        """An exemption with an end date is a decision that falls due: renew it by her ruling, or remove it."""
+        for name, entry in one_step_guard.ONE_STEP_ALLOW_LIST.items():
+            if entry.expires is not None:
+                self.assertLessEqual(
+                    date.today(), entry.expires,
+                    f"the one-step exemption {name!r} ended on {entry.expires}: remove it, or renew it by Eleonora's ruling",
+                )
 
     def test_the_published_entry_is_the_frozen_command_less_the_target(self):
         script = Path(__file__).resolve().parents[1] / "scripts" / "final_test_preregistration.py"
@@ -136,11 +151,13 @@ class WrappedFitterTests(unittest.TestCase):
     one-step depth-limited fit of exactly the exempt inputs matched `published_distribution_crps` and went through.
     """
 
-    def test_a_depth_limited_one_step_fit_of_the_exempt_inputs_is_refused(self):
+    def test_a_depth_limited_one_step_fit_is_checked_under_its_own_name(self):
         from repo_model import ml
 
         with self.assertRaisesRegex(ValueError, "fit_depth_limited_quantiles trains on one-step pairs"):
-            ml.fit_depth_limited_quantiles(frame(), PUBLISHED_AT_H1, date(2026, 2, 9), 20, max_depth=3)
+            ml.fit_depth_limited_quantiles(
+                frame(), PUBLISHED_AT_H1 + ("quarter_end",), date(2026, 2, 9), 20, max_depth=3
+            )
 
     def test_training_pairs_passed_through_settings_is_read(self):
         guarded = one_step_guard.guard_one_step_fit(lambda train_frame, regressors, **settings: "fitted")
