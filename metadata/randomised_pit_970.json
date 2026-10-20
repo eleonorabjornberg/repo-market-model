@@ -1,0 +1,32 @@
+{
+  "status": "declared by the pull request that closes #970 before any number was computed; a measurement, not a record. Nothing is published, no day after 2025-12-31 is read (docs/decisions/lockbox.md), no rule changes. Development data gives a diagnosis, never a verdict (scoring protocol v1, #640; #46 top block).",
+  "issue": 970,
+  "hypothesis": "H5 (primary goal), development step 3 (docs/research/hypotheses/H5.md): a correction to the PIT diagnostic of #707",
+  "question": "A whole-bp target has many ties, so the midpoint PIT of #707 is not uniform even for a perfect forecast. Does the 2021-23 share of PIT at or below 0.10 that #707 reported (0.42 for c_two_part_new and 0.33 for gbm_funding, in docs/pivot/evidence/h5-step3-707/report.md) survive a randomised PIT?",
+  "input": {
+    "cells": "exactly the cells of #707: the walks of #634 read unchanged (scripts/spread_distribution_634.py walk), the 1,868 decision days to 2025-12-23, leads 1 to 5, a missing lead filled by B1 as in #634 and #707, the 2021-23 window by metadata/evaluation_splits.json regime of the decision day",
+    "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+    "candidates": [
+      "gbm_funding",
+      "c_two_part_new"
+    ]
+  },
+  "pit": {
+    "midpoint": "the PIT of #707 (scripts/h5_step3_707.py pit), unchanged: the midpoint of the level bracket the outcome falls in among the 23 quantiles, a tie taking the midpoint of the tied levels",
+    "randomised": "Czado, Gneiting and Held (2009): a value drawn uniformly in the cell's bracket [lo, hi], where lo is the largest grid level whose quantile is below the outcome (0 if none) and hi the smallest grid level whose quantile is above it (1 if none). A tie therefore spans the levels around the tied ones. With no tie the bracket is the one the midpoint PIT uses",
+    "seed": 970,
+    "draw_order": "cells sorted by (decision day, target day), one uniform draw each, from random.Random(970), for each candidate and cut in turn",
+    "bins": "six bins, edges at 0.10, 0.25, 0.50, 0.75, 0.90, expected shares 0.10, 0.15, 0.25, 0.25, 0.15, 0.10, as in #707"
+  },
+  "reports": [
+    "2021-23 pooled: the share of PIT at or below 0.10 and the six bin shares, both ways, per candidate",
+    "all days pooled, both ways",
+    "the draw repeated under 20 further seeds (971 to 990), to show the spread of the randomised share at or below 0.10"
+  ],
+  "reading_rule": "The #707 reading of the 2021-23 low-PIT share stands if the randomised share (seed 970) is more than 0.05 above the nominal 0.10 and no seed of the 20 brings it to 0.10 or below; it does not stand if the randomised share is within 0.05 of 0.10. Anything else is reported as unresolved. The old page stands in either case.",
+  "limits": "No published declaration or record changes. Nothing after 2025-12-31 and no lockbox day is read (refuse_locked).",
+  "variants": {
+    "midpoint_pit": "the PIT of #707 (scripts/h5_step3_707.py pit), unchanged: the midpoint of the level bracket the outcome falls in among the 23 quantiles, a tie taking the midpoint of the tied levels",
+    "randomised_pit": "Czado, Gneiting and Held (2009): a value drawn uniformly in the cell's bracket [lo, hi], where lo is the largest grid level whose quantile is below the outcome (0 if none) and hi the smallest grid level whose quantile is above it (1 if none). A tie therefore spans the levels around the tied ones. With no tie the bracket is the one the midpoint PIT uses"
+  }
+}

@@ -155,6 +155,41 @@ class TestTheGuard(unittest.TestCase):
         script.require_study_window([date(2025, 12, 31)])
 
 
+class TestTheCalibrationOrientation(unittest.TestCase):
+    """#1013 (finding #1000): the paths are built on `e` = S(B1) - S(B2), so the critical values must be calibrated on `e`, not
+    on `-e` (her ruling of 19 October 2026 on #913: each leg in its own orientation).
+
+    Recorded mutation, run and killed: `series = [sign * v for v in e]` in `scripts/scaled_score_967.py` `calibrate` changed back
+    to `series = [-v for v in e]` fails `test_the_critical_values_are_calibrated_on_the_series_the_paths_use` with
+    `AssertionError: 0.7015469016873616 != 0.7484114412261694` and the named-option test with `AssertionError` (the old and the
+    new critical values are equal)."""
+
+    def series(self):
+        # skewed on purpose: a mirrored series has a different upper quantile
+        return [(((i * 37) % 23) / 23.0) ** 3 - 0.2 + (0.5 if i % 41 == 0 else 0.0) for i in range(500)]
+
+    def test_the_critical_values_are_calibrated_on_the_series_the_paths_use(self):
+        design = script.Design("T", 100, sp.HORIZONS, "raw")
+        e = self.series()
+        cc = script._load("contiguous_calibration_963")
+        levels = sp.nominal_levels(design.checkpoints)
+        _, got = script.calibrate((design, e, 500))
+        for k, n in enumerate(design.checkpoints[1:], start=1):
+            ordered = cc.contiguous_window_statistics(list(e), days=n)
+            self.assertEqual(got["critical"][str(n)], sp._bound(ordered, 1.0 - levels[k], len(ordered)))
+        mirrored = cc.contiguous_window_statistics([-v for v in e], days=design.checkpoints[2])
+        self.assertNotEqual(sp._bound(mirrored, 1.0 - levels[2], len(mirrored)), got["critical"][str(design.checkpoints[2])])
+
+    def test_the_previous_orientation_is_a_named_option_for_the_row_check(self):
+        design = script.Design("T", 100, sp.HORIZONS, "raw")
+        e = self.series()
+        _, new = script.calibrate((design, e, 500))
+        _, old = script.calibrate((design, e, 500, -1.0))
+        self.assertNotEqual(new["critical"], old["critical"])
+        _, same = script.calibrate((design, [-v for v in e], 500))
+        self.assertEqual(same["critical"], old["critical"])
+
+
 class TestTheReadings(unittest.TestCase):
     def test_scale_buys_nothing_when_power_is_below_twenty_percent_or_size_above_five(self):
         def record(power, size):
