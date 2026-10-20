@@ -80,6 +80,9 @@ ARMS: Dict[str, dict] = {
     "direct_base_leaf5": {"inputs": "base", "min_samples_leaf": 5, "training_pairs": DIRECT},
     "direct_cal_leaf20": {"inputs": "calendar", "min_samples_leaf": 20, "training_pairs": DIRECT},
     "direct_cal_leaf5": {"inputs": "calendar", "min_samples_leaf": 5, "training_pairs": DIRECT},
+    # amendment of Eleonora's ruling of 19 October 2026 (relayed on #951), made after 0189ba27 and before any score of this arm: the
+    # calendar inputs on the current one-step pairs (#914's misaligned training), otherwise `direct_cal_leaf20`
+    "onestep_cal_leaf20": {"inputs": "calendar", "min_samples_leaf": 20, "training_pairs": ONE_STEP},
 }
 #: (first, second): the second is read against the first; the first pair is the key comparison
 KEY_COMPARISONS = (
@@ -89,6 +92,10 @@ KEY_COMPARISONS = (
     ("direct_cal_leaf20", "direct_cal_leaf5"),
     (CONTROL, "direct_base_leaf20"),
     (CONTROL, "direct_cal_leaf5"),
+    # the ruled amendment: does the misalignment make calendar inputs hurt (control against the one-step arm), and the effect of alignment
+    # alone with the calendar inputs held fixed
+    (CONTROL, "onestep_cal_leaf20"),
+    ("onestep_cal_leaf20", "direct_cal_leaf20"),
 )
 KEY_COMPARISON = KEY_COMPARISONS[0]
 #: a rare-day group and how it is flagged on the scratch panel
@@ -275,7 +282,17 @@ def declaration_document() -> dict:
             "calendar": "base plus " + ", ".join(CALENDAR_INPUTS),
             "panel": "the scratch panel AUG3.csv of scripts/spread_distribution_634.py's docstring plus scripts/net_settlement.py panel; the base columns are the published panel's, read with the plain registry",
         },
-        "training_pairs": "direct (ml.TRAINING_PAIRS): each target is paired with its own as-of read, so a calendar or scheduled column is trained from the row it is served from",
+        "training_pairs": "direct (ml.TRAINING_PAIRS): each target is paired with its own as-of read, so a calendar or scheduled column is trained from the row it is served from; the one exception is the ruled arm onestep_cal_leaf20, which is trained on the current one-step pairs (training_pairs unset), as gbm_funding is",
+        "amendments": [
+            {
+                "after": "0189ba27 (the declaration as first committed)",
+                "before": "any score of the arm",
+                "arm": "onestep_cal_leaf20",
+                "ruling": "Eleonora, 19 October 2026 (relayed on #951, comment 6275151940): the published inputs plus the calendar inputs exactly as inputs.calendar declares them, on one-step pairs, min_samples_leaf 20; otherwise identical to direct_cal_leaf20",
+                "added_comparisons": [[CONTROL, "onestep_cal_leaf20"], ["onestep_cal_leaf20", "direct_cal_leaf20"]],
+                "reading": "under the declaration's existing reading rules, cuts and protocol",
+            }
+        ],
         "leaf_sizes": list(LEAF_SIZES),
         "leaf_rule": "20 is ml.fit_gradient_boosted_quantiles' default; 5 is the smaller leaf, declared as the setting that can put a rare-day group alone on one side of a split once the training window holds 5 of them",
         "key_comparison": list(KEY_COMPARISON),
@@ -393,7 +410,7 @@ def arm_fit(arm: str, features: Sequence[str]):
     spec = ARMS[arm]
     return functools.partial(
         ml.fit_gradient_boosted_quantiles, regressors=tuple(f for f in features if f != "spread_bps"), levels=GRID,
-        training_pairs=spec["training_pairs"], min_samples_leaf=spec["min_samples_leaf"],
+        training_pairs=None if spec["training_pairs"] == ONE_STEP else spec["training_pairs"], min_samples_leaf=spec["min_samples_leaf"],
     )
 
 
@@ -504,8 +521,9 @@ def score_command(args) -> int:
             pairing = settings_of(document).get("training_pairs")
             if name == CONTROL and pairing is not None:
                 raise ValueError(f"the control {name} lead {h} names training_pairs {pairing!r}; it must be unset (one-step)")
-            if name != CONTROL and pairing != "direct":
-                raise ValueError(f"{name} lead {h} does not name training_pairs 'direct'")
+            expected = None if name == CONTROL or declared["arms"][name]["training_pairs"] == ONE_STEP else "direct"
+            if name != CONTROL and pairing != expected:
+                raise ValueError(f"{name} lead {h} names training_pairs {pairing!r}; the declaration says {declared['arms'][name]['training_pairs']!r}")
         decisions[name], covered[name] = sd.lead_forecasts(sd.load_laws(args.walks, name), calendar)
     common = sorted(set.intersection(*(set(d) for d in covered.values())))
     common = [d for d in common if all(calendar[position[d] + h] <= LAST_TARGET for h in HORIZONS)]

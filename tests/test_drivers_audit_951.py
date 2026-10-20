@@ -90,11 +90,24 @@ class SubsetTests(unittest.TestCase):
 
 
 class DeclarationTests(unittest.TestCase):
-    def test_every_arm_is_direct_and_the_leaves_include_one_that_can_split_rare_days(self):
+    def test_every_arm_is_direct_but_the_ruled_one_step_arm_and_the_leaves_include_one_that_can_split_rare_days(self):
         arms = script.ARMS
-        self.assertTrue(all(arm["training_pairs"] == "direct" for arm in arms.values()))
+        self.assertEqual({name for name, arm in arms.items() if arm["training_pairs"] != "direct"}, {"onestep_cal_leaf20"})
         self.assertIn(5, {arm["min_samples_leaf"] for arm in arms.values()})
         self.assertIn(20, {arm["min_samples_leaf"] for arm in arms.values()})
+
+    def test_the_ruled_one_step_arm_is_direct_cal_leaf20_trained_on_one_step_pairs(self):
+        """The amendment of Eleonora's ruling of 19 October 2026 on #951: otherwise identical to `direct_cal_leaf20`."""
+
+        arms = script.ARMS
+        self.assertEqual(arms["onestep_cal_leaf20"], {**arms["direct_cal_leaf20"], "training_pairs": script.ONE_STEP})
+        self.assertEqual(script.arm_features("onestep_cal_leaf20", 1), script.arm_features("direct_cal_leaf20", 1))
+        for pair in (("gbm_funding", "onestep_cal_leaf20"), ("onestep_cal_leaf20", "direct_cal_leaf20")):
+            self.assertIn(pair, script.KEY_COMPARISONS)
+
+    def test_a_one_step_arm_fits_with_training_pairs_unset(self):
+        self.assertIsNone(script.arm_fit("onestep_cal_leaf20", ("on_rrp",)).keywords["training_pairs"])
+        self.assertEqual(script.arm_fit("direct_cal_leaf20", ("on_rrp",)).keywords["training_pairs"], "direct")
 
     def test_the_key_comparison_names_declared_arms(self):
         for pair in script.KEY_COMPARISONS:
