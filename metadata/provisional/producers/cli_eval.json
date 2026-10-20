@@ -1,0 +1,8 @@
+{
+  "script": "src/repo_model/cli_eval.py",
+  "declarations": [],
+  "model": "`--model gbm`: the phase 2 gbm and the published v1 funding declaration",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}

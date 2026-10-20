@@ -1,0 +1,17 @@
+{
+  "order": 310,
+  "directive": 967,
+  "pull_request": 999,
+  "hypothesis": "H1",
+  "result": "The scaled-score study",
+  "declarations": [
+    "metadata/scaled_score_967.json"
+  ],
+  "model": "`gbm_funding` as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-20-model-00999-H1-step2"
+  ],
+  "concluded": "The scale buys nothing under the orientation used then."
+}

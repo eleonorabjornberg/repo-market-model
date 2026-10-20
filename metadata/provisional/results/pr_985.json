@@ -1,0 +1,18 @@
+{
+  "order": 300,
+  "directive": 963,
+  "pull_request": 985,
+  "hypothesis": "H1",
+  "result": "Contiguous-window calibration and event strata",
+  "declarations": [
+    "metadata/contiguous_calibration_963.json"
+  ],
+  "model": "`gbm_funding` and `spread_mr_ctx` as series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-19-model-00985-H1-step3",
+    "2026-10-19-model-00985-H6-step1"
+  ],
+  "concluded": "Contiguous critical values for the candidates; both beat B2 on three strata and neither is clear of B1."
+}

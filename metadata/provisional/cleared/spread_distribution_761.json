@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/spread_distribution_761.json",
+  "script": null,
+  "pairing": "as_of_read",
+  "why": "mean reversion with residuals pooled by the target day's context"
+}

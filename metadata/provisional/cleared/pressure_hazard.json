@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/pressure_hazard.json",
+  "script": "scripts/pressure_hazard.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

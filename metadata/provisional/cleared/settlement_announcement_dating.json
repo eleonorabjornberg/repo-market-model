@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/settlement_announcement_dating.json",
+  "script": null,
+  "pairing": "none",
+  "why": "when each settlement is public: dating"
+}

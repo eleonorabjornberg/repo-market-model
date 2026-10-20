@@ -1,0 +1,8 @@
+{
+  "script": "scripts/calibration_rediagnosis.py",
+  "declarations": [],
+  "model": "the published declaration, CV+ against conformal PID and Mondrian CV+",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}
