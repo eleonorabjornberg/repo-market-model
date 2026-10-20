@@ -59,6 +59,10 @@ day is provisional (`docs/research/provisional-calendar-register.md`). A session
 
 - **Information set:** `docs/decisions/information-set.md`. A forecast uses exactly what was public at its decision
   instant (16:00 the business day before), read per field. Leakage guards and staleness guards both have to hold.
+- **Calendar first** (Eleonora, 20 October 2026). A repo-market model that does not read calendar days at the target
+  day (quarter-end, month-end, tax dates, Treasury settlements, scheduled IORB) is wrong. A new spread model reads
+  them, on direct pairs. A result from a model that did not, or that learned them one row off (the #914 class), is
+  provisional until re-run, and is listed in `docs/research/provisional-calendar-register.md`.
 - **Calendar and scheduled columns at the target day.** `asof` rule 2 serves a calendar column
   (`contract.CALENDAR_FEATURES`) or a `scheduled_availability` field from the target row. A one-step fitter (row `p`
   against the spread of `p + 1`) would learn it a day off, so `repo_model.one_step_guard` makes such a fit raise
