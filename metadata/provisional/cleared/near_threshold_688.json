@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/near_threshold_688.json",
+  "script": "scripts/near_threshold_688.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

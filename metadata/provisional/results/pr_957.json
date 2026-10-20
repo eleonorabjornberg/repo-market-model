@@ -1,0 +1,17 @@
+{
+  "order": 130,
+  "directive": 931,
+  "pull_request": 957,
+  "hypothesis": "H5",
+  "result": "Aligned settlement pairs at lead 1",
+  "declarations": [
+    "metadata/aligned_pairs_931.json"
+  ],
+  "model": "`gbm_funding` (control) and the aligned arm",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-19-model-00957-H5-step3"
+  ],
+  "concluded": "The aligned arm beats `gbm_funding` by +2.8% pooled and +13.8% on month-end targets."
+}

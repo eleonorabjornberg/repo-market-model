@@ -338,8 +338,8 @@ def summary_html(hypotheses, links):
 
 def provisional_mark():
     """The mark on a figure from a registered result (#1028), linked to the register."""
-    return (f'<span class="rs-tag rs-prov">{esc(PROVISIONAL_LABEL)}</span> '
-            f'<a href="{BLOB}{REGISTER}">register</a>')
+    return (f'<span class="rs-tag rs-prov">{esc(PROVISIONAL_LABEL)} &middot; '
+            f'<a href="{BLOB}{REGISTER}">register</a></span>')
 
 
 def best_html(final, provisional=False):

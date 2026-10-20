@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/setup_diagnostic.json",
+  "script": "scripts/setup_diagnostic.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

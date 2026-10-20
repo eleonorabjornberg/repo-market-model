@@ -1,0 +1,15 @@
+{
+  "order": 280,
+  "directive": 922,
+  "pull_request": 923,
+  "hypothesis": "H1",
+  "result": "Size of the B2 leg of \"Supported\" for B1 and `gbm_funding`",
+  "declarations": [],
+  "model": "`gbm_funding` as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-19-model-00923-H1-step4"
+  ],
+  "concluded": "The share of windows whose B2-leg bound is above zero with no skill is reported."
+}
