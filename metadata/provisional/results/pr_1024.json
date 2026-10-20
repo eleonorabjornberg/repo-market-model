@@ -1,0 +1,17 @@
+{
+  "order": 330,
+  "directive": 1015,
+  "pull_request": 1024,
+  "hypothesis": "H1",
+  "result": "The B2 leg of \"Supported\" under #963's rules",
+  "declarations": [
+    "metadata/b2_leg_contiguous_1015.json"
+  ],
+  "model": "`gbm_funding` and `spread_mr_ctx` as series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-20-model-01024-H1-step3"
+  ],
+  "concluded": "At 250 days the B1 leg survives and the B2 leg is between 3.0 and 4.0 for both."
+}

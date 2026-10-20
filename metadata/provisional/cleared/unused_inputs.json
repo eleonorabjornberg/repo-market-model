@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/unused_inputs.json",
+  "script": "scripts/unused_inputs.py",
+  "pairing": "direct",
+  "why": "the unused-input screen: pressure models on direct pairs"
+}

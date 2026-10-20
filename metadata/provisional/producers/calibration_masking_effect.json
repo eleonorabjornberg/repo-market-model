@@ -1,0 +1,8 @@
+{
+  "script": "scripts/calibration_masking_effect.py",
+  "declarations": [],
+  "model": "the published declaration, calibration masking on and off",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}

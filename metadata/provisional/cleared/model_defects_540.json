@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/model_defects_540.json",
+  "script": "scripts/model_defects_540.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/ranking_694.json",
+  "script": "scripts/ranking_694.py",
+  "pairing": "as_of_read",
+  "why": "the calendar ranker reads the target's day type"
+}

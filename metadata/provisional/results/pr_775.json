@@ -1,0 +1,17 @@
+{
+  "order": 30,
+  "directive": 758,
+  "pull_request": 775,
+  "hypothesis": "H5",
+  "result": "The best candidate against H2's ceiling",
+  "declarations": [
+    "metadata/h5_step4_758.json"
+  ],
+  "model": "`gbm_funding`; H2's reachable and ceiling fits are aligned and not provisional",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "0056-2026-10-14-model-00775-H5-step4"
+  ],
+  "concluded": "`gbm_funding` +0.257 against B1 on ordinary targets, above the ceiling's +0.168 (headroom negative)."
+}

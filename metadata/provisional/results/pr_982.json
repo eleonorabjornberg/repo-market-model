@@ -1,0 +1,17 @@
+{
+  "order": 180,
+  "directive": 969,
+  "pull_request": 982,
+  "hypothesis": "H5",
+  "result": "Live-monitoring thresholds replayed on the published model",
+  "declarations": [
+    "metadata/live_monitoring_969.json"
+  ],
+  "model": "the published model's daily forecasts at lead 1",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-19-model-00982-H5-G3"
+  ],
+  "concluded": "The proposed thresholds do not discriminate: a flag is set on most days."
+}

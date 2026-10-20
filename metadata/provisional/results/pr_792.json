@@ -1,0 +1,15 @@
+{
+  "order": 250,
+  "directive": 754,
+  "pull_request": 792,
+  "hypothesis": "H1",
+  "result": "Power tested by replay on real forecast pairs",
+  "declarations": [],
+  "model": "B3 against B1 as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "0061-2026-10-15-model-00792-H1-step3"
+  ],
+  "concluded": "Only B3 against B1 is a known-better pair; the current test's size on a symmetric null is far above 5%."
+}
