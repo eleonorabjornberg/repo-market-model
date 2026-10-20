@@ -4,6 +4,10 @@
 (entry files, records, code) and never the outputs, so a test that reads one calls `ensure()` first. It builds all
 three from the tree under test, once per process, and the copy it writes is the one that tree would publish: a test
 sees the page this pull request would produce, never a stale one.
+
+The progress page and its data (`docs/pivot/progress.md`, `docs/research/progress.json`) are built on main too, but
+no test reads them from disk: `tests/test_emit_progress.py` builds them in memory or in a temporary directory, because
+ordering the candidates needs the full history.
 """
 import importlib.util
 from pathlib import Path
