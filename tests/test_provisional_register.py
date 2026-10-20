@@ -109,6 +109,18 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
                          "scripts that call a gradient-boosted quantile fitter and are not a producer row")
         self.assertEqual(sorted(listed - set(callers)), [], "producer rows whose script no longer calls such a fitter")
 
+    def test_the_frozen_exemptions_of_the_one_step_guard_are_named_in_the_register(self):
+        """#947's guard refuses a calendar or scheduled regressor in a one-step fit, except two frozen declarations: both are
+        class b, and both are named on the register page."""
+        import sys
+        sys.path.insert(0, str(ROOT / "src"))
+        from repo_model import one_step_guard
+        for name in one_step_guard.ONE_STEP_ALLOW_LIST:
+            with self.subTest(exemption=name):
+                self.assertIn(f"`{name}`", TEXT)
+        for path in register.GUARDS:
+            self.assertTrue((ROOT / path).is_file(), f"{path} is a guard no longer")
+
     def test_a_cleared_declaration_is_read_at_the_target_day_and_calls_no_one_step_fitter(self):
         callers = set(register.one_step_fitter_callers(ROOT))
         for row in TABLES["cleared"]:

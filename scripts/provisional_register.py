@@ -41,6 +41,8 @@ CLASSES = ("a", "b", "a+b", "series")
 RESULT_PAIRINGS = ("one_step",)
 PRODUCER_PAIRINGS = ("one_step", "one_step+direct")
 CLEARED_PAIRINGS = ("direct", "as_of_read", "none")
+#: Library modules that name a fitter in order to refuse a one-step fit (#947), not to make one.
+GUARDS = ("src/repo_model/one_step_guard.py",)
 #: A word in a result row's "On the page" cell: the incumbent's figures at the top of the results page.
 INCUMBENT = "incumbent"
 
@@ -123,12 +125,12 @@ def declarations_naming_a_calendar_column(repo):
 
 
 def one_step_fitter_callers(repo):
-    """Scripts and library modules (other than `ml.py`, which defines the fitters) that name a one-step-capable fitter."""
+    """Scripts and library modules that name a one-step-capable fitter, other than `ml.py` (which defines them) and `GUARDS`."""
     root = Path(repo)
     found = []
     for folder in ("scripts", "src/repo_model"):
         for path in sorted((root / folder).glob("*.py")):
-            if path.name == "ml.py":
+            if path.name == "ml.py" or f"{folder}/{path.name}" in GUARDS:
                 continue
             if FITTER.search(path.read_text(encoding="utf-8")):
                 found.append(f"{folder}/{path.name}")
