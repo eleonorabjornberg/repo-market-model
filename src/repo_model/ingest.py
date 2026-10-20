@@ -158,6 +158,10 @@ REPO_FACILITY_START = date(2019, 9, 17)
 #: differs by era builds a regime dummy (#672). The operation still happened, so its date keeps a
 #: row, at zero.
 TEST_TRADE_MAX = 7_000_000
+#: A repo operation whose `operationLimit` is at most this amount is a Desk test, as is one whose
+#: `operationId` ends in " 99" (#933, Eleonora's ruling of 19 October 2026 on #916). A normal
+#: operation's limit is $500 bn; the labelled exercises are $75-250 mn.
+DESK_TEST_LIMIT_MAX = 250_000_000
 #: The OFR's Short-term Funding Monitor, repo collection (#187): one
 #: unmodified `timeseries` response per series mnemonic, saved by
 #: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
@@ -2086,16 +2090,38 @@ def _effective_accepted(accepted):
 
 
 def _is_small_value_exercise(operation: Mapping[str, object]) -> bool:
-    """Whether the Desk's `note` names the operation a small-value exercise.
+    """Whether the operation is a Desk test, a small-value exercise (#933, ruling on #916).
 
     A small-value exercise is the Desk's operational-readiness test, a few tens
-    of millions accepted by arrangement; it is not take-up. The Desk names it
-    in the note ("Small Value Exercise (SVE)", "small value exercise for
-    operational readiness testing"), and that is the only place it does.
+    of millions accepted by arrangement; it is not take-up. An operation is one
+    if the Desk's `note` names it ("Small Value Exercise (SVE)", "small value
+    exercise for operational readiness testing"), or, for a `Repo` operation, if
+    its `operationId` ends in " 99" or its `operationLimit` is at most
+    `DESK_TEST_LIMIT_MAX` (a normal operation's limit is $500 bn). Six repo
+    operations carry the marks without the note. A reverse repo is read by its
+    note alone: its id " 99" is not a test mark (the ON RRP operation of
+    2023-07-17 took $1.7 trillion).
+
+    Raises `ValueError` on a `Repo` operation whose `operationLimit` is present
+    and not a number.
     """
 
     note = operation.get("note")
-    return isinstance(note, str) and "small value exercise" in note.lower()
+    if isinstance(note, str) and "small value exercise" in note.lower():
+        return True
+    if operation.get("operationType") != "Repo":
+        return False
+    operation_id = operation.get("operationId")
+    if isinstance(operation_id, str) and operation_id.endswith(" 99"):
+        return True
+    limit = operation.get("operationLimit")
+    if limit is None:
+        return False
+    if isinstance(limit, bool) or not isinstance(limit, (int, float)):
+        raise ValueError(
+            f"New York Fed repo operation {operation_id!r} has a non-numeric operationLimit ({limit!r})"
+        )
+    return limit <= DESK_TEST_LIMIT_MAX
 
 
 def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
@@ -2110,7 +2136,8 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
     day of test trades only included, is 0.0. A day whose only operation was
     a small-value exercise yields no row. Term
     repos are left out: the facility is overnight, and its two term operations
-    since the inception were tests of a few tens of millions.
+    since the inception were tests of a few tens of millions, both now dropped as
+    Desk tests by their marks (`_is_small_value_exercise`, #933).
 
     `available_at` is the next business day at 16:00 New York time, the registry's
     conservative declaration (`nyfed_srf.release_lag`): the Desk states no

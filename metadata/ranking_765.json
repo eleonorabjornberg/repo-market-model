@@ -20,7 +20,7 @@
     },
     "blend": {
       "letter": "c",
-      "rule": "a declared blend of the calendar rank and the step-1 tail-probability rank. Each is turned into a mid-rank in (0, 1) within the window (ties share the average of the places they cover; high is risky). Score: w x calendar rank + (1 - w) x tail rank. The weight w is chosen from the grid {0, 0.25, 0.5, 0.75, 1} at each refit (every 21 decision days), as the grid value with the highest mean top-5 precision over the trailing scored windows, using only windows whose 20 targets are all at or before the anchor (the last public row at the refit's decision instant), at most the latest 252 of them. A tie in that mean goes to the smaller w. Before 60 such windows exist the weight is 0.5. The chosen weights are reported",
+      "rule": "a declared blend of the calendar rank and the step-1 tail-probability rank. Each is turned into a mid-rank in (0, 1) within the window (ties share the average of the places they cover; high is risky). Score: w x calendar rank + (1 - w) x tail rank. The weight w is chosen from the grid {0, 0.25, 0.5, 0.75, 1} at each refit (every 21 decision days), as the grid value with the highest mean top-5 precision over the trailing scored windows, using only windows whose 20 targets are all at or before the anchor (the last public row at the refit's decision instant), at most the latest 252 of them. A tie in that mean goes to the smaller w, except that when none of those windows holds a pressure day the weight is 0.5 (Eleonora's ruling of 19 October 2026 on #925, applied in #930). Before 60 such windows exist the weight is 0.5. The chosen weights are reported",
       "weight_grid": [0.0, 0.25, 0.5, 0.75, 1.0],
       "default_weight": 0.5,
       "trailing_windows": 252,

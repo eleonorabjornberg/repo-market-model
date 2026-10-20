@@ -96,7 +96,7 @@ issue in the pinned "Directive queue" issue is reviewed and merged by the "Direc
 escalates instead of merging (the pull request labelled `needs-eleonora`) when the pull request:
 
 - asks her a question, or its session opened a `needs-eleonora` issue (other than a publishing question under the rule
-  below);
+  below, or a question she has since ruled on under "A ruled question no longer holds a pull request" below);
 - changes `docs/decisions/` beyond recording a decision its directive says she has made;
 - states a verdict on an exit criterion, or a public claim not generated from a record;
 - lacks a required recorded mutation, or one that was not killed, or has any `expectedFailure`;
@@ -136,9 +136,32 @@ session. Other findings wait for her triage. When the queue is done, merging ret
 **Pure follow-ups go through the queue too.** Decided by Eleonora, 1 October 2026. A follow-up that only applies a
 ruling she has already posted is queued as a directive and merged under delegated review like any other. Examples:
 wording that brings a page in line with a ruling, a record's path after it moves, a stale reference in a directive's
-text. The directive cites the ruling by link. Recording that ruling in `docs/decisions/` counts as recording a
-decision she has made. The reviewer escalates such a pull request if it changes code, a record in `docs/runs/`, or
-what the project claims beyond what the cited ruling says.
+text. The directive cites the ruling by link. A follow-up pull request that adds or changes a decision record under
+`docs/decisions/` is the exception: it is always merged by Eleonora herself, whatever ruling it records (Eleonora,
+19 October 2026, on #943; see the list of her own actions under "A ruled question no longer holds a pull request"). The
+reviewer escalates such a pull request if it changes code, a record in `docs/runs/`, or what the project claims beyond
+what the cited ruling says.
+
+**A ruled question no longer holds a pull request.** Decided by Eleonora, 19 October 2026 (in chat, relayed; in force
+once she merges this section). A pull request labelled `needs-eleonora` only because it waits on a judgement call may
+be merged by the delegated reviewer once Eleonora has ruled on that call, and the pull request implements exactly the
+ruling. Her ruling is either her own comment on GitHub, or a comment starting
+"**Ruling (Eleonora, <date>; relayed by the orchestrating session):**" that the orchestrating session posts after she
+has ruled in chat. A relayed ruling names the pull request or the finding, and states the decision. The reviewer then
+removes `needs-eleonora`, reviews the pull request under the rules above, and merges it. A pull request that does
+more or less than the ruling, or that is escalated for any other reason on the list above, still waits on her.
+
+These still need her own action on GitHub (a comment, review or merge by `eleonorabjornberg` with
+`performed_via_github_app` null and no app footer), as ruled on 6 October 2026 (#256); a ruling relayed from chat
+never stands in for it:
+
+- opening any lockbox tier;
+- changing a pre-registered primary test;
+- approving a model for the live record;
+- changing the live model pin;
+- registering a candidate;
+- merging a decision record under `docs/decisions/`;
+- any change to `CLAUDE.md` or `.claude/`.
 
 ## Merging, conflicts and long runs
 
