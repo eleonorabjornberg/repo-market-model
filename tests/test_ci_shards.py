@@ -73,14 +73,14 @@ class ShardTests(unittest.TestCase):
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
         expected = list(range(1, ci_shards.SHARDS + 1))
         found = re.findall(r"^\s+shard:\s*\[([\d, ]+)\]\s*$", text, flags=re.M)
-        self.assertEqual(len(found), 2, "suite and offline each list their shards")
+        self.assertEqual(len(found), 1, "the suite lists its shards; the networking-off check waits on the same shards")
         for entry in found:
             self.assertEqual([int(n) for n in entry.split(",")], expected)
         self.assertIn("'[1]' || '[" + ", ".join(map(str, expected)) + "]'", text, "the ml matrix lists the shards on a push")
 
     def test_every_shard_job_gets_its_modules_from_the_script(self):
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
-        self.assertEqual(len(re.findall(r"scripts/ci_shards\.py modules --shard \$\{\{ matrix\.shard \}\}", text)), 3)
+        self.assertEqual(len(re.findall(r"scripts/ci_shards\.py modules --shard \$\{\{ matrix\.shard \}\}", text)), 2)
 
 
 class MlModuleTests(unittest.TestCase):
