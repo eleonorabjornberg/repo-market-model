@@ -265,14 +265,18 @@ def narrow_family(entries: Dict[str, dict], name: str) -> dict:
 
 
 
-def gbm(runs: Path) -> dict:
-    """Both readings' paired comparisons, p-values and classification from the files `pair` and `crps` wrote."""
+def gbm(runs: Path, readings: Tuple[Tuple[str, str], ...] = READINGS) -> dict:
+    """The readings' paired comparisons, p-values and classification from the files `pair` and `crps` wrote.
+
+    `readings` is both of #968's by default. A grid's series are resampled with the same draws and each p-value is its
+    own series', so one reading alone (#1016) gets the p-values it would have beside the other (the same seed and days).
+    """
 
     from repo_model import ml
 
     entries: Dict[str, dict] = {}
     grids: Dict[tuple, list] = {}
-    for name, _label in READINGS:
+    for name, _label in readings:
         for h in HORIZONS:
             paired = json.loads((runs / f"pair_{name}_h{h}.json").read_text())
             entries.update(paired["entries"])
@@ -302,7 +306,7 @@ def gbm(runs: Path) -> dict:
         )
         for (key, _values), (p_improve, p_worse) in zip(members, p_values):
             entries[key]["p_improve"], entries[key]["p_worse"] = p_improve, p_worse
-    outcomes = {name: narrow_family(entries, name) for name, _label in READINGS}
+    outcomes = {name: narrow_family(entries, name) for name, _label in readings}
     return {
         "directive": "#968",
         "status": "scratch measurement; development data, not a verdict; nothing published moves",

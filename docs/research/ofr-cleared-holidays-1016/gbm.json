@@ -1,0 +1,2679 @@
+{
+ "comparisons": {
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|1|persistence_logistic": {
+   "days": 1263,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.0010636881901912169,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 28044839,
+    "upper": 0.001466763741759262
+   },
+   "mean": 0.00018557250125280159,
+   "p_improve": 0.3866306684665767,
+   "p_worse": 0.6134193290335483,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0010145664633203122
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.010007529605594284,
+       "upper": 0.0008310836630481573
+      },
+      "mean": -0.003642382473114973
+     },
+     "ordinary": {
+      "count": 1074,
+      "interval": {
+       "lower": -0.0007762612697985229,
+       "upper": 0.0020221446802285103
+      },
+      "mean": 0.0005711315820896636
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.0006198902576367228,
+       "upper": 0.0035432062275207662
+      },
+      "mean": 0.0009084098013507438
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.001397909143388951,
+       "upper": 0.0009892275092980298
+      },
+      "mean": -0.00019356957677731709
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1160,
+      "interval": {
+       "lower": -0.0011995985927477028,
+       "upper": 0.00158385931748633
+      },
+      "mean": 0.00017114551352860204
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.0004452263317055211,
+       "upper": 0.0015012203284798377
+      },
+      "mean": 0.0003480511979524768
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 16,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -8.304888403879045e-07,
+       "upper": -1.1246496336750984e-11
+      },
+      "mean": -3.3585067076312404e-07
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.00016388221648604303,
+       "upper": 1.6766430134610664e-05
+      },
+      "mean": -7.199105593097346e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.005320113878697796,
+       "upper": 0.007537694605710645
+      },
+      "mean": 0.0010145664633203122
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|1|pressure_model_v1": {
+   "days": 1263,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.0002659352161148377,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1418832646,
+    "upper": 0.00010243949214622831
+   },
+   "mean": -7.073188009084838e-05,
+   "p_improve": 0.7446627668616569,
+   "p_worse": 0.2553872306384681,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": -0.00028862619773327967
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.0028409436216456805,
+       "upper": 0.00020457572432033702
+      },
+      "mean": -0.0010126783594166903
+     },
+     "ordinary": {
+      "count": 1074,
+      "interval": {
+       "lower": -0.0001612766925911089,
+       "upper": 8.10656076480365e-05
+      },
+      "mean": -4.1621702870580586e-05
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.0001563063573344215,
+       "upper": 0.010032535856506293
+      },
+      "mean": 0.0035524038341516674
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0005475460820183901,
+       "upper": 6.617490775336337e-05
+      },
+      "mean": -0.00019176177565723322
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1160,
+      "interval": {
+       "lower": -0.00016531875143911852,
+       "upper": 9.382503907805564e-05
+      },
+      "mean": -4.042978047506183e-05
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.0022649251941813777,
+       "upper": 0.001109373225423071
+      },
+      "mean": -0.00041199824469577147
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 16,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 1.1636421223351669e-11,
+       "upper": 8.957665844239902e-08
+      },
+      "mean": 3.702191010653918e-08
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.00024513827014598284,
+       "upper": 4.143978486393559e-05
+      },
+      "mean": -6.997653483163695e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.0012386457580701683,
+       "upper": 0.000599190143775566
+      },
+      "mean": -0.00028862619773327967
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|2|persistence_logistic": {
+   "days": 1262,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": 0.00020777532974858954,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1179419022,
+    "upper": 0.0020581679385005807
+   },
+   "mean": 0.001037120644057839,
+   "p_improve": 0.05024748762561872,
+   "p_worse": 0.9498025098745063,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.005272671122473393
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.0019295749745376555,
+       "upper": 0.005928589582590891
+      },
+      "mean": 0.001589468173398345
+     },
+     "ordinary": {
+      "count": 1073,
+      "interval": {
+       "lower": 0.00010989115482939504,
+       "upper": 0.0018829106125565248
+      },
+      "mean": 0.0009180103695220422
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.00016618225478118732,
+       "upper": 0.02200498498474047
+      },
+      "mean": 0.007291217893270645
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0008339908268907796,
+       "upper": 0.0010123310863747908
+      },
+      "mean": 3.583748653122386e-05
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1159,
+      "interval": {
+       "lower": 9.958144163404746e-05,
+       "upper": 0.001953908486298455
+      },
+      "mean": 0.0009324711011606182
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -9.32668937507555e-05,
+       "upper": 0.006095672166281017
+      },
+      "mean": 0.0022146820053964905
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 15,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 68; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -4.1368072194093315e-05,
+       "upper": 1.1642885818415162e-05
+      },
+      "mean": -1.6195426779519443e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.001095944094150002,
+       "upper": 0.010494064485041631
+      },
+      "mean": 0.005272671122473393
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|2|pressure_model_v1": {
+   "days": 1262,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": 8.974069609505073e-05,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 262828497,
+    "upper": 0.0008602259873324162
+   },
+   "mean": 0.0004306074131298007,
+   "p_improve": 0.04809759512024399,
+   "p_worse": 0.951952402379881,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.002173051951663736
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": 0.00028422352143707115,
+       "upper": 0.0041611957861254645
+      },
+      "mean": 0.002027021749501514
+     },
+     "ordinary": {
+      "count": 1073,
+      "interval": {
+       "lower": -1.5898890009455223e-05,
+       "upper": 0.0005090420554392761
+      },
+      "mean": 0.00020743605600231558
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -4.516814233903907e-05,
+       "upper": 0.015509776878633664
+      },
+      "mean": 0.005401904654559965
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.00033126143775355114,
+       "upper": 1.7281680650684892e-05
+      },
+      "mean": -0.00012026832118696786
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1159,
+      "interval": {
+       "lower": 3.252231524118741e-05,
+       "upper": 0.0007805514376794229
+      },
+      "mean": 0.00035771589760576054
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -1.4469498855437351e-05,
+       "upper": 0.003545968823069469
+      },
+      "mean": 0.0012508138839294758
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 15,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 379; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -1.4200191325965561e-05,
+       "upper": 4.6395221354064634e-05
+      },
+      "mean": 9.346477622168356e-06
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.00044666881684058324,
+       "upper": 0.004172452154030027
+      },
+      "mean": 0.002173051951663736
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|3|persistence_logistic": {
+   "days": 1261,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": 0.0002497087660307306,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1179419022,
+    "upper": 0.002252544649282584
+   },
+   "mean": 0.001129447664341681,
+   "p_improve": 0.04864756762161892,
+   "p_worse": 0.9514024298785061,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.005733135342413843
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -2.7296364541542993e-05,
+       "upper": 0.003955878391875128
+      },
+      "mean": 0.001666629881476802
+     },
+     "ordinary": {
+      "count": 1072,
+      "interval": {
+       "lower": 0.0001038596614237395,
+       "upper": 0.002214368551556304
+      },
+      "mean": 0.00101991348923908
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.00011552272710324668,
+       "upper": 0.02017693564813621
+      },
+      "mean": 0.006985878228456954
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0008017887522411501,
+       "upper": 0.0011510706705071042
+      },
+      "mean": 0.00012129087155524633
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1158,
+      "interval": {
+       "lower": 0.00012932171489204747,
+       "upper": 0.002166258440832486
+      },
+      "mean": 0.0010075946862259536
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -7.451511294640025e-05,
+       "upper": 0.006748904911585805
+      },
+      "mean": 0.0024994063891767187
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 14,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 7; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -2.470880893848197e-05,
+       "upper": -3.2490919153870013e-06
+      },
+      "mean": -1.3268782104763574e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.0013350501211027701,
+       "upper": 0.011210796090640705
+      },
+      "mean": 0.005733135342413843
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|3|pressure_model_v1": {
+   "days": 1261,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": -7.988804804573452e-06,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 262828497,
+    "upper": 0.0005753435684953258
+   },
+   "mean": 0.00024315989022589794,
+   "p_improve": 0.0928953552322384,
+   "p_worse": 0.9071546422678866,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0012187841564972202
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": 0.00026918507370824726,
+       "upper": 0.0032507228963772573
+      },
+      "mean": 0.0015156386127942883
+     },
+     "ordinary": {
+      "count": 1072,
+      "interval": {
+       "lower": -5.803241583476061e-05,
+       "upper": 0.000429925167403444
+      },
+      "mean": 0.00014397613196833717
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.0006341493684141846,
+       "upper": 9.58559284448088e-07
+      },
+      "mean": -0.00021538478620460028
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0002484824151552523,
+       "upper": 8.965715899029651e-05
+      },
+      "mean": -6.213555388877141e-05
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1158,
+      "interval": {
+       "lower": -2.28518667278075e-05,
+       "upper": 0.0006055481622629673
+      },
+      "mean": 0.0002468595771011296
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -5.6150855149403434e-05,
+       "upper": 0.0006606304443947935
+      },
+      "mean": 0.00020156535234702456
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 14,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 124; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": 2.442665518491835e-06,
+       "upper": 2.6718247857664308e-05
+      },
+      "mean": 1.2589466428174906e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -5.676673368578931e-05,
+       "upper": 0.002899392549507033
+      },
+      "mean": 0.0012187841564972202
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|4|persistence_logistic": {
+   "days": 1260,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": 0.0002696451583426655,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1179419022,
+    "upper": 0.0022243955525345516
+   },
+   "mean": 0.0011508429801496568,
+   "p_improve": 0.046347682615869204,
+   "p_worse": 0.9537023148842558,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.005821933295007859
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": 8.04044810164599e-05,
+       "upper": 0.0031722308796703247
+      },
+      "mean": 0.001471760789704156
+     },
+     "ordinary": {
+      "count": 1071,
+      "interval": {
+       "lower": 0.00016698259719343956,
+       "upper": 0.0022879218297691154
+      },
+      "mean": 0.0011061954108702887
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -4.666631178752865e-05,
+       "upper": 0.015265068019582939
+      },
+      "mean": 0.0057952002042399595
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0014658235836908658,
+       "upper": 0.0009605955416303911
+      },
+      "mean": -0.00019966093630950012
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1157,
+      "interval": {
+       "lower": 0.0001659962779765172,
+       "upper": 0.002230669014520816
+      },
+      "mean": 0.0010843509753040213
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -4.9292693763318625e-05,
+       "upper": 0.005127192032505284
+      },
+      "mean": 0.0018977483161341457
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 13,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 20; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -1.5024509794776723e-05,
+       "upper": 2.42611700226324e-05
+      },
+      "mean": 1.6030581264506146e-06
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.0013994443781534457,
+       "upper": 0.010965772452493822
+      },
+      "mean": 0.005821933295007859
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|4|pressure_model_v1": {
+   "days": 1260,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": -9.085594554358338e-05,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 262828497,
+    "upper": 0.00012229312483085633
+   },
+   "mean": 1.951314449486971e-05,
+   "p_improve": 0.3765311734413279,
+   "p_worse": 0.6235188240587971,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.00010278697073995369
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.0005909832390111458,
+       "upper": 0.0004319717670435143
+      },
+      "mean": -2.7014751240559553e-05
+     },
+     "ordinary": {
+      "count": 1071,
+      "interval": {
+       "lower": -3.7841901579998476e-05,
+       "upper": 0.00012458065420284826
+      },
+      "mean": 3.776241167595345e-05
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.0010040405399803813,
+       "upper": 1.9757858681486064e-05
+      },
+      "mean": -0.0003514283407474399
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0003252040353248839,
+       "upper": 4.6680057471860414e-05
+      },
+      "mean": -9.053906539072735e-05
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1157,
+      "interval": {
+       "lower": -2.9193085340183918e-05,
+       "upper": 0.00014772440556022409
+      },
+      "mean": 5.2608702268652277e-05
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.0009879363414247511,
+       "upper": 1.319225859478687e-06
+      },
+      "mean": -0.0003522495772942252
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 13,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 2; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -1.1614562222406327e-05,
+       "upper": 6.011486036291314e-07
+      },
+      "mean": -4.029574602891868e-06
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.0004811583564909013,
+       "upper": 0.000607444533916228
+      },
+      "mean": 0.00010278697073995369
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|5|persistence_logistic": {
+   "days": 1259,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": 0.00020950001065754304,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1179419022,
+    "upper": 0.0033202545181620626
+   },
+   "mean": 0.0015318776429596222,
+   "p_improve": 0.08024598770061497,
+   "p_worse": 0.91980400979951,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0077116896366233615
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.0013589779232658192,
+       "upper": 0.002603198725108388
+      },
+      "mean": 0.0005038006267156429
+     },
+     "ordinary": {
+      "count": 1070,
+      "interval": {
+       "lower": 0.00015501883685937722,
+       "upper": 0.003735865610724708
+      },
+      "mean": 0.001630195043620277
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -3.2343278387112264e-05,
+       "upper": 0.020141488114230575
+      },
+      "mean": 0.007343125163909588
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0016436939117485023,
+       "upper": 0.0006497810569426603
+      },
+      "mean": -0.00037553611389483285
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1156,
+      "interval": {
+       "lower": 9.344209011897964e-05,
+       "upper": 0.0034070962541885345
+      },
+      "mean": 0.0014650761715193198
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -3.1419992146604366e-05,
+       "upper": 0.006147041753235222
+      },
+      "mean": 0.0022816106622314774
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 12,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 60; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -1.3499787418092432e-05,
+       "upper": 0.00011561692146515991
+      },
+      "mean": 3.369293186783499e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.001082006070909852,
+       "upper": 0.016529308566295597
+      },
+      "mean": 0.0077116896366233615
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|10|5|pressure_model_v1": {
+   "days": 1259,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": -1.7794471241933384e-05,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 262828497,
+    "upper": 9.370516075326423e-05
+   },
+   "mean": 3.1843026167268154e-05,
+   "p_improve": 0.16604169791510426,
+   "p_worse": 0.8340082995850208,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0001751726289556646
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.0007329590271427443,
+       "upper": 0.00022327630915863528
+      },
+      "mean": -0.00016006850985505222
+     },
+     "ordinary": {
+      "count": 1070,
+      "interval": {
+       "lower": 2.869212545549805e-06,
+       "upper": 0.00011247476444781857
+      },
+      "mean": 4.828932609953848e-05
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": 1.1608654600099107e-06,
+       "upper": 0.001352542148529404
+      },
+      "mean": 0.0004743238025465322
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.00021227244585356279,
+       "upper": 6.490952697585672e-06
+      },
+      "mean": -7.375398049606166e-05
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1156,
+      "interval": {
+       "lower": 4.369759646298132e-06,
+       "upper": 0.00011993426818559346
+      },
+      "mean": 5.1946147968798144e-05
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.0006875492516694855,
+       "upper": 0.00011495729343567224
+      },
+      "mean": -0.00019378036026542386
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 12,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 9; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -4.171473692250345e-05,
+       "upper": 1.154690984150404e-06
+      },
+      "mean": -1.4110458661473973e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -7.864110129444443e-05,
+       "upper": 0.0004731636535456662
+      },
+      "mean": 0.0001751726289556646
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|1|persistence_logistic": {
+   "days": 1263,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.005884131630931689,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 818940054,
+    "upper": 0.00026588595840698604
+   },
+   "mean": -0.0026077444670460533,
+   "p_improve": 0.9150042497875106,
+   "p_worse": 0.08504574771261438,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": -0.014659488443192979
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.038011900903665886,
+       "upper": -0.0009690428876625924
+      },
+      "mean": -0.01647408876580335
+     },
+     "ordinary": {
+      "count": 1074,
+      "interval": {
+       "lower": -0.004103737935162902,
+       "upper": 0.0009107876541900797
+      },
+      "mean": -0.0015770648153897763
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.02892972997450704,
+       "upper": 0.031138116374972047
+      },
+      "mean": 9.491947088230688e-05
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.00277655385710966,
+       "upper": 0.009558088657429475
+      },
+      "mean": 0.0023297814538077574
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1160,
+      "interval": {
+       "lower": -0.0062523407374673965,
+       "upper": 0.00016190911425851764
+      },
+      "mean": -0.0028489864275273104
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.008455485378023282,
+       "upper": 0.00887547528461251
+      },
+      "mean": 0.0001091552820632648
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 16,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -0.00015049765219909273,
+       "upper": -3.787681374109055e-05
+      },
+      "mean": -8.702644609474058e-05
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.0004200543854573447,
+       "upper": 0.004687330251963331
+      },
+      "mean": 0.0016869085686190158
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.030081538509964326,
+       "upper": -0.0003420035014925858
+      },
+      "mean": -0.014659488443192979
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|1|pressure_model_v1": {
+   "days": 1263,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.0004692349128014473,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1039403691,
+    "upper": -1.8070327089256266e-05
+   },
+   "mean": -0.0002101792949279098,
+   "p_improve": 0.92040397980101,
+   "p_worse": 0.07964601769911504,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": -0.0011908351648732976
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.004172701929315143,
+       "upper": 0.00015925812485620013
+      },
+      "mean": -0.0014555170935045185
+     },
+     "ordinary": {
+      "count": 1074,
+      "interval": {
+       "lower": -0.00025776914937997804,
+       "upper": 1.6045193700516398e-06
+      },
+      "mean": -0.00012658637844095358
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.0010289533531501313,
+       "upper": 0.001575604688638029
+      },
+      "mean": 0.00017863564055110132
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0007089299079234178,
+       "upper": 0.0014184164896245098
+      },
+      "mean": 0.00033920620018611816
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1160,
+      "interval": {
+       "lower": -0.0002692288657350166,
+       "upper": 1.7337725831029225e-05
+      },
+      "mean": -0.0001200895582746967
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.003965086743185195,
+       "upper": 0.0004855372705557266
+      },
+      "mean": -0.0012247821543233252
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 16,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0
+      },
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -1.3636808958347798e-05,
+       "upper": -1.6781974710809572e-06
+      },
+      "mean": -6.748123430016845e-06
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -8.221411076193583e-05,
+       "upper": 0.0003958821879737038
+      },
+      "mean": 0.00014443641154061225
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.0024421793497736875,
+       "upper": -0.00022797901334453263
+      },
+      "mean": -0.0011908351648732976
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|2|persistence_logistic": {
+   "days": 1262,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": -0.002968750081854454,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 467153624,
+    "upper": 0.0034350065196923573
+   },
+   "mean": 0.0002924696382399887,
+   "p_improve": 0.44027798610069496,
+   "p_worse": 0.55977201139943,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0011234564262935214
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.02811545207285795,
+       "upper": 0.010450477667571786
+      },
+      "mean": -0.0061329833816364246
+     },
+     "ordinary": {
+      "count": 1073,
+      "interval": {
+       "lower": -0.001889136883760648,
+       "upper": 0.0037273487901497825
+      },
+      "mean": 0.0007560417759858491
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.006028846508006865,
+       "upper": 0.012406021864785795
+      },
+      "mean": 0.002136161079061955
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0010684542119123613,
+       "upper": 0.008409584420688511
+      },
+      "mean": 0.0026306566712776917
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1159,
+      "interval": {
+       "lower": -0.003543888606866725,
+       "upper": 0.003268797590954756
+      },
+      "mean": -4.7293635510384825e-05
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.00020160117166959668,
+       "upper": 0.00999195708142365
+      },
+      "mean": 0.004115631136071932
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 15,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 272; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -0.00010385934903807623,
+       "upper": -1.4778127142224696e-05
+      },
+      "mean": -5.2702513329493256e-05
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.000265050889849041,
+       "upper": 0.001620210575077375
+      },
+      "mean": 0.0005151100531289858
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.015477367004513687,
+       "upper": 0.016746558553264852
+      },
+      "mean": 0.0011234564262935214
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|2|pressure_model_v1": {
+   "days": 1262,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": 2.1403994840797152e-05,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 70471576,
+    "upper": 0.0007364123199245859
+   },
+   "mean": 0.00033358501996564455,
+   "p_improve": 0.07829608519574022,
+   "p_worse": 0.9217539123043847,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0014500849817749872
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": 0.000126906400537513,
+       "upper": 0.0016561235704103386
+      },
+      "mean": 0.000768950614528146
+     },
+     "ordinary": {
+      "count": 1073,
+      "interval": {
+       "lower": -0.00011588916664056098,
+       "upper": 0.0005943106856054024
+      },
+      "mean": 0.00019446852385258484
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": 5.2835921312276197e-05,
+       "upper": 0.013648063141276574
+      },
+      "mean": 0.005885407433093687
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.00013796026238595922,
+       "upper": 0.0004667218903323009
+      },
+      "mean": 0.00011640722367551252
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1159,
+      "interval": {
+       "lower": -4.980931174703783e-05,
+       "upper": 0.0006251320281218094
+      },
+      "mean": 0.0002481250803207319
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": 4.11484586506996e-05,
+       "upper": 0.002853504645154319
+      },
+      "mean": 0.001295216768009009
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 15,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 284; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -1.6500943564158777e-05,
+       "upper": -3.2325763266103627e-06
+      },
+      "mean": -9.251340403976474e-06
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -6.31799441660871e-05,
+       "upper": 0.0008424965266975835
+      },
+      "mean": 0.00026733254942743525
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -7.601858537618585e-05,
+       "upper": 0.0034774140440116488
+      },
+      "mean": 0.0014500849817749872
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|3|persistence_logistic": {
+   "days": 1261,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": -0.0009667580373269177,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 467153624,
+    "upper": 0.0054191584571388176
+   },
+   "mean": 0.0020117083883102356,
+   "p_improve": 0.143992800359982,
+   "p_worse": 0.856057197140143,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.009804964144313767
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.016396030996123846,
+       "upper": 0.01019363598161574
+      },
+      "mean": -0.0020079888147791877
+     },
+     "ordinary": {
+      "count": 1072,
+      "interval": {
+       "lower": -0.0009076512602237567,
+       "upper": 0.005572289968171197
+      },
+      "mean": 0.0019785414158044554
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": 0.0008372084337399068,
+       "upper": 0.029951209988881962
+      },
+      "mean": 0.013645008079253623
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0006955645148140645,
+       "upper": 0.01671511645844595
+      },
+      "mean": 0.005517250397081653
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1158,
+      "interval": {
+       "lower": -0.0015575008613323159,
+       "upper": 0.004969881806744488
+      },
+      "mean": 0.001454283408507278
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": 0.0003601561388830723,
+       "upper": 0.019867880052272656
+      },
+      "mean": 0.00827868049133731
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 14,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 22; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -6.112032418317306e-05,
+       "upper": -3.4678556270594333e-06
+      },
+      "mean": -2.7391167212129467e-05
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.00019466140981119656,
+       "upper": 0.0015014313152951675
+      },
+      "mean": 0.00046326719519886115
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.005257932397759127,
+       "upper": 0.026530858195969745
+      },
+      "mean": 0.009804964144313767
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|3|pressure_model_v1": {
+   "days": 1261,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": 9.827592984101318e-05,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 70471576,
+    "upper": 0.0006976906182923275
+   },
+   "mean": 0.0003593289232198364,
+   "p_improve": 0.03844807759612019,
+   "p_worse": 0.9616019199040048,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0017520214758133927
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": 0.00024404356360132378,
+       "upper": 0.006319669225610216
+      },
+      "mean": 0.00263364119827123
+     },
+     "ordinary": {
+      "count": 1072,
+      "interval": {
+       "lower": -7.546549603552777e-06,
+       "upper": 0.0002666057681462726
+      },
+      "mean": 0.00011791030596791652
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": 0.00010480146352910135,
+       "upper": 0.0014328401563889937
+      },
+      "mean": 0.0007208648827711089
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -1.824800168843913e-05,
+       "upper": 0.0014573130858652613
+      },
+      "mean": 0.0005227386230269017
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1158,
+      "interval": {
+       "lower": 4.30663094437799e-05,
+       "upper": 0.0004031843141086252
+      },
+      "mean": 0.00020398534367969902
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": 3.9403782917092724e-05,
+       "upper": 0.005736735294135215
+      },
+      "mean": 0.0021058130504769575
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 14,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 39; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -1.4655793574122202e-05,
+       "upper": 1.0524192270410579e-05
+      },
+      "mean": -1.6752370579352672e-06
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": 8.583919006745296e-06,
+       "upper": 0.00015732018955485428
+      },
+      "mean": 7.245400808807545e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.0004480261920293321,
+       "upper": 0.00341724076143586
+      },
+      "mean": 0.0017520214758133927
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|4|persistence_logistic": {
+   "days": 1260,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": -0.00035518638694760895,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 467153624,
+    "upper": 0.0052988983262628065
+   },
+   "mean": 0.002216773001789192,
+   "p_improve": 0.10504474776261187,
+   "p_worse": 0.8950052497375132,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.011010491651370224
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.005874226386761843,
+       "upper": 0.011959334322299163
+      },
+      "mean": 0.0022119808151596356
+     },
+     "ordinary": {
+      "count": 1071,
+      "interval": {
+       "lower": -0.0006727671355057602,
+       "upper": 0.0053192481085037446
+      },
+      "mean": 0.0018838836208078693
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": 0.001023255440872341,
+       "upper": 0.03025947707372641
+      },
+      "mean": 0.012307191163458889
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0012498925430937616,
+       "upper": 0.013845508862572724
+      },
+      "mean": 0.004557639411767929
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1157,
+      "interval": {
+       "lower": -0.0008351020911824174,
+       "upper": 0.005070147507765887
+      },
+      "mean": 0.0017259158816209355
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": 0.00032012538293911254,
+       "upper": 0.01974075069820003
+      },
+      "mean": 0.007730575798242486
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 13,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 120; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -4.843948356366746e-05,
+       "upper": -2.8842850971819546e-06
+      },
+      "mean": -2.177412557725661e-05
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.00020008423759566697,
+       "upper": 0.0009997255805037192
+      },
+      "mean": 0.000271234427980003
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.002043455366697671,
+       "upper": 0.026481725820806407
+      },
+      "mean": 0.011010491651370224
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|4|pressure_model_v1": {
+   "days": 1260,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": 5.3605886882511854e-05,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 70471576,
+    "upper": 0.000576649449179793
+   },
+   "mean": 0.000282518015665683,
+   "p_improve": 0.05254737263136843,
+   "p_worse": 0.9475026248687566,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0014348086019506652
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": 3.1677222348643426e-05,
+       "upper": 0.004482272076561644
+      },
+      "mean": 0.0017507806782920666
+     },
+     "ordinary": {
+      "count": 1071,
+      "interval": {
+       "lower": 1.7175620638131515e-05,
+       "upper": 0.000400626158816055
+      },
+      "mean": 0.00018265996206726675
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": 3.114961620519207e-05,
+       "upper": 0.0010892018671216333
+      },
+      "mean": 0.0005040778848557633
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.0017056060781296474,
+       "upper": 4.585830121079843e-05
+      },
+      "mean": -0.0005778146309066419
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1157,
+      "interval": {
+       "lower": -1.4351371599230312e-08,
+       "upper": 0.0003586816254962914
+      },
+      "mean": 0.00015392535939884227
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": 1.2330282518429982e-05,
+       "upper": 0.004666583809873958
+      },
+      "mean": 0.0017270005719835005
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 13,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 89; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -2.8853927979959873e-05,
+       "upper": 4.793813354944947e-06
+      },
+      "mean": -9.472837587622617e-06
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -1.202707736934096e-05,
+       "upper": 8.151141269475836e-05
+      },
+      "mean": 2.316416147434846e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.0003033654953058091,
+       "upper": 0.002915668439568441
+      },
+      "mean": 0.0014348086019506652
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|5|persistence_logistic": {
+   "days": 1259,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": -0.0008131176323421414,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 467153624,
+    "upper": 0.00407202427840427
+   },
+   "mean": 0.001320065570926253,
+   "p_improve": 0.17854107294635269,
+   "p_worse": 0.8215089245537723,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.006455517648611659
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.004472825994895537,
+       "upper": 0.009188611331368222
+      },
+      "mean": 0.001720914353834337
+     },
+     "ordinary": {
+      "count": 1070,
+      "interval": {
+       "lower": -0.0011067747254092514,
+       "upper": 0.0034870053334551706
+      },
+      "mean": 0.0008933159494909512
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": 0.0,
+       "upper": 0.0472143152567659
+      },
+      "mean": 0.018423187166798933
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -0.002974888780423976,
+       "upper": 0.00856860499803285
+      },
+      "mean": 0.0022066231585743164
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1156,
+      "interval": {
+       "lower": -0.0013043289179134514,
+       "upper": 0.003358760817567961
+      },
+      "mean": 0.0007559176838608819
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": 0.00016551936829644622,
+       "upper": 0.020349371604472602
+      },
+      "mean": 0.007651667099543337
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 12,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 25; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -4.007019897758342e-05,
+       "upper": -1.0221662759055166e-06
+      },
+      "mean": -1.7086574988999663e-05
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.00020345749040268774,
+       "upper": 0.0010305322217872008
+      },
+      "mean": 0.0002692776695344462
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": -0.004456990373137908,
+       "upper": 0.019962136170967478
+      },
+      "mean": 0.006455517648611659
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|all_days|5|5|pressure_model_v1": {
+   "days": 1259,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": 0.00010507583435703213,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 70471576,
+    "upper": 0.000909700906442182
+   },
+   "mean": 0.0004609405829825129,
+   "p_improve": 0.050597470126493675,
+   "p_worse": 0.9494525273736313,
+   "regimes": {
+    "2018-19": null,
+    "2025-26": 0.0023858029526096537
+   },
+   "splits": {
+    "by_day_type": {
+     "month_end": {
+      "count": 106,
+      "interval": {
+       "lower": -0.000373183575113124,
+       "upper": 0.0001465595928667072
+      },
+      "mean": -7.289843940904075e-05
+     },
+     "ordinary": {
+      "count": 1070,
+      "interval": {
+       "lower": 7.605520773615649e-05,
+       "upper": 0.0007620148135570859
+      },
+      "mean": 0.00036412310309551335
+     },
+     "quarter_end": {
+      "count": 21,
+      "interval": {
+       "lower": -0.0008078409451754547,
+       "upper": 0.02210033273979391
+      },
+      "mean": 0.0077086471592369395
+     },
+     "tax_date": {
+      "count": 62,
+      "interval": {
+       "lower": -2.4251634794018896e-05,
+       "upper": 0.0016601507462858515
+      },
+      "mean": 0.0005896470628412424
+     }
+    },
+    "by_quarter_end_window": {
+     "outside_quarter_end_window": {
+      "count": 1156,
+      "interval": {
+       "lower": 8.67439939151964e-05,
+       "upper": 0.0007738317065815935
+      },
+      "mean": 0.00037870546273210276
+     },
+     "quarter_end_window": {
+      "count": 103,
+      "interval": {
+       "lower": -0.0002706311351526966,
+       "upper": 0.004266889399576429
+      },
+      "mean": 0.0013838900879287654
+     }
+    },
+    "by_regime": {
+     "2018-19": {
+      "count": 0
+     },
+     "2020": {
+      "count": 12,
+      "interval_unavailable": "statistic returned nan on bootstrap replication 11; discarding such replicates would narrow the interval, so this raises instead",
+      "mean": 0.0
+     },
+     "2021-23": {
+      "count": 748,
+      "interval": {
+       "lower": -3.0063872408368783e-06,
+       "upper": -1.5256273772896986e-07
+      },
+      "mean": -1.3434133936494974e-06
+     },
+     "2024": {
+      "count": 250,
+      "interval": {
+       "lower": -0.0001323492571073145,
+       "upper": -8.681496621795684e-07
+      },
+      "mean": -5.094347202552137e-05
+     },
+     "2025-26": {
+      "count": 249,
+      "interval": {
+       "lower": 0.0006219709736671094,
+       "upper": 0.004690654176374494
+      },
+      "mean": 0.0023858029526096537
+     },
+     "2027": {
+      "count": 0
+     }
+    }
+   }
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|1|persistence_logistic": {
+   "days": 1230,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.00023527408829008122,
+    "replications": 2000,
+    "seed": 1224300433,
+    "upper": 0.00017288059172163782
+   },
+   "mean": -4.4047799550120956e-05,
+   "p_improve": 0.623968801559922,
+   "p_worse": 0.376081195940203
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|1|pressure_model_v1": {
+   "days": 1230,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.0001005110797101471,
+    "replications": 2000,
+    "seed": 1224300433,
+    "upper": -1.333681658320326e-05
+   },
+   "mean": -5.293732416219798e-05,
+   "p_improve": 0.9614519274036298,
+   "p_worse": 0.03859807009649518
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|2|persistence_logistic": {
+   "days": 1229,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": -8.303288711914564e-05,
+    "replications": 2000,
+    "seed": 1451366325,
+    "upper": 0.0006451262467212589
+   },
+   "mean": 0.0002449033979707561,
+   "p_improve": 0.14769261536923153,
+   "p_worse": 0.8523573821308934
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|2|pressure_model_v1": {
+   "days": 1229,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": -0.00012057519943809994,
+    "replications": 2000,
+    "seed": 1451366325,
+    "upper": 5.2558773288252754e-05
+   },
+   "mean": -2.8670862876980833e-05,
+   "p_improve": 0.7262636868156592,
+   "p_worse": 0.2737863106844658
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|3|persistence_logistic": {
+   "days": 1228,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": -1.4456012928584434e-05,
+    "replications": 2000,
+    "seed": 464226127,
+    "upper": 0.0013807186719793805
+   },
+   "mean": 0.0006124578961836314,
+   "p_improve": 0.09529523523823809,
+   "p_worse": 0.9047547622618869
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|3|pressure_model_v1": {
+   "days": 1228,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": -0.00015169706193945666,
+    "replications": 2000,
+    "seed": 464226127,
+    "upper": -1.4305901736787412e-06
+   },
+   "mean": -6.520756132421693e-05,
+   "p_improve": 0.9062046897655117,
+   "p_worse": 0.09384530773461328
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|4|persistence_logistic": {
+   "days": 1227,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": -8.230085026147504e-06,
+    "replications": 2000,
+    "seed": 1699233729,
+    "upper": 0.0015554422917013716
+   },
+   "mean": 0.0006585874287218563,
+   "p_improve": 0.10119494025298735,
+   "p_worse": 0.8988550572471377
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|4|pressure_model_v1": {
+   "days": 1227,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": -5.139403105357204e-05,
+    "replications": 2000,
+    "seed": 1699233729,
+    "upper": 1.7188209339149638e-05
+   },
+   "mean": -1.331650803522076e-05,
+   "p_improve": 0.7492625368731564,
+   "p_worse": 0.25078746062696866
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|5|persistence_logistic": {
+   "days": 1226,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": 4.575942475839511e-05,
+    "replications": 2000,
+    "seed": 963198620,
+    "upper": 0.003185663277534168
+   },
+   "mean": 0.0012974700862042742,
+   "p_improve": 0.11134443277836108,
+   "p_worse": 0.8887055647217639
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|10|5|pressure_model_v1": {
+   "days": 1226,
+   "events": 4,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": 3.299003335048522e-07,
+    "replications": 2000,
+    "seed": 963198620,
+    "upper": 5.362687506809744e-05
+   },
+   "mean": 2.3661950537952327e-05,
+   "p_improve": 0.07944602769861507,
+   "p_worse": 0.9206039698015099
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|1|persistence_logistic": {
+   "days": 1230,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.0017922286581169135,
+    "replications": 2000,
+    "seed": 1224300433,
+    "upper": 0.0002448276612827656
+   },
+   "mean": -0.0007066777782776194,
+   "p_improve": 0.8767561621918905,
+   "p_worse": 0.1232938353082346
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|1|pressure_model_v1": {
+   "days": 1230,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.00018587345214891003,
+    "replications": 2000,
+    "seed": 1224300433,
+    "upper": 1.150161828772948e-05
+   },
+   "mean": -8.05160718742573e-05,
+   "p_improve": 0.9015049247537623,
+   "p_worse": 0.09854507274636268
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|2|persistence_logistic": {
+   "days": 1229,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": -0.0006197372964498061,
+    "replications": 2000,
+    "seed": 1451366325,
+    "upper": 0.0021048022688028374
+   },
+   "mean": 0.0006647981005268794,
+   "p_improve": 0.2031398430078496,
+   "p_worse": 0.7969101544922754
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|2|pressure_model_v1": {
+   "days": 1229,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 3,
+    "level": 0.9,
+    "lower": -0.00011727185504453128,
+    "replications": 2000,
+    "seed": 1451366325,
+    "upper": 0.0004803422830874467
+   },
+   "mean": 0.00013752919592156543,
+   "p_improve": 0.2112894355282236,
+   "p_worse": 0.7887605619719014
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|3|persistence_logistic": {
+   "days": 1228,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": -3.906549366977161e-05,
+    "replications": 2000,
+    "seed": 464226127,
+    "upper": 0.005094427635161698
+   },
+   "mean": 0.0022538508999602742,
+   "p_improve": 0.09574521273936303,
+   "p_worse": 0.9043047847607619
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|3|pressure_model_v1": {
+   "days": 1228,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 4,
+    "level": 0.9,
+    "lower": -1.7086346542440714e-05,
+    "replications": 2000,
+    "seed": 464226127,
+    "upper": 0.00018467571876499728
+   },
+   "mean": 7.705591983349752e-05,
+   "p_improve": 0.11099445027748613,
+   "p_worse": 0.8890555472226389
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|4|persistence_logistic": {
+   "days": 1227,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": -3.855457569711755e-05,
+    "replications": 2000,
+    "seed": 1699233729,
+    "upper": 0.005312647668522649
+   },
+   "mean": 0.00225598683590398,
+   "p_improve": 0.09539523023848807,
+   "p_worse": 0.904654767261637
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|4|pressure_model_v1": {
+   "days": 1227,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 5,
+    "level": 0.9,
+    "lower": -3.057647265338645e-05,
+    "replications": 2000,
+    "seed": 1699233729,
+    "upper": 0.00024833757961016727
+   },
+   "mean": 8.673359257993407e-05,
+   "p_improve": 0.15954202289885505,
+   "p_worse": 0.8405079746012699
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|5|persistence_logistic": {
+   "days": 1226,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": 1.3997795605492785e-06,
+    "replications": 2000,
+    "seed": 963198620,
+    "upper": 0.004382680244824235
+   },
+   "mean": 0.0018533944303113041,
+   "p_improve": 0.0991950402479876,
+   "p_worse": 0.9008549572521374
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|brier|onset_days|5|5|pressure_model_v1": {
+   "days": 1226,
+   "events": 12,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 6,
+    "level": 0.9,
+    "lower": 2.8325263529445716e-05,
+    "replications": 2000,
+    "seed": 963198620,
+    "upper": 0.0005334881442736521
+   },
+   "mean": 0.00024040828767648605,
+   "p_improve": 0.0823958802059897,
+   "p_worse": 0.9176541172941353
+  },
+  "ofr_dvp_minus_bgcr_bp@1d|crps": {
+   "candidate_crps_bps": 1.0673961075587883,
+   "control_crps_bps": 1.077534068414103,
+   "days": 1263,
+   "holm_improve": false,
+   "holm_worse": false,
+   "interval": {
+    "block_length": 2,
+    "level": 0.9,
+    "lower": -0.004373645990319774,
+    "method": "stationary_bootstrap",
+    "replications": 2000,
+    "seed": 1821348875,
+    "upper": 0.0243353294306169
+   },
+   "mean": 0.010137960855314694,
+   "p_improve": 0.11909404529773511,
+   "p_worse": 0.8809559522023899
+  }
+ },
+ "directive": "#1016",
+ "holm_family": "each reading's own comparisons (40 Brier and 1 CRPS), not #187's family",
+ "outcomes": {
+  "ofr_dvp_minus_bgcr_bp@1d": {
+   "by_threshold": {
+    "10": {
+     "conditions": {
+      "a_survives_correction": false,
+      "b_improves_every_horizon": false,
+      "c_improves_in_both_stress_regimes": false,
+      "d_nothing_significantly_worse": true
+     },
+     "horizons_surviving_correction": [],
+     "horizons_surviving_uncorrected": [
+      2,
+      3
+     ],
+     "outcome": "no effect",
+     "stress_regime_cells_not_improved": [
+      "h1 persistence_logistic 2018-19",
+      "h1 pressure_model_v1 2018-19",
+      "h1 pressure_model_v1 2025-26",
+      "h2 persistence_logistic 2018-19",
+      "h2 pressure_model_v1 2018-19",
+      "h3 persistence_logistic 2018-19",
+      "h3 pressure_model_v1 2018-19",
+      "h4 persistence_logistic 2018-19",
+      "h4 pressure_model_v1 2018-19",
+      "h5 persistence_logistic 2018-19",
+      "h5 pressure_model_v1 2018-19"
+     ]
+    },
+    "5": {
+     "conditions": {
+      "a_survives_correction": false,
+      "b_improves_every_horizon": false,
+      "c_improves_in_both_stress_regimes": false,
+      "d_nothing_significantly_worse": true
+     },
+     "horizons_surviving_correction": [],
+     "horizons_surviving_uncorrected": [],
+     "outcome": "no effect",
+     "stress_regime_cells_not_improved": [
+      "h1 persistence_logistic 2018-19",
+      "h1 persistence_logistic 2025-26",
+      "h1 pressure_model_v1 2018-19",
+      "h1 pressure_model_v1 2025-26",
+      "h2 persistence_logistic 2018-19",
+      "h2 pressure_model_v1 2018-19",
+      "h3 persistence_logistic 2018-19",
+      "h3 pressure_model_v1 2018-19",
+      "h4 persistence_logistic 2018-19",
+      "h4 pressure_model_v1 2018-19",
+      "h5 persistence_logistic 2018-19",
+      "h5 pressure_model_v1 2018-19"
+     ]
+    }
+   },
+   "capped": "scored on the OFR window (2020-09-09 to 2025-12-31), which holds no 2018-19 episode: at most 'promising, unconfirmed' (#187, win rule item 4)",
+   "outcome": "no effect",
+   "significantly_worse": []
+  }
+ },
+ "status": "scratch measurement; development data, not a verdict; nothing published moves"
+}
