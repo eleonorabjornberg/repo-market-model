@@ -27,6 +27,13 @@
       "comment_id": 6172786156,
       "phrase": "GO #656",
       "what": "move the live pin to 492c53d65b09a0181065f5532f0197291b24ea14, the merge commit of #699, so the live record gains the protocol block (docs/decisions/live-pin-v3-bump.md, #736)"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1039,
+      "comment_id": 6299407441,
+      "phrase": "GO #1039",
+      "what": "approve the CLAUDE.md rewrite (calendar first, the pointer to #46, the code map, commands), the orchestrator skill naming the Directive loop, and .claude/routines/directive-loop.md (PR #1039)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
