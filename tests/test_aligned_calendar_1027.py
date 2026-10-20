@@ -17,8 +17,8 @@ Recorded mutations:
 
 from __future__ import annotations
 
-import functools
 import importlib.util
+import os
 import json
 import sys
 import unittest
@@ -104,6 +104,20 @@ class Recorded:
         self._patch.stop()
 
 
+REQUIRE_ML = "REPO_MODEL_REQUIRE_ML"
+
+
+class NeedsExtra(unittest.TestCase):
+    """The fits below need the optional `ml` extra: skip without it, fail when CI's ml job says it must be there (as tests/test_ml.py does)."""
+
+    def setUp(self):
+        if all(importlib.util.find_spec(name) is not None for name in ("numpy", "sklearn")):
+            return
+        if os.environ.get(REQUIRE_ML):
+            self.fail(f"{REQUIRE_ML} is set but the optional 'ml' extra is not importable")
+        self.skipTest("the optional 'ml' extra is not installed")
+
+
 def row_of_target(spread):
     return int(round(spread - 1000.0))
 
@@ -162,7 +176,7 @@ class AlignColumnsTests(unittest.TestCase):
             script.align_columns(panel(6), ("quarter_end", "no_such_column"))
 
 
-class MainsFitIsTheDefectTests(unittest.TestCase):
+class MainsFitIsTheDefectTests(NeedsExtra):
     """The control: `gbm_funding`'s fit as it stands on main trains the same columns one day off (#914). This is what the variants must not do."""
 
     def test_the_unaligned_one_step_fit_trains_every_target_row_column_from_row_p(self):
@@ -182,7 +196,7 @@ class MainsFitIsTheDefectTests(unittest.TestCase):
             ml.fit_gradient_boosted_quantiles(panel(), regressors=TARGET_ROW + ("tga",), levels=script.GRID, minimum_history=20)
 
 
-class OneStepVariantTests(unittest.TestCase):
+class OneStepVariantTests(NeedsExtra):
     """Run with `Admitted`: the #947 guard refuses a calendar regressor on any one-step fit, aligned or not, and its allow-list is Eleonora's."""
 
     def run(self, result=None):
@@ -230,7 +244,7 @@ class OneStepVariantTests(unittest.TestCase):
         self.assertNotIn("information", inspect.signature(fit).parameters)
 
 
-class DirectVariantTests(unittest.TestCase):
+class DirectVariantTests(NeedsExtra):
     """No stand-in: the direct variant passes the #947 guard as it stands (a direct fit is not checked)."""
 
     def test_every_calendar_and_scheduled_column_is_the_targets_at_every_lead(self):
