@@ -115,6 +115,13 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -B scripts/emit_progress.py --check
 
+      # The provisional register's tables are generated from one file per
+      # row under metadata/provisional/ (#1028); this refuses a stale page.
+      - name: Check the provisional register is current
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -B scripts/provisional_register.py --check
+
       # Every test module is in exactly one shard (#927).
       - name: Check every test module is in a shard
         env:

@@ -1,0 +1,15 @@
+{
+  "order": 270,
+  "directive": 886,
+  "pull_request": 911,
+  "hypothesis": "H1",
+  "result": "Values recalibrated on post-2020 stationary-bootstrap windows",
+  "declarations": [],
+  "model": "the published model (B3) as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-17-model-00911-H1-step5"
+  ],
+  "concluded": "Size by 250 days is 5.0% at the new values; power for a 3% skill falls to 6.1%."
+}

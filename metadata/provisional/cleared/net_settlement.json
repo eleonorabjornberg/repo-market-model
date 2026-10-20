@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/net_settlement.json",
+  "script": "scripts/net_settlement.py",
+  "pairing": "direct",
+  "why": "the net settlement columns, read in pressure models on direct pairs"
+}

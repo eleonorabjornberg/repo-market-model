@@ -1,0 +1,17 @@
+{
+  "order": 230,
+  "directive": 726,
+  "pull_request": 726,
+  "hypothesis": "H4",
+  "result": "The back-fill against H5's candidate",
+  "declarations": [
+    "metadata/backfill_h5_726.json"
+  ],
+  "model": "`gbm_funding` with and without the back-filled rows",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "0046-2026-10-14-model-00726-H4-step3"
+  ],
+  "concluded": "The back-fill makes 2018-19 grid CRPS worse and moves the other regimes within their intervals."
+}

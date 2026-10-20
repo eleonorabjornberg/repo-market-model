@@ -1,0 +1,15 @@
+{
+  "order": 100,
+  "directive": 934,
+  "pull_request": 945,
+  "hypothesis": "H5",
+  "result": "Per-regime AUROC difference of four models",
+  "declarations": [],
+  "model": "`gbm_funding` among four models, read from the committed score",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "2026-10-19-model-00945-H5-step3"
+  ],
+  "concluded": "By regime and lead `gbm_funding` has one cell above zero and one below of 15; no pooled gain is claimed."
+}
