@@ -139,6 +139,7 @@ SNAPSHOT_INVENTORY: Mapping[str, Tuple[str, str]] = {
     "srf_inputs": ("read", "srf_take_up, the standing repo facility take-up"),
     "repo_ops_inputs": ("read", "the Desk's repo operations (fed_repo_* columns, both availability readings)"),
     "fed-iorb-announcements": ("read", "iorb_announced_change_bps, iorb_days_to_announced_change"),
+    "fomc_calendar": ("cannot", "the Board's FOMC calendar pages and the press releases that dated each schedule (#1038): an event calendar read per target day by repo_model.fomc_calendar, not a daily series with a first print per day"),
     "fr2004": ("read", "dealer_treasury_position (FR 2004 weekly)"),
     "new_sources": ("cannot", "snapshots of the new sources of #630 (primary dealer financing and fails, Treasury debt cash flows); read by scripts/new_sources.py, not by this screen"),
     "treasury_bill_rates_page": ("cannot", "the Treasury text-view page as served: evidence for #445 (its 3:30 pm quote time), not a data input; no series is built from it"),

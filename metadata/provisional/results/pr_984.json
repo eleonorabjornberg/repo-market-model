@@ -1,0 +1,17 @@
+{
+  "order": 170,
+  "directive": 970,
+  "pull_request": 984,
+  "hypothesis": "H5",
+  "result": "Randomised PIT beside the midpoint PIT",
+  "declarations": [
+    "metadata/randomised_pit_970.json"
+  ],
+  "model": "`gbm_funding` and (c)",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "2026-10-19-model-00984-H5-step3"
+  ],
+  "concluded": "The randomised PIT reproduces the midpoint bins' reading in 2021-23."
+}

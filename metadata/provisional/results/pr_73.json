@@ -1,0 +1,16 @@
+{
+  "order": 10,
+  "directive": 73,
+  "pull_request": 73,
+  "hypothesis": "H5",
+  "result": "Phase 2 and the v1 funding declaration against as-of persistence (`docs/runs/`)",
+  "declarations": [],
+  "model": "the phase 2 gbm, uncalibrated and cross-conformal, and the published v1 declaration",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "0001-2026-10-05-model-00073-H5-step3",
+    "incumbent"
+  ],
+  "concluded": "Beats as-of persistence on CRPS by its interval, not uniformly: every gbm loses in 2021-23 and the uncalibrated gbm on quarter ends; the tail clause fails."
+}

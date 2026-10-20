@@ -1,0 +1,17 @@
+{
+  "order": 20,
+  "directive": 634,
+  "pull_request": 711,
+  "hypothesis": "H5",
+  "result": "The spread distribution re-scored under protocol v1",
+  "declarations": [
+    "metadata/spread_distribution_634.json"
+  ],
+  "model": "`gbm_funding`, (a), (b) and the published declaration",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "0026-2026-10-13-model-00711-H5-step1"
+  ],
+  "concluded": "The new inputs add nothing on the primary score; no variant beats B3 on its five levels; only the two-part form (c, direct, not provisional) leads on the upper tail."
+}

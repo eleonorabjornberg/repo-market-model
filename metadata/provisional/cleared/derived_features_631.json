@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/derived_features_631.json",
+  "script": "scripts/derived_features_631.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}
