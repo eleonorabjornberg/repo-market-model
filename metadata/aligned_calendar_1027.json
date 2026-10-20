@@ -99,6 +99,7 @@
  "status": "declared by the pull request that closes #1027 before any number was computed; a measurement, not a record. Nothing is published: neither variant joins any published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
  "variants": {
   "gbm_funding_cal_aligned": {
+   "947_guard": "refused by repo_model.one_step_guard until its pinned allow-list (Eleonora's) has an entry for each lead's regressors; variant (ii) passes",
    "min_samples_leaf": 5,
    "pairing": "one-step pairs (p, p + 1) of gbm_funding's current fit, at every lead, on the frame whose target-row columns are row p + 1's (align_columns)",
    "training_pairs": null

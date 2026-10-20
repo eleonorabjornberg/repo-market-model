@@ -21,6 +21,10 @@ quarter-end days and only 33 hold twenty), on the same inputs at every lead (`va
 The only difference between the variants is the pairing; the leaf, seed, fold grid, refit cadence (21 scored days, 61 minimum history) and quantile
 grid are `gbm_funding`'s and #951's. The scratch panel is #951's `AUG3` (`gbm_funding`'s published columns plus the net-settlement columns).
 
+**The #947 guard.** `repo_model.one_step_guard` refuses a calendar or scheduled regressor on any one-step fit, whether or not the frame was aligned, and its
+allow-list is pinned and Eleonora's. Variant (ii) passes it (direct pairs are not checked). Variant (i) is refused until she admits it by an allow-list entry
+per lead (the fitter and the regressors of `variant_features(ALIGNED, h)`); the tests run it with a stand-in entry and show the refusal without one.
+
 The walks are long (`needs-mac`, #46); `score` reads them. The reference walks of `gbm_funding` are #634's (`spread_distribution_634.py walk`).
 
     # PUB.csv: the published panel (digest 4ddc3882...); AUG3.csv: #951's scratch panel (see scripts/drivers_audit_951.py's docstring)
@@ -211,6 +215,7 @@ def declaration_document() -> dict:
         "ruling": "Eleonora, 20 October 2026, relayed by the orchestrating session: a model that does not read calendar days at the target day is wrong; the calendar fix comes first",
         "variants": {
             ALIGNED: {
+                "947_guard": "refused by repo_model.one_step_guard until its pinned allow-list (Eleonora's) has an entry for each lead's regressors; variant (ii) passes",
                 "pairing": "one-step pairs (p, p + 1) of gbm_funding's current fit, at every lead, on the frame whose target-row columns are row p + 1's (align_columns)",
                 "training_pairs": None,
                 "min_samples_leaf": LEAF,

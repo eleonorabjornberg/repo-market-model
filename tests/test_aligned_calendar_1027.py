@@ -32,7 +32,7 @@ script = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = script
 spec.loader.exec_module(script)
 
-from repo_model import ml  # noqa: E402
+from repo_model import ml, one_step_guard  # noqa: E402
 from repo_model.asof import InformationRule  # noqa: E402
 from repo_model.data import DailyObservation  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
@@ -65,6 +65,22 @@ def panel(count=ROWS):
             values[name] = float(10_000 * (k + 1) + i)
         out.append(DailyObservation(date=day, values=values))
     return out
+
+
+class Admitted:
+    """Stands in for the allow-list entries Eleonora's decision would add (#947: the list is hers and pinned), for the one-step variant only."""
+
+    def __enter__(self):
+        entries = dict(one_step_guard.ONE_STEP_ALLOW_LIST)
+        for h in script.HORIZONS:
+            names = script.regressors(script.variant_features(script.ALIGNED, h))
+            entries[f"stand_in_{h}"] = one_step_guard.FrozenDeclaration("fit_gradient_boosted_quantiles", tuple(names), "test stand-in")
+        self._patch = mock.patch.object(one_step_guard, "ONE_STEP_ALLOW_LIST", entries)
+        self._patch.start()
+        return self
+
+    def __exit__(self, *exc):
+        self._patch.stop()
 
 
 class Recorded:
@@ -152,14 +168,33 @@ class MainsFitIsTheDefectTests(unittest.TestCase):
     def test_the_unaligned_one_step_fit_trains_every_target_row_column_from_row_p(self):
         rows = panel()
         names = TARGET_ROW + ("tga",)
-        with Recorded() as recorded:
+        # the unaligned one-step fit trains each such column from row p; with the guard's refusal lifted (a stand-in entry) it does so on every pair
+        entries = dict(one_step_guard.ONE_STEP_ALLOW_LIST)
+        entries["stand_in"] = one_step_guard.FrozenDeclaration("fit_gradient_boosted_quantiles", names, "test stand-in")
+        with mock.patch.object(one_step_guard, "ONE_STEP_ALLOW_LIST", entries), Recorded() as recorded:
             ml.fit_gradient_boosted_quantiles(rows, regressors=names, levels=script.GRID, minimum_history=20)
         design, targets, _ = recorded.calls[0]
         bad = offenders(design, targets, design_names(names), rows, TARGET_ROW, lambda name, j: j)
         self.assertEqual(len(bad), len(design) * len(TARGET_ROW), "main's one-step fit should be off by one day on every pair and column")
 
+    def test_the_947_guard_refuses_that_fit_today(self):
+        with self.assertRaises(ValueError):
+            ml.fit_gradient_boosted_quantiles(panel(), regressors=TARGET_ROW + ("tga",), levels=script.GRID, minimum_history=20)
+
 
 class OneStepVariantTests(unittest.TestCase):
+    """Run with `Admitted`: the #947 guard refuses a calendar regressor on any one-step fit, aligned or not, and its allow-list is Eleonora's."""
+
+    def run(self, result=None):
+        with Admitted():
+            return super().run(result)
+
+    def test_the_947_guard_refuses_this_variant_until_the_allow_list_admits_it(self):
+        features = script.variant_features(script.ALIGNED, 2)
+        with mock.patch.object(one_step_guard, "ONE_STEP_ALLOW_LIST", {}):
+            with self.assertRaises(ValueError):
+                script.variant_fit(script.ALIGNED, features)(panel(), 20)
+
     def test_every_calendar_and_scheduled_column_is_the_targets_at_every_lead(self):
         rows = panel()
         for h in script.HORIZONS:
@@ -196,6 +231,8 @@ class OneStepVariantTests(unittest.TestCase):
 
 
 class DirectVariantTests(unittest.TestCase):
+    """No stand-in: the direct variant passes the #947 guard as it stands (a direct fit is not checked)."""
+
     def test_every_calendar_and_scheduled_column_is_the_targets_at_every_lead(self):
         from repo_model import measurement_fields
 

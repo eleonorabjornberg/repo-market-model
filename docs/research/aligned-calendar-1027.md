@@ -17,6 +17,10 @@ Both read `gbm_funding`'s published inputs at the lead (as of the decision insta
 
 Settings are `gbm_funding`'s (seed, quantile grid, refit every 21 scored days, 61 days of minimum history) except `min_samples_leaf`, declared at 5: #951 section 2 shows that a leaf of 20 can isolate quarter-ends in only about a third of the refits and a leaf of 5 in most. #951 tested 5 and 20 only; 10 is untested.
 
+## The #947 guard
+
+`repo_model.one_step_guard` (merged under #947) refuses a calendar or scheduled regressor on any one-step fit, aligned or not, and says to train on direct pairs. Its allow-list is pinned and is Eleonora's. Variant (ii) passes. Variant (i) is refused as the code stands; it runs only once she adds an allow-list entry for the fitter and each lead's regressors. The tests run (i) with a stand-in entry and show the refusal without it. **Marked question:** admit (i), or drop it and run (ii) alone.
+
 ## Which columns at which lead
 
 | lead | target-row columns |
