@@ -8536,10 +8536,10 @@
   "tiers": "docs/pivot/evidence/weighted-miss/tier1.json"
  },
  "variant_count": {
-  "arm_declarations": 24,
-  "arms": 85,
+  "arm_declarations": 27,
+  "arms": 96,
   "candidate_files": 358,
-  "declarations": 29,
+  "declarations": 35,
   "unread": [
    "alarm_cooldown.json",
    "always_flag_588.json",
@@ -8577,7 +8577,7 @@
    "structural_liquidity.json",
    "upper_bound_635.json"
   ],
-  "variants": 86,
+  "variants": 96,
   "without_evidence": [
    "vote_2_of_3",
    "window_onset_gbm+recalibrated",

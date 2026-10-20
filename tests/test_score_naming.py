@@ -18,6 +18,9 @@ import json
 import re
 import unittest
 from pathlib import Path
+import built_outputs
+
+built_outputs.ensure()  # the page, its data and the log are built, not committed (#928)
 
 REPO = Path(__file__).resolve().parent.parent
 BANNED = re.compile(r"full\s+distribution", re.IGNORECASE)

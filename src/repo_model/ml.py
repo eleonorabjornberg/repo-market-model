@@ -589,6 +589,7 @@ from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .metrics import _validate_levels
 from .pressure import ONSET_QUIET_DAYS
 from .asof import InformationRule
+from .one_step_guard import guard_one_step_fit
 from .splits import (
     LookAheadError,
     SplitError,
@@ -2923,6 +2924,7 @@ def _masked_rows(
     return out
 
 
+@guard_one_step_fit
 def fit_gradient_boosted_quantiles(
     train_frame: Sequence[DailyObservation],
     regressors: Sequence[str],
