@@ -1187,6 +1187,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (no verdict; development data).
 - Next: the milestones left open in the pull request are Eleonora's to match; the layout redesign is #893.
 
+### 2026-10-17 [H1] groundwork G1 · eleonorabjornberg/repo-market-model#897
+- Directive: #893
+- Step: groundwork G1 (the layout of the results page for H1 to H10; as in #816, the hypothesis tag is the nearest fit and is a question in the PR)
+- Tier: development
+- Pins: no panel and no scoring; base `f70bf93d`
+- Tried: `site/index.html` re-set as a paper: title, dek, an executive summary in prose (no table), one contents list in place of the tile grids, numbered sections, numbered figure and table captions, a serif text column of about 66 characters with a margin column on wide screens for notes, a table and key figures (each key figure marked "development, not a verdict"), folding into the flow on a phone. Each hypothesis is one line, its id and a tagline from the new `docs/research/taglines.json`, over a native `<details>` fold holding its step, status, tests, kill criterion, milestones and log. Variants: n/a (presentation, no model).
+- Result: every chapter, view, figure and record of the page is still on it, folded or in the contents list; no figure, record or rule moves. The taglines are drafted from the plan's headings for Eleonora's review.
+- Against kill: not applicable (groundwork).
+- Next: #891 refreshes the milestones and status data the folds show; whichever merges second merges main and regenerates.
+
 ### 2026-10-17 [H5] step 3 · eleonorabjornberg/repo-market-model#898
 - Directive: #882
 - Step: 3 (the scored results of steps 2 to 4, #775/#758, #815/#761 and #822/#688, without decision day 2019-09-18; finding #798)
@@ -1307,6 +1317,16 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Against kill: not applicable (groundwork).
 - Next: Eleonora's ruling on whether a record may ever be written after midnight ET (marked question in the PR).
 
+### 2026-10-19 [H8] step 2 · eleonorabjornberg/repo-market-model#956
+- Directive: #930
+- Step: 2 (a second re-score, after #924: the blend (c) takes the declared default weight 0.5 when its trailing windows hold no pressure day, Eleonora's ruling on #925; the entry for #926 stands as written and is not superseded for (a) and (b), which are unchanged)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `f06899da`; seed 765; declaration `metadata/ranking_765.json` with the rule text for (c) carrying the exception, no declared value changed
+- Tried: the same three rankers, script, days and 10,000 draws as #926; only `choose_weight` changed. Variants: 0 (a correction of the weight rule, no new candidate).
+- Result: 46 of 87 refits take the default weight 0.5 (4 for want of 60 windows, 42 with no pressure day in the trailing windows), mean weight in force 0.36 to 0.60. (c) top-5 precision 9.5%, gain over the calendar +0.0 pp [-1.1 pp, +1.1 pp] (was -0.1 pp [-1.2 pp, +1.0 pp]); 2024: 3.4% against the calendar's 4.2%, -0.8 pp [-1.9 pp, +0.0 pp] (was -1.8 pp [-3.6 pp, -0.3 pp]); 2018-19 and 2025-26 unchanged. (a) and (b) are identical to #926 to the digit. Detail in `docs/pivot/ranking-930-result.md`.
+- Against kill: no ranker has an interval wholly above zero against the calendar of known risk dates, so the kill condition is still met on development data, as exploration and not a verdict.
+- Next: no claim for step 3; whether any ranker goes on to registration is Eleonora's decision.
+
 ### 2026-10-19 [H5] step 3 · eleonorabjornberg/repo-market-model#957
 - Directive: #931
 - Step: 3 (the candidate's construction: finding #914; Eleonora's ruling of 19 October 2026 to run aligned training pairs for `treasury_settlement` at lead 1 as a development step)
@@ -1336,3 +1356,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: against B1 the lead-averaged differentials have rho(1) 0.16 and an automatic block of 4.8 days; against B2 rho(1) 0.87, rho(10) 0.47 and 73.2 days pooled (5.8 to 47.5 within regime). Pooled lower bounds at block 5, 10 and 20: +0.241, +0.236, +0.226 against B1; +0.485, +0.458, +0.417 against B2. Only the 2025-26 bound against B2 changes sign with the block (+0.121, +0.002, −0.165). The block stays 10. Detail in `docs/research/block-length-949-result.md`.
 - Against kill: not applicable (a check on the interval, not a model).
 - Next: whether the block changes is Eleonora's decision (a section 13 matter); the question is marked in the pull request.
+
+### 2026-10-19 [H3] step 1 · eleonorabjornberg/repo-market-model#988
+- Directive: #968
+- Step: 1 (screening; the lag at which the OFR's cleared-repo series are readable, Lens E of #958)
+- Tier: development
+- Pins: published panel `4ddc3882…`; scratch panel `f46cfc57…`; base `b008b564`
+- Tried: the OFR's DVP and GCF preliminary rates declared at one business day, 15:00 (the page's statement), beside #187's two days, 16:00, in a new measurement source; the #478 source screen with each column at both lags in one run, and #187's paired Brier and CRPS test for `ofr_dvp_minus_bgcr_bp` at both lags. Variants: 1 (the lag).
+- Result: no change. The DVP rate minus BGCR keeps its pooled Spearman with the +5 bp indicator at lead 1 (+0.175 declared, +0.177 stated; rank 16 and 20 of 62; pre-onset AUC 0.784 and 0.762), and the paired test is "no effect" at both lags with no paired Brier difference moving by more than 0.00011.
+- Against kill: not applicable (no verdict; development data); the directive's kill, a change in the screen's verdict, did not occur.
+- Next: whether any OFR series joins a published declaration, and whether the records' columns move to the stated lag, are Eleonora's; the #629 matrix needs re-declaring on main's panel.
