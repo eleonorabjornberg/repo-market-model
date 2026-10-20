@@ -159,7 +159,7 @@ comment for her.
 
 ## Delegated review
 
-Until Eleonora revokes it in writing, queued pull requests are reviewed and merged by the "Directive reviewer" routine
+Until Eleonora revokes it in writing, queued pull requests are reviewed and merged by the "Directive loop" routine
 (a Claude Code cloud session in the `rmm` environment), under "Delegated review" in `docs/decisions/workflow.md`. Once
 she has ruled on the judgement call a `needs-eleonora` pull request waits on (her own GitHub comment, or a ruling the
 orchestrating session relays from chat), the reviewer may merge a pull request that implements exactly that ruling.
