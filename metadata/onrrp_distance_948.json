@@ -1,0 +1,64 @@
+{
+  "status": "declared before any score of the arm was computed (#948, H5 step 3, one more development variant, counted under docs/decisions/scoring-protocol.md section 8): a scratch measurement, not a record. Nothing is published, nothing is registered, no rule changes, the declared candidate stays one-step gbm_funding, no published model, declaration or figure moves, no day after 2025-12-31 is read, and no day of a locked tier is scored (docs/decisions/lockbox.md). Development days give a score and an interval, never a verdict (scoring protocol v1, #46).",
+  "issue": 948,
+  "hypothesis": "H5 (primary goal), step 3: does gbm_funding forecast the spread better when it is fit on SOFR's distance from the ON RRP floor, with the quantiles mapped back to SOFR - IORB in bp? The IORB - ON RRP width has stepped over the sample (25 bp, 20 bp, 15 bp, 10 bp, 15 bp), and a fit on SOFR - IORB carries those steps as level shifts in its target.",
+  "rulings": [
+    "Eleonora, 19 October 2026 (relayed on #948 by the orchestrating session, from the fixed-income reviews of main at 362df84): approved as one more H5 step 3 development variant, counted under protocol section 8; fit on SOFR - ON RRP (or the corridor position, declared before any score), quantiles mapped back to SOFR - IORB in bp; scored with grid CRPS, paired against gbm_funding, B1 and B2, pooled, by regime and by day type; the ON RRP rate is read announcement-dated from the policy register, not as FRED's realised RRPONTSYAWARD; an availability declaration and a leakage test with one recorded mutation; aligned (direct) training pairs if #931 has merged, and say which"
+  ],
+  "ownership": "The ON RRP rate as a liquidity input is owned by repo-market-liquidity (repo-market-model#643). Here it only re-expresses the target: it is never a regressor of the fit, and nothing here ingests or models the ON RRP rate as a series.",
+  "register_steps": "metadata/policy_events.json, entries of kind iorb_rate (details.rate_percent) and on_rrp (details.offering_rate_percent), each announced at its stated instant (FOMC statement 14:00 ET; 2020-03-03 10:00; 2020-03-15 17:00) and effective the next day. The width IORB - ON RRP is 25 bp from 2018-03-22, 20 bp from 2018-06-14, 15 bp from 2018-12-20, 10 bp from 2019-05-02 through 2024-12-18 and 15 bp from 2024-12-19; the script re-derives every step from the register and the tests pin them.",
+  "inputs": {
+    "on_rrp_offering_rate": {
+      "source": "metadata/policy_events.json, kind on_rrp, details.offering_rate_percent (never FRED's RRPONTSYAWARD, the realised award rate)",
+      "availability": "announcement-dated: an entry is public from its announcement instant (announced_date and announced_time, America/New_York wall clock; 23:59:59 on its date where no time is stated, time_basis not_stated) and not before; the effective date is when it applies, never when it is known (docs/decisions/policy-point-in-time.md). A serving read at the decision instant D sees only entries announced at or before D and effective on or before the target day.",
+      "decision_instant": "the decision instant of the as-of rule (repo_model.asof.InformationRule.decision_instant): 16:00 America/New_York on the panel day h rows before the target day, at lead h",
+      "guard": "policy_events.require_announced on the entry chosen, which raises LookAheadError for an entry announced after the decision instant; a malformed register entry raises ValueError at load (policy_events.load_register)"
+    },
+    "iorb_rate": {
+      "source": "metadata/policy_events.json, kind iorb_rate, details.rate_percent; the published panel's iorb column agrees with it on every study day (checked in code; the run refuses otherwise)",
+      "availability": "as for on_rrp_offering_rate"
+    }
+  },
+  "target_transform": {
+    "chosen": "the distance of SOFR from the ON RRP offering rate, in bp: z(t) = 100 * (SOFR(t) - ON RRP(t)) = spread_bps(t) + W(t), with W(t) = 100 * (IORB(t) - ON RRP(t)), the width in force on the target day t",
+    "not_run": "the corridor position (SOFR - ON RRP) / (IORB - ON RRP): it divides by a width that steps from 25 to 10 and back to 15 bp and would turn a 5 bp move into a different number of fractions in each era, which is a second change of units and not a re-expression of the same bp target. It is not run; it would be a further variant",
+    "training_label": "z(t) for every training target t: the rate in force on t, as announced at or before the end of t (entries effective on or before t, announced at or before 23:59:59 on t). Every training target is a realised day of the frame the as-of rule already passed to the fit, so no later announcement is used",
+    "map_back": "q_y(level) = q_z(level) - W(t, D), for each of the 23 levels, where W(t, D) is the width of the entries announced at or before the decision instant D and effective on or before the target day t. The mapped-back quantiles are exactly the fitted ones shifted by the as-of width, so their order is the fitted order",
+    "unseen_change": "a change announced after D that takes effect by t is not seen at D: the serving width is the old one. At lead 1 the FOMC statement of the day before is public at the 16:00 decision; at longer leads a meeting inside the lead is not, which is a cost this variant carries, not one it hides",
+    "served_row": "the last-spread input of the design (spread_bps of the anchor row) is the last observed distance z(anchor), with the rate in force on the anchor day, in training and at serving alike (amendment 1)"
+  },
+  "arms": {
+    "gbm_funding_onrrp": "gbm_funding (ml.fit_gradient_boosted_quantiles, one-step pairs, the 23 levels of protocol v1, the published funding features live_record.published_features(h), the same seed, hyper-parameters, fold grid (61 rows, refit every 21 days) and quantile grid) whose training target is z(t) in place of spread_bps(t), mapped back to SOFR - IORB in bp as above. At lead 1 treasury_settlement is trained from the target's own row (scripts/aligned_pairs_931.align_field), as the ruling says to use the aligned pairs now that #931 has merged; at leads 2 to 5 the field is not an input and the pairs are the one-step pairs of gbm_funding. No other change; the regressors are gbm_funding's, the ON RRP rate is not one of them"
+  },
+  "pairs_used": "aligned pairs for treasury_settlement at lead 1 (the arm of #931, merged), one-step pairs at the other leads. The control gbm_funding stays on one-step pairs, as declared in metadata/spread_distribution_634.json, because the ruling pairs the variant against gbm_funding. To separate the transform from the alignment at lead 1, the lead 1 table also pairs the arm against gbm_funding_aligned, the arm of #931 re-walked here (it adds no variant)",
+  "reference": "the walks of scripts/spread_distribution_634.py walk --variant gbm_funding at leads 1 to 5 (the control) and scripts/aligned_pairs_931.py walk (gbm_funding_aligned, lead 1), re-walked here with their commands on the same published panel. The control reproduces gbm_funding's mean grid CRPS in docs/research/direct-twin-449/score.json at every lead to the digit, and gbm_funding_aligned reproduces docs/research/aligned-pairs-931/score.json at lead 1, or the score refuses to run",
+  "scale": {
+    "metric": "grid CRPS in bp (twice the mean pinball loss over the 23 levels of protocol v1), one number per decision day and lead; the primary figure averages leads 1 to 5 (repo_model.scoring_protocol.day_scores)",
+    "difference": "d = S(reference) - S(arm); skill = mean(d) / mean(S(reference)); positive favours the arm",
+    "interval": "the protocol's studentized stationary bootstrap (scoring_protocol.paired_tests): mean block 10, seed 948, one-sided 95%, 10,000 draws on the pooled figure and on each lead alone and 2,000 on the regime and day-type splits; Diebold-Mariano with Newey-West lag 10 beside it",
+    "pairs": "B1 and B2 against gbm_funding and against the arm; gbm_funding against the arm; at lead 1 also gbm_funding_aligned against the arm",
+    "missing": "a missing lead takes B1's law (scoring_protocol.fill_missing semantics), the share reported",
+    "decision_days": "those of #449's score (docs/research/direct-twin-449/score.json), so that the figures are those of #449 for the same days"
+  },
+  "locate": "pooled over leads 1 to 5 and at each lead; by regime of the decision day (evaluation_splits.json: 2018-19, 2020, 2021-23, 2024, 2025-26); by pressure-day type of the target day (splits.reporting_day_type: month_end, quarter_end, tax_date, ordinary); every table on all decision days and without decision day 2019-09-18 (#798); a split with fewer than 30 decision days is too thin and carries no interval. The width regimes (25, 20, 15, 10, 15 bp) are reported as the decision day's width at lead 1, beside the regimes of the splits, as a description and not as a declared table",
+  "width_regimes_described": [
+    "25 bp: 2018-04-03 to 2018-06-13",
+    "20 bp: 2018-06-14 to 2018-12-19",
+    "15 bp: 2018-12-20 to 2019-05-01",
+    "10 bp: 2019-05-02 to 2024-12-18",
+    "15 bp: 2024-12-19 to 2025-12-31"
+  ],
+  "reading_rule": "none: nothing here is a verdict and nothing registers; whether the candidate changes is Eleonora's, asked as a marked question in the pull request. A skill of the arm over gbm_funding whose lower 95% bound is above 0 is described as 'ahead on these development days', never as a pass",
+  "checks": {
+    "lookahead": "a day after 2025-12-31 raises LookAheadError (onrrp_distance_948.require_study_window) and the scorer's lockbox guard (require_unlocked) refuses a locked day; a register entry announced after the decision instant raises LookAheadError (onrrp_distance_948.width_bp, through policy_events.require_announced)",
+    "variant_count": "one arm; nothing tuned, nothing else changed; it joins no published declaration, and gbm_funding's declaration, published_features and scripts/final_test_preregistration.py are not changed"
+  },
+  "amendments": [
+    {
+      "number": 1,
+      "made": "19 October 2026, after the first scoring pass had been computed (pooled skill of the arm over gbm_funding -92.7%)",
+      "why": "ml.fit_gradient_boosted_quantiles takes the last observed spread as an input beside the regressors. The first pass re-expressed the training target and the training rows' last-spread input as the distance but served the plain spread, so the fit was trained and served on different inputs. A constant shift of the target changed the predictions by about 5 bp, where an equivariant fit changes them by none. That pass is discarded and its walks are not used; it is reported in the pull request as a defect found and fixed, not as a result.",
+      "what": "the served feature row is re-expressed like the training rows: its last-spread input is the last observed distance, SOFR - ON RRP on the anchor day with the rate in force on that day (scripts/onrrp_distance_948.DistanceModel). Nothing else changed. A constant shift of the target now leaves the mapped-back predictions unchanged to the digit (checked once on the published panel, 2019-05-02 to 2020-02-28, lead 2)."
+    }
+  ]
+}
