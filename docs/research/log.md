@@ -1356,3 +1356,13 @@ Pull requests #612 and #647 are open and are not backfilled.
 - Result: no change. The DVP rate minus BGCR keeps its pooled Spearman with the +5 bp indicator at lead 1 (+0.175 declared, +0.177 stated; rank 16 and 20 of 62; pre-onset AUC 0.784 and 0.762), and the paired test is "no effect" at both lags with no paired Brier difference moving by more than 0.00011.
 - Against kill: not applicable (no verdict; development data); the directive's kill, a change in the screen's verdict, did not occur.
 - Next: whether any OFR series joins a published declaration, and whether the records' columns move to the stated lag, are Eleonora's; the #629 matrix needs re-declaring on main's panel.
+
+### 2026-10-20 [H5] step 3 · eleonorabjornberg/repo-market-model#991
+- Directive: #948
+- Step: 3 (one more development variant, counted under protocol §8; Eleonora's ruling of 19 October 2026)
+- Tier: development
+- Pins: published panel `4ddc3882…`; base `20935079`; seed 948; declaration `metadata/onrrp_distance_948.json` (amendment 1 named in it)
+- Tried: `gbm_funding` fit on SOFR minus the ON RRP offering rate (both rates from the announcement-dated policy register), quantiles mapped back to SOFR − IORB by the width known at the decision instant; aligned settlement pairs at lead 1 (#931), one-step elsewhere. Control `gbm_funding` and `gbm_funding_aligned` re-walked and reproduced to the digit. Variants: 1 (not in any published declaration). A first pass served the plain spread to a fit trained on the distance (scored −92.7%, discarded as a defect, amendment 1).
+- Result: over 1,868 decision days to 2025-12-23 the arm's skill over `gbm_funding` is −5.5% [−9.0%, −2.5%] pooled, and below zero at every lead (lead 1 −4.1% [−8.7%, −0.7%]); against `gbm_funding_aligned` at lead 1 −7.0% [−11.7%, −3.4%]. By regime: 2018-19 −5.6% [−12.2%, −0.4%], 2020 −13.7% [−41.9%, −4.0%], 2021-23 −10.6% [−17.8%, −5.5%], 2024 +0.0% [−2.2%, +2.6%], 2025-26 +0.6% [−2.4%, +3.2%]. Month-ends +0.8% [−6.1%, +7.6%], ordinary days −7.8% [−11.8%, −4.4%]. Against B1 +16.4% [+7.8%, +38.2%], against B2 +23.4% [+14.1%, +32.7%]. Detail in `docs/research/onrrp-distance-948-result.md`.
+- Against kill: the kill condition (no CRPS gain over the phase 2 models) is not touched by a variant that does worse than `gbm_funding`. Development data, never a verdict.
+- Next: whether the declared candidate changes is Eleonora's; nothing published or registered moves, and nothing here recommends the change.
