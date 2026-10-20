@@ -1,0 +1,17 @@
+{
+  "order": 110,
+  "directive": 449,
+  "pull_request": 825,
+  "hypothesis": "H5",
+  "result": "`gbm_funding` against its direct-pairs twin",
+  "declarations": [
+    "metadata/direct_twin_449.json"
+  ],
+  "model": "`gbm_funding` (control) and the twin",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-15-model-00825-H5-step1"
+  ],
+  "concluded": "The twin is behind the control pooled and in 2021-23."
+}

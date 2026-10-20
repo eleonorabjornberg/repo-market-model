@@ -1,0 +1,17 @@
+{
+  "order": 210,
+  "directive": 842,
+  "pull_request": 856,
+  "hypothesis": "H9",
+  "result": "The nested test of the richer targets against `gbm_funding`",
+  "declarations": [
+    "metadata/h9_nested_842.json"
+  ],
+  "model": "`gbm_funding` with a target's forecast as an input",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-17-model-00856-H9-step3"
+  ],
+  "concluded": "No target improves the candidate beyond its interval; the input is trained against the wrong day at the longer leads, which biases the test toward no gain."
+}

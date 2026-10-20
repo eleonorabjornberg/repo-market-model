@@ -1,0 +1,10 @@
+{
+  "script": "scripts/spread_distribution_634.py",
+  "declarations": [
+    "metadata/spread_distribution_634.json"
+  ],
+  "model": "`gbm_funding` (control); (a) the published declaration and (b) gbm with the new inputs; (c) the two-part form is direct (cleared)",
+  "calendar_inputs": "treasury_settlement at lead 1 in the control; tax_date, treasury_settlement and the announced-IORB columns in (a) and (b)",
+  "pairing": "one_step",
+  "class": "a+b"
+}

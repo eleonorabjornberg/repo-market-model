@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Refuse a change that carries a file that is built on main (#928).
 
-`site/index.html`, `docs/visual/data/` and `docs/research/log.md` are generated from the tree's inputs by the pages job
-on main (`emit_visual.py --stamp`, `check_research_log.py assemble`), and the tests build their own copy
-(`tests/built_outputs.py`). Every merge to main changed all three, so every open pull request that carried its own
-regenerated copy conflicted again. They are gitignored; a pull request changes the inputs (the entry files under
-`docs/research/log/`, the records, the template, the scripts) and nothing else. This check fails when git tracks one
-of the three, or, with `--base`, when the change since the merge base adds or edits one (deleting a tracked copy is the cure, so it is allowed).
+`site/index.html`, `docs/visual/data/`, `docs/research/log.md`, and the progress page with its data
+(`docs/pivot/progress.md`, `docs/research/progress.json`) are generated from the tree's inputs by the pages job on main
+(`emit_visual.py --stamp`, `check_research_log.py assemble`, `emit_progress.py`), and the tests build their own copy
+(`tests/built_outputs.py`, `tests/test_emit_progress.py`). Every merge to main changed them, so every open pull request
+that carried its own regenerated copy conflicted again. They are gitignored; a pull request changes the inputs (the
+entry files under `docs/research/log/`, the records, the evidence, the template, the scripts) and nothing else. This
+check fails when git tracks one of them, or, with `--base`, when the change since the merge base adds or edits one (deleting a tracked copy is the cure, so it is allowed).
 
     python3 scripts/check_built_outputs.py
     python3 scripts/check_built_outputs.py --base REF [--head REF]
@@ -21,10 +22,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 #: The built paths; a trailing slash is a directory.
-BUILT = ("site/index.html", "docs/visual/data/", "docs/research/log.md")
-INPUTS = ("the entry files under docs/research/log/, the records, site/template.html and the scripts "
-          "(`python3 scripts/emit_visual.py` and `python3 scripts/check_research_log.py assemble` build the outputs "
-          "locally; they stay untracked)")
+BUILT = ("site/index.html", "docs/visual/data/", "docs/research/log.md", "docs/pivot/progress.md",
+         "docs/research/progress.json")
+INPUTS = ("the entry files under docs/research/log/, the records, the evidence, site/template.html and the scripts "
+          "(`python3 scripts/emit_visual.py`, `python3 scripts/check_research_log.py assemble` and "
+          "`python3 scripts/emit_progress.py` build the outputs locally; they stay untracked)")
 
 
 def built(path):

@@ -188,12 +188,15 @@ INPUTS = (
     "scripts/final_test_influence.py",
     "scripts/band_coverage.py",
     "scripts/research_view.py",
+    "scripts/provisional_register.py",
     "scripts/check_research_log.py",
     "docs/research/plan.md",
     "docs/research/log",
     "docs/research/milestones.json",
     "docs/research/hypotheses",
     "docs/research/taglines.json",
+    "docs/research/provisional-calendar-register.md",
+    "metadata/provisional",
     USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",
@@ -3458,6 +3461,7 @@ def generate(repo, commit=None):
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
     research_provenance = dict(provenance, inputs={
         rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.PROGRESS, research_view.TAGLINES,
+                                            research_view.REGISTER,
                                             *sorted(str(p.relative_to(repo)) for p in
                                                     (repo / research_view.HYPOTHESES).glob("H*.md")))}
         # The log is built from its entry files (#928): its digest is that of the assembly, not of a tracked file.
