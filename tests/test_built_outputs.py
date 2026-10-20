@@ -31,14 +31,14 @@ crl = load("check_research_log")
 
 
 class BuiltPathTests(unittest.TestCase):
-    def test_the_three_outputs_are_built_and_nothing_else(self):
+    def test_the_outputs_are_built_and_nothing_else(self):
         for path in ("site/index.html", "docs/visual/data/research.json", "docs/visual/data/newcomer_n4.json",
-                     "docs/research/log.md"):
+                     "docs/research/log.md", "docs/pivot/progress.md", "docs/research/progress.json"):
             with self.subTest(path=path):
                 self.assertTrue(cbo.built(path))
         for path in ("site/template.html", "docs/visual/annotations.json", "docs/research/log/_header.md",
                      "docs/research/log/0001-2026-10-05-model-00073-H5-step3.md", "docs/research/plan.md",
-                     "docs/visual/data-notes.md", "docs/pivot/progress.md"):
+                     "docs/visual/data-notes.md", "docs/pivot/next-session.md", "docs/research/milestones.json"):
             with self.subTest(path=path):
                 self.assertFalse(cbo.built(path))
 
