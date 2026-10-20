@@ -254,7 +254,7 @@ class WorkflowFileTests(unittest.TestCase):
         # A failed check never blocks a record: the log job runs unless the day is known recorded.
         self.assertIn("!cancelled()", log)
         # The step's own shell, run with a stub `gh`: found -> recorded, anything else -> not.
-        body = check.split("run: |\n", 1)[1]
+        body = check.split("run: |\n", 1)[1].split("\n      - name: ", 1)[0]
         script = textwrap.dedent(body)
         for code, expected in ((0, "recorded=true"), (1, "recorded=false")):
             with self.subTest(gh_exit=code), tempfile.TemporaryDirectory() as tmp:
@@ -269,6 +269,47 @@ class WorkflowFileTests(unittest.TestCase):
         # The existing refusal in the script stays as the second line of defence.
         script = (ROOT / "scripts" / "live_record.py").read_text(encoding="utf-8")
         self.assertIn('raise ValueError(f"{record_path(out_dir, day)} exists: a day is logged once")', script)
+
+    def test_a_run_before_the_decision_instant_ends_green_and_writes_nothing(self):
+        """#937: GitHub started the 01:15 UTC fallback slot hours late (05:48 UTC on 2026-10-16 and
+        five earlier runs), after midnight ET. `date +%F` then named the next ET day, which has no
+        record yet, so the log job ran, "Write the day's record" failed and #237 got a false
+        "Failed: <day>, at step record". A run that starts before the 16:00 ET decision instant has
+        nothing to do: the check job says so, the log job is skipped, and no comment is posted. From
+        16:00 ET on the log job runs as before, and a real failure still reaches #237.
+
+        Recorded mutation: `-lt 16` in the "Skip before the decision instant" step changed to `-lt 15`;
+        this test failed on the 15:00 ET subtest with AssertionError ('early=false' != 'early=true').
+        """
+        check = self._job("check")
+        step = re.search(r"\n      - name: Skip before the decision instant\n(.*?)(?=\n      - name: |\Z)", check, re.S)
+        self.assertIsNotNone(step)
+        body = step.group(1)
+        self.assertIn("id: instant", body)
+        self.assertIn("before the decision instant; nothing to do", body)
+        self.assertNotIn("live_record.py", body)
+        self.assertNotIn("git push", body)
+        self.assertNotIn("$FAILED_RUNS_ISSUE", body)
+        self.assertIn("early: ${{ steps.instant.outputs.early }}", check)
+        log = self._job("log")
+        self.assertIn("needs.check.outputs.early != 'true'", log)
+        self.assertIn("needs.check.outputs.recorded != 'true'", log)
+        script = textwrap.dedent(body.split("run: |\n", 1)[1])
+        for hour, expected in (("00", "early=true"), ("01", "early=true"), ("08", "early=true"),
+                               ("15", "early=true"), ("16", "early=false"), ("19", "early=false"),
+                               ("21", "early=false")):
+            with self.subTest(et_hour=hour), tempfile.TemporaryDirectory() as tmp:
+                stub = Path(tmp) / "date"
+                stub.write_text(f"#!/bin/sh\ncase \"$*\" in\n  *%H*) echo {hour};;\n  *) echo 2026-10-16;;\nesac\n",
+                                encoding="utf-8")
+                stub.chmod(0o755)
+                out = Path(tmp) / "output"
+                env = {"PATH": f"{tmp}:{os.environ['PATH']}", "GITHUB_OUTPUT": str(out)}
+                done = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+                self.assertEqual(done.returncode, 0, done.stderr)
+                self.assertEqual(out.read_text(encoding="utf-8").strip(), expected)
+                if expected == "early=true":
+                    self.assertIn("before the decision instant; nothing to do", done.stdout)
 
 
 class DecisionDayTests(unittest.TestCase):

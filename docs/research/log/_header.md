@@ -18,6 +18,9 @@ second entry with the same heading takes `-2` before `.md`. Then run `python3 sc
 assemble`, which rewrites this page, and commit it with the regeneration commit like the other generated pages.
 Two pull requests that add different files never conflict; a conflict in this page alone is resolved by running
 `assemble` again. An entry file already on `main` is never edited, renamed or deleted: the check refuses it.
+A wrong pull request number in a frozen entry's heading is corrected in
+[`log/_corrections.md`](log/_corrections.md) (#867): `assemble` applies it and keeps the original heading in a
+`- Correction:` line.
 
 Heading: `### YYYY-MM-DD [H#] step N · owner/repo#PR` (the date is Eastern time). Groundwork (G1 to G5 in a
 hypothesis manual, kept apart from the six steps) has its own heading,

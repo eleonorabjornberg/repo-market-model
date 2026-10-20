@@ -64,6 +64,12 @@ def fixture(root):
     write(root, "docs/pivot/evidence/all-inputs/compare.json", {"brier": {"a": brier}})
     verdict = {"tier_1_onset_warning": True, "tier_3_no_crying_wolf": False, "tier_5_week_ahead": True, "passes": False}
     write(root, "docs/pivot/evidence/weighted-miss/tier1.json", {"weighted": {"a": {"verdict": verdict}}})
+    test = {"benchmark_mean": 1.7, "candidate_mean": 1.3, "n": 40, "skill": 0.25, "skill_interval_90": [0.1, 0.4]}
+    cell = {"n": 40, "tests": {"B1 -> a": test, "B2 -> a": dict(test, skill=0.3, skill_interval_90=[0.2, 0.4])}}
+    write(root, "docs/pivot/evidence/h5-step4/score.json", {
+        "best_candidate": "a", "decision_days": {"first": "2019-07-31", "last": "2025-12-23", "n": 40},
+        "cells": {"crps": {"pooled, ordinary targets": cell, "regime: 2021-23": {"n": 9, "tests": {}}},
+                  "twcrps": {"pooled, all targets": cell}}})
 
 
 class ReaderTest(unittest.TestCase):
@@ -90,6 +96,23 @@ class ReaderTest(unittest.TestCase):
         self.assertEqual(a["calibration"]["regime 2018-19"]["realised"], 0.27)
         self.assertEqual(a["tiers"], {"tier_1": True, "tier_3": False, "tier_5": True})
         self.assertEqual(a["spread"]["1"]["crps_difference_vs_persistence"]["pooled"]["mean"], 0.4)
+
+    def test_h5_carries_the_current_candidate_with_its_development_figures(self):
+        h5 = self.model["hypotheses"]["H5"]
+        self.assertEqual(h5["candidate"]["name"], "a")
+        self.assertEqual(h5["candidate"]["label"], "development, not a verdict")
+        pooled = h5["candidate"]["crps"]["pooled, ordinary targets"]
+        self.assertEqual(pooled["days"], 40)
+        self.assertEqual(pooled["skill_vs_B1"], {"skill": 0.25, "interval": [0.1, 0.4]})
+        self.assertEqual(pooled["skill_vs_B2"]["skill"], 0.3)
+        self.assertIsNone(h5["candidate"]["crps"]["regime: 2021-23"]["skill_vs_B1"])
+        self.assertIn("`a`", emit_progress.render(self.model))
+
+    def test_h5_without_candidate_evidence_is_not_measured(self):
+        (self.root / "docs/pivot/evidence/h5-step4/score.json").unlink()
+        model = emit_progress.build(self.root, order=["a", "b", "c"])
+        self.assertIsNone(model["hypotheses"]["H5"]["candidate"])
+        self.assertIn(NM, emit_progress.render(model))
 
     def test_missing_figure_is_not_measured(self):
         b = self.row("b")

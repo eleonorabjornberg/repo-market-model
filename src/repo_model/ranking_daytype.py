@@ -97,15 +97,23 @@ def _mean_precision(windows: Sequence[Tuple[Sequence[float], Sequence[float], Se
     return total / len(windows)
 
 
+def takes_default(windows: Sequence[Tuple[Sequence[float], Sequence[float], Sequence[int]]]) -> bool:
+    """Whether `choose_weight` falls to `DEFAULT_WEIGHT` on `windows`: too few trailing windows, or no pressure day in them."""
+
+    used = list(windows)[-TRAILING:]
+    return len(used) < MIN_TRAILING or not any(sum(flags) for _, _, flags in used)
+
+
 def choose_weight(windows: Sequence[Tuple[Sequence[float], Sequence[float], Sequence[int]]]) -> Tuple[float, int]:
     """The weight of `WEIGHT_GRID` with the highest mean top-5 precision over the latest `TRAILING` of `windows`.
 
     `windows` are (calendar scores, tail scores, realised flags) in time order. A tie goes to the smaller weight. With
-    fewer than `MIN_TRAILING` windows the weight is `DEFAULT_WEIGHT`. Returns the weight and the windows it was chosen on.
+    fewer than `MIN_TRAILING` windows, or when none of the windows holds a pressure day (every weight then ties at zero),
+    the weight is `DEFAULT_WEIGHT` (Eleonora's ruling on #925). Returns the weight and the windows it was chosen on.
     """
 
     used = list(windows)[-TRAILING:]
-    if len(used) < MIN_TRAILING:
+    if takes_default(used):
         return DEFAULT_WEIGHT, len(used)
     best = max(WEIGHT_GRID, key=lambda w: (_mean_precision(used, w), -w))
     return best, len(used)
@@ -271,6 +279,8 @@ class Walk:
         self.fit_used: Dict[date, date] = {}
         #: Refit day -> (the blend's weight, the trailing windows it was chosen on).
         self.weights: Dict[date, Tuple[float, int]] = {}
+        #: Refit day -> whether the weight is the default for want of windows or of a pressure day among them.
+        self.weight_is_default: Dict[date, bool] = {}
         #: Decision day -> the weight in force.
         self.weight_used: Dict[date, float] = {}
         self.skipped: List[date] = []
@@ -313,11 +323,13 @@ def walk(
                 fitted = ranking.fit(panel, index, **settings)
                 pools = residual_pools(panel, index, fitted, **settings)
                 anchor = pb._anchor(panel, index, registry, decision_time)
-                chosen = choose_weight(trailing_windows(history, panel, anchor))
+                trailing = trailing_windows(history, panel, anchor)
+                chosen = choose_weight(trailing)
                 current = fitted
                 weight = chosen[0]
                 out.fits[day] = current
                 out.weights[day] = chosen
+                out.weight_is_default[day] = takes_default(trailing)
                 since = 0
             scores, fallback = _window_scores(panel, index, current, pools, **settings)
         except smr.InsufficientHistory:

@@ -26,7 +26,9 @@ own Newey-West standard error at lag 10, and the bound is read one-sided at 95%.
 the Diebold-Mariano statistic, reported beside it.
 
 **B3 (ruling of 13 October 2026).** The incumbent is scored on its own five levels against each
-candidate read at the same five (`on_levels`, `level_crps`), as a secondary comparison.
+candidate read at the same five (`on_levels`, `level_crps`), as a secondary comparison. A win over B3
+is a reported comparison only (Eleonora's ruling of 19 October 2026 on #768, option a): `report` prints it
+beside the verdict, with its bound, labelled "reported comparison, no rule"; the verdict never reads it.
 
 **Checkpoints (§6).** 60, 125 and 250 confirmation days, the overall one-sided 5% spent across
 them by the Lan-DeMets O'Brien-Fleming function. `nominal_levels` gives the one-sided level each
@@ -92,6 +94,11 @@ CRITICAL_VALUES: Dict[str, Dict[int, Optional[float]]] = {
     GRID_COMPARISON: {60: None, 125: 3.419438620805254, 250: 2.425730476113518},
     FIVE_LEVEL_COMPARISON: {60: None, 125: 9.50052772574656, 250: 5.454950300123988},
 }
+#: The critical value of the leg of "Supported" against B2, per comparison and checkpoint, where it differs from the
+#: leg against B1 (finding #913, #929). That leg has d = S(B2) - S(candidate), with B2 the benchmark, so it is
+#: calibrated in its own orientation. Empty until a ruling declares values: a look with no entry here reads the
+#: value of `CRITICAL_VALUES`, so the verdict is unchanged.
+B2_LEG_CRITICAL_VALUES: Dict[str, Dict[int, Optional[float]]] = {}
 #: Futility (Q-C): one-sided at this level at every look, non-binding.
 FUTILITY_LEVEL = 0.05
 #: The critical value of the one-sided upper bound of skill at `FUTILITY_LEVEL`, per checkpoint,
@@ -922,7 +929,8 @@ def verdict(
     6159852603):
 
     - Supported, at looks 2 and 3: the lower bound of mean(d), `mean - c * se` with `c` the
-      checkpoint's `CRITICAL_VALUES[GRID_COMPARISON]`, is above zero against B1 and against B2, and
+      checkpoint's `CRITICAL_VALUES[GRID_COMPARISON]` (against B2: `B2_LEG_CRITICAL_VALUES`, where
+      declared), is above zero against B1 and against B2, and
       the point skill against B1 is at least the MME. Look 1 has no efficacy value and checks
       futility only (Q-B).
     - Killed (futility, Q-C): the upper bound of skill against B1, `skill + c_f * se(skill)` with
@@ -948,13 +956,98 @@ def verdict(
     if against_b1.days != against_b2.days:
         raise ProtocolError("the tests against B1 and B2 must cover the same days")
     critical = CRITICAL_VALUES[GRID_COMPARISON].get(days)
+    b2_critical = B2_LEG_CRITICAL_VALUES.get(GRID_COMPARISON, {}).get(days, critical)
     if (
         critical is not None
+        and b2_critical is not None
         and against_b1.lower_bound(critical) > 0.0
-        and against_b2.lower_bound(critical) > 0.0
+        and against_b2.lower_bound(b2_critical) > 0.0
         and against_b1.skill >= mme
     ):
         return SUPPORTED
     if against_b1.upper_skill_bound(FUTILITY_CRITICAL_VALUES[GRID_COMPARISON][days]) < mme:
         return KILLED
     return NOT_SHOWN if look == len(checkpoints) else INCONCLUSIVE
+
+
+# --------------------------------------------------------------------------
+# §4: the B3 comparison, reported beside the verdict
+# --------------------------------------------------------------------------
+
+B3_LABEL = "reported comparison, no rule"
+
+
+@dataclass(frozen=True)
+class B3Comparison:
+    """The candidate against B3 on B3's own five levels (§4, ruling 2 on PR #660), reported only.
+
+    "Improves on what we have" is a reported comparison with no efficacy or futility rule (Eleonora's
+    ruling of 19 October 2026 on #768, option a). The bound is the one the grid comparisons use,
+    `mean - c * se` at `CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]` for the checkpoint; look 1 has no such
+    value (Q-B), so it carries the mean and no bound.
+    """
+
+    look: int
+    days: int
+    mean_difference: float
+    skill: float
+    dm_statistic: float
+    critical_value: Optional[float]
+    lower_bound: Optional[float]
+
+    def line(self) -> str:
+        bound = (
+            f"lower bound {self.lower_bound:.4f} at c={self.critical_value:.4f}"
+            if self.lower_bound is not None
+            else "no bound at look 1"
+        )
+        return (
+            f"candidate against B3, five levels ({B3_LABEL}): mean(d) {self.mean_difference:.4f}, "
+            f"skill {self.skill:.4f}, DM t {self.dm_statistic:.3f}, {bound}, over {self.days} days"
+        )
+
+
+@dataclass(frozen=True)
+class Report:
+    """The verdict of §6 with the B3 comparison printed beside it. The verdict never reads the comparison."""
+
+    verdict: str
+    b3: B3Comparison
+
+    def __str__(self) -> str:
+        return f"verdict: {self.verdict}\n{self.b3.line()}"
+
+
+def report(
+    against_b1: PairedTest,
+    against_b2: PairedTest,
+    against_b3: PairedTest,
+    *,
+    look: int,
+    **settings,
+) -> Report:
+    """`verdict` and, beside it, the candidate against B3 on its five levels (reported, no rule).
+
+    `against_b3` is B3's five-level scores against the candidate read at the same five levels
+    (`on_levels`, `level_crps`), on the same days as the other two tests. `settings` go to `verdict`.
+
+    Raises:
+        ProtocolError: as `verdict`, or the B3 test is not on the checkpoint's days.
+    """
+
+    result = verdict(against_b1, against_b2, look=look, **settings)
+    if against_b3.days != against_b1.days:
+        raise ProtocolError("the test against B3 must cover the same days as the tests against B1 and B2")
+    critical = CRITICAL_VALUES[FIVE_LEVEL_COMPARISON].get(against_b3.n)
+    return Report(
+        verdict=result,
+        b3=B3Comparison(
+            look=look,
+            days=against_b3.n,
+            mean_difference=against_b3.mean_difference,
+            skill=against_b3.skill,
+            dm_statistic=against_b3.dm_statistic,
+            critical_value=critical,
+            lower_bound=None if critical is None else against_b3.lower_bound(critical),
+        ),
+    )
