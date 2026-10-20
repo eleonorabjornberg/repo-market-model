@@ -29,6 +29,8 @@ that can split on rare days (`walk`, `score`).
     PYTHONPATH=src python3 scripts/drivers_audit_951.py report OUT/score.json --audit OUT/audit.json --rare OUT/rare.json --output OUT/report.md
     # the ceiling re-fit is long (needs-mac, #46): PYTHONPATH=src python3 scripts/drivers_audit_951.py ceiling-fit --panel DERIV.csv --output OUT/ceiling_fits.json
     PYTHONPATH=src python3 scripts/drivers_audit_951.py ceiling-score --published PUB.csv --fits OUT/ceiling_fits.json --output OUT/ceiling_score.json
+    # no re-scoring (#1017): the committed score read on ruling 1's studentized one-sided bound
+    PYTHONPATH=src python3 scripts/drivers_audit_951.py studentized docs/research/drivers-audit-951/score.json --output docs/research/drivers-audit-951-studentized.md
 """
 
 from __future__ import annotations
@@ -797,6 +799,89 @@ def report_command(args) -> int:
     return 0
 
 
+# -- the studentized reading (#1017) ----------------------------------------------------------------------------------
+
+
+def percentile_side(row: Mapping) -> str:
+    """The side the percentile 5th-95th interval of the skill shows: `gain` (it lies above zero), `harm` (below) or `not seen`."""
+
+    low, high = row["skill_interval_90"]
+    return "gain" if low > 0.0 else "harm" if high < 0.0 else "not seen"
+
+
+def studentized_side(row: Mapping) -> str:
+    """The side ruling 1 reads (`docs/decisions/scoring-protocol.md`): `gain` when the studentized one-sided 95% lower bound on mean d is above zero,
+    `not seen` otherwise. A one-sided lower bound cannot confirm a harm."""
+
+    bound = row.get("mean_difference_lower_95_one_sided")
+    if bound is None:
+        raise ValueError("a row without a studentized lower bound cannot be read under ruling 1")
+    return "gain" if bound > 0.0 else "not seen"
+
+
+def side_changes(document: Mapping) -> List[dict]:
+    """Every scored row whose side differs between the percentile reading and the studentized one, in the table order of `score.json`."""
+
+    changed = []
+    for group, cells in document["tables"].items():
+        for label, entry in cells.items():
+            for pair, row in entry.get("tests", {}).items():
+                before, after = percentile_side(row), studentized_side(row)
+                if before != after:
+                    changed.append({"group": group, "label": label, "pair": pair, "percentile": before, "studentized": after, "row": row})
+    return changed
+
+
+def studentized_command(args) -> int:
+    document = json.loads(args.score.read_text(encoding="utf-8"))
+    lines = [
+        "# The drivers audit read on ruling 1's bound (#1017, H5 and H2)",
+        "",
+        "**Development data, not a verdict.** No re-scoring: every figure is read from `docs/research/drivers-audit-951/score.json`. The original page "
+        "(`drivers-audit-951-result.md`) stands as published; whether any reading of 15 October is reopened is Eleonora's question, marked at the end.",
+        "",
+        "Ruling 1 of `docs/decisions/scoring-protocol.md` reads the studentized one-sided 95% lower bound on mean d = S(first) - S(second) of the grid CRPS "
+        "(positive favours the second arm). The original page read the percentile 5th-95th interval of the skill. `gain` below means the interval lies above "
+        "zero (percentile) or the bound is above zero (studentized). The one-sided bound cannot confirm a harm, so a row the percentile reading shows as `harm` "
+        "reads `not seen` here and is listed as a change.",
+        "",
+        "## 1. Rows whose side changes",
+        "",
+    ]
+    changes = side_changes(document)
+    header = ["| cut | first -> second | mean d | skill [90% percentile] | lower bound (studentized, one-sided) | percentile reading | studentized reading |",
+              "|---|---|---|---|---|---|---|"]
+    for title, picked in (
+        ("1a. A gain on one reading and not on the other", [c for c in changes if c["percentile"] != "harm"]),
+        ("1b. A harm on the percentile reading, which the one-sided bound cannot confirm", [c for c in changes if c["percentile"] == "harm"]),
+    ):
+        lines += [f"### {title}", "", f"{len(picked)} rows.", "", *header]
+        for c in picked:
+            row = c["row"]
+            lines.append(f"| {c['group']}: {c['label']} | {c['pair']} | {_f(row['mean_difference'], 3)} | {_f(row['skill'])} {_iv(row['skill_interval_90'])} | "
+                         f"{_f(row['mean_difference_lower_95_one_sided'], 3)} | {c['percentile']} | {c['studentized']} |")
+        lines.append("")
+    lines += ["## 2. Every row, both readings", ""]
+    for group, cells in document["tables"].items():
+        for label, entry in cells.items():
+            if "tests" not in entry:
+                continue
+            lines += [f"### {group}: {label}", "", f"n = {entry['n']} decision days.", "",
+                      "| first -> second | mean d | skill [90% percentile] | lower bound (studentized, one-sided) | percentile | studentized |", "|---|---|---|---|---|---|"]
+            for pair, row in entry["tests"].items():
+                lines.append(f"| {pair} | {_f(row['mean_difference'], 3)} | {_f(row['skill'])} {_iv(row['skill_interval_90'])} | "
+                             f"{_f(row['mean_difference_lower_95_one_sided'], 3)} | {percentile_side(row)} | {studentized_side(row)} |")
+            lines.append("")
+    lines += [
+        "## Question for Eleonora (marked, not settled here)",
+        "",
+        "Whether any reading of the original page that changes side above is reopened is hers. This page decides nothing and changes no published figure.",
+    ]
+    args.output.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(json.dumps({"rows_changed": len(changes)}))
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -843,6 +928,10 @@ def main(argv=None) -> int:
     p.add_argument("--fits", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.set_defaults(run=ceiling_score_command)
+    p = sub.add_parser("studentized")
+    p.add_argument("score", type=Path)
+    p.add_argument("--output", type=Path, required=True)
+    p.set_defaults(run=studentized_command)
     args = parser.parse_args(argv)
     return args.run(args)
 

@@ -35,7 +35,7 @@ each mutation confirmed applied by `grep` and restored before the next):
    wrong day unnoticed, and `PredictorTests.test_a_served_row_whose_calendar_is_not_the_scored_days_is_refused`
    fails (no `ValueError` raised).
 3. `require_labels_inside`: change `last_label >= rows` to `last_label > rows`.
-   `PairTests.test_the_label_guard_refuses_a_row_past_the_frame` fails
+   `LabelGuardTests.test_the_label_guard_refuses_a_row_past_the_frame` fails
    (no `LookAheadError` for `last_label == rows`).
 
 Each of the three is a guard on what a fit may read: 1 and 3 that a label must
@@ -197,6 +197,22 @@ class CalendarTests(unittest.TestCase):
             self.assertEqual(hz.gap_to_anchor(_rule(horizon)), one + horizon - 1)
 
 
+class LabelGuardTests(unittest.TestCase):
+    """The `LookAheadError` guard on a label past the frame needs no array library, so it lives in a class that does not
+    skip without the ml extra (#1018): a pull-request job without the extra ran `PairTests` as skipped, guard included."""
+
+    def test_the_guard_test_is_not_in_a_class_that_requires_the_extra(self):
+        name = "test_the_label_guard_refuses_a_row_past_the_frame"
+        self.assertNotIn("setUp", vars(LabelGuardTests), "a setUp here could require the extra for every test in the class")
+        for cls in (PairTests, PredictorTests):
+            self.assertFalse(hasattr(cls, name), f"{cls.__name__} skips without the extra, and the guard test with it")
+
+    def test_the_label_guard_refuses_a_row_past_the_frame(self):
+        hz.require_labels_inside(9, 10, what="x")
+        with self.assertRaises(LookAheadError):
+            hz.require_labels_inside(10, 10, what="x")
+
+
 class DeclarationTests(unittest.TestCase):
     def test_the_declaration_loads_and_agrees_with_the_judges(self):
         declaration = hz.load_declaration()
@@ -273,11 +289,6 @@ class PairTests(unittest.TestCase):
         last = max(decisions)
         hx, hy, _, _, _ = hz.hazard_pairs(self.design, rows, {last: decisions[last]}, 5.0, 4)
         self.assertLessEqual(len(hy), 4)
-
-    def test_the_label_guard_refuses_a_row_past_the_frame(self):
-        hz.require_labels_inside(9, 10, what="x")
-        with self.assertRaises(LookAheadError):
-            hz.require_labels_inside(10, 10, what="x")
 
     def test_decisions_are_read_under_the_rule_at_their_own_instant(self):
         rows = self.rows
