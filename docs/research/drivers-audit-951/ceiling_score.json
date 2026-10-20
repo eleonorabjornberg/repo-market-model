@@ -1,0 +1,120 @@
+{
+ "best_of_lineup": "candidate + other",
+ "candidate_inputs_cell": "candidate inputs",
+ "ceiling_is_at_least_the_candidate": true,
+ "cells": {
+  "all inputs, reachable settings": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.011,
+   "candidate_mean": 1.6387796379084534,
+   "interval_width": 0.26773880721537424,
+   "mean_difference": 0.32893087709220636,
+   "mean_difference_lower_95_one_sided": 0.08333054440900006,
+   "n": 1869,
+   "skill": 0.16716426251962987,
+   "skill_interval_90": [
+    0.018818027649569122,
+    0.2865568348649434
+   ]
+  },
+  "candidate + calendar": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.0595,
+   "candidate_mean": 1.7191505500881905,
+   "interval_width": 0.2901387270266072,
+   "mean_difference": 0.24855996491246915,
+   "mean_difference_lower_95_one_sided": -0.008435529160540717,
+   "n": 1869,
+   "skill": 0.12631937625864942,
+   "skill_interval_90": [
+    -0.03531907642809597,
+    0.25481965059851125
+   ]
+  },
+  "candidate + net settlement": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.0745,
+   "candidate_mean": 1.7355333198160352,
+   "interval_width": 0.2917912837137261,
+   "mean_difference": 0.2321771951846245,
+   "mean_difference_lower_95_one_sided": -0.021817871020636842,
+   "n": 1869,
+   "skill": 0.11799357345231581,
+   "skill_interval_90": [
+    -0.04288469215393623,
+    0.24890659155978986
+   ]
+  },
+  "candidate + other": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.0015,
+   "candidate_mean": 1.558422676568641,
+   "interval_width": 0.24913358717578693,
+   "mean_difference": 0.4092878384320187,
+   "mean_difference_lower_95_one_sided": 0.16015865060526915,
+   "n": 1869,
+   "skill": 0.2080020588962912,
+   "skill_interval_90": [
+    0.07266246143280371,
+    0.3217960486085906
+   ]
+  },
+  "candidate + policy and facilities": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.058,
+   "candidate_mean": 1.7319423352745533,
+   "interval_width": 0.283350317988464,
+   "mean_difference": 0.2357681797261064,
+   "mean_difference_lower_95_one_sided": -0.010308183372625485,
+   "n": 1869,
+   "skill": 0.11981852916308035,
+   "skill_interval_90": [
+    -0.03808650562238069,
+    0.24526381236608333
+   ]
+  },
+  "candidate + rates and volumes": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.0925,
+   "candidate_mean": 1.7593227381993382,
+   "interval_width": 0.2858698744484756,
+   "mean_difference": 0.20838777680132153,
+   "mean_difference_lower_95_one_sided": -0.04117773218232959,
+   "n": 1869,
+   "skill": 0.10590367597911203,
+   "skill_interval_90": [
+    -0.04944652216748842,
+    0.23642335228098718
+   ]
+  },
+  "candidate + reserves and TGA": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.306,
+   "candidate_mean": 1.880058024476307,
+   "interval_width": 0.32792976665415036,
+   "mean_difference": 0.08765249052435278,
+   "mean_difference_lower_95_one_sided": -0.1809537316200289,
+   "n": 1869,
+   "skill": 0.04454541959101306,
+   "skill_interval_90": [
+    -0.13679800656846067,
+    0.1911317600856897
+   ]
+  },
+  "candidate inputs": {
+   "benchmark_mean": 1.9677105150006597,
+   "bootstrap_p": 0.2045,
+   "candidate_mean": 1.828899096132776,
+   "interval_width": 0.3103614380380994,
+   "mean_difference": 0.1388114188678837,
+   "mean_difference_lower_95_one_sided": -0.12238410559152765,
+   "n": 1869,
+   "skill": 0.07054463439091657,
+   "skill_interval_90": [
+    -0.10022126844260475,
+    0.21014016959549467
+   ]
+  }
+ },
+ "decision_days": 1869
+}
