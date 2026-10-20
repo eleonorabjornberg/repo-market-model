@@ -1,0 +1,30 @@
+{
+  "status": "declared by the pull request that closes #1015 before any score was computed; a measurement, not a record. Nothing is published, no critical value in force moves, no day after 2025-12-31 and no lockbox day is scored, and nothing here is a verdict (scoring protocol v1, #640). The series are development data seen before this declaration (#949, #922, #886), so a result is exploration only. Whether the confirmation design changes is Eleonora's",
+  "issue": 1015,
+  "hypothesis": "H1 step 3 (the confirmation design), addendum to #963; finding #1002 extends #913",
+  "ruling": "the directive #1015, queued by the orchestrating session from finding #1002; it applies #963's declared rules to a second leg and settles no new judgement",
+  "variants": {},
+  "variants_note": "no model and no variant is added: the critical values in force and the draft values of #953 are only read, and the candidates scored are existing ones (spread_mr_ctx of #761, gbm_funding of #634)",
+  "series": {
+    "d_b2_leg": "d_t = S(B2) - S(candidate), the lead-averaged grid CRPS of the decision day (scoring_protocol.day_scores), positive favours the candidate: the orientation of the leg against B2 (#913, #929)",
+    "d_b1_leg": "d_t = S(B1) - S(candidate), #963's series; recomputed here only to check that it reproduces #963's record and to state the joint reading",
+    "candidates": {
+      "spread_mr_ctx": "repo_model.spread_mr_variants.walk (#761), unchanged",
+      "gbm_funding": "scripts/spread_distribution_634.py walks, one per lead, its missing forecasts filled by B1 as the protocol does (#949, #922)"
+    },
+    "days": "the days of #963's declaration, built by scripts/contiguous_calibration_963.py's `build` unchanged: decision days from 2020-04-03 whose fifth target is on or before 2025-12-31, on the days B1, B2 and both candidates have a forecast; lockbox.require_unlocked on every decision and target day"
+  },
+  "calibration": {
+    "rules": "scripts/contiguous_calibration_963.py's, unchanged: window_days 125, 250 and 500; the studentized window mean at Newey-West lag 10; generators contiguous (exhaustive, no wrap), stationary_10 and circular_10; 20000 windows and seed 1 for the two random generators; c is the 0.95 quantile of a generator's window statistics",
+    "values_in_force": "scoring_protocol.CRITICAL_VALUES, grid comparison: 125 days 3.419438620805254, 250 days 2.425730476113518; 500 days has none and is read at the 250-day value",
+    "values_draft_953": "the B2-leg values of draft amendment 3 (PR #953, docs/research/per-leg-calibration-929/result.json, 'B2|post-2020-04'): 125 days 2.682105672772658, 250 days 1.701424623493621; 500 days has none and is read at the 250-day value. The draft is not in force; it is read as a comparison only",
+    "size": "the share of a generator's B2-leg window statistics above the value, at the value in force and at the draft value",
+    "effective_windows": "n / days"
+  },
+  "reading_rules": {
+    "per_leg": "#963's rule, applied to each leg's own contiguous-window c at 250 days: survives below 3.0, fails above 4.0, neither between",
+    "joint": "'Supported' needs both legs (scoring protocol item 5), so the joint reading is the worse of the two legs: survives only if both survive, fails if either fails, and neither rule applies otherwise. It is a statement of the two readings together, not a new rule; whether a joint rule should be written is Eleonora's",
+    "B1_leg": "read from the recomputation, which must equal #963's recorded contiguous c to 1e-9"
+  },
+  "limits": "no published record, declaration or critical value changes; #985's page stands; the protocol's constants and #953's draft values are only read"
+}
