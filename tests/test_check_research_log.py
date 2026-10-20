@@ -190,7 +190,8 @@ class RepositoryTests(unittest.TestCase):
 
     def test_the_committed_plan_and_log_pass(self):
         plan = (ROOT / "docs" / "research" / "plan.md").read_text()
-        text = (ROOT / "docs" / "research" / "log.md").read_text()
+        header, files = crl.read_entry_files()
+        text = crl.assemble(header, files)
         self.assertEqual(crl.validate_log(text, crl.plan_hypotheses(plan)), [])
 
     def test_the_plan_has_all_ten_hypotheses_and_a_manual_each(self):
