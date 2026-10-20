@@ -78,7 +78,7 @@ v1 = _script("pressure_model_v1")
 ew = _script("early_warning_inputs")
 
 from repo_model.exploration import panel_end  # noqa: E402
-from repo_model import contract, dvp_segment, early_warning, measurement_fields, pressure  # noqa: E402
+from repo_model import contract, dvp_segment, early_warning, government_calendar, measurement_fields, pressure  # noqa: E402
 from repo_model.baseline import (  # noqa: E402
     benchmark_comparison_document,
     panel_sha256,
@@ -804,6 +804,10 @@ def splits_markdown(document) -> str:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--government-open-days", action="store_true",
+        help="date a source that sets government_open_days_only by the days the government is open (#1016)",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     one = sub.add_parser("panel")
     one.add_argument("--panel", type=Path, required=True)
@@ -843,7 +847,8 @@ def main(argv=None) -> int:
     five.add_argument("--splits-markdown", type=Path, default=None)
     five.set_defaults(handler=lambda a: _assemble_and_splits(a))
     args = parser.parse_args(argv)
-    return args.handler(args)
+    with government_calendar.government_open_dating() if args.government_open_days else contextlib.nullcontext():
+        return args.handler(args)
 
 
 def _assemble_and_splits(args) -> int:

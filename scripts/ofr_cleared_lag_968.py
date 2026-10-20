@@ -99,14 +99,29 @@ def ranks(screen: Mapping, swap: bool) -> Dict[str, Tuple[int, int]]:
     return {name: (ordered.index(name) + 1, len(ordered)) for name in ordered if name in {p for pair in PAIRS for p in pair}}
 
 
-def compare(screen: Mapping, base: Optional[Mapping] = None) -> dict:
-    """The paired tables and the checks; raises `ValueError` if a check fails."""
+def count_identity_breaks(original: Mapping, copy: Mapping) -> int:
+    """How many cells of a copy are not the original's one lead earlier (the opposite of `check_identity`)."""
+
+    return len(check_identity(original, copy))
+
+
+def compare(screen: Mapping, base: Optional[Mapping] = None, government_open_days: bool = False) -> dict:
+    """The paired tables and the checks; raises `ValueError` if a check fails.
+
+    With `government_open_days` (#1016) the copies are dated by the days the government is open, so a copy at lead L
+    is no longer the original at lead L - 1 on the days after a statutory holiday the market opened: that check is
+    replaced by a count of the cells that differ.
+    """
 
     problems: List[str] = []
     if base is not None:
         problems += check_others(base, screen)
+    breaks = {}
     for original, copy in PAIRS:
-        problems += [f"{copy}: {p}" for p in check_identity(screen["series"][original], screen["series"][copy])]
+        if government_open_days:
+            breaks[copy] = count_identity_breaks(screen["series"][original], screen["series"][copy])
+        else:
+            problems += [f"{copy}: {p}" for p in check_identity(screen["series"][original], screen["series"][copy])]
     if problems:
         raise ValueError("; ".join(problems))
     own = ranks(screen, swap=False)
@@ -138,7 +153,11 @@ def compare(screen: Mapping, base: Optional[Mapping] = None) -> dict:
         "pairs": pairs,
         "top_two_day": top_two,
         "top_one_day": top_one,
-        "checks": {"other_series_unchanged": base is not None, "copy_equals_original_one_lead_earlier": True},
+        "checks": {
+            "other_series_unchanged": base is not None,
+            "copy_equals_original_one_lead_earlier": not government_open_days,
+            **({"cells_differing_from_one_lead_earlier": breaks} if government_open_days else {}),
+        },
     }
 
 
@@ -198,7 +217,11 @@ def markdown(result: Mapping) -> str:
         "* Every cell of every other series is identical to the same screen without the `_1d` columns."
         if result["checks"]["other_series_unchanged"]
         else "* The comparison with a screen without the `_1d` columns was not requested.",
-        "* A `_1d` column at lead L equals its original at lead L - 1 in every cell (the same row is read), for every lead both were computed at.",
+        "* A `_1d` column at lead L equals its original at lead L - 1 in every cell (the same row is read), for every lead both were computed at."
+        if result["checks"]["copy_equals_original_one_lead_earlier"]
+        else "* A `_1d` column is dated by the days the government is open (#1016), so it differs from its original one lead earlier "
+        "on the days after a statutory holiday the market opened; cells that differ: "
+        + ", ".join(f"`{c}` {n}" for c, n in sorted(result["checks"]["cells_differing_from_one_lead_earlier"].items())) + ".",
         "",
         (
             f"The twelve strongest series (largest absolute pooled correlation over the leads) are the same with the declared and with the stated lag, "
@@ -351,6 +374,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     one.add_argument("--base", type=Path, help="the same screen on the panel without them (checks the other series)")
     one.add_argument("--output", type=Path, required=True)
     one.add_argument("--markdown", type=Path, required=True)
+    one.add_argument(
+        "--government-open-days", action="store_true",
+        help="the screen was run with source_screen.py --government-open-days (#1016): count, do not require, the identity",
+    )
     two = sub.add_parser("gbm", help="#187's paired test for ofr_dvp_minus_bgcr_bp at both lags")
     two.add_argument("--runs", type=Path, required=True)
     two.add_argument("--output", type=Path, required=True)
@@ -364,7 +391,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
     screen = json.loads(args.screen.read_text())
     base = json.loads(args.base.read_text()) if args.base else None
-    result = compare(screen, base)
+    result = compare(screen, base, args.government_open_days)
     args.output.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     args.markdown.write_text(markdown(result), encoding="utf-8")
     print(json.dumps({"pairs": list(result["pairs"]), "checks": result["checks"]}))
