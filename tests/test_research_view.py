@@ -19,6 +19,9 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+import built_outputs
+
+built_outputs.ensure()  # the page, its data and the log are built, not committed (#928)
 
 ROOT = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location("research_view", ROOT / "scripts" / "research_view.py")
@@ -224,9 +227,9 @@ class Sources(unittest.TestCase):
         """Mutation: `step = max([floor] + log steps)` in `load` (the old rule): this failed, AssertionError (H1 read 6)."""
         with tempfile.TemporaryDirectory() as tmp:
             out = self.copy_tree(tmp)
-            log = out / "docs/research/log.md"
-            log.write_text(log.read_text(encoding="utf-8") + "\n### 2026-10-17 [H1] step 6 · o/r#9\n- Directive: #9\n",
-                           encoding="utf-8")
+            # The log is its entry files (#928): the high-step entry is one more file.
+            (out / "docs/research/log/2026-10-17-model-00009-H1-step6.md").write_text(
+                "### 2026-10-17 [H1] step 6 · o/r#9\n- Directive: #9\n", encoding="utf-8")
             before = {h["id"]: h["step"] for h in research_view.load(ROOT)}
             after = {h["id"]: h["step"] for h in research_view.load(out)}
             self.assertEqual(before, after)

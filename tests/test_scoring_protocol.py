@@ -671,6 +671,86 @@ class VerdictTests(unittest.TestCase):
             sp.verdict(tests[0], tests[1], look=3)
 
 
+class B3ReportTests(unittest.TestCase):
+    """#939 (ruling on #768, option a, 19 October 2026): "improves on what we have", a win over B3, is a reported
+    comparison only. `report` prints the candidate against B3 on its own five levels, with its bound at
+    `CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]`, beside the verdict. It carries no efficacy or futility rule:
+    the verdict never reads it."""
+
+    def setUp(self):
+        rng = random.Random(9)
+        self.days = weekdays(date(2015, 1, 2), 250)
+
+        def scores(level, noise=0.05):
+            return {day: level + noise * rng.gauss(0, 1) for day in self.days}
+
+        self.b1, self.b2, self.b3 = scores(1.0), scores(1.2), scores(0.95)
+        self.strong, self.weak = scores(0.80), scores(0.9999)
+        self.five_strong, self.five_weak = scores(0.70), scores(1.2)
+
+    def paired(self, candidate, five):
+        b1, b2, b3 = sp.paired_tests(
+            [(self.b1, candidate), (self.b2, candidate), (self.b3, five)], seed=1, draws=200
+        )
+        return b1, b2, b3
+
+    def test_the_output_prints_the_b3_comparison_and_its_bound_beside_the_verdict(self):
+        b1, b2, b3 = self.paired(self.strong, self.five_strong)
+        out = sp.report(b1, b2, b3, look=3)
+        text = str(out)
+        self.assertEqual(out.verdict, sp.SUPPORTED)
+        self.assertIn(sp.SUPPORTED, text)
+        self.assertIn("B3", text)
+        self.assertIn("reported comparison, no rule", text)
+        critical = sp.CRITICAL_VALUES[sp.FIVE_LEVEL_COMPARISON][250]
+        self.assertEqual(out.b3.critical_value, critical)
+        self.assertAlmostEqual(out.b3.lower_bound, b3.lower_bound(critical))
+        self.assertAlmostEqual(out.b3.mean_difference, b3.mean_difference)
+        self.assertIn(f"{b3.lower_bound(critical):.4f}", text)
+        self.assertLess(text.index(sp.SUPPORTED), text.index("reported comparison, no rule"))
+
+    def test_the_first_look_has_no_bound_to_print(self):
+        """Look 1 has no efficacy value (Q-B), so the B3 line carries its mean and no bound."""
+
+        days = weekdays(date(2015, 1, 2), 60)
+        rng = random.Random(3)
+        b = {day: 1 + 0.05 * rng.random() for day in days}
+        c = {day: 0.9 + 0.05 * rng.random() for day in days}
+        b1, b2, b3 = sp.paired_tests([(b, c), (b, c), (b, c)], seed=1, draws=100)
+        out = sp.report(b1, b2, b3, look=1)
+        self.assertIsNone(out.b3.critical_value)
+        self.assertIsNone(out.b3.lower_bound)
+        self.assertIn("no bound at look 1", str(out))
+
+    def test_the_verdict_never_reads_the_b3_comparison(self):
+        """The same verdict on every fixture whatever B3 shows, at any five-level value, and `verdict` has no
+        B3 input and does not name the five-level comparison."""
+
+        import inspect
+
+        for candidate, expected in ((self.strong, sp.SUPPORTED), (self.weak, sp.KILLED)):
+            alone = sp.verdict(*self.paired(candidate, self.five_strong)[:2], look=3)
+            self.assertEqual(alone, expected)
+            for five in (self.five_strong, self.five_weak):
+                for value in (1e-9, 1e9):
+                    with mock.patch.dict(sp.CRITICAL_VALUES, {sp.FIVE_LEVEL_COMPARISON: {60: None, 125: value, 250: value}}):
+                        b1, b2, b3 = self.paired(candidate, five)
+                        self.assertEqual(sp.report(b1, b2, b3, look=3).verdict, expected)
+                        self.assertEqual(sp.verdict(b1, b2, look=3), expected)
+        self.assertEqual(list(inspect.signature(sp.verdict).parameters)[:2], ["against_b1", "against_b2"])
+        self.assertNotIn("b3", inspect.signature(sp.verdict).parameters)
+        self.assertNotIn("FIVE_LEVEL_COMPARISON", inspect.getsource(sp.verdict))
+
+    def test_a_b3_test_on_other_days_is_refused(self):
+        b1, b2, b3 = self.paired(self.strong, self.five_strong)
+        short = weekdays(date(2015, 1, 2), 125)
+        other = {day: 1.0 + 0.01 * (i % 7) for i, day in enumerate(short)}
+        cand = {day: 0.9 + 0.01 * (i % 5) for i, day in enumerate(short)}
+        wrong = sp.paired_test(other, cand, seed=1, draws=100)
+        with self.assertRaises(sp.ProtocolError):
+            sp.report(b1, b2, wrong, look=3)
+
+
 class SecondaryLevelsTests(unittest.TestCase):
     """B3 is scored on its own five levels against the candidate's same five (ruling, PR #660)."""
 
