@@ -153,6 +153,7 @@ SNAPSHOT_INVENTORY: Mapping[str, Tuple[str, str]] = {
     "alfred-wlrraol": ("cannot", "ALFRED vintage pulls (H.4.1 reverse repos, other): a revision study, no daily first prints"),
     "alfred-wresbal": ("cannot", "ALFRED vintage pulls: reserve_balances is read from the FRED latest-vintage snapshot under the registry's declared lag"),
     "alfred-wtregen": ("cannot", "ALFRED vintage pulls at four dates: tga is read from the FRED latest-vintage snapshot under the registry's declared lag"),
+    "h41_wednesday_levels": ("cannot", "FRED WRBWFRBL and WDTGAL, the H.4.1 Wednesday levels, as one latest-vintage pull (#970): a measurement of the scarcity state beside the week averages, off in every published declaration; never-revised status not re-verified, so no first print per day"),
     "backfill_2014_2018": ("cannot", "posting date of the back-filled workbook not established; the #431 amendment is not in force (ruling of 9 October 2026)"),
 }
 
