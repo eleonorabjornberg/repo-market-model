@@ -155,6 +155,41 @@ class TestTheGuard(unittest.TestCase):
         script.require_study_window([date(2025, 12, 31)])
 
 
+class TestTheCalibrationOrientation(unittest.TestCase):
+    """#1013 (finding #1000): the paths are built on `e` = S(B1) - S(B2), so the critical values must be calibrated on `e`, not
+    on `-e` (her ruling of 19 October 2026 on #913: each leg in its own orientation).
+
+    Recorded mutation, run and killed: `series = [sign * v for v in e]` in `scripts/scaled_score_967.py` `calibrate` changed back
+    to `series = [-v for v in e]` fails `test_the_critical_values_are_calibrated_on_the_series_the_paths_use` with
+    `AssertionError: 0.7015469016873616 != 0.7484114412261694` and the named-option test with `AssertionError` (the old and the
+    new critical values are equal)."""
+
+    def series(self):
+        # skewed on purpose: a mirrored series has a different upper quantile
+        return [(((i * 37) % 23) / 23.0) ** 3 - 0.2 + (0.5 if i % 41 == 0 else 0.0) for i in range(500)]
+
+    def test_the_critical_values_are_calibrated_on_the_series_the_paths_use(self):
+        design = script.Design("T", 100, sp.HORIZONS, "raw")
+        e = self.series()
+        cc = script._load("contiguous_calibration_963")
+        levels = sp.nominal_levels(design.checkpoints)
+        _, got = script.calibrate((design, e, 500))
+        for k, n in enumerate(design.checkpoints[1:], start=1):
+            ordered = cc.contiguous_window_statistics(list(e), days=n)
+            self.assertEqual(got["critical"][str(n)], sp._bound(ordered, 1.0 - levels[k], len(ordered)))
+        mirrored = cc.contiguous_window_statistics([-v for v in e], days=design.checkpoints[2])
+        self.assertNotEqual(sp._bound(mirrored, 1.0 - levels[2], len(mirrored)), got["critical"][str(design.checkpoints[2])])
+
+    def test_the_previous_orientation_is_a_named_option_for_the_row_check(self):
+        design = script.Design("T", 100, sp.HORIZONS, "raw")
+        e = self.series()
+        _, new = script.calibrate((design, e, 500))
+        _, old = script.calibrate((design, e, 500, -1.0))
+        self.assertNotEqual(new["critical"], old["critical"])
+        _, same = script.calibrate((design, [-v for v in e], 500))
+        self.assertEqual(same["critical"], old["critical"])
+
+
 class TestTheReadings(unittest.TestCase):
     def test_scale_buys_nothing_when_power_is_below_twenty_percent_or_size_above_five(self):
         def record(power, size):
@@ -175,62 +210,6 @@ class TestTheReadings(unittest.TestCase):
         self.assertFalse(script.misranking(thin)["holds"])
         same = {"a": regime(100, (0.2, 0.1), (0.4, 0.3))}
         self.assertFalse(script.misranking(same)["holds"])
-
-
-class TestTheCalibrationSeries(unittest.TestCase):
-    """#1014: the critical value is calibrated on the series the paths are drawn from, `e = S(B1) - S(B2)`, not on `-e`.
-
-    The windows are studentized about the series mean, so a skewed series has a different upper quantile from its negation.
-    Recorded mutation: `series = list(e)` in `calibrate` changed back to `series = [-v for v in e]` fails
-    `test_the_critical_value_is_the_upper_quantile_of_the_path_series` with `AssertionError` (the contiguous critical value
-    equals the one of `-e`, not the one of `e`).
-    """
-
-    DESIGN = script.Design("T", 40, (1,), "raw")
-
-    @staticmethod
-    def skewed(n=300):
-        # rare large negative differences: S(B1) - S(B2) is left-skewed, so its two tails differ
-        return [(-6.0 if i % 23 == 0 else 0.4) + ((i * 7) % 5) / 10.0 for i in range(n)]
-
-    def upper(self, series):
-        cc = script._load("contiguous_calibration_963")
-        levels = sp.nominal_levels(self.DESIGN.checkpoints)
-        out = {}
-        for k, n in enumerate(self.DESIGN.checkpoints[1:], start=1):
-            ordered = cc.contiguous_window_statistics(series, days=n)
-            out[str(n)] = sp._bound(ordered, 1.0 - levels[k], len(ordered))
-        return out
-
-    def test_the_critical_value_is_the_upper_quantile_of_the_path_series(self):
-        e = self.skewed()
-        _, record = script.calibrate((self.DESIGN, e, 2000))
-        self.assertEqual(record["critical"], self.upper(e))
-        self.assertNotEqual(record["critical"], self.upper([-v for v in e]))
-
-
-class TestTheRowCheck(unittest.TestCase):
-    """#1014 criterion 3: the old orientation, run again, gives the values #999 published."""
-
-    def test_the_row_check_reproduces_a_record_made_on_the_negated_series_and_refuses_one_made_on_the_series(self):
-        import tempfile
-
-        e = TestTheCalibrationSeries.skewed(1500)
-        series = {d: (None, None, e) for d in script.ROW_CHECK_DESIGNS}
-
-        def record(sign):
-            designs = {}
-            for d in script.ROW_CHECK_DESIGNS:
-                _, info = script.calibrate_series(script.DESIGN_BY_ID[d], [sign * v for v in e], 2000)
-                designs[d] = {"critical": info["critical"], "critical_stationary": info["critical_stationary"]}
-            return {"designs": designs}
-
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "result.json"
-            path.write_text(json.dumps(record(-1.0)), encoding="utf-8")
-            self.assertTrue(all(v["matches"] for v in script.row_check(series, 2000, path).values()))
-            path.write_text(json.dumps(record(1.0)), encoding="utf-8")
-            self.assertFalse(any(v["matches"] for v in script.row_check(series, 2000, path).values()))
 
 
 class TestTheDeclaration(unittest.TestCase):

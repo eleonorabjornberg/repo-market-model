@@ -55,10 +55,6 @@ RESEARCH = REPO / "docs" / "research"
 DECLARATION = REPO / "metadata" / "scaled_score_967.json"
 RECORD = RESEARCH / "scaled-score-967" / "result.json"
 PAGE = RESEARCH / "scaled-score-967-result.md"
-RECORD_1014 = RESEARCH / "scaled-score-967" / "result-1014.json"
-PAGE_1014 = RESEARCH / "scaled-score-967-orientation-1014-result.md"
-ORIENTATION = "S(B1) - S(B2)"
-ROW_CHECK_DESIGNS = ("D0", "D4")
 SPLITS_PATH = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"
 PANEL_MANIFEST = REPO / "metadata" / "funding_panel_manifest.json"
@@ -305,17 +301,18 @@ def candidate(b: Sequence[float], e: Sequence[float], delta: float, noise: float
 
 
 def calibrate(job) -> Tuple[str, Dict[str, object]]:
-    """The design's critical value at each look after the first: the contiguous windows of S(B1) - S(B2), the series
-    `candidate` and `run_path` draw from, and, beside it, the stationary-10 windows of #886."""
+    """The design's critical value at each look after the first: the contiguous windows of the series `e` the paths are built
+    on (S(B1) - S(B2), positive where B2 is better), and, beside it, the stationary-10 windows of #886.
 
-    design, e, windows = job
-    return calibrate_series(design, list(e), windows)  # S(B1) - S(B2), the series the paths are drawn from (#1014)
+    `job` is `(design, e, windows)`, or `(design, e, windows, -1.0)` for the orientation #999 used, which calibrated on
+    `-e` while the paths used `e` (finding #1000); only the row check of #1013 asks for it."""
 
-
-def calibrate_series(design: Design, series: Sequence[float], windows: int) -> Tuple[str, Dict[str, object]]:
+    design, e, windows = job[:3]
+    sign = job[3] if len(job) > 3 else 1.0
     cc = _load("contiguous_calibration_963")
     looks = design.checkpoints
     levels = sp.nominal_levels(looks)
+    series = [sign * v for v in e]
     contiguous, stationary, counts = {}, {}, {}
     for k, n in enumerate(looks[1:], start=1):
         ordered = cc.contiguous_window_statistics(series, days=n)
@@ -325,7 +322,7 @@ def calibrate_series(design: Design, series: Sequence[float], windows: int) -> T
             ordered = sp.window_t_statistics(series, days=n, windows=windows, seed=CALIBRATION_SEED, block=sp.BLOCK_LENGTH)
         stationary[str(n)] = sp._bound(ordered, 1.0 - levels[k], len(ordered))
     return design.id, {"checkpoints": list(looks), "nominal_levels": list(levels), "critical": contiguous,
-                       "critical_stationary": stationary, "windows": counts, "series_days": len(series)}
+                       "critical_stationary": stationary, "windows": counts, "series_days": len(e)}
 
 
 # -- the paths --------------------------------------------------------------------------------------------------------------
@@ -476,20 +473,6 @@ def regime_split(published: Path, walks: Path, pool: Pool, scales, splits) -> Di
     return {"days": len(rows), "first": rows[0][0].isoformat(), "last": rows[-1][0].isoformat(), "by_regime": by_regime}
 
 
-def row_check(series, windows: int, published: Path = RECORD) -> Dict[str, object]:
-    """#1014 criterion 3: calibrate D0 and D4 on `-e`, the orientation #999 used, and compare with #999's committed values."""
-
-    old = json.loads(published.read_text(encoding="utf-8"))["designs"]
-    out: Dict[str, object] = {}
-    for design_id in ROW_CHECK_DESIGNS:
-        design = DESIGN_BY_ID[design_id]
-        _, reproduced = calibrate_series(design, [-v for v in series[design_id][2]], windows)
-        out[design_id] = {"reproduced": {k: reproduced[k] for k in ("critical", "critical_stationary")},
-                          "published_999": {k: old[design_id][k] for k in ("critical", "critical_stationary")},
-                          "matches": all(reproduced[k] == old[design_id][k] for k in ("critical", "critical_stationary"))}
-    return out
-
-
 def run_command(args) -> int:
     declaration = committed_declaration()
     rows = load_daily_panel(args.published)
@@ -523,8 +506,6 @@ def run_command(args) -> int:
                            **calibrated[d.id], "post_2020": rows_[d.id]} for d in DESIGNS},
         "scenarios": scenarios,
     }
-    record["orientation"] = ORIENTATION
-    record["row_check"] = row_check(series, args.windows)
     record["kill_scale_buys_nothing"] = kill_scale_buys_nothing(record)
     record["regimes"] = regime_split(args.published, args.walks, pool, scales, splits)
     record["misranking"] = misranking(record["regimes"]["by_regime"])
@@ -546,51 +527,15 @@ def f(value: Optional[float], digits: int = 3, sign: bool = False) -> str:
     return "n/a" if value is None else f"{value:{'+' if sign else ''}.{digits}f}"
 
 
-def correction_section(record) -> List[str]:
-    """#1014: what changed against #999's page, and the row check that the old orientation still gives #999's values."""
-
-    old = json.loads(RECORD.read_text(encoding="utf-8"))["designs"]
-    L = ["## What this page corrects (#1014)", "",
-         "#999 built each path from `e = S(B1) - S(B2)` but calibrated the critical value on `-e`. The windows are studentized "
-         "about the series mean, so a skewed series has a different upper quantile from its negation, and the two disagreed. This "
-         f"page calibrates on {record['orientation']}, the series the paths use, and changes nothing else: the generator, the "
-         "constants, the scale, the pool and the panel are #999's. #999's page and record stand beside this one. The values "
-         "below are the contiguous and the stationary-10 critical values at the last two looks (the first and the second "
-         "number of each pair), #999's beside the corrected.", "",
-         "| design | #999 contiguous | corrected contiguous | #999 stationary-10 | corrected stationary-10 | #999 size | corrected size | #999 power at 10% | corrected power at 10% |",
-         "|---|---|---|---|---|---|---|---|---|"]
-    for d in DESIGNS:
-        new = record["designs"][d.id]
-        looks = new["checkpoints"]
-
-        def pair(info, key):
-            return f"{info[key][str(looks[1])]:.2f} / {info[key][str(looks[2])]:.2f}"
-
-        L.append(f"| {d.id} | {pair(old[d.id], 'critical')} | {pair(new, 'critical')} | {pair(old[d.id], 'critical_stationary')} | "
-                 f"{pair(new, 'critical_stationary')} | {pct(old[d.id]['post_2020']['size'])} | {pct(new['post_2020']['size'])} | "
-                 f"{pct(old[d.id]['post_2020']['power_10'])} | {pct(new['post_2020']['power_10'])} |")
-    rc = record["row_check"]
-    L += ["", "Row check: calibrating D0 and D4 on `-e`, the old orientation, on this run's histories "
-          + ("reproduces #999's critical values exactly (contiguous and stationary-10): " if all(v["matches"] for v in rc.values())
-             else "does NOT reproduce #999's critical values: ")
-          + ", ".join(f"{k} {'yes' if v['matches'] else 'no'}" for k, v in rc.items()) + ".", ""]
-    return L
-
-
 def render(record) -> str:
     c, pool, designs, sc = record["constants"], record["pool"], record["designs"], record["scenarios"]
     kill, mis = record["kill_scale_buys_nothing"], record["misranking"]
-    corrected = bool(record.get("orientation"))
     L = [
-        "# A scale-free primary score: size, power and the regime ranking "
-        + ("re-read with the critical value calibrated on the series the paths use (#1014, H1 step 2 and H5)" if corrected
-           else "(#967, H1 step 2 and H5)"), "",
+        "# A scale-free primary score: size, power and the regime ranking (#967, H1 step 2 and H5)", "",
         "**Development data, not a verdict.** A report that changes nothing: `scoring_protocol.CRITICAL_VALUES` and "
         "`docs/decisions/scoring-protocol.md` are only read. No day after 2025-12-31 and no lockbox day is scored. Everything is "
-        "declared in `metadata/scaled_score_967.json` before any score and read from "
-        + ("`docs/research/scaled-score-967/result-1014.json`" if corrected else "`docs/research/scaled-score-967/result.json`")
-        + " by `scripts/scaled_score_967.py report`. The series are development data seen before the declaration.", "",
-        *(correction_section(record) if corrected else []),
+        "declared in `metadata/scaled_score_967.json` before any score and read from `docs/research/scaled-score-967/result.json` "
+        "by `scripts/scaled_score_967.py report`. The series are development data seen before the declaration.", "",
         "## Question for Eleonora (marked)", "",
         "**Does the primary score change?** Replacing raw grid CRPS by the scaled score in the confirmation test is a section 13 "
         "decision and is hers. This page is its evidence: the scale's size and power, and whether it ranks the two candidates "
@@ -604,7 +549,7 @@ def render(record) -> str:
         "(from 2020-04-03).", "",
         "## 1. Size and power of #733's six designs under the scale", "",
         "Contiguous calibration (#963): the critical value of a look is the quantile of every contiguous post-2020 window of "
-        f"that length, on {record.get('orientation', 'S(B2) - S(B1)')} alone (reading (b), her ruling on PR #695, Q-E), at the look's nominal level. Size is the "
+        "that length, on S(B2) - S(B1) alone (reading (b), her ruling on PR #695, Q-E), at the look's nominal level. Size is the "
         "false-detection share by the last look under no true difference, without the MME gate, on stationary-bootstrap paths "
         f"of the same history ({c['paths']} paths a scenario); power is the gated share. D4 and D5 use this study's scale; D4old "
         "and D5old use #733's (the trailing 60-day mean of B1); D0t and D4t are the trapezoid companion (#259) on the raw and "
@@ -660,11 +605,10 @@ def render(record) -> str:
 
 def report_command(args) -> int:
     record = json.loads(args.record.read_text(encoding="utf-8"))
-    record_path, page_path = (RECORD_1014, PAGE_1014) if record.get("orientation") else (RECORD, PAGE)
-    record_path.parent.mkdir(parents=True, exist_ok=True)
-    record_path.write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    page_path.write_text(render(record), encoding="utf-8")
-    print("wrote", page_path)
+    RECORD.parent.mkdir(parents=True, exist_ok=True)
+    RECORD.write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    PAGE.write_text(render(record), encoding="utf-8")
+    print("wrote", PAGE)
     return 0
 
 
@@ -672,19 +616,16 @@ def check_command(_args) -> int:
     if not RECORD.exists():
         print("no record yet: `run` and `report` have not been run", file=sys.stderr)
         return 1
-    for record_path, page_path in ((RECORD, PAGE), (RECORD_1014, PAGE_1014)):
-        if not record_path.exists():
-            continue
-        record = json.loads(record_path.read_text(encoding="utf-8"))
-        if record["declaration_sha256"] != sha256(DECLARATION):
-            print("the record was made under another text of the declaration", file=sys.stderr)
-            return 1
-        if record["pool"]["last"] > STUDY_END.isoformat():
-            print("the study scored a day after its end", file=sys.stderr)
-            return 1
-        if not page_path.exists() or page_path.read_text(encoding="utf-8") != render(record):
-            print("the page is not what the record gives; run `report`", file=sys.stderr)
-            return 1
+    record = json.loads(RECORD.read_text(encoding="utf-8"))
+    if record["declaration_sha256"] != sha256(DECLARATION):
+        print("the record was made under another text of the declaration", file=sys.stderr)
+        return 1
+    if record["pool"]["last"] > STUDY_END.isoformat():
+        print("the study scored a day after its end", file=sys.stderr)
+        return 1
+    if not PAGE.exists() or PAGE.read_text(encoding="utf-8") != render(record):
+        print("the page is not what the record gives; run `report`", file=sys.stderr)
+        return 1
     print("ok")
     return 0
 

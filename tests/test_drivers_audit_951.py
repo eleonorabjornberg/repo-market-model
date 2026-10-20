@@ -136,5 +136,45 @@ class CommittedDeclarationTests(unittest.TestCase):
             self.assertIn(fit["pairing"], script.PAIRINGS)
 
 
+class StudentizedReadingTests(unittest.TestCase):
+    """#1017: verdicts read the studentized one-sided bound on mean d (ruling 1), not the percentile interval of the skill."""
+
+    @staticmethod
+    def row(interval, lower):
+        return {"skill": 0.05, "skill_interval_90": interval, "mean_difference": 0.1, "mean_difference_lower_95_one_sided": lower}
+
+    def test_the_studentized_reading_follows_the_bound_not_the_percentile_interval(self):
+        row = self.row([0.01, 0.09], -0.02)
+        self.assertEqual(script.percentile_side(row), "gain")
+        self.assertEqual(script.studentized_side(row), "not seen")
+
+    def test_a_positive_bound_is_a_gain_whatever_the_percentile_interval_says(self):
+        row = self.row([-0.01, 0.09], 0.03)
+        self.assertEqual(script.percentile_side(row), "not seen")
+        self.assertEqual(script.studentized_side(row), "gain")
+
+    def test_a_bound_of_exactly_zero_is_not_a_gain(self):
+        self.assertEqual(script.studentized_side(self.row([0.01, 0.09], 0.0)), "not seen")
+
+    def test_the_percentile_reading_has_a_harm_side_the_one_sided_bound_cannot_confirm(self):
+        row = self.row([-0.09, -0.01], -0.2)
+        self.assertEqual(script.percentile_side(row), "harm")
+        self.assertEqual(script.studentized_side(row), "not seen")
+
+    def test_rows_whose_side_changes_are_listed_from_the_scored_document(self):
+        document = {"tables": {"pooled": {"all": {"n": 10, "tests": {
+            "B1 -> a": self.row([0.01, 0.09], -0.02),
+            "B1 -> b": self.row([0.01, 0.09], 0.02),
+            "B1 -> c": self.row([-0.01, 0.09], 0.03),
+        }}, "thin": {"n": 3}}}}
+        got = script.side_changes(document)
+        self.assertEqual([(g["label"], g["pair"], g["percentile"], g["studentized"]) for g in got],
+                         [("all", "B1 -> a", "gain", "not seen"), ("all", "B1 -> c", "not seen", "gain")])
+
+    def test_a_missing_bound_is_refused(self):
+        with self.assertRaises(ValueError):
+            script.studentized_side({"skill_interval_90": [0.0, 1.0]})
+
+
 if __name__ == "__main__":
     unittest.main()

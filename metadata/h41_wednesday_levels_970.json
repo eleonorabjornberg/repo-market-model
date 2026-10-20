@@ -1,0 +1,41 @@
+{
+  "status": "declared by the pull request that closes #970 before any number was computed; a measurement, not a record. Nothing is published, off in every published declaration, no day after 2025-12-31 is read (docs/decisions/lockbox.md), no rule changes. Development data gives a diagnosis, never a verdict (scoring protocol v1, #640; #46 top block).",
+  "issue": 970,
+  "hypothesis": "H5 (primary goal), development step 3 (docs/research/hypotheses/H5.md): an input correction check on the scarcity state",
+  "question": "The panel's reserve_balances is FRED's WRESBAL and its tga is WTREGEN, both averages over the week ending Wednesday, although the docs and the weekly-carry rule call them Wednesday levels (finding #485, item 5). Does forming the scarcity state from the Wednesday level of reserves (WRBWFRBL) rather than the week average move the state, and the state at the pressure onsets?",
+  "fields": {
+    "WRBWFRBL": {"beside": "WRESBAL", "meaning": "reserve balances with Federal Reserve Banks, Wednesday level", "panel_column": "reserve_balances"},
+    "WDTGAL": {"beside": "WTREGEN", "meaning": "Treasury General Account, Wednesday level", "panel_column": "tga"}
+  },
+  "snapshot": {
+    "directory": "tests/fixtures/snapshots/h41_wednesday_levels",
+    "files": {
+      "WRBWFRBL.csv": "199ce3ef5657b03b90c9f56021dc2d1c2222149c696403a50b4d8d88b6bd1b0a",
+      "WDTGAL.csv": "ae6934f9c4ff4876cb560b57e4e1fffef6aaa50e37d2c6f999743677eb6c511b"
+    },
+    "fetched": "19 October 2026, from https://fred.stlouisfed.org/graph/fredgraph.csv?id=<SERIES>, latest vintage, in millions of US dollars",
+    "units": "divided by 1000 to the panel's billions, as WRESBAL and WTREGEN are"
+  },
+  "availability": {
+    "rule": "Same release, same instant. A Wednesday level is a line of the same H.4.1 release as the week average of the same Wednesday, so it takes the registry's declaration of the average it sits beside, unchanged: metadata/sources.json fred_macro_latest_vintage field_release_lags WRESBAL (reserve balances) and WTREGEN (TGA), 16:30 America/New_York, five calendar days after the Wednesday, basis record_date. The measurement builds the panel with the same long rows, replacing only each value, so the declared instant, the vintage id and the source sha of every row are the average's own (substitute() keeps them and a test checks it).",
+    "an_input_before_its_release": "refused as for the average: the as-of rule reads the row at its declared instant (asof.InformationRule), so a decision before the print never sees it",
+    "not_in_the_published_panel": "the published panel, its declaration and the final test's pipeline are untouched"
+  },
+  "never_revised": {
+    "claim": "not re-verified",
+    "reason": "The directive asks for two ALFRED vintages. alfred.stlouisfed.org is refused by this environment's proxy (CONNECT 403), and fred.stlouisfed.org's graph endpoint ignores a vintage_date parameter. The values read are the latest vintage, as for the averages they sit beside. Whether the Wednesday levels are never revised is not claimed; the commands to check it are in the PR."
+  },
+  "substitution": "In the point-in-time long rows of the measurement panel (scarcity_validation.build_measurement_panel's), every WRESBAL row whose Wednesday has a WRBWFRBL value takes that value / 1000; a WRESBAL row whose Wednesday has no WRBWFRBL value is dropped and counted (a hole, never the average). WTREGEN and WDTGAL likewise. Wednesday levels after 2025-12-31 are not read: rows with a reference date after it keep their average and are read by no scored decision.",
+  "measures": [
+    "per Wednesday to 2025-12-31: the Wednesday level less the week average, for reserves and for the TGA (n, mean, mean absolute, the 5th, 50th and 95th percentile, in USD billions, and by calendar year)",
+    "the own-leg scarcity state (scarcity.own_leg_states, each leg at its own latest public row, #586) of every scored day, 2018-06-29 to 2025-12-31, at each horizon 1 to 5, formed from the week average (as now) and from the Wednesday level: days that change state, up and down, by year; days that enter or leave the risky set (state >= 2); state counts",
+    "the pressure onsets (pressure.onsets at 5 bp over the scored days of horizon 1; a descriptive list, not a decision rule): for each, the state before and after"
+  ],
+  "kill_condition": "No movement: no scored day changes state at any horizon and no onset's state changes. The idea is then closed and the averages stand.",
+  "reading_rule": "Movement is reported as counts and a list of days; no state is called better. Which of the two reads the scarcity state should use is Eleonora's decision and is not made here.",
+  "docs_mismatch": "The calling of WRESBAL and WTREGEN Wednesday levels in docs/decisions/information-set.md (rule 1 and the amendment's first point), asof.py (WEEKLY_OBSERVATION_WEEKDAY) and docs/diagnosis-exceedance-flattening.md is a marked question in the PR. information-set.md is a decision record and is not edited here.",
+  "variants": {
+    "week_average_reserves": "WRESBAL, as now",
+    "wednesday_level_reserves": "WRBWFRBL"
+  }
+}
