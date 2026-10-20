@@ -1,0 +1,45 @@
+{
+ "directive": "#969",
+ "serves": "H5 groundwork G3 (the live record) and the validation report section 7 (SR 11-7 ongoing monitoring)",
+ "status": "declared before any number is computed. The statistics and windows are this directive's reading of its acceptance criteria. The thresholds are proposals only: Eleonora's decision on #950 row 8 stays parked, and no flag below is a verdict, a stop order or a decision rule.",
+ "gate": {
+  "decision_record": "docs/decisions/live-monitoring.md",
+  "draft": "docs/decisions/drafts/live-monitoring.md",
+  "rule": "the monitoring read of live (locked-tier) outcomes refuses to run unless the decision record is a file in docs/decisions/ itself, not in drafts/; the replay on development days (to 2025-12-31) needs no record"
+ },
+ "windows": {
+  "coverage_days": 60,
+  "calibration_days": 125,
+  "crps_days": 125,
+  "unit": "scored target days per lead, newest last; a window with fewer days reports its figures with the days it has and the label too_few_days"
+ },
+ "statistics": {
+  "band": {"lower_level": 0.05, "upper_level": 0.95, "nominal_coverage": 0.9, "inside": "lower <= outcome <= upper"},
+  "tail": {"level": 0.95, "expected_rate": 0.05, "miss": "outcome > q95 (strict)"},
+  "kupiec": "proportion-of-failures likelihood ratio on the q95 miss indicator against 0.05; chi-square, 1 degree of freedom",
+  "christoffersen": "first-order independence likelihood ratio on the same indicator sequence, in date order; chi-square, 1 degree of freedom",
+  "pit": {"bins": 6, "edges": "the published forecast's five quantiles (q05, q25, q50, q75, q95)", "bin": "the number of quantiles strictly below the outcome", "expected": [0.05, 0.20, 0.25, 0.25, 0.20, 0.05], "share_at_or_below_q25": "bins 0 and 1 together; expected 0.25"},
+  "crps_ratio": "mean CRPS of the published distribution divided by the mean CRPS of the benchmark on the same days, the grid CRPS of repo_model.metrics.crps_from_quantiles on the five declared levels; below 1 favours the model. B1 is as-of persistence; B2 is read from the record's protocol block when the record carries one",
+  "staleness": "per source in a record's inputs.snapshots: calendar days from retrieved_at to the decision instant, against the source's release_lag.worst_case_calendar_days in metadata/sources.json (the largest of field_release_lags when the source has them); and the panel's last date against the decision day, against the same bound for nyfed_sofr. A source without a declared bound is reported, not flagged",
+  "pin": "each record's code.pinned_sha against the transitions registered in metadata/live_pin.json"
+ },
+ "proposed_thresholds": {
+  "note": "Lens D's amber and stop thresholds of the five-lens review (#958) are not in the directive; these are the directive author's proposals from binomial arithmetic, for Eleonora to replace. They are only used to show what a reader would see in the replay.",
+  "band_coverage_60d": {"amber_below": 0.80, "amber_above": 0.98, "stop_below": 0.70},
+  "kupiec_q95_125d": {"amber_p_below": 0.01},
+  "christoffersen_q95_125d": {"amber_p_below": 0.01},
+  "stop_rule": "stop when both the Kupiec and the Christoffersen p-values are below amber_p_below on the same date, or the 60-day band coverage is below stop_below",
+  "pit_share_at_or_below_q25": {"amber_outside": [0.15, 0.35]},
+  "crps_ratio_to_b1_125d": {"amber_above": 1.0, "stop_above": 1.1}
+ },
+ "replay": {
+  "source": "docs/runs/published_distribution_daily_h1.json",
+  "lead": 1,
+  "first_day": "2018-06-29",
+  "last_day": "2025-12-31",
+  "limit": "no day after 2025-12-31 and no day in a locked tier is read; the replay reads each day's published quantiles and its realised spread, both already in the tracked record",
+  "windows_reported": "the first date of each month on which a flag fires, and for each regime of metadata/evaluation_splits.json the minimum 60-day coverage, the days under amber and under stop, and the Kupiec and Christoffersen p-values on the regime's days",
+  "b1": "as-of persistence of repo_model.protocol_benchmarks.b1_forecast on the published panel (digest 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999), for the days it can be formed",
+  "reading_rule": "the replay shows whether the 2021-23 and 2024 signatures would have fired. It is development data, not a verdict, and no threshold is chosen from it"
+ }
+}

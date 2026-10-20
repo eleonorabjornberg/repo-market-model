@@ -3,7 +3,8 @@
 `metadata/policy_events.json` lists the changes that bear on money-market
 pressure: administered-rate settings, the ON RRP and the standing repo facility,
 balance-sheet runoff and reserve-management purchases, the supplementary
-leverage ratio, Treasury buybacks and debt-limit acts. Each entry has the
+leverage ratio, Treasury buybacks, debt-limit acts and changes to how a
+reference rate is calculated. Each entry has the
 instant it became public and the date it takes effect, and a primary source.
 
 **Keyed on the announcement, never on the effective date**
@@ -46,7 +47,7 @@ __all__ = [
 REGISTER_PATH = Path(__file__).resolve().parents[2] / "metadata" / "policy_events.json"
 KINDS = (
     "iorb_rate", "on_rrp", "standing_repo", "balance_sheet", "reserve_management",
-    "slr", "treasury_buyback", "debt_ceiling",
+    "slr", "treasury_buyback", "debt_ceiling", "rate_methodology",
 )
 #: The instant a date-only announcement is public: the last second of its date.
 END_OF_DAY = time(23, 59, 59)

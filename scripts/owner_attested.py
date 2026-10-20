@@ -24,7 +24,11 @@ are the ones a pull request may make only with her own approval:
   in `scripts/live_record.py`, or a pin manifest `metadata/live_pin.json`;
 * `live-model`: the models the live record logs: the names in its `MODELS`
   and the published records (`docs/runs/...`) it names, so a model joining the
-  record (v2, #245) is one.
+  record (v2, #245) is one;
+* `claude-files`: `CLAUDE.md` or any file under `.claude/` (ruling on PR #943, 19 October 2026);
+* `registration`: any file under `metadata/registrations/` or `docs/registrations/`, where a candidate's
+  registration under `docs/decisions/scoring-protocol.md` section 2 is recorded (the protocol names no path yet;
+  these two are the ones the check watches until Eleonora names another).
 
 A pull request that makes one cites her approval by appending an entry to
 `metadata/owner_attestations.json`: its kind, the issue, the comment id, and the
@@ -67,7 +71,13 @@ REGISTRY = "metadata/owner_attestations.json"
 RULE = "docs/decisions/drafts/owner-attestation.md"
 
 #: The binding kinds a registry entry may cite.
-KINDS = ("lockbox", "live-pin", "live-model")
+KINDS = ("lockbox", "live-pin", "live-model", "claude-files", "registration")
+
+#: Binding by path: the exact files and the directories (with their trailing slash) that no pull request may change
+#: without her own GitHub action. `CLAUDE.md` is the one at the repository root, not a look-alike elsewhere.
+CLAUDE_FILES = ("CLAUDE.md",)
+CLAUDE_DIRS = (".claude/",)
+REGISTRATION_DIRS = ("metadata/registrations/", "docs/registrations/")
 ENTRY_KEYS = {"kind", "issue", "comment_id", "phrase", "what"}
 
 
@@ -212,10 +222,25 @@ def _tiers(text):
     return None if data is None else data.get("tiers")
 
 
-def binding_kinds(read_base, read_head) -> set:
-    """The binding kinds that differ between two trees; `read(path)` gives text or None."""
+def path_kinds(paths) -> set:
+    """The path-bound kinds among `paths`: `CLAUDE.md` or `.claude/` files, and registration records."""
 
     kinds = set()
+    for path in paths:
+        if path in CLAUDE_FILES or path.startswith(CLAUDE_DIRS):
+            kinds.add("claude-files")
+        if path.startswith(REGISTRATION_DIRS):
+            kinds.add("registration")
+    return kinds
+
+
+def binding_kinds(read_base, read_head, changed_paths=None) -> set:
+    """The binding kinds that differ between two trees; `read(path)` gives text or None.
+
+    `changed_paths()` lists the paths the change touches; without it the path-bound kinds are not looked at.
+    """
+
+    kinds = path_kinds(changed_paths()) if changed_paths is not None else set()
     if _tiers(read_base(LOCKBOX)) != _tiers(read_head(LOCKBOX)):
         kinds.add("lockbox")
     base_live, head_live = read_base(LIVE), read_head(LIVE)
@@ -272,14 +297,14 @@ def added_entries(base_text, head_text) -> list:
     return head[len(base):]
 
 
-def check(read_base, read_head, fetch_comment) -> list:
+def check(read_base, read_head, fetch_comment, changed_paths=None) -> list:
     """Every binding change cites an owner-attested comment; return those comments.
 
     `fetch_comment(comment_id)` returns the REST payload of an issue comment.
     Nothing is fetched when nothing is added.
     """
 
-    kinds = binding_kinds(read_base, read_head)
+    kinds = binding_kinds(read_base, read_head, changed_paths)
     added = added_entries(read_base(REGISTRY), read_head(REGISTRY))
     missing = sorted(kinds - {entry["kind"] for entry in added})
     if missing:
@@ -337,6 +362,19 @@ def git_reader(ref):
     return read
 
 
+def git_changed(base, head):
+    """`changed_paths()` for a pull request: the paths `head` changed since it left `base`."""
+
+    def changed():
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "--no-renames", f"{base}...{head}"],
+            cwd=REPO, capture_output=True, text=True, check=True,
+        )
+        return result.stdout.splitlines()
+
+    return changed
+
+
 # -- commands -----------------------------------------------------------------------
 
 
@@ -355,6 +393,7 @@ def _check(args):
     verified = check(
         git_reader(args.base), git_reader(args.head),
         lambda comment_id: fetch_comment(args.repo, comment_id, token),
+        changed_paths=git_changed(args.base, args.head),
     )
     if not verified:
         print("owner-attested: no binding change and no new attestation")
