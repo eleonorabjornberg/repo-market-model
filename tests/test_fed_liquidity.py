@@ -268,13 +268,14 @@ class TestTradeTests(unittest.TestCase):
         accepted = series["repo_accepted"]
         for day, expected in (
             (date(2024, 9, 23), 0.015),
-            (date(2024, 9, 24), 0.057),
             (date(2024, 12, 23), 0.050),
             (date(2025, 9, 10), 0.009),
             (date(2025, 9, 22), 0.030),
             (date(2025, 10, 6), 0.020),
         ):
             self.assertAlmostEqual(accepted[day], expected, msg=str(day))
+        # 2024-09-24 was an unlabelled $57 mn test (limit $75 mn): the day keeps its row, at zero (#933)
+        self.assertEqual(accepted[date(2024, 9, 24)], 0.0)
 
     def test_a_day_of_test_trades_resets_nothing_in_days_since_positive(self):
         panel = [DailyObservation(date(2023, 12, d), {"iorb": 5.4}) for d in (14, 15, 18, 19)]
@@ -291,6 +292,115 @@ class TestTradeTests(unittest.TestCase):
                 end=date(2023, 12, 19), coverage_end=date(2026, 1, 1),
             )
         self.assertEqual([r.values["fed_repo_days_since_positive"] for r in rows], [0.0, 1.0, 2.0, 3.0])
+
+
+class TestDeskTestMarks(unittest.TestCase):
+    """#933: an operation id ending " 99", or an `operationLimit` of at most $250 mn, marks a Desk test (Eleonora, 19 October 2026, ruling on #916).
+
+    The Desk's small-value exercises carry a structural mark as well as a note: a repo operation id ending " 99",
+    or a limit of $75-250 mn against $500 bn for a normal operation. Six repo operations carry the mark without the
+    note (2020-06-17, 2020-10-07, 2021-05-26, 2023-03-08, 2023-05-23, 2024-09-24) and were counted as take-up. The
+    rule is read per operation, on a `Repo` operation only: a reverse repo with an id ending " 99" is an ordinary
+    ON RRP operation when its amount is in the trillions (2023-07-17). A `Repo` operation whose `operationLimit` is
+    present but not a number raises `ValueError`. The recurring $10 mn / $0 / $10 mn split pattern is not ruled and
+    is not dropped here.
+
+    Recorded mutations (CLAUDE.md), 19 October 2026, in a disposable copy, `src/repo_model/ingest.py`,
+    `_is_small_value_exercise`:
+    `return limit <= DESK_TEST_LIMIT_MAX` mutated to `return limit < 0` (the limit mark ignored):
+    `test_a_limit_of_at_most_250_million_marks_a_desk_test` then fails with `AssertionError`
+    (`datetime.date(2024, 9, 24) unexpectedly found` in the take-up series);
+    `operation_id.endswith(" 99")` mutated to `operation_id.endswith(" 98")` (the id mark ignored):
+    `test_an_id_ending_99_marks_a_desk_test` then fails with `AssertionError`
+    (`datetime.date(2021, 5, 26) unexpectedly found`).
+    """
+
+    @staticmethod
+    def marked(day, accepted, *, op_id=None, limit=None, kind="Repo", term="Overnight"):
+        record = operation(day, accepted, kind=kind, term=term)
+        if op_id is not None:
+            record["operationId"] = op_id
+        if limit is not None:
+            record["operationLimit"] = limit
+        return record
+
+    def test_an_id_ending_99_marks_a_desk_test(self):
+        rows = by_series(rows_for(self.marked("2021-05-26", 46_000_000, op_id="RP 052621 99")))
+        self.assertNotIn(date(2021, 5, 26), rows.get("repo_accepted", {}))
+
+    def test_a_limit_of_at_most_250_million_marks_a_desk_test(self):
+        rows = by_series(
+            rows_for(
+                self.marked("2024-09-24", 57_000_000, op_id="RP 092424 1", limit=75_000_000, term="Term"),
+                self.marked("2023-05-23", 76_000_000, op_id="RP 052323 1", limit=250_000_000),
+            )
+        )
+        self.assertNotIn(date(2024, 9, 24), rows.get("repo_accepted", {}))
+        self.assertNotIn(date(2023, 5, 23), rows.get("repo_accepted", {}))
+
+    def test_a_limit_above_250_million_or_none_is_take_up(self):
+        rows = by_series(
+            rows_for(
+                self.marked("2023-06-01", 76_000_000, op_id="RP 060123 1", limit=250_000_001),
+                self.marked("2023-06-02", 76_000_000, op_id="RP 060223 1", limit=500 * BN),
+                self.marked("2023-06-05", 76_000_000, op_id="RP 060523 1"),
+                self.marked("2023-06-06", 76_000_000, op_id="RP 060623 199"),
+            )
+        )
+        for day in (date(2023, 6, 1), date(2023, 6, 2), date(2023, 6, 5), date(2023, 6, 6)):
+            self.assertAlmostEqual(rows["repo_accepted"][day].value, 0.076, msg=str(day))
+
+    def test_a_desk_test_beside_real_take_up_is_dropped_alone(self):
+        rows = by_series(
+            rows_for(
+                self.marked("2023-05-23", 76_000_000, op_id="RP 052323 99", limit=100_000_000),
+                self.marked("2023-05-23", 2 * BN, op_id="RP 052323 1"),
+            )
+        )
+        self.assertAlmostEqual(rows["repo_accepted"][date(2023, 5, 23)].value, 2.0)
+
+    def test_a_reverse_repo_id_ending_99_is_not_a_desk_test(self):
+        record = self.marked("2023-07-17", 1_728_322_000_000, op_id="RP 071723 99", kind="Reverse Repo")
+        self.assertFalse(ingest._is_small_value_exercise(record))
+
+    def test_the_note_still_marks_a_desk_test(self):
+        record = operation("2025-10-16", 61_000_000, note="This operation is a Small Value Exercise")
+        self.assertTrue(ingest._is_small_value_exercise(record))
+
+    def test_the_srf_total_drops_a_desk_test_by_its_marks(self):
+        operations = [
+            self.marked("2023-05-23", 76_000_000, op_id="RP 052323 99", limit=100_000_000),
+            self.marked("2023-05-24", 3 * BN, op_id="RP 052423 1"),
+        ]
+        payload = json.dumps({"repo": {"operations": operations}}).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "srf.json"
+            path.write_bytes(payload)
+            artifact = SnapshotArtifact(
+                source_id=ingest.NYFED_SRF_SOURCE_ID, path=path,
+                retrieved_at="2026-10-08T20:51:05+00:00", sha256=hashlib.sha256(payload).hexdigest(),
+                url=ingest.NYFED_RP_RESULTS_URL, byte_count=len(payload),
+            )
+            rows = {r.ref_date: r.value for r in ingest._nyfed_srf_rows(artifact, payload)}
+        self.assertNotIn(date(2023, 5, 23), rows)
+        self.assertAlmostEqual(rows[date(2023, 5, 24)], 3.0)
+
+    def test_a_limit_that_is_not_a_number_is_refused(self):
+        for bad in ("100000000", True):
+            record = operation("2023-05-23", 76_000_000)
+            record["operationLimit"] = bad
+            with self.subTest(limit=bad), self.assertRaises(ValueError):
+                rows_for(record)
+
+    def test_the_six_operations_of_the_finding_are_no_take_up_in_the_snapshots(self):
+        series = fed_liquidity.series_from_snapshots(SNAPSHOTS, datetime(2026, 9, 8, 21, 31, 42, tzinfo=ZoneInfo("UTC")))
+        accepted = series["repo_accepted"]
+        # the operation still happened, so each date keeps a row; 2020-06-17 keeps its other (real) operations
+        for day in (
+            date(2020, 10, 7), date(2021, 5, 26), date(2023, 3, 8), date(2023, 5, 23), date(2024, 9, 24),
+        ):
+            self.assertEqual(accepted[day], 0.0, msg=str(day))
+        self.assertAlmostEqual(accepted[date(2020, 6, 17)], 4.5)
 
 
 def ingest_series(operations):
