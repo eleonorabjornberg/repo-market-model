@@ -1,0 +1,151 @@
+{
+ "fits": [
+  {
+   "calendar_and_scheduled_columns": [
+    "quarter_end",
+    "tax_date",
+    "days_to_month_end",
+    "treasury_settlement",
+    "treasury_settlement_bills",
+    "treasury_settlement_coupons",
+    "iorb_announced_change_bps",
+    "iorb_days_to_announced_change"
+   ],
+   "evidence": "scripts/upper_bound_635.py:351-367 (read_inputs reads every column at the scored day through InformationRule(horizon=lead)), :444-446 (_fit_task trains and serves the same x_lead rows)",
+   "fit": "reachable gbm",
+   "note": "treasury_settlement* are re-dated per lead (settlement_dating); iorb_* are inputs at h=1 only and None at h>=2; the soma column is a hole at every lead; dow, bday_of_month and maint_period_day are also calendar under d631.switched()",
+   "pairing": "as_of_read",
+   "result": "#775/#758 (H2 #635)"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "quarter_end",
+    "tax_date",
+    "days_to_month_end",
+    "treasury_settlement",
+    "treasury_settlement_bills",
+    "treasury_settlement_coupons",
+    "iorb_announced_change_bps",
+    "iorb_days_to_announced_change"
+   ],
+   "evidence": "scripts/upper_bound_635.py:430-437 (same design matrices, crossfit_positions)",
+   "fit": "ceiling gbm (cross-fitted)",
+   "note": "as the reachable fit",
+   "pairing": "as_of_read",
+   "result": "#775/#758 (H2 #635)"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "treasury_settlement"
+   ],
+   "evidence": "scripts/spread_distribution_634.py:399-403 (ml.fit_gradient_boosted_quantiles, training_pairs unset); scripts/direct_twin_449.py:8-9",
+   "fit": "gbm_funding, h=1",
+   "note": "treasury_settlement is dropped at h>=2 (live_record.published_features)",
+   "pairing": "one_step",
+   "result": "#634/#758"
+  },
+  {
+   "calendar_and_scheduled_columns": [],
+   "evidence": "as above",
+   "fit": "gbm_funding, h=2..5",
+   "note": "no calendar or scheduled column among the inputs at these leads",
+   "pairing": "one_step",
+   "result": "#634/#758"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "treasury_settlement"
+   ],
+   "evidence": "scripts/spread_distribution_634.py:303 published_side; final_test_preregistration.CRPS_COMMAND has no --training-pairs-b",
+   "fit": "published (frozen CRPS command), h=1",
+   "note": "",
+   "pairing": "one_step",
+   "result": "#634"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "tax_date",
+    "treasury_settlement"
+   ],
+   "evidence": "scripts/spread_distribution_634.py:413-422",
+   "fit": "a_published_new, every lead",
+   "note": "treasury_settlement is announcement-dated and kept at every lead; iorb_* at h=1 as well (scheduled)",
+   "pairing": "one_step",
+   "result": "#634"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "tax_date",
+    "treasury_settlement"
+   ],
+   "evidence": "scripts/spread_distribution_634.py:424",
+   "fit": "b_gbm_new, every lead",
+   "note": "as a_published_new; iorb_* at h=1",
+   "pairing": "one_step",
+   "result": "#634"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "days_to_month_end",
+    "quarter_end",
+    "tax_date",
+    "treasury_settlement",
+    "treasury_settlement_coupons"
+   ],
+   "evidence": "src/repo_model/ml.py:4403-4451 (_pressure_pairs pairs each label with information.observation at its own decision instant), :6699, :6729",
+   "fit": "c_two_part_new, every lead",
+   "note": "the pressure_* predictors train on direct pairs without a flag; iorb_announced_change_bps at h=1",
+   "pairing": "direct",
+   "result": "#634/#758"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "treasury_settlement"
+   ],
+   "evidence": "scripts/h3_nested_708.py:177-178 (fit_gradient_boosted_quantiles through walk, training_pairs unset)",
+   "fit": "nested families (base and plus_*), h=1",
+   "note": "'directly at each lead' in its declaration means one fit per lead, not training_pairs='direct'",
+   "pairing": "one_step",
+   "result": "#708/#763"
+  },
+  {
+   "calendar_and_scheduled_columns": [],
+   "evidence": "as above",
+   "fit": "nested families (base and plus_*), h=2..5",
+   "note": "family columns are observed, not scheduled",
+   "pairing": "one_step",
+   "result": "#708/#763"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "treasury_settlement"
+   ],
+   "evidence": "scripts/backfill_h5_726.py:269-275",
+   "fit": "gbm_funding on backfilled history, h=1",
+   "note": "h>=2: nothing calendar or scheduled",
+   "pairing": "one_step",
+   "result": "#726"
+  },
+  {
+   "calendar_and_scheduled_columns": [
+    "quarter_end",
+    "tax_date",
+    "days_to_month_end"
+   ],
+   "evidence": "scripts/risk_date_spread_693.py:166; src/repo_model/risk_date_spread.py:93-117, 191, 226 (empirical quantiles; each sample day typed from its own row, the target typed from T)",
+   "fit": "spread mean reversion and risk-date calendar/type-state laws",
+   "note": "no feature design and no gbm; the coupon-settlement typing is gated by the lead (coupon_public), a gate and not a one-day offset",
+   "pairing": "as_of_read",
+   "result": "#693/#739 (H6)"
+  },
+  {
+   "calendar_and_scheduled_columns": [],
+   "evidence": "scripts/ordinary_day_p5_844.py:3-6, 235-259; adds no fit",
+   "fit": "reads P(>5 bp) off existing walks",
+   "note": "inherits the rows above for gbm_funding (one-step), c_two_part_new (direct), mean reversion (no design) and #761 (context keyed on the target row)",
+   "pairing": "as_of_read",
+   "result": "#853"
+  }
+ ],
+ "status": "inventory of the fits behind the 'no gain' results, read from the code at the base commit; every row's evidence is a file:line. 'one_step' = target of row p+1 paired with the design of row p; 'direct' = training_pairs='direct' or the pressure_* pairing; 'as_of_read' = the design of each target is read as of its own decision instant. net_settlement* are observed columns, not scheduled or calendar (dated at the row's own day), and are in none of the one-step fits above."
+}
