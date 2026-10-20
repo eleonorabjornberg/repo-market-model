@@ -1,0 +1,583 @@
+{
+  "built_by": "scripts/build_fomc_calendar.py",
+  "note": "Read from the tracked Board pages in tests/fixtures/snapshots/fomc_calendar/pages by scripts/build_fomc_calendar.py; `--check` rebuilds it. A scheduled meeting is public from the earliest schedule release that lists it (its announced_date and announced_time, Eastern wall clock). An unscheduled meeting is public from its own release. Notation votes are listed apart and are not meetings. Instants are naive America/New_York wall-clock times, as in metadata/policy_events.json. Each meeting date is tentative until the Committee confirms it at the meeting before it (the Board's calendar page says so).",
+  "schedule_announcements": [
+    {
+      "id": "schedule-20170511",
+      "announced_date": "2017-05-11",
+      "announced_time": "14:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20170511b.htm",
+      "page": "pages/monetary20170511b.htm",
+      "source_sentence": "The Federal Open Market Committee on Thursday announced its tentative meeting schedule for 2018:",
+      "meetings": [
+        {
+          "start": "2018-01-30",
+          "end": "2018-01-31"
+        },
+        {
+          "start": "2018-03-20",
+          "end": "2018-03-21"
+        },
+        {
+          "start": "2018-05-01",
+          "end": "2018-05-02"
+        },
+        {
+          "start": "2018-06-12",
+          "end": "2018-06-13"
+        },
+        {
+          "start": "2018-07-31",
+          "end": "2018-08-01"
+        },
+        {
+          "start": "2018-09-25",
+          "end": "2018-09-26"
+        },
+        {
+          "start": "2018-11-07",
+          "end": "2018-11-08"
+        },
+        {
+          "start": "2018-12-18",
+          "end": "2018-12-19"
+        },
+        {
+          "start": "2019-01-29",
+          "end": "2019-01-30"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20180525",
+      "announced_date": "2018-05-25",
+      "announced_time": "12:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20180525a.htm",
+      "page": "pages/monetary20180525a.htm",
+      "source_sentence": "The Federal Open Market Committee on Friday announced its tentative meeting schedule for 2019:",
+      "meetings": [
+        {
+          "start": "2019-01-29",
+          "end": "2019-01-30"
+        },
+        {
+          "start": "2019-03-19",
+          "end": "2019-03-20"
+        },
+        {
+          "start": "2019-04-30",
+          "end": "2019-05-01"
+        },
+        {
+          "start": "2019-06-18",
+          "end": "2019-06-19"
+        },
+        {
+          "start": "2019-07-30",
+          "end": "2019-07-31"
+        },
+        {
+          "start": "2019-09-17",
+          "end": "2019-09-18"
+        },
+        {
+          "start": "2019-10-29",
+          "end": "2019-10-30"
+        },
+        {
+          "start": "2019-12-10",
+          "end": "2019-12-11"
+        },
+        {
+          "start": "2020-01-28",
+          "end": "2020-01-29"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20190517",
+      "announced_date": "2019-05-17",
+      "announced_time": "10:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20190517a.htm",
+      "page": "pages/monetary20190517a.htm",
+      "source_sentence": "The Federal Open Market Committee on Friday announced its tentative meeting schedule for 2020:",
+      "meetings": [
+        {
+          "start": "2020-01-28",
+          "end": "2020-01-29"
+        },
+        {
+          "start": "2020-03-17",
+          "end": "2020-03-18"
+        },
+        {
+          "start": "2020-04-28",
+          "end": "2020-04-29"
+        },
+        {
+          "start": "2020-06-09",
+          "end": "2020-06-10"
+        },
+        {
+          "start": "2020-07-28",
+          "end": "2020-07-29"
+        },
+        {
+          "start": "2020-09-15",
+          "end": "2020-09-16"
+        },
+        {
+          "start": "2020-11-04",
+          "end": "2020-11-05"
+        },
+        {
+          "start": "2020-12-15",
+          "end": "2020-12-16"
+        },
+        {
+          "start": "2021-01-26",
+          "end": "2021-01-27"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20200702",
+      "announced_date": "2020-07-02",
+      "announced_time": "10:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200702a.htm",
+      "page": "pages/monetary20200702a.htm",
+      "source_sentence": "The Federal Open Market Committee on Thursday announced its tentative meeting schedule for 2021:",
+      "meetings": [
+        {
+          "start": "2021-01-26",
+          "end": "2021-01-27"
+        },
+        {
+          "start": "2021-03-16",
+          "end": "2021-03-17"
+        },
+        {
+          "start": "2021-04-27",
+          "end": "2021-04-28"
+        },
+        {
+          "start": "2021-06-15",
+          "end": "2021-06-16"
+        },
+        {
+          "start": "2021-07-27",
+          "end": "2021-07-28"
+        },
+        {
+          "start": "2021-09-21",
+          "end": "2021-09-22"
+        },
+        {
+          "start": "2021-11-02",
+          "end": "2021-11-03"
+        },
+        {
+          "start": "2021-12-14",
+          "end": "2021-12-15"
+        },
+        {
+          "start": "2022-01-25",
+          "end": "2022-01-26"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20210604",
+      "announced_date": "2021-06-04",
+      "announced_time": "11:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20210604a.htm",
+      "page": "pages/monetary20210604a.htm",
+      "source_sentence": "The Federal Open Market Committee on Friday announced its tentative meeting schedule for 2022:",
+      "meetings": [
+        {
+          "start": "2022-01-25",
+          "end": "2022-01-26"
+        },
+        {
+          "start": "2022-03-15",
+          "end": "2022-03-16"
+        },
+        {
+          "start": "2022-05-03",
+          "end": "2022-05-04"
+        },
+        {
+          "start": "2022-06-14",
+          "end": "2022-06-15"
+        },
+        {
+          "start": "2022-07-26",
+          "end": "2022-07-27"
+        },
+        {
+          "start": "2022-09-20",
+          "end": "2022-09-21"
+        },
+        {
+          "start": "2022-11-01",
+          "end": "2022-11-02"
+        },
+        {
+          "start": "2022-12-13",
+          "end": "2022-12-14"
+        },
+        {
+          "start": "2023-01-31",
+          "end": "2023-02-01"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20220624",
+      "announced_date": "2022-06-24",
+      "announced_time": "14:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20220624a.htm",
+      "page": "pages/monetary20220624a.htm",
+      "source_sentence": "The Federal Open Market Committee on Friday announced its tentative meeting schedule for 2023:",
+      "meetings": [
+        {
+          "start": "2023-01-31",
+          "end": "2023-02-01"
+        },
+        {
+          "start": "2023-03-21",
+          "end": "2023-03-22"
+        },
+        {
+          "start": "2023-05-02",
+          "end": "2023-05-03"
+        },
+        {
+          "start": "2023-06-13",
+          "end": "2023-06-14"
+        },
+        {
+          "start": "2023-07-25",
+          "end": "2023-07-26"
+        },
+        {
+          "start": "2023-09-19",
+          "end": "2023-09-20"
+        },
+        {
+          "start": "2023-10-31",
+          "end": "2023-11-01"
+        },
+        {
+          "start": "2023-12-12",
+          "end": "2023-12-13"
+        },
+        {
+          "start": "2024-01-30",
+          "end": "2024-01-31"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20230623",
+      "announced_date": "2023-06-23",
+      "announced_time": "11:30",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230623a.htm",
+      "page": "pages/monetary20230623a.htm",
+      "source_sentence": "The Federal Open Market Committee on Friday announced its tentative meeting schedule for 2024:",
+      "meetings": [
+        {
+          "start": "2024-01-30",
+          "end": "2024-01-31"
+        },
+        {
+          "start": "2024-03-19",
+          "end": "2024-03-20"
+        },
+        {
+          "start": "2024-04-30",
+          "end": "2024-05-01"
+        },
+        {
+          "start": "2024-06-11",
+          "end": "2024-06-12"
+        },
+        {
+          "start": "2024-07-30",
+          "end": "2024-07-31"
+        },
+        {
+          "start": "2024-09-17",
+          "end": "2024-09-18"
+        },
+        {
+          "start": "2024-11-06",
+          "end": "2024-11-07"
+        },
+        {
+          "start": "2024-12-17",
+          "end": "2024-12-18"
+        },
+        {
+          "start": "2025-01-28",
+          "end": "2025-01-29"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20240809",
+      "announced_date": "2024-08-09",
+      "announced_time": "13:30",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240809a.htm",
+      "page": "pages/monetary20240809a.htm",
+      "source_sentence": "The Federal Open Market Committee on Friday announced its tentative meeting schedule for 2025 and 2026.",
+      "meetings": [
+        {
+          "start": "2025-01-28",
+          "end": "2025-01-29"
+        },
+        {
+          "start": "2025-03-18",
+          "end": "2025-03-19"
+        },
+        {
+          "start": "2025-05-06",
+          "end": "2025-05-07"
+        },
+        {
+          "start": "2025-06-17",
+          "end": "2025-06-18"
+        },
+        {
+          "start": "2025-07-29",
+          "end": "2025-07-30"
+        },
+        {
+          "start": "2025-09-16",
+          "end": "2025-09-17"
+        },
+        {
+          "start": "2025-10-28",
+          "end": "2025-10-29"
+        },
+        {
+          "start": "2025-12-09",
+          "end": "2025-12-10"
+        },
+        {
+          "start": "2026-01-27",
+          "end": "2026-01-28"
+        },
+        {
+          "start": "2026-03-17",
+          "end": "2026-03-18"
+        },
+        {
+          "start": "2026-04-28",
+          "end": "2026-04-29"
+        },
+        {
+          "start": "2026-06-16",
+          "end": "2026-06-17"
+        },
+        {
+          "start": "2026-07-28",
+          "end": "2026-07-29"
+        },
+        {
+          "start": "2026-09-15",
+          "end": "2026-09-16"
+        },
+        {
+          "start": "2026-10-27",
+          "end": "2026-10-28"
+        },
+        {
+          "start": "2026-12-08",
+          "end": "2026-12-09"
+        },
+        {
+          "start": "2027-01-26",
+          "end": "2027-01-27"
+        }
+      ]
+    },
+    {
+      "id": "schedule-20250905",
+      "announced_date": "2025-09-05",
+      "announced_time": "13:30",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250905a.htm",
+      "page": "pages/monetary20250905a.htm",
+      "source_sentence": "The Federal Open Market Committee on Friday announced its tentative meeting schedule for 2027:",
+      "meetings": [
+        {
+          "start": "2027-01-26",
+          "end": "2027-01-27"
+        },
+        {
+          "start": "2027-03-16",
+          "end": "2027-03-17"
+        },
+        {
+          "start": "2027-04-27",
+          "end": "2027-04-28"
+        },
+        {
+          "start": "2027-06-08",
+          "end": "2027-06-09"
+        },
+        {
+          "start": "2027-07-27",
+          "end": "2027-07-28"
+        },
+        {
+          "start": "2027-09-14",
+          "end": "2027-09-15"
+        },
+        {
+          "start": "2027-10-26",
+          "end": "2027-10-27"
+        },
+        {
+          "start": "2027-12-07",
+          "end": "2027-12-08"
+        },
+        {
+          "start": "2028-01-25",
+          "end": "2028-01-26"
+        }
+      ]
+    }
+  ],
+  "unscheduled_meetings": [
+    {
+      "kind": "unscheduled_meeting",
+      "date": "2019-10-04",
+      "announced_date": "2019-10-11",
+      "announced_time": "11:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20191011a.htm",
+      "page": "pages/monetary20191011a.htm",
+      "release_title": "Statement Regarding Monetary Policy Implementation",
+      "calendar_label": "October 4 (unscheduled)"
+    },
+    {
+      "kind": "unscheduled_meeting",
+      "date": "2020-03-02",
+      "announced_date": "2020-03-03",
+      "announced_time": "10:00",
+      "time_zone_stated": "EST",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200303a.htm",
+      "page": "pages/monetary20200303a.htm",
+      "release_title": "Federal Reserve issues FOMC statement",
+      "calendar_label": "March 2 (unscheduled)"
+    },
+    {
+      "kind": "unscheduled_meeting",
+      "date": "2020-03-15",
+      "announced_date": "2020-03-15",
+      "announced_time": "17:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm",
+      "page": "pages/monetary20200315a.htm",
+      "release_title": "Federal Reserve issues FOMC statement",
+      "calendar_label": "March 15 (unscheduled)"
+    }
+  ],
+  "notation_votes": [
+    {
+      "kind": "notation_vote",
+      "date": "2020-03-19",
+      "announced_date": "2020-03-19",
+      "announced_time": "09:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200319b.htm",
+      "page": "pages/monetary20200319b.htm",
+      "release_title": "Federal Reserve announces the establishment of temporary U.S. dollar liquidity arrangements with other central banks",
+      "calendar_label": "March 19 (notation vote)"
+    },
+    {
+      "kind": "notation_vote",
+      "date": "2020-03-23",
+      "announced_date": "2020-03-23",
+      "announced_time": "08:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200323a.htm",
+      "page": "pages/monetary20200323a.htm",
+      "release_title": "Federal Reserve issues FOMC statement",
+      "calendar_label": "March 23 (notation vote)"
+    },
+    {
+      "kind": "notation_vote",
+      "date": "2020-03-31",
+      "announced_date": "2020-03-31",
+      "announced_time": "08:30",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200331a.htm",
+      "page": "pages/monetary20200331a.htm",
+      "release_title": "Federal Reserve announces establishment of a temporary FIMA Repo Facility to help support the smooth functioning of financial markets",
+      "calendar_label": "March 31 (notation vote)"
+    },
+    {
+      "kind": "notation_vote",
+      "date": "2020-08-27",
+      "announced_date": "2020-08-27",
+      "announced_time": "09:10",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200827a.htm",
+      "page": "pages/monetary20200827a.htm",
+      "release_title": "Federal Open Market Committee announces approval of updates to its Statement on Longer-Run Goals and Monetary Policy Strategy",
+      "calendar_label": "August 27 (notation vote)"
+    },
+    {
+      "kind": "notation_vote",
+      "date": "2025-08-22",
+      "announced_date": "2025-08-22",
+      "announced_time": "10:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "stated",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250822a.htm",
+      "page": "pages/monetary20250822a.htm",
+      "release_title": "Federal Open Market Committee announces approval of updates to its Statement on Longer-Run Goals and Monetary Policy Strategy",
+      "calendar_label": "22 (notation vote)"
+    }
+  ],
+  "cancellations": [
+    {
+      "meeting_start": "2020-03-17",
+      "announced_date": "2020-03-15",
+      "announced_time": "17:00",
+      "time_zone_stated": "EDT",
+      "time_basis": "declared",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm",
+      "page": "pages/monetary20200315a.htm",
+      "calendar_label": "March 17-18 (cancelled)",
+      "note": "The Board's calendar page marks the meeting cancelled and dates nothing. Declared as the release of the statement that closed the 15 March 2020 meeting, the first public word of the Committee's meeting that replaced it (docs/decisions/fomc-calendar.md, marked question)."
+    }
+  ]
+}

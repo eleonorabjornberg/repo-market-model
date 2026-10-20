@@ -161,6 +161,41 @@
     "structural_zeros_reviewed": true,
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/policy_events.json"
   },
+  "fomc_calendar": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 20 October 2026 for #1038 (calendar first, #46). Not a fetched series: repo_model.fomc_calendar computes both columns for a target day from metadata/fomc_calendar.json, which scripts/build_fomc_calendar.py builds from the Board's own pages (tests/fixtures/snapshots/fomc_calendar). A scheduled meeting is public from the earliest press release that lists it, at that release's stated 'For release at' time (for example the 2019 schedule at 12:00 EDT on 25 May 2018); an unscheduled meeting is public from the release that first reported it (4 October 2019 on 11 October 2019 at 11:00 EDT; 15 March 2020 at 17:00 EDT); a cancelled meeting stops being counted from the cancellation's instant, declared as 17:00 EDT on 15 March 2020 because the Board dates nothing (marked question in docs/decisions/fomc-calendar.md). The columns are read at the target row (rule 2 of docs/decisions/information-set.md): the value for day T is computed at the decision instant of the panel day h rows before it from meetings public at that instant, and every meeting used passes repo_model.fomc_calendar.require_public, which raises LookAheadError. Each meeting date is tentative until the Committee confirms it at the meeting before it; no date in the tracked schedules was later moved other than the cancelled 17-18 March 2020 meeting.",
+      "publication": "Board of Governors press releases 'Federal Open Market Committee announces its tentative meeting schedule for <year>' (11 May 2017 for 2018, 25 May 2018, 17 May 2019, 2 July 2020, 4 June 2021, 24 June 2022, 23 June 2023, 9 August 2024 for 2025 and 2026, 5 September 2025 for 2027), and the calendar pages https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm and fomchistorical2018.htm to fomchistorical2020.htm, which the build checks the meetings against."
+    },
+    "coverage": [
+      "FOMC meeting days and the wait to the next meeting, one value per panel day, 2018 onwards (the 2018 schedule was public from 11 May 2017)"
+    ],
+    "field_frequencies": {
+      "fomc_days_to_next_meeting": "business_daily",
+      "fomc_meeting_day": "business_daily"
+    },
+    "fields": [
+      "fomc_meeting_day",
+      "fomc_days_to_next_meeting"
+    ],
+    "frequency": "event",
+    "identities": [],
+    "limitation": "Off in every published declaration (#1038), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. Not a panel column and not fetched: a track adds the columns to a scratch panel with repo_model.fomc_calendar.add_columns. Whether they join a published declaration is a publishing question (docs/decisions/workflow.md) and is Eleonora's. Notation votes are not meetings and are not in the columns.",
+    "provider": "Board of Governors of the Federal Reserve System",
+    "release_lag": {
+      "available_time": "16:00",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 20 October 2026 (#1038). The value for a row is computed from meetings public at or before 16:00 ET on the decision day, and each meeting's own first-public instant is its schedule's release, so the value is public at that instant by construction; the decision instant is never later than the row's own day. The target row's value is a scheduled input (rule 2 of asof.py): it refers to T and is admissible because it was announced before the decision.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "No structural zeros: a 0.0 meeting day is a computed value (no meeting that day), not a missing one.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": true,
+    "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/fomc_calendar.json"
+  },
   "nyfed_on_rrp_sameday": {
     "access": "public",
     "availability_provenance": {
