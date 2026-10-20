@@ -196,6 +196,7 @@ INPUTS = (
     "docs/research/hypotheses",
     "docs/research/taglines.json",
     "docs/research/provisional-calendar-register.md",
+    "metadata/provisional",
     USE_LIMITATION,
     TEMPLATE,
     "docs/visual/annotations.json",

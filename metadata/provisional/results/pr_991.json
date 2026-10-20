@@ -1,0 +1,17 @@
+{
+  "order": 150,
+  "directive": 948,
+  "pull_request": 991,
+  "hypothesis": "H5",
+  "result": "`gbm_funding` fit on SOFR minus the ON RRP rate",
+  "declarations": [
+    "metadata/onrrp_distance_948.json"
+  ],
+  "model": "`gbm_funding` (control, one-step) and the arm (no day-type input)",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-20-model-00991-H5-step3"
+  ],
+  "concluded": "Fit on the distance, the arm is measured against `gbm_funding` at every lead."
+}

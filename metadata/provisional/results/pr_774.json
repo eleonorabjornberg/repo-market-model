@@ -1,0 +1,17 @@
+{
+  "order": 200,
+  "directive": 706,
+  "pull_request": 774,
+  "hypothesis": "H9",
+  "result": "The richer targets modelled with #634's candidate (b)",
+  "declarations": [
+    "metadata/richer_targets_706.json"
+  ],
+  "model": "candidate (b) of #634 fitted on each target",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "0082-2026-10-14-model-00774-H9-step2"
+  ],
+  "concluded": "Skill over B1 for all three targets; no lead on the +5 bp episodes in the scarce state."
+}

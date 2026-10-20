@@ -1,0 +1,10 @@
+{
+  "script": "scripts/onrrp_distance_948.py",
+  "declarations": [
+    "metadata/onrrp_distance_948.json"
+  ],
+  "model": "`gbm_funding` on SOFR minus the ON RRP rate; the control is one-step",
+  "calendar_inputs": "treasury_settlement aligned at lead 1 in the arm, one-step in the control; no day-type input",
+  "pairing": "one_step+direct",
+  "class": "a+b"
+}
