@@ -22,7 +22,7 @@
     "H8.M2": {"evidence": "docs/pivot/ranking-result.md", "pr": "eleonorabjornberg/repo-market-model#722"},
     "H9.M2": {"evidence": "docs/pivot/richer-targets-639-result.md", "pr": "eleonorabjornberg/repo-market-model#702"},
     "H9.M3": {"evidence": "docs/pivot/richer-targets-706-result.md", "pr": "eleonorabjornberg/repo-market-model#774"},
-    "H10.M1": {"evidence": "docs/research/log.md", "pr": "eleonorabjornberg/repo-market-liquidity#33"},
-    "H10.M2": {"evidence": "docs/research/log.md", "pr": "eleonorabjornberg/repo-market-liquidity#78"}
+    "H10.M1": {"evidence": "docs/research/log/0063-2026-10-14-liquidity-00066-H10-step1.md", "pr": "eleonorabjornberg/repo-market-liquidity#33"},
+    "H10.M2": {"evidence": "docs/research/log/0067-2026-10-15-liquidity-00078-H10-step3.md", "pr": "eleonorabjornberg/repo-market-liquidity#78"}
   }
 }

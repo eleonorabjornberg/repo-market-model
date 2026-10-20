@@ -32,6 +32,9 @@ from pathlib import Path
 
 from repo_model.lockbox import require_unlocked
 from repo_model.splits import LookAheadError
+import built_outputs
+
+built_outputs.ensure()  # the page, its data and the log are built, not committed (#928)
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = sorted((ROOT / "docs" / "runs").glob("*.json"))
