@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/risk_date_severity.json",
+  "script": "scripts/risk_date_severity.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

@@ -1,0 +1,15 @@
+{
+  "order": 260,
+  "directive": 873,
+  "pull_request": 878,
+  "hypothesis": "H1",
+  "result": "Critical and futility values recalibrated in the candidate orientation",
+  "declarations": [],
+  "model": "the published model (B3) and `gbm_funding` as series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-17-model-00878-H1-step4"
+  ],
+  "concluded": "Draft values and the power at them, as a draft amendment."
+}

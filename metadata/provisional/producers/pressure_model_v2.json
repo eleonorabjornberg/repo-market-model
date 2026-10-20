@@ -1,0 +1,8 @@
+{
+  "script": "scripts/pressure_model_v2.py",
+  "declarations": [],
+  "model": "pressure model v2: trees of depth 3 on v1's features, with calendar columns in some arms",
+  "calendar_inputs": "quarter_end, tax_date, days_to_month_end in the calendar arms; treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}

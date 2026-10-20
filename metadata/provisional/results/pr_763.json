@@ -1,0 +1,17 @@
+{
+  "order": 220,
+  "directive": 708,
+  "pull_request": 763,
+  "hypothesis": "H3",
+  "result": "The nested test of four source families against `gbm_funding`",
+  "declarations": [
+    "metadata/h3_nested_708.json"
+  ],
+  "model": "`gbm_funding` with each family added",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-17-model-00763-H3-step3"
+  ],
+  "concluded": "No family improves the candidate beyond its interval; two make it worse."
+}

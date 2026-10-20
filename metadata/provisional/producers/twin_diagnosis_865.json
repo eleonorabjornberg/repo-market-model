@@ -1,0 +1,10 @@
+{
+  "script": "scripts/twin_diagnosis_865.py",
+  "declarations": [
+    "metadata/twin_diagnosis_865.json"
+  ],
+  "model": "the control and five remedy arms",
+  "calendar_inputs": "treasury_settlement at lead 1 (control)",
+  "pairing": "one_step+direct",
+  "class": "a+b"
+}

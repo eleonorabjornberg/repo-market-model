@@ -1,0 +1,17 @@
+{
+  "order": 120,
+  "directive": 865,
+  "pull_request": 885,
+  "hypothesis": "H5",
+  "result": "Diagnosis of the twin's shortfall",
+  "declarations": [
+    "metadata/twin_diagnosis_865.json"
+  ],
+  "model": "the control and five remedy arms",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-17-model-00885-H5-step2"
+  ],
+  "concluded": "No defect: the pairs are aligned and the shortfall falls as the training pairs get fresher."
+}

@@ -1,0 +1,8 @@
+{
+  "script": "scripts/pid_constant_selection.py",
+  "declarations": [],
+  "model": "the published declaration, nested selection of the PID constants",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}

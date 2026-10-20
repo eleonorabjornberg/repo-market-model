@@ -92,7 +92,7 @@ The ownership gate, its CI job and its Claude Code hook are retired, by directiv
 ## Delegated review (in force until Eleonora revokes it)
 
 Decided by Eleonora, 30 September 2026, and extended on 2 October 2026 (#112). Until Eleonora revokes it in writing (a comment on the "Directive queue" issue, or a change to this record), a pull request that closes an
-issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive reviewer" routine (a Claude Code cloud session in the `rmm` environment), not by her. The review session is a separate Claude Code session from the one that implemented the change, and does not change code. It merges only when CI is green and the directive's acceptance criteria are met. It
+issue in the pinned "Directive queue" issue is reviewed and merged by the "Directive loop" routine (a Claude Code cloud session in the `rmm` environment, hourly; since 1 October it both reviews and implements, and its instructions are in `.claude/routines/directive-loop.md`), not by her. The review session is a separate Claude Code session from the one that implemented the change, never reviews a pull request its own session opened, and does not change code in the pull request it reviews. It merges only when CI is green and the directive's acceptance criteria are met. It
 escalates instead of merging (the pull request labelled `needs-eleonora`) when the pull request:
 
 - asks her a question, or its session opened a `needs-eleonora` issue (other than a publishing question under the rule
@@ -186,6 +186,38 @@ The orchestrating session hands Eleonora one paste for her Mac: a fresh clone of
 environment at the declared Python, output to a log file, and a push of the results to the same branch. The pull
 request records the Python, numpy and scikit-learn versions of that environment. Her pushed results are then finished
 by a cloud session like any other branch.
+
+## Fewer round trips
+
+**Status: draft, in force once Eleonora merges it.** Asked for by her on 20 October 2026, after a review of the
+workflow found that since 6 October about three in five commits that were not merges of a pull request were merges of
+`main` into a branch or regenerated files, that about a third of reviews asked for changes a local check would have
+caught, and that about half the comments on pull requests were claims and heartbeats.
+
+**A branch is merged with `main` only when `main` changed what it depends on.** Before merging, the reviewer merges
+`main` into the branch only when, since the branch's merge base, `main` changed `src/`, `metadata/`,
+`tests/fixtures/snapshots/`, or a file the branch also changes, or when GitHub reports a conflict. Otherwise a pull
+request whose CI is green on its head merges as it is, and the push CI on `main` checks the combination. Red CI on
+`main` is a `hold`, as before. "Ready means ready now" keeps its meaning for her own merges.
+
+**Checks run before review, and review starts on green.** A session runs `python3 scripts/pre_review.py --base
+origin/main` and the full suite before it asks for review. The reviewer starts only when every check on the pull
+request's head has completed, and a red check sends it back without a review.
+
+**Claims are labels, not comments.** A session claims a pull request with the label `reviewing` or `fixing` and
+removes it when done. It keeps one status comment per pull request and edits it, instead of posting "Reviewing", "Still
+reviewing" or "Still fixing".
+
+**Long runs go to the long-run workflow first.** Once `.github/workflows/long-run.yml` is on `main`, a step expected
+to take more than about two hours runs there (up to six hours, with the ml versions CI pins), started by the
+orchestrating session on the pull request's branch; its results are committed to that branch with the neutral author.
+A step longer than six hours, or one that needs her machine, still goes to her Mac under the rule below.
+
+**Her questions come as options.** A question batched for her lists numbered options and the default that applies if
+she does not answer by the next batch. The default is never a change to what the project claims.
+
+**The queue lists open work only.** The orchestrating session removes a line from the "Directive queue" issue once its
+issue is closed; the issue's edit history keeps the removed lines.
 
 **Mechanical commits carry a neutral author.** When the orchestrating session commits to someone else's branch (a
 merge of `main`, regenerated files), the commit's author and committer are "repo-market-model orchestrator", never
