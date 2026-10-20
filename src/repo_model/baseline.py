@@ -175,6 +175,7 @@ from .contract import (
 )
 from .data import DailyObservation, exceeds_bp, load_stress_thresholds
 from .lockbox import require_unlocked
+from .one_step_guard import check_one_step_regressors
 from .onset import whole_bp
 from .metrics import (
     CorpDecomposition,
@@ -1833,6 +1834,7 @@ def fit_arx(
             f"column makes the design rank deficient and its two coefficients "
             f"meaningless individually"
         )
+    check_one_step_regressors("fit_arx", names)
 
     rows = list(train_frame)
     if origins is None:
@@ -2544,6 +2546,7 @@ def fit_threshold(
             "regime, and this model's whole claim is that a covariate chooses "
             "the relationship"
         )
+    check_one_step_regressors("fit_threshold", names + (selector_name,))
     if threshold is not None:
         threshold = float(threshold)
         if not math.isfinite(threshold):

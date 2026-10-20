@@ -13,10 +13,13 @@ two, or if the shard count here differs from the one in the workflow.
 
     python3 scripts/ci_shards.py modules --shard 2        # module names for shard 2 of SHARDS
     python3 scripts/ci_shards.py check                    # every module in exactly one shard
+    python3 scripts/ci_shards.py ml-modules               # the modules that skip without the ml extra (#1018)
 """
 
 import argparse
+import ast
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -33,6 +36,46 @@ DEFAULT_WEIGHT = 5.0
 def all_modules(tests_dir=TESTS):
     """The test module names that `unittest discover -s tests` would load."""
     return sorted(path.stem for path in Path(tests_dir).glob("test*.py"))
+
+
+#: The libraries the optional `ml` extra installs.
+EXTRA_LIBRARIES = ("numpy", "sklearn")
+#: A call to one of these is a skip (or a failure under `REPO_MODEL_REQUIRE_ML`) for want of the extra.
+REQUIRE_CALLS = ("require_extra", "_require_extra")
+#: A helper imported from another test module under one of these names carries that module's skip with it.
+HELPER_NAME = re.compile(r"require_extra|have_ml", re.IGNORECASE)
+
+
+def _called(node):
+    func = node.func
+    return func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else None
+
+
+def skips_without_the_extra(tree):
+    """True if the parsed module skips its tests for want of the ml extra: it calls `require_extra`, or probes
+    `find_spec` with the extra's libraries named in code, or imports such a helper from another test module. Docstrings and
+    comments are not code, so a module that only names the libraries (`test_dependency_boundary`) is not one."""
+    nodes = list(ast.walk(tree))
+    calls = {_called(n) for n in nodes if isinstance(n, ast.Call)}
+    if calls & set(REQUIRE_CALLS):
+        return True
+    named = any(isinstance(n, ast.Constant) and n.value in EXTRA_LIBRARIES for n in nodes)
+    if "find_spec" in calls and named:
+        return True
+    return any(
+        isinstance(n, ast.ImportFrom) and (n.module or "").startswith("test_") and any(HELPER_NAME.search(a.name) for a in n.names)
+        for n in nodes
+    )
+
+
+def ml_extra_modules(tests_dir=TESTS):
+    """The test modules that skip without the ml extra, read from their sources. The pull-request ml job runs these."""
+    found = set()
+    for module in all_modules(tests_dir):
+        tree = ast.parse((Path(tests_dir) / f"{module}.py").read_text(encoding="utf-8"), filename=module)
+        if skips_without_the_extra(tree):
+            found.add(module)
+    return found
 
 
 def load_weights(path=WEIGHTS):
@@ -74,7 +117,12 @@ def main(argv=None):
     mods = sub.add_parser("modules", help="print the module names of one shard, space separated")
     mods.add_argument("--shard", type=int, required=True, help="1 to SHARDS")
     sub.add_parser("check", help="fail unless every test module is in exactly one shard")
+    sub.add_parser("ml-modules", help="print the module names that skip without the ml extra, space separated")
     args = parser.parse_args(argv)
+
+    if args.command == "ml-modules":
+        print(" ".join(sorted(ml_extra_modules())))
+        return 0
 
     modules = all_modules()
     split = assign(modules, load_weights())
