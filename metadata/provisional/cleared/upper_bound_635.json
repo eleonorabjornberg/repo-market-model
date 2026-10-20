@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/upper_bound_635.json",
+  "script": "scripts/upper_bound_635.py",
+  "pairing": "direct",
+  "why": "H2's cross-fitted ceiling and reachable fits on aligned reads (#951 §1: no)"
+}

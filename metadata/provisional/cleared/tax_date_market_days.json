@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/tax_date_market_days.json",
+  "script": "scripts/tax_date_market_days.py",
+  "pairing": "direct",
+  "why": "the tax-date window on market days, in pressure models on direct pairs"
+}

@@ -1,0 +1,10 @@
+{
+  "script": "scripts/backfill_h5_726.py",
+  "declarations": [
+    "metadata/backfill_h5_726.json"
+  ],
+  "model": "`gbm_funding` with and without the back-filled rows",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}

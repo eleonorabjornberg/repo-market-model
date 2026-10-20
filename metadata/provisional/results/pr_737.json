@@ -1,0 +1,15 @@
+{
+  "order": 240,
+  "directive": 655,
+  "pull_request": 737,
+  "hypothesis": "H1",
+  "result": "Critical values calibrated on the real difference series, B3 minus B1 included",
+  "declarations": [],
+  "model": "the published model (B3) as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "0041-2026-10-13-model-00737-H1-step1"
+  ],
+  "concluded": "The verdict reads the grid comparison's calibrated values; power for a 3% skill stays low."
+}

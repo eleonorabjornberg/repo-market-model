@@ -1,0 +1,10 @@
+{
+  "script": "scripts/h9_nested_842.py",
+  "declarations": [
+    "metadata/h9_nested_842.json"
+  ],
+  "model": "`gbm_funding` with a richer target's forecast as an input",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}

@@ -1,0 +1,15 @@
+{
+  "order": 80,
+  "directive": 882,
+  "pull_request": 898,
+  "hypothesis": "H5",
+  "result": "Results of steps 2 to 4 without 2019-09-18",
+  "declarations": [],
+  "model": "the candidates of #761, #688 and #758",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "2026-10-17-model-00898-H5-step3"
+  ],
+  "concluded": "Without the day the candidates' ordinary skill falls by about 9 points and stays above zero."
+}

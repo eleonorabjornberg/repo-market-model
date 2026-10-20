@@ -164,6 +164,50 @@ comparison only**. The comparison of the candidate against B3 on B3's own five l
 `CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]`, are printed beside the verdict (`scoring_protocol.report`), labelled "reported
 comparison, no rule". There is no efficacy rule and no futility rule for it for now, and the verdict (§6) never reads it.
 
+## Draft amendment 3: each leg of "Supported" is calibrated in its own orientation, on post-2020-04 history (#929)
+
+**Status: a third draft, by the pull request that closes #929, for Eleonora to merge. Nothing here is in force until she
+merges it, and it does not apply the values of the two drafts above** (§13: this record is merged by her, not under
+delegated review; the change is of kind (a), a demonstration, and kind (b), a reproduced error in code). It follows her
+ruling of 19 October 2026 on finding #913: the amended values of draft amendment 1 are not applied, and each leg is
+recalibrated in its own orientation. Until she merges it, item 5 and Q-C stand as written, `CRITICAL_VALUES` and
+`FUTILITY_CRITICAL_VALUES` are unchanged, and `B2_LEG_CRITICAL_VALUES` in `scoring_protocol.py` is empty, so `verdict` reads one
+value for both legs as it did.
+
+**The error (#913).** "Supported" (item 5, §6) requires the lower bound of mean(d) to be above zero against B1 and against B2.
+The leg against B1 has d = S(B1) − S(candidate). The leg against B2 has d = S(B2) − S(candidate), with B2 the benchmark. Both
+legs read the same `CRITICAL_VALUES[GRID_COMPARISON][days]`, which is calibrated for one orientation only; the daily
+differences are skewed, so the quantile of the studentized mean depends on the sign. Draft amendment 1 corrected the leg
+against B1 and left the leg against B2 on a value of the wrong orientation (its size at 250 days was 9.6% for `gbm_funding`
+and 24.6% for the stand-in B1 on the full history, against 4.8% nominal: `docs/research/b2-leg-size-922-result.md`).
+
+**The amendment.** The leg against B1 and the leg against B2 each read their own critical value at looks 2 and 3. Each is the
+`1 - level` quantile of `scoring_protocol.window_t_statistics` of the centred series in that leg's orientation, at the
+protocol's level for the look, on the decision days from 2020-04-03 (two years after the panel's first row, where every
+confirmation day falls), with 20,000 windows, block 10 and seed 1. The stand-in for the candidate is B2 on the leg against B1
+(d = S(B1) − S(B2), as #873 calibrated) and B1 on the leg against B2 (d = S(B2) − S(B1)):
+
+| value | days | in force | this draft |
+|---|---|---|---|
+| efficacy, leg against B1 | 125 | 3.419 | 4.727 |
+| efficacy, leg against B1 | 250 | 2.426 | 2.438 |
+| efficacy, leg against B2 | 125 | 3.419 | 2.682 |
+| efficacy, leg against B2 | 250 | 2.426 | 1.701 |
+
+Look 1 still has no efficacy value (Q-B). The futility values (Q-C) are not recalibrated here. After she merges this record,
+a follow-up directive sets `CRITICAL_VALUES` (the leg against B1) and `B2_LEG_CRITICAL_VALUES` (the leg against B2) to these
+values; `verdict` already reads the second where it is declared (`tests/test_scoring_protocol.py`, `VerdictTests`). The record is
+`docs/research/per-leg-calibration-929/result.json`, and the page `docs/research/per-leg-calibration-929-result.md` gives
+the values on the full history and without 2019-09-18, and each leg's size under these values, draft amendment 1's
+(1.347 / 2.548) and the values in force, for B1 and for `gbm_funding`.
+
+**What she decides.** Whether to merge this amendment as drafted, and which cut of "post-2020-04" it uses. The decision days
+from 2020-04-03 are the ones the protocol's coverage work (#699) and #886 use; #913's own table cuts two days earlier, at
+2020-04-01, which gives 2.427 / 4.808 on the leg against B1 and 1.685 / 2.670 on the leg against B2. This draft calibrates by
+circular blocks of the history (`window_t_statistics`) as her ruling says; draft amendment 2 (#886) drew stationary-bootstrap
+windows, and the two do not give the same values. Draft amendments 1 and 2 are not additive to this one: if she adopts this
+draft, their efficacy values are superseded.
+
 ---
 
 **Draft scoring protocol, v1 (orchestrating session, 12 Oct 2026, for Eleonora's decision). Designed from first principles; current rules are kept only where they survive scrutiny.**

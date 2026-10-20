@@ -74,9 +74,22 @@ class RegisterTests(unittest.TestCase):
             ("balance_sheet", "qt_taper"), ("balance_sheet", "qt_end"), ("reserve_management", "bill_purchases"),
             ("treasury_buyback", "program_launch"), ("debt_ceiling", "suspension"),
             ("debt_ceiling", "reinstatement"), ("slr", "exclusion_start"), ("slr", "eslr_final"),
+            ("rate_methodology", "sofr_calculation_change"),
         ]:
             self.assertIn(needed, actions)
         self.assertTrue(any(e.kind == "iorb_rate" and e.details["technical_adjustment"] for e in self.register))
+
+    def test_the_sofr_methodology_change_is_dated_by_the_operating_policy_statement(self):
+        entry = self.by_id["rate_methodology-20241125"]
+        self.assertEqual(entry.source_url, "https://www.newyorkfed.org/markets/opolicy/operating_policy_241125")
+        self.assertEqual(entry.effective, date(2024, 11, 25))
+        self.assertEqual(entry.time_basis, "not_stated")
+        self.assertEqual(entry.details["dvp_trim_share"], 0.20)
+        self.assertTrue(entry.details["affiliate_exclusion"])
+        self.assertTrue(entry.read_at_source)
+        # a decision on the statement's own date does not see it (the not_stated rule); the next day does
+        self.assertNotIn(entry.id, {e.id for e in pe.known_entries(self.register, datetime(2024, 11, 25, 16, 0))})
+        self.assertIn(entry.id, {e.id for e in pe.known_entries(self.register, datetime(2024, 11, 26, 16, 0))})
 
     def test_qt_ends_on_1_december_2025(self):
         end = self.by_id["balance_sheet-20251029"]

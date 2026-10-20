@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/projected_reserves.json",
+  "script": "scripts/projected_reserves.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

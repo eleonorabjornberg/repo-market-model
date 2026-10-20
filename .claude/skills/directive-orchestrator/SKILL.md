@@ -1,13 +1,15 @@
 ---
 name: directive-orchestrator
-description: Run the directive queue while Eleonora is away. Start the "Directive implementer" and "Directive reviewer" routines in turn, and stop and tell her when the queue needs her. Use when she says she is stepping away, going offline or leaving you in charge of the routines, or asks you to orchestrate or babysit the directive queue.
+description: Run the directive queue while Eleonora is away. Fire the "Directive loop" routine early when work is waiting, and stop and tell her when the queue needs her. Use when she says she is stepping away, going offline or leaving you in charge of the routines, or asks you to orchestrate or babysit the directive queue.
 ---
 
 # Directive orchestrator
 
-You stand in for Eleonora as the one who starts the two directive routines. They cannot start each other: routine
-sessions have no `fire_trigger`. Until the routines have GitHub event triggers, someone has to notice when a run ends
-and start the next. That is your whole job.
+One routine, "Directive loop", does both jobs: each run first reviews a queued pull request waiting for review, in
+either repository, and, if it merges one, implements the next directive (its instructions are in
+`.claude/routines/directive-loop.md`). It runs every hour at :13 on its own. You stand in for Eleonora by firing it
+early when work is waiting, so a pull request does not sit until the next hour. Routine sessions have no
+`fire_trigger`, so a run cannot start the next. Until the loop has GitHub event triggers, that is your whole job.
 
 **Two limits you never cross:**
 - **You do not do the routines' work.** You never implement, review, merge or edit code or docs.
@@ -19,13 +21,12 @@ Everything that decides what happens next stays with the routines and with `docs
 ## Setup, once per session
 
 1. **Find the routines.** Call `list_triggers` (claude-code-remote MCP server; load it with ToolSearch if it is
-   deferred) and take the ids of the routines named exactly "Directive implementer" and "Directive reviewer". Use
-   whatever ids you find, since recreating a routine changes its id. If either is missing or disabled, tell Eleonora
-   and stop.
+   deferred) and take the id of the routine named exactly "Directive loop". Use whatever id you find, since
+   recreating a routine changes its id. If it is missing or disabled, tell Eleonora and stop.
 2. **Read the state** with the commands below.
 3. **Act once** by the table.
 4. **Arm the first check-in** with `send_later` (initiation `human_request`, since she asked for this). Put the routine
-   ids and the session id of any run you fired in the message, so the next check-in knows what it is waiting on.
+   id and the session id of any run you fired in the message, so the next check-in knows what it is waiting on.
 
 ## Reading the state
 
@@ -55,17 +56,17 @@ open.
 |---|---|
 | Queue issue closed | Tell her the queue is complete. Stop, without re-arming. |
 | Queue labelled `hold`, or any queued PR labelled `needs-eleonora` | Tell her once what is waiting on her, quoting the latest routine comment that explains it. Stop, without re-arming. |
-| A run you fired is still running | Nothing. Re-arm in 15 min. |
-| A queued PR is labelled `changes-requested` | Fire the implementer. |
-| An open, non-draft PR closes a queued issue and has no comment starting `Review of <its head SHA>` | Fire the reviewer, with the text "PR #n is ready for review". |
-| A draft PR closes a queued issue | Fire the reviewer; it escalates drafts. |
-| The current item is open, has no PR and is not `in-progress` | Fire the implementer. |
+| A run you fired is still running, or the loop's hourly run is due within 10 minutes | Nothing. Re-arm in 15 min. |
+| A queued PR is labelled `changes-requested` | Fire the loop. |
+| An open, non-draft PR closes a queued issue and has no comment starting `Review of <its head SHA>` | Fire the loop, with the text "PR #n is ready for review". |
+| A draft PR closes a queued issue | Fire the loop; it escalates drafts. |
+| The current item is open, has no PR and is not `in-progress` | Fire the loop. |
 | The current item is `in-progress` with no PR | Nothing: it is being worked, possibly in Eleonora's own session. Idle check-in. |
 | Anything else | Idle check-in. |
 
 **Guards on firing:**
-- Fire at most one routine per check-in.
-- Never fire a routine while a run of it that you started is still running.
+- Fire the loop at most once per check-in.
+- Never fire it while a run you started is still running.
 - If `fire_trigger` is refused, tell her and stop.
 
 ## Check-in rhythm
@@ -74,7 +75,7 @@ open.
 - **Idle:** re-arm in about 60 minutes.
 - **Stop after three idle check-ins in a row,** and tell her in one line that you have stopped and why, for example
   "waiting on #34's PR". Any action or state change resets the count.
-- **Stop at once** when she says so, or when she has recreated the routines with GitHub event triggers. Then the
+- **Stop at once** when she says so, or when she has given the loop GitHub event triggers. Then the
   events do this job.
 
 ## Reporting

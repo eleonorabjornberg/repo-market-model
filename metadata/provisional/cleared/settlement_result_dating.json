@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/settlement_result_dating.json",
+  "script": "scripts/settlement_result_dating.py",
+  "pairing": "direct",
+  "why": "a re-score of pressure models under result-dated settlements"
+}

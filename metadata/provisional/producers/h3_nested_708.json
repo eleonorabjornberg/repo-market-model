@@ -1,0 +1,10 @@
+{
+  "script": "scripts/h3_nested_708.py",
+  "declarations": [
+    "metadata/h3_nested_708.json"
+  ],
+  "model": "the nested families added to `gbm_funding`",
+  "calendar_inputs": "treasury_settlement at lead 1",
+  "pairing": "one_step",
+  "class": "a+b"
+}

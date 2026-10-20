@@ -1,0 +1,10 @@
+{
+  "script": "scripts/aligned_pairs_931.py",
+  "declarations": [
+    "metadata/aligned_pairs_931.json"
+  ],
+  "model": "the control and the arm with treasury_settlement from the target row",
+  "calendar_inputs": "treasury_settlement at lead 1 (control); the arm reads it at the target day and has no day-type input",
+  "pairing": "one_step+direct",
+  "class": "a+b"
+}
