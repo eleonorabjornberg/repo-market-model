@@ -1,0 +1,15 @@
+{
+  "order": 90,
+  "directive": 883,
+  "pull_request": 907,
+  "hypothesis": "H5",
+  "result": "Month-end readings of the ordinary-day headlines",
+  "declarations": [],
+  "model": "the controls of #805, #761, #849, #694 and #775",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "2026-10-17-model-00907-H5-G2"
+  ],
+  "concluded": "Pooled skills move by about 0.1 points at most; kill outcomes do not change."
+}

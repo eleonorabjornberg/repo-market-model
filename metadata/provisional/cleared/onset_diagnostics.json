@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/onset_diagnostics.json",
+  "script": "scripts/onset_diagnostics.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

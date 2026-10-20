@@ -1,0 +1,18 @@
+{
+  "order": 40,
+  "directive": 707,
+  "pull_request": 756,
+  "hypothesis": "H5",
+  "result": "Diagnoses of 2021-23 and of the upper tail",
+  "declarations": [
+    "metadata/h5_step3_707.json"
+  ],
+  "model": "the phase 2 gbm and (c); (c) is aligned",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "0043-2026-10-14-model-00756-H5-step3",
+    "0044-2026-10-14-model-00756-H5-step3"
+  ],
+  "concluded": "The gbm does not resolvably lose to B1 in 2021-23 and is under-dispersed above 0 bp."
+}

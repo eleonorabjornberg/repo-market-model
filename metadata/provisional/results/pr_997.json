@@ -1,0 +1,17 @@
+{
+  "order": 160,
+  "directive": 992,
+  "pull_request": 997,
+  "hypothesis": "H5",
+  "result": "The `gbm_funding` arms of #960",
+  "declarations": [
+    "metadata/b1_calendar_960.json"
+  ],
+  "model": "`gbm_funding` and B1'",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "2026-10-20-model-00997-H5-step5"
+  ],
+  "concluded": "The `gbm_funding` arms are quoted beside B1' from #960's evidence."
+}
