@@ -12,7 +12,9 @@
 4. **Dilution (suspect 4) and the re-run.** On aligned (direct) pairs, adding the calendar and net-settlement inputs improves the grid CRPS everywhere pooled, on calendar days and on ordinary days (key comparison `direct_base_leaf5 -> direct_cal_leaf5`: skill +0.075 [+0.054, +0.098] pooled, +0.104 [+0.061, +0.160] on calendar days, +0.072 on ordinary days; by regime positive in 2018–19, 2024 and 2025–26 and not seen in 2020 and 2021–23). The same pair at the default leaf (`direct_base_leaf20 -> direct_cal_leaf20`) gives +0.053 [+0.037, +0.071] pooled. **Against the real control, `gbm_funding`, the picture is smaller:** direct pairs alone cost skill (`gbm_funding -> direct_base_leaf20` −0.054 [−0.098, −0.015] pooled, as #449 found for its twin), and the calendar inputs on direct pairs bring the arm back to the control pooled (`direct_cal_leaf20`: +0.001 [−0.042, +0.043]; `direct_cal_leaf5`: −0.024 [−0.076, +0.023]), with a gain only on calendar days (`direct_cal_leaf20`: +0.051 [−0.000, +0.114]; `direct_cal_leaf5`: +0.068 [+0.002, +0.141]). On the 750 decision days with a calendar target, `gbm_funding` is no better than B1 (−0.037 [−0.071, +0.001]) while `direct_cal_leaf5` is +0.033 [−0.047, +0.124] against B1 and +0.266 against B2; those intervals are wide (width 0.17–0.30), so the calendar-day test has little power against B1.
    So: the calendar and net-settlement inputs do carry signal once trained on aligned pairs, and the pooled test dilutes it (calendar days are a minority of days). But the direct pairing has its own cost on ordinary days and in 2021–23, so the whole-model comparison against `gbm_funding` is flat pooled. Whether that reopens the 15 October ruling is Eleonora's decision.
 
-Limits of this reading: one candidate family (`gbm_funding`'s gbm), four arms, one seed of the stationary bootstrap, a leaf of 5 against 20 only, one set of calendar and net-settlement inputs (`quarter_end`, `tax_date`, `days_to_month_end`, `net_settlement`, `net_settlement_due_5d`), and no arm combining direct pairs with `treasury_settlement` aligned separately.
+5. **The ruled one-step arm `onestep_cal_leaf20` (Eleonora's ruling of 19 October 2026, a named amendment made after 0189ba27 and before any score of the arm): the misalignment did not make the calendar inputs hurt here.** The arm is `direct_cal_leaf20` trained on the current one-step pairs. Against the real control it is **better**, not worse: `gbm_funding -> onestep_cal_leaf20` is +0.031 [+0.019, +0.045] pooled, +0.062 [+0.032, +0.107] on calendar days, +0.022 [+0.011, +0.033] on ordinary days and +0.095 [+0.043, +0.140] on quarter-ends, with no regime negative beyond its interval (2021-23 −0.011 [−0.030, +0.007]); only tax-date targets are slightly worse (−0.008 [−0.026, −0.002]). So the "calendar makes it worse" reading is **not reproduced**: reading the calendar inputs misaligned still beats `gbm_funding`. Alignment alone, with the calendar inputs fixed (`onestep_cal_leaf20 -> direct_cal_leaf20`), is −0.031 [−0.072, +0.008] pooled and −0.012 [−0.054, +0.025] on calendar days: not seen, and if anything the direct pairing costs skill, as the control comparison above showed (2018-19 −0.046 [−0.104, −0.010]; 2021-23 −0.174 [−0.253, −0.111]; 2024 +0.170 [+0.084, +0.235] in favour of direct; 2025-26 +0.056 [−0.069, +0.177]). The gain of the one-step arm over the control comes with the calendar inputs, whichever way they are paired; the leaf size is not what separates the arms. Whether the mechanism of #914 is harmless for these particular columns, or is masked by the other inputs, is not decided by this design: the arms differ in pairing only, one seed, one leaf size. Development data, not a verdict.
+
+Limits of this reading: one candidate family (`gbm_funding`'s gbm), five arms, one seed of the stationary bootstrap, a leaf of 5 against 20 only, one set of calendar and net-settlement inputs (`quarter_end`, `tax_date`, `days_to_month_end`, `net_settlement`, `net_settlement_due_5d`), and no arm combining direct pairs with `treasury_settlement` aligned separately.
 
 ## 1. Which fits train a calendar or scheduled column one day off (suspect 2)
 
@@ -78,11 +80,13 @@ n = 750 decision days.
 | B1 -> direct_cal_leaf20 | 3.531 | 3.476 | +0.016 [-0.053, +0.100] | 0.152 |
 | B1 -> direct_cal_leaf5 | 3.531 | 3.414 | +0.033 [-0.047, +0.124] | 0.171 |
 | B1 -> gbm_funding | 3.531 | 3.662 | -0.037 [-0.071, +0.001] | 0.072 |
+| B1 -> onestep_cal_leaf20 | 3.531 | 3.435 | +0.027 [-0.017, +0.090] | 0.107 |
 | B2 -> direct_base_leaf20 | 4.650 | 3.712 | +0.202 [+0.077, +0.362] | 0.284 |
 | B2 -> direct_base_leaf5 | 4.650 | 3.810 | +0.181 [+0.058, +0.340] | 0.282 |
 | B2 -> direct_cal_leaf20 | 4.650 | 3.476 | +0.252 [+0.129, +0.410] | 0.281 |
 | B2 -> direct_cal_leaf5 | 4.650 | 3.414 | +0.266 [+0.151, +0.416] | 0.265 |
 | B2 -> gbm_funding | 4.650 | 3.662 | +0.213 [+0.080, +0.381] | 0.301 |
+| B2 -> onestep_cal_leaf20 | 4.650 | 3.435 | +0.261 [+0.133, +0.425] | 0.293 |
 | direct_base_leaf20 -> direct_base_leaf5 | 3.712 | 3.810 | -0.026 [-0.050, -0.010] | 0.040 |
 | direct_base_leaf20 -> direct_cal_leaf20 | 3.712 | 3.476 | +0.064 [+0.033, +0.110] | 0.077 |
 | direct_base_leaf5 -> direct_cal_leaf5 | 3.810 | 3.414 | +0.104 [+0.061, +0.160] | 0.099 |
@@ -91,6 +95,8 @@ n = 750 decision days.
 | gbm_funding -> direct_base_leaf5 | 3.662 | 3.810 | -0.041 [-0.093, +0.001] | 0.095 |
 | gbm_funding -> direct_cal_leaf20 | 3.662 | 3.476 | +0.051 [-0.000, +0.114] | 0.114 |
 | gbm_funding -> direct_cal_leaf5 | 3.662 | 3.414 | +0.068 [+0.002, +0.141] | 0.139 |
+| gbm_funding -> onestep_cal_leaf20 | 3.662 | 3.435 | +0.062 [+0.032, +0.107] | 0.075 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 3.435 | 3.476 | -0.012 [-0.054, +0.025] | 0.079 |
 
 ### day type: coupon settlement
 
@@ -107,6 +113,8 @@ n = 1012 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 2.673 | 2.611 | +0.023 [-0.017, +0.060] | 0.077 |
 | gbm_funding -> direct_base_leaf20 | 2.966 | 2.982 | -0.005 [-0.048, +0.035] | 0.084 |
 | gbm_funding -> direct_cal_leaf5 | 2.966 | 2.611 | +0.120 [+0.053, +0.181] | 0.128 |
+| gbm_funding -> onestep_cal_leaf20 | 2.966 | 2.705 | +0.088 [+0.065, +0.113] | 0.048 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 2.705 | 2.673 | +0.012 [-0.032, +0.053] | 0.084 |
 
 ### day type: month_end
 
@@ -123,6 +131,8 @@ n = 507 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 1.917 | 1.810 | +0.056 [+0.004, +0.108] | 0.104 |
 | gbm_funding -> direct_base_leaf20 | 2.150 | 2.063 | +0.041 [-0.037, +0.109] | 0.146 |
 | gbm_funding -> direct_cal_leaf5 | 2.150 | 1.810 | +0.158 [+0.047, +0.257] | 0.210 |
+| gbm_funding -> onestep_cal_leaf20 | 2.150 | 1.912 | +0.110 [+0.051, +0.158] | 0.107 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 1.912 | 1.917 | -0.003 [-0.066, +0.064] | 0.130 |
 
 ### day type: ordinary
 
@@ -139,6 +149,8 @@ n = 1868 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 1.524 | 1.585 | -0.040 [-0.068, -0.013] | 0.055 |
 | gbm_funding -> direct_base_leaf20 | 1.496 | 1.611 | -0.077 [-0.130, -0.029] | 0.100 |
 | gbm_funding -> direct_cal_leaf5 | 1.496 | 1.585 | -0.060 [-0.124, -0.003] | 0.121 |
+| gbm_funding -> onestep_cal_leaf20 | 1.496 | 1.462 | +0.022 [+0.011, +0.033] | 0.022 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 1.462 | 1.524 | -0.042 [-0.093, +0.004] | 0.098 |
 
 ### day type: quarter_end
 
@@ -155,6 +167,8 @@ n = 146 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 6.755 | 6.818 | -0.009 [-0.109, +0.052] | 0.162 |
 | gbm_funding -> direct_base_leaf20 | 7.639 | 7.630 | +0.001 [-0.069, +0.042] | 0.111 |
 | gbm_funding -> direct_cal_leaf5 | 7.639 | 6.818 | +0.107 [-0.081, +0.245] | 0.326 |
+| gbm_funding -> onestep_cal_leaf20 | 7.639 | 6.910 | +0.095 [+0.043, +0.140] | 0.097 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 6.910 | 6.755 | +0.022 [-0.074, +0.123] | 0.198 |
 
 ### day type: tax_date
 
@@ -171,6 +185,8 @@ n = 214 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 5.396 | 5.412 | -0.003 [-0.032, +0.019] | 0.050 |
 | gbm_funding -> direct_base_leaf20 | 5.196 | 5.531 | -0.065 [-0.195, -0.032] | 0.163 |
 | gbm_funding -> direct_cal_leaf5 | 5.196 | 5.412 | -0.042 [-0.137, -0.012] | 0.125 |
+| gbm_funding -> onestep_cal_leaf20 | 5.196 | 5.239 | -0.008 [-0.026, -0.002] | 0.024 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 5.239 | 5.396 | -0.030 [-0.106, -0.001] | 0.105 |
 
 ### pooled: all
 
@@ -183,11 +199,13 @@ n = 1868 decision days.
 | B1 -> direct_cal_leaf20 | 2.302 | 1.824 | +0.208 [+0.103, +0.296] | 0.194 |
 | B1 -> direct_cal_leaf5 | 2.302 | 1.871 | +0.187 [+0.073, +0.283] | 0.210 |
 | B1 -> gbm_funding | 2.302 | 1.826 | +0.207 [+0.114, +0.289] | 0.175 |
+| B1 -> onestep_cal_leaf20 | 2.302 | 1.769 | +0.232 [+0.143, +0.311] | 0.168 |
 | B2 -> direct_base_leaf20 | 2.514 | 1.925 | +0.234 [+0.163, +0.310] | 0.147 |
 | B2 -> direct_base_leaf5 | 2.514 | 2.023 | +0.195 [+0.119, +0.276] | 0.157 |
 | B2 -> direct_cal_leaf20 | 2.514 | 1.824 | +0.275 [+0.205, +0.348] | 0.143 |
 | B2 -> direct_cal_leaf5 | 2.514 | 1.871 | +0.256 [+0.184, +0.332] | 0.148 |
 | B2 -> gbm_funding | 2.514 | 1.826 | +0.274 [+0.198, +0.353] | 0.155 |
+| B2 -> onestep_cal_leaf20 | 2.514 | 1.769 | +0.296 [+0.222, +0.374] | 0.152 |
 | direct_base_leaf20 -> direct_base_leaf5 | 1.925 | 2.023 | -0.051 [-0.074, -0.029] | 0.045 |
 | direct_base_leaf20 -> direct_cal_leaf20 | 1.925 | 1.824 | +0.053 [+0.037, +0.071] | 0.034 |
 | direct_base_leaf5 -> direct_cal_leaf5 | 2.023 | 1.871 | +0.075 [+0.054, +0.098] | 0.044 |
@@ -196,6 +214,8 @@ n = 1868 decision days.
 | gbm_funding -> direct_base_leaf5 | 1.826 | 2.023 | -0.108 [-0.159, -0.063] | 0.096 |
 | gbm_funding -> direct_cal_leaf20 | 1.826 | 1.824 | +0.001 [-0.042, +0.043] | 0.086 |
 | gbm_funding -> direct_cal_leaf5 | 1.826 | 1.871 | -0.024 [-0.076, +0.023] | 0.098 |
+| gbm_funding -> onestep_cal_leaf20 | 1.826 | 1.769 | +0.031 [+0.019, +0.045] | 0.025 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 1.769 | 1.824 | -0.031 [-0.072, +0.008] | 0.080 |
 
 ### regime: 2018-19
 
@@ -212,6 +232,8 @@ n = 375 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 4.032 | 4.131 | -0.025 [-0.072, +0.014] | 0.086 |
 | gbm_funding -> direct_base_leaf20 | 3.993 | 4.190 | -0.049 [-0.102, -0.012] | 0.089 |
 | gbm_funding -> direct_cal_leaf5 | 3.993 | 4.131 | -0.035 [-0.105, +0.020] | 0.125 |
+| gbm_funding -> onestep_cal_leaf20 | 3.993 | 3.855 | +0.034 [+0.020, +0.059] | 0.039 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 3.855 | 4.032 | -0.046 [-0.104, -0.010] | 0.093 |
 
 ### regime: 2020
 
@@ -228,6 +250,8 @@ n = 251 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 1.571 | 1.526 | +0.029 [-0.012, +0.081] | 0.093 |
 | gbm_funding -> direct_base_leaf20 | 1.417 | 1.534 | -0.082 [-0.222, +0.020] | 0.242 |
 | gbm_funding -> direct_cal_leaf5 | 1.417 | 1.526 | -0.077 [-0.235, +0.059] | 0.293 |
+| gbm_funding -> onestep_cal_leaf20 | 1.417 | 1.435 | -0.013 [-0.048, +0.017] | 0.065 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 1.435 | 1.571 | -0.095 [-0.268, +0.034] | 0.302 |
 
 ### regime: 2021-23
 
@@ -244,6 +268,8 @@ n = 748 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 0.852 | 0.913 | -0.072 [-0.135, -0.015] | 0.120 |
 | gbm_funding -> direct_base_leaf20 | 0.717 | 0.858 | -0.197 [-0.278, -0.134] | 0.144 |
 | gbm_funding -> direct_cal_leaf5 | 0.717 | 0.913 | -0.273 [-0.394, -0.180] | 0.214 |
+| gbm_funding -> onestep_cal_leaf20 | 0.717 | 0.725 | -0.011 [-0.030, +0.007] | 0.036 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 0.725 | 0.852 | -0.174 [-0.253, -0.111] | 0.142 |
 
 ### regime: 2024
 
@@ -260,6 +286,8 @@ n = 250 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 1.138 | 1.158 | -0.017 [-0.058, +0.010] | 0.068 |
 | gbm_funding -> direct_base_leaf20 | 1.411 | 1.277 | +0.095 [-0.018, +0.161] | 0.179 |
 | gbm_funding -> direct_cal_leaf5 | 1.411 | 1.158 | +0.179 [+0.092, +0.239] | 0.147 |
+| gbm_funding -> onestep_cal_leaf20 | 1.411 | 1.372 | +0.028 [+0.007, +0.057] | 0.050 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 1.372 | 1.138 | +0.170 [+0.084, +0.235] | 0.152 |
 
 ### regime: 2025-26
 
@@ -276,4 +304,6 @@ n = 244 decision days.
 | direct_cal_leaf20 -> direct_cal_leaf5 | 2.372 | 2.419 | -0.020 [-0.040, +0.004] | 0.044 |
 | gbm_funding -> direct_base_leaf20 | 2.742 | 2.783 | -0.015 [-0.173, +0.121] | 0.294 |
 | gbm_funding -> direct_cal_leaf5 | 2.742 | 2.419 | +0.118 [-0.020, +0.249] | 0.269 |
+| gbm_funding -> onestep_cal_leaf20 | 2.742 | 2.512 | +0.084 [+0.054, +0.115] | 0.061 |
+| onestep_cal_leaf20 -> direct_cal_leaf20 | 2.512 | 2.372 | +0.056 [-0.069, +0.177] | 0.246 |
 
