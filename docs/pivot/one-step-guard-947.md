@@ -20,7 +20,7 @@ the column). The check is `repo_model.one_step_guard.check_one_step_regressors`.
 |---|---|---|
 | `baseline.fit_arx` | yes | its regressors |
 | `baseline.fit_threshold` | yes | its regressors and its threshold variable (the regime is read from the origin row) |
-| `ml.fit_gradient_boosted_quantiles` | yes, unless `training_pairs="direct"` | its regressors |
+| `ml.fit_gradient_boosted_quantiles` | yes, unless `training_pairs="direct"` | its regressors, checked by the `one_step_guard.guard_one_step_fit` decorator on the def line, so the fitter's body (which the final test's frozen declarations checksum) is unchanged (Eleonora's ruling of 20 October 2026, "move the guard") |
 | `ml.fit_depth_limited_quantiles` | yes | passes through to the gradient-boosted fitter |
 | `baseline.fit_rolling_residual_law` | not applicable | takes no regressors |
 | `ml.fit_off_risk_day_model`, `ml.fit_censored_gpd`, `ml.fit_markov_switching`, `ml.fit_latent_factor` | not applicable | take matrices or series the caller built; they name no column. The caller that builds a one-step design from a named column is not guarded by this directive. |

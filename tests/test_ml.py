@@ -9298,7 +9298,9 @@ class OneStepGuardGradientBoostedTests(unittest.TestCase):
     Run on CPython 3.11, numpy 2.4.6, scikit-learn 1.9.1 (`/opt/rmm-venv`), `PYTHONDONTWRITEBYTECODE=1`, `-B`, in a
     disposable copy of the branch; each mutation confirmed applied by diff and reverted.
 
-    1. **The guard skipped in the gbm** -- in `fit_gradient_boosted_quantiles`, `if not direct:` -> `if False:`.
+    1. **The guard skipped in the gbm** -- in `one_step_guard.guard_one_step_fit` (the decorator on
+       `fit_gradient_boosted_quantiles`, which keeps the fitter's body byte-identical for the final-test freeze),
+       `if bound.arguments.get("training_pairs") != "direct":` -> `if False:`.
        Killed by `test_a_calendar_column_is_refused_on_one_step_pairs`, `AssertionError: ValueError not raised`.
     """
 
@@ -9387,7 +9389,7 @@ class OneStepGuardExemptDeclarationTests(unittest.TestCase):
     def test_the_exempt_declaration_fits_and_equals_the_unguarded_fit(self):
         guarded = self.fit()
         self.assertEqual(guarded.regressors, self.FEATURES)
-        with mock.patch.object(ml, "check_one_step_regressors", lambda *args, **kwargs: None):
+        with mock.patch.object(one_step_guard, "check_one_step_regressors", lambda *args, **kwargs: None):
             unguarded = self.fit()
         self.assertEqual(guarded._residuals, unguarded._residuals)
         self.assertEqual(guarded.imputations, unguarded.imputations)

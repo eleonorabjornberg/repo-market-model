@@ -14,6 +14,8 @@ Stdlib only, like the rest of `src/` outside `ml.py`.
 
 from __future__ import annotations
 
+import functools
+import inspect
 import json
 from pathlib import Path
 from types import MappingProxyType
@@ -31,6 +33,7 @@ __all__ = [
     "FrozenDeclaration",
     "ONE_STEP_ALLOW_LIST",
     "check_one_step_regressors",
+    "guard_one_step_fit",
     "one_step_refusals",
 ]
 
@@ -144,3 +147,29 @@ def check_one_step_regressors(
         f"Train on direct (aligned) pairs (training_pairs='direct' where the fitter has it), or drop the column "
         f"from the regressors"
     )
+
+
+def guard_one_step_fit(function):
+    """Decorate a fitter that trains on one-step pairs unless `training_pairs='direct'`: check its regressors first.
+
+    The check sits on the decorator line, outside the fitter's body, so the body that the final test's frozen
+    declarations checksum (`scripts/final_test_preregistration.py`) is byte-identical to the one they pin (#947,
+    Eleonora's ruling of 20 October 2026). The fitter still refuses a calendar or scheduled regressor on every
+    one-step fit, with the same `ValueError`; a direct fit is not checked. A call whose `regressors` cannot be read
+    as names goes through, for the fitter's own validation to refuse.
+    """
+
+    signature = inspect.signature(function)
+
+    @functools.wraps(function)
+    def guarded(*args, **kwargs):
+        try:
+            bound = signature.bind(*args, **kwargs)
+            names = tuple(str(name) for name in bound.arguments["regressors"])
+        except (TypeError, KeyError):
+            return function(*args, **kwargs)
+        if bound.arguments.get("training_pairs") != "direct":
+            check_one_step_regressors(function.__name__, names)
+        return function(*args, **kwargs)
+
+    return guarded

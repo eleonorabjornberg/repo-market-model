@@ -21,6 +21,7 @@ mutation confirmed applied by diff and reverted; unmutated control green before 
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 import unittest
 from datetime import date, timedelta
@@ -97,7 +98,10 @@ class AllowListTests(unittest.TestCase):
             self.assertTrue(entry.reason)
 
     def test_the_published_entry_is_the_frozen_command_less_the_target(self):
-        import final_test_preregistration as fp
+        script = Path(__file__).resolve().parents[1] / "scripts" / "final_test_preregistration.py"
+        spec = importlib.util.spec_from_file_location("final_test_preregistration", script)
+        fp = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fp)
 
         self.assertEqual(
             tuple(name for name in fp.CRPS_FEATURES if name != "spread_bps"), PUBLISHED_AT_H1
