@@ -10,29 +10,18 @@ disagrees with `docs/decisions/`, `docs/process/AGENT_CONTRACT.md`, `PLAN.md`,
 
 ## The current direction
 
-The direction is not in this repository. It is the top block of the "Directive queue" issue (#46), and it wins over
-this section:
+The direction is not in this file. It is the top block of the "Directive queue" issue (#46): the primary and
+secondary goals, the research plan H1–H10 (`docs/research/plan.md`), what is paused, what gates the queue, and her
+standing orders (among them: long runs go to her Mac with a `needs-mac:` comment). Read it first, and the ruling
+comments on your directive:
 
 ```
 gh api repos/eleonorabjornberg/repo-market-model/issues/46 -q .body
 ```
 
-As of 20 October 2026 it says:
-
-- **Calendar first.** A repo-market model that does not read calendar days at the target day is wrong. #1027 (rebuild
-  the H5 candidate on aligned pairs) comes before everything else in the queue. Every result from a model without
-  calendar inputs, or trained on calendar or scheduled columns one day off (the #914 class), is **provisional until
-  re-run**, and is listed in `docs/research/provisional-calendar-register.md` (`scripts/provisional_register.py`; a
-  new producer fails `tests/test_provisional_register.py`).
-- **Primary goal H5:** the SOFR − IORB spread distribution in bp. **Secondary goal H9:** richer targets. The research
-  plan is H1–H10 (`docs/research/plan.md`). New +5 bp classification variants are paused.
-- **Every directive names its hypothesis and step**, and its PR adds a research-log entry (below).
-- **Long runs go to Eleonora's Mac.** A step expected to take more than about two hours is not run in the cloud: commit
-  the script and exact commands, push, and comment `needs-mac:` with the commands on the PR.
-- This repository does not ingest the series owned by `eleonorabjornberg/repo-market-liquidity` (the H.8 bank groups,
-  the ON RRP offering rate, the SRF rate, the runoff caps, SLR headroom); it reads them as snapshots by digest.
-
-A session starts from `docs/pivot/next-session.md` (reading order, with check commands). `docs/archive/` is not binding.
+Every directive names its hypothesis and step. A result from a model that does not read calendar days at the target
+day is provisional (`docs/research/provisional-calendar-register.md`). A session starts from
+`docs/pivot/next-session.md`; `docs/archive/` is not binding.
 
 ## How work happens
 
