@@ -318,7 +318,7 @@ def render(record):
           "over-wide in calm, too narrow in stress. A pooled pass is reported beside each result and decides nothing.", "",
           "## 3. The gate's own size", "",
           f"The ideal forecaster is calibrated by construction. On {s['paths']} simulated paths of {s['days']} days ({s['cells_per_path']} "
-          f"lead-and-regime cells, {s['tests_per_cell']} tests each, every one at 1%) the declared gate fails it on "
+          f"lead-and-regime cells, four tests each, every one at 1%) the declared gate fails it on "
           f"{pct(s['declared']['fail_share'])} of paths. Share of paths on which each test fails at least one cell: "
           + ", ".join(f"{k} {pct(v)}" for k, v in s["declared"]["fail_share_by_test"].items()) + ". By lead (any cell of the lead): "
           + ", ".join(f"lead {k} {pct(v)}" for k, v in s["declared"]["fail_share_by_lead"].items()) + ".", "",
