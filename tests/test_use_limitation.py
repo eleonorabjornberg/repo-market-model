@@ -32,6 +32,9 @@ counts it, and no longer the technical statement). Two more, applied the same wa
 import re
 import unittest
 from pathlib import Path
+import built_outputs
+
+built_outputs.ensure()  # the page, its data and the log are built, not committed (#928)
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "docs" / "use-limitation.md"
