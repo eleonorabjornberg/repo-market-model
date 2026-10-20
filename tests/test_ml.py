@@ -230,7 +230,7 @@ from pathlib import Path
 from unittest import mock
 
 from nightly import nightly
-from repo_model import baseline, cli, cli_eval, ml, recalibration
+from repo_model import baseline, cli, cli_eval, ml, one_step_guard, recalibration
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
 from repo_model.contract import event_window_digest
@@ -9340,6 +9340,74 @@ class OneStepGuardGradientBoostedTests(unittest.TestCase):
             self.rows, ("on_rrp", "quarter_end"), minimum_history=20, information=rule, training_pairs="direct"
         )
         self.assertEqual(fitted.training_pairs, "direct")
+
+
+class OneStepGuardExemptDeclarationTests(unittest.TestCase):
+    """#947, review point 1: the exempt declarations still run through the real fitter and reproduce.
+
+    `ONE_STEP_ALLOW_LIST` exempts two declarations of `fit_gradient_boosted_quantiles`: `published_distribution_crps`
+    (the final test's frozen `CRPS_COMMAND` and the live record) and `gbm_funding_634` (the control of
+    `metadata/spread_distribution_634.json`). Both fit the published h = 1 features, `treasury_settlement` among them, on
+    one-step pairs. These tests run that declaration through the guarded fitter on the real estimator, show that the
+    fit is bit-identical to one that skips the guard, and tie the `gbm_funding_634` entry to the regressors the
+    declaration's own script feeds the fitter (`published_features(1)`).
+
+    Mutation record (#947)
+    ----------------------
+
+    CPython 3.11 (`/opt/rmm-venv`), `PYTHONDONTWRITEBYTECODE=1`, `-B`, disposable copy; each mutation confirmed
+    applied by diff and reverted.
+
+    1. **The exemption never applied** -- in `one_step_guard.check_one_step_regressors`,
+       `if entry.fitter == fitter and entry.regressors == names:` -> `if False:`. Killed by
+       `test_the_exempt_declaration_fits_and_equals_the_unguarded_fit`, `ValueError` (naming `treasury_settlement`).
+    2. **The 634 entry detached from its declaration** -- the `gbm_funding_634` entry's regressors replaced by
+       `_PUBLISHED_AT_H1[:-1]`. Killed by `test_the_634_entry_is_the_declaration_it_names`, `AssertionError` (tuples differ).
+    """
+
+    ROWS = 60
+    FEATURES = (
+        "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "tbill_13w", "tbill_4w", "tga", "treasury_settlement",
+    )
+
+    def setUp(self):
+        require_extra(self)
+        base = business_day_frame(self.ROWS)
+        self.rows = base
+        for index, name in enumerate(self.FEATURES):
+            if name == "sofr_volume":
+                continue
+            self.rows = with_column(
+                self.rows, name, [float((7 * i + 3 * index) % 11) + 0.1 * index for i in range(self.ROWS)]
+            )
+
+    def fit(self):
+        return ml.fit_gradient_boosted_quantiles(self.rows, self.FEATURES, minimum_history=20, min_samples_leaf=5)
+
+    def test_the_exempt_declaration_fits_and_equals_the_unguarded_fit(self):
+        guarded = self.fit()
+        self.assertEqual(guarded.regressors, self.FEATURES)
+        with mock.patch.object(ml, "check_one_step_regressors", lambda *args, **kwargs: None):
+            unguarded = self.fit()
+        self.assertEqual(guarded._residuals, unguarded._residuals)
+        self.assertEqual(guarded.imputations, unguarded.imputations)
+
+    def test_the_guard_is_live_on_the_same_fit_when_not_exempt(self):
+        with self.assertRaisesRegex(ValueError, "treasury_settlement"):
+            ml.fit_gradient_boosted_quantiles(self.rows, self.FEATURES[::-1], minimum_history=20, min_samples_leaf=5)
+
+    def test_the_634_entry_is_the_declaration_it_names(self):
+        sys.path.insert(0, str(Path(__file__).parents[1] / "scripts"))
+        import final_test_preregistration as fp
+        import live_record
+
+        entry = one_step_guard.ONE_STEP_ALLOW_LIST["gbm_funding_634"]
+        declared = json.loads((Path(__file__).parents[1] / "metadata" / "spread_distribution_634.json").read_text())
+        self.assertIn("gbm_funding", declared["controls"])
+        self.assertEqual(entry.fitter, "fit_gradient_boosted_quantiles")
+        self.assertEqual(entry.regressors, tuple(f for f in live_record.published_features(1) if f != "spread_bps"))
+        self.assertEqual(entry.regressors, tuple(f for f in fp.CRPS_FEATURES if f != "spread_bps"))
+        self.assertEqual(entry.regressors, self.FEATURES)
 
 
 class DirectTrainingPairsTests(unittest.TestCase):
