@@ -88,10 +88,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      # The results page is generated, never hand-edited; this refuses a stale
-      # one (the same check tests/test_visual.py makes, run as the command a
-      # contributor runs).
-      - name: Check the results page is current
+      # The results page is built on main and never committed (#928); this
+      # builds it from the tree, which refuses a page the inputs cannot produce,
+      # and refuses a tracked copy.
+      - name: Check the results page builds and is not committed
         env:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: src
@@ -274,8 +274,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      # `log.md` is generated from the entry files under `docs/research/log/` (#866); this refuses a stale one.
-      - name: Check the log page is current
+      # `log.md` is generated from the entry files under `docs/research/log/` (#866) and built on main, never
+      # committed (#928); this refuses a tracked copy.
+      - name: Check the log page is not committed
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -B scripts/check_research_log.py assemble --check
@@ -293,6 +294,21 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: python3 -B scripts/check_research_log.py check --base "$BASE_SHA"
+
+      # The page, its data and the assembled log are built on main (#928). A pull request that carries one fails
+      # here with a message that says to change the inputs instead.
+      - name: No built output is committed
+        if: github.event_name != 'pull_request'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -B scripts/check_built_outputs.py
+
+      - name: No built output is committed or changed by this pull request
+        if: github.event_name == 'pull_request'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 -B scripts/check_built_outputs.py --base "$BASE_SHA"
 
   owner-attested:
     # A binding change (a lockbox tier, the live pin, a model joining the live
