@@ -60,6 +60,29 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "distribution_run": (
+        "not_entry",
+        "the live record's distribution loop (#215): trains and forecasts the published "
+        "distribution and as-of persistence as the as-of information set allows, computes no loss "
+        "and scores no day (docs/decisions/lockbox.md); scripts/live_score.py scores the record, "
+        "through `lockbox.require_unlocked` on days `metadata/lockbox.json` has opened (#277)",
+    ),
+    "forecast_run": (
+        "not_entry",
+        "the live record's forecast loop (#215): trains and forecasts as the as-of information set "
+        "allows, computes no metric and scores no day (docs/decisions/lockbox.md); "
+        "scripts/live_score.py scores the record, through `lockbox.require_unlocked` on days "
+        "`metadata/lockbox.json` has opened (#277)",
+    ),
+    "require_reads_on_real_rows": (
+        "not_entry",
+        "checks one live forecast's reads against the placeholder rows (#215); selects and scores "
+        "nothing",
+    ),
+}
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 

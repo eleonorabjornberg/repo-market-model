@@ -55,6 +55,16 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "crps_contract": (
+        "delegates",
+        "one loss on the contract's levels; `distribution_command` calls `require_unlocked` on the "
+        "last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the "
+        "published daily file is read to that day only (#632)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "spread_distribution_632.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 PUBLISHED_DISTRIBUTION = REPO / "docs" / "runs" / "published_distribution_daily_h{h}.json"

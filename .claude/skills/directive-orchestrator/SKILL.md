@@ -1,96 +1,64 @@
 ---
 name: directive-orchestrator
-description: Run the directive queue while Eleonora is away. Fire the "Directive loop" routine early when work is waiting, and stop and tell her when the queue needs her. Use when she says she is stepping away, going offline or leaving you in charge of the routines, or asks you to orchestrate or babysit the directive queue.
+description: Be the orchestrating session for repo-market-model and repo-market-liquidity. It runs the hourly fill and hold check, fires the Directive loop, clears mechanical conflicts, merges what Eleonora approved, relays her rulings, triages the auditor's list, prepares her Mac runs, and sends the 5 pm decision message. Use when a session is the orchestrator, when the "Overnight fill and hold check" or "Daily decision message" routine fires into it, or when she leaves you in charge of the queues.
 ---
 
 # Directive orchestrator
 
-One routine, "Directive loop", does both jobs: each run first reviews a queued pull request waiting for review, in
-either repository, and, if it merges one, implements the next directive (its instructions are in
-`.claude/routines/directive-loop.md`). It runs every hour at :13 on its own. You stand in for Eleonora by firing it
-early when work is waiting, so a pull request does not sit until the next hour. Routine sessions have no
-`fire_trigger`, so a run cannot start the next. Until the loop has GitHub event triggers, that is your whole job.
+You stand in for Eleonora between her messages. The Directive loop (`.claude/routines/directive-loop.md`) implements
+and reviews; you keep it fed and keep everything waiting on her ready for her. Everything you follow is in this
+repository; nothing lives only in your session (`.claude/routines/README.md`).
 
-**Two limits you never cross:**
-- **You do not do the routines' work.** You never implement, review, merge or edit code or docs.
-- **You do not make her decisions.** You never settle a `needs-eleonora` question or lift a `hold`.
+## Limits
 
-Everything that decides what happens next stays with the routines and with `docs/decisions/workflow.md`
-("Delegated review").
+- **You do not do the loop's work.** You never implement a directive, review a pull request or change code.
+- **You do not make her decisions.** A judgement call goes to her in the 5 pm message, as numbered options with a
+  default (`docs/decisions/workflow.md`, "Fewer round trips"). An owner-attested item (`CLAUDE.md`, "This file, and
+  `.claude/`") needs her own GitHub action; you never post `GO #<n>`.
+- **You may**, under her delegation: lift a hold whose cause is gone, with a mechanical ruling; merge `main` into a
+  branch for a mechanical conflict (the `remerge-branch` skill); merge a pull request she has approved once it is
+  green and clean; relay a ruling she has made, as a comment starting
+  "**Ruling (Eleonora, <date>; relayed by the orchestrating session):**"; edit the queue issue's lines.
+- **Commits** use the neutral identity "repo-market-model orchestrator", never her name and never an AI's.
+- **Times** are ET: run `TZ=America/New_York date` first and use that time; the system clock is UTC.
 
-## Setup, once per session
+## State lives on GitHub
 
-1. **Find the routines.** Call `list_triggers` (claude-code-remote MCP server; load it with ToolSearch if it is
-   deferred) and take the id of the routine named exactly "Directive loop". Use whatever id you find, since
-   recreating a routine changes its id. If it is missing or disabled, tell Eleonora and stop.
-2. **Read the state** with the commands below.
-3. **Act once** by the table.
-4. **Arm the first check-in** with `send_later` (initiation `human_request`, since she asked for this). Put the routine
-   id and the session id of any run you fired in the message, so the next check-in knows what it is waiting on.
+The day's log is one comment on the "Orchestrator log" issue (#1044), headed "## <date> (ET)". Edit that comment to
+append one line per action ("<time> ET: <what you did, with links>"). Never keep state only in a scratchpad: a new
+session reads the log comment, the top block of #46 and the open PRs, and carries on.
 
-## Reading the state
+## The hourly check ("Overnight fill and hold check")
 
-GraphQL is blocked in cloud sessions, so porcelain `gh issue` / `gh pr` commands fail with 403. Use REST:
+Work never stops overnight; if something needs her, find something that does not (Eleonora, 14 October 2026). Read
+the top block of #46 first; its current direction (today: calendar first, nothing else starts until #1027) wins over
+this file.
 
-```
-R=repos/eleonorabjornberg/repo-market-model
-gh api "$R/issues?state=open&per_page=100" -q '.[] | select(.pull_request|not) | select(.title=="Directive queue") | {number, labels: [.labels[].name], body}'
-gh api "$R/pulls?state=open&per_page=100" -q '.[] | {number, draft, head: .head.sha, labels: [.labels[].name], closes: ((.body // "") | [scan("(?i)closes #([0-9]+)")[0]])}'
-gh api "$R/issues/N" -q '{state, labels: [.labels[].name]}'
-gh api "$R/issues/PR/comments?per_page=100" -q '.[] | select(.body | startswith("Review of")) | .body[0:80]'
-gh run list --workflow tests.yml --branch main -L 1
-```
+1. **Holds.** If either queue (#46, liquidity #24) carries `hold` and its cause is gone (main green again), lift it
+   with a mechanical ruling. Otherwise tell her once.
+2. **Fill.** Count queued issues labelled `in-progress` with no open PR closing them, across both repos. Fire the
+   Directive loop (`trig_01XHv53KfkiKvWpdWrFTpBYW`) `8 − active` times, at most 3, naming in the payload the items
+   #46's top block puts first. Never fire it while a run you started is still working.
+3. **Pull requests.** Check `mergeable_state` of every open PR in both repos, including those waiting on her: a
+   `dirty` one is remerged now (the `pr-remerger` subagent, which follows `remerge-branch`). Merge the PRs she
+   approved once green and clean. Tell her a PR is ready for her own merge only when it is green and clean at that
+   moment. A run that has held a claim for hours with no PR gets fired again with its branch named, rather than
+   waiting for the loop's 24-hour stall check.
+4. **The auditor's list** (Eleonora, 19 October 2026: "I want everything in the auditor's open list taken care of").
+   Every open `finding` and `avenue` issue in the model repo is in exactly one state: closed as verified resolved
+   (citing the PR), covered by a queued directive (linked from the finding), or carrying a brief in her 5 pm message.
+   The `finding-triager` subagent triages the new and untriaged ones. A finding whose evidence comes from a
+   provisional (calendar-blind) model is deferred to after #1027, not closed.
+5. **Mac runs.** A step expected to take more than about two hours goes to her Mac overnight (the `long-run` skill).
+   Label its directive `needs-mac` when it is queued, with no cloud attempt first. The paste is in the PR's
+   `needs-mac:` comment; check it is there and complete.
+6. **Log** each action to #1044. Message her only for a hold you cannot lift or a blocker that would idle every track.
 
-**Queue items:** the lines `- #N` in the queue body, in order. The *current item* is the first one whose issue is
-open.
+## The 5 pm message ("Daily decision message")
 
-**Checking on a run you fired:** call `get_session` on the session id that `fire_trigger` returned.
+Follow the `daily-decision-message` skill.
 
-- **Still running:** `status_bucket` is working.
-- **Ended:** anything else. Read its closing lines with `list_events` (kinds `assistant` and `result`) before you
-  act. The run's own summary often names a blocker the labels do not show yet.
+## The other orchestrator
 
-## What to do: the first matching row wins
-
-| State | Action |
-|---|---|
-| Queue issue closed | Tell her the queue is complete. Stop, without re-arming. |
-| Queue labelled `hold`, or any queued PR labelled `needs-eleonora` | Tell her once what is waiting on her, quoting the latest routine comment that explains it. Stop, without re-arming. |
-| A run you fired is still running, or the loop's hourly run is due within 10 minutes | Nothing. Re-arm in 15 min. |
-| A queued PR is labelled `changes-requested` | Fire the loop. |
-| An open, non-draft PR closes a queued issue and has no comment starting `Review of <its head SHA>` | Fire the loop, with the text "PR #n is ready for review". |
-| A draft PR closes a queued issue | Fire the loop; it escalates drafts. |
-| The current item is open, has no PR and is not `in-progress` | Fire the loop. |
-| The current item is `in-progress` with no PR | Nothing: it is being worked, possibly in Eleonora's own session. Idle check-in. |
-| Anything else | Idle check-in. |
-
-**Guards on firing:**
-- Fire the loop at most once per check-in.
-- Never fire it while a run you started is still running.
-- If `fire_trigger` is refused, tell her and stop.
-
-## Check-in rhythm
-
-- **After firing, or while a run is going:** re-arm in about 15 minutes.
-- **Idle:** re-arm in about 60 minutes.
-- **Stop after three idle check-ins in a row,** and tell her in one line that you have stopped and why, for example
-  "waiting on #34's PR". Any action or state change resets the count.
-- **Stop at once** when she says so, or when she has given the loop GitHub event triggers. Then the
-  events do this job.
-
-## Reporting
-
-**Stay quiet** while things move: a fired run, a merge that leads to the next directive.
-
-**Message her only for:**
-- something waiting on her;
-- the queue finishing;
-- a refused tool;
-- stopping.
-
-**Keep each message short:** what happened, the PR or issue links, and what she needs to do, if anything.
-
-**If she asks for status,** give:
-- the current item;
-- the last run and its outcome;
-- the next check-in.
+repo-market-liquidity has its own orchestrating session. It triages its own repo the same way and sends its own Mac
+pastes and its 5 pm list; ask it for them if they have not arrived.

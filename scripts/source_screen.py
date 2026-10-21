@@ -83,6 +83,22 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.registry import RegistryContractError  # noqa: E402
 from repo_model.splits import LookAheadError, SplitError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "probe": (
+        "not_entry",
+        "asks the as-of rule, on the one middle row of the panel, whether a column has a "
+        "row-relative availability; reads one row, scores and selects nothing (#478)",
+    ),
+    "read_series": (
+        "not_entry",
+        "reads each series as of the decision instant on the lead-1 fold grid, for the exploratory "
+        "source screen (#478); selects no model and scores no forecast, calls "
+        "lockbox.require_unlocked on every day before it reads one, and the screen's `run` refuses "
+        "a panel that runs past 2025-12-31 (tests/test_source_screen.py)",
+    ),
+}
+
 FIRST_DAY = date(2018, 6, 29)
 #: The exploratory end, shared by every screen (#684): the last day of the opened near-blind tier. The blind tier stays shut.
 LAST_DAY = EXPLORATORY_END

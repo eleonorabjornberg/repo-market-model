@@ -53,6 +53,17 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "forecasts_command": (
+        "not_entry",
+        "makes the H4 nested test's forecasts and scores nothing (#726): it calls require_unlocked, "
+        "then spread_distribution_634.walk, which refuses a locked scored day (refuse_locked) "
+        "before any fit; `score_command` scores them only through scoring_protocol.day_scores, "
+        "which calls require_unlocked",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "backfill_h5_726.json"
 REREAD = REPO / "metadata" / "backfill_h5_726_reread.json"
 POSTING = REPO / "metadata" / "backfill_posting.json"

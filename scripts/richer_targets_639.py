@@ -62,6 +62,16 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import _quantile  # noqa: E402
 from repo_model.scoring_protocol import BLOCK_LENGTH, DRAWS, paired_test  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "run_command": (
+        "not_entry",
+        "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls "
+        "lockbox.require_unlocked on every scored day before it reads one, refuses a panel past "
+        "2025-12-31 and fits and selects nothing",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "richer_targets_639.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SNAPSHOTS = REPO / "tests" / "fixtures" / "snapshots"
