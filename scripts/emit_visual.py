@@ -427,6 +427,15 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def research_inputs(repo):
+    """The digest of each input of the research sections: every file `research_view.input_files` names, so a new input is
+    added to `research_view.INPUTS` alone (#1059). The log is built from its entry files (#928): its digest is that of
+    the assembly, not of a tracked file."""
+    repo = Path(repo)
+    return {rel: sha256(repo / rel) for rel in research_view.input_files(repo)} | {
+        "docs/research/log.md": research_view.log_digest(repo)}
+
+
 def read_json(rel, repo):
     return json.loads((repo / rel).read_text(encoding="utf-8"))
 
@@ -3459,14 +3468,8 @@ def generate(repo, commit=None):
                      "inputs": {**inputs, MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES),
                                 **on_rrp_snapshots, **n5_digests}}
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
-    research_provenance = dict(provenance, inputs={
-        rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.PROGRESS, research_view.TAGLINES,
-                                            research_view.REGISTER,
-                                            *sorted(str(p.relative_to(repo)) for p in
-                                                    (repo / research_view.HYPOTHESES).glob("H*.md")))}
-        # The log is built from its entry files (#928): its digest is that of the assembly, not of a tracked file.
-        | {"docs/research/log.md": research_view.log_digest(repo)},
-        incumbent_from=f"{DATA_DIR}/final_test.json")
+    research_provenance = dict(provenance, inputs=research_inputs(repo),
+                               incumbent_from=f"{DATA_DIR}/final_test.json")
     daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})
     own = {"research": research_provenance, "model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
            "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}

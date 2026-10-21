@@ -36,6 +36,8 @@ PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 TAGLINES = "docs/research/taglines.json"
 REGISTER = provisional_register.REGISTER
+#: Every source the page is built from: the one list a new input is added to (#1059). `LOG` and `HYPOTHESES` are
+#: directories; `input_files` expands them, and `emit_visual.py` stamps the page with the digest of each.
 INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER)
 
 DEV_LABEL = "development, not a verdict"
@@ -80,6 +82,13 @@ def inline(text):
     out = esc(lay(text) or "")
     out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
     return re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", out)
+
+
+def input_files(repo):
+    """The tracked files the page is digested from: the files of `INPUTS`, then the hypothesis manuals. The log is not
+    here: it is built from its entry files (#928), and `log_digest` is its digest."""
+    files = [rel for rel in INPUTS if rel not in (LOG, HYPOTHESES)]
+    return files + sorted(str(p.relative_to(repo)) for p in (Path(repo) / HYPOTHESES).glob("H*.md"))
 
 
 def read(repo, rel):
