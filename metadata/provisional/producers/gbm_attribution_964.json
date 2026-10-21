@@ -1,0 +1,10 @@
+{
+  "script": "scripts/gbm_attribution_964.py",
+  "declarations": [
+    "metadata/gbm_attribution_964.json"
+  ],
+  "model": "`gbm_funding` of metadata/spread_distribution_634.json, refitted as declared there (ml.fit_gradient_boosted_quantiles on the protocol grid, one-step pairs); the #964 attribution reads its dependence on each input",
+  "calendar_inputs": "treasury_settlement at lead 1, as in the #634 control; tax_date, treasury_settlement and the announced-IORB columns at the longer leads, as published_features(h) gives them",
+  "pairing": "one_step",
+  "class": "a+b"
+}
