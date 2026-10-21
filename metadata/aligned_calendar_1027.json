@@ -1,0 +1,113 @@
+{
+ "benchmarks": [
+  "gbm_funding",
+  "B1",
+  "B1_prime",
+  "B2",
+  "spread_mr_ctx"
+ ],
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind",
+ "cuts": {
+  "calendar_days": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement"
+  ],
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "settlement": "a target day whose reporting day type is ordinary and whose treasury_settlement_coupons or treasury_settlement_bills is above 0",
+  "target_day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement",
+   "ordinary"
+  ]
+ },
+ "hypothesis": "H5 step 3/4, re-run on aligned pairs (#914 class; #951)",
+ "inputs": {
+  "base": "gbm_funding's published inputs at the lead (scripts/live_record.py published_features), each read as of the decision instant",
+  "observed_added": [
+   "net_settlement",
+   "net_settlement_due_5d"
+  ],
+  "panel": "#951's scratch panel AUG3 (the published columns plus scripts/net_settlement.py panel); the reference walks of gbm_funding are #634's on the published panel",
+  "rule": "asof.py rule 2: the target_row columns are served from the target row (the calendar columns at every lead h = 1 to 5, the settlement columns at h = 1); the one-step pair (p, p + 1) trains them from row p + 1, a direct pair from its own target; the observed_added columns are dated at their own day and read as of the decision instant",
+  "target_row": [
+   "quarter_end",
+   "days_to_month_end",
+   "tax_date",
+   "treasury_settlement",
+   "treasury_settlement_coupons",
+   "treasury_settlement_bills"
+  ],
+  "target_row_by_lead": {
+   "1": [
+    "quarter_end",
+    "days_to_month_end",
+    "tax_date",
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "treasury_settlement_bills"
+   ],
+   "2 to 5": [
+    "quarter_end",
+    "days_to_month_end",
+    "tax_date"
+   ],
+   "why": "the scheduled settlement columns are public at 15:00 the business day before the target (sources.json treasury_auctions), so a decision at lead 2 or more cannot read them: asof.InformationRule.check raises LookAheadError. The directive's wording, every column at every lead, is read as 'every column the information set allows' (a marked question on the pull request)"
+  }
+ },
+ "interval": "stationary bootstrap, seed 1027, the studentized interval of ruling 1 (#739); the lower end of the two-sided 90% interval is the one-sided 95% lower bound",
+ "issue": 1027,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps"
+ ],
+ "reading_rules": {
+  "no_verdict": "development data gives no verdict",
+  "reads_calendar_days_and_beats": "a variant beats gbm_funding on calendar days when the lower end of its grid-CRPS skill interval over gbm_funding on the calendar_days cut (the union of the calendar types) is above 0",
+  "replacement": "naming the variant that reads calendar days and does not lose is a marked question for Eleonora; replacing the candidate is hers",
+  "without_losing_on_ordinary_days": "and its skill over gbm_funding on ordinary target days has an upper interval end of 0 or more; 'loses' means an interval wholly below 0"
+ },
+ "ruling": "Eleonora, 20 October 2026, relayed by the orchestrating session: a model that does not read calendar days at the target day is wrong; the calendar fix comes first",
+ "settings": {
+  "as_gbm_funding": [
+   "seed",
+   "quantile grid",
+   "refit every 21 scored days",
+   "minimum history 61",
+   "n_estimators and depth of ml.fit_gradient_boosted_quantiles"
+  ],
+  "except": {
+   "min_samples_leaf": "5 instead of 20: #951 section 2 shows 78 of 90 refits hold five quarter-end days against 33 for twenty; #951 tested 5 and 20 only, so 10 is untested"
+  }
+ },
+ "status": "declared by the pull request that closes #1027 before any number was computed; a measurement, not a record. Nothing is published: neither variant joins any published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
+ "variants": {
+  "gbm_funding_cal_aligned": {
+   "947_guard": "refused by repo_model.one_step_guard until its pinned allow-list (Eleonora's) has an entry for each lead's regressors; variant (ii) passes",
+   "min_samples_leaf": 5,
+   "pairing": "one-step pairs (p, p + 1) of gbm_funding's current fit, at every lead, on the frame whose target-row columns are row p + 1's (align_columns)",
+   "training_pairs": null
+  },
+  "gbm_funding_cal_direct": {
+   "min_samples_leaf": 5,
+   "pairing": "#951's direct pairs: each target is paired with its own as-of read",
+   "training_pairs": "direct"
+  }
+ }
+}

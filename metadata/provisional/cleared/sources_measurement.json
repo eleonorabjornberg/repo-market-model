@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/sources_measurement.json",
+  "script": null,
+  "pairing": "none",
+  "why": "the measurement sources registry, which declares the `fomc_calendar` columns: data. A fit on them is refused on one-step pairs by `repo_model.one_step_guard` (#1070)"
+}

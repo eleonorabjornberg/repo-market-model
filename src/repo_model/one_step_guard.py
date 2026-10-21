@@ -1,6 +1,6 @@
 """Refuse a calendar or scheduled regressor in a one-step pair (#947, Eleonora's ruling of 19 October 2026).
 
-`asof` rule 2 serves the calendar columns (`contract.CALENDAR_FEATURES`) and every field a source declares in
+`asof` rule 2 serves the columns written about the target day (`target_day_columns.TARGET_DAY_COLUMNS`: the calendar columns and the FOMC meeting columns) and every field a source declares in
 `scheduled_availability` from the scored row `T` itself. A one-step fitter trains each target on the row before it:
 row `p` against `spread(p + 1)`. A calendar or scheduled column therefore trains one row off from the row it is
 served on (finding #914): the flag that marks a quarter-end learns the reversal the day *after* the turn.
@@ -24,11 +24,11 @@ from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .asof import _scheduled_blocks
 from .contract import (
-    CALENDAR_FEATURES,
     COMPOSED_FEATURES,
     DERIVED_FEATURES,
     FEATURE_FIELDS,
 )
+from .target_day_columns import TARGET_DAY_COLUMNS
 
 __all__ = [
     "FrozenDeclaration",
@@ -63,6 +63,22 @@ _PUBLISHED_AT_H1 = (
     "treasury_settlement",
 )
 
+#: `gbm_funding_cal_aligned` of `scripts/aligned_calendar_1027.py` (#1027): `variant_features(ALIGNED, h)` less the target.
+#: Its one-step fit runs on a frame whose calendar and scheduled columns were moved up one row (`align_columns`), so
+#: row p carries the target row's values; the script checks that before every fit (`require_aligned`).
+_PUBLISHED_AT_H2 = tuple(name for name in _PUBLISHED_AT_H1 if name != "treasury_settlement")
+_ALIGNED_1027_TARGET_ROW_H1 = (
+    "quarter_end", "days_to_month_end", "tax_date", "treasury_settlement_coupons", "treasury_settlement_bills",
+)
+_ALIGNED_1027_TARGET_ROW_H2 = ("quarter_end", "days_to_month_end", "tax_date")
+_ALIGNED_1027_OBSERVED = ("net_settlement", "net_settlement_due_5d")
+_ALIGNED_1027_REASON = (
+    "gbm_funding_cal_aligned (#1027, scripts/aligned_calendar_1027.py): one-step pairs on a frame whose calendar and "
+    "scheduled columns are read from the target row, so they train on the day they are served on; the script refuses "
+    "a frame that is not so aligned. Allowed by Eleonora on 21 October 2026, in chat (relayed on PR #1036), for the "
+    "#1027 comparison only, with an end date."
+)
+
 #: The exemptions, by name. Pinned by `tests/test_one_step_guard.py`.
 ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
     {
@@ -86,6 +102,18 @@ ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
             "(class a+b) in docs/research/provisional-calendar-register.md. Allowed by Eleonora on 20 October 2026, in "
             "chat, on PR #1042: option (a), with an end date, the live record's first scoring date",
             expires=date(2027, 4, 1),
+        ),
+        "aligned_calendar_1027_h1": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H1 + _ALIGNED_1027_TARGET_ROW_H1 + _ALIGNED_1027_OBSERVED,
+            _ALIGNED_1027_REASON + " Lead 1.",
+            expires=date(2026, 11, 15),
+        ),
+        "aligned_calendar_1027_h2_to_h5": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H2 + _ALIGNED_1027_TARGET_ROW_H2 + _ALIGNED_1027_OBSERVED,
+            _ALIGNED_1027_REASON + " Leads 2 to 5, which share one set of inputs.",
+            expires=date(2026, 11, 15),
         ),
     }
 )
@@ -125,7 +153,7 @@ def one_step_refusals(
     found: Dict[str, str] = {}
     for name in regressors:
         for leaf in _leaves(str(name)):
-            if leaf in CALENDAR_FEATURES:
+            if leaf in TARGET_DAY_COLUMNS:
                 found[str(name)] = f"calendar column {leaf!r}"
                 break
             pairs = [pair for pair in FEATURE_FIELDS.get(leaf, ()) if pair in scheduled]
