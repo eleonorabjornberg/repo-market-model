@@ -45,9 +45,9 @@
     {
       "kind": "claude-files",
       "issue": 1075,
-      "comment_id": 6320474216,
+      "comment_id": 6320919440,
       "phrase": "GO #1075",
-      "what": "approve the Directive loop instructions brought in line with Fewer round trips (.claude/routines/directive-loop.md), the long-run skill and CLAUDE.md's review-checks rule, and the amendment to docs/decisions/workflow.md (long runs to her Mac overnight; the draft status line dropped) (PR #1075)"
+      "what": "approve the routines' instructions in .claude/routines (the Directive loop brought in line with Fewer round trips, the other three routines' prompts and the README), the skills directive-orchestrator, remerge-branch, daily-decision-message and long-run, the subagents pr-remerger and finding-triager, CLAUDE.md's review-checks and .claude/ paragraphs, and the amendment to docs/decisions/workflow.md (long runs to her Mac overnight; the draft status line dropped) (PR #1075)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
