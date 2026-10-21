@@ -97,8 +97,16 @@ class OneStepGuardTests(unittest.TestCase):
 class AllowListTests(unittest.TestCase):
     def test_the_allow_list_is_exactly_these_declarations(self):
         entries = one_step_guard.ONE_STEP_ALLOW_LIST
-        self.assertEqual(set(entries), {"published_distribution_crps", "gbm_funding_634", "pressure_model_v2"})
+        self.assertEqual(
+            set(entries),
+            {
+                "published_distribution_crps", "gbm_funding_634", "pressure_model_v2",
+                "aligned_calendar_1027_h1", "aligned_calendar_1027_h2_to_h5",
+            },
+        )
         for name, entry in entries.items():
+            if name.startswith("aligned_calendar_1027"):
+                continue
             fitter = "fit_depth_limited_quantiles" if name == "pressure_model_v2" else "fit_gradient_boosted_quantiles"
             self.assertEqual(entry.fitter, fitter)
             self.assertEqual(entry.regressors, PUBLISHED_AT_H1)
@@ -108,6 +116,17 @@ class AllowListTests(unittest.TestCase):
         entry = one_step_guard.ONE_STEP_ALLOW_LIST["pressure_model_v2"]
         self.assertEqual(entry.expires, date(2027, 4, 1))
         one_step_guard.check_one_step_regressors("fit_depth_limited_quantiles", PUBLISHED_AT_H1)
+
+    def test_the_aligned_1027_entries_end_on_15_november_2026(self):
+        """The #1027 aligned variant's two entries (lead 1; leads 2 to 5) and their end date (Eleonora, 21 October 2026)."""
+        h1 = one_step_guard.ONE_STEP_ALLOW_LIST["aligned_calendar_1027_h1"]
+        rest = one_step_guard.ONE_STEP_ALLOW_LIST["aligned_calendar_1027_h2_to_h5"]
+        for entry in (h1, rest):
+            self.assertEqual(entry.fitter, "fit_gradient_boosted_quantiles")
+            self.assertEqual(entry.expires, date(2026, 11, 15))
+            self.assertIn("quarter_end", entry.regressors)
+        self.assertIn("treasury_settlement", h1.regressors)
+        self.assertNotIn("treasury_settlement", rest.regressors)
 
     def test_no_exemption_has_outlived_its_end_date(self):
         """An exemption with an end date is a decision that falls due: renew it by her ruling, or remove it."""

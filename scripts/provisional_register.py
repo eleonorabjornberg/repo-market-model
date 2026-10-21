@@ -51,7 +51,7 @@ CALENDAR_COLUMNS = (
 )
 #: The fitters whose default training pairs are one-step.
 FITTER = re.compile(r"fit_(?:gradient_boosted|depth_limited)_quantiles")
-CLASSES = ("a", "b", "a+b", "series")
+CLASSES = ("a", "b", "a+b", "series", "aligned")
 RESULT_PAIRINGS = ("one_step",)
 PRODUCER_PAIRINGS = ("one_step", "one_step+direct")
 CLEARED_PAIRINGS = ("direct", "as_of_read", "none")

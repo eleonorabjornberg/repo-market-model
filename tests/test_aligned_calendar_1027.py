@@ -237,6 +237,18 @@ class OneStepVariantTests(NeedsExtra):
         self.assertTrue(observed)
         self.assertEqual(offenders(design, targets, design_names(names), rows, observed, lambda name, j: j - 1), [])
 
+    def test_an_unaligned_frame_is_refused_before_the_fit(self):
+        """Mutation: `align_columns` returning the frame unchanged makes the fit raise ValueError from `require_aligned`."""
+        fit = script.variant_fit(script.ALIGNED, script.variant_features(script.ALIGNED, 2))
+        with mock.patch.object(script, "align_columns", lambda frame, fields=script.TARGET_ROW_COLUMNS: list(frame)):
+            with self.assertRaises(ValueError):
+                fit(panel(), 20)
+
+    def test_the_admitted_entries_are_exactly_the_variants_inputs(self):
+        """Without the stand-in: the allow-list's two #1027 entries admit the aligned variant at every lead (Eleonora, 21 October 2026)."""
+        listed = {e.regressors for n, e in one_step_guard.ONE_STEP_ALLOW_LIST.items() if n.startswith("aligned_calendar_1027")}
+        self.assertEqual(listed, {tuple(script.regressors(script.variant_features(script.ALIGNED, h))) for h in script.HORIZONS})
+
     def test_the_fit_names_no_information_so_the_pairs_stay_one_step(self):
         import inspect
 

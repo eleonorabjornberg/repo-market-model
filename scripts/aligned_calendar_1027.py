@@ -22,8 +22,9 @@ The only difference between the variants is the pairing; the leaf, seed, fold gr
 grid are `gbm_funding`'s and #951's. The scratch panel is #951's `AUG3` (`gbm_funding`'s published columns plus the net-settlement columns).
 
 **The #947 guard.** `repo_model.one_step_guard` refuses a calendar or scheduled regressor on any one-step fit, whether or not the frame was aligned, and its
-allow-list is pinned and Eleonora's. Variant (ii) passes it (direct pairs are not checked). Variant (i) is refused until she admits it by an allow-list entry
-per lead (the fitter and the regressors of `variant_features(ALIGNED, h)`); the tests run it with a stand-in entry and show the refusal without one.
+allow-list is pinned and Eleonora's. Variant (ii) passes it (direct pairs are not checked). Variant (i) is admitted by two entries (lead 1; leads 2 to 5,
+which share one set of inputs), allowed by Eleonora on 21 October 2026 and ending on 15 November 2026. An entry matches the fitter and the regressors, not
+the frame, so before every fit `require_aligned` refuses a frame whose target-row columns are not the next row's: the exemption covers the aligned fit only.
 
 The walks are long (`needs-mac`, #46); `score` reads them. The reference walks of `gbm_funding` are #634's (`spread_distribution_634.py walk`).
 
@@ -171,6 +172,28 @@ def align_columns(frame: Sequence[DailyObservation], fields: Sequence[str] = TAR
     return aligned
 
 
+def require_aligned(frame: Sequence[DailyObservation], aligned: Sequence[DailyObservation], fields: Sequence[str] = TARGET_ROW_COLUMNS) -> None:
+    """Refuse to fit the one-step variant on a frame whose `fields` on row p are not `frame`'s row p + 1 (the guard's exemption assumes they are).
+
+    Raises:
+        ValueError: a row whose date or one of whose `fields` differs from what `align_columns` makes of `frame`, naming the first.
+    """
+
+    rows, shifted = list(frame), list(aligned)
+    if [r.date for r in rows] != [r.date for r in shifted]:
+        raise ValueError("the aligned frame's dates are not the frame's; every row must keep its own date")
+    for position, row in enumerate(shifted):
+        for field in fields:
+            if field not in row.values:
+                continue
+            expected = rows[position + 1].values.get(field) if position + 1 < len(rows) else None
+            if row.values[field] != expected:
+                raise ValueError(
+                    f"{field!r} on {row.date} is not the next row's value: the frame is not aligned, so the one-step fit "
+                    "would train it one day off (#914) and #947's exemption does not cover it"
+                )
+
+
 def target_row_columns(horizon: int) -> Tuple[str, ...]:
     """The `TARGET_ROW_COLUMNS` a decision at `horizon` can read: the calendar columns at every lead, the scheduled settlement columns at lead 1."""
 
@@ -200,8 +223,10 @@ def variant_fit(variant: str, features: Sequence[str]):
         raise ValueError(f"{variant!r} is not a declared variant")
 
     def fit(train_frame, minimum_history):
+        aligned = align_columns(train_frame)
+        require_aligned(train_frame, aligned)
         return ml.fit_gradient_boosted_quantiles(
-            align_columns(train_frame), regressors=names, levels=GRID, minimum_history=minimum_history, min_samples_leaf=LEAF
+            aligned, regressors=names, levels=GRID, minimum_history=minimum_history, min_samples_leaf=LEAF
         )
 
     return fit

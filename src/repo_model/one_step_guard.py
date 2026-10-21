@@ -63,6 +63,22 @@ _PUBLISHED_AT_H1 = (
     "treasury_settlement",
 )
 
+#: `gbm_funding_cal_aligned` of `scripts/aligned_calendar_1027.py` (#1027): `variant_features(ALIGNED, h)` less the target.
+#: Its one-step fit runs on a frame whose calendar and scheduled columns were moved up one row (`align_columns`), so
+#: row p carries the target row's values; the script checks that before every fit (`require_aligned`).
+_PUBLISHED_AT_H2 = tuple(name for name in _PUBLISHED_AT_H1 if name != "treasury_settlement")
+_ALIGNED_1027_TARGET_ROW_H1 = (
+    "quarter_end", "days_to_month_end", "tax_date", "treasury_settlement_coupons", "treasury_settlement_bills",
+)
+_ALIGNED_1027_TARGET_ROW_H2 = ("quarter_end", "days_to_month_end", "tax_date")
+_ALIGNED_1027_OBSERVED = ("net_settlement", "net_settlement_due_5d")
+_ALIGNED_1027_REASON = (
+    "gbm_funding_cal_aligned (#1027, scripts/aligned_calendar_1027.py): one-step pairs on a frame whose calendar and "
+    "scheduled columns are read from the target row, so they train on the day they are served on; the script refuses "
+    "a frame that is not so aligned. Allowed by Eleonora on 21 October 2026, in chat (relayed on PR #1036), for the "
+    "#1027 comparison only, with an end date."
+)
+
 #: The exemptions, by name. Pinned by `tests/test_one_step_guard.py`.
 ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
     {
@@ -86,6 +102,18 @@ ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
             "(class a+b) in docs/research/provisional-calendar-register.md. Allowed by Eleonora on 20 October 2026, in "
             "chat, on PR #1042: option (a), with an end date, the live record's first scoring date",
             expires=date(2027, 4, 1),
+        ),
+        "aligned_calendar_1027_h1": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H1 + _ALIGNED_1027_TARGET_ROW_H1 + _ALIGNED_1027_OBSERVED,
+            _ALIGNED_1027_REASON + " Lead 1.",
+            expires=date(2026, 11, 15),
+        ),
+        "aligned_calendar_1027_h2_to_h5": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H2 + _ALIGNED_1027_TARGET_ROW_H2 + _ALIGNED_1027_OBSERVED,
+            _ALIGNED_1027_REASON + " Leads 2 to 5, which share one set of inputs.",
+            expires=date(2026, 11, 15),
         ),
     }
 )
