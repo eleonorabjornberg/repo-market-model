@@ -34,6 +34,15 @@ sys.path.insert(0, str(REPO / "src"))
 
 import importlib.util  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "measure": (
+        "not_entry",
+        "fits the published gbm at fixed folds on days before 2026 and re-reads one feature row, "
+        "scoring nothing (#267); refuses any day on or after 2026-01-01 itself",
+    ),
+}
+
 
 def _script(name):
     spec = importlib.util.spec_from_file_location(f"rs_{name}", REPO / "scripts" / f"{name}.py")

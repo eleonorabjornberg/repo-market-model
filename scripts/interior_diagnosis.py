@@ -57,6 +57,15 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "_crps": (
+        "delegates",
+        "one loss; scores the days `final_test_opening.distribution_walk` walks, which calls "
+        "lockbox.require_unlocked before any fit",
+    ),
+}
+
 
 def _script(name):
     spec = importlib.util.spec_from_file_location(f"diagnosis_{name}", REPO / "scripts" / f"{name}.py")

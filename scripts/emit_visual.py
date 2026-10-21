@@ -138,6 +138,15 @@ from repo_model.scarcity import (  # noqa: E402
 )
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "newcomer_n2": (
+        "not_entry",
+        "draws the scored grid on the explorer's N2 (#143); scores and compares nothing, and leaves "
+        "locked days out of every count through `counted` (tests/test_visual.py, NewcomerN2Tests)",
+    ),
+}
+
 _spec = importlib.util.spec_from_file_location("research_view", ROOT / "scripts" / "research_view.py")
 research_view = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(research_view)
