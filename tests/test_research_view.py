@@ -324,5 +324,31 @@ class CriticalPath(unittest.TestCase):
             self.assertEqual(link["done"], link["milestone"] in done, link["id"])
 
 
+class DeclaredInputs(unittest.TestCase):
+    """#1059: the page's inputs are declared once, in `research_view.INPUTS`; `emit_visual.py` digests that list."""
+
+    def test_load_reads_only_declared_inputs(self):
+        read = []
+        original = research_view.read
+        research_view.read = lambda repo, rel: (read.append(rel), original(repo, rel))[1]
+        try:
+            research_view.load(ROOT)
+        finally:
+            research_view.read = original
+        self.assertTrue(read)
+        directories = tuple(p + "/" for p in research_view.INPUTS)
+        for rel in read:
+            self.assertTrue(rel in research_view.INPUTS or rel.startswith(directories), f"{rel} is read but not in INPUTS")
+
+    def test_every_declared_input_is_digested_by_the_page(self):
+        spec = importlib.util.spec_from_file_location("emit_visual", ROOT / "scripts" / "emit_visual.py")
+        emit_visual = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(emit_visual)
+        digested = set(emit_visual.research_inputs(ROOT))
+        for rel in research_view.INPUTS:
+            self.assertTrue(rel in digested or any(d.startswith(rel + "/") or d == rel + ".md" for d in digested), rel)
+        self.assertEqual(set(research_view.input_files(ROOT)) | {"docs/research/log.md"}, digested)
+
+
 if __name__ == "__main__":
     unittest.main()

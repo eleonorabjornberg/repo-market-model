@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/construction_gaps_485.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

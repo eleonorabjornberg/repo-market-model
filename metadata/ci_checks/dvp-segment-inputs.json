@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/dvp_segment_inputs.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

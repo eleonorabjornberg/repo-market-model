@@ -1,0 +1,7 @@
+{
+  "command": [
+    "scripts/check_built_outputs.py"
+  ],
+  "where": "workflow:tests.yml",
+  "pre_review": true
+}
