@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/check_research_log.py",
+    "check"
+  ],
+  "where": "workflow:tests.yml",
+  "pre_review": true
+}

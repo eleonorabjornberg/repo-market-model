@@ -182,14 +182,14 @@ clean for her.
 **Long runs go to her Mac.** A step expected to take more than about two hours (walk-forward refits, power studies,
 long simulations) is not run in a cloud session, where it can run out of time and lose its work. The session commits
 the script and the exact commands, pushes its branch, and comments `needs-mac:` with the commands on its pull request.
-The orchestrating session hands Eleonora one paste for her Mac: a fresh clone of that branch, the project's virtual
+The orchestrating session hands Eleonora one paste for her Mac in the 5 pm catch-up, which she runs overnight: a fresh clone of that branch, the project's virtual
 environment at the declared Python, output to a log file, and a push of the results to the same branch. The pull
 request records the Python, numpy and scikit-learn versions of that environment. Her pushed results are then finished
 by a cloud session like any other branch.
 
 ## Fewer round trips
 
-**Status: draft, in force once Eleonora merges it.** Asked for by her on 20 October 2026, after a review of the
+Merged by Eleonora on 20 October 2026 (#1041); amended by her on 21 October 2026. Asked for by her on 20 October 2026, after a review of the
 workflow found that since 6 October about three in five commits that were not merges of a pull request were merges of
 `main` into a branch or regenerated files, that about a third of reviews asked for changes a local check would have
 caught, and that about half the comments on pull requests were claims and heartbeats.
@@ -201,17 +201,19 @@ request whose CI is green on its head merges as it is, and the push CI on `main`
 `main` is a `hold`, as before. "Ready means ready now" keeps its meaning for her own merges.
 
 **Checks run before review, and review starts on green.** A session runs `python3 scripts/pre_review.py --base
-origin/main` and the full suite before it asks for review. The reviewer starts only when every check on the pull
-request's head has completed, and a red check sends it back without a review.
+origin/main` and the test modules its change touches before it asks for review; the full suite runs in the pull
+request's CI, in its shards, not in the session (Eleonora, 21 October 2026: a cloud session running the whole suite
+outlasted its run). The reviewer starts only when every check on the pull request's head has completed, and a red
+check sends it back without a review.
 
 **Claims are labels, not comments.** A session claims a pull request with the label `reviewing` or `fixing` and
 removes it when done. It keeps one status comment per pull request and edits it, instead of posting "Reviewing", "Still
 reviewing" or "Still fixing".
 
-**Long runs go to the long-run workflow first.** Once `.github/workflows/long-run.yml` is on `main`, a step expected
-to take more than about two hours runs there (up to six hours, with the ml versions CI pins), started by the
-orchestrating session on the pull request's branch; its results are committed to that branch with the neutral author.
-A step longer than six hours, or one that needs her machine, still goes to her Mac under the rule below.
+**Long runs go to her Mac, overnight** (Eleonora, 21 October 2026, replacing the long-run workflow first). A step
+expected to take more than about two hours goes to her Mac under the rule above: the orchestrating session hands her
+its paste in the 5 pm catch-up, she runs it overnight, and the results come back as a commit on the same branch.
+`.github/workflows/long-run.yml` stays on `main` but is not part of the routine path.
 
 **Her questions come as options.** A question batched for her lists numbered options and the default that applies if
 she does not answer by the next batch. The default is never a change to what the project claims.

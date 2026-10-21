@@ -40,6 +40,16 @@ from repo_model.exploration import panel_end  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_levels": (
+        "not_entry",
+        "reads the tail spread at each scored day's decision (#601); scores no forecast, it ends at "
+        "the declared last scored day through _as_of_folds, which calls require_unlocked, and `cap` "
+        "calls require_unlocked on that day before it reads anything",
+    ),
+}
+
 
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")

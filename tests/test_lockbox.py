@@ -16,7 +16,9 @@ What is held here:
   before the tier;
 * the entry points are enumerated, and the enumeration is checked against the
   code (`src/repo_model/` and `scripts/`): a new function that selects scored
-  days, or a new CLI subcommand, fails here until it is classified;
+  days, or a new CLI subcommand, fails here until it is classified. A function
+  declares itself in its own module (`LOCKBOX_READS`, `LOCKBOX_CRPS`, #1058);
+  this file holds only the runners of the entry points;
 * an opened tier is allowed, and opening needs a ruling reference.
 
 **Since #151 opened the near-blind tier** (2026-10-05, Eleonora's "GO #151"),
@@ -336,258 +338,59 @@ NON_SCORING_COMMANDS = {
     "backfill-nmfp": "backfills raw SEC N-MFP snapshots",
 }
 
-#: Functions that read an as-of information set but score nothing, and why.
-NOT_ENTRY_POINTS = {
-    "scripts/drivers_audit_951.rare_command": (
-        "counts the rare days (quarter-end, tax date, month-end) in each walk-forward refit's training window (#951) and "
-        "scores nothing; it calls require_study_window (no day after 2025-12-31) before it reads the panel"
-    ),
-    "scripts/twin_diagnosis_865.alignment_row": (
-        "reads one training pair's information set for a named decision day and checks both guards (#865); scores "
-        "nothing; the named days (`ALIGNMENT_DAYS`) all end on or before 2025-12-31"
-    ),
-    "scripts/aligned_pairs_931.served_row": (
-        "reads one target's information set for a named day and checks both guards (#931); scores nothing; the named "
-        "days (`alignment_days` in the declaration) all end on or before 2025-12-31"
-    ),
-    "scripts/backfill_spread_633.features": (
-        "reads one forecast's declared inputs through InformationRule and checks both guards (#633); scores "
-        "nothing"
-    ),
-    "scripts/backfill_spread_633.forecasts_command": (
-        "makes the H4 measurement's forecasts and scores nothing (#633): its decision days end with the lead-5 "
-        "target on or before 2025-12-31 (`decision_indices`) and no training label after it is read; "
-        "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
-    ),
-    "scripts/backfill_h5_726.forecasts_command": (
-        "makes the H4 nested test's forecasts and scores nothing (#726): it calls require_unlocked, then "
-        "spread_distribution_634.walk, which refuses a locked scored day (refuse_locked) before any fit; "
-        "`score_command` scores them only through scoring_protocol.day_scores, which calls require_unlocked"
-    ),
-    "protocol_benchmarks._anchor": (
-        "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a forecast, "
-        "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls "
-        "require_unlocked on every scored day"
-    ),
-    # Holds the guard itself: every entry point above reaches it.
-    "baseline._as_of_folds": "the shared fold loop; calls require_unlocked",
-    "scripts/pressure_judge._same_row_scarcity_states": (
-        "reads the reserve-scarcity state the pre-#586 way (one row for all three legs) on the fold grid, "
-        "to count the days the own-leg read changes (#586); scores nothing, it ends at the declared last "
-        "scored day through _as_of_folds, which calls require_unlocked"
-    ),
-    "scripts/pressure_audit.inputs_command": (
-        "tabulates what each input reads at the 16:00 decision and how the value read ranks the +5 bp "
-        "onsets, on the judge's scored days (#473); scores no forecast, it ends at the declared last "
-        "scored day, calls require_unlocked on it before the first read, and refuses a scratch panel "
-        "whose spread is not the published panel's"
-    ),
-    "scripts/setup_reads.measure": (
-        "tabulates the age of what each input reads at the 16:00 decision, on the judge's scored days (#517); "
-        "scores no forecast, its caller drops every row after the declared last scored day, refuses a later "
-        "one (setup_diagnostic.require_window) and calls require_unlocked on it before the first read"
-    ),
-    "scripts/every_day_separation_601.read_units": (
-        "reads the inputs of the days the every-day part flags at each lead's decision (#601); scores no forecast, "
-        "it ends at the declared last scored day through _as_of_folds, which calls require_unlocked, and `run` "
-        "calls require_unlocked on that day before it reads anything"
-    ),
-    "scripts/every_day_conditioning_601.read_levels": (
-        "reads the tail spread at each scored day's decision (#601); scores no forecast, it ends at the declared "
-        "last scored day through _as_of_folds, which calls require_unlocked, and `cap` calls require_unlocked on "
-        "that day before it reads anything"
-    ),
-    "scripts/off_risk_day_624.read_features": (
-        "reads the inputs of the day-level model at each scored day's decision (#624); scores no forecast, it ends at "
-        "the declared last scored day through _as_of_folds, which calls require_unlocked, and `run` calls "
-        "require_unlocked and pressure_judge.require_scored_days on that day before it reads anything"
-    ),
-    "satiation._ratio_at": (
-        "reads the reserves-to-assets ratio the as-of rule gives one panel row's decision (#587); scores nothing, "
-        "`asof_ratios` and `build_columns` build no row after the declared last scored day, and "
-        "`scripts/satiation_587.py panel` calls require_unlocked on that day before it builds anything"
-    ),
-    "projected_reserves.build_row": (
-        "builds one row's projected-reserves columns from the as-of reads of its own decision (#545); scores "
-        "nothing, `build_columns` builds no row after the declared last scored day, and `scripts/projected_reserves.py "
-        "panel` calls require_unlocked on that day before it builds anything"
-    ),
-    "scripts/pressure_track_m.states_command": (
-        "tabulates the filtered state against #115's state on the fold grid (#384); scores "
-        "nothing, it ends at the declared last scored day through _as_of_folds, which calls "
-        "require_unlocked, and drops every row after that day before it starts"
-    ),
-    "pressure_hazard._decisions": (
-        "reads each training decision's as-of covariates inside a fit's own training "
-        "frame (#387), as ml._pressure_pairs does; scores nothing, the backtest that "
-        "calls the predictor guards the scored days"
-    ),
-    "pressure_hazard.gap_to_anchor": (
-        "measures the rule's scored-day-to-anchor distance on a synthetic run of "
-        "business days (#387); reads no panel row and scores nothing"
-    ),
-    "ml._held_out_read": "a calibration read inside a fit's own training frame",
-    "ml._pressure_pairs": (
-        "builds the direct pressure models' training pairs inside a fit's own "
-        "training frame (#114); scores nothing, the backtest that calls the "
-        "predictor guards the scored days"
-    ),
-    "ml._combined_pairs": (
-        "builds the combined model's training pairs, with their anchors, inside a fit's own "
-        "training frame (#561), as ml._pressure_pairs does; scores nothing, the backtest that "
-        "calls the predictor guards the scored days"
-    ),
-    "ml._dynamic_rows": (
-        "builds the dynamic pressure models' design rows and anchors inside a "
-        "fit's own as-of frames (#137); scores nothing, the backtest that calls "
-        "the predictor guards the scored days"
-    ),
-    "ml._held_out_mask": (
-        "lists the training values before a calibration block that a held-out "
-        "row could not yet see, inside a fit's own training frame (#78); "
-        "selects and scores nothing, the held-out rows come from _held_out_read"
-    ),
-    "ml._direct_pairs": (
-        "builds direct training pairs inside a fit's own training frame (#37); "
-        "scores nothing, the backtest that calls the forecaster guards the scored days"
-    ),
-    "scripts/reserves_sensitivity.measure": (
-        "fits the published gbm at fixed folds on days before 2026 and re-reads one "
-        "feature row, scoring nothing (#267); refuses any day on or after 2026-01-01 itself"
-    ),
-    "scripts/calibration_masking_exposure.exposure": (
-        "counts masked training pairs per refit block; scores nothing"
-    ),
-    "scripts/live_record.forecast_run": (
-        "the live record's forecast loop (#215): trains and forecasts as the as-of "
-        "information set allows, computes no metric and scores no day "
-        "(docs/decisions/lockbox.md); scripts/live_score.py scores the record, "
-        "through `lockbox.require_unlocked` on days `metadata/lockbox.json` has opened (#277)"
-    ),
-    "scripts/live_record.distribution_run": (
-        "the live record's distribution loop (#215): trains and forecasts the published "
-        "distribution and as-of persistence as the as-of information set allows, "
-        "computes no loss and scores no day (docs/decisions/lockbox.md); "
-        "scripts/live_score.py scores the record, through `lockbox.require_unlocked` on days `metadata/lockbox.json` has opened (#277)"
-    ),
-    "scripts/live_record.require_reads_on_real_rows": (
-        "checks one live forecast's reads against the placeholder rows (#215); "
-        "selects and scores nothing"
-    ),
-    "scripts/source_screen.read_series": (
-        "reads each series as of the decision instant on the lead-1 fold grid, for the exploratory "
-        "source screen (#478); selects no model and scores no forecast, calls "
-        "lockbox.require_unlocked on every day before it reads one, and the screen's `run` refuses "
-        "a panel that runs past 2025-12-31 (tests/test_source_screen.py)"
-    ),
-    "scripts/derived_features_631.read_all": (
-        "reads each derived series as of the decision instant on the lead-1 fold grid, for the exploratory "
-        "screen of #631; selects no model and scores no forecast, calls lockbox.require_unlocked on every "
-        "day before it reads one, and its `run` refuses a panel that runs past 2025-12-31 "
-        "(tests/test_derived_features_631.py)"
-    ),
-    "scripts/near_threshold_688.read_inputs": (
-        "reads the scored days' inputs as of the decision instant on the lead-1 fold grid, for the exploratory "
-        "screen of #688; selects no model and scores no forecast, calls lockbox.require_unlocked on every day "
-        "before it reads one, and `refuse_locked` is tested (tests/test_near_threshold_688.py)"
-    ),
-    "scripts/upper_bound_635.read_inputs": (
-        "reads each input as of the decision instant at leads 1 to 5 on the lead-1 fold grid, for the upper-bound study of #635; "
-        "selects no model and scores no forecast, calls lockbox.require_unlocked on every day before it reads one, and its `fit` "
-        "refuses a panel that runs past 2025-12-31 (tests/test_upper_bound_635.py)"
-    ),
-    "scripts/source_screen.probe": (
-        "asks the as-of rule, on the one middle row of the panel, whether a column has a "
-        "row-relative availability; reads one row, scores and selects nothing (#478)"
-    ),
-    "scripts/source_matrix_629.scored_grid": (
-        "the lead-1 fold grid of the exploratory source matrix (#629); scores and selects no model, and "
-        "calls lockbox.require_unlocked on every day before it returns one (tests/test_source_matrix_629.py)"
-    ),
-    "scripts/source_matrix_629.read_lead": (
-        "reads each series as of the decision instant at one lead on days scored_grid has already "
-        "passed through lockbox.require_unlocked (#629); selects no model and scores no forecast, and "
-        "the screen's `run` refuses a panel past 2025-12-31 (tests/test_source_matrix_629.py)"
-    ),
-    "scripts/source_matrix_629.read_derived": (
-        "forms the every-day inputs of #601 from the masked frames of the decisions on the screen's "
-        "scored days (#629); scores nothing, and walks _as_of_folds, which refuses a locked day"
-    ),
-    "richer_targets.as_of_rows": (
-        "reads each target column as of the decision instant at each lead, on the rows it is given, for the "
-        "exploratory H9 screen (#639); selects no model and scores no forecast, and the screen's `run` passes "
-        "it only days that went through lockbox.require_unlocked (tests/test_richer_targets.py)"
-    ),
-    "scripts/richer_targets_639.run_command": (
-        "the exploratory H9 screen (#639): walks the lead-1 fold grid, calls lockbox.require_unlocked on every "
-        "scored day before it reads one, refuses a panel past 2025-12-31 and fits and selects nothing"
-    ),
-    "scripts/b1_alignment_850.run_command": (
-        "the B1 alignment measurement on step 1's panel (#850): walks the lead-1 fold grid, calls "
-        "lockbox.require_unlocked on every scored day before it reads one, refuses a panel past 2025-12-31 and "
-        "fits and selects nothing"
-    ),
-    "scripts/richer_targets_706.lead_on_onsets": (
-        "the pre-onset AUC of a modelled target's lead-1 median and of its as-of value (H9 step 2, #706); walks the lead-1 "
-        "fold grid, calls refuse_locked on every scored day before it reads one, and fits and selects nothing "
-        "(tests/test_richer_targets_706_script.py, LockedDayTests)"
-    ),
-    "scripts/h9_nested_842.decision_forecasts": (
-        "rebuilds the fold grid and the fit instants #706's walks used, from dates and the registry alone, to key a target's laws by "
-        "decision day (H9 step 3, #842); fits and scores nothing, and `walk_command` calls require_unlocked, with `target_forecasts.attach` "
-        "refusing a locked decision or target day, before any fit (tests/test_h9_nested_842_script.py, LockedDayTests)"
-    ),
-    "scripts/emit_visual.newcomer_n2": (
-        "draws the scored grid on the explorer's N2 (#143); scores and compares "
-        "nothing, and leaves locked days out of every count through `counted` "
-        "(tests/test_visual.py, NewcomerN2Tests)"
-    ),
-    "scripts/onset_post_mortem.as_of_reads": (
-        "reads each scored day's as-of state and calendar for the descriptive "
-        "onset post-mortem (#214); compares nothing, and walks _as_of_folds, "
-        "which refuses a locked day (tests/test_onset_post_mortem.py)"
-    ),
-    "scripts/episode_post_mortem.as_of_series": (
-        "reads each scored day's as-of inputs for the descriptive episode "
-        "post-mortem (#474); compares nothing, and walks _as_of_folds, which "
-        "refuses a locked day (tests/test_episode_post_mortem.py)"
-    ),
-    "scripts/unwarned_onsets.as_of_at_lead": (
-        "reads each scored day's as-of inputs at a lead for the descriptive "
-        "diagnostic of the unwarned onsets (#560); compares nothing, and walks "
-        "_as_of_folds, which refuses a locked day (tests/test_unwarned_onsets.py)"
-    ),
-    "scripts/gbm_attribution_964.attribution_walk": (
-        "the #964 attribution's walk of gbm_funding at one lead, as spread_distribution_634.walk is; it scores nothing "
-        "but re-forecasts days of the same fold grid, and it refuses a day after 2025-12-31 (require_study_window, "
-        "tests/test_gbm_attribution_964.py) and a locked scored day (require_unlocked) before any fit"
-    ),
-    "scripts/spread_distribution_634.walk": (
-        "the #634 measurement's walk of a variant at one lead, as distribution_walk is; it refuses a locked "
-        "scored day itself (refuse_locked, tests/test_spread_distribution_634_script.py, LockboxTests) before any fit"
-    ),
-    "scripts/final_test_opening.distribution_walk": (
-        "the final test opening's walk of the published distribution and as-of "
-        "persistence at h = 2 to 5 (#151), reported only; it refuses a locked "
-        "scored day itself before any fit (tests/test_final_test_opening.py, "
-        "WindowGuardTests)"
-    ),
-    "scripts/onset_post_mortem.gauge_history": (
-        "finds the first fold-grid day whose state is public (#214); reads no "
-        "outcome and scores nothing, as_of_reads walks the guarded grid"
-    ),
-    "scripts/desk_outputs.distribution_history": (
-        "the desk outputs' walk of the published distribution and as-of "
-        "persistence at h = 1 to 5 (#232), reporting only; it refuses a locked "
-        "scored day itself before any fit (tests/test_desk_outputs.py, "
-        "DistributionHistoryLockboxTests, which calls the walk across a blind-tier "
-        "day with the fit stubbed unreachable)"
-    ),
-    "scripts/desk_outputs.scarcity_at": (
-        "reads the declared scarcity state as of one forecast's decision instant "
-        "(#232) for display beside it; reads no outcome and scores nothing"
-    ),
-}
+#: Where a function declares itself (#1058). A module of `src/repo_model/` or `scripts/` that holds a
+#: function the scans below find declares it at module level, beside the function, in a literal:
+#:
+#:     LOCKBOX_READS = {"function_name": ("not_entry", "why it scores nothing")}
+#:     LOCKBOX_CRPS = {"function_name": ("guard" | "delegates", "why a locked day is refused")}
+#:
+#: `LOCKBOX_READS` classifies a function that reads an as-of information set or walks the fold grid:
+#: `"entry"` (it scores days, and has a runner in `LIBRARY_ENTRY_POINTS` or `SCRIPT_ENTRY_POINTS`
+#: above) or `"not_entry"` (it reads an as-of information set but scores nothing, and why).
+#: `LOCKBOX_CRPS` classifies a function that computes a CRPS. The tests read the literals from the
+#: syntax tree, never by importing a script. So a new study declares itself in its own script and
+#: never edits this file.
+READS_KINDS = ("entry", "not_entry")
+CRPS_KINDS = ("guard", "delegates")
+
+
+def _lockbox_modules():
+    paths = [(path, path.stem) for path in sorted(SRC.glob("*.py"))]
+    paths += [(path, f"scripts/{path.stem}") for path in sorted(SCRIPTS.glob("*.py"))]
+    return paths
+
+
+def declarations(variable, kinds):
+    """Every `variable` literal in the tree, as `{"<module>.<function>": (kind, reason)}`.
+
+    A declaration that is not a literal dict of `name: (kind, reason)`, with a kind in `kinds` and a
+    reason, is an error here, so a malformed one fails loudly instead of being skipped.
+    """
+
+    found = {}
+    for path, module in _lockbox_modules():
+        for node in ast.parse(path.read_text(encoding="utf-8")).body:
+            targets = node.targets if isinstance(node, ast.Assign) else [getattr(node, "target", None)]
+            if not any(isinstance(target, ast.Name) and target.id == variable for target in targets):
+                continue
+            table = ast.literal_eval(node.value)
+            for function, declared in table.items():
+                where = f"{path.name}: {variable}[{function!r}]"
+                if not (isinstance(declared, tuple) and len(declared) == 2):
+                    raise AssertionError(f"{where} is not a (kind, reason) pair")
+                kind, reason = declared
+                if kind not in kinds or not str(reason).strip():
+                    raise AssertionError(f"{where} needs a kind in {kinds} and a reason")
+                key = f"{module}.{function}"
+                if key in found:
+                    raise AssertionError(f"{where} is declared twice")
+                found[key] = declared
+    return found
+
+
+def _declared_reads():
+    return declarations("LOCKBOX_READS", READS_KINDS)
+
 
 
 class TrackedDeclarationTests(unittest.TestCase):
@@ -1045,54 +848,10 @@ CRPS_CALLERS = frozenset({"crps_from_quantiles", "crps_trapezoid_from_quantiles"
                           "crps_from_record", "integral_crps_from_record",
                           "_require_scored_days_unlocked"})
 GUARD_CALLS = frozenset({"require_unlocked", "_require_scored_days_unlocked", "_as_of_folds"})
-_WALK = "scores the days `final_test_opening.distribution_walk` walks, which calls lockbox.require_unlocked before any fit"
-_FOLDS = "scores the days `baseline.rolling_persistence_backtest` walks, which refuses a locked day through `_as_of_folds`"
-CRPS_SCORERS = {
-    "scoring_protocol.grid_crps": ("delegates", "scoring protocol v1's loss of one vector at one outcome; `day_scores` calls `require_unlocked` on every decision and target day before it computes any (#655)"),
-    "scoring_protocol.level_crps": ("delegates", "builds the B3 secondary comparison's loss on given levels; scores no day itself, and `day_scores` calls `require_unlocked` before using it (PR #660 ruling)"),
-    "scoring_protocol.score": ("delegates", "the loss `level_crps` returns, of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any"),
-    "scoring_protocol.upper_tail_twcrps": ("delegates", "the key secondary's loss of one vector at one outcome; `day_scores` calls `require_unlocked` before it computes any (#655)"),
-    "scripts/spread_mean_reversion_686.five_level_cells": ("guard", "the five-level CRPS of the mean-reversion walk's cells: `require_unlocked` on every decision and target day before any cell is computed (#686)"),
-    "scripts/spread_mean_reversion_686.published_cells": ("guard", "the five-level CRPS of the published distribution's cells on the same days: `require_unlocked` on every target day before any cell is computed (#686)"),
-    "scripts/scaled_score_967.build_pool": ("guard", "B1's and B2's grid and trapezoid CRPS cells of the scaled-score study: `require_unlocked` on every decision and target day, and `require_study_window` on every target, before any cell is computed (#967)"),
-    "scripts/live_score.score_crps": ("guard", "the live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
-    "scripts/live_score.score": ("guard", "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed (#277)"),
-    "baseline.rolling_persistence_backtest": ("guard", "the CRPS fold loop: `_as_of_folds` refuses a locked scored day"),
-    "scripts/live_score.score_v2": ("guard", "v2's live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#245)"),
-    "scripts/nowcast.score_command": ("guard", "scores the nowcast walks' CRPS after `require_unlocked` on the last scored day (2025-12-31), and refuses a walk or panel that runs past it (#445)"),
-    "live_monitor.crps_ratio": ("delegates", "a pure metric of rows the caller supplies; the replay refuses a day after 2025-12-31 and a locked day before it builds rows, and the read of live outcomes refuses until the monitoring decision record is merged (#969)"),
-    "scripts/live_score.v2_crps": ("delegates", "one v2 record's loss at an outcome `score_v2` supplies, after its guard"),
-    "scripts/live_score.crps_from_record": ("delegates", "one record's loss at an outcome `score_crps` supplies, after its guard"),
-    "scripts/live_score.integral_crps_from_record": ("delegates", "one record's integral loss at an outcome `score_crps` supplies, after its guard"),
-    "baseline._crps_at": ("delegates", "the loss callback of `paired_model_comparison`, which walks `_as_of_folds`"),
-    "interior.record": ("delegates", "a label the online calibrator takes from the walk that calls it; scores no day itself"),
-    "recalibration.label": ("delegates", "a label the online calibrator takes from the walk that calls it; scores no day itself"),
-    "onset.twcrps_above_from_quantiles": ("delegates", "a pure metric of one vector and one outcome; chooses no day"),
-    "scripts/calibration_masking_effect.score": ("delegates", _FOLDS),
-    "scripts/calibration_rediagnosis.rediagnose": ("delegates", _FOLDS),
-    "scripts/pid_constant_selection.select": ("delegates", _FOLDS),
-    "scripts/pid_constant_selection.per_day": ("delegates", "a per-day loss of the walk `select` runs; " + _FOLDS),
-    "scripts/final_test_opening.crps_horizon_command": ("delegates", _WALK + ", and `_window_positions` guards the window"),
-    "scripts/direct_pairs_twin.score_command": ("guard", "scores the twin walks' CRPS after `require_unlocked` on the last scored day (2025-12-31), and refuses a walk that is not on the published record's days, which stop there (#450)"),
-    "scripts/turning_point_variant.score_command": ("guard", "scores the variants' CRPS after `require_unlocked` on the last scored day (2025-12-31), and refuses a walk that is not on the published record's days, which stop there (#453)"),
-    "scripts/settlement_flag_candidate.crps_side": ("delegates", _WALK),
-    "scripts/forecast_daily.reproduction_check": ("delegates", "compares the published series with " + _WALK),
-    "scripts/forecast_daily.reproduction_check_horizon": ("delegates", "compares the final test's cell with " + _WALK),
-    "scripts/blend_equal_491.score_command": ("guard", "scores the blend walk's CRPS after `require_unlocked` on the last scored day (2025-12-31) and on every day of the walk, and `check_days` refuses a walk that is not on the published record's days to 2025-12-31 (#491)"),
-    "scripts/calendar_bands_418.mean_crps": ("delegates", "the mean loss of a published daily record's days, which `score` builds from `_WALK`'s records and refuses after the panel end"),
-    "scripts/interior_diagnosis._crps": ("delegates", "one loss; " + _WALK),
-    "scripts/pressure_model_v2._crps": ("delegates", "one loss; " + _WALK),
-    "scripts/interior_calibration_judge._crps": ("delegates", "one loss; `score_command` calls `check_window` (which calls lockbox.require_unlocked) on every day before any is scored"),
-    "scripts/pressure_model_v2.paired_against": ("delegates", "pairs the losses of `window_block`'s days; " + _WALK),
-    "scripts/pressure_model_v2.window_block": ("delegates", "a block over days " + _WALK),
-    "scripts/pressure_model_v2.assemble_command": ("delegates", "assembles blocks over days " + _WALK),
-    "scripts/quarter_end_remedy._crps": ("delegates", "one loss; " + _WALK),
-    "scripts/desk_outputs.check_against_published": ("delegates", "compares the days `history_command` chose, after its `require_unlocked`"),
-    "scripts/spread_distribution_632.crps_contract": ("delegates", "one loss on the contract's levels; `distribution_command` calls `require_unlocked` on the last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the published daily file is read to that day only (#632)"),
-    "scripts/spread_distribution_634.five_crps": ("delegates", "B3's secondary loss of one vector on its own five levels at one outcome; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634, ruling on #660 and #700)"),
-    "scripts/spread_distribution_634.five_twcrps": ("delegates", "the upper-tail loss on the same five levels; `score_command` calls `refuse_locked` on every decision and target day before any score, and `day_scores` calls `require_unlocked` before using it (#634)"),
-    "scripts/desk_outputs._series": ("delegates", "the series of days `history_command` chose, after its `require_unlocked`"),
-}
+
+
+def _crps_scorers():
+    return declarations("LOCKBOX_CRPS", CRPS_KINDS)
 
 
 class CrpsScorerScanTests(unittest.TestCase):
@@ -1101,10 +860,11 @@ class CrpsScorerScanTests(unittest.TestCase):
     `EnumerationTests` finds the functions that read an as-of information set; the live scorer's
     cells read none, so its `score` and `score_crps` were in neither list. This scan finds the
     callers of `crps_from_quantiles` and its siblings too, in `src/repo_model/*.py` and the tracked
-    `scripts/*.py`, and requires each to be classified in `CRPS_SCORERS` with a reason.
+    `scripts/*.py`, and requires each to be classified with a reason in its own module's `LOCKBOX_CRPS` (#1058).
 
     Recorded mutations (#257), each applied in a disposable copy outside the tree: renaming the
-    `"scripts/live_score.score_crps"` key in `CRPS_SCORERS` makes
+    `"scripts/live_score.score_crps"` key in `CRPS_SCORERS` (now the `"score_crps"` key of `LOCKBOX_CRPS` in
+    `scripts/live_score.py`) makes
     `test_every_function_that_computes_a_crps_is_classified` fail with `AssertionError: Items in the
     first set but not the second` (the scan finds the function, the table does not), and
     `test_a_guard_entry_calls_a_guard_itself` error with `KeyError`; replacing the
@@ -1116,9 +876,7 @@ class CrpsScorerScanTests(unittest.TestCase):
 
     @staticmethod
     def functions():
-        paths = [(path, path.stem) for path in sorted(SRC.glob("*.py"))]
-        paths += [(path, f"scripts/{path.stem}") for path in sorted(SCRIPTS.glob("*.py"))]
-        for path, module in paths:
+        for path, module in _lockbox_modules():
             for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     called = {getattr(call.func, "attr", getattr(call.func, "id", None))
@@ -1127,12 +885,12 @@ class CrpsScorerScanTests(unittest.TestCase):
 
     def test_every_function_that_computes_a_crps_is_classified(self):
         found = {name for name, called in self.functions() if called & CRPS_CALLERS}
-        self.assertEqual(found, set(CRPS_SCORERS),
-                         "classify each new function that computes a CRPS in CRPS_SCORERS, with a reason")
+        self.assertEqual(found, set(_crps_scorers()),
+                         "classify each new function that computes a CRPS in its module's LOCKBOX_CRPS, with a reason")
 
     def test_a_guard_entry_calls_a_guard_itself(self):
         called = dict(self.functions())
-        for name, (kind, reason) in CRPS_SCORERS.items():
+        for name, (kind, reason) in _crps_scorers().items():
             with self.subTest(function=name):
                 self.assertIn(kind, ("guard", "delegates"))
                 self.assertTrue(reason.strip())
@@ -1141,11 +899,29 @@ class CrpsScorerScanTests(unittest.TestCase):
 
     def test_the_live_scorers_cells_are_classified_as_guards(self):
         for name in ("scripts/live_score.score_crps", "scripts/live_score.score"):
-            self.assertEqual(CRPS_SCORERS[name][0], "guard")
+            self.assertEqual(_crps_scorers()[name][0], "guard")
 
 
 class EnumerationTests(unittest.TestCase):
-    """The entry points above are all of them, checked against the code."""
+    """The entry points above are all of them, checked against the code.
+
+    Since #1058 the classification lives in the modules, not here (`LOCKBOX_READS`, `LOCKBOX_CRPS`), so
+    adding a study never edits this file.
+
+    **Red before the move.** With the tables gone from this file and no declaration yet in any module,
+    `test_every_function_that_selects_scored_days_is_classified` and
+    `test_every_function_that_computes_a_crps_is_classified` failed with `AssertionError: Items in the
+    first set but not the second`, and `test_the_live_scorers_cells_are_classified_as_guards` with
+    `KeyError: 'scripts/live_score.score_crps'`.
+
+    **Recorded mutations (#1058).** Deleting the `"probe"` entry of `LOCKBOX_READS` in
+    `scripts/source_screen.py` makes `test_every_function_that_selects_scored_days_is_classified` fail with
+    `AssertionError: Items in the first set but not the second: 'scripts/source_screen.probe'`.
+    Deleting the `"score_crps"` entry of `LOCKBOX_CRPS` in `scripts/live_score.py` makes
+    `test_every_function_that_computes_a_crps_is_classified` fail with the same `AssertionError` (naming
+    `scripts/live_score.score_crps`) and `test_the_live_scorers_cells_are_classified_as_guards` error with
+    `KeyError: 'scripts/live_score.score_crps'`.
+    """
 
     def test_every_function_that_selects_scored_days_is_classified(self):
         """A function reading an as-of information set or the fold loop.
@@ -1155,13 +931,11 @@ class EnumerationTests(unittest.TestCase):
         that calls either outside `asof.py` selects days to score, or reads
         inside a fit. The scan covers `src/repo_model/*.py` and the tracked
         `scripts/*.py`. Each must be an entry point above or be named, with a
-        reason, in `NOT_ENTRY_POINTS`.
+        reason, in its own module's `LOCKBOX_READS` (#1058).
         """
 
         found = set()
-        paths = [(path, path.stem) for path in sorted(SRC.glob("*.py"))]
-        paths += [(path, f"scripts/{path.stem}") for path in sorted(SCRIPTS.glob("*.py"))]
-        for path, module in paths:
+        for path, module in _lockbox_modules():
             if path.name == "asof.py":
                 continue
             tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -1176,11 +950,17 @@ class EnumerationTests(unittest.TestCase):
                         found.add(f"{module}.{node.name}")
         self.assertEqual(
             found,
-            set(LIBRARY_ENTRY_POINTS) | set(SCRIPT_ENTRY_POINTS) | set(NOT_ENTRY_POINTS),
-            "classify each new function as a scoring entry point (add it to "
-            "LIBRARY_ENTRY_POINTS, or SCRIPT_ENTRY_POINTS for scripts/) or as "
-            "NOT_ENTRY_POINTS with a reason",
+            set(LIBRARY_ENTRY_POINTS) | set(SCRIPT_ENTRY_POINTS) | set(_declared_reads()),
+            "declare each new function in its own module's LOCKBOX_READS: "
+            "\"not_entry\" with a reason, or \"entry\" with a runner in "
+            "LIBRARY_ENTRY_POINTS (or SCRIPT_ENTRY_POINTS for scripts/)",
         )
+
+    def test_a_runner_and_a_declaration_agree_on_the_entry_points(self):
+        """The entry points run above are the ones the modules declare `"entry"`, and no others."""
+
+        declared = {name for name, (kind, _) in _declared_reads().items() if kind == "entry"}
+        self.assertEqual(declared, set(LIBRARY_ENTRY_POINTS) | set(SCRIPT_ENTRY_POINTS))
 
     def test_every_cli_subcommand_is_classified(self):
         parser = cli.build_parser()

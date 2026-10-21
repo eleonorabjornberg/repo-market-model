@@ -17,6 +17,9 @@ Recorded mutations (the new leakage guards; each run on the tests named, then re
 * `require_scored_days`: `if day > last:` replaced with `if day > last + timedelta(days=400):`, so a day after the
   declared end is admitted. `ScopeTests.test_a_day_after_the_declared_end_is_refused` failed with `AssertionError`
   ("LookAheadError not raised"); restored, it passes.
+* `walk`'s `except LookAheadError: raise` removed (code review), so a guard trip before the first fit is skipped as
+  "no public row". `WalkGuardTests.test_a_guard_trip_before_the_first_fit_is_raised_not_skipped` failed with
+  `AssertionError: LookAheadError not raised`; restored, it passes.
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import unittest
+import unittest.mock
 from datetime import date
 from pathlib import Path
 
@@ -105,6 +109,20 @@ class TopKTests(unittest.TestCase):
         metrics = ranking.window_metrics([0.9, 0.8, 0.7], [0, 0, 0], (3,))
         self.assertEqual(metrics[3]["precision"], 0.0)
         self.assertIsNone(metrics[3]["recall"])
+
+
+class WalkGuardTests(unittest.TestCase):
+
+    def test_a_guard_trip_before_the_first_fit_is_raised_not_skipped(self):
+        panel, settings = panel_and_settings()
+        days = [row.date for row in panel if row.date.isoformat() >= "2022-03-07"][:3]
+
+        def tripped(*args, **kwargs):
+            raise LookAheadError("a read after the decision instant")
+
+        with unittest.mock.patch.object(ranking, "fit", tripped):
+            with self.assertRaises(LookAheadError):
+                ranking.walk(panel, days, **settings)
 
 
 class FitTests(unittest.TestCase):

@@ -28,7 +28,10 @@ are the ones a pull request may make only with her own approval:
 * `claude-files`: `CLAUDE.md` or any file under `.claude/` (ruling on PR #943, 19 October 2026);
 * `registration`: any file under `metadata/registrations/` or `docs/registrations/`, where a candidate's
   registration under `docs/decisions/scoring-protocol.md` section 2 is recorded (the protocol names no path yet;
-  these two are the ones the check watches until Eleonora names another).
+  these two are the ones the check watches until Eleonora names another);
+* `decisions`: any file under `docs/decisions/`, `docs/decisions/drafts/` included, added, changed, deleted or
+  moved (ruling on #1068, 21 October 2026; #1074). Moving a draft out of `drafts/` is a delete and an add, both
+  listed.
 
 A pull request that makes one cites her approval by appending an entry to
 `metadata/owner_attestations.json`: its kind, the issue, the comment id, and the
@@ -71,13 +74,14 @@ REGISTRY = "metadata/owner_attestations.json"
 RULE = "docs/decisions/drafts/owner-attestation.md"
 
 #: The binding kinds a registry entry may cite.
-KINDS = ("lockbox", "live-pin", "live-model", "claude-files", "registration")
+KINDS = ("lockbox", "live-pin", "live-model", "claude-files", "registration", "decisions")
 
 #: Binding by path: the exact files and the directories (with their trailing slash) that no pull request may change
 #: without her own GitHub action. `CLAUDE.md` is the one at the repository root, not a look-alike elsewhere.
 CLAUDE_FILES = ("CLAUDE.md",)
 CLAUDE_DIRS = (".claude/",)
 REGISTRATION_DIRS = ("metadata/registrations/", "docs/registrations/")
+DECISIONS_DIRS = ("docs/decisions/",)
 ENTRY_KEYS = {"kind", "issue", "comment_id", "phrase", "what"}
 
 
@@ -223,7 +227,7 @@ def _tiers(text):
 
 
 def path_kinds(paths) -> set:
-    """The path-bound kinds among `paths`: `CLAUDE.md` or `.claude/` files, and registration records."""
+    """The path-bound kinds among `paths`: """
 
     kinds = set()
     for path in paths:
@@ -231,6 +235,8 @@ def path_kinds(paths) -> set:
             kinds.add("claude-files")
         if path.startswith(REGISTRATION_DIRS):
             kinds.add("registration")
+        if path.startswith(DECISIONS_DIRS):
+            kinds.add("decisions")
     return kinds
 
 

@@ -54,6 +54,17 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "inputs_command": (
+        "not_entry",
+        "tabulates what each input reads at the 16:00 decision and how the value read ranks the +5 "
+        "bp onsets, on the judge's scored days (#473); scores no forecast, it ends at the declared "
+        "last scored day, calls require_unlocked on it before the first read, and refuses a scratch "
+        "panel whose spread is not the published panel's",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "pressure_audit.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 DECISION = time(16, 0)

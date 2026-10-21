@@ -87,6 +87,21 @@ from repo_model.scarcity import (  # noqa: E402
     with_reserve_scarcity_state,
 )
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "as_of_reads": (
+        "not_entry",
+        "reads each scored day's as-of state and calendar for the descriptive onset post-mortem "
+        "(#214); compares nothing, and walks _as_of_folds, which refuses a locked day "
+        "(tests/test_onset_post_mortem.py)",
+    ),
+    "gauge_history": (
+        "not_entry",
+        "finds the first fold-grid day whose state is public (#214); reads no outcome and scores "
+        "nothing, as_of_reads walks the guarded grid",
+    ),
+}
+
 REGISTRY = REPO / "metadata" / "sources.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 RECORD = REPO / "docs" / "runs" / "pressure_model_v1_h1.json"

@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/turn_day_labels_959.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

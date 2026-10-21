@@ -111,6 +111,35 @@ from repo_model.evaluation_splits import MONTH_END_RULE, load_split_declaration 
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "crps_from_record": (
+        "delegates",
+        "one record's loss at an outcome `score_crps` supplies, after its guard",
+    ),
+    "integral_crps_from_record": (
+        "delegates",
+        "one record's integral loss at an outcome `score_crps` supplies, after its guard",
+    ),
+    "score": (
+        "guard",
+        "the live Brier event cells: `_require_scored_days_unlocked` before any cell is computed "
+        "(#277)",
+    ),
+    "score_crps": (
+        "guard",
+        "the live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#277)",
+    ),
+    "score_v2": (
+        "guard",
+        "v2's live CRPS cells: `_require_scored_days_unlocked` before any cell is computed (#245)",
+    ),
+    "v2_crps": (
+        "delegates",
+        "one v2 record's loss at an outcome `score_v2` supplies, after its guard",
+    ),
+}
+
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 LOCK = REPO / "metadata" / "live_requirements.lock"
 EASTERN = ZoneInfo("America/New_York")

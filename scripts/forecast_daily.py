@@ -44,6 +44,20 @@ from repo_model.baseline import _code_provenance, panel_sha256  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "reproduction_check": (
+        "delegates",
+        "compares the published series with scores the days `final_test_opening.distribution_walk` "
+        "walks, which calls lockbox.require_unlocked before any fit",
+    ),
+    "reproduction_check_horizon": (
+        "delegates",
+        "compares the final test's cell with scores the days `final_test_opening.distribution_walk` "
+        "walks, which calls lockbox.require_unlocked before any fit",
+    ),
+}
+
 RUNS = REPO / "docs" / "runs"
 CRPS_RECORD = "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"
 FINAL_TEST = "docs/runs/final_test_near_blind.json"

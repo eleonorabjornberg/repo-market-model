@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/tax_date_october_965.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

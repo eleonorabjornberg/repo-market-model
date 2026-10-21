@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/build_fomc_calendar.py",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

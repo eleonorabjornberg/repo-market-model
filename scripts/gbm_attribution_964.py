@@ -62,6 +62,17 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "attribution_walk": (
+        "not_entry",
+        "the #964 attribution's walk of gbm_funding at one lead, as spread_distribution_634.walk is; it scores "
+        "nothing but re-forecasts days of the same fold grid, and it refuses a day after 2025-12-31 "
+        "(require_study_window, tests/test_gbm_attribution_964.py) and a locked scored day (require_unlocked) "
+        "before any fit",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "gbm_attribution_964.json"
 SOURCES = REPO / "metadata" / "sources.json"
 LAST_TARGET = date(2025, 12, 31)

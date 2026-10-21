@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/scaled_score_1013.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

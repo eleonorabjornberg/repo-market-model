@@ -114,8 +114,9 @@ data/ snapshots (checksummed) + metadata/ (sources, release lags, event windows,
 - **Write the test first and watch it fail.** A new leakage, availability or staleness guard also gets one recorded
   mutation that kills it: the mutated line, and the exception type the failing test raised. The record goes in the
   test's docstring. Other code needs no mutation ritual; CI and review cover it.
-- **Run the full suite in one process before you ask for review.** If it outlasts your shell's time limit, run it in the
-  background and wait for it.
+- **Before you ask for review, run `python3 scripts/pre_review.py --base origin/main` and the test modules your change
+  touches.** The full suite runs in the pull request's CI, in its shards (`docs/decisions/workflow.md`, "Fewer round
+  trips"); read it with `gh pr checks`.
 - **CI runs with networking disabled** (`unshare --net`), in shards from `scripts/ci_shards.py`. A test that quietly needs
   the network fails there.
 - **Zero `expectedFailure` is load-bearing.** Skip counts vary by environment and mean nothing.
@@ -164,9 +165,10 @@ comment for her.
 
 `.claude/` holds the hooks that enforce some of these rules before an action (`hooks/`: no push to `main`, no
 `GO #<n>` comment, no commit of a built file, the documentation guards after a Markdown edit, the pre-review checks
-before stopping), the subagents (`agents/`: implementer, reviewer, auditor), the skills (`skills/`: `new-study`,
-`publish-record`, `register-producer`, `long-run`, `directive-orchestrator`) and the Directive loop's instructions
-(`routines/`).
+before stopping), the subagents (`agents/`: implementer, reviewer, auditor, `pr-remerger`, `finding-triager`), the
+skills (`skills/`: `new-study`, `publish-record`, `register-producer`, `long-run`, `directive-orchestrator`,
+`remerge-branch`, `daily-decision-message`) and every routine's instructions (`routines/`, with its README). Eleonora
+works in cloud sessions only: nothing a session follows lives outside this repository.
 
 ## Delegated review
 

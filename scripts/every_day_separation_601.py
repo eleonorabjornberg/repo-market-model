@@ -40,6 +40,17 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import _quantile, stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_units": (
+        "not_entry",
+        "reads the inputs of the days the every-day part flags at each lead's decision (#601); "
+        "scores no forecast, it ends at the declared last scored day through _as_of_folds, which "
+        "calls require_unlocked, and `run` calls require_unlocked on that day before it reads "
+        "anything",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "every_day_separation_601.json"
 LEADS = (1, 2, 3, 4, 5)
 #: a cell with fewer onset warnings than this is reported and never called a separation

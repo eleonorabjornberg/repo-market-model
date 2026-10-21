@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/ci_shards.py",
+    "check"
+  ],
+  "where": "ci:pages",
+  "pre_review": true
+}

@@ -40,6 +40,15 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 from repo_model.recalibration import NestedFoldPid  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "crps_side": (
+        "delegates",
+        "scores the days `final_test_opening.distribution_walk` walks, which calls "
+        "lockbox.require_unlocked before any fit",
+    ),
+}
+
 LAST = date(2025, 12, 31)
 FIRST = date(2018, 4, 3)
 AUCTIONS = (REPO / "tests/fixtures/snapshots/funding_inputs/treasury_auctions"

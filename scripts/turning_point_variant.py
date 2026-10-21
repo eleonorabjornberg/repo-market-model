@@ -46,6 +46,15 @@ from repo_model.splits import LookAheadError  # noqa: E402
 from repo_model.metrics import _quantile, crps_from_quantiles, stationary_bootstrap_indices  # noqa: E402
 from repo_model.recalibration import SCORECASTER_INDICATORS, scorecaster_calendar  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "score_command": (
+        "guard",
+        "scores the variants' CRPS after `require_unlocked` on the last scored day (2025-12-31), "
+        "and refuses a walk that is not on the published record's days, which stop there (#453)",
+    ),
+}
+
 
 def _script(name):
     spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / f"{name}.py")

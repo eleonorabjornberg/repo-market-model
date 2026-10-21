@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/emit_progress.py",
+    "--check"
+  ],
+  "where": "ci:pages",
+  "pre_review": true
+}
