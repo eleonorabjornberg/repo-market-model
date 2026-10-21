@@ -19,6 +19,30 @@ count. The words are otherwise unchanged.
 **Implemented by:** `repo_model.scoring_protocol` (sections 3, 5, 6 and 11) and `repo_model.protocol_benchmarks`
 (section 4), tested on the synthetic suite `tests/test_scoring_protocol_synthetic.py` (H1, section 9).
 
+## Critical values in force
+
+**Status (draft for Eleonora's review, #1073; in force only once she merges it).** Eleonora ruled on 21 October 2026,
+relayed by the orchestrating session on #1064, that the critical values in force are the ones before #878, with no
+per-leg value, and that draft amendments 1 to 3 below (#878, #886, #953) are set aside until H1 is recalibrated on
+the #1027 candidate (the #1050 conditions); all three were calibrated on series from models that do not read calendar
+days. <https://github.com/eleonorabjornberg/repo-market-model/issues/1064#issuecomment-6318943223>
+
+On #1065 she ruled that draft amendment 3's B2-leg value (1.701) is not adopted.
+<https://github.com/eleonorabjornberg/repo-market-model/issues/1065#issuecomment-6318943641>
+
+The values, as `repo_model.scoring_protocol.CRITICAL_VALUES` holds them (three decimals), and no per-leg value
+(`B2_LEG_CRITICAL_VALUES` is empty, so the leg against B2 reads the same value):
+
+- `B2-B1`, 60 days: none
+- `B2-B1`, 125 days: 3.419
+- `B2-B1`, 250 days: 2.426
+- `B3-B1 (five levels)`, 60 days: none
+- `B3-B1 (five levels)`, 125 days: 9.501
+- `B3-B1 (five levels)`, 250 days: 5.455
+
+`tests/test_protocol_values_in_force.py` fails if these lines and the code disagree. The text of the draft amendments
+below is not edited.
+
 ## Rulings on the implementation (13 October 2026, PR #660)
 
 Eleonora ruled on the questions the implementing pull request asked. The ruling was relayed by the orchestrating
