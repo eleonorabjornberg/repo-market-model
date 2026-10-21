@@ -1,0 +1,110 @@
+{
+ "day": "2026-10-20",
+ "files": [
+  {
+   "byte_count": 133957,
+   "path": "fred_macro_latest_vintage/20261021T000334Z_74a1e88d8ad5.zip",
+   "retrieved_at": "2026-10-21T00:03:34.072504+00:00",
+   "sha256": "74a1e88d8ad5c1aae212b3096c1622d9a47b119697f3b979cfe990dc24f8fc76",
+   "source_id": "fred_macro_latest_vintage",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=IORB%2CIOER%2CWRESBAL%2CWTREGEN%2CRRPONTSYD%2CDFF%2CRRPONTSYAWARD%2CTREAST%2CWLRRAOL"
+  },
+  {
+   "byte_count": 452604,
+   "path": "nyfed_sofr/20261021T000331Z_2212396ff7c5.json",
+   "retrieved_at": "2026-10-21T00:03:31.992476+00:00",
+   "sha256": "2212396ff7c51fa9f7f9f153d3964995422410bf49667d999b3b54a441d0954d",
+   "source_id": "nyfed_sofr",
+   "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-10-20&type=rate"
+  },
+  {
+   "byte_count": 216898,
+   "path": "nyfed_sofr/20261021T000331Z_4c17fb882eb9.json",
+   "retrieved_at": "2026-10-21T00:03:31.992476+00:00",
+   "sha256": "4c17fb882eb973626d815526d6bd6089ff6ad761f0163a730c101c1ad7d71ca5",
+   "source_id": "nyfed_sofr",
+   "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-10-20&type=volume"
+  },
+  {
+   "byte_count": 13123160,
+   "path": "treasury_auctions/20261021T000628Z_bd087fdcd686.json",
+   "retrieved_at": "2026-10-21T00:06:28.731523+00:00",
+   "sha256": "bd087fdcd686f68468a39824c718cee24c9b205ae549728ab688ac4ec055c7ce",
+   "source_id": "treasury_auctions",
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?filter=issue_date%3Agte%3A2017-01-03%2Cissue_date%3Alte%3A2026-12-19&page%5Bsize%5D=10000&sort=record_date%2Cissue_date%2Ccusip"
+  },
+  {
+   "byte_count": 16411,
+   "path": "treasury_bill_rates/20261021T000334Z_4059b158b989.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "4059b158b989b5bb4d295cc5e3356434bcceba44d89365e368a2aafbf2077859",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2022/all?type=daily_treasury_bill_rates&field_tdr_date_value=2022&_format=csv"
+  },
+  {
+   "byte_count": 18074,
+   "path": "treasury_bill_rates/20261021T000334Z_47cc8985d947.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "47cc8985d9474bbdaea37266ac5658f6b1b276d3310c54c7efd70358e80bc37b",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2024/all?type=daily_treasury_bill_rates&field_tdr_date_value=2024&_format=csv"
+  },
+  {
+   "byte_count": 13875,
+   "path": "treasury_bill_rates/20261021T000334Z_6f037e225a3f.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "6f037e225a3f296613f620404667971df9f202743e70540d9ffbf5c7d30a3a51",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2018/all?type=daily_treasury_bill_rates&field_tdr_date_value=2018&_format=csv"
+  },
+  {
+   "byte_count": 20297,
+   "path": "treasury_bill_rates/20261021T000334Z_aa024dfde770.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "aa024dfde7700a971b287d7cc8284fd8c34f4dd6c66cb009cf39f501be33b562",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2025/all?type=daily_treasury_bill_rates&field_tdr_date_value=2025&_format=csv"
+  },
+  {
+   "byte_count": 16657,
+   "path": "treasury_bill_rates/20261021T000334Z_b4d5471c30a8.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "b4d5471c30a8818bce9561154e60b6fe63befd4dcd8ffe71aacfa94056c6e35e",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_bill_rates&field_tdr_date_value=2026&_format=csv"
+  },
+  {
+   "byte_count": 18074,
+   "path": "treasury_bill_rates/20261021T000334Z_ca4d73d5e985.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "ca4d73d5e9856391c06ef0b3ec252d950019b1a5db97c934d92d9569fc4ba87c",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2023/all?type=daily_treasury_bill_rates&field_tdr_date_value=2023&_format=csv"
+  },
+  {
+   "byte_count": 15589,
+   "path": "treasury_bill_rates/20261021T000334Z_cc29ccb650fe.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "cc29ccb650fe49ce04781e97332cecba11c20e466b053a08d6fb15b6b24dbd20",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2020/all?type=daily_treasury_bill_rates&field_tdr_date_value=2020&_format=csv"
+  },
+  {
+   "byte_count": 15581,
+   "path": "treasury_bill_rates/20261021T000334Z_e45398cf008a.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "e45398cf008aeca21679fe1ebcc7d051add07f0819ef62723fe472a1ea00377d",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2021/all?type=daily_treasury_bill_rates&field_tdr_date_value=2021&_format=csv"
+  },
+  {
+   "byte_count": 15520,
+   "path": "treasury_bill_rates/20261021T000334Z_f0396ee6dfaa.csv",
+   "retrieved_at": "2026-10-21T00:03:34.077819+00:00",
+   "sha256": "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a",
+   "source_id": "treasury_bill_rates",
+   "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2019/all?type=daily_treasury_bill_rates&field_tdr_date_value=2019&_format=csv"
+  }
+ ],
+ "label": null
+}
