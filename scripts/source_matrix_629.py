@@ -69,6 +69,27 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import _quantile, stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_derived": (
+        "not_entry",
+        "forms the every-day inputs of #601 from the masked frames of the decisions on the screen's "
+        "scored days (#629); scores nothing, and walks _as_of_folds, which refuses a locked day",
+    ),
+    "read_lead": (
+        "not_entry",
+        "reads each series as of the decision instant at one lead on days scored_grid has already "
+        "passed through lockbox.require_unlocked (#629); selects no model and scores no forecast, "
+        "and the screen's `run` refuses a panel past 2025-12-31 (tests/test_source_matrix_629.py)",
+    ),
+    "scored_grid": (
+        "not_entry",
+        "the lead-1 fold grid of the exploratory source matrix (#629); scores and selects no model, "
+        "and calls lockbox.require_unlocked on every day before it returns one "
+        "(tests/test_source_matrix_629.py)",
+    ),
+}
+
 
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")

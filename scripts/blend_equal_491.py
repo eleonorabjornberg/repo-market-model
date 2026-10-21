@@ -36,6 +36,16 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "score_command": (
+        "guard",
+        "scores the blend walk's CRPS after `require_unlocked` on the last scored day (2025-12-31) "
+        "and on every day of the walk, and `check_days` refuses a walk that is not on the published "
+        "record's days to 2025-12-31 (#491)",
+    ),
+}
+
 RUNS = REPO / "docs" / "runs"
 PUBLISHED = RUNS / "published_distribution_daily_h1.json"
 OUTPUT = RUNS / "published_distribution_blend_equal_daily_h1.json"

@@ -64,6 +64,30 @@ from repo_model.data import audit_panel, exceeds_bp, load_daily_panel  # noqa: E
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "walk": (
+        "not_entry",
+        "the #634 measurement's walk of a variant at one lead, as distribution_walk is; it refuses "
+        "a locked scored day itself (refuse_locked, tests/test_spread_distribution_634_script.py, "
+        "LockboxTests) before any fit",
+    ),
+}
+LOCKBOX_CRPS = {
+    "five_crps": (
+        "delegates",
+        "B3's secondary loss of one vector on its own five levels at one outcome; `score_command` "
+        "calls `refuse_locked` on every decision and target day before any score, and `day_scores` "
+        "calls `require_unlocked` before using it (#634, ruling on #660 and #700)",
+    ),
+    "five_twcrps": (
+        "delegates",
+        "the upper-tail loss on the same five levels; `score_command` calls `refuse_locked` on "
+        "every decision and target day before any score, and `day_scores` calls `require_unlocked` "
+        "before using it (#634)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "spread_distribution_634.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"

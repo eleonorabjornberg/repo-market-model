@@ -55,6 +55,15 @@ from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration, split_summary  # noqa: E402
 from repo_model.metrics import crps_from_quantiles, stationary_bootstrap_interval  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "score": (
+        "delegates",
+        "scores the days `baseline.rolling_persistence_backtest` walks, which refuses a locked day "
+        "through `_as_of_folds`",
+    ),
+}
+
 #: The first locked day, `docs/decisions/lockbox.md`'s near-blind tier.
 LOCKED_FROM = date(2026, 1, 1)
 #: The published records' block length and replications, so the intervals here
