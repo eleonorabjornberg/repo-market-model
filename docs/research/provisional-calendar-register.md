@@ -170,6 +170,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/setup_diagnostic.json` | `scripts/setup_diagnostic.py` | direct | pressure models on direct pairs |
 | `metadata/source_matrix_629.json` | `scripts/source_matrix_629.py` | direct | the source screen: pressure models on direct pairs |
 | `metadata/sources.json` | none | none | the availability registry: data |
+| `metadata/sources_measurement.json` | none | none | the measurement sources registry, which declares the `fomc_calendar` columns: data. A fit on them is refused on one-step pairs by `repo_model.one_step_guard` (#1070) |
 | `metadata/spread_distribution_761.json` | none | as_of_read | mean reversion with residuals pooled by the target day's context |
 | `metadata/structural_liquidity.json` | `scripts/structural_liquidity.py` | direct | the structural model, pressure models on direct pairs |
 | `metadata/tax_date_market_days.json` | `scripts/tax_date_market_days.py` | direct | the tax-date window on market days, in pressure models on direct pairs |

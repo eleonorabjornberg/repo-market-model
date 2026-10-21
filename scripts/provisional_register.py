@@ -49,6 +49,12 @@ CALENDAR_COLUMNS = (
     "iorb_announced_change_bps",
     "iorb_days_to_announced_change",
 )
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from repo_model.target_day_columns import TARGET_DAY_COLUMNS  # noqa: E402
+
+#: Every column written about the target day (#1070): the shared declaration, `target_day_columns.TARGET_DAY_COLUMNS` (calendar and
+#: FOMC columns), with the scheduled fields above. The scan of the declarations reads this.
+CALENDAR_COLUMNS = tuple(dict.fromkeys(CALENDAR_COLUMNS + tuple(sorted(TARGET_DAY_COLUMNS))))
 #: The fitters whose default training pairs are one-step.
 FITTER = re.compile(r"fit_(?:gradient_boosted|depth_limited)_quantiles")
 CLASSES = ("a", "b", "a+b", "series")
