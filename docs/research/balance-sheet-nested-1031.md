@@ -35,4 +35,4 @@ The declared reading rule: an arm beats the base on its flagged days when the lo
 
 ## Not done here
 
-No walk was run in this session (the base's own walks took hours on the Mac, and a long run is not run in a cloud session). The base and control walks are #1027's and exist only on her Mac. The aligned one-step variant of #1027 is not nested: it needs an allow-list entry that ends on 15 November 2026, and the flags would be a new regressor set for it.
+No walk was run in this session (the base's own walks took hours on the Mac, and a long run is not run in a cloud session). The base and control walks are #1027's and exist only on her Mac. The aligned one-step variant of #1027 is not nested: it runs under an allow-list entry with an end date (`one_step_guard.ONE_STEP_ALLOW_LIST`), and the flags would be a new regressor set for it.
