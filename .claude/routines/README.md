@@ -31,7 +31,4 @@ prompt is the agent file's text with its inputs, and follows a skill by reading 
 | Scratchpad `mac-<N>.sh` pastes | the PR's `needs-mac:` comment, in the `long-run` skill's format |
 | Scratchpad `orchestrator-state.md` | the day's comment on the "Orchestrator log" issue (#1044) |
 | The auditor's list triage, in the hourly check | subagent `finding-triager` |
-
-**Still outside the repository:** the Forensic auditor's original instructions, given in the first message of its
-session (`session_01VeJzV2uWnsr5Ct3SwitkDg`). Its session copies them into `.claude/agents/forensic-auditor.md`, in a
-pull request for her review.
+| The Forensic auditor's original instructions, in its session's first message | subagent `forensic-auditor` (`.claude/agents/forensic-auditor.md`) |
