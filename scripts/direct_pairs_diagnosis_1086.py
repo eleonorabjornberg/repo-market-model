@@ -6,7 +6,7 @@ touches nothing in `docs/runs/`, and reads no day after 2025-12-31 and no day of
 constants below, and its output was committed before any number was computed.
 
 **Criterion 1, `decompose`.** Reads the ten (and the control's five) walks of #1036 and splits the excess grid CRPS of a candidate over a reference on 2021-23
-target days by lead, by target day type and by quantile level. `scoring_protocol.grid_crps` is twice the mean pinball loss over the 23 levels, so a level's
+target days by lead, by target day type, by year of the target and by quantile level. `scoring_protocol.grid_crps` is twice the mean pinball loss over the 23 levels, so a level's
 share of a cell is `2 * pinball / 23` and the shares sum to the cell's score. The levels are grouped into the declared bands (`BANDS`) to say whether the
 excess sits in the centre or in the tails. Three pairs: `gbm_funding_cal_direct` over `gbm_funding` (the pair of #1036's headline; it differs in the
 pairing, the leaf and the inputs), `gbm_funding_cal_aligned` against `gbm_funding_cal_direct` (the pair that differs in the pairing alone), and the aligned
@@ -122,6 +122,8 @@ class Cell(NamedTuple):
     reference: Sequence[float]
     candidate: Sequence[float]
     observed: float
+    #: the calendar year of the target day, a further cut when given (the floor regime fills a refit's training set over 2021-23: see `training`)
+    period: str = ""
 
 
 def decompose(cells: Sequence[Cell]) -> Dict[str, dict]:
@@ -133,6 +135,8 @@ def decompose(cells: Sequence[Cell]) -> Dict[str, dict]:
     for cell in cells:
         groups.setdefault(f"lead {cell.lead}", []).append(cell)
         groups.setdefault(cell.kind, []).append(cell)
+        if cell.period:
+            groups.setdefault(f"year {cell.period}", []).append(cell)
     out = {}
     for name, members in groups.items():
         by_level = [0.0] * len(GRID)
@@ -232,7 +236,7 @@ def declaration_document() -> dict:
             "pairs_candidate_over_reference": [list(p) for p in PAIRS],
             "pairs_note": "direct over gbm_funding differs in the pairing, the leaf (5 against 20) and the inputs (calendar and net-settlement columns added); aligned against direct differs in the pairing alone",
             "excess": "candidate minus reference of the grid CRPS; positive is a loss of the candidate",
-            "cuts": ["all cells", "lead 1 to 5", "target day type (ordinary, settlement, month_end, tax_date, quarter_end)", "quantile level (23), grouped into bands"],
+            "cuts": ["all cells", "lead 1 to 5", "target day type (ordinary, settlement, month_end, tax_date, quarter_end)", "calendar year of the target day (the floor regime fills a refit's training window over 2021-23, see the training check's per-refit floor pairs)", "quantile level (23), grouped into bands"],
             "bands": BANDS,
             "contrast": "the same decomposition on target days outside 2021-23",
         },
@@ -331,7 +335,7 @@ def decompose_command(args) -> int:
     for candidate, reference in PAIRS:
         by_window: Dict[str, List[Cell]] = {"2021-23": [], "outside 2021-23": []}
         for (d, h), t in targets.items():
-            cell = Cell(h, ac.target_type(frame, t), frame.forecasts[reference][d][h], frame.forecasts[candidate][d][h], frame.outcome[t])
+            cell = Cell(h, ac.target_type(frame, t), frame.forecasts[reference][d][h], frame.forecasts[candidate][d][h], frame.outcome[t], str(t.year))
             by_window["2021-23" if in_window(t) else "outside 2021-23"].append(cell)
         out["pairs"][f"{candidate} over {reference}"] = {name: decompose(cells) for name, cells in by_window.items() if cells}
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)

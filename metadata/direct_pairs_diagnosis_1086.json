@@ -20,6 +20,7 @@
    "all cells",
    "lead 1 to 5",
    "target day type (ordinary, settlement, month_end, tax_date, quarter_end)",
+   "calendar year of the target day (the floor regime fills a refit's training window over 2021-23, see the training check's per-refit floor pairs)",
    "quantile level (23), grouped into bands"
   ],
   "excess": "candidate minus reference of the grid CRPS; positive is a loss of the candidate",

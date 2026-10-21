@@ -119,6 +119,17 @@ class DecomposeTests(unittest.TestCase):
         self.assertEqual(set(out), {"all", "lead 1", "lead 2", "ordinary", "month_end"})
         self.assertEqual(out["all"]["days"], 3)
 
+    def test_a_period_is_a_further_group_when_given(self):
+        wide, narrow = law(0.0, 20.0), law(0.0, 2.0)
+        cells = [
+            script.Cell(1, "ordinary", narrow, wide, 0.0, "2021"),
+            script.Cell(1, "ordinary", narrow, narrow, 0.0, "2022"),
+        ]
+        out = script.decompose(cells)
+        self.assertEqual(out["year 2022"]["total"], 0.0)
+        self.assertGreater(out["year 2021"]["total"], 0.0)
+        self.assertNotIn("year ", "".join(script.decompose(self.rows())))
+
     def test_an_empty_input_is_refused(self):
         with self.assertRaises(ValueError):
             script.decompose([])
