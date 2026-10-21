@@ -575,20 +575,22 @@ class InformationRule:
         Its observation is the latest Wednesday on or before the row, and a
         calendar-day lag counted from that Wednesday is the row's declared
         instant less the days between them. Any other field, or a lag counted
-        in business days, is aged from its own row.
+        in business days, is aged from its own row. A group's instant is the
+        latest over its fields, so it does not depend on their order.
         """
 
+        latest = datetime.min
         for source_id, field in fields:
+            moment = self.availability(dates, ((source_id, field),), row)
             frequencies = self.registry[source_id].get("field_frequencies") or {}
-            if frequencies.get(field) != "weekly":
-                return available
             lag = (self.registry[source_id].get("field_release_lags") or {}).get(
                 field
             ) or self.registry[source_id].get("release_lag") or {}
-            if lag.get("unit") == "business_days":
-                return available
-        behind = (dates[row].weekday() - WEEKLY_OBSERVATION_WEEKDAY) % 7
-        return available - timedelta(days=behind)
+            if frequencies.get(field) == "weekly" and lag.get("unit") != "business_days":
+                behind = (dates[row].weekday() - WEEKLY_OBSERVATION_WEEKDAY) % 7
+                moment -= timedelta(days=behind)
+            latest = max(latest, moment)
+        return latest
 
     def information_set(self, dates: Sequence[date], scored_index: int) -> InformationSet:
         """Every declared read for the forecast of `dates[scored_index]`."""
