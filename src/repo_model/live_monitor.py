@@ -25,6 +25,16 @@ from .contract import QUANTILE_LEVELS
 from .metrics import crps_from_quantiles
 from .splits import LookAheadError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "crps_ratio": (
+        "delegates",
+        "a pure metric of rows the caller supplies; the replay refuses a day after 2025-12-31 and a "
+        "locked day before it builds rows, and the read of live outcomes refuses until the "
+        "monitoring decision record is merged (#969)",
+    ),
+}
+
 __all__ = [
     "DECISION_RECORD", "DEV_LAST", "TOO_FEW_DAYS", "band_hits", "chi2_sf", "christoffersen", "crps_ratio",
     "kupiec", "pin_check", "pit_counts", "pit_shares", "report", "require_decision_record",

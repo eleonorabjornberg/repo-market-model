@@ -45,6 +45,15 @@ from .baseline import (
 )
 from .data import exceeds_bp
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "refit_knots": (
+        "entry",
+        "scores days through the fold loop; its runner is in LIBRARY_ENTRY_POINTS in "
+        "tests/test_lockbox.py",
+    ),
+}
+
 __all__ = [
     "absolute_ceilings",
     "brier_by_tau",

@@ -54,6 +54,16 @@ sys.path.insert(0, str(REPO / "src"))
 from repo_model import contract, scoring_protocol as sp  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "rare_command": (
+        "not_entry",
+        "counts the rare days (quarter-end, tax date, month-end) in each walk-forward refit's "
+        "training window (#951) and scores nothing; it calls require_study_window (no day after "
+        "2025-12-31) before it reads the panel",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "drivers_audit_951.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"

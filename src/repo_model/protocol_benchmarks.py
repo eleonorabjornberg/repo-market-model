@@ -44,6 +44,16 @@ from .evaluation_splits import SplitDeclaration
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
 from .splits import LookAheadError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "_anchor": (
+        "not_entry",
+        "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a "
+        "forecast, scores nothing: the forecast is scored only through scoring_protocol.day_scores, "
+        "which calls require_unlocked on every scored day",
+    ),
+}
+
 #: §4: B1's trailing window and B2's, in years before the decision day.
 B1_YEARS = 2
 B2_YEARS = 1

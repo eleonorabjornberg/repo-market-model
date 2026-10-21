@@ -51,6 +51,16 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_trapezoid_from_quantiles, stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "build_pool": (
+        "guard",
+        "B1's and B2's grid and trapezoid CRPS cells of the scaled-score study: `require_unlocked` "
+        "on every decision and target day, and `require_study_window` on every target, before any "
+        "cell is computed (#967)",
+    ),
+}
+
 RESEARCH = REPO / "docs" / "research"
 DECLARATION = REPO / "metadata" / "scaled_score_967.json"
 RECORD = RESEARCH / "scaled-score-967" / "result.json"

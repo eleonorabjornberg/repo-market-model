@@ -53,6 +53,14 @@ from .metrics import crps_from_quantiles
 from .recalibration import NestedFoldPid, SelectedBlock, _PidView, select_constants
 from .splits import LookAheadError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "record": (
+        "delegates",
+        "a label the online calibrator takes from the walk that calls it; scores no day itself",
+    ),
+}
+
 #: The levels v2 tracks. The outer two stay nested PID's.
 INTERIOR_LEVELS = (0.25, 0.5, 0.75)
 #: The candidate steps, in basis points per unit of miss, and the step used

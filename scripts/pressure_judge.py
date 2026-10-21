@@ -59,6 +59,16 @@ from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "_same_row_scarcity_states": (
+        "not_entry",
+        "reads the reserve-scarcity state the pre-#586 way (one row for all three legs) on the fold "
+        "grid, to count the days the own-leg read changes (#586); scores nothing, it ends at the "
+        "declared last scored day through _as_of_folds, which calls require_unlocked",
+    ),
+}
+
 REGISTRY = REPO / "metadata" / "sources.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 EVENTS = REPO / "metadata" / "events.json"

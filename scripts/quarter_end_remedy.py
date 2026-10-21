@@ -40,6 +40,15 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "_crps": (
+        "delegates",
+        "one loss; scores the days `final_test_opening.distribution_walk` walks, which calls "
+        "lockbox.require_unlocked before any fit",
+    ),
+}
+
 LEVELS = (0.05, 0.25, 0.5, 0.75, 0.95)
 RECORD = REPO / "docs" / "runs" / "pressure_model_v2_distribution_h1.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"

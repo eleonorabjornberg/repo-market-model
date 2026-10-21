@@ -125,6 +125,14 @@ from .contract import QUANTILE_LEVELS, field_sources_for_features
 from .data import DailyObservation
 from .splits import LookAheadError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "label": (
+        "delegates",
+        "a label the online calibrator takes from the walk that calls it; scores no day itself",
+    ),
+}
+
 #: The scorecaster's calendar, in column order after the intercept.
 SCORECASTER_INDICATORS = ("month_end", "quarter_end", "tax_date", "coupon_settlement")
 
