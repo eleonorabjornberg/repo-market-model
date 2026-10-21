@@ -1,0 +1,15 @@
+{
+  "order": 222,
+  "directive": 968,
+  "pull_request": 988,
+  "hypothesis": "H3",
+  "result": "The OFR cleared-repo series at the lag the OFR states",
+  "declarations": [],
+  "model": "`gbm` on the published funding features plus `ofr_dvp_minus_bgcr_bp`, against the same without it (#187's paired test)",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "2026-10-19-model-00988-H3-step1"
+  ],
+  "concluded": "No change: the paired test is no effect at both lags; `treasury_settlement` is trained one row off at lead 1 in both arms."
+}
