@@ -5,18 +5,29 @@ description: Run a step of repo-market-model expected to take more than about tw
 
 # Long runs
 
-A long step is never run in a cloud session, where it can run out of time and lose its work, and never as a heavy run
-on Eleonora's Mac unless the rule below sends it there.
+A long step is never run in a cloud session, where it can run out of time and lose its work. It runs overnight on
+Eleonora's Mac (`docs/decisions/workflow.md`, "Long runs go to her Mac").
 
 1. **Commit the script and the exact commands first**, and push the branch, so the run is reproducible from the branch.
-2. **Up to six hours: the long-run workflow.** Once `.github/workflows/long-run.yml` is on `main` (PR #1043), start it
-   on the branch (`gh workflow run long-run.yml --ref <branch> -f ...`, inputs as the workflow declares). It installs
-   the pinned ml versions, runs the command, uploads the log, and commits the results under `docs/` and `metadata/`
-   to the same branch with a neutral author. Its push does not start the PR's tests: push again afterwards, or ask
-   the orchestrating session to re-run them.
-3. **Longer than six hours, or it needs her machine:** comment `needs-mac:` on the PR with the commands
-   (`docs/decisions/workflow.md`, "Long runs go to her Mac"). The orchestrating session hands her one paste; her pushed
-   results are then finished by a cloud session.
+2. **Comment `needs-mac:` on the PR** with the paste, complete and ready to run, so it lives on GitHub and not in a
+   session. The orchestrating session hands it to her in the 5 pm message; she runs it overnight. Its shape:
+   ```
+   bash -s <<'EOF'
+   set -euo pipefail
+   [ -d ~/rmm-<N> ] || git clone -b <branch> https://github.com/eleonorabjornberg/repo-market-model ~/rmm-<N>
+   cd ~/rmm-<N> && git fetch origin && git checkout <branch> && git merge --ff-only origin/<branch>
+   source ~/rmm-venv/bin/activate   # Python 3.11.17, numpy and scikit-learn at the versions CI's ml job pins
+   python -c "import sys, numpy, sklearn; print(sys.version, numpy.__version__, sklearn.__version__)"
+   <the exact commands> > ~/<N>.log 2>&1
+   git add <the result paths> && git commit -m "#<N>: Mac run" && git push origin HEAD
+   echo PUSHED
+   EOF
+   ```
+   Say the expected hours, and whether it can run beside another paste.
+3. **Do not push to the branch, or merge main into it, while her run is out**: her push would fail. The orchestrating
+   session says on the PR when a run has started.
 4. **Record the environment** in the PR: Python, numpy and scikit-learn versions of the run.
-5. Split a long run into independent pieces (per horizon, per regime, per seed) that each finish well inside the
-   limit, and write each piece's output to its own file, so a lost piece costs only itself.
+5. Split a long run into independent pieces (per horizon, per regime, per seed), each writing its own output file, and
+   make the scoring step score only the pieces that exist, so a lost piece costs only itself and a re-run skips what
+   finished.
+6. Her pushed results are finished by a cloud session like any other branch.
