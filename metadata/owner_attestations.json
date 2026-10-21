@@ -55,6 +55,13 @@
       "comment_id": 6320919440,
       "phrase": "GO #1075",
       "what": "approve the amendment to docs/decisions/workflow.md in PR #1075 (Fewer round trips: the draft status line dropped; long runs to her Mac overnight; the full suite in CI), bound to attestation by #1074 after her GO was posted"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1077,
+      "comment_id": 6326602842,
+      "phrase": "GO #1077",
+      "what": "approve the Forensic auditor's original instructions and her 12 and 13 October changes, quoted in .claude/agents/forensic-auditor.md with her 21 October rulings (labels, scope, reading list); finding-triager's needs-eleonora step; the auditor's routine file pointing at the agent file; the routines README row (PR #1077)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
