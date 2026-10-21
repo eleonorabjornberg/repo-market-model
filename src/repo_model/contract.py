@@ -59,6 +59,8 @@ __all__ = [
     "SETTLEMENT_DAY_MONTH_END_DAYS",
     "DERIVED_FEATURES",
     "CALENDAR_FEATURES",
+    "FOMC_TARGET_DAY_COLUMNS",
+    "TARGET_DAY_COLUMNS",
     "UNSOURCED_FEATURES",
     "UNMODELLED_SOURCES",
     "OVERLAY_FEATURES",
@@ -509,6 +511,17 @@ CALENDAR_FEATURES = frozenset(
         "days_to_month_end",
     }
 )
+
+# The FOMC meeting columns of `fomc_calendar.add_columns` (#1038): written about the target day, read at the decision
+# instant, and not in `CALENDAR_FEATURES` (no published panel or declaration reads them). Their names are repeated here
+# so that `tests/test_one_step_guard.py` can fail when `fomc_calendar.COLUMNS` and this tuple part.
+FOMC_TARGET_DAY_COLUMNS = frozenset({"fomc_meeting_day", "fomc_days_to_next_meeting"})
+
+# The one declaration of the columns written about the target day (#1070, finding #1066): `asof` rule 2 serves them from
+# the scored row, so a one-step pair would learn them a row off (#914). `one_step_guard` and
+# `scripts/provisional_register.py` read it. The fields a source declares in `scheduled_availability` are the other half
+# of the class and come from the registry, not from here. A later column-adding module adds its names to this set.
+TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS
 
 # Columns a model may read that the published panel does not carry: a named
 # module adds them to a panel in memory, from a tracked snapshot, after the

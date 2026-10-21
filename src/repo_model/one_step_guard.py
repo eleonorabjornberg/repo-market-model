@@ -1,6 +1,6 @@
 """Refuse a calendar or scheduled regressor in a one-step pair (#947, Eleonora's ruling of 19 October 2026).
 
-`asof` rule 2 serves the calendar columns (`contract.CALENDAR_FEATURES`) and every field a source declares in
+`asof` rule 2 serves the columns written about the target day (`contract.TARGET_DAY_COLUMNS`: the calendar columns and the FOMC meeting columns) and every field a source declares in
 `scheduled_availability` from the scored row `T` itself. A one-step fitter trains each target on the row before it:
 row `p` against `spread(p + 1)`. A calendar or scheduled column therefore trains one row off from the row it is
 served on (finding #914): the flag that marks a quarter-end learns the reversal the day *after* the turn.
@@ -23,10 +23,10 @@ from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .asof import _scheduled_blocks
 from .contract import (
-    CALENDAR_FEATURES,
     COMPOSED_FEATURES,
     DERIVED_FEATURES,
     FEATURE_FIELDS,
+    TARGET_DAY_COLUMNS,
 )
 
 __all__ = [
@@ -112,7 +112,7 @@ def one_step_refusals(
     found: Dict[str, str] = {}
     for name in regressors:
         for leaf in _leaves(str(name)):
-            if leaf in CALENDAR_FEATURES:
+            if leaf in TARGET_DAY_COLUMNS:
                 found[str(name)] = f"calendar column {leaf!r}"
                 break
             pairs = [pair for pair in FEATURE_FIELDS.get(leaf, ()) if pair in scheduled]
