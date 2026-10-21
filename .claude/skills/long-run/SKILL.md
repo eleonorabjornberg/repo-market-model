@@ -9,9 +9,21 @@ A long step is never run in a cloud session, where it can run out of time and lo
 Eleonora's Mac (`docs/decisions/workflow.md`, "Long runs go to her Mac").
 
 1. **Commit the script and the exact commands first**, and push the branch, so the run is reproducible from the branch.
-2. **Comment `needs-mac:` on the PR** with the commands: a fresh clone of the branch, the project's virtual environment
-   at the declared Python, output to a log file, and a push of the results to the same branch. The orchestrating
-   session hands her the paste in the 5 pm catch-up; she runs it overnight.
+2. **Comment `needs-mac:` on the PR** with the paste, complete and ready to run, so it lives on GitHub and not in a
+   session. The orchestrating session hands it to her in the 5 pm message; she runs it overnight. Its shape:
+   ```
+   bash -s <<'EOF'
+   set -euo pipefail
+   [ -d ~/rmm-<N> ] || git clone -b <branch> https://github.com/eleonorabjornberg/repo-market-model ~/rmm-<N>
+   cd ~/rmm-<N> && git fetch origin && git checkout <branch> && git merge --ff-only origin/<branch>
+   source ~/rmm-venv/bin/activate   # Python 3.11.17, numpy and scikit-learn at the versions CI's ml job pins
+   python -c "import sys, numpy, sklearn; print(sys.version, numpy.__version__, sklearn.__version__)"
+   <the exact commands> > ~/<N>.log 2>&1
+   git add <the result paths> && git commit -m "#<N>: Mac run" && git push origin HEAD
+   echo PUSHED
+   EOF
+   ```
+   Say the expected hours, and whether it can run beside another paste.
 3. **Do not push to the branch, or merge main into it, while her run is out**: her push would fail. The orchestrating
    session says on the PR when a run has started.
 4. **Record the environment** in the PR: Python, numpy and scikit-learn versions of the run.

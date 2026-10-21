@@ -21,8 +21,17 @@ A change to a routine is then a pull request changing its file, owner-attested l
 may not offer this repository's subagents and skills. When they do not, a run starts a general-purpose subagent whose
 prompt is the agent file's text with its inputs, and follows a skill by reading its `SKILL.md`.
 
-**Still outside the repository (to move here):**
-- the Forensic auditor's original instructions, given in the first message of its session
-  (`session_01VeJzV2uWnsr5Ct3SwitkDg`);
-- the orchestrating session's scratchpad: `orchestrator-state.md`, `tools/remerge2.sh` and the `mac-<N>.sh` pastes
-  for her Mac runs.
+**What used to live in sessions, and where it is now:**
+
+| Was | Now |
+| --- | --- |
+| The orchestrating session's hourly check and standing rules, in its routine prompt | skill `directive-orchestrator` |
+| The 5 pm message, in its routine prompt | skill `daily-decision-message` |
+| Scratchpad `tools/remerge2.sh` | skill `remerge-branch`, run by subagent `pr-remerger` |
+| Scratchpad `mac-<N>.sh` pastes | the PR's `needs-mac:` comment, in the `long-run` skill's format |
+| Scratchpad `orchestrator-state.md` | the day's comment on the "Orchestrator log" issue (#1044) |
+| The auditor's list triage, in the hourly check | subagent `finding-triager` |
+
+**Still outside the repository:** the Forensic auditor's original instructions, given in the first message of its
+session (`session_01VeJzV2uWnsr5Ct3SwitkDg`). Its session copies them into `.claude/agents/forensic-auditor.md`, in a
+pull request for her review.

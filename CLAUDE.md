@@ -165,9 +165,10 @@ comment for her.
 
 `.claude/` holds the hooks that enforce some of these rules before an action (`hooks/`: no push to `main`, no
 `GO #<n>` comment, no commit of a built file, the documentation guards after a Markdown edit, the pre-review checks
-before stopping), the subagents (`agents/`: implementer, reviewer, auditor), the skills (`skills/`: `new-study`,
-`publish-record`, `register-producer`, `long-run`, `directive-orchestrator`) and the Directive loop's instructions
-(`routines/`).
+before stopping), the subagents (`agents/`: implementer, reviewer, auditor, `pr-remerger`, `finding-triager`), the
+skills (`skills/`: `new-study`, `publish-record`, `register-producer`, `long-run`, `directive-orchestrator`,
+`remerge-branch`, `daily-decision-message`) and every routine's instructions (`routines/`, with its README). Eleonora
+works in cloud sessions only: nothing a session follows lives outside this repository.
 
 ## Delegated review
 
