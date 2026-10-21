@@ -94,6 +94,10 @@ class OneStepGuardTests(unittest.TestCase):
         self.assertEqual(one_step_guard.one_step_refusals(PUBLISHED_AT_H1[:-1]), {})
 
 
+class _EstimatorReached(Exception):
+    pass
+
+
 class TargetDayColumnsTests(unittest.TestCase):
     """The FOMC columns are written about the target day, like the calendar columns (#1070, finding #1066).
 
@@ -139,11 +143,15 @@ class TargetDayColumnsTests(unittest.TestCase):
             )
             rows = self.rows()
             train = rule.frame(rows, rule.information_set([row.date for row in rows], len(rows) - 1))
-            model = ml.fit_gradient_boosted_quantiles(
-                train, ["sofr_volume", "fomc_meeting_day"], minimum_history=20, min_samples_leaf=3,
-                information=rule, training_pairs="direct",
-            )
-        self.assertIn("fomc_meeting_day", model.regressors)
+            # Every guard runs before the estimator is built, so a stub that raises when asked for it shows the fit got
+            # past the guard without needing the `ml` extra (this module runs in a stdlib-only shard).
+            with mock.patch.object(ml, "_estimator_class", side_effect=_EstimatorReached), self.assertRaises(
+                _EstimatorReached
+            ):
+                ml.fit_gradient_boosted_quantiles(
+                    train, ["sofr_volume", "fomc_meeting_day"], minimum_history=20, min_samples_leaf=3,
+                    information=rule, training_pairs="direct",
+                )
 
     def test_every_column_the_fomc_module_writes_is_declared(self):
         written = {name for row in self.rows() for name in row.values} - {name for row in frame(60) for name in row.values}
