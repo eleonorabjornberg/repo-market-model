@@ -1799,7 +1799,6 @@ def _compare(args: argparse.Namespace) -> int:
     )
     model_a, fit_a = _select_fitter(side_a, side="-a")
     model_b, fit_b = _select_fitter(side_b, side="-b")
-    _refuse_mixed_nested_pairing(args)
 
     rows = load_daily_panel(args.path)
     audit_panel(rows)
@@ -1895,6 +1894,18 @@ def _compare(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+def _compare_nested_checked(args: argparse.Namespace) -> int:
+    """`compare`'s handler: refuse a nested comparison with mixed pairing (#1071), then run `_compare`.
+
+    A wrapper and not a line in `_compare`: `_compare` and what it calls are hashed into the final test's pinned CRPS
+    checksum (`scripts/final_test_preregistration.py`, `_CRPS_SOURCE`), which this refusal must not move. It runs before
+    the panel is read, so a refused comparison leaves no report behind.
+    """
+
+    _refuse_mixed_nested_pairing(args)
+    return _compare(args)
 
 
 def _event_holdout(args: argparse.Namespace) -> int:
@@ -2741,7 +2752,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     # No --purge and no --source, on either side. See _compare: the obvious way
     # to make two declarations comparable is to overrule one of them, and that
     # is exactly what must not be available here.
-    compare.set_defaults(handler=_compare)
+    compare.set_defaults(handler=_compare_nested_checked)
 
 
     exceedance = subparsers.add_parser(

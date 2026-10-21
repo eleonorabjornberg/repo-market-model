@@ -11,7 +11,7 @@ Mutation record
 
 Run on this branch's tree, `PYTHONPATH=src:tests`, unmutated control green before and after.
 
-  * **The refusal removed** -- the `_refuse_mixed_nested_pairing(args)` call in `_compare` replaced by `pass`. Kills
+  * **The refusal removed** -- the `_refuse_mixed_nested_pairing(args)` call in `_compare_nested_checked` replaced by `pass`. Kills
     `test_mixed_pairing_in_a_nested_comparison_is_refused`, both subtests, `AssertionError: 0 != 2` (the mixed comparison
     ran and exited 0).
   * **The nesting test dropped** -- `if not columns_a < columns_b:` replaced by `if False:`. Kills
