@@ -1698,6 +1698,35 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
     )
 
 
+def _refuse_mixed_nested_pairing(args: argparse.Namespace) -> None:
+    """Refuse a nested comparison whose arms are trained on different pairs (#1071, finding #1067).
+
+    "Side b is side a's columns plus X" asks what X adds. If one arm is fitted on one-step pairs and the other on direct
+    pairs, the paired difference also carries the change of pairing (a calendar or scheduled column is learned a row
+    off on one-step pairs, #914), so it measures neither X nor the pairing. Both arms run on one pairing: the control
+    is then the published features fitted on that pairing, not the frozen one-step fit. Only a strictly nested pair of
+    declarations of one model is refused; two arms that differ in the pairing alone, or in unrelated columns, are not
+    an input test and are left alone.
+    """
+
+    if args.model_a != args.model_b:
+        return
+    columns_a, columns_b = set(args.feature_a or ()), set(args.feature_b or ())
+    if not columns_a < columns_b:
+        return
+    pairs_a = getattr(args, "training_pairs_a", None) or "one-step"
+    pairs_b = getattr(args, "training_pairs_b", None) or "one-step"
+    if pairs_a == pairs_b:
+        return
+    raise SplitError(
+        f"the comparison is nested (--feature-b adds {sorted(columns_b - columns_a)} to --feature-a) but the arms are "
+        f"trained on different pairs: --training-pairs-a is {pairs_a}, --training-pairs-b is {pairs_b}. The difference "
+        "would measure the change of pairing as well as the added input. Give both arms one --training-pairs-a and "
+        "--training-pairs-b (direct, for a model that reads calendar columns at the target day), so the control is the "
+        "published features fitted on that pairing"
+    )
+
+
 def _compare(args: argparse.Namespace) -> int:
     """Score two continuous models at the same origins and publish the gap.
 
@@ -1770,6 +1799,7 @@ def _compare(args: argparse.Namespace) -> int:
     )
     model_a, fit_a = _select_fitter(side_a, side="-a")
     model_b, fit_b = _select_fitter(side_b, side="-b")
+    _refuse_mixed_nested_pairing(args)
 
     rows = load_daily_panel(args.path)
     audit_panel(rows)
