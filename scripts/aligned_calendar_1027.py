@@ -382,6 +382,28 @@ def _task(job):
     return key, metric, candidate, benchmark, s761.run_pairs({benchmark: series[benchmark]}, series[candidate], days, seed=SEED, draws=_SERIES["draws"])[benchmark]
 
 
+def scored_variants(walks: Path) -> Tuple[List[str], Dict[str, str]]:
+    """The variants whose five walks exist, and why any other is not run.
+
+    The aligned one-step variant may be absent: `repo_model.one_step_guard` (#947) refuses it until Eleonora admits it by an allow-list entry, so its walks
+    write nothing. The direct variant may not be absent, and a variant with some leads walked and others not is an error, never a silent drop (Eleonora,
+    21 October 2026: score the direct variant against the control, the aligned one reported as not run).
+    """
+
+    scored, not_run = [], {}
+    for variant in VARIANTS:
+        present = [h for h in HORIZONS if (walks / f"{variant}_h{h}.json").is_file()]
+        if len(present) == len(HORIZONS):
+            scored.append(variant)
+        elif present:
+            raise ValueError(f"{variant} has walks for leads {present} only; walk every lead or none")
+        elif variant == ALIGNED:
+            not_run[variant] = "not run: refused by repo_model.one_step_guard (#947) until Eleonora admits it by an allow-list entry per lead"
+        else:
+            raise ValueError(f"{variant} has no walks; the direct variant is the one calendar first asks for and must be scored")
+    return scored, not_run
+
+
 def score_command(args) -> int:
     b960 = _load("b1_calendar_960")
     s761, s686 = b960.s761, b960.s686
@@ -392,7 +414,8 @@ def score_command(args) -> int:
     registry = json.loads(SOURCES.read_text(encoding="utf-8"))
     frame, notes = b960.build_frame(pub, panel_sha256(published), splits, registry, s761.committed_declaration(b960.DECLARATION), walks)
     models = list(BENCHMARKS) + [CONTROL]
-    for variant in VARIANTS:
+    variants, not_run = scored_variants(walks)
+    for variant in variants:
         forecasts = load_walks(walks, variant, published, panel_path, frame)
         frame.forecasts[variant] = forecasts
         models.append(variant)
@@ -420,7 +443,7 @@ def score_command(args) -> int:
     calendar_days = [d for d in targets if labels["target_type"][d] in CALENDAR_TYPES]
     groups[("target_type", "calendar_days")] = ("target", calendar_days)
 
-    pairs = [(v, b) for v in VARIANTS for b in (CONTROL,) + BENCHMARKS] + [(ALIGNED, DIRECT)]
+    pairs = [(v, b) for v in variants for b in (CONTROL,) + BENCHMARKS] + ([(ALIGNED, DIRECT)] if ALIGNED in variants else [])
     jobs, skipped = [], {}
     for (split, label), (grain, members) in groups.items():
         if len(members) < MIN_GROUP_DAYS:
@@ -438,7 +461,7 @@ def score_command(args) -> int:
         "issue": 1027, "declaration": str(DECLARATION.relative_to(REPO)), "panel_sha256": panel_sha256(published), "scratch_panel_sha256": panel_sha256(panel_path),
         "label": "development, not a verdict", "seed": SEED, "draws": args.draws, "notes": notes, "models": models, "pairs": [list(p) for p in pairs],
         "means": {label: {m: sum(series[("decision", label)][m].values()) / len(days) for m in models} for label, _ in METRICS},
-        "groups": {}, "skipped_groups": skipped, "declared_reading_rules": declaration["reading_rules"],
+        "groups": {}, "skipped_groups": skipped, "declared_reading_rules": declaration["reading_rules"], "not_run": not_run,
     }
     for (grain, name), metric, candidate, benchmark, row in out:
         split, label = name.split("/", 1)
@@ -451,7 +474,7 @@ def score_command(args) -> int:
     def pick(label, candidate):
         return result["groups"].get("target_type", {}).get(label, {}).get("metrics", {}).get("grid_crps", {}).get("pairs", {}).get(f"{candidate} vs {CONTROL}")
 
-    result["reading_rules"] = reading_rules({v: {"calendar": pick("calendar_days", v), "ordinary": pick("ordinary", v)} for v in VARIANTS})
+    result["reading_rules"] = reading_rules({v: {"calendar": pick("calendar_days", v), "ordinary": pick("ordinary", v)} for v in variants})
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     if args.markdown:
@@ -478,6 +501,7 @@ def render_report(r: dict, s761) -> str:
     for m in r["models"]:
         lines.append(f"| {m} | " + " | ".join(f"{r['means'][label][m]:.4f}" for label in r["means"]) + " |")
     lines += ["", "## Reading (declared rules)", ""] + [f"- {s}" for s in r["reading_rules"]]
+    lines += [f"- {v}: {why}." for v, why in sorted(r.get("not_run", {}).items())]
     lines += ["", "Replacing the candidate is a marked question for Eleonora; this page does not decide it.", ""]
     for metric in METRIC_TITLES:
         lines += [f"## {METRIC_TITLES[metric]}", ""]

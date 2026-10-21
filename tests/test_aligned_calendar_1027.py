@@ -324,3 +324,35 @@ class DeclarationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScoredVariantsTests(unittest.TestCase):
+    """Score what was walked: the aligned variant may be absent (refused by #947's guard), the direct one may not (Eleonora, 21 October 2026)."""
+
+    def walks(self, names):
+        import tempfile
+        root = Path(tempfile.mkdtemp())
+        for name in names:
+            for h in script.HORIZONS:
+                (root / f"{name}_h{h}.json").write_text("{}", encoding="utf-8")
+        return root
+
+    def test_both_walked_scores_both(self):
+        scored, not_run = script.scored_variants(self.walks([script.ALIGNED, script.DIRECT]))
+        self.assertEqual(scored, [script.ALIGNED, script.DIRECT])
+        self.assertEqual(not_run, {})
+
+    def test_the_aligned_variant_refused_by_the_guard_is_reported_not_run(self):
+        scored, not_run = script.scored_variants(self.walks([script.DIRECT]))
+        self.assertEqual(scored, [script.DIRECT])
+        self.assertIn("947", not_run[script.ALIGNED])
+
+    def test_the_direct_variant_missing_is_an_error(self):
+        with self.assertRaises(ValueError):
+            script.scored_variants(self.walks([script.ALIGNED]))
+
+    def test_a_variant_with_some_leads_walked_is_an_error_not_a_silent_drop(self):
+        root = self.walks([script.DIRECT])
+        (root / f"{script.ALIGNED}_h1.json").write_text("{}", encoding="utf-8")
+        with self.assertRaises(ValueError):
+            script.scored_variants(root)
