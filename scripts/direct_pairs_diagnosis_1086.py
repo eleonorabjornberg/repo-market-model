@@ -343,6 +343,55 @@ def decompose_command(args) -> int:
     return 0
 
 
+def _f(value, digits=1) -> str:
+    return "n/a" if value is None else f"{value:,.{digits}f}"
+
+
+def render_training(training: dict) -> List[str]:
+    lines = [
+        f"Panel `{training['panel_sha256']}`, scratch panel `{training['scratch_panel_sha256']}`. Means over the refits whose first scored day is in 2021-23 (refits per lead in the first column). "
+        "`one-step` is the set `gbm_funding` trains on, `direct` the set of `gbm_funding_cal_direct`; both from the same training frame.",
+        "",
+        "| lead | refits | set | pairs | effective sample | target variance | h-step residual variance | floor-regime pairs | floor pairs per leaf of 5 | per leaf of 20 | floor-regime target variance |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for h, lead in training["leads"].items():
+        for name, label in (("one_step", "one-step"), ("direct", "direct")):
+            m = lead["mean"][name]
+            lines.append(
+                f"| {h} | {lead['refits']} | {label} | {_f(m['pairs'])} | {_f(m['effective_sample'])} | {_f(m['target_variance'])} | {_f(m['change_variance'])} | "
+                f"{_f(m['floor_pairs'])} | {_f(m['floor_pairs_per_leaf_5'])} | {_f(m['floor_pairs_per_leaf_20'])} | {_f(m['floor_target_variance'], 2)} |"
+            )
+    first = training["leads"]["1"]["blocks"]
+    lines += ["", "Floor-regime pairs in the training set at lead 1, by refit (the first scored day of the refit; direct set):", "", "| first scored day | pairs | floor-regime pairs | floor-regime target variance |", "|---|---|---|---|"]
+    for b in first[:: max(1, len(first) // 12)]:
+        d = b["direct"]
+        lines.append(f"| {b['first_scored_day']} | {d['pairs']} | {d['floor_pairs']} | {_f(d['floor_target_variance'], 2)} |")
+    return lines
+
+
+def render_decomposition(decomposition: dict) -> List[str]:
+    lines = []
+    for pair, windows in decomposition["pairs"].items():
+        lines += [f"### {pair}", ""]
+        for window, groups in windows.items():
+            lines += [f"Target days {window}. Mean excess grid CRPS (candidate minus reference; positive is a loss of the candidate), and its share in each band of levels.", "",
+                      "| group | cells | excess | " + " | ".join(BANDS) + " |", "|---|---|---|" + "---|" * len(BANDS)]
+            for name, g in groups.items():
+                lines.append(f"| {name} | {g['days']} | {g['total']:+.4f} | " + " | ".join(f"{g['by_band'][b]:+.4f}" for b in BANDS) + " |")
+            lines.append("")
+    return lines
+
+
+def report_command(args) -> int:
+    training = json.loads(Path(args.training).read_text(encoding="utf-8"))
+    lines = ["## Check results (criterion 2): the training pairs, 2021-23 refits", ""] + render_training(training) + [""]
+    if args.decompose and Path(args.decompose).is_file():
+        lines += ["## Decomposition (criterion 1)", ""] + render_decomposition(json.loads(Path(args.decompose).read_text(encoding="utf-8")))
+    Path(args.markdown).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -355,6 +404,11 @@ def main(argv=None) -> int:
         if name == "decompose":
             p.add_argument("--walks", type=Path, required=True)
         p.set_defaults(run=run)
+    report = sub.add_parser("report")
+    report.add_argument("--training", type=Path, required=True)
+    report.add_argument("--decompose", type=Path)
+    report.add_argument("--markdown", type=Path, required=True)
+    report.set_defaults(run=report_command)
     args = parser.parse_args(argv)
     return args.run(args)
 
