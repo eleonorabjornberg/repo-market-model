@@ -33,7 +33,7 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
-from repo_model import one_step_guard
+from repo_model import contract, fomc_calendar, one_step_guard, target_day_columns
 from repo_model.baseline import fit_arx, fit_threshold
 from repo_model.data import DailyObservation
 
@@ -94,11 +94,94 @@ class OneStepGuardTests(unittest.TestCase):
         self.assertEqual(one_step_guard.one_step_refusals(PUBLISHED_AT_H1[:-1]), {})
 
 
+class _EstimatorReached(Exception):
+    pass
+
+
+class TargetDayColumnsTests(unittest.TestCase):
+    """The FOMC columns are written about the target day, like the calendar columns (#1070, finding #1066).
+
+    Mutation record (#1070)
+    -----------------------
+
+    Run on CPython 3.11 (`/opt/rmm-venv`), `-B`, in a disposable copy; applied by diff and reverted; control green before
+    and after.
+
+    1. **The FOMC names dropped from the shared declaration** -- in `target_day_columns.py`, `TARGET_DAY_COLUMNS = CALENDAR_FEATURES |
+       FOMC_TARGET_DAY_COLUMNS` -> `TARGET_DAY_COLUMNS = CALENDAR_FEATURES`. Killed by
+       `test_a_one_step_fit_on_an_fomc_column_is_refused`, `AssertionError: ValueError not raised`, and by
+       `test_every_column_the_fomc_module_writes_is_declared`, `AssertionError: ... not found in frozenset`.
+    """
+
+    def rows(self):
+        return fomc_calendar.add_columns(frame(60))
+
+    def test_a_one_step_fit_on_an_fomc_column_is_refused(self):
+        from repo_model import ml
+
+        for column in fomc_calendar.COLUMNS:
+            with self.subTest(column=column):
+                with self.assertRaisesRegex(ValueError, rf"{column}.*direct.*drop"):
+                    ml.fit_gradient_boosted_quantiles(self.rows(), ["sofr_volume", column], minimum_history=20)
+
+    def test_the_same_fit_on_direct_pairs_succeeds(self):
+        """Wiring the FOMC columns into the as-of rule is #1027's; here they are served as calendar columns, as
+        `scripts/near_threshold_688.py` serves its flag."""
+        import json
+        from datetime import time
+        from unittest import mock
+
+        from repo_model import asof, ml
+
+        registry = json.loads((Path(__file__).parents[1] / "metadata" / "sources.json").read_text())
+        served = contract.CALENDAR_FEATURES | target_day_columns.FOMC_TARGET_DAY_COLUMNS
+        with mock.patch.object(contract, "CALENDAR_FEATURES", served), mock.patch.object(
+            asof, "CALENDAR_FEATURES", served
+        ):
+            rule = asof.InformationRule(
+                registry, ("spread_bps", "sofr_volume", "fomc_meeting_day"), decision_time=time(16, 0)
+            )
+            rows = self.rows()
+            train = rule.frame(rows, rule.information_set([row.date for row in rows], len(rows) - 1))
+            # Every guard runs before the estimator is built, so a stub that raises when asked for it shows the fit got
+            # past the guard without needing the `ml` extra (this module runs in a stdlib-only shard).
+            with mock.patch.object(ml, "_estimator_class", side_effect=_EstimatorReached), self.assertRaises(
+                _EstimatorReached
+            ):
+                ml.fit_gradient_boosted_quantiles(
+                    train, ["sofr_volume", "fomc_meeting_day"], minimum_history=20, min_samples_leaf=3,
+                    information=rule, training_pairs="direct",
+                )
+
+    def test_every_column_the_fomc_module_writes_is_declared(self):
+        written = {name for row in self.rows() for name in row.values} - {name for row in frame(60) for name in row.values}
+        self.assertEqual(written, set(fomc_calendar.COLUMNS))
+        for name in written | set(fomc_calendar.COLUMNS):
+            self.assertIn(name, target_day_columns.TARGET_DAY_COLUMNS)
+
+    def test_the_declaration_covers_the_calendar_columns(self):
+        self.assertLessEqual(contract.CALENDAR_FEATURES, target_day_columns.TARGET_DAY_COLUMNS)
+
+    def test_the_refusal_names_the_target_day_column(self):
+        self.assertEqual(
+            one_step_guard.one_step_refusals(("fomc_days_to_next_meeting",)),
+            {"fomc_days_to_next_meeting": "calendar column 'fomc_days_to_next_meeting'"},
+        )
+
+
 class AllowListTests(unittest.TestCase):
     def test_the_allow_list_is_exactly_these_declarations(self):
         entries = one_step_guard.ONE_STEP_ALLOW_LIST
-        self.assertEqual(set(entries), {"published_distribution_crps", "gbm_funding_634", "pressure_model_v2"})
+        self.assertEqual(
+            set(entries),
+            {
+                "published_distribution_crps", "gbm_funding_634", "pressure_model_v2",
+                "aligned_calendar_1027_h1", "aligned_calendar_1027_h2_to_h5",
+            },
+        )
         for name, entry in entries.items():
+            if name.startswith("aligned_calendar_1027"):
+                continue
             fitter = "fit_depth_limited_quantiles" if name == "pressure_model_v2" else "fit_gradient_boosted_quantiles"
             self.assertEqual(entry.fitter, fitter)
             self.assertEqual(entry.regressors, PUBLISHED_AT_H1)
@@ -108,6 +191,17 @@ class AllowListTests(unittest.TestCase):
         entry = one_step_guard.ONE_STEP_ALLOW_LIST["pressure_model_v2"]
         self.assertEqual(entry.expires, date(2027, 4, 1))
         one_step_guard.check_one_step_regressors("fit_depth_limited_quantiles", PUBLISHED_AT_H1)
+
+    def test_the_aligned_1027_entries_end_on_15_november_2026(self):
+        """The #1027 aligned variant's two entries (lead 1; leads 2 to 5) and their end date (Eleonora, 21 October 2026)."""
+        h1 = one_step_guard.ONE_STEP_ALLOW_LIST["aligned_calendar_1027_h1"]
+        rest = one_step_guard.ONE_STEP_ALLOW_LIST["aligned_calendar_1027_h2_to_h5"]
+        for entry in (h1, rest):
+            self.assertEqual(entry.fitter, "fit_gradient_boosted_quantiles")
+            self.assertEqual(entry.expires, date(2026, 11, 15))
+            self.assertIn("quarter_end", entry.regressors)
+        self.assertIn("treasury_settlement", h1.regressors)
+        self.assertNotIn("treasury_settlement", rest.regressors)
 
     def test_no_exemption_has_outlived_its_end_date(self):
         """An exemption with an end date is a decision that falls due: renew it by her ruling, or remove it."""
