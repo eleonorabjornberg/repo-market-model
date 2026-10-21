@@ -41,6 +41,13 @@ on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo
 - **Test:** the synthetic suite the protocol requires ([#640](https://github.com/eleonorabjornberg/repo-market-model/issues/640)); [#636](https://github.com/eleonorabjornberg/repo-market-model/issues/636) covers the +5 bp judge, if she keeps it.
 - **Kill or fix:** any pre-registered check fails. Every registration is blocked until it passes.
 - **Next:** on pass, registrations may proceed. On fail, fix the scorer under the protocol's change control.
+- **Freeze (Eleonora, 20 October 2026, in chat, relayed):** H1 freezes on conditions, not on a date, once all of
+  these hold: [#1027](https://github.com/eleonorabjornberg/repo-market-model/issues/1027) has merged (the H5 candidate
+  reads calendar days at the target day); [#878](https://github.com/eleonorabjornberg/repo-market-model/issues/878)'s
+  calibration of the critical and futility values is re-run on that new candidate;
+  [#1022](https://github.com/eleonorabjornberg/repo-market-model/issues/1022) and
+  [#961](https://github.com/eleonorabjornberg/repo-market-model/issues/961) are closed; and the coverage check passes.
+  Once frozen, a later scorer finding goes through the protocol's change control and does not reopen H1.
 - **Status:** open. Manual: [`hypotheses/H1.md`](hypotheses/H1.md).
 
 ## H2. The data we hold carries signal for the spread and for ordinary-day pressure
