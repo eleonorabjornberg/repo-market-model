@@ -17,6 +17,7 @@ from __future__ import annotations
 import functools
 import inspect
 import json
+from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
@@ -49,6 +50,9 @@ class FrozenDeclaration(NamedTuple):
     fitter: str
     regressors: Tuple[str, ...]
     reason: str
+    #: The last day the exemption stands, or `None` for a frozen declaration that must reproduce for good. The guard
+    #: does not read it (a fit never depends on the clock); `tests/test_one_step_guard.py` fails once it has passed.
+    expires: Optional[date] = None
 
 
 #: The published distribution's inputs at h = 1 (`scripts/live_record.py`, `published_features(1)`): `CRPS_FEATURES` of
@@ -73,6 +77,15 @@ ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
             _PUBLISHED_AT_H1,
             "gbm_funding, the control of metadata/spread_distribution_634.json: the phase 2 gbm on the published "
             "features at the 23 levels, a declaration whose figures must reproduce",
+        ),
+        "pressure_model_v2": FrozenDeclaration(
+            "fit_depth_limited_quantiles",
+            _PUBLISHED_AT_H1,
+            "pressure model v2 (scripts/pressure_model_v2.py, CHOSEN_FOURTH 'base'): depth-3 trees on the published h = 1 "
+            "inputs, logged in the live record, whose agreement must reproduce until it is scored. Already provisional "
+            "(class a+b) in docs/research/provisional-calendar-register.md. Allowed by Eleonora on 20 October 2026, in "
+            "chat, on PR #1042: option (a), with an end date, the live record's first scoring date",
+            expires=date(2027, 4, 1),
         ),
     }
 )
@@ -157,6 +170,10 @@ def guard_one_step_fit(function):
     Eleonora's ruling of 20 October 2026). The fitter still refuses a calendar or scheduled regressor on every
     one-step fit, with the same `ValueError`; a direct fit is not checked. A call whose `regressors` cannot be read
     as names goes through, for the fitter's own validation to refuse.
+
+    A fitter that wraps a guarded one (`ml.fit_depth_limited_quantiles`) is decorated too, so it is checked under
+    its own name: the inner check alone sees the inner name and would match that fitter's allow-list entries.
+    `training_pairs` is read whether it is a named parameter or passed through `**settings`.
     """
 
     signature = inspect.signature(function)
@@ -168,7 +185,11 @@ def guard_one_step_fit(function):
             names = tuple(str(name) for name in bound.arguments["regressors"])
         except (TypeError, KeyError):
             return function(*args, **kwargs)
-        if bound.arguments.get("training_pairs") != "direct":
+        pairs = bound.arguments.get("training_pairs")
+        for parameter in signature.parameters.values():
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+                pairs = bound.arguments.get(parameter.name, {}).get("training_pairs", pairs)
+        if pairs != "direct":
             check_one_step_regressors(function.__name__, names)
         return function(*args, **kwargs)
 

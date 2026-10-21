@@ -31,12 +31,14 @@ they read the target day's columns; the benchmarks and risk-date laws read the t
 Starting point: the table of `docs/research/drivers-audit-951-result.md` §1, extended to every result merged since and to the results
 before it that read the same series.
 
-## The guard (#947), and the two frozen exemptions
+## The guard (#947), and its exemptions
 
 `src/repo_model/one_step_guard.py` refuses a calendar or scheduled regressor in a one-step fit, so a new fit cannot be class b. It
 exempts two frozen declarations whose figures must reproduce: `published_distribution_crps` (the published distribution: the final
 test's frozen command and the live record) and `gbm_funding_634` (the control of `metadata/spread_distribution_634.json`). Both are
-class a+b at lead 1 and are the first rows of the results table. The guard names the fitters and makes no fit, so it is not a
+class a+b at lead 1 and are the first rows of the results table. A third, `pressure_model_v2` (depth-3 trees on the same
+inputs, logged in the live record), is exempt only until the live record's first scoring date (Eleonora, 20 October 2026,
+on PR #1042); its producer, `scripts/pressure_model_v2.py`, is class a+b below. The guard names the fitters and makes no fit, so it is not a
 producer. Rows in the tables below whose fit the guard would now refuse (the one-step calendar arms and variants (a) and (b)) are
 the results of a fit that can no longer be repeated unchanged; their figures stand as published and are marked.
 
