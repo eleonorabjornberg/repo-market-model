@@ -31,7 +31,7 @@ from . import protocol_benchmarks as pb
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
-from .splits import SplitError
+from .splits import LookAheadError, SplitError
 
 #: The level is the median of this many ordinary days.
 LEVEL_DAYS = 10
@@ -256,6 +256,8 @@ def walk(
         except InsufficientHistory:
             skipped.append(day)
             continue
+        except LookAheadError:
+            raise  # a guard trip is never "no public row yet"
         except SplitError:
             # The first rows of the panel have no public row at their decision instant; later ones must.
             if current is not None:
