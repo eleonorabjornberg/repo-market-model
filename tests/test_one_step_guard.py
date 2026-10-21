@@ -27,7 +27,7 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
-from repo_model import contract, fomc_calendar, one_step_guard
+from repo_model import contract, fomc_calendar, one_step_guard, target_day_columns
 from repo_model.baseline import fit_arx, fit_threshold
 from repo_model.data import DailyObservation
 
@@ -97,7 +97,7 @@ class TargetDayColumnsTests(unittest.TestCase):
     Run on CPython 3.11 (`/opt/rmm-venv`), `-B`, in a disposable copy; applied by diff and reverted; control green before
     and after.
 
-    1. **The FOMC names dropped from the shared declaration** -- in `contract.py`, `TARGET_DAY_COLUMNS = CALENDAR_FEATURES |
+    1. **The FOMC names dropped from the shared declaration** -- in `target_day_columns.py`, `TARGET_DAY_COLUMNS = CALENDAR_FEATURES |
        FOMC_TARGET_DAY_COLUMNS` -> `TARGET_DAY_COLUMNS = CALENDAR_FEATURES`. Killed by
        `test_a_one_step_fit_on_an_fomc_column_is_refused`, `AssertionError: ValueError not raised`, and by
        `test_every_column_the_fomc_module_writes_is_declared`, `AssertionError: ... not found in frozenset`.
@@ -124,7 +124,7 @@ class TargetDayColumnsTests(unittest.TestCase):
         from repo_model import asof, ml
 
         registry = json.loads((Path(__file__).parents[1] / "metadata" / "sources.json").read_text())
-        served = contract.CALENDAR_FEATURES | contract.FOMC_TARGET_DAY_COLUMNS
+        served = contract.CALENDAR_FEATURES | target_day_columns.FOMC_TARGET_DAY_COLUMNS
         with mock.patch.object(contract, "CALENDAR_FEATURES", served), mock.patch.object(
             asof, "CALENDAR_FEATURES", served
         ):
@@ -143,10 +143,10 @@ class TargetDayColumnsTests(unittest.TestCase):
         written = {name for row in self.rows() for name in row.values} - {name for row in frame(60) for name in row.values}
         self.assertEqual(written, set(fomc_calendar.COLUMNS))
         for name in written | set(fomc_calendar.COLUMNS):
-            self.assertIn(name, contract.TARGET_DAY_COLUMNS)
+            self.assertIn(name, target_day_columns.TARGET_DAY_COLUMNS)
 
     def test_the_declaration_covers_the_calendar_columns(self):
-        self.assertLessEqual(contract.CALENDAR_FEATURES, contract.TARGET_DAY_COLUMNS)
+        self.assertLessEqual(contract.CALENDAR_FEATURES, target_day_columns.TARGET_DAY_COLUMNS)
 
     def test_the_refusal_names_the_target_day_column(self):
         self.assertEqual(

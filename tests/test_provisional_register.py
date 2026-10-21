@@ -199,8 +199,8 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
         """#1070: the FOMC columns are written about the target day, so a declaration naming one is classified."""
         import sys
         sys.path.insert(0, str(ROOT / "src"))
-        from repo_model import contract
-        self.assertLessEqual(set(contract.TARGET_DAY_COLUMNS), set(register.CALENDAR_COLUMNS))
+        from repo_model import target_day_columns
+        self.assertLessEqual(set(target_day_columns.TARGET_DAY_COLUMNS), set(register.CALENDAR_COLUMNS))
         self.assertIn("fomc_meeting_day", register.CALENDAR_COLUMNS)
         self.assertIn("metadata/sources_measurement.json", register.declarations_naming_a_calendar_column(ROOT))
 
