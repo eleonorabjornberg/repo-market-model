@@ -98,35 +98,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      # The results page is built on main and never committed (#928); this
-      # builds it from the tree, which refuses a page the inputs cannot produce,
-      # and refuses a tracked copy.
-      - name: Check the results page builds and is not committed
+      # The checks are declared one file each under `metadata/ci_checks/` with `where: ci:pages` (#1059), so a
+      # new generator check is a new file, not an edit here. They are: the results page builds and is not committed
+      # (#928), the progress page builds and is not committed (#928, #637), the provisional register's tables are
+      # current (#1028), and every test module is in exactly one shard (#927). All of them run, and the step
+      # fails if any did.
+      - name: Run the declared generated-page checks
         env:
           PYTHONDONTWRITEBYTECODE: "1"
-          PYTHONPATH: src
-        run: python3 -B scripts/emit_visual.py --check
-
-      # The progress page and its data are built on main and never committed
-      # (#928, #637); this builds them from the tree, which refuses evidence
-      # the page cannot read, and refuses a tracked copy.
-      - name: Check the progress page builds and is not committed
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -B scripts/emit_progress.py --check
-
-      # The provisional register's tables are generated from one file per
-      # row under metadata/provisional/ (#1028); this refuses a stale page.
-      - name: Check the provisional register is current
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -B scripts/provisional_register.py --check
-
-      # Every test module is in exactly one shard (#927).
-      - name: Check every test module is in a shard
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -B scripts/ci_shards.py check
+        run: python3 -B scripts/ci_checks.py run ci:pages
 
   suite:
     # The one required check for the suite.

@@ -1,0 +1,9 @@
+{
+  "command": [
+    "scripts/new_sources.py",
+    "extract",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

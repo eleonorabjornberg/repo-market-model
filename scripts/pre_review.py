@@ -14,6 +14,7 @@ With `--base` (normally `origin/main`) it also runs the two checks CI runs again
 Standard library only.
 """
 import argparse
+import importlib.util
 import os
 import subprocess
 import sys
@@ -21,16 +22,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-#: The checks, as CI runs them, without the base.
-CHECKS = (
-    ("scripts/emit_visual.py", "--check"),
-    ("scripts/emit_progress.py", "--check"),
-    ("scripts/emit_status.py", "--check"),
-    ("scripts/ci_shards.py", "check"),
-    ("scripts/check_research_log.py", "assemble", "--check"),
-    ("scripts/check_research_log.py", "check"),
-    ("scripts/check_built_outputs.py",),
-)
+_spec = importlib.util.spec_from_file_location("ci_checks", Path(__file__).with_name("ci_checks.py"))
+ci_checks = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(ci_checks)
+
+#: The checks, as CI runs them, without the base: the declarations under `metadata/ci_checks/` that say `pre_review` (#1059).
+CHECKS = tuple(tuple(check["command"]) for check in ci_checks.load() if check["pre_review"])
 
 
 def commands(base=None):

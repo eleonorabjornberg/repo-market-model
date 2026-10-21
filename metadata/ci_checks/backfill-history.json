@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/backfill_history.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

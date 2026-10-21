@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/extract_h8_first_prints.py",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

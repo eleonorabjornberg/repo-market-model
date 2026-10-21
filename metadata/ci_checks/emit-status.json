@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/emit_status.py",
+    "--check"
+  ],
+  "where": "workflow:status.yml",
+  "pre_review": true
+}
