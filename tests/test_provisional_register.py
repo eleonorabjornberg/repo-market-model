@@ -195,6 +195,15 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
         missing = sorted(set(named) - cited(ALL_ENTRIES))
         self.assertEqual(missing, [], f"declarations that name a calendar or scheduled column and are not in the register: {missing}")
 
+    def test_the_scan_reads_the_shared_target_day_declaration(self):
+        """#1070: the FOMC columns are written about the target day, so a declaration naming one is classified."""
+        import sys
+        sys.path.insert(0, str(ROOT / "src"))
+        from repo_model import target_day_columns
+        self.assertLessEqual(set(target_day_columns.TARGET_DAY_COLUMNS), set(register.CALENDAR_COLUMNS))
+        self.assertIn("fomc_meeting_day", register.CALENDAR_COLUMNS)
+        self.assertIn("metadata/sources_measurement.json", register.declarations_naming_a_calendar_column(ROOT))
+
     def test_every_cited_declaration_exists(self):
         for path in sorted(cited(ALL_ENTRIES) | set(DECLARATION.findall(TEXT))):
             with self.subTest(path=path):
