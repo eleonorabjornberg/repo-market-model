@@ -80,16 +80,6 @@ def _kinked():
     return _script("kinked_626")
 
 
-def _cells_json(cells) -> dict:
-    return {
-        k: {
-            "days": c.days, "events": c.events, "slope": c.slope, "intercept": c.intercept,
-            "slope_interval": c.slope_interval, "intercept_interval": c.intercept_interval,
-        }
-        for k, c in cells.items()
-    }
-
-
 # -- tracked: the points already in #624's evidence ----------------------------------------------------------------
 
 
@@ -161,17 +151,7 @@ def tracked_text(result: dict) -> str:
 # -- kinked: #626's rows, refitted within regimes ------------------------------------------------------------------
 
 
-def _row_cells(job):
-    """One row at one horizon: its pooled, per-regime and per-scarcity-state cells (the bootstrap, which is where the time goes)."""
-
-    key, p, outcome, regime, state, settings = job
-    return key, {
-        "regime": _cells_json(rr.by_cell(p, outcome, regime, **settings)),
-        "scarcity_state": _cells_json(rr.by_cell(p, outcome, state, **settings)),
-    }
-
-
-def _run_rows(jobs, workers: int = 1) -> Dict[object, dict]:
+def _run_rows(jobs, workers: int = 1, mp_context=None) -> Dict[object, dict]:
     """The cells of every job, in the order of `jobs`. Each cell's resample stream is seeded by its job, so the number of
     workers changes the time and nothing else (#753: the bootstrap is pure Python, about 8 ms a fit on 1,900 days, and it ran
     in one process)."""
@@ -179,9 +159,9 @@ def _run_rows(jobs, workers: int = 1) -> Dict[object, dict]:
     if workers < 1:
         raise ValueError(f"workers must be at least 1, got {workers}")
     if workers == 1 or len(jobs) < 2:
-        return dict(_row_cells(job) for job in jobs)
-    with ProcessPoolExecutor(max_workers=min(workers, len(jobs))) as pool:
-        return dict(pool.map(_row_cells, jobs))
+        return dict(rr.row_cells(job) for job in jobs)
+    with ProcessPoolExecutor(max_workers=min(workers, len(jobs)), mp_context=mp_context) as pool:
+        return dict(pool.map(rr.row_cells, jobs))
 
 
 def kinked_command(args) -> int:

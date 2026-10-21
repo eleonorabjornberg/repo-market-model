@@ -122,6 +122,16 @@ class RowCellsTests(unittest.TestCase):
         self.assertEqual(list(serial), ["a", "b", "c"])
         self.assertEqual(serial, S._run_rows(jobs, workers=2))
 
+    def test_the_cells_are_the_same_under_the_spawn_start_method(self):
+        """#1061: macOS starts workers by spawn, which imports the worker by name; a function defined in a script loaded by path has no
+        name a fresh interpreter can import, so the pool broke there and not in CI. Run the pool under spawn."""
+
+        import multiprocessing
+
+        jobs = self._jobs()
+        serial = S._run_rows(jobs, workers=1)
+        self.assertEqual(serial, S._run_rows(jobs, workers=2, mp_context=multiprocessing.get_context("spawn")))
+
     def test_each_row_has_a_pooled_cell_in_both_splits(self):
         rows = S._run_rows(self._jobs()[:1], workers=1)
         self.assertIn("pooled", rows["a"]["regime"])
