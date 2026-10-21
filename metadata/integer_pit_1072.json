@@ -1,0 +1,31 @@
+{
+  "status": "declared by the pull request that closes #1072 before any number was computed; a measurement, not a record. Nothing is published, no day after 2025-12-31 is read (docs/decisions/lockbox.md), no rule changes. Development data gives a diagnosis, never a verdict (scoring protocol v1, #640; #46 top block).",
+  "issue": 1072,
+  "finding": 1069,
+  "hypothesis": "H5 (primary goal), development step 3 (docs/research/hypotheses/H5.md): the 2021-23 floor diagnosis, a correction to the PIT diagnostic of #970",
+  "question": "The target is a whole number of basis points. #970's randomised PIT draws inside the bracket of grid levels around the outcome, so it differs from the midpoint PIT only when a quantile ties the outcome exactly. Does the 2021-23 share of PIT at or below 0.10 move when the PIT is the proper one for an integer-valued outcome, on the lead-1 walks of the #1027 candidate?",
+  "input": {
+    "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+    "walks": "lead 1 only: gbm_funding (#634's walk, published panel), gbm_funding_cal_aligned and gbm_funding_cal_direct (the two variants of #1027, scratch panel AUG3), each walked as their scripts' docstrings say and read unchanged",
+    "candidates": [
+      "gbm_funding",
+      "gbm_funding_cal_aligned",
+      "gbm_funding_cal_direct"
+    ],
+    "cells": "the target days every candidate has a law for, up to 2025-12-31 (refuse_locked); the decision day of a lead-1 cell is the business day before its target; the regime is that of the decision day (metadata/evaluation_splits.json)"
+  },
+  "pit": {
+    "midpoint": "the PIT of #707 (scripts/h5_step3_707.py pit), unchanged",
+    "bracket_970": "the randomised PIT of #970 (scripts/randomised_pit_970.py randomised_pit), unchanged: a draw uniform in the bracket of grid levels around the outcome",
+    "integer": "Czado, Gneiting and Held (2009) for an integer-valued outcome: a draw uniform in (F(y - 1/2), F(y + 1/2)), F the law's distribution function read off its 23 quantiles: linear between neighbouring quantiles, right-continuous, the largest level of tied quantiles at a tie, the mass below the first quantile at the first quantile and the mass above the last at the last (F is 0 below the first quantile and 1 from the last on)",
+    "seed": 1072,
+    "draw_order": "cells sorted by (decision day, target day), one uniform draw each, from one random.Random(1072) per randomised version, for each candidate and cut in turn",
+    "bins": "six bins, edges at 0.10, 0.25, 0.50, 0.75, 0.90, expected shares 0.10, 0.15, 0.25, 0.25, 0.15, 0.10, as in #707 and #970"
+  },
+  "reports": [
+    "per candidate and per regime (all days and each regime of metadata/evaluation_splits.json): the share of PIT at or below 0.10 and the six bin shares, for the three versions side by side",
+    "2021-23: the proper PIT's share at or below 0.10 under 20 further seeds (1073 to 1092)"
+  ],
+  "reading_rule": "#970's rule, unchanged and applied to the proper PIT: the 2021-23 low-PIT reading stands if the proper share (seed 1072) is more than 0.15 and no seed of the 20 brings it to 0.10 or below; it does not stand if the share is 0.15 or below; anything else is unresolved. The PR states in words whether the 2021-23 share moves against the PIT of #970 and the midpoint PIT or stays. #984's page is not edited.",
+  "limits": "No published declaration or record changes. #984's page and its record stand and are cited by the new page. Nothing after 2025-12-31 and no lockbox day is read (refuse_locked). The tails of F are a convention (point mass at the end quantiles); only a law narrower than its own outer quantiles is affected by it."
+}
