@@ -51,6 +51,13 @@ written under. `EXCLUDED_PREFIXES` is asserted against `.gitignore` rather than
 trusted, because a scope anchored to nothing cannot fail: if those patterns ever
 stop being ignored, the working logs become published documents and this guard
 must start reading them.
+
+Reviews kept word for word are out of scope too, though tracked: `VERBATIM_PREFIXES`
+(`docs/reviews/`, Eleonora's ruling of 21 October 2026 on #987). A review is a dated
+outside reading of the repository, not a page that describes it, so its dates and
+counts are evidence of when and what it read and are never rewritten. Each review folder
+must carry a README saying it is kept as written (`VerbatimScopeTests`), so the
+exclusion cannot quietly cover anything else.
 """
 
 from __future__ import annotations
@@ -79,12 +86,30 @@ EXCLUDED_PREFIXES = (
     "docs/track-",
 )
 
-# A digit run standing within two words of "test", "pass" or "assertion". Catches
-# "409 tests", "361 standard-library tests", "360 passes". Does not catch prose
-# that counts in words ("two implementers"), which does not rot the same way: a
-# word is a claim about design, a numeral is a measurement of a commit.
+# Tracked reviews kept word for word (ruling on #987). Each folder must say so in its README.
+VERBATIM_PREFIXES = ("docs/reviews/",)
+
+# A numeral standing within two words of "test", "pass" or "assertion", or right
+# before "skipped". Catches "409 tests", "361 standard-library tests", "360 passes",
+# "17 skipped" (but not "90 offered days skipped", which counts days).
+# Does not catch prose that counts in words ("two implementers"), which does not
+# rot the same way: a word is a claim about design, a numeral is a measurement of
+# a commit. Nor does it read as a count a numeral that is not one
+# (`CountClaimPatternTests.PROSE`): an issue reference (#632 tests), a decimal
+# (0.001 check passes), an amount or the end of a range ($64-66 mn tests,
+# 2018-2025 test), a label (tier 3 tests, step 3 test), a numeral a comma ends
+# (step 3, the nested test), or one a function word follows (0 on a test date).
+_LABELS = ("tier", "tiers", "step", "steps", "stage", "phase", "level", "lead", "leads",
+           "issue", "pr", "rule", "row", "column", "table", "figure", "section", "option")
+_FUNCTION_WORDS = ("a", "an", "the", "on", "in", "at", "to", "for", "by", "with", "under",
+                   "over", "is", "are", "was", "were", "be", "so", "which", "that", "and",
+                   "or", "but", "as", "if", "now", "still", "does", "do", "did", "not", "then")
 COUNT_CLAIM = re.compile(
-    r"\b\d[\d,]*\s+(?:[A-Za-z][A-Za-z-]*\s+){0,2}(?:tests?|passes|assertions?)\b",
+    r"(?<![\w#.$/\-–])"
+    + "".join(r"(?<!\b%s\s)" % label for label in _LABELS)
+    + r"(?:\d{1,3}(?:,\d{3})+|\d+)\s+(?:skipped|"
+    r"(?:(?!(?:%s)\b)[A-Za-z][A-Za-z-]*\s+){0,2}" % "|".join(_FUNCTION_WORDS)
+    + r"(?:tests?|passes|assertions?))\b",
     re.IGNORECASE,
 )
 
@@ -136,6 +161,7 @@ def published_markdown(root=REPO_ROOT):
             (relative, root / relative)
             for relative in sorted(tracked)
             if not relative.startswith(EXCLUDED_PREFIXES)
+            and not relative.startswith(VERBATIM_PREFIXES)
             and (root / relative).is_file()
         ]
     warnings.warn(
@@ -148,7 +174,7 @@ def published_markdown(root=REPO_ROOT):
         relative = path.relative_to(root).as_posix()
         if relative.startswith(".git/") or "/.git/" in f"/{relative}":
             continue
-        if relative.startswith(EXCLUDED_PREFIXES):
+        if relative.startswith(EXCLUDED_PREFIXES) or relative.startswith(VERBATIM_PREFIXES):
             continue
         found.append((relative, path))
     return found
@@ -653,6 +679,78 @@ class PublishedDocumentTests(unittest.TestCase):
             + "\nName the commit instead; `git show -s --format=%ci <sha>` is a "
             "timestamp nobody has to type.",
         )
+
+
+class CountClaimPatternTests(unittest.TestCase):
+    """What `COUNT_CLAIM` refuses, and the prose it used to misread as a count.
+
+    Fifteen-odd commits only reworded a sentence to get past the pattern
+    (#471, #482, #506, #532, #598, #601, #610, #692, #706, #743, #802, #811,
+    #872, #1028, ...). Each phrase in `PROSE` is the removed line of one of them,
+    cut to the part the old pattern matched: an issue reference (`#632 tests`),
+    a decimal (`0.001 check passes`), an amount or the end of a range
+    (`$64-66 mn tests`), an ordinal label (`tier 3 tests`, `step 3, the nested
+    test`), or a numeral followed by a comma or a function word. None of them
+    counts tests. The rule itself is unchanged: a numeral counting tests,
+    passes, assertions or skips is refused.
+    """
+
+    PROSE = (
+        "(the H5 step that #632 tests)",                      # 4af41317
+        "(#632 is the test of H5 there)",                     # 4befe911
+        "(the #632 test of H5)",                              # 28516c9a
+        "other files of #662 are tests and documents",        # d711eab1
+        "other files of #662 are test files and documents",   # a7c51754
+        "The five candidates that met the #243 test",         # bd0b03e5
+        "(#442, a sensitivity test of #425)",                 # 76bf3219
+        "The trace shows the 0.001 check passes on the panel",  # 21c88bd4 (#811)
+        "per onset from 3.46 to 1.88, which passes tier 1",   # bfd10c44 (#601)
+        "Every interval contains 0.5 under the test-trade rule",  # 4b089c97 (#802)
+        "It covers the $64-66 mn tests before the",           # 159e7a8e (#743)
+        "it removes the $1 mn to $7 mn test trades",          # 97e29aec (#872)
+        "| 2018-2025 CRPS | 2018-2025 test | 2026 CRPS |",     # bd0b03e5 (#408)
+        "Tier 3 tests only regimes that had a pressure day",  # c287907c (#471)
+        "the regimes tier 3 tests. They change no rule",      # a5b87768 (#482)
+        "which tier 3 does not test",                         # a5b87768 (#482)
+        "* **Tier 5 now passes, tier 3 still fails.**",       # 9b2af83d (#506)
+        "For the three gate rows, tier 1 passes as declared",  # 4c29e057 (#532)
+        "Tier 1 passes for every row, parent and variant",    # a8bae4cd (#598)
+        "with at least 20 pressure days (tier 3 test",        # 86311155 (#610)
+        "This is why tier 3, which tests calibration",        # 02ec289d (#539)
+        "* Step 3, the nested test with H5's best candidate",  # 004bd2d7 (#706)
+        "(step 3, the nested test against H5's candidate",    # 7d4e2d2b
+        "trained one day off at leads 2 to 5, so the test leans to no gain",  # 96de88ee (#1028)
+        "0 on a test date, then counting up",                 # d711eab1 (#692)
+        "90 offered days skipped",                            # ranking-result.md: days, not tests
+    )
+
+    COUNTS = (
+        "6188 tests",
+        "Ran 412 tests in 61.3s",
+        "all 300 tests pass",
+        "Released with 4321 tests.",
+        "the suite has 1,204 tests",
+        "409 tests",
+        "361 standard-library tests",
+        "360 passes",
+        "12 new unit tests",
+        "1 test",
+        "a single module with 40 assertions",
+        "OK, 17 skipped",
+        "OK (12 skipped)",
+        "the suite runs with 3 tests skipped",
+        "Tier 3 has 120 tests",
+    )
+
+    def test_prose_that_counts_no_tests_passes(self):
+        for line in self.PROSE:
+            with self.subTest(line=line):
+                self.assertIsNone(COUNT_CLAIM.search(line))
+
+    def test_a_transcribed_count_is_refused(self):
+        for line in self.COUNTS:
+            with self.subTest(line=line):
+                self.assertIsNotNone(COUNT_CLAIM.search(line))
 
 
 class PublishedCommandTests(unittest.TestCase):
@@ -1926,3 +2024,20 @@ class RegistryQuotationTests(unittest.TestCase):
             "publishes; remove the declaration deliberately rather than "
             "leaving it to pass by absence:\n  " + "\n  ".join(missing),
         )
+
+
+class VerbatimScopeTests(unittest.TestCase):
+    """`VERBATIM_PREFIXES` excludes only review folders that say they are kept as written (#987)."""
+
+    def test_every_verbatim_folder_says_it_is_kept_as_written(self):
+        for prefix in VERBATIM_PREFIXES:
+            base = REPO_ROOT / prefix
+            if not base.is_dir():
+                continue
+            for folder in sorted(p for p in base.iterdir() if p.is_dir()):
+                readme = folder / "README.md"
+                self.assertTrue(readme.is_file(), f"{folder.relative_to(REPO_ROOT)} has no README.md")
+                self.assertIn("kept as written", readme.read_text(encoding="utf-8"),
+                              f"{readme.relative_to(REPO_ROOT)} does not say the review is kept as written")
+            stray = [p.name for p in base.iterdir() if p.is_file()]
+            self.assertEqual(stray, [], f"files directly under {prefix} are not in a review folder: {stray}")

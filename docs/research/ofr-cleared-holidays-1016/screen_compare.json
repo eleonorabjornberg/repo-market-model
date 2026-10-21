@@ -1,0 +1,535 @@
+{
+ "checks": {
+  "cells_differing_from_one_lead_earlier": {
+   "ofr_dvp_minus_bgcr_bp_1d": 6,
+   "ofr_dvp_rate_1d": 6,
+   "ofr_gcf_rate_1d": 0
+  },
+  "copy_equals_original_one_lead_earlier": false,
+  "other_series_unchanged": false
+ },
+ "pairs": {
+  "ofr_dvp_minus_bgcr_bp": {
+   "copy": "ofr_dvp_minus_bgcr_bp_1d",
+   "level_change_lead1": {
+    "change": {
+     "one_day": {
+      "n": 1416,
+      "rho": -0.10303555240932943
+     },
+     "two_day": {
+      "n": 1415,
+      "rho": -0.08973247834990461
+     }
+    },
+    "level": {
+     "one_day": {
+      "n": 1416,
+      "rho": 0.6615497562002385
+     },
+     "two_day": {
+      "n": 1415,
+      "rho": 0.6285781036291599
+     }
+    }
+   },
+   "pre_onset_lead1": {
+    "one_day": {
+     "auc": 0.7617753758416315,
+     "mean_other": 0.0980248719824433,
+     "mean_pre": 3.4489795918367347,
+     "n_other": 1367,
+     "n_pre": 49,
+     "std_diff": 0.7902316163808524
+    },
+    "two_day": {
+     "auc": 0.7838990647503511,
+     "mean_other": 0.08857979502196194,
+     "mean_pre": 3.63265306122449,
+     "n_other": 1366,
+     "n_pre": 49,
+     "std_diff": 0.8368070531424074
+    }
+   },
+   "pressure_by_lead": {
+    "1": {
+     "one_day": {
+      "n": 1416,
+      "pressure_days": 37,
+      "rho": 0.17683366801365236
+     },
+     "two_day": {
+      "n": 1415,
+      "pressure_days": 37,
+      "rho": 0.17513545380444903
+     }
+    },
+    "10": {
+     "one_day": {
+      "n": 1407,
+      "pressure_days": 39,
+      "rho": 0.1816121367081537
+     },
+     "two_day": {
+      "n": 1406,
+      "pressure_days": 39,
+      "rho": 0.1627557840108146
+     }
+    },
+    "2": {
+     "one_day": {
+      "n": 1415,
+      "pressure_days": 37,
+      "rho": 0.17522104077162817
+     },
+     "two_day": {
+      "n": 1414,
+      "pressure_days": 37,
+      "rho": 0.17489087672636253
+     }
+    },
+    "3": {
+     "one_day": {
+      "n": 1414,
+      "pressure_days": 37,
+      "rho": 0.17498197274794622
+     },
+     "two_day": {
+      "n": 1413,
+      "pressure_days": 39,
+      "rho": 0.17329498805059876
+     }
+    },
+    "5": {
+     "one_day": {
+      "n": 1412,
+      "pressure_days": 38,
+      "rho": 0.1842725147101421
+     },
+     "two_day": {
+      "n": 1411,
+      "pressure_days": 39,
+      "rho": 0.20041479413634747
+     }
+    }
+   },
+   "rank_one_day": [
+    20,
+    62
+   ],
+   "rank_two_day": [
+    16,
+    62
+   ],
+   "regimes_lead1": {
+    "regime:ample": {
+     "one_day": {
+      "n": 1180,
+      "pressure_days": 4,
+      "rho": 0.021371508737967674
+     },
+     "two_day": {
+      "n": 1179,
+      "pressure_days": 4,
+      "rho": 0.015850195490834905
+     }
+    },
+    "regime:scarce": {
+     "one_day": {
+      "n": 236,
+      "pressure_days": 33,
+      "rho": 0.13171793333454046
+     },
+     "two_day": {
+      "n": 236,
+      "pressure_days": 33,
+      "rho": 0.1265469937675171
+     }
+    }
+   }
+  },
+  "ofr_dvp_rate": {
+   "copy": "ofr_dvp_rate_1d",
+   "level_change_lead1": {
+    "change": {
+     "one_day": {
+      "n": 1416,
+      "rho": -0.02962139704582383
+     },
+     "two_day": {
+      "n": 1415,
+      "rho": -0.008412781161387073
+     }
+    },
+    "level": {
+     "one_day": {
+      "n": 1416,
+      "rho": 0.0969181029928894
+     },
+     "two_day": {
+      "n": 1415,
+      "rho": 0.09539346710761068
+     }
+    }
+   },
+   "pre_onset_lead1": {
+    "one_day": {
+     "auc": 0.539338339578699,
+     "mean_other": 3.0634162399414713,
+     "mean_pre": 4.059387755102039,
+     "n_other": 1367,
+     "n_pre": 49,
+     "std_diff": 0.4717966791766174
+    },
+    "two_day": {
+     "auc": 0.5416529715839483,
+     "mean_other": 3.06295021961932,
+     "mean_pre": 4.0608163265306105,
+     "n_other": 1366,
+     "n_pre": 49,
+     "std_diff": 0.47253138657035554
+    }
+   },
+   "pressure_by_lead": {
+    "1": {
+     "one_day": {
+      "n": 1416,
+      "pressure_days": 37,
+      "rho": 0.015451340064284428
+     },
+     "two_day": {
+      "n": 1415,
+      "pressure_days": 37,
+      "rho": 0.01628654401122935
+     }
+    },
+    "10": {
+     "one_day": {
+      "n": 1407,
+      "pressure_days": 39,
+      "rho": 0.03108557517532069
+     },
+     "two_day": {
+      "n": 1406,
+      "pressure_days": 39,
+      "rho": 0.029459611790798083
+     }
+    },
+    "2": {
+     "one_day": {
+      "n": 1415,
+      "pressure_days": 37,
+      "rho": 0.016286535696882036
+     },
+     "two_day": {
+      "n": 1414,
+      "pressure_days": 37,
+      "rho": 0.014974263110569517
+     }
+    },
+    "3": {
+     "one_day": {
+      "n": 1414,
+      "pressure_days": 37,
+      "rho": 0.01497425544991392
+     },
+     "two_day": {
+      "n": 1413,
+      "pressure_days": 39,
+      "rho": 0.017301838764235338
+     }
+    },
+    "5": {
+     "one_day": {
+      "n": 1412,
+      "pressure_days": 38,
+      "rho": 0.01878602195105347
+     },
+     "two_day": {
+      "n": 1411,
+      "pressure_days": 39,
+      "rho": 0.020900194380181977
+     }
+    }
+   },
+   "rank_one_day": [
+    48,
+    62
+   ],
+   "rank_two_day": [
+    49,
+    62
+   ],
+   "regimes_lead1": {
+    "regime:ample": {
+     "one_day": {
+      "n": 1180,
+      "pressure_days": 4,
+      "rho": 0.026029013662308975
+     },
+     "two_day": {
+      "n": 1179,
+      "pressure_days": 4,
+      "rho": 0.02537636155893833
+     }
+    },
+    "regime:scarce": {
+     "one_day": {
+      "n": 236,
+      "pressure_days": 33,
+      "rho": 0.42109502478579247
+     },
+     "two_day": {
+      "n": 236,
+      "pressure_days": 33,
+      "rho": 0.4250408211548362
+     }
+    }
+   }
+  },
+  "ofr_gcf_rate": {
+   "copy": "ofr_gcf_rate_1d",
+   "level_change_lead1": {
+    "change": {
+     "one_day": {
+      "n": 206,
+      "rho": -0.10771993851566955
+     },
+     "two_day": {
+      "n": 205,
+      "rho": 0.035367010038742756
+     }
+    },
+    "level": {
+     "one_day": {
+      "n": 206,
+      "rho": -0.42184418372768795
+     },
+     "two_day": {
+      "n": 205,
+      "rho": -0.4297800760477752
+     }
+    }
+   },
+   "pre_onset_lead1": {
+    "one_day": {
+     "auc": 0.4087171052631579,
+     "mean_other": 4.078473684210527,
+     "mean_pre": 3.9731249999999996,
+     "n_other": 190,
+     "n_pre": 16,
+     "std_diff": -0.09919127869989834
+    },
+    "two_day": {
+     "auc": 0.40445026178010474,
+     "mean_other": 4.080366492146598,
+     "mean_pre": 3.958571428571428,
+     "n_other": 191,
+     "n_pre": 14,
+     "std_diff": -0.11498838195193122
+    }
+   },
+   "pressure_by_lead": {
+    "1": {
+     "one_day": {
+      "n": 206,
+      "pressure_days": 17,
+      "rho": -0.07805426609201864
+     },
+     "two_day": {
+      "n": 205,
+      "pressure_days": 16,
+      "rho": -0.059022421411020896
+     }
+    },
+    "10": {
+     "one_day": {
+      "n": 204,
+      "pressure_days": 18,
+      "rho": -0.046239717469363124
+     },
+     "two_day": {
+      "n": 203,
+      "pressure_days": 16,
+      "rho": -0.015136397603819072
+     }
+    },
+    "2": {
+     "one_day": {
+      "n": 205,
+      "pressure_days": 16,
+      "rho": -0.059022421411020896
+     },
+     "two_day": {
+      "n": 205,
+      "pressure_days": 15,
+      "rho": -0.046548060705800746
+     }
+    },
+    "3": {
+     "one_day": {
+      "n": 205,
+      "pressure_days": 15,
+      "rho": -0.046548060705800746
+     },
+     "two_day": {
+      "n": 205,
+      "pressure_days": 17,
+      "rho": -0.07565259387890481
+     }
+    },
+    "5": {
+     "one_day": {
+      "n": 205,
+      "pressure_days": 22,
+      "rho": -0.07979333715790607
+     },
+     "two_day": {
+      "n": 204,
+      "pressure_days": 23,
+      "rho": -0.052393475641674125
+     }
+    }
+   },
+   "rank_one_day": [
+    36,
+    62
+   ],
+   "rank_two_day": [
+    37,
+    62
+   ],
+   "regimes_lead1": {
+    "regime:ample": {
+     "one_day": {
+      "n": 108,
+      "pressure_days": 0,
+      "rho": null
+     },
+     "two_day": {
+      "n": 107,
+      "pressure_days": 0,
+      "rho": null
+     }
+    },
+    "regime:scarce": {
+     "one_day": {
+      "n": 98,
+      "pressure_days": 17,
+      "rho": 0.41094657537698526
+     },
+     "two_day": {
+      "n": 98,
+      "pressure_days": 16,
+      "rho": 0.4419822492119878
+     }
+    }
+   }
+  }
+ },
+ "scope": {
+  "called_out_years": [
+   2018,
+   2020,
+   2024
+  ],
+  "correlations_computed": 990,
+  "first_day": "2018-06-29",
+  "last_day": "2026-09-03",
+  "leads": [
+   1,
+   2,
+   3,
+   5,
+   10
+  ],
+  "minimum_days": 30,
+  "minimum_pressure_days": 3,
+  "onsets": [
+   "2018-06-29",
+   "2018-11-15",
+   "2018-11-30",
+   "2018-12-17",
+   "2018-12-28",
+   "2019-01-15",
+   "2019-01-31",
+   "2019-02-28",
+   "2019-03-15",
+   "2019-03-29",
+   "2019-05-28",
+   "2019-06-17",
+   "2019-06-25",
+   "2019-08-13",
+   "2019-08-30",
+   "2019-10-15",
+   "2019-11-29",
+   "2019-12-16",
+   "2020-03-04",
+   "2020-03-12",
+   "2024-09-30",
+   "2024-12-26",
+   "2025-09-15",
+   "2025-09-30",
+   "2025-10-15",
+   "2025-12-15",
+   "2025-12-26",
+   "2026-02-17",
+   "2026-03-02",
+   "2026-04-15"
+  ],
+  "panel_sha256": "f46cfc571940e49582af2a2304f223653ab81ce33926640589027e2409c6f240",
+  "pre_onset_days": 145,
+  "pre_onset_window_panel_days": [
+   1,
+   5
+  ],
+  "pressure_days": 145,
+  "regime_days": {
+   "ample": 1359,
+   "scarce": 683,
+   "unknown": 0
+  },
+  "scored_days": 2042,
+  "series_screened": 66,
+  "threshold_bp": 5.0,
+  "years": [
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ]
+ },
+ "top_one_day": [
+  "policy_reserve_management_in_force",
+  "sofr_p99_iorb_bps",
+  "sofr_p75_iorb_bps",
+  "spread_bps",
+  "spread_nowcast_bps",
+  "reserve_balances",
+  "sofr_above_effr_share_20",
+  "reserve_scarcity_state",
+  "sofr_p99_iorb_sd15_bps",
+  "on_rrp_below_100bn",
+  "srf_take_up",
+  "on_rrp"
+ ],
+ "top_two_day": [
+  "policy_reserve_management_in_force",
+  "sofr_p99_iorb_bps",
+  "sofr_p75_iorb_bps",
+  "spread_bps",
+  "spread_nowcast_bps",
+  "reserve_balances",
+  "sofr_above_effr_share_20",
+  "reserve_scarcity_state",
+  "sofr_p99_iorb_sd15_bps",
+  "on_rrp_below_100bn",
+  "srf_take_up",
+  "on_rrp"
+ ]
+}

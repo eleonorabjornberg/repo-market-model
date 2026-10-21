@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/risk_date_spread_693.json",
+  "script": "scripts/risk_date_spread_693.py",
+  "pairing": "as_of_read",
+  "why": "the risk-date laws read the target row's calendar columns (#951 §1: no)"
+}

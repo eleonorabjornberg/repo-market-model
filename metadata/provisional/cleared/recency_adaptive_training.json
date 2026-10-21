@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/recency_adaptive_training.json",
+  "script": "scripts/recency_adaptive_training.py",
+  "pairing": "direct",
+  "why": "pressure models on direct pairs"
+}

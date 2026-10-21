@@ -26,15 +26,21 @@ from pathlib import Path
 _spec = importlib.util.spec_from_file_location("check_research_log", Path(__file__).with_name("check_research_log.py"))
 check_research_log = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(check_research_log)
+_spec = importlib.util.spec_from_file_location("provisional_register", Path(__file__).with_name("provisional_register.py"))
+provisional_register = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(provisional_register)
 
 PLAN = "docs/research/plan.md"
 LOG = "docs/research/log"
 PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 TAGLINES = "docs/research/taglines.json"
-INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES)
+REGISTER = provisional_register.REGISTER
+INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER)
 
 DEV_LABEL = "development, not a verdict"
+#: The mark on a figure from a registered result (#1028). It names no issue number: the page is for a lay reader.
+PROVISIONAL_LABEL = "provisional: calendar not read at the target day"
 NOT_MEASURED = "not measured"
 #: The six steps every hypothesis follows (`docs/research/plan.md`, "Every hypothesis follows the same steps").
 STEPS = ("Question", "Groundwork", "Development", "Registration", "Confirmation", "Verdict")
@@ -175,6 +181,13 @@ def load(repo):
     log = {}
     for name, text in check_research_log.read_entry_files(Path(repo) / LOG)[1].items():
         parse_log_entries(text, name, log)
+    registered = provisional_register.marked_entries(provisional_register.load(repo))
+    for entries in log.values():
+        for e in entries:
+            e["provisional"] = Path(e["file"]).stem in registered
+    unknown = sorted(registered - {Path(e["file"]).stem for entries in log.values() for e in entries})
+    if unknown:
+        raise ResearchError(f"{REGISTER} names log entries that do not exist: {unknown}")
     done = progress.get("milestones", {})
     taglines = json.loads(read(repo, TAGLINES)).get("taglines", {})
     stray = sorted(set(taglines) - {entry["id"] for entry in plan})
@@ -316,14 +329,25 @@ def summary_html(hypotheses, links):
         'data never gives one '
         '(<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/scoring-protocol.md">'
         'scoring protocol v1</a>). Every figure from development days below is marked '
-        f'&ldquo;{esc(DEV_LABEL)}&rdquo;. <b>Next on the critical path.</b> {next_text}</p>'
+        f'&ldquo;{esc(DEV_LABEL)}&rdquo;, and one from a model that did not read calendar days at the target day is '
+        f'also marked &ldquo;{esc(PROVISIONAL_LABEL)}&rdquo; until it is re-run. <b>Next on the critical path.</b> {next_text}</p>'
         '<p class="rs-note">The next link is the first in the plan&rsquo;s &ldquo;Critical path&rdquo; section that '
         'gates the goal and whose milestone is not marked done in <code>docs/research/milestones.json</code>.</p>'
         '</div>')
 
 
-def best_html(final):
-    """The incumbent and the development leader (#645 §2). `final` is the page's final-test payload."""
+def provisional_mark():
+    """The mark on a figure from a registered result (#1028), linked to the register."""
+    return (f'<span class="rs-tag rs-prov">{esc(PROVISIONAL_LABEL)} &middot; '
+            f'<a href="{BLOB}{REGISTER}">register</a></span>')
+
+
+def best_html(final, provisional=False):
+    """The incumbent and the development leader (#645 §2). `final` is the page's final-test payload.
+
+    `provisional` marks the incumbent's figures when the register registers them (#1028).
+    """
+    mark = f' {provisional_mark()}' if provisional else ""
     figs = (f'On the {final["days"]} days {final["first"]} to {final["last"]} the published declaration scored '
             f'{final["published"]:.2f} bp mean CRPS at h = 1, as that record scores it (not the protocol’s '
             f'grid CRPS), against {final["persistence"]:.2f} bp for as-of persistence '
@@ -334,17 +358,17 @@ def best_html(final):
         f'<span class="big">{final["mean"]:+.2f}<small>bp</small></span>'
         f'<span class="cap">The published declaration&rsquo;s edge in mean CRPS over as-of persistence at h = 1, on '
         f'{final["days"]} days; {final["level"]}% interval {final["lower"]:+.2f} to {final["upper"]:+.2f}.</span>'
-        f'<span class="rs-tag">{esc(DEV_LABEL)}</span></aside>'
+        f'<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside>'
         f'<aside class="callout" aria-label="Key figure: the incumbent&rsquo;s score">'
         f'<span class="big">{final["published"]:.2f}<small>bp against {final["persistence"]:.2f}</small></span>'
         f'<span class="cap">Mean CRPS at h = 1 of the published declaration and of as-of persistence, as that record '
-        f'scores it; lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span></aside></div>')
+        f'scores it; lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside></div>')
     return (
         '<p class="lede">No candidate is registered under the scoring protocol yet, so the incumbent stands: '
         'the published v1 funding declaration, which the protocol uses as its benchmark B3.</p>'
         + callouts +
         '<p><span class="runin">The incumbent.</span> '
-        f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span></p>'
+        f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
         '<p><span class="runin">The development leader.</span> '
         f'<span class="rs-nm">{NOT_MEASURED}</span>: no committed evidence names one by the protocol&rsquo;s primary '
         'score (grid CRPS over h = 1&ndash;5). When one does, it appears here beside the incumbent, labelled '
@@ -366,6 +390,7 @@ def log_html(h):
         items.append(
             f'<li><b>{e["date"]}</b>, {"groundwork " + e["groundwork"] if e["step"] is None else "step " + str(e["step"])}, {link}, tier {esc(f.get("Tier", ""))}'
             + (f' <span class="rs-tag">{esc(DEV_LABEL)}</span>' if f.get("Tier") == "development" else "")
+            + (f' {provisional_mark()}' if e.get("provisional") else "")
             + f'<br>{inline(f.get("Result", ""))}<br><i>Against kill:</i> {inline(f.get("Against kill", ""))}</li>')
     return '<ul class="rs-log">' + "".join(items) + '</ul>'
 
@@ -439,6 +464,7 @@ def payload(hypotheses):
 def fills(repo, final):
     hypotheses = load(repo)
     links = load_critical_path(repo, hypotheses)
-    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final),
+    incumbent = provisional_register.marks_incumbent(provisional_register.load(repo))
+    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final, incumbent),
             "research_steps": steps_html(),
             "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)

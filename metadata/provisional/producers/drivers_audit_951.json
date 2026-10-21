@@ -1,0 +1,11 @@
+{
+  "script": "scripts/drivers_audit_951.py",
+  "declarations": [
+    "metadata/drivers_audit_951.json",
+    "metadata/drivers_audit_951_fits.json"
+  ],
+  "model": "the nested ceiling lineup and five arms; `onestep_cal_leaf20` trains the calendar inputs one-step",
+  "calendar_inputs": "quarter_end, tax_date, days_to_month_end (the one-step calendar arm); treasury_settlement at lead 1",
+  "pairing": "one_step+direct",
+  "class": "a+b"
+}

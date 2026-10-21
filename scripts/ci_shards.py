@@ -6,10 +6,17 @@ suite that `python3 -B -m unittest discover -s tests` runs in one process. Nothi
 the split only decides which job runs which module.
 
 The split is deterministic: modules are sorted by their weight in `tests/ci_shard_weights.json`
-(seconds measured once, a module missing from the file gets `DEFAULT_WEIGHT`), heaviest first, and each
+(a module missing from the file gets `DEFAULT_WEIGHT`), heaviest first, and each
 goes to the lightest shard so far, ties broken by shard number. A new module therefore falls into a
 shard without anyone editing a list; `tests/test_ci_shards.py` fails if any module is in no shard or in
 two, or if the shard count here differs from the one in the workflow.
+
+The weights are CI seconds, measured on 20 October 2026 from five green pull-request runs of
+`tests.yml`: the `-v` output of each suite-shard job carries a timestamp per line, the gap before each
+line is charged to the module it names (a class's `setUpClass` falls to its first test), and a
+module's weight is the median over the runs. Pull-request runs, because they are the common case:
+the nightly classes skip there (`REPO_MODEL_SKIP_NIGHTLY`). `test_visual` alone is about 370 s, more
+than a sixth of the suite, so it holds a shard by itself and sets the floor of the slowest shard.
 
     python3 scripts/ci_shards.py modules --shard 2        # module names for shard 2 of SHARDS
     python3 scripts/ci_shards.py check                    # every module in exactly one shard
