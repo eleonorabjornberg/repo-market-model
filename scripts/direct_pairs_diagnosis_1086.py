@@ -59,6 +59,14 @@ from repo_model import metrics, scoring_protocol as sp  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+#: scripts/ entry points that select scored days, classified for tests/test_lockbox.py
+LOCKBOX_READS = {
+    "training_command": (
+        "not_entry",
+        "builds the training pairs of the 2021-23 refits of #1036's walks and scores nothing; `require_study_window` refuses any day after 2025-12-31 (#1086)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "direct_pairs_diagnosis_1086.json"
 LAST_TARGET = date(2025, 12, 31)
 #: the 2021-23 regime window of #1036's report (`evaluation_splits.json`'s regime "2021-23"), by target day
@@ -231,6 +239,11 @@ def declaration_document() -> dict:
         "ruling": "Eleonora, 21 October 2026, relayed by the orchestrating session: keep gbm_funding as the H5 candidate, adopt nothing, find out why the direct-pairs variant loses in 2021-23",
         "window": [WINDOW[0].isoformat(), WINDOW[1].isoformat()],
         "window_meaning": "the regime '2021-23' of #1036's report, by target day; 'floor-regime pairs' are the training pairs whose target day is in it (a description of the period of the ON RRP floor, not a rule)",
+        "variants": {
+            CONTROL: "the control: #634's gbm_funding, leaf 20, one-step pairs; its #1036 walk is read, not refitted",
+            DIRECT: "the direct-pairs variant of #1027, leaf 5, calendar and net-settlement columns at the target day; its #1036 walk is read, not refitted",
+            ALIGNED: "the aligned one-step variant of #1027, leaf 5, the same inputs; its #1036 walk is read, not refitted",
+        },
         "decomposition": {
             "walks": "#1036's: gbm_funding (#634's), gbm_funding_cal_direct and gbm_funding_cal_aligned, five leads each, read as they are; nothing is refitted",
             "pairs_candidate_over_reference": [list(p) for p in PAIRS],

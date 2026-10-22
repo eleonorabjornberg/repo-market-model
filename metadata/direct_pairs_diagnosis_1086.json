@@ -52,6 +52,11 @@
  ],
  "ruling": "Eleonora, 21 October 2026, relayed by the orchestrating session: keep gbm_funding as the H5 candidate, adopt nothing, find out why the direct-pairs variant loses in 2021-23",
  "status": "declared by the pull request that closes #1086 before any number was computed; a diagnosis of development data, not a record. No refit, no published figure moves, no day after 2025-12-31 and no locked day is read. Development data gives no verdict (scoring protocol v1, #46).",
+ "variants": {
+  "gbm_funding": "the control: #634's gbm_funding, leaf 20, one-step pairs; its #1036 walk is read, not refitted",
+  "gbm_funding_cal_aligned": "the aligned one-step variant of #1027, leaf 5, the same inputs; its #1036 walk is read, not refitted",
+  "gbm_funding_cal_direct": "the direct-pairs variant of #1027, leaf 5, calendar and net-settlement columns at the target day; its #1036 walk is read, not refitted"
+ },
  "window": [
   "2021-01-01",
   "2023-12-31"
