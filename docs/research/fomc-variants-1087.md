@@ -1,6 +1,6 @@
 # The FOMC meeting columns on the calendar-aware variants (#1087, H5 step 3, calendar first): design
 
-**Status: design and declaration. Nothing is scored here.** The direct arm's walks take hours and run on Eleonora's Mac (`needs-mac`, #46); the result page replaces this section when they have been scored. **Development data, never a verdict.** The declaration is `metadata/fomc_variants_1087.json`, committed before any number was computed; the script is `scripts/fomc_variants_1087.py` (commands in its docstring); the test is `tests/test_fomc_variants_1087.py`.
+**Status: design and declaration; the direct arm is now scored, in `docs/research/fomc-variants-1087-result.md`.** The walks ran on Eleonora's Mac (`needs-mac`, #46). **Development data, never a verdict.** The declaration is `metadata/fomc_variants_1087.json`, committed before any number was computed; the script is `scripts/fomc_variants_1087.py` (commands in its docstring); the test is `tests/test_fomc_variants_1087.py`.
 
 ## What is asked
 
