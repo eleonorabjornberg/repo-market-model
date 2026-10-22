@@ -389,7 +389,9 @@ def standings(repo):
             pair = metrics["pairs"].get(f"{name} vs {model}")
             rows[model] = {"mean": metrics["means"].get(model),
                            "skill": pair["skill"] if pair else None,
-                           "interval": pair.get("skill_interval") if pair else None}
+                           "interval": pair.get("skill_interval") if pair else None,
+                           "difference": pair.get("difference") if pair else None,
+                           "difference_interval": pair.get("difference_interval") if pair else None}
         groups.append({"caption": caption, "days": group["days"], "rows": rows})
     if not groups:
         return None
@@ -415,6 +417,14 @@ def standings_html(st):
         lo = row["interval"]
         return pct(row["skill"]) + (f" [{pct(lo[0])}, {pct(lo[1])}]" if lo else " (no interval)")
 
+    def mean_d(row):
+        """The studentized mean-d bound beside the skill interval (#1009 ruling; #1118): benchmark minus candidate, bp."""
+        low = (row.get("difference_interval") or (None, None))
+        if row.get("difference") is None or low[0] is None:
+            return '<br><span class="rs-note">no mean-d bound in the record</span>'
+        return (f'<br><span class="rs-note">mean-d {row["difference"]:+.2f} bp '
+                f'[{low[0]:+.2f}, {low[1]:+.2f}]</span>')
+
     def mean(row):
         return NOT_MEASURED if row["mean"] is None else f'{row["mean"]:.2f}'
 
@@ -427,7 +437,7 @@ def standings_html(st):
         for g in st["groups"]:
             row = g["rows"].get(model) or {"mean": None, "skill": None, "interval": None}
             own = model == name
-            cells.append(f'<td>{mean(row)}</td><td>{"&mdash;" if own else skill(row)}</td>')
+            cells.append(f'<td>{mean(row)}</td><td>{"&mdash;" if own else skill(row) + (mean_d(row) if row["skill"] is not None else "")}</td>')
         body.append(f'<tr><th scope="row">{shown}</th>{"".join(cells)}</tr>')
     rules = "".join(f"<li>{esc(rule)}</li>" for rule in st["rules"])
     return (
@@ -437,10 +447,17 @@ def standings_html(st):
         f'spread_mr_ctx, on the decision days {esc(st["first"])} to {esc(st["last"])}, from the record '
         f'<code>{esc(st["record"])}</code>. No one of them is the leader: B1 alone is not the honest baseline. '
         f'Mean grid CRPS in bp, lower is better; skill is the share of the benchmark&rsquo;s mean score removed, '
-        f'positive favours {esc(name)}. Intervals as recorded: {esc(st["interval"])}. '
+        f'positive favours {esc(name)}. Each skill cell carries two intervals from the record: the skill interval, and '
+        f'beneath it the studentized mean-d bound, the mean difference d in bp (benchmark minus {esc(name)}, positive '
+        f'favours {esc(name)}) with its interval. Intervals as recorded: {esc(st["interval"])}. '
         f'<span class="rs-tag">{esc(DEV_LABEL)}</span> {mark}</p>'
         f'<table class="rs-standings"><thead><tr><th scope="col">Model</th>{head}</tr></thead>'
         f'<tbody>{"".join(body)}</tbody></table>'
+        '<p class="rs-note"><b>Caveat (Lens C of the five-lens review, <a href="https://github.com/'
+        'eleonorabjornberg/repo-market-model/issues/958">#958</a>).</b> The lag-10 HAC standard error that '
+        'studentizes the mean-d bound is understated about 2&times; after 2020, so the bound is optimistic there: an '
+        'interval that excludes zero is narrower than it should be. A development reading is evidence for a '
+        'question, not a verdict.</p>'
         + (f'<p class="rs-note">The record&rsquo;s own reading rules:</p><ul>{rules}</ul>' if rules else ""))
 
 
