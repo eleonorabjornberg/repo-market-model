@@ -1,0 +1,15 @@
+{
+  "order": 195,
+  "directive": 1030,
+  "pull_request": 1085,
+  "hypothesis": "H5",
+  "result": "The per-episode stress replay of the published model",
+  "declarations": [],
+  "model": "the published distribution as a series (`docs/runs/published_distribution_daily_h1.json`), beside B1, B2 and B1′",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-21-model-01030-H5-step6"
+  ],
+  "concluded": "The published q95 sat below the print on most replayed days and the band widened after the first miss; development data, a replay of a calendar-blind series."
+}

@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/sofr_revision_exposure_1019.py",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

@@ -1,0 +1,643 @@
+{
+ "declaration": "metadata/fomc_variants_1087.json",
+ "draws": 10000,
+ "environment": {
+  "numpy_sklearn": "not recorded: the versions were printed to ~/1087.log on the Mac, which was not committed",
+  "python": "3.11.17 (the paste stops on any other interpreter)",
+  "run": "Eleonora's Mac, commit f9f158d9, ~/rmm-venv"
+ },
+ "fomc_calendar_sha256": "cddbadfa2bb37fbc536b2be29a985d6594a9d9e62320263e007975417b4da403",
+ "issue": 1087,
+ "label": "development, not a verdict",
+ "means": {
+  "grid_crps": {
+   "gbm_funding": 1.8222896454436095,
+   "gbm_funding_cal_direct": 1.8682541173331555,
+   "gbm_funding_cal_direct_fomc": 1.8807150993377897
+  },
+  "upper_tail_twcrps": {
+   "gbm_funding": 0.9515298646434547,
+   "gbm_funding_cal_direct": 0.9549227374798365,
+   "gbm_funding_cal_direct_fomc": 0.9553005379928369
+  }
+ },
+ "models": [
+  "gbm_funding",
+  "gbm_funding_cal_direct",
+  "gbm_funding_cal_direct_fomc"
+ ],
+ "not_run": {
+  "gbm_funding_cal_aligned_fomc": "not run: repo_model.one_step_guard (#947) refuses it until Eleonora admits it by an allow-list entry per lead; walk refuses and writes nothing"
+ },
+ "notes": {
+  "b1_prime_missing": [],
+  "benchmark_missing": [],
+  "candidate_skipped_for_history": 75,
+  "decision_days_offered": 1930,
+  "first": "2018-07-19",
+  "gbm": {
+   "common_days": 1855,
+   "gbm_days": 1855,
+   "transparent_days": 1855
+  },
+  "last": "2025-12-23",
+  "last_target": "2025-12-31",
+  "refits": 89,
+  "scored_decision_days": 1855
+ },
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "reading_rules": [
+  "gbm_funding_cal_direct_fomc is not shown to help over gbm_funding_cal_direct on FOMC days (skill -1.2%, one-sided 95% lower bound -3.0%) and does not lose on ordinary non-FOMC days (skill -0.7%, interval -1.7% to +0.3%)."
+ ],
+ "reading_rules_against_the_control": [
+  "gbm_funding_cal_direct_fomc is not shown to beat gbm_funding on calendar days (skill -0.7%, one-sided 95% lower bound -6.3%) and does not lose on ordinary days (skill -7.8%, interval -17.3% to +0.8%)."
+ ],
+ "scratch_panel_sha256": "f9fae9dce43341f2816d19c76d9562f9773f0bff5891bd051f52eac0ffecb8f3",
+ "seed": 1087,
+ "skill": {
+  "grid_crps": {
+   "pooled": {
+    "all decision days": {
+     "days": 1855,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.03206156279286724,
+       "skill_interval": [
+        -0.08840653815045393,
+        0.020931741662660576
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.006669853896762136,
+       "skill_interval": [
+        -0.015157730767089515,
+        0.0006742586335018938
+       ]
+      }
+     }
+    }
+   },
+   "regime": {
+    "2018-19": {
+     "days": 361,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.039871415996709805,
+       "skill_interval": [
+        -0.11136095953355629,
+        0.014535513518706092
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.0008281742837788599,
+       "skill_interval": [
+        -0.01397460761674223,
+        0.00978836402093632
+       ]
+      }
+     }
+    },
+    "2020": {
+     "days": 251,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.10796670341307321,
+       "skill_interval": [
+        -0.3761962465138683,
+        0.10007422874451591
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.023853126928897503,
+       "skill_interval": [
+        -0.08406588044891355,
+        0.01934761229915998
+       ]
+      }
+     }
+    },
+    "2021-23": {
+     "days": 748,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.30604688128046065,
+       "skill_interval": [
+        -0.44944529553253376,
+        -0.19662069646608377
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.021856022855707282,
+       "skill_interval": [
+        -0.0354216524017869,
+        -0.009658604714580162
+       ]
+      }
+     }
+    },
+    "2024": {
+     "days": 250,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.1794718141974248,
+       "skill_interval": [
+        0.09701896914321789,
+        0.25708788085784096
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.0041239541189578835,
+       "skill_interval": [
+        -0.005630621793750945,
+        0.015616745655056902
+       ]
+      }
+     }
+    },
+    "2025-26": {
+     "days": 249,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.13618216423555105,
+       "skill_interval": [
+        -0.06852709342875021,
+        0.28271828576798563
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.0006742558415209472,
+       "skill_interval": [
+        -0.019098271990863076,
+        0.014837252549064867
+       ]
+      }
+     }
+    }
+   },
+   "target_type": {
+    "calendar_days": {
+     "days": 1011,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.006876733360441044,
+       "skill_interval": [
+        -0.06302269458095434,
+        0.04431882566930223
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.00587549589409688,
+       "skill_interval": [
+        -0.014532009298413098,
+        0.0011138327608289098
+       ]
+      }
+     }
+    },
+    "fomc_day": {
+     "days": 120,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.012809390132645895,
+       "skill_interval": [
+        -0.05829084632663574,
+        0.03527373729664551
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.012146968812616694,
+       "skill_interval": [
+        -0.02956186039604533,
+        -0.0024445370592918268
+       ]
+      }
+     }
+    },
+    "fomc_ordinary": {
+     "days": 42,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.03454976616283136,
+       "skill_interval": [
+        -0.1666805879212636,
+        0.0992896934361027
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.043410237908940434,
+       "skill_interval": [
+        -0.11986085269649202,
+        0.001885446446729555
+       ]
+      }
+     }
+    },
+    "month_end": {
+     "days": 150,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.16348307456391267,
+       "skill_interval": [
+        0.03689786317591062,
+        0.3193964632515173
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.020188176582043697,
+       "skill_interval": [
+        -0.04276530684497524,
+        -0.0032923656024823438
+       ]
+      }
+     }
+    },
+    "ordinary": {
+     "days": 848,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.07830674515419836,
+       "skill_interval": [
+        -0.17296024226510043,
+        0.007804145407855331
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.008595383977202154,
+       "skill_interval": [
+        -0.018966720611994642,
+        0.001298797605978421
+       ]
+      }
+     }
+    },
+    "ordinary_non_fomc": {
+     "days": 806,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.08050665186335752,
+       "skill_interval": [
+        -0.17833686167973506,
+        0.006926436826667215
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.006978010390368992,
+       "skill_interval": [
+        -0.016925668110041033,
+        0.0028722885194166162
+       ]
+      }
+     }
+    },
+    "quarter_end": {
+     "days": 30,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.1478701143273743,
+       "skill_interval": [
+        -0.12015040289869217,
+        0.39327884707273275
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.007739429367697729,
+       "skill_interval": [
+        -0.003691553828929819,
+        0.03174013462920816
+       ]
+      }
+     }
+    },
+    "settlement": {
+     "days": 742,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.06848043286654812,
+       "skill_interval": [
+        -0.15283397116179304,
+        -0.0020000777788205665
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.00487331083630844,
+       "skill_interval": [
+        -0.015023187117942963,
+        0.0036823502853254603
+       ]
+      }
+     }
+    },
+    "tax_date": {
+     "days": 89,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.037066477580671935,
+       "skill_interval": [
+        -0.0986776949678024,
+        0.025382937751578766
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.006312295831834482,
+       "skill_interval": [
+        -0.020184343745907336,
+        0.004535429025398677
+       ]
+      }
+     }
+    }
+   }
+  },
+  "upper_tail_twcrps": {
+   "pooled": {
+    "all decision days": {
+     "days": 1855,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.003962748295661258,
+       "skill_interval": [
+        -0.0640334683872308,
+        0.05026172881525291
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.0003956346395096085,
+       "skill_interval": [
+        -0.012279426284170883,
+        0.009507400340777145
+       ]
+      }
+     }
+    }
+   },
+   "regime": {
+    "2018-19": {
+     "days": 361,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.0259005636227565,
+       "skill_interval": [
+        -0.09420094281462026,
+        0.026558939340063648
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.0016110538548633638,
+       "skill_interval": [
+        -0.015882283564731696,
+        0.00856474746726656
+       ]
+      }
+     }
+    },
+    "2020": {
+     "days": 251,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.017032460727884294,
+       "skill_interval": [
+        -0.38657207133204735,
+        0.3366552660908173
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.029771626372539682,
+       "skill_interval": [
+        -0.007359655240276743,
+        0.0642579339415257
+       ]
+      }
+     }
+    },
+    "2021-23": {
+     "days": 748,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.14394682892995211,
+       "skill_interval": [
+        -0.7615202332949613,
+        0.22029229074247816
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.0482187444231848,
+       "skill_interval": [
+        -0.13164165886133766,
+        0.24728276445538744
+       ]
+      }
+     }
+    },
+    "2024": {
+     "days": 250,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.11281717305250506,
+       "skill_interval": [
+        0.03595379192504028,
+        0.23952323270148662
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.000767384125175141,
+       "skill_interval": [
+        -0.004878063299361336,
+        0.006779106615754824
+       ]
+      }
+     }
+    },
+    "2025-26": {
+     "days": 249,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.10565848513196932,
+       "skill_interval": [
+        -0.3008994128604351,
+        0.3548759551547409
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.007726770576493756,
+       "skill_interval": [
+        -0.05259258447801769,
+        0.021520748375673058
+       ]
+      }
+     }
+    }
+   },
+   "target_type": {
+    "calendar_days": {
+     "days": 1011,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.016663934724008053,
+       "skill_interval": [
+        -0.02893265612117439,
+        0.0625663038598066
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.00022728553302858267,
+       "skill_interval": [
+        -0.009592842788916162,
+        0.008763958332813212
+       ]
+      }
+     }
+    },
+    "fomc_day": {
+     "days": 120,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.005011728693623757,
+       "skill_interval": [
+        -0.03105904242054435,
+        0.03213819381231789
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.013885366032344318,
+       "skill_interval": [
+        -0.029370681939855516,
+        0.0008841042460419404
+       ]
+      }
+     }
+    },
+    "fomc_ordinary": {
+     "days": 42,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.036219259219360186,
+       "skill_interval": [
+        -0.3096829747726168,
+        0.23742166508982276
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.10453513954306037,
+       "skill_interval": [
+        -0.22042289860946807,
+        -0.06452758314743125
+       ]
+      }
+     }
+    },
+    "month_end": {
+     "days": 150,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.18148193664431733,
+       "skill_interval": [
+        -0.029796676788911652,
+        0.443963008766139
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.03315523835063997,
+       "skill_interval": [
+        -0.07999471722129645,
+        -0.004835053537300536
+       ]
+      }
+     }
+    },
+    "ordinary": {
+     "days": 848,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.057046074257107546,
+       "skill_interval": [
+        -0.1983853694066981,
+        0.053580752083148914
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": -0.0022042147336137517,
+       "skill_interval": [
+        -0.025578924588082513,
+        0.014029649035036555
+       ]
+      }
+     }
+    },
+    "ordinary_non_fomc": {
+     "days": 806,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.0629040683968251,
+       "skill_interval": [
+        -0.21972471826272655,
+        0.04883378212352686
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.0030560905123497083,
+       "skill_interval": [
+        -0.020051245555936726,
+        0.018725170334990063
+       ]
+      }
+     }
+    },
+    "quarter_end": {
+     "days": 30,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": 0.13960066551160974,
+       "skill_interval": [
+        -0.07003882426027178,
+        0.29026184941472544
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.015090405886725684,
+       "skill_interval": [
+        0.009834870002391246,
+        0.02790931140065738
+       ]
+      }
+     }
+    },
+    "settlement": {
+     "days": 742,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": -0.045464839937530255,
+       "skill_interval": [
+        -0.17360460684595252,
+        0.036514540683590196
+       ]
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.0039031118704765193,
+       "skill_interval": [
+        -0.007563286941114718,
+        0.014901408097757843
+       ]
+      }
+     }
+    },
+    "tax_date": {
+     "days": 89,
+     "pairs": {
+      "gbm_funding_cal_direct_fomc vs gbm_funding": {
+       "skill": null,
+       "skill_interval": null
+      },
+      "gbm_funding_cal_direct_fomc vs gbm_funding_cal_direct": {
+       "skill": 0.00020743233552646784,
+       "skill_interval": [
+        -0.00305905970822248,
+        0.006163117262619523
+       ]
+      }
+     }
+    }
+   }
+  }
+ },
+ "source": "docs/research/fomc-variants-1087/score.json"
+}

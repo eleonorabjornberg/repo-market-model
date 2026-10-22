@@ -1,0 +1,99 @@
+{
+ "arms": {
+  "gbm_funding_cal_aligned_fomc": {
+   "947_guard": "refused by repo_model.one_step_guard: the #1027 allow-list entries cover that variant's regressors only, and a new entry is Eleonora's decision. The arm is run only if she admits it; otherwise it is reported as not run (walk refuses and writes nothing)",
+   "adds": [
+    "fomc_meeting_day",
+    "fomc_days_to_next_meeting"
+   ],
+   "base": "gbm_funding_cal_aligned",
+   "min_samples_leaf": 5,
+   "training_pairs": null
+  },
+  "gbm_funding_cal_direct_fomc": {
+   "947_guard": "passes: a direct fit is not checked",
+   "adds": [
+    "fomc_meeting_day",
+    "fomc_days_to_next_meeting"
+   ],
+   "base": "gbm_funding_cal_direct",
+   "min_samples_leaf": 5,
+   "training_pairs": "direct"
+  }
+ },
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind",
+ "comparisons": [
+  "each arm over its #1027 variant without the columns",
+  "each arm over gbm_funding"
+ ],
+ "cuts": {
+  "calendar_days": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement"
+  ],
+  "fomc_day": "every target day that held a meeting (both days of a two-day meeting; an unscheduled meeting on its day; a cancelled meeting not), whatever its other type; overlaps the types above",
+  "fomc_ordinary": "a meeting day whose #1027 type is ordinary",
+  "labels": "the FOMC cuts label target days after the fact for scoring; they are never an input",
+  "ordinary_non_fomc": "an ordinary target day that held no meeting",
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "target_day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement",
+   "ordinary"
+  ]
+ },
+ "hypothesis": "H5 step 3, calendar first: the FOMC meeting columns (#1038, #1046) on the calendar-aware variants of #1027",
+ "inputs": {
+  "added": [
+   "fomc_meeting_day",
+   "fomc_days_to_next_meeting"
+  ],
+  "base": "the #1027 variant's inputs at the lead (scripts/aligned_calendar_1027.py variant_features), unchanged",
+  "calendar": "metadata/fomc_calendar.json (#1038), its sha256 recorded in every walk and checked at score time",
+  "panel": "#951's scratch panel AUG3, as #1027 (the walks of gbm_funding and of the two #1027 variants are #1027's, reused)",
+  "read": "the target row, at every lead h = 1 to 5: row T carries the values read at the decision instant of the panel day h rows before T (fomc_calendar.add_columns(horizon=h)), a meeting counted from its schedule's release instant and a cancelled one dropped from its cancellation's; served by asof rule 2 under a study-time scheduled declaration of h panel days ahead at 16:00 (fomc_registry)"
+ },
+ "interval": "stationary bootstrap, seed 1087, the studentized interval of ruling 1 (#739); the lower end of the two-sided 90% interval is the one-sided 95% lower bound",
+ "issue": 1087,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "no published declaration changes",
+  "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps"
+ ],
+ "reading_rules": {
+  "against_the_control": "read as #1027's rule: an arm beats gbm_funding on calendar days when the lower end of its grid-CRPS skill interval over gbm_funding on the calendar_days cut is above 0, and does not lose on ordinary days when that interval's upper end on the ordinary cut is 0 or more",
+  "does_not_lose_elsewhere": "and its skill over the variant on ordinary non-FOMC days has an upper interval end of 0 or more; 'loses' means an interval wholly below 0",
+  "helps_on_fomc_days": "an arm helps over its variant on FOMC days when the lower end of its grid-CRPS skill interval over the variant on the fomc_day cut is above 0",
+  "no_verdict": "development data gives no verdict",
+  "publish": "whether the columns join a published declaration is Eleonora's question (#1046) and comes back to her with this result; this page does not decide it"
+ },
+ "ruling": "Eleonora, 21 October 2026, relayed by the orchestrating session, on #1046: calendar first; FOMC meeting days are calendar days, so the columns are tested on the calendar-aware variants (option 2)",
+ "settings": {
+  "as_variant": [
+   "seed",
+   "quantile grid",
+   "refit every 21 scored days",
+   "minimum history 61",
+   "min_samples_leaf 5",
+   "n_estimators and depth of ml.fit_gradient_boosted_quantiles"
+  ]
+ },
+ "status": "declared by the pull request that closes #1087 before any number was computed; a measurement, not a record. Nothing is published: neither arm joins any published declaration, the FOMC columns stay off every published declaration (Eleonora, 21 October 2026, on #1046), no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46)."
+}
