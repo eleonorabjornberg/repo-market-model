@@ -36,9 +36,14 @@ PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 TAGLINES = "docs/research/taglines.json"
 REGISTER = provisional_register.REGISTER
+#: The committed records the development standings are read from (#1020): the step 4 record names the candidate; the
+#: #960 score holds the paired grid-CRPS figures, and its declaration says how the intervals were drawn.
+STEP4 = "docs/pivot/evidence/h5-step4/score.json"
+STANDINGS = "docs/pivot/evidence/b1-calendar-960/score.json"
+STANDINGS_DECLARATION = "metadata/b1_calendar_960.json"
 #: Every source the page is built from: the one list a new input is added to (#1059). `LOG` and `HYPOTHESES` are
 #: directories; `input_files` expands them, and `emit_visual.py` stamps the page with the digest of each.
-INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER)
+INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION)
 
 DEV_LABEL = "development, not a verdict"
 #: The mark on a figure from a registered result (#1028). It names no issue number: the page is for a lay reader.
@@ -351,10 +356,99 @@ def provisional_mark():
             f'<a href="{BLOB}{REGISTER}">register</a></span>')
 
 
-def best_html(final, provisional=False):
+#: The models of the standings table, in order, with the name the page prints for each.
+STANDING_MODELS = (("B1", "B1"), ("B1_prime", "B1&prime;"), ("spread_mr_ctx", "spread_mr_ctx"))
+#: The two groups of the #960 record the table shows: its pooled figure and its headline (ordinary targets).
+STANDING_GROUPS = (("pooled", "all decision days", "all days"), ("target_type", "ordinary", "ordinary targets"))
+
+
+def standings(repo):
+    """The development standings of the candidate the step 4 record names, read from committed records, or None.
+
+    Nothing is computed: every mean, skill and interval is copied from `STANDINGS`, the interval type from its
+    declaration. None when the step 4 record names no candidate or the #960 record does not score it.
+    """
+    root = Path(repo)
+    try:
+        step4 = json.loads((root / STEP4).read_text(encoding="utf-8"))
+        score = json.loads((root / STANDINGS).read_text(encoding="utf-8"))
+        declaration = json.loads((root / STANDINGS_DECLARATION).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    name = step4.get("best_candidate")
+    if not name or name not in score.get("models", ()):
+        return None
+    groups = []
+    for key, label, caption in STANDING_GROUPS:
+        group = (score.get("groups") or {}).get(key, {}).get(label)
+        metrics = ((group or {}).get("metrics") or {}).get("grid_crps")
+        if not metrics:
+            continue
+        rows = {}
+        for model, _ in ((name, name),) + tuple((m, m) for m, _ in STANDING_MODELS):
+            pair = metrics["pairs"].get(f"{name} vs {model}")
+            rows[model] = {"mean": metrics["means"].get(model),
+                           "skill": pair["skill"] if pair else None,
+                           "interval": pair.get("skill_interval") if pair else None}
+        groups.append({"caption": caption, "days": group["days"], "rows": rows})
+    if not groups:
+        return None
+    return {"candidate": name, "groups": groups, "first": score["notes"]["first"], "last": score["notes"]["last"],
+            "interval": declaration["scoring"]["interval"], "rules": list(score.get("reading_rules") or []),
+            "record": STANDINGS, "step4": STEP4}
+
+
+def standings_html(st):
+    """The development standings paragraph and table (#1020), or the plain "not measured" when nothing names a candidate."""
+    if not st:
+        return ('<p><span class="runin">The development standings.</span> '
+                f'<span class="rs-nm">{NOT_MEASURED}</span>: no committed record names a candidate scored beside '
+                f'B1, B1&prime; and spread_mr_ctx. When one does, it appears here, labelled &ldquo;{esc(DEV_LABEL)}&rdquo;.</p>')
+    name = st["candidate"]
+
+    def pct(x):
+        return NOT_MEASURED if x is None else f"{100 * x:+.1f}%"
+
+    def skill(row):
+        if row["skill"] is None:
+            return NOT_MEASURED
+        lo = row["interval"]
+        return pct(row["skill"]) + (f" [{pct(lo[0])}, {pct(lo[1])}]" if lo else " (no interval)")
+
+    def mean(row):
+        return NOT_MEASURED if row["mean"] is None else f'{row["mean"]:.2f}'
+
+    mark = provisional_mark()
+    head = "".join(f'<th scope="col">Grid CRPS, {esc(g["caption"])} ({g["days"]} days)</th>'
+                   f'<th scope="col">{esc(name)}&rsquo;s skill against it</th>' for g in st["groups"])
+    body = []
+    for model, shown in STANDING_MODELS + ((name, esc(name)),):
+        cells = []
+        for g in st["groups"]:
+            row = g["rows"].get(model) or {"mean": None, "skill": None, "interval": None}
+            own = model == name
+            cells.append(f'<td>{mean(row)}</td><td>{"&mdash;" if own else skill(row)}</td>')
+        body.append(f'<tr><th scope="row">{shown}</th>{"".join(cells)}</tr>')
+    rules = "".join(f"<li>{esc(rule)}</li>" for rule in st["rules"])
+    return (
+        '<p><span class="runin">The development standings.</span> '
+        f'The step 4 record (<code>{esc(st["step4"])}</code>) names <b>{esc(name)}</b> as its best candidate. '
+        f'The table sets it beside B1, B1&prime; (B1 with its changes pooled by the target day&rsquo;s type) and '
+        f'spread_mr_ctx, on the decision days {esc(st["first"])} to {esc(st["last"])}, from the record '
+        f'<code>{esc(st["record"])}</code>. No one of them is the leader: B1 alone is not the honest baseline. '
+        f'Mean grid CRPS in bp, lower is better; skill is the share of the benchmark&rsquo;s mean score removed, '
+        f'positive favours {esc(name)}. Intervals as recorded: {esc(st["interval"])}. '
+        f'<span class="rs-tag">{esc(DEV_LABEL)}</span> {mark}</p>'
+        f'<table class="rs-standings"><thead><tr><th scope="col">Model</th>{head}</tr></thead>'
+        f'<tbody>{"".join(body)}</tbody></table>'
+        + (f'<p class="rs-note">The record&rsquo;s own reading rules:</p><ul>{rules}</ul>' if rules else ""))
+
+
+def best_html(final, provisional=False, standing=None):
     """The incumbent and the development leader (#645 §2). `final` is the page's final-test payload.
 
-    `provisional` marks the incumbent's figures when the register registers them (#1028).
+    `provisional` marks the incumbent's figures when the register registers them (#1028). `standing` is
+    `standings(repo)` (#1020): the development standings of the candidate the step 4 record names.
     """
     mark = f' {provisional_mark()}' if provisional else ""
     figs = (f'On the {final["days"]} days {final["first"]} to {final["last"]} the published declaration scored '
@@ -378,10 +472,7 @@ def best_html(final, provisional=False):
         + callouts +
         '<p><span class="runin">The incumbent.</span> '
         f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
-        '<p><span class="runin">The development leader.</span> '
-        f'<span class="rs-nm">{NOT_MEASURED}</span>: no committed evidence names one by the protocol&rsquo;s primary '
-        'score (grid CRPS over h = 1&ndash;5). When one does, it appears here beside the incumbent, labelled '
-        f'&ldquo;{esc(DEV_LABEL)}&rdquo;.</p>'
+        + standings_html(standing) +
         f'<p class="rs-note">The incumbent&rsquo;s figures are from the published record <code>{esc(final["record"])}</code>, '
         'read by the final-test section below; this page scores nothing itself.</p>'
         '<aside class="rs-q"><b>Question for Eleonora.</b> The default rule shown here is the best registered '
@@ -474,6 +565,6 @@ def fills(repo, final):
     hypotheses = load(repo)
     links = load_critical_path(repo, hypotheses)
     incumbent = provisional_register.marks_incumbent(provisional_register.load(repo))
-    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final, incumbent),
+    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final, incumbent, standings(repo)),
             "research_steps": steps_html(),
             "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)

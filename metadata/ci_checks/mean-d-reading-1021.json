@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/mean_d_reading_1021.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

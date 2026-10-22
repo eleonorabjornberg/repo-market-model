@@ -1,0 +1,10 @@
+{
+  "script": "scripts/dom_level_term_1032.py",
+  "declarations": [
+    "metadata/dom_level_term_1032.json"
+  ],
+  "model": "gbm_funding_cal_direct of #1027 plus a day-of-month bucket of the target day, on direct pairs only (the producers table's pairing values have no direct-only entry)",
+  "calendar_inputs": "dom_bucket at every lead, plus #1027's: quarter_end, days_to_month_end, tax_date at every lead; treasury_settlement and its parts at lead 1; all from the target row",
+  "pairing": "one_step+direct",
+  "class": "aligned"
+}

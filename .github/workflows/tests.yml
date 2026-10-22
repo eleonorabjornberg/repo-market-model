@@ -159,7 +159,8 @@ jobs:
     # fit with the same numpy and scikit-learn; pyproject.toml's bounds admit
     # them.
     #
-    # On a pull request, the modules that skip without the extra, and nothing else:
+    # On a pull request, the modules that skip without the extra, and nothing else, in
+    # `ML_SHARDS` shards balanced by `tests/ci_shard_weights.json` (#1096):
     # `scripts/ci_shards.py ml-modules` finds them by reading the test sources (a call
     # to `require_extra`, a `find_spec` probe for numpy or sklearn, or a helper
     # imported from such a module), so a new module that skips for want of the
@@ -174,7 +175,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(github.event_name == 'pull_request' && '[1]' || '[1, 2, 3, 4, 5, 6]') }}
+        shard: ${{ fromJSON(github.event_name == 'pull_request' && '[1, 2, 3]' || '[1, 2, 3, 4, 5, 6]') }}
     steps:
       # The whole history, not a depth-1 clone: the results page and
       # docs/status.json are stamped with the latest commit that changed an
@@ -204,7 +205,7 @@ jobs:
             # Subtests marked `skip_if_fast` in test_ml (refit sweeps, never a
             # leakage, availability or staleness guard) skip here and run on
             # every push and on the schedule (directive 05, Do 4).
-            REPO_MODEL_SKIP_SLOW=1 python3 -B -m unittest $(python3 scripts/ci_shards.py ml-modules) -v
+            REPO_MODEL_SKIP_SLOW=1 python3 -B -m unittest $(python3 scripts/ci_shards.py ml-modules --shard ${{ matrix.shard }}) -v
           else
             python3 -B -m unittest $(python3 scripts/ci_shards.py modules --shard ${{ matrix.shard }}) -v
           fi
@@ -289,7 +290,7 @@ jobs:
     # job fetches it. With no binding change and no new citation it fetches
     # nothing.
     name: owner attestation
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -309,4 +310,15 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
           GH_TOKEN: ${{ github.token }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        if: github.event_name == 'pull_request'
         run: python3 -B scripts/owner_attested.py check --base "$BASE_SHA"
+
+      # A push to main re-runs the check over the pushed range, so a pull request whose CI ran before a path
+      # became binding cannot merge a binding change unchecked (#1110, #1122). It fails the push, and main, red.
+      - name: Pushed commits cite an owner-attested comment
+        if: github.event_name == 'push'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: python3 -B scripts/owner_attested.py check --push-before "$BEFORE_SHA" --head "$GITHUB_SHA"
