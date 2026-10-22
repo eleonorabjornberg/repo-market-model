@@ -55,6 +55,17 @@ from .data import (
 from .scarcity import SATIATION_BAND
 from .splits import LookAheadError, SplitError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "build_row": (
+        "not_entry",
+        "builds one row's projected-reserves columns from the as-of reads of its own decision "
+        "(#545); scores nothing, `build_columns` builds no row after the declared last scored day, "
+        "and `scripts/projected_reserves.py panel` calls require_unlocked on that day before it "
+        "builds anything",
+    ),
+}
+
 __all__ = [
     "AHEAD_COLUMNS",
     "COLUMNS",

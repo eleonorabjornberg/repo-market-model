@@ -19,6 +19,21 @@ window lengths are declared, not tuned.
   global systemically important bank holding company on its FR Y-15 indicators
   as of 31 December.
 
+**The relabelled flags (#1031, H5 step 2 / H6 step 1).** `relabelled_flags` re-dates the same three rules onto the turn days of
+`turn_days` (#959): the last business day and the first business day after it, in place of the run-up windows. The sources, the
+`public_from` gates and the flag names are the rules' own and nothing else changes; the as-coded `flags` above is untouched.
+
+* `foreign_bank_quarter_end`: the quarter's last business day and the first business day after it, for March, June, September and
+  December (the four quarter-ends the rule names);
+* `foreign_bank_month_end`: the last business day of a month that is not a quarter's last and the first business day after it;
+* `gsib_year_end`: the last business day of December and the first business day of January (December as its own type: the year-end
+  turn also carries `foreign_bank_quarter_end`, as the rule named December among its quarters). 26 December is flagged by no relabelled
+  rule; the as-coded `gsib_year_end` window held it.
+
+Both sets are columns of a scratch panel only (`add_columns`): a function of the row's own date, written about the target day and so
+declared in `target_day_columns` (`asof` rule 2 serves them from the scored row; a one-step fit on them is refused). They are off in every
+published declaration, and adopting the relabel is Eleonora's (a data meaning).
+
 A rule is usable only from the day its source was public (`public_from`);
 `require_public` raises `LookAheadError` for a decision before it. Business days
 are the market holiday table's, as for `data.quarter_end`.
@@ -29,9 +44,11 @@ Standard library only.
 from __future__ import annotations
 
 from datetime import date
-from typing import Dict, Mapping, NamedTuple, Tuple
+from typing import Dict, List, Mapping, NamedTuple, Sequence, Tuple
 
+from . import turn_days
 from .data import (
+    DailyObservation,
     days_to_month_end,
     last_business_days_of_month,
     next_business_day,
@@ -40,7 +57,20 @@ from .data import (
 )
 from .splits import LookAheadError
 
-__all__ = ["RULES", "Rule", "RUN_UP_DAYS", "YEAR_END_DAYS", "flags", "require_public", "scored_day"]
+__all__ = [
+    "CODED_COLUMNS",
+    "NAMES",
+    "RULES",
+    "Rule",
+    "RUN_UP_DAYS",
+    "TURN_COLUMNS",
+    "YEAR_END_DAYS",
+    "add_columns",
+    "flags",
+    "relabelled_flags",
+    "require_public",
+    "scored_day",
+]
 
 #: Business days of the quarter-end run-up, the last business day included.
 RUN_UP_DAYS = 3
@@ -85,6 +115,9 @@ RULES: Tuple[Rule, ...] = (
 )
 
 NAMES: Tuple[str, ...] = tuple(rule.name for rule in RULES)
+#: The scratch-panel columns of the as-coded flags and of the relabelled flags (#1031), one per rule, in `NAMES` order.
+CODED_COLUMNS: Tuple[str, ...] = tuple(f"bs_coded_{name}" for name in NAMES)
+TURN_COLUMNS: Tuple[str, ...] = tuple(f"bs_turn_{name}" for name in NAMES)
 
 
 def require_public(rule: Rule, decision: date) -> Rule:
@@ -138,3 +171,42 @@ def scored_day(anchor: date, calendar: Mapping[str, float]) -> date:
             f"the calendar columns {wanted} match {len(found)} business days after {anchor}, not one"
         )
     return found[0]
+
+
+def relabelled_flags(day: date, decision: date) -> Dict[str, float]:
+    """Each rule's 0/1 flag on scored `day` on the turn days of `turn_days` (#1031), for a decision made on `decision`.
+
+    A function of `day` and the market holiday table alone. Raises `LookAheadError` when a rule's source was not yet public at `decision`.
+    """
+
+    for rule in RULES:
+        require_public(rule, decision)
+    label = turn_days.turn_label(day)
+    return {
+        "foreign_bank_quarter_end": 1.0 if label in (turn_days.QUARTER_END_TURN, turn_days.YEAR_END) else 0.0,
+        "foreign_bank_month_end": 1.0 if label == turn_days.TURN else 0.0,
+        "gsib_year_end": 1.0 if label == turn_days.YEAR_END else 0.0,
+    }
+
+
+def add_columns(rows: Sequence[DailyObservation], kind: str) -> List[DailyObservation]:
+    """`rows` with the three flag columns of `kind` ("coded" or "turn"), each from the row's own date and no other.
+
+    The columns are written about the row's day, so a forecast of that day reads them from its row (`asof` rule 2, `target_day_columns`).
+    Every other value of every row is the frame's own.
+
+    Raises:
+        ValueError: `kind` is neither, or the holiday table does not cover a row's month.
+    """
+
+    if kind == "coded":
+        columns, compute = CODED_COLUMNS, flags
+    elif kind == "turn":
+        columns, compute = TURN_COLUMNS, relabelled_flags
+    else:
+        raise ValueError(f"unknown flag set {kind!r}; one of 'coded', 'turn'")
+    out = []
+    for row in rows:
+        got = compute(row.date, row.date)
+        out.append(DailyObservation(date=row.date, values={**row.values, **{c: got[n] for c, n in zip(columns, NAMES)}}))
+    return out

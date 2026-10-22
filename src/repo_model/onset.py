@@ -49,6 +49,14 @@ from .data import DailyObservation, exceeds_bp
 from .metrics import stationary_bootstrap_interval
 from .splits import LookAheadError, SplitError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "twcrps_above_from_quantiles": (
+        "delegates",
+        "a pure metric of one vector and one outcome; chooses no day",
+    ),
+}
+
 #: Onset days: the first scored day with SOFR - IORB above this, in whole bp.
 ONSET_THRESHOLD_BP = 5
 #: ...after at least this many consecutive panel (business) days at or below it.

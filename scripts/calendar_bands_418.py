@@ -35,6 +35,15 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import DAY_TYPES, load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "mean_crps": (
+        "delegates",
+        "the mean loss of a published daily record's days, which `score` builds from `_WALK`'s "
+        "records and refuses after the panel end",
+    ),
+}
+
 CANDIDATE = "conformal_pid_calendar"
 RUNS = REPO / "docs" / "runs"
 PUBLISHED = RUNS / "published_distribution_daily_h1.json"

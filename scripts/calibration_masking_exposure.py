@@ -43,6 +43,14 @@ sys.path.insert(0, str(ROOT / "src"))
 from repo_model.asof import InformationRule, fold_grid, refit_blocks  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "exposure": (
+        "not_entry",
+        "counts masked training pairs per refit block; scores nothing",
+    ),
+}
+
 KIND_OBSERVED = "observed"
 
 

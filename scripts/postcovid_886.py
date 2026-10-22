@@ -29,7 +29,6 @@ import importlib.util
 import json
 import math
 import multiprocessing
-import random
 import sys
 from datetime import date
 from pathlib import Path
@@ -38,7 +37,10 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import scoring_protocol as sp  # noqa: E402
-from repo_model.metrics import stationary_bootstrap_indices  # noqa: E402
+# The design path's pooled workers live in src: a spawn pool (macOS) imports them by name (#1090).
+from repo_model.confirmation_workers import (  # noqa: E402,F401
+    design_values, post_2020, stationary_window_indices, stationary_window_statistics,
+)
 
 RESEARCH = REPO / "docs" / "research"
 CALIBRATION = RESEARCH / "protocol-calibration" / "result.json"
@@ -74,25 +76,6 @@ def sha256(path: Path) -> str:
 
 
 # -- the history and the generator -------------------------------------------------------------------------------
-
-
-def post_2020(days, values):
-    """The days from `POST_2020_FIRST` and their values, in order.
-
-    Raises:
-        ValueError: `days` and `values` differ in length.
-    """
-
-    if len(days) != len(values):
-        raise ValueError(f"{len(days)} days but {len(values)} values")
-    kept = [(d, v) for d, v in zip(days, values) if d >= POST_2020_FIRST]
-    return [d for d, _ in kept], [v for _, v in kept]
-
-
-def stationary_window_indices(size, days, rng, block):
-    """A window of `days` positions drawn as the power study draws a path: a stationary bootstrap resample."""
-
-    return list(stationary_bootstrap_indices(size, block, rng)[:days])
 
 
 @contextlib.contextmanager
@@ -225,39 +208,6 @@ def replay_command(args) -> int:
 
 
 # -- the confirmation designs of #733 ------------------------------------------------------------------------------
-
-
-def stationary_window_statistics(series, *, days, lengths, windows, seed, block=sp.BLOCK_LENGTH):
-    """`confirmation_design.window_statistics` with stationary-bootstrap windows: sorted studentized means at each look."""
-
-    values = [float(v) for v in series]
-    truth = sum(values) / len(values)
-    rng = random.Random(seed)
-    out = {n: [] for n in lengths}
-    for _ in range(windows):
-        window = [values[i] for i in stationary_window_indices(len(values), days, rng, block)]
-        for n in lengths:
-            part = window[:n]
-            out[n].append((sum(part) / n - truth) / sp._standard_error(part, sp.HAC_LAG, "a window"))
-    return {n: sorted(v) for n, v in out.items()}
-
-
-def design_values(job):
-    """A design's values at looks 2 and 3 on the candidate-side series `e`: (a) full history, circular blocks (#873's
-    reading) and (b) post-2020 days, stationary bootstrap (this one)."""
-
-    cd = load_script("confirmation_design_for_886", "confirmation_design.py")
-    design, series, windows = job
-    looks = design.checkpoints
-    levels = sp.nominal_levels(looks)
-    full = cd.window_statistics(series.e, days=design.days, lengths=looks[1:], windows=windows, seed=cd.CALIBRATION_SEED)
-    _days, post = post_2020(series.dates, series.e)
-    after = stationary_window_statistics(post, days=design.days, lengths=looks[1:], windows=windows, seed=cd.CALIBRATION_SEED)
-    return design.id, {
-        "full_history_circular": {str(n): sp._bound(full[n], 1.0 - levels[k + 1], windows) for k, n in enumerate(looks[1:])},
-        "post_2020_stationary": {str(n): sp._bound(after[n], 1.0 - levels[k + 1], windows) for k, n in enumerate(looks[1:])},
-        "series_days": len(series.e), "post_2020_days": len(post),
-    }
 
 
 VALUE_SETS = ("full_history_circular", "post_2020_stationary")

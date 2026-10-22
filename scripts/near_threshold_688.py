@@ -50,6 +50,17 @@ from repo_model.data import DailyObservation, audit_panel, exceeds_bp, load_dail
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_inputs": (
+        "not_entry",
+        "reads the scored days' inputs as of the decision instant on the lead-1 fold grid, for the "
+        "exploratory screen of #688; selects no model and scores no forecast, calls "
+        "lockbox.require_unlocked on every day before it reads one, and `refuse_locked` is tested "
+        "(tests/test_near_threshold_688.py)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "near_threshold_688.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"

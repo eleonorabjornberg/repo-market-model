@@ -39,6 +39,17 @@ from .data import DailyObservation, next_business_day
 from .scarcity import SATIATION_BAND, reserves_ratio
 from .splits import LookAheadError, SplitError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "_ratio_at": (
+        "not_entry",
+        "reads the reserves-to-assets ratio the as-of rule gives one panel row's decision (#587); "
+        "scores nothing, `asof_ratios` and `build_columns` build no row after the declared last "
+        "scored day, and `scripts/satiation_587.py panel` calls require_unlocked on that day before "
+        "it builds anything",
+    ),
+}
+
 __all__ = [
     "COLUMN_FIELDS",
     "DISTANCE_COLUMN",

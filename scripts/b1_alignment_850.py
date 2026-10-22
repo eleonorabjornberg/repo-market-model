@@ -54,6 +54,16 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import stationary_bootstrap_interval  # noqa: E402
 from repo_model.scoring_protocol import BLOCK_LENGTH, GRID  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "run_command": (
+        "not_entry",
+        "the B1 alignment measurement on step 1's panel (#850): walks the lead-1 fold grid, calls "
+        "lockbox.require_unlocked on every scored day before it reads one, refuses a panel past "
+        "2025-12-31 and fits and selects nothing",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "b1_alignment_850.json"
 SCREEN = REPO / "docs" / "pivot" / "evidence" / "richer-targets-639" / "screen.json"
 SEED = 850

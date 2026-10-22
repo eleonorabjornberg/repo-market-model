@@ -51,6 +51,15 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import DAY_TYPES, load_split_declaration  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "_crps": (
+        "delegates",
+        "one loss; `score_command` calls `check_window` (which calls lockbox.require_unlocked) on "
+        "every day before any is scored",
+    ),
+}
+
 DECLARATION = REPO / "docs" / "declarations" / "interior_calibration_243.json"
 ADDENDUM = REPO / "docs" / "declarations" / "interior_calibration_243_addendum.json"
 V1_RECORD = REPO / "docs" / "runs" / "v1_interior_diagnosis.json"

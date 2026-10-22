@@ -25,11 +25,13 @@ deleted from a checkout: `test_tests_yml_checks_out_the_whole_history` fails wit
 
 from __future__ import annotations
 
+import json
 import re
 import unittest
 from pathlib import Path
 
-WORKFLOWS = sorted((Path(__file__).resolve().parents[1] / ".github" / "workflows").glob("*.yml"))
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
 
 #: Actions still used by tag. Empty: every action is pinned to its commit SHA.
 PENDING_PINS = set()
@@ -106,7 +108,10 @@ class WorkflowFileTests(unittest.TestCase):
     def test_tests_yml_runs_the_results_page_check(self):
         path = next(p for p in WORKFLOWS if p.name == "tests.yml")
         text = "\n".join(jobs(path)["pages"])
-        self.assertIn("scripts/emit_visual.py --check", text)
+        # The check is a declaration run by `ci_checks.py` (#1059): the job runs the declared checks, and the results-page check is one.
+        self.assertIn("scripts/ci_checks.py run ci:pages", text)
+        declared = json.loads((ROOT / "metadata" / "ci_checks" / "emit-visual.json").read_text(encoding="utf-8"))
+        self.assertEqual((declared["command"], declared["where"]), (["scripts/emit_visual.py", "--check"], "ci:pages"))
 
     def test_the_required_check_names_are_kept_by_the_aggregating_jobs(self):
         """The ruleset requires these three names; each is now a job that waits on its shards (#927)."""

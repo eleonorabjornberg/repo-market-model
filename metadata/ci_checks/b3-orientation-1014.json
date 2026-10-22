@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/b3_orientation_1014.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

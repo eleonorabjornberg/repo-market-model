@@ -257,3 +257,26 @@ def markdown_table(cells: Mapping[str, Cell], *, level: float = 0.90) -> str:
         "its slope is a handful of events' worth.",
     ]
     return "\n".join(head + rows + foot) + "\n"
+
+
+def cells_json(cells) -> dict:
+    return {
+        k: {
+            "days": c.days, "events": c.events, "slope": c.slope, "intercept": c.intercept,
+            "slope_interval": c.slope_interval, "intercept_interval": c.intercept_interval,
+        }
+        for k, c in cells.items()
+    }
+
+
+def row_cells(job):
+    """One row at one horizon: its pooled, per-regime and per-scarcity-state cells (the bootstrap, which is where the time goes).
+
+    It lives here, not in `scripts/reliability_regimes_683.py`, so that a process pool can import it by name under the *spawn* start
+    method (macOS), which a function in a script loaded by path cannot be (#1061)."""
+
+    key, p, outcome, regime, state, settings = job
+    return key, {
+        "regime": cells_json(by_cell(p, outcome, regime, **settings)),
+        "scarcity_state": cells_json(by_cell(p, outcome, state, **settings)),
+    }

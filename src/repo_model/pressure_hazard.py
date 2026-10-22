@@ -61,6 +61,21 @@ from .data import (
 )
 from .splits import LookAheadError, SplitError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "_decisions": (
+        "not_entry",
+        "reads each training decision's as-of covariates inside a fit's own training frame (#387), "
+        "as ml._pressure_pairs does; scores nothing, the backtest that calls the predictor guards "
+        "the scored days",
+    ),
+    "gap_to_anchor": (
+        "not_entry",
+        "measures the rule's scored-day-to-anchor distance on a synthetic run of business days "
+        "(#387); reads no panel row and scores nothing",
+    ),
+}
+
 __all__ = [
     "DEFAULT_DECLARATION",
     "Declaration",
