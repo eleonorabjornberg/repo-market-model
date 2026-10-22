@@ -43,6 +43,9 @@ sys.path.insert(0, str(REPO / "src"))
 
 
 def _load(name: str):
+    loaded = sys.modules.get(name)
+    if loaded is not None and Path(getattr(loaded, "__file__", "")) == REPO / "scripts" / f"{name}.py":
+        return loaded  # a worker pool pickles functions by module name: keep the object another loader registered
     spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module

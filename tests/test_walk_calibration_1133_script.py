@@ -34,6 +34,18 @@ def flat_law(low, high):
     return law
 
 
+class LoaderTests(unittest.TestCase):
+
+    def test_a_script_another_module_registered_is_not_replaced(self):
+        """A shard that loads the 941 script first must keep its object, or its worker pool cannot pickle."""
+
+        registered = sys.modules.get("fhs_scale_941")
+        if registered is None:
+            self.skipTest("fhs_scale_941 not loaded")
+        self.assertIs(script._load("fhs_scale_941"), registered)
+        self.assertIs(sys.modules["fhs_scale_941"], registered)
+
+
 class SequenceTests(unittest.TestCase):
 
     outcomes = [-5.0, -2.0, 0.0, 2.0, 5.0, 9.0]

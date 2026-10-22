@@ -7,6 +7,7 @@ ran four times).
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 import tempfile
@@ -15,9 +16,10 @@ from datetime import datetime, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-
-import live_retry  # noqa: E402
+_spec = importlib.util.spec_from_file_location("live_retry", ROOT / "scripts" / "live_retry.py")
+live_retry = importlib.util.module_from_spec(_spec)
+sys.modules["live_retry"] = live_retry
+_spec.loader.exec_module(live_retry)
 
 EASTERN = live_retry.EASTERN
 
