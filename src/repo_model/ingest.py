@@ -1022,7 +1022,11 @@ def fetch_fred_macro(
             contents = [archive.read(name) for name in csv_names]
     headers = [content.splitlines()[0].decode("utf-8") for content in contents if content]
     if not headers or any("observation_date" not in header for header in headers):
-        raise ValueError("FRED response is not the expected CSV format")
+        raise ValueError(
+            "FRED response is not the expected CSV format; it begins "
+            + repr(payload[:120])
+            + " (#1148)"
+        )
     return [
         _save_snapshot(
             source_id="fred_macro_latest_vintage",
