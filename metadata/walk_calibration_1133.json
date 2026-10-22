@@ -67,5 +67,10 @@
     ]
   },
   "long_run": "the base walk (89 refits) and the calibration are arithmetic on the panel and are expected to finish well inside two hours; if the scoring step exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)",
-  "amendments": []
+  "amendments": [],
+  "variants": {
+    "pooled": "(a) at each of the 23 levels, q_p + w * (the conformal quantile at level p of the normalised scores), over all cells of the lead, pooled over regimes. It can move a level up or down",
+    "state": "(b) the same, on the past cells whose anchor row has the same as-of floor flag state as the decision day's anchor row; the pooled correction of (a) while that state has fewer than 100 past cells at the lead, and while the flag is undefined at the anchor. The regime is the flag, never the hindsight regime label of evaluation_splits",
+    "state_tail": "(c) (b), except that levels at or above 0.90 (0.90, 0.95, 0.975, 0.99) take q_50 + lambda_p * (q_p - q_50), lambda_p the conformal quantile at level p of (y - q_50) / max(q_p - q_50, 0.25 bp) over the same cells as (b), floored at 0. lambda_p is not capped, so the upper tail can widen by more than the body (avenue #809)"
+  }
 }
