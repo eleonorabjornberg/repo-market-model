@@ -1,6 +1,6 @@
 # The balance-sheet days on the turn days, nested into the calendar-aware candidate (#1031, H5 step 2 / H6 step 1): design
 
-**Development data, not a verdict. Status: design and declaration. Nothing is scored here.** The walks are long and run on Eleonora's Mac (`needs-mac`, #46); the result page, `docs/research/balance-sheet-nested-1031/report.md`, and its figures, `docs/research/balance-sheet-nested-1031/score.json`, arrive as a commit on this branch when they have been scored. The declaration is `metadata/balance_sheet_nested_1031.json`, committed before any number was computed; the script is `scripts/balance_sheet_nested_1031.py` (commands in its docstring); the tests are `tests/test_balance_sheet_nested_1031.py`.
+**Development data, not a verdict. Status: design and declaration; the result is on `docs/research/balance-sheet-nested-1031-result.md`.** The walks were long and ran on Eleonora's Mac (`needs-mac`, #46); the tables are `docs/research/balance-sheet-nested-1031/report.md`, the scores `docs/research/balance-sheet-nested-1031/score.json`. The declaration is `metadata/balance_sheet_nested_1031.json`, committed before any number was computed; the script is `scripts/balance_sheet_nested_1031.py` (commands in its docstring); the tests are `tests/test_balance_sheet_nested_1031.py`.
 
 **Questions for Eleonora (not settled here), each with a default.**
 
