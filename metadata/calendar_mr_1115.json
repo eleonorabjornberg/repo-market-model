@@ -16,7 +16,7 @@
    {
     "name": "month_end",
     "reads": "days_to_month_end",
-    "flag": "days_to_month_end == 0",
+    "flag": "the target day is one of the month's last two business days on the market calendar (data.in_last_business_days_of_month, the definition of the reporting day type `month_end` in repo_model.evaluation_splits); days_to_month_end counts calendar days and is 0 only when the month ends on a weekday, so it is the column the one-step guard is asked about, not the flag",
     "leads": "1 to 5",
     "kind": "calendar column (TARGET_DAY_COLUMNS)"
    },
